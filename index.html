@@ -54,7 +54,9 @@ a{ text-decoration:none; color:inherit; }
 
 .subject{ margin-bottom:38px; }
 .subject-name{ font-size:19px; font-weight:700; margin-bottom:16px; }
-.square-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+
+/* ✅ 4개 구성을 위해 repeat(4, 1fr)로 수정 */
+.square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
 .square-link{ aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; }
 .square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
 .sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; }
@@ -70,6 +72,9 @@ a{ text-decoration:none; color:inherit; }
 .left{ display:flex; align-items:center; gap:10px; }
 .footer{ margin-top:58px; text-align:center; color:var(--sub); font-size:13px; line-height:1.9; }
 
+@media(max-width:1100px){
+  .square-grid{ grid-template-columns:repeat(3,1fr); }
+}
 @media(max-width:980px){
   .layout{ grid-template-columns:1fr; }
   .header{ flex-direction:column; text-align:center; }
@@ -118,7 +123,6 @@ a{ text-decoration:none; color:inherit; }
           </a>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
 
@@ -131,7 +135,6 @@ a{ text-decoration:none; color:inherit; }
           <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
 
@@ -142,7 +145,6 @@ a{ text-decoration:none; color:inherit; }
           <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
 
@@ -150,10 +152,9 @@ a{ text-decoration:none; color:inherit; }
         <div class="subject-name">행렬</div>
         <div class="square-grid">
           <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="sq-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
     </div>
