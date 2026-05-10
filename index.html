@@ -22,7 +22,7 @@
   --gold:#b69163;
   --hover:#f5eee4;
   --open:#b69163;
-  --soon:#c8beb1;
+  --soon:#bdb2a4;
 }
 
 *{
@@ -48,7 +48,7 @@ a{
   margin:auto;
 }
 
-/* 헤더 */
+/* HEADER */
 
 .header{
   text-align:center;
@@ -75,11 +75,11 @@ a{
   letter-spacing:0.28em;
 }
 
-/* 레이아웃 */
+/* LAYOUT */
 
 .layout{
   display:grid;
-  grid-template-columns:1.8fr 1fr;
+  grid-template-columns:1.9fr 1fr;
   gap:22px;
 }
 
@@ -95,7 +95,7 @@ a{
 
 }
 
-/* 카드 */
+/* CARD */
 
 .card{
   background:var(--card);
@@ -115,9 +115,16 @@ a{
 
 .title{
   font-family:'Cormorant Garamond', serif;
-  font-size:38px;
-  line-height:1.1;
+  font-size:40px;
+  line-height:1.08;
   margin-bottom:14px;
+}
+
+.small-title{
+  font-family:'Cormorant Garamond', serif;
+  font-size:30px;
+  line-height:1.15;
+  margin-bottom:12px;
 }
 
 .desc{
@@ -127,72 +134,63 @@ a{
   margin-bottom:30px;
 }
 
-/* writing section */
-
 .subject{
-  margin-bottom:28px;
+  margin-bottom:34px;
 }
 
 .subject-name{
-  font-size:18px;
+  font-size:19px;
   font-weight:700;
-  margin-bottom:14px;
-  color:var(--brown);
+  margin-bottom:16px;
 }
 
-.menu{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+/* SQUARE GRID */
+
+.square-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
 }
 
-.link{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+.square-link{
+  aspect-ratio:1/1;
   background:#faf6f0;
   border:1px solid #eee3d4;
-  border-radius:16px;
-  padding:15px 18px;
+  border-radius:22px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
   transition:0.22s;
 }
 
-.link:hover{
+.square-link:hover{
   background:white;
   border-color:var(--gold);
-  transform:translateX(4px);
+  transform:translateY(-3px);
 }
 
-.left{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.number{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:white;
-  border:1px solid #e9dccb;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
+.sq-number{
+  font-size:13px;
   color:var(--gold);
   font-weight:700;
+  letter-spacing:0.08em;
 }
 
-.label{
-  font-size:15px;
+.sq-title{
+  font-size:17px;
+  font-weight:600;
+  color:var(--brown);
+  line-height:1.4;
 }
 
-.status{
-  font-size:11px;
+.sq-status{
+  align-self:flex-start;
+  font-size:10px;
+  padding:6px 10px;
+  border-radius:999px;
   font-weight:700;
   letter-spacing:0.08em;
-  padding:7px 10px;
-  border-radius:999px;
 }
 
 .open{
@@ -205,7 +203,7 @@ a{
   color:var(--soon);
 }
 
-/* 사이드 */
+/* SIDE */
 
 .side{
   display:flex;
@@ -213,25 +211,61 @@ a{
   gap:22px;
 }
 
-.small-title{
-  font-family:'Cormorant Garamond', serif;
-  font-size:30px;
-  line-height:1.15;
-  margin-bottom:12px;
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 
-.video-icon{
-  font-size:14px;
-  margin-right:6px;
-  color:var(--gold);
+.link{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 18px;
+  border-radius:16px;
+  background:#faf6f0;
+  border:1px solid #eee3d4;
+  transition:0.22s;
+}
+
+.link:hover{
+  background:white;
+  border-color:var(--gold);
+  transform:translateX(3px);
+}
+
+.left{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .footer{
-  margin-top:50px;
+  margin-top:55px;
   text-align:center;
   color:var(--sub);
   font-size:13px;
   line-height:1.9;
+}
+
+@media(max-width:980px){
+
+  .square-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+}
+
+@media(max-width:560px){
+
+  body{
+    padding-top:34px;
+  }
+
+  .square-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
 }
 
 </style>
@@ -241,7 +275,7 @@ a{
 
 <div class="container">
 
-  <!-- 헤더 -->
+  <!-- HEADER -->
 
   <div class="header">
 
@@ -256,11 +290,11 @@ a{
 
   </div>
 
-  <!-- 메인 레이아웃 -->
+  <!-- LAYOUT -->
 
   <div class="layout">
 
-    <!-- 메인 writing -->
+    <!-- WRITING -->
 
     <div class="card">
 
@@ -269,7 +303,7 @@ a{
       </div>
 
       <div class="title">
-        공통수학Ⅰ
+        공통수학Ⅰ<br>
         서술형 Training
       </div>
 
@@ -285,46 +319,39 @@ a{
           방정식
         </div>
 
-        <div class="menu">
+        <div class="square-grid">
 
-          <a class="link"
+          <a class="square-link"
           href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
 
-            <div class="left">
-              <div class="number">01</div>
-              <div class="label">Writing Training</div>
-            </div>
-
-            <div class="status open">
-              OPEN
-            </div>
+            <div class="sq-number">01</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status open">OPEN</div>
 
           </a>
 
-          <div class="link">
-
-            <div class="left">
-              <div class="number">02</div>
-              <div class="label">Writing Training</div>
-            </div>
-
-            <div class="status soon">
-              COMING SOON
-            </div>
-
+          <div class="square-link">
+            <div class="sq-number">02</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
-          <div class="link">
+          <div class="square-link">
+            <div class="sq-number">03</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="left">
-              <div class="number">03</div>
-              <div class="label">Writing Training</div>
-            </div>
+          <div class="square-link">
+            <div class="sq-number">04</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="status soon">
-              COMING SOON
-            </div>
-
+          <div class="square-link">
+            <div class="sq-number">05</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
         </div>
@@ -339,33 +366,39 @@ a{
           부등식
         </div>
 
-        <div class="menu">
+        <div class="square-grid">
 
-          <a class="link"
+          <a class="square-link"
           href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
 
-            <div class="left">
-              <div class="number">01</div>
-              <div class="label">Writing Training</div>
-            </div>
-
-            <div class="status open">
-              OPEN
-            </div>
+            <div class="sq-number">01</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status open">OPEN</div>
 
           </a>
 
-          <div class="link">
+          <div class="square-link">
+            <div class="sq-number">02</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="left">
-              <div class="number">02</div>
-              <div class="label">Writing Training</div>
-            </div>
+          <div class="square-link">
+            <div class="sq-number">03</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="status soon">
-              COMING SOON
-            </div>
+          <div class="square-link">
+            <div class="sq-number">04</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
+          <div class="square-link">
+            <div class="sq-number">05</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
         </div>
@@ -380,19 +413,36 @@ a{
           경우의 수
         </div>
 
-        <div class="menu">
+        <div class="square-grid">
 
-          <div class="link">
+          <div class="square-link">
+            <div class="sq-number">01</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="left">
-              <div class="number">01</div>
-              <div class="label">Writing Training</div>
-            </div>
+          <div class="square-link">
+            <div class="sq-number">02</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="status soon">
-              COMING SOON
-            </div>
+          <div class="square-link">
+            <div class="sq-number">03</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
+          <div class="square-link">
+            <div class="sq-number">04</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
+
+          <div class="square-link">
+            <div class="sq-number">05</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
         </div>
@@ -407,19 +457,36 @@ a{
           행렬
         </div>
 
-        <div class="menu">
+        <div class="square-grid">
 
-          <div class="link">
+          <div class="square-link">
+            <div class="sq-number">01</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="left">
-              <div class="number">01</div>
-              <div class="label">Writing Training</div>
-            </div>
+          <div class="square-link">
+            <div class="sq-number">02</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="status soon">
-              COMING SOON
-            </div>
+          <div class="square-link">
+            <div class="sq-number">03</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
+          <div class="square-link">
+            <div class="sq-number">04</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
+
+          <div class="square-link">
+            <div class="sq-number">05</div>
+            <div class="sq-title">Writing</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
         </div>
@@ -434,19 +501,36 @@ a{
           실전 FINAL
         </div>
 
-        <div class="menu">
+        <div class="square-grid">
 
-          <div class="link">
+          <div class="square-link">
+            <div class="sq-number">F1</div>
+            <div class="sq-title">FINAL</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="left">
-              <div class="number">F</div>
-              <div class="label">Final Training</div>
-            </div>
+          <div class="square-link">
+            <div class="sq-number">F2</div>
+            <div class="sq-title">FINAL</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
-            <div class="status soon">
-              COMING SOON
-            </div>
+          <div class="square-link">
+            <div class="sq-number">F3</div>
+            <div class="sq-title">FINAL</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
 
+          <div class="square-link">
+            <div class="sq-number">F4</div>
+            <div class="sq-title">FINAL</div>
+            <div class="sq-status soon">SOON</div>
+          </div>
+
+          <div class="square-link">
+            <div class="sq-number">F5</div>
+            <div class="sq-title">FINAL</div>
+            <div class="sq-status soon">SOON</div>
           </div>
 
         </div>
@@ -455,11 +539,11 @@ a{
 
     </div>
 
-    <!-- 오른쪽 -->
+    <!-- SIDE -->
 
     <div class="side">
 
-      <!-- 로직 -->
+      <!-- LOGIC -->
 
       <div class="card">
 
@@ -473,32 +557,18 @@ a{
         </div>
 
         <div class="desc">
-          킬러문항 풀이 및 사고력 논리 훈련 영상
+          킬러문항 풀이 및 수업 영상 아카이브
         </div>
 
         <div class="menu">
 
-          <a class="link">
-
-            <div class="left">
-              <span class="video-icon">▶</span>
-              <div class="label">킬러문항 훈련</div>
-            </div>
-
-            <div class="status open">
-               COMING SOON
-            </div>
-
-          </a>
-
           <div class="link">
 
             <div class="left">
-              <span class="video-icon">▶</span>
-              <div class="label">풀이 영상</div>
+              <div>킬러문항 훈련</div>
             </div>
 
-            <div class="status soon">
+            <div class="sq-status soon">
               COMING SOON
             </div>
 
@@ -507,11 +577,22 @@ a{
           <div class="link">
 
             <div class="left">
-              <span class="video-icon">▶</span>
-              <div class="label">수업 아카이브</div>
+              <div>풀이 영상</div>
             </div>
 
-            <div class="status soon">
+            <div class="sq-status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+          <div class="link">
+
+            <div class="left">
+              <div>수업 아카이브</div>
+            </div>
+
+            <div class="sq-status soon">
               COMING SOON
             </div>
 
@@ -521,7 +602,7 @@ a{
 
       </div>
 
-      <!-- 입시 -->
+      <!-- ADMISSION -->
 
       <div class="card">
 
@@ -540,10 +621,10 @@ a{
           href="https://mathyyuri.github.io/splus-quiz/">
 
             <div class="left">
-              <div class="label">서울대학교</div>
+              <div>서울대학교</div>
             </div>
 
-            <div class="status open">
+            <div class="sq-status open">
               OPEN
             </div>
 
@@ -552,10 +633,10 @@ a{
           <div class="link">
 
             <div class="left">
-              <div class="label">연세대학교</div>
+              <div>연세대학교</div>
             </div>
 
-            <div class="status soon">
+            <div class="sq-status soon">
               SOON
             </div>
 
@@ -564,10 +645,10 @@ a{
           <div class="link">
 
             <div class="left">
-              <div class="label">고려대학교</div>
+              <div>고려대학교</div>
             </div>
 
-            <div class="status soon">
+            <div class="sq-status soon">
               SOON
             </div>
 
@@ -581,7 +662,7 @@ a{
 
   </div>
 
-  <!-- footer -->
+  <!-- FOOTER -->
 
   <div class="footer">
 
