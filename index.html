@@ -55,13 +55,16 @@ a{ text-decoration:none; color:inherit; }
 .subject{ margin-bottom:38px; }
 .subject-name{ font-size:19px; font-weight:700; margin-bottom:16px; }
 
-/* ✅ 4개 구성을 위해 repeat(4, 1fr)로 수정 */
 .square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
 .square-link{ aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; }
 .square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
 .sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; }
 .sq-title{ font-size:17px; font-weight:600; line-height:1.4; }
-.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; }
+.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; display: flex; align-items: center; gap: 4px; }
+
+/* 참여 인원 표시 태그 스타일 */
+.count-tag { font-size: 9px; opacity: 0.8; font-weight: 400; margin-left: 2px; }
+
 .open{ background:var(--open-bg); color:var(--open); }
 .soon{ background:var(--soon-bg); color:var(--soon); }
 
@@ -72,9 +75,7 @@ a{ text-decoration:none; color:inherit; }
 .left{ display:flex; align-items:center; gap:10px; }
 .footer{ margin-top:58px; text-align:center; color:var(--sub); font-size:13px; line-height:1.9; }
 
-@media(max-width:1100px){
-  .square-grid{ grid-template-columns:repeat(3,1fr); }
-}
+@media(max-width:1100px){ .square-grid{ grid-template-columns:repeat(3,1fr); } }
 @media(max-width:980px){
   .layout{ grid-template-columns:1fr; }
   .header{ flex-direction:column; text-align:center; }
@@ -116,10 +117,12 @@ a{ text-decoration:none; color:inherit; }
         <div class="subject-name">방정식</div>
         <div class="square-grid">
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
-            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+            <div class="sq-number">01</div><div class="sq-title">Writing</div>
+            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d1">0</span>명)</span></div>
           </a>
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1-2/">
-            <div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+            <div class="sq-number">02</div><div class="sq-title">Writing</div>
+            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d2">0</span>명)</span></div>
           </a>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
@@ -130,7 +133,8 @@ a{ text-decoration:none; color:inherit; }
         <div class="subject-name">부등식</div>
         <div class="square-grid">
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
-            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+            <div class="sq-number">01</div><div class="sq-title">Writing</div>
+            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d3">0</span>명)</span></div>
           </a>
           <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
@@ -177,12 +181,8 @@ a{ text-decoration:none; color:inherit; }
           <a class="link" href="https://mathyyuri.github.io/splus-quiz/">
             <div class="left">서울대학교</div><div class="sq-status open">OPEN</div>
           </a>
-          <div class="link">
-            <div class="left">연세대학교</div><div class="sq-status soon">SOON</div>
-          </div>
-          <div class="link">
-            <div class="left">고려대학교</div><div class="sq-status soon">SOON</div>
-          </div>
+          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
+          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
     </div>
@@ -192,5 +192,30 @@ a{ text-decoration:none; color:inherit; }
     MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform
   </div>
 </div>
+
+<script>
+  // ✅ 1. 원장님의 구글 앱스 스크립트 URL 업데이트 완료
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk2JVmj_gFeO_uBsJHIReaVkVuDS5kJBki3CRIO2mu4kwW0WoxGKCQcB4ofLwq90OB/exec";
+
+  // ✅ 2. 대시보드 로딩 시 데이터 가져오기
+  window.onload = function() {
+    fetchCountData();
+  };
+
+  function fetchCountData() {
+    // ❗ GAS 코드의 doGet(e)에서 action 파라미터를 체크하도록 구성되어 있어야 합니다.
+    fetch(SCRIPT_URL + "?action=getCounts")
+      .then(response => response.json())
+      .then(data => {
+        // GAS 결과 { d1: 숫자, d2: 숫자, d3: 숫자 } 매칭
+        if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
+        if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
+        if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
+      })
+      .catch(error => {
+        console.error('데이터를 가져오는 중 오류 발생:', error);
+      });
+  }
+</script>
 </body>
 </html>
