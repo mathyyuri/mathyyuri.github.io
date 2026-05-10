@@ -12,64 +12,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 
 <style>
-
 :root{
-
   --bg:#edf5ea;
   --card:#f9fdf7;
   --line:#d9e7d5;
-
   --main:#233222;
   --sub:#6f7d6c;
-
   --point:#7da27b;
   --hover:#f2f8ef;
-
   --open-bg:#e5f0e1;
   --open:#6f9270;
-
   --soon-bg:#eef1eb;
   --soon:#a1ab9e;
-
 }
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
-body{
-  background:var(--bg);
-  color:var(--main);
-  font-family:'Noto Sans KR', sans-serif;
-  padding:42px 20px 80px;
-}
-
-a{
-  text-decoration:none;
-  color:inherit;
-}
-
-.container{
-  max-width:1240px;
-  margin:auto;
-}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{ background:var(--bg); color:var(--main); font-family:'Noto Sans KR', sans-serif; padding:42px 20px 80px; }
+a{ text-decoration:none; color:inherit; }
+.container{ max-width:1240px; margin:auto; }
 
 /* HEADER */
-
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:30px;
-  margin-bottom:42px;
+  margin-bottom:52px;
 }
 
-.logo-wrap{
-  flex:1;
-}
-
+.logo-wrap{ flex:1; }
 .logo{
   font-family:'Cormorant Garamond', serif;
   font-size:76px;
@@ -77,705 +48,194 @@ a{
   font-weight:600;
   letter-spacing:-1px;
 }
+.logo span{ color:var(--point); font-style:italic; }
+.sub{ margin-top:18px; color:var(--sub); font-size:13px; letter-spacing:0.28em; }
 
-.logo span{
-  color:var(--point);
-  font-style:italic;
+/* PROFILE SECTION (수정된 부분) */
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
-.sub{
-  margin-top:18px;
-  color:var(--sub);
-  font-size:13px;
-  letter-spacing:0.28em;
+.profile {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #ffffff;
+  box-shadow: 0 10px 30px rgba(60,90,60,0.12);
+  flex-shrink: 0;
+}
+.profile img { width: 100%; height: 100%; object-fit: cover; }
+
+.profile-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* PROFILE */
-
-.profile{
-
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  overflow:hidden;
-
-  border:3px solid #ffffff;
-
-  box-shadow:0 10px 30px rgba(60,90,60,0.12);
-
-  flex-shrink:0;
-
+/* 실시간 성적차트 링크 스타일 */
+.live-chart-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  background: #ffffff;
+  border: 1px solid var(--point);
+  border-radius: 30px;
+  color: var(--open);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(125, 162, 123, 0.1);
 }
 
-.profile img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
+.live-chart-btn .dot {
+  width: 7px;
+  height: 7px;
+  background-color: var(--point);
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: blink 1.5s infinite;
 }
 
-/* LAYOUT */
-
-.layout{
-  display:grid;
-  grid-template-columns:1.9fr 1fr;
-  gap:22px;
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
 }
+
+.live-chart-btn:hover {
+  background: var(--point);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(125, 162, 123, 0.25);
+}
+
+.live-chart-btn .arrow { margin-left: 6px; font-style: normal; }
+
+/* LAYOUT & CARDS */
+.layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:32px; padding:36px; box-shadow:0 10px 28px rgba(80,110,80,0.05); }
+.category{ color:var(--point); font-size:12px; letter-spacing:0.18em; margin-bottom:18px; font-weight:700; }
+.title{ font-family:'Cormorant Garamond', serif; font-size:42px; line-height:1.08; margin-bottom:14px; }
+.small-title{ font-family:'Cormorant Garamond', serif; font-size:30px; line-height:1.15; margin-bottom:12px; }
+.desc{ color:var(--sub); font-size:14px; line-height:1.8; margin-bottom:32px; }
+
+.subject{ margin-bottom:38px; }
+.subject-name{ font-size:19px; font-weight:700; margin-bottom:16px; }
+.square-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+.square-link{ aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; }
+.square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
+.sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; }
+.sq-title{ font-size:17px; font-weight:600; line-height:1.4; }
+.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; }
+.open{ background:var(--open-bg); color:var(--open); }
+.soon{ background:var(--soon-bg); color:var(--soon); }
+
+.side{ display:flex; flex-direction:column; gap:22px; }
+.menu{ display:flex; flex-direction:column; gap:12px; }
+.link{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-radius:18px; background:#f5faf3; border:1px solid #dde9d8; transition:0.22s; }
+.link:hover{ background:white; border-color:var(--point); transform:translateX(4px); }
+.left{ display:flex; align-items:center; gap:10px; }
+.footer{ margin-top:58px; text-align:center; color:var(--sub); font-size:13px; line-height:1.9; }
 
 @media(max-width:980px){
-
-  .layout{
-    grid-template-columns:1fr;
-  }
-
-  .header{
-    flex-direction:column;
-    text-align:center;
-  }
-
-  .logo{
-    font-size:56px;
-  }
-
+  .layout{ grid-template-columns:1fr; }
+  .header{ flex-direction:column; text-align:center; }
+  .profile-section { flex-direction: column; }
+  .logo{ font-size:56px; }
+  .square-grid{ grid-template-columns:repeat(2,1fr); }
 }
-
-/* CARD */
-
-.card{
-
-  background:var(--card);
-
-  border:1px solid var(--line);
-
-  border-radius:32px;
-
-  padding:36px;
-
-  box-shadow:0 10px 28px rgba(80,110,80,0.05);
-
-}
-
-.category{
-
-  color:var(--point);
-
-  font-size:12px;
-
-  letter-spacing:0.18em;
-
-  margin-bottom:18px;
-
-  font-weight:700;
-
-}
-
-.title{
-
-  font-family:'Cormorant Garamond', serif;
-
-  font-size:42px;
-
-  line-height:1.08;
-
-  margin-bottom:14px;
-
-}
-
-.small-title{
-
-  font-family:'Cormorant Garamond', serif;
-
-  font-size:30px;
-
-  line-height:1.15;
-
-  margin-bottom:12px;
-
-}
-
-.desc{
-
-  color:var(--sub);
-
-  font-size:14px;
-
-  line-height:1.8;
-
-  margin-bottom:32px;
-
-}
-
-/* SUBJECT */
-
-.subject{
-  margin-bottom:38px;
-}
-
-.subject-name{
-
-  font-size:19px;
-
-  font-weight:700;
-
-  margin-bottom:16px;
-
-}
-
-/* GRID */
-
-.square-grid{
-
-  display:grid;
-
-  grid-template-columns:repeat(5,1fr);
-
-  gap:14px;
-
-}
-
-.square-link{
-
-  aspect-ratio:1/1;
-
-  background:#f5faf3;
-
-  border:1px solid #dde9d8;
-
-  border-radius:24px;
-
-  padding:18px;
-
-  display:flex;
-
-  flex-direction:column;
-
-  justify-content:space-between;
-
-  transition:0.24s;
-
-}
-
-.square-link:hover{
-
-  background:white;
-
-  border-color:var(--point);
-
-  transform:translateY(-4px);
-
-}
-
-.sq-number{
-
-  font-size:13px;
-
-  color:var(--point);
-
-  font-weight:700;
-
-  letter-spacing:0.08em;
-
-}
-
-.sq-title{
-
-  font-size:17px;
-
-  font-weight:600;
-
-  line-height:1.4;
-
-}
-
-.sq-status{
-
-  align-self:flex-start;
-
-  font-size:10px;
-
-  padding:6px 10px;
-
-  border-radius:999px;
-
-  font-weight:700;
-
-  letter-spacing:0.08em;
-
-}
-
-.open{
-
-  background:var(--open-bg);
-
-  color:var(--open);
-
-}
-
-.soon{
-
-  background:var(--soon-bg);
-
-  color:var(--soon);
-
-}
-
-/* SIDE */
-
-.side{
-  display:flex;
-  flex-direction:column;
-  gap:22px;
-}
-
-.menu{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.link{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:center;
-
-  padding:16px 18px;
-
-  border-radius:18px;
-
-  background:#f5faf3;
-
-  border:1px solid #dde9d8;
-
-  transition:0.22s;
-
-}
-
-.link:hover{
-
-  background:white;
-
-  border-color:var(--point);
-
-  transform:translateX(4px);
-
-}
-
-.left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-/* FOOTER */
-
-.footer{
-
-  margin-top:58px;
-
-  text-align:center;
-
-  color:var(--sub);
-
-  font-size:13px;
-
-  line-height:1.9;
-
-}
-
-@media(max-width:980px){
-
-  .square-grid{
-    grid-template-columns:repeat(2,1fr);
-  }
-
-}
-
 @media(max-width:560px){
-
-  body{
-    padding-top:34px;
-  }
-
-  .square-grid{
-    grid-template-columns:1fr 1fr;
-  }
-
+  .square-grid{ grid-template-columns:1fr 1fr; }
 }
-
 </style>
 </head>
 
 <body>
 
 <div class="container">
-
-  <!-- HEADER -->
-
   <div class="header">
-
     <div class="logo-wrap">
-
-      <div class="logo">
-        MATHY YURI<br>
-        <span>System</span>
-      </div>
-
-      <div class="sub">
-        DAECHI S+ ACADEMY
-      </div>
-
+      <div class="logo">MATHY YURI<br><span>System</span></div>
+      <div class="sub">DAECHI S+ ACADEMY</div>
     </div>
 
-    <!-- 프로필 사진 -->
-
-    <div class="profile">
-
-      <!-- profile.png 파일 업로드 후 자동 연결 -->
-
-      <img src="profile.png" alt="Mathy Yuri">
-
+    <div class="profile-section">
+      <div class="profile">
+        <img src="profile.png" alt="Mathy Yuri">
+      </div>
+      <div class="profile-links">
+        <a href="dashboard.html" class="live-chart-btn">
+          <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
+        </a>
+      </div>
     </div>
-
   </div>
-
-  <!-- MAIN -->
 
   <div class="layout">
-
-    <!-- WRITING -->
-
     <div class="card">
-
-      <div class="category">
-        WRITING TRAINING
-      </div>
-
-      <div class="title">
-        공통수학Ⅰ<br>
-        서술형 Training
-      </div>
-
-      <div class="desc">
-        단원별 서술형 논리 훈련 및 실전형 FINAL 대비 시스템
-      </div>
-
-      <!-- 방정식 -->
+      <div class="category">WRITING TRAINING</div>
+      <div class="title">공통수학Ⅰ<br>서술형 Training</div>
+      <div class="desc">단원별 서술형 논리 훈련 및 실전형 FINAL 대비 시스템</div>
 
       <div class="subject">
-
-        <div class="subject-name">
-          방정식
-        </div>
-
+        <div class="subject-name">방정식</div>
         <div class="square-grid">
-
-          <a class="square-link"
-          href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
-
-            <div class="sq-number">01</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status open">OPEN</div>
-
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
+            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
           </a>
-
-          <div class="square-link">
-            <div class="sq-number">02</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">03</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">04</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">05</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
-
       </div>
 
-      <!-- 부등식 -->
-
       <div class="subject">
-
-        <div class="subject-name">
-          부등식
-        </div>
-
+        <div class="subject-name">부등식</div>
         <div class="square-grid">
-
-          <a class="square-link"
-          href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
-
-            <div class="sq-number">01</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status open">OPEN</div>
-
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
+            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
           </a>
-
-          <div class="square-link">
-            <div class="sq-number">02</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">03</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">04</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">05</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">05</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
-
       </div>
 
-      <!-- 경우의 수 -->
-
-      <div class="subject">
-
-        <div class="subject-name">
-          경우의 수
-        </div>
-
-        <div class="square-grid">
-
-          <div class="square-link">
-            <div class="sq-number">01</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">02</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">03</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">04</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">05</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-        </div>
-
       </div>
-
-      <!-- 행렬 -->
-
-      <div class="subject">
-
-        <div class="subject-name">
-          행렬
-        </div>
-
-        <div class="square-grid">
-
-          <div class="square-link">
-            <div class="sq-number">01</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">02</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">03</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">04</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">05</div>
-            <div class="sq-title">Writing</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- SIDE -->
 
     <div class="side">
-
-      <!-- 킬러 -->
-
       <div class="card">
-
-        <div class="category">
-          S+ LOGIC MASTER
-        </div>
-
-        <div class="small-title">
-          Killer Problem<br>
-          Training
-        </div>
-
-        <div class="desc">
-          킬러문항 풀이 및 수업 영상 아카이브
-        </div>
-
+        <div class="category">S+ LOGIC MASTER</div>
+        <div class="small-title">Killer Problem<br>Training</div>
         <div class="menu">
-
-          <div class="link">
-
-            <div class="left">
-              <div>킬러문항 훈련</div>
-            </div>
-
-            <div class="sq-status soon">
-              COMING SOON
-            </div>
-
-          </div>
-
-          <div class="link">
-
-            <div class="left">
-              <div>풀이 영상</div>
-            </div>
-
-            <div class="sq-status soon">
-              COMING SOON
-            </div>
-
-          </div>
-
-          <div class="link">
-
-            <div class="left">
-              <div>수업 아카이브</div>
-            </div>
-
-            <div class="sq-status soon">
-              COMING SOON
-            </div>
-
-          </div>
-
+          <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><div class="left">수업 아카이브</div><div class="sq-status soon">COMING SOON</div></div>
         </div>
-
       </div>
 
-      <!-- 입시 -->
-
       <div class="card">
-
-        <div class="category">
-          2028 UNIVERSITY ADMISSION
-        </div>
-
-        <div class="small-title">
-          2028 대학 입시
-        </div>
-
+        <div class="category">2028 UNIVERSITY ADMISSION</div>
+        <div class="small-title">2028 대학 입시</div>
         <div class="menu">
-
-          <a class="link"
-          href="https://mathyyuri.github.io/splus-quiz/">
-
-            <div class="left">
-              <div>서울대학교</div>
-            </div>
-
-            <div class="sq-status open">
-              OPEN
-            </div>
-
+          <a class="link" href="https://mathyyuri.github.io/splus-quiz/">
+            <div class="left">서울대학교</div><div class="sq-status open">OPEN</div>
           </a>
-
-          <div class="link">
-
-            <div class="left">
-              <div>연세대학교</div>
-            </div>
-
-            <div class="sq-status soon">
-              SOON
-            </div>
-
-          </div>
-
-          <div class="link">
-
-            <div class="left">
-              <div>고려대학교</div>
-            </div>
-
-            <div class="sq-status soon">
-              SOON
-            </div>
-
-          </div>
-
+          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
+          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon) SOON</div></div>
         </div>
-
       </div>
-
     </div>
-
   </div>
-
-  <!-- FOOTER -->
 
   <div class="footer">
-
-    MATHY YURI · Daechi S+ ACADEMY<br>
-    Premium Writing Training Platform
-
+    MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform
   </div>
-
 </div>
 
 </body>
