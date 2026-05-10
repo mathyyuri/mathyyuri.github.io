@@ -42,6 +42,7 @@ a{ text-decoration:none; color:inherit; }
 .live-chart-btn .dot { width: 7px; height: 7px; background-color: var(--point); border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 .live-chart-btn:hover { background: var(--point); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(125, 162, 123, 0.25); }
+.live-chart-btn .arrow { margin-left: 6px; font-style: normal; }
 
 /* LAYOUT */
 .layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
@@ -54,41 +55,15 @@ a{ text-decoration:none; color:inherit; }
 .subject{ margin-bottom:38px; }
 .subject-name{ font-size:19px; font-weight:700; margin-bottom:16px; }
 
+/* ✅ 4개 구성을 위해 repeat(4, 1fr)로 수정 */
 .square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.square-link{ position: relative; aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; overflow: hidden; }
+.square-link{ aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; }
 .square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
-.sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; z-index: 2; }
-.sq-title{ font-size:17px; font-weight:600; line-height:1.4; z-index: 2; }
-
-/* ✅ 숫자 강조 레이어 (박스 안에서 큼직하게 배치) */
-.count-wrapper {
-  position: absolute;
-  right: 15px;
-  bottom: 10px;
-  text-align: right;
-  z-index: 1;
-}
-.count-num {
-  display: block;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 52px; /* ❗ 숫자를 엄청 크게 키움 */
-  line-height: 1;
-  font-weight: 700;
-  color: var(--point);
-  opacity: 0.9;
-}
-.count-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--sub);
-  letter-spacing: 0.05em;
-  margin-top: -5px;
-  display: block;
-}
-
-.sq-status{ align-self: flex-start; font-size:10px; padding:5px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; z-index: 2; }
+.sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; }
+.sq-title{ font-size:17px; font-weight:600; line-height:1.4; }
+.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; }
 .open{ background:var(--open-bg); color:var(--open); }
-.soon{ background:var(--soon-bg); color:var(--soon); opacity: 0.5; }
+.soon{ background:var(--soon-bg); color:var(--soon); }
 
 .side{ display:flex; flex-direction:column; gap:22px; }
 .menu{ display:flex; flex-direction:column; gap:12px; }
@@ -97,11 +72,125 @@ a{ text-decoration:none; color:inherit; }
 .left{ display:flex; align-items:center; gap:10px; }
 .footer{ margin-top:58px; text-align:center; color:var(--sub); font-size:13px; line-height:1.9; }
 
-@media(max-width:1100px){ .square-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(max-width:1100px){
+  .square-grid{ grid-template-columns:repeat(3,1fr); }
+}
 @media(max-width:980px){
   .layout{ grid-template-columns:1fr; }
   .header{ flex-direction:column; text-align:center; }
+  .profile-section { flex-direction: column; }
   .logo{ font-size:56px; }
   .square-grid{ grid-template-columns:repeat(2,1fr); }
-  .count-num { font-size: 44px; }
 }
+@media(max-width:560px){ .square-grid{ grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo">MATHY YURI<br><span>System</span></div>
+      <div class="sub">DAECHI S+ ACADEMY</div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile">
+        <img src="profile.png" alt="Mathy Yuri">
+      </div>
+      <div class="profile-links">
+        <a href="https://mathyyuri.github.io/splus-writing-dashboard/" class="live-chart-btn">
+          <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <div class="category">WRITING TRAINING</div>
+      <div class="title">공통수학Ⅰ<br>서술형 Training</div>
+      <div class="desc">단원별 서술형 논리 훈련 및 실전형 FINAL 대비 시스템</div>
+
+      <div class="subject">
+        <div class="subject-name">방정식</div>
+        <div class="square-grid">
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
+            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+          </a>
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1-2/">
+            <div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+          </a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
+
+      <div class="subject">
+        <div class="subject-name">부등식</div>
+        <div class="square-grid">
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
+            <div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status open">OPEN</div>
+          </a>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
+
+      <div class="subject">
+        <div class="subject-name">경우의 수</div>
+        <div class="square-grid">
+          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
+
+      <div class="subject">
+        <div class="subject-name">행렬</div>
+        <div class="square-grid">
+          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="category">S+ LOGIC MASTER</div>
+        <div class="small-title">Killer Problem<br>Training</div>
+        <div class="menu">
+          <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><div class="left">수업 아카이브</div><div class="sq-status soon">COMING SOON</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="category">2028 UNIVERSITY ADMISSION</div>
+        <div class="small-title">2028 대학 입시</div>
+        <div class="menu">
+          <a class="link" href="https://mathyyuri.github.io/splus-quiz/">
+            <div class="left">서울대학교</div><div class="sq-status open">OPEN</div>
+          </a>
+          <div class="link">
+            <div class="left">연세대학교</div><div class="sq-status soon">SOON</div>
+          </div>
+          <div class="link">
+            <div class="left">고려대학교</div><div class="sq-status soon">SOON</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform
+  </div>
+</div>
+</body>
+</html>
