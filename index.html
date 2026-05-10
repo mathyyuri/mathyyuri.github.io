@@ -42,7 +42,6 @@ a{ text-decoration:none; color:inherit; }
 .live-chart-btn .dot { width: 7px; height: 7px; background-color: var(--point); border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 .live-chart-btn:hover { background: var(--point); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(125, 162, 123, 0.25); }
-.live-chart-btn .arrow { margin-left: 6px; font-style: normal; }
 
 /* LAYOUT */
 .layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
@@ -60,13 +59,16 @@ a{ text-decoration:none; color:inherit; }
 .square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
 .sq-number{ font-size:13px; color:var(--point); font-weight:700; letter-spacing:0.08em; }
 .sq-title{ font-size:17px; font-weight:600; line-height:1.4; }
-.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; display: flex; align-items: center; gap: 4px; }
 
-/* 참여 인원 표시 태그 스타일 */
-.count-tag { font-size: 9px; opacity: 0.8; font-weight: 400; margin-left: 2px; }
-
+/* ✅ 하단 상태 바 (배지 + 숫자) */
+.status-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.sq-status{ font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; letter-spacing:0.08em; }
 .open{ background:var(--open-bg); color:var(--open); }
 .soon{ background:var(--soon-bg); color:var(--soon); }
+
+/* ✅ 숫자 스타일 강조 */
+.count-info { font-size: 13px; font-weight: 700; color: var(--point); }
+.count-num { font-size: 15px; font-family: 'Cormorant Garamond', serif; }
 
 .side{ display:flex; flex-direction:column; gap:22px; }
 .menu{ display:flex; flex-direction:column; gap:12px; }
@@ -79,11 +81,9 @@ a{ text-decoration:none; color:inherit; }
 @media(max-width:980px){
   .layout{ grid-template-columns:1fr; }
   .header{ flex-direction:column; text-align:center; }
-  .profile-section { flex-direction: column; }
   .logo{ font-size:56px; }
   .square-grid{ grid-template-columns:repeat(2,1fr); }
 }
-@media(max-width:560px){ .square-grid{ grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 
@@ -94,11 +94,8 @@ a{ text-decoration:none; color:inherit; }
       <div class="logo">MATHY YURI<br><span>System</span></div>
       <div class="sub">DAECHI S+ ACADEMY</div>
     </div>
-
     <div class="profile-section">
-      <div class="profile">
-        <img src="profile.png" alt="Mathy Yuri">
-      </div>
+      <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
       <div class="profile-links">
         <a href="https://mathyyuri.github.io/splus-writing-dashboard/" class="live-chart-btn">
           <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
@@ -118,11 +115,17 @@ a{ text-decoration:none; color:inherit; }
         <div class="square-grid">
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
             <div class="sq-number">01</div><div class="sq-title">Writing</div>
-            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d1">0</span>명)</span></div>
+            <div class="status-bar">
+              <div class="sq-status open">OPEN</div>
+              <div class="count-info"><span class="count-num" id="count-d1">0</span>명</div>
+            </div>
           </a>
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1-2/">
             <div class="sq-number">02</div><div class="sq-title">Writing</div>
-            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d2">0</span>명)</span></div>
+            <div class="status-bar">
+              <div class="sq-status open">OPEN</div>
+              <div class="count-info"><span class="count-num" id="count-d2">0</span>명</div>
+            </div>
           </a>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
@@ -134,7 +137,10 @@ a{ text-decoration:none; color:inherit; }
         <div class="square-grid">
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
             <div class="sq-number">01</div><div class="sq-title">Writing</div>
-            <div class="sq-status open">OPEN <span class="count-tag">(<span id="count-d3">0</span>명)</span></div>
+            <div class="status-bar">
+              <div class="sq-status open">OPEN</div>
+              <div class="count-info"><span class="count-num" id="count-d3">0</span>명</div>
+            </div>
           </a>
           <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
@@ -151,16 +157,6 @@ a{ text-decoration:none; color:inherit; }
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
-
-      <div class="subject">
-        <div class="subject-name">행렬</div>
-        <div class="square-grid">
-          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-        </div>
-      </div>
     </div>
 
     <div class="side">
@@ -170,51 +166,29 @@ a{ text-decoration:none; color:inherit; }
         <div class="menu">
           <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
           <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
-          <div class="link"><div class="left">수업 아카이브</div><div class="sq-status soon">COMING SOON</div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="category">2028 UNIVERSITY ADMISSION</div>
-        <div class="small-title">2028 대학 입시</div>
-        <div class="menu">
-          <a class="link" href="https://mathyyuri.github.io/splus-quiz/">
-            <div class="left">서울대학교</div><div class="sq-status open">OPEN</div>
-          </a>
-          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
-          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="footer">
-    MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform
-  </div>
 </div>
 
 <script>
-  // ✅ 1. 원장님의 구글 앱스 스크립트 URL 업데이트 완료
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk2JVmj_gFeO_uBsJHIReaVkVuDS5kJBki3CRIO2mu4kwW0WoxGKCQcB4ofLwq90OB/exec";
+  // ✅ 최신 배포 URL 반영 완료
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz0bp-baNYGFHCE-vNsE-BL8TwwWla7wO8CpOuuBw4qWY7n3lkEs77y3BwQppLXQV3Q/exec";
 
-  // ✅ 2. 대시보드 로딩 시 데이터 가져오기
   window.onload = function() {
     fetchCountData();
   };
 
   function fetchCountData() {
-    // ❗ GAS 코드의 doGet(e)에서 action 파라미터를 체크하도록 구성되어 있어야 합니다.
     fetch(SCRIPT_URL + "?action=getCounts")
       .then(response => response.json())
       .then(data => {
-        // GAS 결과 { d1: 숫자, d2: 숫자, d3: 숫자 } 매칭
         if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
         if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
         if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
       })
-      .catch(error => {
-        console.error('데이터를 가져오는 중 오류 발생:', error);
-      });
+      .catch(error => console.error('Error:', error));
   }
 </script>
 </body>
