@@ -14,15 +14,23 @@
 <style>
 
 :root{
-  --bg:#f7f3ed;
-  --card:#fffdf9;
-  --line:#e7dccd;
-  --brown:#2f241b;
-  --sub:#7d7165;
-  --gold:#b69163;
-  --hover:#f5eee4;
-  --open:#b69163;
-  --soon:#bdb2a4;
+
+  --bg:#edf5ea;
+  --card:#f9fdf7;
+  --line:#d9e7d5;
+
+  --main:#233222;
+  --sub:#6f7d6c;
+
+  --point:#7da27b;
+  --hover:#f2f8ef;
+
+  --open-bg:#e5f0e1;
+  --open:#6f9270;
+
+  --soon-bg:#eef1eb;
+  --soon:#a1ab9e;
+
 }
 
 *{
@@ -33,7 +41,7 @@
 
 body{
   background:var(--bg);
-  color:var(--brown);
+  color:var(--main);
   font-family:'Noto Sans KR', sans-serif;
   padding:42px 20px 80px;
 }
@@ -44,35 +52,65 @@ a{
 }
 
 .container{
-  max-width:1180px;
+  max-width:1240px;
   margin:auto;
 }
 
 /* HEADER */
 
 .header{
-  text-align:center;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:30px;
   margin-bottom:42px;
+}
+
+.logo-wrap{
+  flex:1;
 }
 
 .logo{
   font-family:'Cormorant Garamond', serif;
-  font-size:72px;
-  line-height:0.95;
+  font-size:76px;
+  line-height:0.93;
   font-weight:600;
   letter-spacing:-1px;
 }
 
 .logo span{
-  color:var(--gold);
+  color:var(--point);
   font-style:italic;
 }
 
 .sub{
-  margin-top:16px;
+  margin-top:18px;
   color:var(--sub);
   font-size:13px;
   letter-spacing:0.28em;
+}
+
+/* PROFILE */
+
+.profile{
+
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  overflow:hidden;
+
+  border:3px solid #ffffff;
+
+  box-shadow:0 10px 30px rgba(60,90,60,0.12);
+
+  flex-shrink:0;
+
+}
+
+.profile img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
 /* LAYOUT */
@@ -89,8 +127,13 @@ a{
     grid-template-columns:1fr;
   }
 
+  .header{
+    flex-direction:column;
+    text-align:center;
+  }
+
   .logo{
-    font-size:54px;
+    font-size:56px;
   }
 
 }
@@ -98,109 +141,181 @@ a{
 /* CARD */
 
 .card{
+
   background:var(--card);
+
   border:1px solid var(--line);
-  border-radius:30px;
-  padding:34px;
-  box-shadow:0 10px 28px rgba(50,30,10,0.04);
+
+  border-radius:32px;
+
+  padding:36px;
+
+  box-shadow:0 10px 28px rgba(80,110,80,0.05);
+
 }
 
 .category{
-  color:var(--gold);
+
+  color:var(--point);
+
   font-size:12px;
+
   letter-spacing:0.18em;
+
   margin-bottom:18px;
+
   font-weight:700;
+
 }
 
 .title{
+
   font-family:'Cormorant Garamond', serif;
-  font-size:40px;
+
+  font-size:42px;
+
   line-height:1.08;
+
   margin-bottom:14px;
+
 }
 
 .small-title{
+
   font-family:'Cormorant Garamond', serif;
+
   font-size:30px;
+
   line-height:1.15;
+
   margin-bottom:12px;
+
 }
 
 .desc{
+
   color:var(--sub);
+
   font-size:14px;
+
   line-height:1.8;
-  margin-bottom:30px;
+
+  margin-bottom:32px;
+
 }
 
+/* SUBJECT */
+
 .subject{
-  margin-bottom:34px;
+  margin-bottom:38px;
 }
 
 .subject-name{
+
   font-size:19px;
+
   font-weight:700;
+
   margin-bottom:16px;
+
 }
 
-/* SQUARE GRID */
+/* GRID */
 
 .square-grid{
+
   display:grid;
+
   grid-template-columns:repeat(5,1fr);
+
   gap:14px;
+
 }
 
 .square-link{
+
   aspect-ratio:1/1;
-  background:#faf6f0;
-  border:1px solid #eee3d4;
-  border-radius:22px;
+
+  background:#f5faf3;
+
+  border:1px solid #dde9d8;
+
+  border-radius:24px;
+
   padding:18px;
+
   display:flex;
+
   flex-direction:column;
+
   justify-content:space-between;
-  transition:0.22s;
+
+  transition:0.24s;
+
 }
 
 .square-link:hover{
+
   background:white;
-  border-color:var(--gold);
-  transform:translateY(-3px);
+
+  border-color:var(--point);
+
+  transform:translateY(-4px);
+
 }
 
 .sq-number{
+
   font-size:13px;
-  color:var(--gold);
+
+  color:var(--point);
+
   font-weight:700;
+
   letter-spacing:0.08em;
+
 }
 
 .sq-title{
+
   font-size:17px;
+
   font-weight:600;
-  color:var(--brown);
+
   line-height:1.4;
+
 }
 
 .sq-status{
+
   align-self:flex-start;
+
   font-size:10px;
+
   padding:6px 10px;
+
   border-radius:999px;
+
   font-weight:700;
+
   letter-spacing:0.08em;
+
 }
 
 .open{
-  background:#f4ead7;
+
+  background:var(--open-bg);
+
   color:var(--open);
+
 }
 
 .soon{
-  background:#f0ece6;
+
+  background:var(--soon-bg);
+
   color:var(--soon);
+
 }
 
 /* SIDE */
@@ -218,20 +333,33 @@ a{
 }
 
 .link{
+
   display:flex;
+
   justify-content:space-between;
+
   align-items:center;
-  padding:15px 18px;
-  border-radius:16px;
-  background:#faf6f0;
-  border:1px solid #eee3d4;
+
+  padding:16px 18px;
+
+  border-radius:18px;
+
+  background:#f5faf3;
+
+  border:1px solid #dde9d8;
+
   transition:0.22s;
+
 }
 
 .link:hover{
+
   background:white;
-  border-color:var(--gold);
-  transform:translateX(3px);
+
+  border-color:var(--point);
+
+  transform:translateX(4px);
+
 }
 
 .left{
@@ -240,12 +368,20 @@ a{
   gap:10px;
 }
 
+/* FOOTER */
+
 .footer{
-  margin-top:55px;
+
+  margin-top:58px;
+
   text-align:center;
+
   color:var(--sub);
+
   font-size:13px;
+
   line-height:1.9;
+
 }
 
 @media(max-width:980px){
@@ -279,18 +415,32 @@ a{
 
   <div class="header">
 
-    <div class="logo">
-      MATHY YURI<br>
-      <span>System</span>
+    <div class="logo-wrap">
+
+      <div class="logo">
+        MATHY YURI<br>
+        <span>System</span>
+      </div>
+
+      <div class="sub">
+        DAECHI S+ ACADEMY
+      </div>
+
     </div>
 
-    <div class="sub">
-      DAECHI S+ ACADEMY
+    <!-- 프로필 사진 -->
+
+    <div class="profile">
+
+      <!-- profile.jpg 파일 업로드 후 자동 연결 -->
+
+      <img src="profile.jpg" alt="Mathy Yuri">
+
     </div>
 
   </div>
 
-  <!-- LAYOUT -->
+  <!-- MAIN -->
 
   <div class="layout">
 
@@ -493,57 +643,13 @@ a{
 
       </div>
 
-      <!-- FINAL -->
-
-      <div class="subject">
-
-        <div class="subject-name">
-          실전 FINAL
-        </div>
-
-        <div class="square-grid">
-
-          <div class="square-link">
-            <div class="sq-number">F1</div>
-            <div class="sq-title">FINAL</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">F2</div>
-            <div class="sq-title">FINAL</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">F3</div>
-            <div class="sq-title">FINAL</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">F4</div>
-            <div class="sq-title">FINAL</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-          <div class="square-link">
-            <div class="sq-number">F5</div>
-            <div class="sq-title">FINAL</div>
-            <div class="sq-status soon">SOON</div>
-          </div>
-
-        </div>
-
-      </div>
-
     </div>
 
     <!-- SIDE -->
 
     <div class="side">
 
-      <!-- LOGIC -->
+      <!-- 킬러 -->
 
       <div class="card">
 
@@ -602,17 +708,16 @@ a{
 
       </div>
 
-      <!-- ADMISSION -->
+      <!-- 입시 -->
 
       <div class="card">
 
         <div class="category">
-          UNIVERSITY ADMISSION
+          2028 UNIVERSITY ADMISSION
         </div>
 
         <div class="small-title">
-          Admission<br>
-          Academy
+          2028 대학 입시
         </div>
 
         <div class="menu">
