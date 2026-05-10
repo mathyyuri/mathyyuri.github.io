@@ -20,7 +20,9 @@
   --brown:#2f241b;
   --sub:#7d7165;
   --gold:#b69163;
-  --hover:#f6efe5;
+  --hover:#f5eee4;
+  --open:#b69163;
+  --soon:#c8beb1;
 }
 
 *{
@@ -33,7 +35,7 @@ body{
   background:var(--bg);
   color:var(--brown);
   font-family:'Noto Sans KR', sans-serif;
-  padding:48px 22px 80px;
+  padding:42px 20px 80px;
 }
 
 a{
@@ -42,7 +44,7 @@ a{
 }
 
 .container{
-  max-width:1100px;
+  max-width:1180px;
   margin:auto;
 }
 
@@ -50,10 +52,10 @@ a{
 
 .header{
   text-align:center;
-  margin-bottom:54px;
+  margin-bottom:42px;
 }
 
-.system{
+.logo{
   font-family:'Cormorant Garamond', serif;
   font-size:72px;
   line-height:0.95;
@@ -61,24 +63,36 @@ a{
   letter-spacing:-1px;
 }
 
-.system span{
+.logo span{
   color:var(--gold);
   font-style:italic;
 }
 
 .sub{
-  margin-top:18px;
+  margin-top:16px;
+  color:var(--sub);
   font-size:13px;
   letter-spacing:0.28em;
-  color:var(--sub);
 }
 
-/* 메인 그리드 */
+/* 레이아웃 */
 
-.grid{
+.layout{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  grid-template-columns:1.8fr 1fr;
   gap:22px;
+}
+
+@media(max-width:980px){
+
+  .layout{
+    grid-template-columns:1fr;
+  }
+
+  .logo{
+    font-size:54px;
+  }
+
 }
 
 /* 카드 */
@@ -86,95 +100,138 @@ a{
 .card{
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:28px;
+  border-radius:30px;
   padding:34px;
-  transition:0.28s ease;
-  box-shadow:0 8px 24px rgba(60,40,20,0.04);
-}
-
-.card:hover{
-  transform:translateY(-4px);
-  background:var(--hover);
+  box-shadow:0 10px 28px rgba(50,30,10,0.04);
 }
 
 .category{
+  color:var(--gold);
   font-size:12px;
   letter-spacing:0.18em;
-  color:var(--gold);
   margin-bottom:18px;
   font-weight:700;
 }
 
 .title{
-  font-size:30px;
-  line-height:1.25;
-  margin-bottom:10px;
   font-family:'Cormorant Garamond', serif;
-  font-weight:600;
+  font-size:38px;
+  line-height:1.1;
+  margin-bottom:14px;
 }
 
 .desc{
   color:var(--sub);
   font-size:14px;
-  line-height:1.7;
+  line-height:1.8;
+  margin-bottom:30px;
+}
+
+/* writing section */
+
+.subject{
   margin-bottom:28px;
 }
 
-/* 링크 버튼 */
+.subject-name{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:14px;
+  color:var(--brown);
+}
 
 .menu{
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 
 .link{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:15px 18px;
-  border-radius:16px;
   background:#faf6f0;
-  border:1px solid #efe5d8;
+  border:1px solid #eee3d4;
+  border-radius:16px;
+  padding:15px 18px;
   transition:0.22s;
-  font-size:15px;
 }
 
 .link:hover{
   background:white;
   border-color:var(--gold);
-  transform:translateX(3px);
+  transform:translateX(4px);
 }
 
-.arrow{
+.left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.number{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:white;
+  border:1px solid #e9dccb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
   color:var(--gold);
-  font-size:14px;
+  font-weight:700;
 }
 
-/* footer */
+.label{
+  font-size:15px;
+}
+
+.status{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.08em;
+  padding:7px 10px;
+  border-radius:999px;
+}
+
+.open{
+  background:#f4ead7;
+  color:var(--open);
+}
+
+.soon{
+  background:#f0ece6;
+  color:var(--soon);
+}
+
+/* 사이드 */
+
+.side{
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+}
+
+.small-title{
+  font-family:'Cormorant Garamond', serif;
+  font-size:30px;
+  line-height:1.15;
+  margin-bottom:12px;
+}
+
+.video-icon{
+  font-size:14px;
+  margin-right:6px;
+  color:var(--gold);
+}
 
 .footer{
+  margin-top:50px;
   text-align:center;
-  margin-top:60px;
   color:var(--sub);
   font-size:13px;
   line-height:1.9;
-}
-
-@media(max-width:768px){
-
-  body{
-    padding-top:38px;
-  }
-
-  .system{
-    font-size:52px;
-  }
-
-  .title{
-    font-size:26px;
-  }
-
 }
 
 </style>
@@ -188,7 +245,7 @@ a{
 
   <div class="header">
 
-    <div class="system">
+    <div class="logo">
       MATHY YURI<br>
       <span>System</span>
     </div>
@@ -199,146 +256,325 @@ a{
 
   </div>
 
-  <!-- 카드 영역 -->
+  <!-- 메인 레이아웃 -->
 
-  <div class="grid">
+  <div class="layout">
 
-    <!-- 공통수학 -->
+    <!-- 메인 writing -->
 
     <div class="card">
 
       <div class="category">
-        COMMON MATHEMATICS
+        WRITING TRAINING
       </div>
 
       <div class="title">
         공통수학Ⅰ<br>
-        기말 대비
+        서술형 Training
       </div>
 
       <div class="desc">
-        단원별 서술형 정밀 훈련 및 실전형 FINAL 훈련
+        단원별 서술형 논리 훈련 및 실전형 FINAL 대비 시스템
       </div>
 
-      <div class="menu">
+      <!-- 방정식 -->
 
-        <a class="link"
-        href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
-          <span>방정식</span>
-          <span class="arrow">↗</span>
-        </a>
+      <div class="subject">
 
-        <a class="link"
-        href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
-          <span>부등식</span>
-          <span class="arrow">↗</span>
-        </a>
+        <div class="subject-name">
+          방정식
+        </div>
 
-        <a class="link"
-        href="#">
-          <span>경우의 수</span>
-          <span class="arrow">↗</span>
-        </a>
+        <div class="menu">
 
-        <a class="link"
-        href="#">
-          <span>행렬</span>
-          <span class="arrow">↗</span>
-        </a>
+          <a class="link"
+          href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
 
-        <a class="link"
-        href="#">
-          <span>실전 FINAL</span>
-          <span class="arrow">↗</span>
-        </a>
+            <div class="left">
+              <div class="number">01</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status open">
+              OPEN
+            </div>
+
+          </a>
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">02</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">03</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 부등식 -->
+
+      <div class="subject">
+
+        <div class="subject-name">
+          부등식
+        </div>
+
+        <div class="menu">
+
+          <a class="link"
+          href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
+
+            <div class="left">
+              <div class="number">01</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status open">
+              OPEN
+            </div>
+
+          </a>
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">02</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 경우의 수 -->
+
+      <div class="subject">
+
+        <div class="subject-name">
+          경우의 수
+        </div>
+
+        <div class="menu">
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">01</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 행렬 -->
+
+      <div class="subject">
+
+        <div class="subject-name">
+          행렬
+        </div>
+
+        <div class="menu">
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">01</div>
+              <div class="label">Writing Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- FINAL -->
+
+      <div class="subject">
+
+        <div class="subject-name">
+          실전 FINAL
+        </div>
+
+        <div class="menu">
+
+          <div class="link">
+
+            <div class="left">
+              <div class="number">F</div>
+              <div class="label">Final Training</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
     </div>
 
-    <!-- 입시 -->
+    <!-- 오른쪽 -->
 
-    <div class="card">
+    <div class="side">
 
-      <div class="category">
-        UNIVERSITY ADMISSION
+      <!-- 로직 -->
+
+      <div class="card">
+
+        <div class="category">
+          S+ LOGIC MASTER
+        </div>
+
+        <div class="small-title">
+          Killer Problem<br>
+          Training
+        </div>
+
+        <div class="desc">
+          킬러문항 풀이 및 사고력 논리 훈련 영상
+        </div>
+
+        <div class="menu">
+
+          <a class="link"
+          href="https://mathyyuri.github.io/Mathy-Yuri-S-LOGIC-MASTER/subject1/">
+
+            <div class="left">
+              <span class="video-icon">▶</span>
+              <div class="label">킬러문항 훈련</div>
+            </div>
+
+            <div class="status open">
+              OPEN
+            </div>
+
+          </a>
+
+          <div class="link">
+
+            <div class="left">
+              <span class="video-icon">▶</span>
+              <div class="label">풀이 영상</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+          <div class="link">
+
+            <div class="left">
+              <span class="video-icon">▶</span>
+              <div class="label">수업 아카이브</div>
+            </div>
+
+            <div class="status soon">
+              COMING SOON
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
-      <div class="title">
-        대학별 입시<br>
-        Academy
-      </div>
+      <!-- 입시 -->
 
-      <div class="desc">
-        대학별 전형 변화 및 최신 입시 분석 콘텐츠
-      </div>
+      <div class="card">
 
-      <div class="menu">
+        <div class="category">
+          UNIVERSITY ADMISSION
+        </div>
 
-        <a class="link"
-        href="https://mathyyuri.github.io/splus-quiz/">
-          <span>서울대학교</span>
-          <span class="arrow">↗</span>
-        </a>
+        <div class="small-title">
+          Admission<br>
+          Academy
+        </div>
 
-        <a class="link"
-        href="#">
-          <span>연세대학교</span>
-          <span class="arrow">↗</span>
-        </a>
+        <div class="menu">
 
-        <a class="link"
-        href="#">
-          <span>고려대학교</span>
-          <span class="arrow">↗</span>
-        </a>
+          <a class="link"
+          href="https://mathyyuri.github.io/splus-quiz/">
 
-        <a class="link"
-        href="#">
-          <span>의대 입시</span>
-          <span class="arrow">↗</span>
-        </a>
+            <div class="left">
+              <div class="label">서울대학교</div>
+            </div>
 
-      </div>
+            <div class="status open">
+              OPEN
+            </div>
 
-    </div>
+          </a>
 
-    <!-- 로직 -->
+          <div class="link">
 
-    <div class="card">
+            <div class="left">
+              <div class="label">연세대학교</div>
+            </div>
 
-      <div class="category">
-        S+ LOGIC TRAINING
-      </div>
+            <div class="status soon">
+              SOON
+            </div>
 
-      <div class="title">
-        S+ Logic<br>
-        Master
-      </div>
+          </div>
 
-      <div class="desc">
-        상위권 사고력과 킬러문항 논리 훈련 시스템
-      </div>
+          <div class="link">
 
-      <div class="menu">
+            <div class="left">
+              <div class="label">고려대학교</div>
+            </div>
 
-        <a class="link"
-        href="https://mathyyuri.github.io/Mathy-Yuri-S-LOGIC-MASTER/subject1/">
-          <span>킬러문항 훈련</span>
-          <span class="arrow">↗</span>
-        </a>
+            <div class="status soon">
+              SOON
+            </div>
 
-        <a class="link"
-        href="#">
-          <span>논리 추론 훈련</span>
-          <span class="arrow">↗</span>
-        </a>
+          </div>
 
-        <a class="link"
-        href="#">
-          <span>3분 킬러</span>
-          <span class="arrow">↗</span>
-        </a>
+        </div>
 
       </div>
 
@@ -346,10 +582,12 @@ a{
 
   </div>
 
+  <!-- footer -->
+
   <div class="footer">
 
     MATHY YURI · Daechi S+ ACADEMY<br>
-    Premium Mathematics Training Platform
+    Premium Writing Training Platform
 
   </div>
 
