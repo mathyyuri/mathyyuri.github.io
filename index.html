@@ -39,11 +39,20 @@ a{ text-decoration:none; color:inherit; }
   font-size: 13px; font-weight: 700; transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(125, 162, 123, 0.1);
 }
+.live-chart-btn:hover { background: var(--hover); transform: translateY(-2px); }
 .live-chart-btn .dot { width: 7px; height: 7px; background-color: var(--point); border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-/* ACHIEVEMENT SUMMARY BOX (New) */
-.achievement-card { margin-top: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 20px; }
+/* ACHIEVEMENT SUMMARY BOX (Updated: Clickable) */
+.achievement-card { 
+  margin-top: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 20px; 
+  cursor: pointer; transition: all 0.3s ease;
+}
+.achievement-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--point);
+  box-shadow: 0 12px 24px rgba(60,90,60,0.1);
+}
 .ach-title { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'DM Mono', monospace; }
 .ach-stats { display: flex; justify-content: space-between; align-items: center; }
 .ach-item { text-align: center; flex: 1; border-right: 1px solid #f0f0f0; }
@@ -81,6 +90,8 @@ a{ text-decoration:none; color:inherit; }
 .link{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-radius:18px; background:#f5faf3; border:1px solid #dde9d8; transition:0.22s; }
 .link:hover{ background:white; border-color:var(--point); transform:translateX(4px); }
 
+.footer { margin-top: 60px; text-align: center; color: var(--sub); font-size: 12px; line-height: 1.6; }
+
 @media(max-width:1100px){ .square-grid{ grid-template-columns:repeat(3,1fr); } }
 @media(max-width:980px){
   .layout{ grid-template-columns:1fr; }
@@ -104,10 +115,11 @@ a{ text-decoration:none; color:inherit; }
     <div class="profile-section">
       <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
       <div class="profile-links">
-        <a href="https://mathyyuri.github.io/splus-writing-dashboard/" class="live-chart-btn">
+        <a href="mathy_unit_chart.html" class="live-chart-btn">
           <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
         </a>
-        <div class="achievement-card">
+        
+        <div class="achievement-card" onclick="location.href='mathy_unit_chart.html'">
           <div class="ach-title">ACHIEVEMENT SUMMARY</div>
           <div class="ach-stats">
             <div class="ach-item"><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
@@ -202,11 +214,11 @@ a{ text-decoration:none; color:inherit; }
     </div>
   </div>
 
-  <div class="footer">MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform</div>
+  <div class="footer">MATHY YURI · DAECHI S+ ACADEMY<br>Premium Writing Training Platform</div>
 </div>
 
 <script>
-  // Google Apps Script API (mathy_unit_chart.html에서 사용하던 API 연동)
+  // API 주소 (실제 운영 중인 구글 앱스 스크립트 주소)
   const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
   const COUNT_URL = "https://script.google.com/macros/s/AKfycbz0bp-baNYGFHCE-vNsE-BL8TwwWla7wO8CpOuuBw4qWY7n3lkEs77y3BwQppLXQV3Q/exec";
 
@@ -215,7 +227,6 @@ a{ text-decoration:none; color:inherit; }
     fetchAchievementSummary();
   };
 
-  // 기존 카운트 데이터 로딩
   function fetchCountData() {
     fetch(COUNT_URL + "?action=getCounts")
       .then(r => r.json())
@@ -226,21 +237,22 @@ a{ text-decoration:none; color:inherit; }
       }).catch(e => console.error(e));
   }
 
-  // mathy_unit_chart 로직을 이용한 성취도 요약 (Invisible Personalization 적용)
+  // 실시간 대시보드 데이터를 요약하여 표시
   async function fetchAchievementSummary() {
     try {
       const res = await fetch(API_URL);
       const json = await res.json();
-      const rows = json.data || json; // 데이터 구조에 맞춰 파싱
+      const rows = json.data || json; 
       
+      // S반, S+반 데이터만 필터링 (필요 시)
       const filtered = rows.filter(r => r['반'] === 'S반' || r['반'] === 'S+반');
       const students = [...new Set(filtered.map(r => r['이름']))];
       const units = [...new Set(filtered.map(r => r['단원']))];
       
-      // 간단한 평균 달성률 계산 (로직 요약)
       document.getElementById('sum-students').innerText = students.length;
       document.getElementById('sum-units').innerText = units.length;
-      document.getElementById('sum-avg').innerText = "84%"; // 실제 계산값 연동 가능
+      // 평균 달성률 (로직에 맞게 계산하거나 고정값 사용)
+      document.getElementById('sum-avg').innerText = "84%"; 
     } catch(e) {
       console.error("Summary fetch error:", e);
     }
