@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MATHY YURI System — Performance Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,22 +50,12 @@
         .ans-1 { background: var(--ans-o); color: #2d5a2d; }
         .ans-2 { background: var(--ans-x); color: #8b2e2e; }
 
-        /* [수정] 전체 성적 테이블 내 정오표: 모바일에서도 한 줄 유지 */
         #main-table .ox-flex-container { flex-wrap: nowrap !important; overflow-x: visible; }
         #main-table .ox-box { width: 14px; height: 14px; font-size: 8px; }
 
-        /* 개별 리포트용 누적 정오표 행 (기존 요청대로 10개 줄바꿈 유지) */
         .check-row { display: flex; align-items: flex-start; gap: 12px; padding: 15px 0; border-bottom: 1px solid #eef3ed; }
         .check-row:last-child { border-bottom: none; }
         .exam-label { width: 110px; font-size: 11px; font-weight: 700; color: var(--main); flex-shrink: 0; padding-top: 2px; }
-
-        @media (max-width: 768px) {
-            .check-row { flex-direction: column; gap: 8px; }
-            .exam-label { width: 100%; font-size: 12px; color: var(--point); }
-            /* 개별 리포트 정오표만 줄바꿈 */
-            #item-rows-wrapper .ox-flex-container { flex-wrap: wrap; gap: 4px; width: 100%; }
-            #item-rows-wrapper .ox-box { width: calc(10% - 4px); height: 24px; font-size: 10px; }
-        }
 
         .grade-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #fff; white-space: nowrap; min-width: 45px; text-align: center; }
         .g1 { background: var(--g1); } .g2 { background: var(--g2); } .g3 { background: var(--g3); }
@@ -76,22 +66,34 @@
         .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
         .tab.active { background: var(--main); color: #fff; }
 
+        /* [수정] 테이블 디자인: CLASS 열 추가 및 간격 최적화 */
         .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 20px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { font-size: 11px; color: var(--sub); padding: 12px 8px; border-bottom: 1px solid var(--line); font-weight: 700; }
-        td { padding: 12px 8px; text-align: center; font-size: 13px; border-bottom: 1px solid #f9fbf8; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; } /* 열 추가로 최소 너비 소폭 확장 */
+        th { font-size: 11px; color: var(--sub); padding: 12px 8px; border-bottom: 1px solid var(--line); font-weight: 700; text-transform: uppercase; }
+        td { padding: 14px 8px; text-align: center; font-size: 13px; border-bottom: 1px solid #f9fbf8; }
+
+        .row-class-label { font-size: 11px; color: var(--sub); font-weight: 500; }
 
         .memo-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 12px; border-left: 4px solid var(--gold); font-size: 13px; line-height: 1.6; }
         .memo-item { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
         .memo-item:last-child { border-bottom: none; margin-bottom: 0; }
         .memo-date { font-weight: 700; color: var(--point); font-size: 11px; margin-right: 8px; }
+
+        @media (max-width: 768px) {
+            table { min-width: 650px; }
+            .col-class { width: 60px; }
+            .check-row { flex-direction: column; gap: 8px; }
+            .exam-label { width: 100%; font-size: 12px; color: var(--point); }
+            #item-rows-wrapper .ox-flex-container { flex-wrap: wrap; gap: 4px; width: 100%; }
+            #item-rows-wrapper .ox-box { width: calc(10% - 4px); height: 24px; font-size: 10px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <div class="logo">MATHY YURI <span>System</span></div>
-        <div class="ver">PREMIUM ANALYTICS v5.5</div>
+        <div class="ver">PREMIUM ANALYTICS v5.6</div>
     </div>
 
     <div class="insight-section">
@@ -143,7 +145,7 @@
                 <tr>
                     <th style="width:50px;">RANK</th>
                     <th style="text-align:left; padding-left:20px;">NICKNAME</th>
-                    <th style="width:90px;">GRADE</th>
+                    <th class="col-class" style="width:80px;">CLASS</th> <th style="width:90px;">GRADE</th>
                     <th style="width:70px;">SCORE</th>
                     <th>ITEM ANALYSIS (1-30)</th>
                 </tr>
@@ -167,10 +169,10 @@
                 nick: String(r["닉네임"]||"").trim(),
                 pw: String(r["비밀번호"]||"").trim(),
                 exam: String(r["시험명"]||"").trim(),
+                className: String(r["반"]||"-").trim(), // [추가] 반 데이터 추출
                 grade: r["등급"] ? parseInt(String(r["등급"]).replace(/[^0-9]/g, "")) : null,
                 score: parseInt(r["원점수"])||0,
-                memo: String(r["비고"]||""), // 비고 기본 데이터
-                analysis: String(r["분석"]||""), // [추가] 분석 열 데이터
+                analysis: String(r["분석"]||""),
                 items: Array.from({length: 30}, (_, i) => parseInt(r[i + 1]) || 2)
             })).filter(d => d.name);
             render();
@@ -187,7 +189,7 @@
             tr.innerHTML = `
                 <td style="color:var(--point); font-weight:700;">${idx+1}</td>
                 <td style="text-align:left; padding-left:20px; font-weight:600;">${s.nick}</td>
-                <td><span class="grade-badge g${s.grade||9}">${s.grade ? s.grade + '등급' : '-'}</span></td>
+                <td class="row-class-label">${s.className}</td> <td><span class="grade-badge g${s.grade||9}">${s.grade ? s.grade + '등급' : '-'}</span></td>
                 <td style="font-weight:800;">${s.score}</td>
                 <td>
                     <div class="ox-flex-container">
@@ -206,7 +208,7 @@
 
         if(history.length === 0) { alert("정보가 일치하지 않습니다."); return; }
 
-        document.getElementById('res-name').innerText = name + " 학생 누적 데이터";
+        document.getElementById('res-name').innerText = name + " 학생 누적 데이터 (" + history[0].className + ")";
         const scores = history.map(h => h.score);
         document.getElementById('res-avg').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) + "점";
         document.getElementById('res-max').innerText = Math.max(...scores) + "점";
@@ -230,7 +232,6 @@
             </div>
         `).join('');
 
-        // [수정] MATHY YURI로 명칭 변경 및 '분석' 데이터 누적 표시
         let analysisHtml = `<div style="font-weight:700; margin-bottom:10px; color:var(--main);">MATHY YURI 분석 리포트</div>`;
         const analysisContent = history
             .filter(h => h.analysis && h.analysis.trim() !== "")
@@ -241,7 +242,7 @@
                 </div>
             `).join('');
         
-        document.getElementById('res-memo').innerHTML = analysisContent || (analysisHtml + "누적된 분석 데이터가 없습니다.");
+        document.getElementById('res-memo').innerHTML = analysisContent ? (analysisHtml + analysisContent) : (analysisHtml + "누적된 분석 데이터가 없습니다.");
         document.getElementById('personal-report').style.display = 'block';
     }
 
