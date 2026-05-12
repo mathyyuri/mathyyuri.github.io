@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATHY YURI System — Performance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f7f2; --card: #ffffff; --line: #e1e9df; --main: #233222;
+            --sub: #6f7d6c; --point: #7da27b; --gold: #b59410;
+            --hover: #f9fbf8; 
+            /* 9단계 등급 컬러 시스템 */
+            --g1: #b59410; --g2: #233222; --g3: #4a6348; --g4: #6f7d6c; 
+            --g5: #94a3b8; --g6: #cbd5e1; --g7: #d8c8b6; --g8: #a8a29e; --g9: #e5e7eb;
+            --ans-o: #d4e8d4; --ans-x: #f9d5d5;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--main); font-family: 'Noto Sans KR', sans-serif; padding: 40px 20px; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1300px; margin: auto; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+        .logo { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+        .logo span { color: var(--point); font-style: italic; }
+        .ver { font-size: 11px; font-weight: 700; color: var(--point); letter-spacing: 0.1em; }
+
+        /* Cumulative Student Insight Section (Position: UP) */
+        .insight-section { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 30px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .insight-header { margin-bottom: 20px; border-left: 4px solid var(--point); padding-left: 15px; }
+        .insight-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; }
+        
+        .login-box { display: flex; gap: 12px; }
+        @media (max-width: 600px) { .login-box { flex-direction: column; } }
+        .login-box input { flex: 1; padding: 14px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--hover); font-size: 14px; outline: none; }
+        .login-box button { padding: 0 35px; background: var(--main); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; height: 48px; }
+        .login-box button:hover { background: var(--point); }
+
+        #personal-report { display: none; margin-top: 30px; padding-top: 30px; border-top: 1px dashed var(--line); animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .report-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        @media (max-width: 900px) { .report-grid { grid-template-columns: 1fr; } }
+        .report-card { background: var(--hover); padding: 25px; border-radius: 20px; border: 1px solid var(--line); }
+        .chart-box { height: 120px; display: flex; align-items: flex-end; gap: 12px; margin-top: 30px; padding: 0 10px 10px; border-bottom: 1px solid var(--line); }
+        .bar { flex: 1; background: var(--point); border-radius: 4px 4px 0 0; position: relative; }
+        .bar::after { content: attr(data-score); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--main); }
+
+        /* Navigation & Summary */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
+        .tab { padding: 10px 24px; border-radius: 30px; border: 1px solid var(--line); background: #fff; color: var(--sub); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap; }
+        .tab.active { background: var(--main); color: #fff; border-color: var(--main); }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        @media (max-width: 768px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+        .sum-card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); text-align: center; }
+        .sum-label { font-size: 11px; color: var(--sub); font-weight: 700; margin-bottom: 8px; }
+        .sum-value { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 700; color: var(--main); }
+        .highlight { color: var(--gold); }
+
+        /* Table */
+        .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 25px; overflow-x: auto; }
+        table { width: 100%; border-collapse: separate; border-spacing: 2px; }
+        th { font-size: 10px; color: var(--sub); padding: 8px 4px; font-family: 'DM Mono', monospace; font-weight: 700; border-bottom: 1px solid var(--line); }
+        td { height: 36px; text-align: center; font-size: 12px; border-radius: 4px; font-weight: 600; }
+        .nick { text-align: left; padding-left: 15px; width: 140px; }
+        
+        /* Grades */
+        .grade-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #fff; }
+        .g1 { background: var(--g1); } .g2 { background: var(--g2); } .g3 { background: var(--g3); }
+        .g4 { background: var(--g4); } .g5 { background: var(--g5); } .g6 { background: var(--g6); }
+        .g7 { background: var(--g7); color: #555; } .g8 { background: var(--g8); } .g9 { background: var(--g9); color: #777; }
+
+        .ans-1 { background: var(--ans-o); color: #2d5a2d; width: 28px; }
+        .ans-2 { background: var(--ans-x); color: #8b2e2e; width: 28px; }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid var(--line); }
+        .memo-box { margin-top: 25px; padding: 20px; background: #fff; border-radius: 15px; border-left: 4px solid var(--gold); font-size: 14px; line-height: 1.7; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">MATHY YURI <span>System</span></div>
+        <div class="ver">PREMIUM ANALYTICS v4.7</div>
+    </div>
+
+    <div class="insight-section">
+        <div class="insight-header">
+            <h2>Cumulative Student Insight</h2>
+        </div>
+        <div class="login-box">
+            <input type="text" id="nameInput" placeholder="학생 실명">
+            <input type="password" id="pwInput" placeholder="비밀번호">
+            <button onclick="generateReport()">리포트 생성</button>
+        </div>
+
+        <div id="personal-report">
+            <div class="report-grid">
+                <div class="report-card">
+                    <div id="res-name" style="font-size:20px; font-weight:700; margin-bottom:20px;">-</div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <div><div class="sum-label">AVG SCORE</div><div id="res-avg" style="font-size:18px; font-weight:700;">-</div></div>
+                        <div><div class="sum-label">MAX SCORE</div><div id="res-max" style="font-size:18px; font-weight:700; color:var(--gold)">-</div></div>
+                    </div>
+                    <div class="chart-box" id="res-chart"></div>
+                </div>
+                <div>
+                    <table class="history-table">
+                        <thead><tr style="text-align:left; font-size:11px; color:var(--sub); border-bottom:1px solid var(--line);"><th style="padding:10px;">EXAM</th><th style="padding:10px;">SCORE</th><th style="padding:10px;">GRADE</th></tr></thead>
+                        <tbody id="res-history"></tbody>
+                    </table>
+                    <div class="memo-box" id="res-memo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('25년 6월 기출')">25년 6월 기출</div>
+        <div class="tab" onclick="switchTab('25년 6월 변형')">25년 6월 변형</div>
+        <div class="tab" onclick="switchTab('24년 6월 기출')">24년 6월 기출</div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="sum-card"><div class="sum-label">TOTAL STUDENTS</div><div class="sum-value" id="stat-total">0</div></div>
+        <div class="sum-card"><div class="sum-label">TOTAL AVG</div><div class="sum-value" id="stat-avg">0.0</div></div>
+        <div class="sum-card"><div class="sum-label">S+ CLASS AVG</div><div class="sum-value highlight" id="stat-splus">0.0</div></div>
+        <div class="sum-card"><div class="sum-label">S CLASS AVG</div><div class="sum-value" id="stat-s">0.0</div></div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead><tr id="table-head">
+                <th style="width:40px;">RANK</th><th class="nick">NICKNAME</th><th style="width:90px;">GRADE</th><th style="width:60px;">SCORE</th>
+            </tr></thead>
+            <tbody id="main-table"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const GAS_API = "https://script.google.com/macros/s/AKfycbwwAm3lYkaILE5xCGnzqKfeiofkN5Ocr4WWGPWhnfx47RIjhGXmgn1YhQRD8s527G8BMg/exec";
+    let allData = [];
+    let currentTab = "25년 6월 기출";
+
+    async function init() {
+        try {
+            const res = await fetch(GAS_API);
+            const json = await res.json();
+            allData = json.map(r => ({
+                name: String(r["이름"]||"").trim(),
+                nick: String(r["닉네임"]||"").trim(),
+                class: String(r["반"]||"").trim(),
+                pw: String(r["비밀번호"]||"").trim(),
+                exam: String(r["시험명"]||"").trim(),
+                // 등급 데이터 가공 (0이거나 비어있으면 null)
+                grade: r["등급"] && parseInt(r["등급"]) !== 0 ? parseInt(String(r["등급"]).replace(/[^0-9]/g, "")) : null, 
+                score: parseInt(r["원점수"])||0,
+                memo: String(r["비고"]||"오답 분석 후 보완학습을 진행하세요."),
+                items: Array.from({length: 30}, (_, i) => parseInt(r[i + 1]) || 2)
+            })).filter(d => d.name);
+            
+            initTableStructure();
+            render();
+        } catch(e) { console.error("Data Load Error", e); }
+    }
+
+    function initTableStructure() {
+        const head = document.getElementById('table-head');
+        for(let i=1; i<=30; i++){ 
+            let th = document.createElement('th'); th.innerText = i; head.appendChild(th); 
+        }
+    }
+
+    function render() {
+        const body = document.getElementById('main-table');
+        body.innerHTML = "";
+        const filtered = allData.filter(d => d.exam === currentTab).sort((a,b) => b.score - a.score);
+        
+        const getAvg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b.score,0)/arr.length).toFixed(1) : "0.0";
+        document.getElementById('stat-total').innerText = filtered.length;
+        document.getElementById('stat-avg').innerText = getAvg(filtered);
+        document.getElementById('stat-splus').innerText = getAvg(filtered.filter(s => s.class === "S+"));
+        document.getElementById('stat-s').innerText = getAvg(filtered.filter(s => s.class === "S"));
+
+        filtered.forEach((s, idx) => {
+            const tr = document.createElement('tr');
+            // 등급이 있을 때만 배지 생성, 없으면 빈칸
+            const gradeHtml = s.grade ? `<span class="grade-badge g${s.grade}">${s.grade}등급</span>` : "";
+            tr.innerHTML = `<td style="color:var(--point); font-family:'DM Mono';">${idx+1}</td><td class="nick">${s.nick}</td><td>${gradeHtml}</td><td style="font-family:'DM Mono'; font-weight:700;">${s.score}</td>`;
+            s.items.forEach(v => {
+                const td = document.createElement('td'); td.className = "ans-"+v; td.innerText = v===1?"O":"X"; tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+
+    function switchTab(n) {
+        currentTab = n;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText === n));
+        render();
+    }
+
+    function generateReport() {
+        const name = document.getElementById('nameInput').value.trim();
+        const pw = document.getElementById('pwInput').value.trim();
+        const order = ["25년 6월 기출", "25년 6월 변형", "24년 6월 기출"];
+        const history = allData.filter(d => d.name === name && d.pw === pw)
+                               .sort((a,b) => order.indexOf(a.exam) - order.indexOf(b.exam));
+
+        if(history.length === 0) { alert("정보가 일치하지 않습니다."); return; }
+
+        document.getElementById('res-name').innerText = name + " 학생 누적 데이터";
+        const scores = history.map(h => h.score);
+        document.getElementById('res-avg').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) + "점";
+        document.getElementById('res-max').innerText = Math.max(...scores) + "점";
+
+        const hBody = document.getElementById('res-history');
+        hBody.innerHTML = history.map(h => {
+            const gHtml = h.grade ? `<span class="grade-badge g${h.grade}" style="padding:2px 6px; font-size:10px;">${h.grade}등급</span>` : "-";
+            return `<tr><td style="padding:15px 10px;">${h.exam}</td><td style="font-weight:700;">${h.score}점</td><td>${gHtml}</td></tr>`;
+        }).join('');
+
+        const chart = document.getElementById('res-chart');
+        chart.innerHTML = history.map(h => `
+            <div class="bar" style="height:${Math.max(h.score, 10)}%" data-score="${h.score}">
+                <span style="position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--sub); white-space:nowrap;">${h.exam.substring(0,5)}</span>
+            </div>
+        `).join('');
+
+        document.getElementById('res-memo').innerText = "MATH STUDIO 분석: " + history[history.length-1].memo;
+        document.getElementById('personal-report').style.display = 'block';
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
