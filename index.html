@@ -10,11 +10,11 @@
 
 <style>
 :root{
-  --bg:#edf5ea; --card:#f9fdf7; --line:#d9e7d5;
-  --main:#233222; --sub:#6f7d6c; --point:#7da27b;
-  --hover:#f2f8ef; --open-bg:#e5f0e1; --open:#6f9270;
-  --soon-bg:#eef1eb; --soon:#a1ab9e;
-  --accent-light: #7a9e6c;
+  --bg:#edf5ea; --card:#f9fdf7; --line:#d9e7d5;
+  --main:#233222; --sub:#6f7d6c; --point:#7da27b;
+  --hover:#f2f8ef; --open-bg:#e5f0e1; --open:#6f9270;
+  --soon-bg:#eef1eb; --soon:#a1ab9e;
+  --accent-light: #7a9e6c;
 }
 *{ margin:0; padding:0; box-sizing:border-box; }
 body{ background:var(--bg); color:var(--main); font-family:'Noto Sans KR', sans-serif; padding:42px 20px 80px; }
@@ -34,10 +34,10 @@ a{ text-decoration:none; color:inherit; }
 .profile-links { display: flex; flex-direction: column; gap: 10px; }
 
 .live-chart-btn {
-  display: inline-flex; align-items: center; padding: 10px 18px; background: #ffffff;
-  border: 1px solid var(--point); border-radius: 30px; color: var(--open);
-  font-size: 13px; font-weight: 700; transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(125, 162, 123, 0.1);
+  display: inline-flex; align-items: center; padding: 10px 18px; background: #ffffff;
+  border: 1px solid var(--point); border-radius: 30px; color: var(--open);
+  font-size: 13px; font-weight: 700; transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(125, 162, 123, 0.1);
 }
 .live-chart-btn .dot { width: 7px; height: 7px; background-color: var(--point); border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
@@ -83,170 +83,168 @@ a{ text-decoration:none; color:inherit; }
 
 @media(max-width:1100px){ .square-grid{ grid-template-columns:repeat(3,1fr); } }
 @media(max-width:980px){
-  .layout{ grid-template-columns:1fr; }
-  .header{ flex-direction:column; text-align:center; }
-  .profile-section { flex-direction: column; }
-  .logo{ font-size:56px; }
+  .layout{ grid-template-columns:1fr; }
+  .header{ flex-direction:column; text-align:center; }
+  .profile-section { flex-direction: column; }
+  .logo{ font-size:56px; }
 }
-@media(max-width:560px){ 
-  .square-grid{ grid-template-columns:repeat(2,1fr); } 
+@media(max-width:560px){ 
+  .square-grid{ grid-template-columns:repeat(2,1fr); } 
 }
 </style>
 </head>
 
 <body>
 <div class="container">
-  <div class="header">
-    <div class="logo-wrap">
-      <div class="logo">MATHY YURI<br><span>System</span></div>
-      <div class="sub">DAECHI S+ ACADEMY</div>
-    </div>
-    <div class="profile-section">
-      <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
-      <div class="profile-links">
-        <a href="https://mathyyuri.github.io/splus-writing-dashboard/" class="live-chart-btn">
-          <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
-        </a>
-        <div class="achievement-card">
-          <div class="ach-title">ACHIEVEMENT SUMMARY</div>
-          <div class="ach-stats">
-            <div class="ach-item"><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
-            <div class="ach-item"><div class="ach-val" id="sum-units">-</div><div class="ach-lab">ACTIVE UNITS</div></div>
-            <div class="ach-item"><div class="ach-val" id="sum-avg">-</div><div class="ach-lab">AVG CLEAR%</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo">MATHY YURI<br><span>System</span></div>
+      <div class="sub">DAECHI S+ ACADEMY</div>
+    </div>
+    <div class="profile-section">
+      <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
+      <div class="profile-links">
+        <a href="https://mathyyuri.github.io/splus-writing-dashboard/" class="live-chart-btn">
+          <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
+        </a>
+        <div class="achievement-card">
+          <div class="ach-title">ACHIEVEMENT SUMMARY</div>
+          <div class="ach-stats">
+            <div class="ach-item"><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
+            <div class="ach-item"><div class="ach-val" id="sum-units">-</div><div class="ach-lab">ACTIVE UNITS</div></div>
+            <div class="ach-item"><div class="ach-val" id="sum-avg">-</div><div class="ach-lab">AVG CLEAR%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="layout">
-    <div class="card">
-      <div class="category">WRITING TRAINING</div>
-      <div class="title">공통수학Ⅰ<br>서술형 Logic Master</div>
-      <div class="desc">단원별 논리 체계 구축 및 실전 FINAL 대비 시스템</div>
+  <div class="layout">
+    <div class="card">
+      <div class="category">WRITING TRAINING</div>
+      <div class="title">공통수학Ⅰ<br>서술형 Logic Master</div>
+      <div class="desc">단원별 논리 체계 구축 및 실전 FINAL 대비 시스템</div>
 
-      <div class="subject">
-        <div class="subject-name">방정식 <span>Equations</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
-            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
-            <div class="count-display"><span class="count-value" id="count-d1">0</span><span class="count-unit">MEMBERS</span></div>
-            <div class="sq-status open">OPEN</div>
-          </a>
-          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1-2/">
-            <div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div>
-            <div class="count-display"><span class="count-value" id="count-d2">0</span><span class="count-unit">MEMBERS</span></div>
-            <div class="sq-status open">OPEN</div>
-          </a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-        </div>
-      </div>
+      <div class="subject">
+        <div class="subject-name">방정식 <span>Equations</span></div>
+        <div class="square-grid">
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1/">
+            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
+            <div class="count-display"><span class="count-value" id="count-d1">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
+          </a>
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing1-2/">
+            <div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div>
+            <div class="count-display"><span class="count-value" id="count-d2">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
+          </a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
 
-      <div class="subject">
-        <div class="subject-name">부등식 <span>Inequalities</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
-            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
-            <div class="count-display"><span class="count-value" id="count-d3">0</span><span class="count-unit">MEMBERS</span></div>
-            <div class="sq-status open">OPEN</div>
-          </a>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-        </div>
-      </div>
+      <div class="subject">
+        <div class="subject-name">부등식 <span>Inequalities</span></div>
+        <div class="square-grid">
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing2/">
+            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
+            <div class="count-display"><span class="count-value" id="count-d3">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
+          </a>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
 
-      <div class="subject">
-        <div class="subject-name">경우의 수 <span>Combinatorics</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="#">
-            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
-            <div class="sq-status soon">SOON</div>
-          </a>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-        </div>
-      </div>
+      <div class="subject">
+        <div class="subject-name">경우의 수 <span>Combinatorics</span></div>
+        <div class="square-grid">
+          <a class="square-link" href="#">
+            <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
+            <div class="sq-status soon">SOON</div>
+          </a>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
 
-      <div class="subject">
-        <div class="subject-name" style="color:var(--open)">실전 Writing <span>Final Practice</span></div>
-        <div class="square-grid">
-          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
-        </div>
-      </div>
-    </div>
+      <div class="subject">
+        <div class="subject-name" style="color:var(--open)">실전 Writing <span>Final Practice</span></div>
+        <div class="square-grid">
+          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
+          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Final<br>Drill</div><div class="sq-status soon">PREP</div></div>
+        </div>
+      </div>
+    </div>
 
-    <div class="side">
-      <div class="card">
-        <div class="category">S+ LOGIC MASTER</div>
-        <div class="small-title" style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">Killer Problem<br>Training</div>
-        <div class="menu">
-          <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
-          <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="category">2028 UNIVERSITY ADMISSION</div>
-        <div class="small-title" style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">2028 대학 입시</div>
-        <div class="menu">
-          <a class="link" href="https://mathyyuri.github.io/splus-quiz/"><div class="left">서울대학교</div><div class="sq-status open">OPEN</div></a>
-          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
-          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon">SOON</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <div class="side">
+      <div class="card">
+        <div class="category">S+ LOGIC MASTER</div>
+        <div class="small-title" style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">Killer Problem<br>Training</div>
+        <div class="menu">
+          <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="category">2028 UNIVERSITY ADMISSION</div>
+        <div class="small-title" style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">2028 대학 입시</div>
+        <div class="menu">
+          <a class="link" href="https://mathyyuri.github.io/splus-quiz/"><div class="left">서울대학교</div><div class="sq-status open">OPEN</div></a>
+          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
+          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon">SOON</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="footer">MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform</div>
+  <div class="footer">MATHY YURI · Daechi S+ ACADEMY<br>Premium Writing Training Platform</div>
 </div>
 
 <script>
-  // Google Apps Script API (mathy_unit_chart.html에서 사용하던 API 연동)
-  const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
-  const COUNT_URL = "https://script.google.com/macros/s/AKfycbz0bp-baNYGFHCE-vNsE-BL8TwwWla7wO8CpOuuBw4qWY7n3lkEs77y3BwQppLXQV3Q/exec";
+  // Google Apps Script API (mathy_unit_chart.html에서 사용하던 API 연동)
+  const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
+  const COUNT_URL = "https://script.google.com/macros/s/AKfycbz0bp-baNYGFHCE-vNsE-BL8TwwWla7wO8CpOuuBw4qWY7n3lkEs77y3BwQppLXQV3Q/exec";
 
-  window.onload = function() { 
-    fetchCountData();
-    fetchAchievementSummary();
-  };
+  window.onload = function() { 
+    fetchCountData();
+    fetchAchievementSummary();
+  };
 
-  // 기존 카운트 데이터 로딩
-  function fetchCountData() {
-    fetch(COUNT_URL + "?action=getCounts")
-      .then(r => r.json())
-      .then(data => {
-        if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
-        if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
-        if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
-      }).catch(e => console.error(e));
-  }
+  // 기존 카운트 데이터 로딩
+  function fetchCountData() {
+    fetch(COUNT_URL + "?action=getCounts")
+      .then(r => r.json())
+      .then(data => {
+        if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
+        if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
+        if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
+      }).catch(e => console.error(e));
+  }
 
-  // mathy_unit_chart 로직을 이용한 성취도 요약 (Invisible Personalization 적용)
-  async function fetchAchievementSummary() {
-    try {
-      const res = await fetch(API_URL);
-      const json = await res.json();
-      const rows = json.data || json; // 데이터 구조에 맞춰 파싱
-      
-      const filtered = rows.filter(r => r['반'] === 'S반' || r['반'] === 'S+반');
-      const students = [...new Set(filtered.map(r => r['이름']))];
-      const units = [...new Set(filtered.map(r => r['단원']))];
-      
-      // 간단한 평균 달성률 계산 (로직 요약)
-      document.getElementById('sum-students').innerText = students.length;
-      document.getElementById('sum-units').innerText = units.length;
-      document.getElementById('sum-avg').innerText = "84%"; // 실제 계산값 연동 가능
-    } catch(e) {
-      console.error("Summary fetch error:", e);
-    }
-  }
+  // mathy_unit_chart 로직을 이용한 성취도 요약 (Invisible Personalization 적용)
+  async function fetchAchievementSummary() {
+    try {
+      const res = await fetch(API_URL);
+      const json = await res.json();
+      const rows = json.data || json; // 데이터 구조에 맞춰 파싱
+      
+      const filtered = rows.filter(r => r['반'] === 'S반' || r['반'] === 'S+반');
+      const students = [...new Set(filtered.map(r => r['이름']))];
+      const units = [...new Set(filtered.map(r => r['단원']))];
+      
+      // 간단한 평균 달성률 계산 (로직 요약)
+      document.getElementById('sum-students').innerText = students.length;
+      document.getElementById('sum-units').innerText = units.length;
+      document.getElementById('sum-avg').innerText = "84%"; // 실제 계산값 연동 가능
+    } catch(e) {
+      console.error("Summary fetch error:", e);
+    }
+  }
 </script>
 </body>
 </html>
-
-여기서 니가 수정해죠
