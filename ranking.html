@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>S+ Writing Ranking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#edf5ea; --card:#fcfefc; --line:#d9e7d5;
+  --main:#233222; --sub:#6f7d6c; --point:#7da27b;
+  --gold-grad: linear-gradient(135deg, #d4af37 0%, #f7ef8a 50%, #d4af37 100%);
+  --silver-grad: linear-gradient(135deg, #a8a8a8 0%, #e0e0e0 50%, #a8a8a8 100%);
+  --bronze-grad: linear-gradient(135deg, #a0522d 0%, #cd7f32 50%, #a0522d 100%);
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--main); padding:42px 20px 80px; }
+.container{ max-width:1100px; margin:auto; }
+
+/* HEADER */
+.header{ text-align:center; margin-bottom:60px; }
+.logo{ font-family:'Cormorant Garamond', serif; font-size:64px; line-height:1; font-weight:600; margin-bottom:12px; letter-spacing:-1px; }
+.logo span{ color:var(--point); font-style:italic; }
+.sub{ color:var(--sub); font-size:13px; letter-spacing:0.25em; font-weight:500; text-transform:uppercase; }
+
+/* PREMIUM TOP 3 SECTION */
+.top-ranking { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-bottom: 50px; padding: 20px; }
+.rank-card { 
+  background: var(--card); border: 1px solid var(--line); border-radius: 20px; 
+  padding: 30px 20px; text-align: center; box-shadow: 0 15px 35px rgba(40,60,40,0.08); 
+  position: relative; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+.rank-card:hover { transform: translateY(-10px); box-shadow: 0 20px 45px rgba(40,60,40,0.12); }
+
+/* 배지 스타일 */
+.rank-badge {
+  width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 15px; font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 20px; color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.rank-1 { order: 2; width: 34%; padding: 50px 20px; border-top: 5px solid #d4af37; }
+.rank-1 .rank-badge { background: var(--gold-grad); transform: scale(1.2); }
+.rank-1 .rank-name { font-size: 24px; }
+
+.rank-2 { order: 1; width: 30%; border-top: 5px solid #a8a8a8; }
+.rank-2 .rank-badge { background: var(--silver-grad); }
+
+.rank-3 { order: 3; width: 30%; border-top: 5px solid #cd7f32; }
+.rank-3 .rank-badge { background: var(--bronze-grad); }
+
+.rank-name { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+.rank-class { font-size: 13px; color: var(--sub); margin-bottom: 12px; font-weight: 500; }
+.rank-score { font-size: 32px; font-weight: 800; color: var(--point); font-family: 'Cormorant Garamond', serif; }
+.rank-score span { font-size: 14px; font-weight: 400; margin-left: 2px; font-family: 'Noto Sans KR'; }
+
+/* TABLE */
+.table-card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 18px; font-size: 13px; color: var(--sub); border-bottom: 2px solid var(--line); text-align: center; letter-spacing: 0.1em; }
+td { padding: 20px; text-align: center; border-bottom: 1px solid #f2f7f1; font-size: 15px; }
+.row-rank { font-weight: 700; color: #a1ab9e; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
+.row-name { font-weight: 700; font-size: 16px; color: var(--main); }
+.row-score { font-weight: 700; color: var(--point); font-size: 18px; }
+
+.footer { text-align: center; margin-top: 60px; color: var(--sub); font-size: 12px; letter-spacing: 0.1em; }
+
+@media(max-width:768px){
+  .top-ranking { flex-direction: column; align-items: center; }
+  .rank-card { width: 100% !important; order: unset !important; padding: 30px !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">S+ Writing<br><span>Ranking</span></div>
+    <div class="sub">Daechi S+ Academy · Premium Logic Mastery</div>
+  </div>
+
+  <div id="topSection" class="top-ranking">
+    </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>RANK</th>
+          <th>NAME</th>
+          <th>CLASS</th>
+          <th>TOTAL SCORE</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    © MATHY YURI · THE HIGHEST LEVEL OF MATHEMATICAL WRITING
+  </div>
+</div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzlCHDzIVbeZld0A2E10eoQGzYZjzBjIYTDLJZlo2DOMZAPvXOvMdHYqYbXvKYf5qNuwA/exec';
+
+fetch(SHEET_URL)
+.then(res => res.json())
+.then(data => {
+  const studentMap = {};
+
+  data.forEach(row => {
+    const rawName = String(row["이름"] || "").trim();
+    const rawClass = String(row["반"] || "").trim().toUpperCase(); // 대소문자 구분 없이 처리
+    const score = Number(row["점수"] || 0);
+
+    if(!rawName) return;
+
+    // 필터링: 반 이름에 'S'가 포함된 경우만 누적 (S, S+, s, s+ 모두 포함)
+    if(rawClass.includes("S")) {
+      if(!studentMap[rawName]) {
+        studentMap[rawName] = { name: rawName, class: rawClass, totalScore: 0 };
+      }
+      studentMap[rawName].totalScore += score;
+    }
+  });
+
+  const rankingArray = Object.values(studentMap).sort((a, b) => b.totalScore - a.totalScore);
+
+  // TOP 3 렌더링 (고급 배지 적용)
+  const topSection = document.getElementById('topSection');
+  const top3Html = rankingArray.slice(0, 3).map((student, idx) => `
+    <div class="rank-card rank-${idx + 1}">
+      <div class="rank-badge">${idx + 1}</div>
+      <div class="rank-name">${student.name}</div>
+      <div class="rank-class">${student.class}</div>
+      <div class="rank-score">${student.totalScore}<span>pts</span></div>
+    </div>
+  `).join('');
+  topSection.innerHTML = top3Html;
+
+  // 전체 리스트 렌더링
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rankingArray.map((student, idx) => `
+    <tr>
+      <td class="row-rank">${idx + 1}</td>
+      <td class="row-name">${student.name}</td>
+      <td>${student.class}</td>
+      <td class="row-score">${student.totalScore}</td>
+    </tr>
+  `).join('');
+
+})
+.catch(err => {
+  console.error(err);
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="4" style="padding:40px; color:red;">데이터 로드 중입니다...</td></tr>';
+});
+</script>
+
+</body>
+</html>
