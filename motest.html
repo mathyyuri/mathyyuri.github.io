@@ -12,109 +12,122 @@
             --bg: #f4f7f2; --card: #ffffff; --line: #e1e9df; --main: #233222;
             --sub: #6f7d6c; --point: #7da27b; --gold: #b59410;
             --hover: #f9fbf8; 
-            /* 9단계 등급 컬러 시스템 */
             --g1: #b59410; --g2: #233222; --g3: #4a6348; --g4: #6f7d6c; 
             --g5: #94a3b8; --g6: #cbd5e1; --g7: #d8c8b6; --g8: #a8a29e; --g9: #e5e7eb;
             --ans-o: #d4e8d4; --ans-x: #f9d5d5;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); color: var(--main); font-family: 'Noto Sans KR', sans-serif; padding: 40px 20px; -webkit-font-smoothing: antialiased; }
-        .container { max-width: 1300px; margin: auto; }
+        body { background: var(--bg); color: var(--main); font-family: 'Noto Sans KR', sans-serif; padding: 20px; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1200px; margin: auto; }
         
-        /* Header */
         .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
-        .logo { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+        .logo { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
         .logo span { color: var(--point); font-style: italic; }
-        .ver { font-size: 11px; font-weight: 700; color: var(--point); letter-spacing: 0.1em; }
+        .ver { font-size: 10px; font-weight: 700; color: var(--point); letter-spacing: 0.1em; }
 
-        /* Cumulative Student Insight Section (Position: UP) */
-        .insight-section { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 30px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .insight-section { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
         .insight-header { margin-bottom: 20px; border-left: 4px solid var(--point); padding-left: 15px; }
-        .insight-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; }
+        .insight-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; }
         
-        .login-box { display: flex; gap: 12px; }
+        .login-box { display: flex; gap: 10px; margin-bottom: 10px; }
         @media (max-width: 600px) { .login-box { flex-direction: column; } }
-        .login-box input { flex: 1; padding: 14px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--hover); font-size: 14px; outline: none; }
-        .login-box button { padding: 0 35px; background: var(--main); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; height: 48px; }
-        .login-box button:hover { background: var(--point); }
+        .login-box input { flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--line); background: var(--hover); font-size: 14px; outline: none; }
+        .login-box button { padding: 0 25px; background: var(--main); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; height: 45px; }
 
-        #personal-report { display: none; margin-top: 30px; padding-top: 30px; border-top: 1px dashed var(--line); animation: fadeIn 0.5s ease; }
+        #personal-report { display: none; margin-top: 25px; animation: fadeIn 0.5s ease; border-top: 1px dashed var(--line); padding-top: 25px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .report-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin-bottom: 20px; }
         @media (max-width: 900px) { .report-grid { grid-template-columns: 1fr; } }
-        .report-card { background: var(--hover); padding: 25px; border-radius: 20px; border: 1px solid var(--line); }
-        .chart-box { height: 120px; display: flex; align-items: flex-end; gap: 12px; margin-top: 30px; padding: 0 10px 10px; border-bottom: 1px solid var(--line); }
-        .bar { flex: 1; background: var(--point); border-radius: 4px 4px 0 0; position: relative; }
-        .bar::after { content: attr(data-score); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--main); }
+        .report-card { background: var(--hover); padding: 20px; border-radius: 18px; border: 1px solid var(--line); }
+        .chart-box { height: 100px; display: flex; align-items: flex-end; gap: 10px; margin-top: 20px; padding: 0 5px 5px; border-bottom: 1px solid var(--line); }
+        .bar { flex: 1; background: var(--point); border-radius: 3px 3px 0 0; position: relative; }
+        .bar::after { content: attr(data-score); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 700; }
 
-        /* Navigation & Summary */
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
-        .tab { padding: 10px 24px; border-radius: 30px; border: 1px solid var(--line); background: #fff; color: var(--sub); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap; }
-        .tab.active { background: var(--main); color: #fff; border-color: var(--main); }
+        /* 정오표 공통 스타일 */
+        .ox-flex-container { display: flex; gap: 3px; }
+        .ox-box { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; border-radius: 3px; font-family: 'DM Mono', monospace; }
+        .ans-1 { background: var(--ans-o); color: #2d5a2d; }
+        .ans-2 { background: var(--ans-x); color: #8b2e2e; }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-        @media (max-width: 768px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
-        .sum-card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); text-align: center; }
-        .sum-label { font-size: 11px; color: var(--sub); font-weight: 700; margin-bottom: 8px; }
-        .sum-value { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 700; color: var(--main); }
-        .highlight { color: var(--gold); }
+        /* [수정] 전체 성적 테이블 내 정오표: 모바일에서도 한 줄 유지 */
+        #main-table .ox-flex-container { flex-wrap: nowrap !important; overflow-x: visible; }
+        #main-table .ox-box { width: 14px; height: 14px; font-size: 8px; }
 
-        /* Table */
-        .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 25px; overflow-x: auto; }
-        table { width: 100%; border-collapse: separate; border-spacing: 2px; }
-        th { font-size: 10px; color: var(--sub); padding: 8px 4px; font-family: 'DM Mono', monospace; font-weight: 700; border-bottom: 1px solid var(--line); }
-        td { height: 36px; text-align: center; font-size: 12px; border-radius: 4px; font-weight: 600; }
-        .nick { text-align: left; padding-left: 15px; width: 140px; }
-        
-        /* Grades */
-        .grade-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #fff; }
+        /* 개별 리포트용 누적 정오표 행 (기존 요청대로 10개 줄바꿈 유지) */
+        .check-row { display: flex; align-items: flex-start; gap: 12px; padding: 15px 0; border-bottom: 1px solid #eef3ed; }
+        .check-row:last-child { border-bottom: none; }
+        .exam-label { width: 110px; font-size: 11px; font-weight: 700; color: var(--main); flex-shrink: 0; padding-top: 2px; }
+
+        @media (max-width: 768px) {
+            .check-row { flex-direction: column; gap: 8px; }
+            .exam-label { width: 100%; font-size: 12px; color: var(--point); }
+            /* 개별 리포트 정오표만 줄바꿈 */
+            #item-rows-wrapper .ox-flex-container { flex-wrap: wrap; gap: 4px; width: 100%; }
+            #item-rows-wrapper .ox-box { width: calc(10% - 4px); height: 24px; font-size: 10px; }
+        }
+
+        .grade-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #fff; white-space: nowrap; min-width: 45px; text-align: center; }
         .g1 { background: var(--g1); } .g2 { background: var(--g2); } .g3 { background: var(--g3); }
         .g4 { background: var(--g4); } .g5 { background: var(--g5); } .g6 { background: var(--g6); }
         .g7 { background: var(--g7); color: #555; } .g8 { background: var(--g8); } .g9 { background: var(--g9); color: #777; }
 
-        .ans-1 { background: var(--ans-o); color: #2d5a2d; width: 28px; }
-        .ans-2 { background: var(--ans-x); color: #8b2e2e; width: 28px; }
-        .history-table { width: 100%; border-collapse: collapse; }
-        .history-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid var(--line); }
-        .memo-box { margin-top: 25px; padding: 20px; background: #fff; border-radius: 15px; border-left: 4px solid var(--gold); font-size: 14px; line-height: 1.7; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .tab.active { background: var(--main); color: #fff; }
+
+        .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 20px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { font-size: 11px; color: var(--sub); padding: 12px 8px; border-bottom: 1px solid var(--line); font-weight: 700; }
+        td { padding: 12px 8px; text-align: center; font-size: 13px; border-bottom: 1px solid #f9fbf8; }
+
+        .memo-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 12px; border-left: 4px solid var(--gold); font-size: 13px; line-height: 1.6; }
+        .memo-item { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+        .memo-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .memo-date { font-weight: 700; color: var(--point); font-size: 11px; margin-right: 8px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <div class="logo">MATHY YURI <span>System</span></div>
-        <div class="ver">PREMIUM ANALYTICS v4.7</div>
+        <div class="ver">PREMIUM ANALYTICS v5.5</div>
     </div>
 
     <div class="insight-section">
         <div class="insight-header">
-            <h2>Cumulative Student Insight</h2>
+            <h2>Individual Student Insight</h2>
         </div>
         <div class="login-box">
             <input type="text" id="nameInput" placeholder="학생 실명">
-            <input type="password" id="pwInput" placeholder="비밀번호">
+            <input type="password" id="pwInput" placeholder="비밀번호 (휴대폰 뒷자리)">
             <button onclick="generateReport()">리포트 생성</button>
         </div>
 
         <div id="personal-report">
             <div class="report-grid">
                 <div class="report-card">
-                    <div id="res-name" style="font-size:20px; font-weight:700; margin-bottom:20px;">-</div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <div><div class="sum-label">AVG SCORE</div><div id="res-avg" style="font-size:18px; font-weight:700;">-</div></div>
-                        <div><div class="sum-label">MAX SCORE</div><div id="res-max" style="font-size:18px; font-weight:700; color:var(--gold)">-</div></div>
+                    <div id="res-name" style="font-size:18px; font-weight:700; margin-bottom:15px;">-</div>
+                    <div style="display: flex; gap: 20px;">
+                        <div><div style="font-size:9px; color:var(--sub); font-weight:700;">AVG SCORE</div><div id="res-avg" style="font-size:16px; font-weight:700;">-</div></div>
+                        <div><div style="font-size:9px; color:var(--sub); font-weight:700;">MAX SCORE</div><div id="res-max" style="font-size:16px; font-weight:700; color:var(--gold)">-</div></div>
                     </div>
                     <div class="chart-box" id="res-chart"></div>
                 </div>
-                <div>
-                    <table class="history-table">
-                        <thead><tr style="text-align:left; font-size:11px; color:var(--sub); border-bottom:1px solid var(--line);"><th style="padding:10px;">EXAM</th><th style="padding:10px;">SCORE</th><th style="padding:10px;">GRADE</th></tr></thead>
+                <div class="table-container" style="padding:0; border:none; background:transparent; overflow-x: visible;">
+                    <table style="min-width: unset; width: 100%; font-size:12px;">
+                        <thead><tr style="text-align:left; color:var(--sub); border-bottom:1px solid var(--line);"><th style="padding:8px;">EXAM</th><th>SCORE</th><th style="text-align: center;">GRADE</th></tr></thead>
                         <tbody id="res-history"></tbody>
                     </table>
-                    <div class="memo-box" id="res-memo"></div>
                 </div>
             </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: var(--hover); border-radius: 18px; border: 1px solid var(--line);">
+                <div style="font-size: 12px; font-weight: 700; color: var(--sub); margin-bottom: 15px;">📌 누적 정오표 (휴대폰: 10개씩 끊어짐)</div>
+                <div id="item-rows-wrapper"></div>
+            </div>
+
+            <div class="memo-box" id="res-memo"></div>
         </div>
     </div>
 
@@ -124,18 +137,17 @@
         <div class="tab" onclick="switchTab('24년 6월 기출')">24년 6월 기출</div>
     </div>
 
-    <div class="summary-grid">
-        <div class="sum-card"><div class="sum-label">TOTAL STUDENTS</div><div class="sum-value" id="stat-total">0</div></div>
-        <div class="sum-card"><div class="sum-label">TOTAL AVG</div><div class="sum-value" id="stat-avg">0.0</div></div>
-        <div class="sum-card"><div class="sum-label">S+ CLASS AVG</div><div class="sum-value highlight" id="stat-splus">0.0</div></div>
-        <div class="sum-card"><div class="sum-label">S CLASS AVG</div><div class="sum-value" id="stat-s">0.0</div></div>
-    </div>
-
     <div class="table-container">
         <table>
-            <thead><tr id="table-head">
-                <th style="width:40px;">RANK</th><th class="nick">NICKNAME</th><th style="width:90px;">GRADE</th><th style="width:60px;">SCORE</th>
-            </tr></thead>
+            <thead>
+                <tr>
+                    <th style="width:50px;">RANK</th>
+                    <th style="text-align:left; padding-left:20px;">NICKNAME</th>
+                    <th style="width:90px;">GRADE</th>
+                    <th style="width:70px;">SCORE</th>
+                    <th>ITEM ANALYSIS (1-30)</th>
+                </tr>
+            </thead>
             <tbody id="main-table"></tbody>
         </table>
     </div>
@@ -153,26 +165,16 @@
             allData = json.map(r => ({
                 name: String(r["이름"]||"").trim(),
                 nick: String(r["닉네임"]||"").trim(),
-                class: String(r["반"]||"").trim(),
                 pw: String(r["비밀번호"]||"").trim(),
                 exam: String(r["시험명"]||"").trim(),
-                // 등급 데이터 가공 (0이거나 비어있으면 null)
-                grade: r["등급"] && parseInt(r["등급"]) !== 0 ? parseInt(String(r["등급"]).replace(/[^0-9]/g, "")) : null, 
+                grade: r["등급"] ? parseInt(String(r["등급"]).replace(/[^0-9]/g, "")) : null,
                 score: parseInt(r["원점수"])||0,
-                memo: String(r["비고"]||"오답 분석 후 보완학습을 진행하세요."),
+                memo: String(r["비고"]||""), // 비고 기본 데이터
+                analysis: String(r["분석"]||""), // [추가] 분석 열 데이터
                 items: Array.from({length: 30}, (_, i) => parseInt(r[i + 1]) || 2)
             })).filter(d => d.name);
-            
-            initTableStructure();
             render();
-        } catch(e) { console.error("Data Load Error", e); }
-    }
-
-    function initTableStructure() {
-        const head = document.getElementById('table-head');
-        for(let i=1; i<=30; i++){ 
-            let th = document.createElement('th'); th.innerText = i; head.appendChild(th); 
-        }
+        } catch(e) { console.error(e); }
     }
 
     function render() {
@@ -180,36 +182,27 @@
         body.innerHTML = "";
         const filtered = allData.filter(d => d.exam === currentTab).sort((a,b) => b.score - a.score);
         
-        const getAvg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b.score,0)/arr.length).toFixed(1) : "0.0";
-        document.getElementById('stat-total').innerText = filtered.length;
-        document.getElementById('stat-avg').innerText = getAvg(filtered);
-        document.getElementById('stat-splus').innerText = getAvg(filtered.filter(s => s.class === "S+"));
-        document.getElementById('stat-s').innerText = getAvg(filtered.filter(s => s.class === "S"));
-
         filtered.forEach((s, idx) => {
             const tr = document.createElement('tr');
-            // 등급이 있을 때만 배지 생성, 없으면 빈칸
-            const gradeHtml = s.grade ? `<span class="grade-badge g${s.grade}">${s.grade}등급</span>` : "";
-            tr.innerHTML = `<td style="color:var(--point); font-family:'DM Mono';">${idx+1}</td><td class="nick">${s.nick}</td><td>${gradeHtml}</td><td style="font-family:'DM Mono'; font-weight:700;">${s.score}</td>`;
-            s.items.forEach(v => {
-                const td = document.createElement('td'); td.className = "ans-"+v; td.innerText = v===1?"O":"X"; tr.appendChild(td);
-            });
+            tr.innerHTML = `
+                <td style="color:var(--point); font-weight:700;">${idx+1}</td>
+                <td style="text-align:left; padding-left:20px; font-weight:600;">${s.nick}</td>
+                <td><span class="grade-badge g${s.grade||9}">${s.grade ? s.grade + '등급' : '-'}</span></td>
+                <td style="font-weight:800;">${s.score}</td>
+                <td>
+                    <div class="ox-flex-container">
+                        ${s.items.map((v, i) => `<div class="ox-box ans-${v}">${i+1}</div>`).join('')}
+                    </div>
+                </td>
+            `;
             body.appendChild(tr);
         });
-    }
-
-    function switchTab(n) {
-        currentTab = n;
-        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText === n));
-        render();
     }
 
     function generateReport() {
         const name = document.getElementById('nameInput').value.trim();
         const pw = document.getElementById('pwInput').value.trim();
-        const order = ["25년 6월 기출", "25년 6월 변형", "24년 6월 기출"];
-        const history = allData.filter(d => d.name === name && d.pw === pw)
-                               .sort((a,b) => order.indexOf(a.exam) - order.indexOf(b.exam));
+        const history = allData.filter(d => d.name === name && d.pw === pw);
 
         if(history.length === 0) { alert("정보가 일치하지 않습니다."); return; }
 
@@ -218,21 +211,44 @@
         document.getElementById('res-avg').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) + "점";
         document.getElementById('res-max').innerText = Math.max(...scores) + "점";
 
-        const hBody = document.getElementById('res-history');
-        hBody.innerHTML = history.map(h => {
-            const gHtml = h.grade ? `<span class="grade-badge g${h.grade}" style="padding:2px 6px; font-size:10px;">${h.grade}등급</span>` : "-";
-            return `<tr><td style="padding:15px 10px;">${h.exam}</td><td style="font-weight:700;">${h.score}점</td><td>${gHtml}</td></tr>`;
+        document.getElementById('res-history').innerHTML = history.map(h => {
+            const gradeTxt = h.grade ? h.grade + '등급' : '-';
+            return `<tr><td style="padding:10px;">${h.exam}</td><td style="font-weight:700;">${h.score}점</td><td style="text-align: center;"><span class="grade-badge g${h.grade||9}">${gradeTxt}</span></td></tr>`;
         }).join('');
 
-        const chart = document.getElementById('res-chart');
-        chart.innerHTML = history.map(h => `
-            <div class="bar" style="height:${Math.max(h.score, 10)}%" data-score="${h.score}">
-                <span style="position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--sub); white-space:nowrap;">${h.exam.substring(0,5)}</span>
+        document.getElementById('res-chart').innerHTML = history.map(h => `
+            <div class="bar" style="height:${Math.max(h.score, 10)}%" data-score="${h.score}"></div>
+        `).join('');
+
+        const wrapper = document.getElementById('item-rows-wrapper');
+        wrapper.innerHTML = history.map(h => `
+            <div class="check-row">
+                <div class="exam-label">${h.exam}</div>
+                <div class="ox-flex-container">
+                    ${h.items.map((v, i) => `<div class="ox-box ans-${v}" title="${i+1}번">${i+1}</div>`).join('')}
+                </div>
             </div>
         `).join('');
 
-        document.getElementById('res-memo').innerText = "MATH STUDIO 분석: " + history[history.length-1].memo;
+        // [수정] MATHY YURI로 명칭 변경 및 '분석' 데이터 누적 표시
+        let analysisHtml = `<div style="font-weight:700; margin-bottom:10px; color:var(--main);">MATHY YURI 분석 리포트</div>`;
+        const analysisContent = history
+            .filter(h => h.analysis && h.analysis.trim() !== "")
+            .map(h => `
+                <div class="memo-item">
+                    <span class="memo-date">[${h.exam}]</span>
+                    <span>${h.analysis}</span>
+                </div>
+            `).join('');
+        
+        document.getElementById('res-memo').innerHTML = analysisContent || (analysisHtml + "누적된 분석 데이터가 없습니다.");
         document.getElementById('personal-report').style.display = 'block';
+    }
+
+    function switchTab(n) {
+        currentTab = n;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText === n));
+        render();
     }
     window.onload = init;
 </script>
