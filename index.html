@@ -45,7 +45,6 @@ a{ text-decoration:none; color:inherit; }
 }
 .live-chart-btn:hover { background: var(--hover); transform: translateY(-2px); border-color: var(--point); }
 
-/* ACHIEVEMENT SUMMARY BOX (Updated: Blinking & Clickable) */
 .achievement-card { 
   margin-top: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 20px; 
   cursor: pointer; transition: all 0.3s ease; position: relative;
@@ -180,7 +179,8 @@ a{ text-decoration:none; color:inherit; }
         <div class="square-grid">
           <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing3/">
             <div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div>
-            <div class="sq-status soon">SOON</div>
+            <div class="count-display"><span class="count-value" id="count-d4">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
           </a>
           <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
@@ -239,6 +239,8 @@ a{ text-decoration:none; color:inherit; }
         if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
         if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
         if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
+        // 추가: 경우의 수 01(d4) 데이터 연동
+        if(data.d4 !== undefined) document.getElementById('count-d4').innerText = data.d4;
       }).catch(e => console.error(e));
   }
 
