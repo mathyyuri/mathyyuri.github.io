@@ -117,7 +117,7 @@ a{ text-decoration:none; color:inherit; }
     <div class="profile-section">
       <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
       <div class="profile-links">
-        <a href="mathy_unit_chart.html" class="live-chart-btn">
+        <a href="ranking.html" class="live-chart-btn">
           <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
         </a>
         
@@ -225,7 +225,6 @@ a{ text-decoration:none; color:inherit; }
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
-  // 새로 업데이트해주신 시트 URL 반영
   const COUNT_URL = "https://script.google.com/macros/s/AKfycbx7jRLjRYFLYjKXyfgcT8M99ftdMns28SFoIRHLQ-wS6iNrkJkF-XZ27LAd0ajeUqVTrg/exec";
 
   window.onload = function() { 
@@ -240,7 +239,6 @@ a{ text-decoration:none; color:inherit; }
         if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
         if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
         if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
-        // 경우의 수 01 (d4) 데이터 연동
         if(data.d4 !== undefined) document.getElementById('count-d4').innerText = data.d4;
       }).catch(e => console.error(e));
   }
