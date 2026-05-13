@@ -44,7 +44,6 @@
         .bar { flex: 1; background: var(--point); border-radius: 3px 3px 0 0; position: relative; }
         .bar::after { content: attr(data-score); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 700; }
 
-        /* 정오표 공통 스타일 */
         .ox-flex-container { display: flex; gap: 3px; }
         .ox-box { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; border-radius: 3px; font-family: 'DM Mono', monospace; }
         .ans-1 { background: var(--ans-o); color: #2d5a2d; }
@@ -62,13 +61,14 @@
         .g4 { background: var(--g4); } .g5 { background: var(--g5); } .g6 { background: var(--g6); }
         .g7 { background: var(--g7); color: #555; } .g8 { background: var(--g8); } .g9 { background: var(--g9); color: #777; }
 
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-        .tab.active { background: var(--main); color: #fff; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+        .tabs::-webkit-scrollbar { height: 4px; }
+        .tabs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+        .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .tab.active { background: var(--main); color: #fff; border-color: var(--main); }
 
-        /* [수정] 테이블 디자인: CLASS 열 추가 및 간격 최적화 */
         .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 20px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 850px; } /* 열 추가로 최소 너비 소폭 확장 */
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
         th { font-size: 11px; color: var(--sub); padding: 12px 8px; border-bottom: 1px solid var(--line); font-weight: 700; text-transform: uppercase; }
         td { padding: 14px 8px; text-align: center; font-size: 13px; border-bottom: 1px solid #f9fbf8; }
 
@@ -137,6 +137,7 @@
         <div class="tab active" onclick="switchTab('25년 6월 기출')">25년 6월 기출</div>
         <div class="tab" onclick="switchTab('25년 6월 변형')">25년 6월 변형</div>
         <div class="tab" onclick="switchTab('24년 6월 기출')">24년 6월 기출</div>
+        <div class="tab" onclick="switchTab('24년 6월 변형')">24년 6월 변형</div>
     </div>
 
     <div class="table-container">
@@ -169,7 +170,7 @@
                 nick: String(r["닉네임"]||"").trim(),
                 pw: String(r["비밀번호"]||"").trim(),
                 exam: String(r["시험명"]||"").trim(),
-                className: String(r["반"]||"-").trim(), // [추가] 반 데이터 추출
+                className: String(r["반"]||"-").trim(),
                 grade: r["등급"] ? parseInt(String(r["등급"]).replace(/[^0-9]/g, "")) : null,
                 score: parseInt(r["원점수"])||0,
                 analysis: String(r["분석"]||""),
@@ -208,7 +209,7 @@
 
         if(history.length === 0) { alert("정보가 일치하지 않습니다."); return; }
 
-        document.getElementById('res-name').innerText = name + " 학생 누적 데이터 (" + history[0].className + ")";
+        document.getElementById('res-name').innerText = name + " 학생 누적 데이터 (" + (history[0].className || '-') + ")";
         const scores = history.map(h => h.score);
         document.getElementById('res-avg').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) + "점";
         document.getElementById('res-max').innerText = Math.max(...scores) + "점";
