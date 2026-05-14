@@ -30,19 +30,19 @@
         
         .honor-podium { 
             display: flex; 
-            flex-wrap: wrap; 
+            flex-wrap: nowrap; /* 모바일 가로 나열 유지 */
             justify-content: center; 
             align-items: stretch; 
-            gap: 15px; 
+            gap: 10px; 
         }
         
         .podium-card { 
             flex: 1;
-            min-width: 280px; 
+            min-width: 0; /* 가로 나열을 위해 최소폭 해제 */
             max-width: 320px;
             border-radius: 25px; 
             text-align: center; 
-            padding: 35px 20px; 
+            padding: 35px 15px; 
             background: white; 
             border: 1px solid #f0ede8; 
             position: relative;
@@ -52,12 +52,54 @@
             flex-direction: column;
             justify-content: center;
         }
+
+        /* 모바일 환경 최적화 */
+        @media (max-width: 600px) {
+            .container { padding: 20px 10px 60px; }
+            .honor-podium { gap: 6px; }
+            .podium-card { padding: 15px 5px; border-radius: 15px; }
+            .p-label { font-size: 0.75rem !important; margin-bottom: 5px !important; letter-spacing: -0.5px !important; }
+            .medal-icon { font-size: 1.6rem !important; margin-bottom: 5px !important; }
+            .p-name { font-size: 0.85rem !important; }
+            .p-class-tag { font-size: 0.55rem !important; padding: 1px 4px !important; margin-left: 2px !important; }
+            .p-sub { font-size: 0.6rem !important; margin-bottom: 6px !important; letter-spacing: 0 !important; }
+            .p-info { font-size: 0.75rem !important; padding: 4px 10px !important; }
+
+            /* 티어 섹션 5개씩 2열 배치 및 명단 표시 */
+            .tier-bar { 
+                display: grid !important; 
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 5px !important; 
+                overflow-x: hidden !important; 
+                padding: 0 !important;
+            }
+            .tier-group { min-width: 0 !important; gap: 5px !important; }
+            .tier-badge { padding: 8px 2px !important; border-radius: 10px !important; }
+            .t-icon { font-size: 1.1rem !important; }
+            .t-name { font-size: 0.45rem !important; transform: scale(0.9); }
+            .t-score { font-size: 0.5rem !important; }
+            
+            /* 모바일 명단 가독성 확보 */
+            .t-member-list { 
+                display: flex !important; 
+                flex-direction: column !important;
+                gap: 2px !important;
+                margin-top: 4px !important;
+                grid-template-columns: none !important;
+            }
+            .t-member-item { 
+                font-size: 0.5rem !important; 
+                padding: 2px 1px !important; 
+                border-radius: 4px !important; 
+                line-height: 1.1 !important;
+            }
+        }
+
         .podium-card:hover { transform: translateY(-8px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
 
-        /* 1위 타이틀 - 한글 & 고급 명조체 & 크기 확대 */
         .p-label { 
             font-family: 'Noto Serif KR', serif;
-            font-size: 1.8rem; /* 크기 확대 */
+            font-size: 1.8rem; 
             font-weight: 900; 
             letter-spacing: -1px; 
             margin-bottom: 15px; 
@@ -187,15 +229,15 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwq78m3piSD6ZF8SnUShDspqdxgG2nmRpCAAb2ed1nOUVvHV3aSPTS0npEN39re-OE9/exec";
 
 const TIERS = [
-    { key: 'king',     name: 'KING',     emoji: '👑', min: 90, bg: 'bg-king'     },
+    { key: 'king',      name: 'KING',      emoji: '👑', min: 90, bg: 'bg-king'      },
     { key: 'master',   name: 'MASTER',   emoji: '🏆', min: 80, bg: 'bg-master'   },
     { key: 'diamond',  name: 'DIAMOND',  emoji: '💎', min: 70, bg: 'bg-diamond'  },
     { key: 'emerald',  name: 'EMERALD',  emoji: '❇️',  min: 60, bg: 'bg-emerald'  },
     { key: 'platinum', name: 'PLATINUM', emoji: '🪙', min: 50, bg: 'bg-platinum' },
-    { key: 'gold',     name: 'GOLD',     emoji: '🥇', min: 40, bg: 'bg-gold'     },
+    { key: 'gold',      name: 'GOLD',      emoji: '🥇', min: 40, bg: 'bg-gold'      },
     { key: 'silver',   name: 'SILVER',   emoji: '🛡️', min: 30, bg: 'bg-silver'   },
     { key: 'bronze',   name: 'BRONZE',   emoji: '⚔️',  min: 20, bg: 'bg-bronze'   },
-    { key: 'iron',     name: 'IRON',     emoji: '🔥', min: 10, bg: 'bg-iron'     },
+    { key: 'iron',      name: 'IRON',      emoji: '🔥', min: 10, bg: 'bg-iron'      },
     { key: 'unranked', name: 'UNRANKED', emoji: '🌱', min: 0,  bg: 'bg-unranked' },
 ];
 
@@ -262,7 +304,6 @@ function renderHonor(data) {
         </div>`;
     };
 
-    /* 요청하신 한글 명칭 반영 */
     document.getElementById('honorPodium').innerHTML = 
         cardHtml(topTier, '티어점수 1st', 'tier', 'top-tier', '') +
         cardHtml(topTotal, '누적점수 1st', 'total', 'top-total', '👑') +
