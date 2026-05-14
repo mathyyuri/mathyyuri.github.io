@@ -14,6 +14,12 @@
   --gold-grad: linear-gradient(135deg, #d4af37 0%, #f7ef8a 50%, #d4af37 100%);
   --silver-grad: linear-gradient(135deg, #a8a8a8 0%, #e0e0e0 50%, #a8a8a8 100%);
   --bronze-grad: linear-gradient(135deg, #a0522d 0%, #cd7f32 50%, #a0522d 100%);
+  
+  /* 반별 박스 색상 정의 */
+  --s-plus-bg: #f8eeee;
+  --s-plus-text: #a67d7d;
+  --s-bg: #edf2ee;
+  --s-text: #7d9681;
 }
 *{ margin:0; padding:0; box-sizing:border-box; }
 body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--main); padding:42px 20px 80px; }
@@ -58,7 +64,17 @@ body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--
 .rank-3 .rank-badge { background: var(--bronze-grad); }
 
 .rank-name { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
-.rank-class { font-size: 13px; color: var(--sub); margin-bottom: 12px; font-weight: 500; }
+
+/* [수정] 카드 내 반 정보 박스 스타일 */
+.rank-class { 
+  font-size: 11px; 
+  margin-bottom: 12px; 
+  font-weight: 700;
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+}
+
 .rank-score { font-size: 32px; font-weight: 800; color: var(--point); font-family: 'Cormorant Garamond', serif; }
 .rank-score span { font-size: 14px; font-weight: 400; margin-left: 2px; font-family: 'Noto Sans KR'; }
 
@@ -69,6 +85,20 @@ th { padding: 18px; font-size: 12px; color: var(--sub); border-bottom: 2px solid
 td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-size: 15px; }
 .row-rank { font-weight: 700; color: #a1ab9e; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
 .row-name { font-weight: 700; font-size: 16px; color: var(--main); white-space: nowrap; }
+
+/* [수정] 테이블 내 반 정보 박스 스타일 */
+.row-class-box {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 반별 색상 조건 적용을 위한 클래스 */
+.tag-s-plus { background-color: var(--s-plus-bg); color: var(--s-plus-text); }
+.tag-s { background-color: var(--s-bg); color: var(--s-text); }
+
 .row-score { font-weight: 700; color: var(--point); font-size: 18px; }
 
 .footer { text-align: center; margin-top: 60px; color: var(--sub); font-size: 12px; letter-spacing: 0.1em; }
@@ -142,7 +172,6 @@ async function loadData() {
       const score = Number(row["점수"] || 0);
       if(!rawName) return;
 
-      // S가 들어간 모든 반 데이터를 수집
       if(rawClass.includes("S")) {
         if(!studentMap[rawName]) {
           studentMap[rawName] = { name: rawName, class: rawClass, totalScore: 0 };
@@ -160,10 +189,6 @@ async function loadData() {
 }
 
 function renderRanking() {
-  // 필터링 로직 수정: 
-  // 1. ALL일 때는 전체 노출
-  // 2. S+ 버튼일 때는 반 이름에 '+'가 포함된 경우 노출
-  // 3. S 버튼일 때는 반 이름에 'S'는 있지만 '+'는 없는 경우만 노출 (S+반 제외용)
   const filtered = currentFilter === 'ALL' 
     ? allRankingData 
     : allRankingData.filter(s => {
@@ -172,28 +197,34 @@ function renderRanking() {
         return false;
       });
 
-  // TOP 3
   const topSection = document.getElementById('topSection');
   const top3 = filtered.slice(0, 3);
-  topSection.innerHTML = top3.map((student, idx) => `
-    <div class="rank-card rank-${idx + 1}">
-      <div class="rank-badge">${idx + 1}</div>
-      <div class="rank-name">${student.name}</div>
-      <div class="rank-class">${student.class}</div>
-      <div class="rank-score">${student.totalScore}<span>pts</span></div>
-    </div>
-  `).join('');
+  
+  topSection.innerHTML = top3.map((student, idx) => {
+    // 반 이름에 맞춰 클래스 부여
+    const tagCls = student.class.includes('+') ? 'tag-s-plus' : 'tag-s';
+    return `
+      <div class="rank-card rank-${idx + 1}">
+        <div class="rank-badge">${idx + 1}</div>
+        <div class="rank-name">${student.name}</div>
+        <div class="rank-class ${tagCls}">${student.class}</div>
+        <div class="rank-score">${student.totalScore}<span>pts</span></div>
+      </div>
+    `;
+  }).join('');
 
-  // Table
   const tbody = document.getElementById('tbody');
-  tbody.innerHTML = filtered.map((student, idx) => `
-    <tr>
-      <td class="row-rank">${idx + 1}</td>
-      <td class="row-name">${student.name}</td>
-      <td>${student.class}</td>
-      <td class="row-score">${student.totalScore}</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = filtered.map((student, idx) => {
+    const tagCls = student.class.includes('+') ? 'tag-s-plus' : 'tag-s';
+    return `
+      <tr>
+        <td class="row-rank">${idx + 1}</td>
+        <td class="row-name">${student.name}</td>
+        <td><span class="row-class-box ${tagCls}">${student.class}</span></td>
+        <td class="row-score">${student.totalScore}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
