@@ -116,15 +116,33 @@ a{ text-decoration:none; color:inherit; }
     </div>
     <div class="profile-section">
       <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
-      <div class="profile-links">
+  <div class="profile-links">
         <a href="ranking.html" class="live-chart-btn">
-          <span class="dot"></span> 실시간 성적차트 <span class="arrow">→</span>
+          <span class="dot"></span> 서술형 성적차트 <span class="arrow">→</span>
         </a>
 
         <a href="motest.html" class="live-chart-btn">
           <span class="dot"></span> 6모대비 성적차트 <span class="arrow">→</span>
         </a>
-        
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;">
+        <a href="daily600.html" class="live-chart-btn" style="padding: 10px 14px; border-radius: 15px; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="dot" style="margin: 0;"></span>
+                <span style="font-size: 12px; white-space: nowrap;">일일일모 제출</span>
+            </div>
+            <span class="sq-status soon" style="font-size: 8px; padding: 2px 6px; transform: scale(0.9);">SOON</span>
+        </a>
+
+        <a href="dailyranking.html" class="live-chart-btn" style="padding: 10px 14px; border-radius: 15px; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="dot" style="margin: 0;"></span>
+                <span style="font-size: 12px; white-space: nowrap;">티어랭킹</span>
+            </div>
+            <span class="sq-status soon" style="font-size: 8px; padding: 2px 6px; transform: scale(0.9);">SOON</span>
+        </a>
+    </div>        
+          
         <div class="achievement-card" onclick="location.href='mathy_unit_chart.html'">
           <div class="ach-header">
             <span class="dot"></span>
