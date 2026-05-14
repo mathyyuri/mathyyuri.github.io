@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>일일일모 600제 | MATH STUDIO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-beige: #fdfbf7;
+            --card-beige: #f4f1ea;
+            --brand-dark: #3a3530;
+            --accent-pink: #d4a3a3;
+            --color-o: #e68a8a;
+            --color-slash: #8ba8a1;
+            --color-tri: #8a96b8;
+            --color-star: #d9ae72;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Poppins', 'Noto Serif KR', serif; background-color: var(--bg-beige); margin: 0; padding: 0; color: var(--brand-dark); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1000px; padding: 20px; }
+        header { text-align: center; padding: 40px 0; border-bottom: 1px solid #e0ddd5; margin-bottom: 30px; }
+        header h1 { margin: 0; font-size: 1.8rem; letter-spacing: 3px; font-weight: 700; }
+        header p { margin: 5px 0 0; font-size: 0.8rem; opacity: 0.6; letter-spacing: 1px; }
+
+        #login-section { max-width: 400px; margin: 50px auto; background: white; padding: 40px; border-radius: 20px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.03); text-align: center; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; color: #666; }
+        .input-group input { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid #ddd; background: var(--bg-beige); font-size: 1rem; outline: none; }
+        .login-btn { width: 100%; background: var(--brand-dark); color: white; padding: 15px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .login-btn:disabled { background: #aaa; cursor: not-allowed; }
+        .error-msg { color: #e05555; font-size: 0.82rem; margin-top: 12px; min-height: 20px; }
+
+        #main-section { display: none; width: 100%; }
+        .legend-bar { background: var(--card-beige); padding: 12px; border-radius: 50px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 25px; font-size: 0.75rem; font-weight: 600; }
+        .legend-item { display: flex; align-items: center; }
+        .legend-icon { width: 22px; height: 22px; border-radius: 50%; margin-right: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700; }
+
+        .dashboard { display: flex; justify-content: space-between; padding: 20px; background: white; border-radius: 15px; margin-bottom: 25px; border: 1px solid #eee; }
+        .stat-box { text-align: center; flex: 1; }
+        .stat-label { font-size: 0.7rem; color: #999; text-transform: uppercase; }
+        .stat-num { font-size: 1.2rem; font-weight: 700; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(20, 1fr); gap: 6px; }
+        @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(10, 1fr); } }
+        @media (max-width: 450px) { .grid-container { grid-template-columns: repeat(5, 1fr); } }
+
+        .item-btn {
+            aspect-ratio: 1/1;
+            border: 1px solid #e0ddd5;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #bbb;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            user-select: none;
+        }
+        .item-btn:not(.submitted):not(.st-1):not(.st-2):not(.st-3):not(.st-4):hover {
+            background: #f7f5f1;
+            transform: scale(1.05);
+        }
+        .item-btn.submitted {
+            background-color: #efefef !important;
+            color: #ccc !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .st-1 { background-color: var(--color-o) !important; color: white !important; border-color: var(--color-o); }
+        .st-2 { background-color: var(--color-slash) !important; color: white !important; border-color: var(--color-slash); }
+        .st-3 { background-color: var(--color-tri) !important; color: white !important; border-color: var(--color-tri); }
+        .st-4 { background-color: var(--color-star) !important; color: white !important; border-color: var(--color-star); }
+
+        /* 새로 입력 중인 항목은 테두리 강조 */
+        .item-btn.new-entry { box-shadow: 0 0 0 2px rgba(58,53,48,0.25); }
+
+        .footer { margin-top: 40px; text-align: center; padding-bottom: 50px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .submit-btn { background: var(--brand-dark); color: white; padding: 16px 60px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+        .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .new-count-badge { font-size: 0.8rem; color: #888; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>일일일모 600제</h1>
+        <p>MATHY YURI | DAECHI ACADEMY</p>
+    </header>
+
+    <div id="login-section">
+        <div class="input-group">
+            <label>학생 이름</label>
+            <input type="text" id="studentName" placeholder="이름을 입력하세요" autocomplete="name">
+        </div>
+        <div class="input-group">
+            <label>학부모 전화번호 뒷자리 (4자리)</label>
+            <input type="tel" id="parentPhone" maxlength="4" placeholder="0000" inputmode="numeric">
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="startChallenge()">암호 확인중</button>
+        <p class="error-msg" id="errorMsg"></p>
+    </div>
+
+    <div id="main-section">
+        <div class="legend-bar">
+            <div class="legend-item"><span class="legend-icon" style="background: var(--color-o)">O</span> 맞음</div>
+            <div class="legend-item"><span class="legend-icon" style="background: var(--color-slash)">/</span> 틀림</div>
+            <div class="legend-item"><span class="legend-icon" style="background: var(--color-tri)">△</span> 고침</div>
+            <div class="legend-item"><span class="legend-icon" style="background: var(--color-star)">★</span> 질문</div>
+        </div>
+        <div class="dashboard">
+            <div class="stat-box">
+                <div class="stat-label">학생</div>
+                <div id="display-name" class="stat-num">-</div>
+            </div>
+            <div class="stat-box" style="border-left: 1px solid #eee; border-right: 1px solid #eee;">
+                <div class="stat-label">진행률</div>
+                <div id="progress" class="stat-num">0%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">완료</div>
+                <div id="status-count" class="stat-num">0 / 600</div>
+            </div>
+        </div>
+        <div class="grid-container" id="grid"></div>
+        <div class="footer">
+            <button class="submit-btn" id="saveBtn" onclick="submitData()">새로운 결과 전송하기</button>
+            <p class="new-count-badge" id="newCountText">새로 입력한 문항: 0개</p>
+            <p style="font-size: 0.75rem; color: #bbb; margin: 0;">* 회색 문항은 이미 시트에 기록된 문제입니다.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TOTAL = 600;
+    // ★ 여기에 실제 GAS 배포 URL을 입력하세요
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwq78m3piSD6ZF8SnUShDspqdxgG2nmRpCAAb2ed1nOUVvHV3aSPTS0npEN39re-OE9/exec";
+    const ICONS = ['', 'O', '/', '△', '★'];
+
+    // serverData: 서버에서 불러온 기존 기록 (1~600 인덱스 사용)
+    // itemData: 이번 세션에 새로 입력한 기록
+    let serverData = new Array(TOTAL + 1).fill(0);
+    let itemData   = new Array(TOTAL + 1).fill(0);
+    let currentStudent, currentClass, currentPhone;
+
+    /* ── 유틸 ── */
+    function setError(msg) { document.getElementById('errorMsg').textContent = msg; }
+    function clearError()  { document.getElementById('errorMsg').textContent = ''; }
+
+    /* ── 로그인 / 데이터 로드 ── */
+    async function startChallenge() {
+        clearError();
+        const name  = document.getElementById('studentName').value.trim();
+        const phone = document.getElementById('parentPhone').value.trim();
+
+        if (!name)              return setError('이름을 입력해주세요.');
+        if (phone.length !== 4) return setError('학부모 전화번호 뒷자리 4자리를 입력해주세요.');
+
+        const btn = document.getElementById('loginBtn');
+        btn.textContent = '암호 확인 중...';
+        btn.disabled = true;
+
+        try {
+            // GET 요청: GAS가 학생 정보 + 기존 기록을 JSON으로 반환
+            const url = `${GAS_URL}?action=login&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
+            const res = await fetch(url);
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('서버 응답을 파싱할 수 없습니다. GAS 배포 설정(누구나 액세스)을 확인하세요.');
+            }
+
+            if (!data.success) {
+                setError(data.message || '이름 또는 전화번호가 일치하지 않습니다.');
+                btn.textContent = '기록 불러오기';
+                btn.disabled = false;
+                return;
+            }
+
+            currentStudent = name;
+            currentClass   = data.studentClass || '';
+            currentPhone   = phone;
+
+            // ── 기존 기록 파싱 ──
+            // GAS는 existingData를 아래 형식 중 하나로 반환할 수 있음:
+            //   A) 1D 배열: [0, 1, 0, 2, ...]  (길이 600)
+            //   B) 2D 배열: [[0,1,...], [0,2,...], ...]  (여러 행)
+            //   C) null / undefined  (기록 없음)
+            serverData.fill(0);
+            if (data.existingData) {
+                const raw = data.existingData;
+                const rows = Array.isArray(raw[0]) ? raw : [raw]; // 항상 2D로 정규화
+                rows.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    row.forEach((v, idx) => {
+                        const n = Number(v);
+                        // 인덱스 0-based → serverData는 1-based
+                        if (n > 0 && idx + 1 <= TOTAL) {
+                            serverData[idx + 1] = n;
+                        }
+                    });
+                });
+            }
+
+            document.getElementById('display-name').textContent =
+                currentClass ? `${name} (${currentClass})` : name;
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('main-section').style.display  = 'block';
+            renderGrid();
+
+        } catch (err) {
+            console.error(err);
+            setError(err.message || '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            btn.textContent = '기록 불러오기';
+            btn.disabled = false;
+        }
+    }
+
+    /* ── 그리드 렌더링 ── */
+    function renderGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        let submittedCount = 0;
+        let newCount = 0;
+
+        for (let i = 1; i <= TOTAL; i++) {
+            const btn = document.createElement('div');
+            btn.className = 'item-btn';
+
+            const serverVal = serverData[i];
+            const newVal    = itemData[i];
+
+            if (serverVal > 0) {
+                // 이미 시트에 기록된 문항
+                btn.classList.add('submitted', `st-${serverVal}`);
+                btn.textContent = ICONS[serverVal];
+                submittedCount++;
+            } else if (newVal > 0) {
+                // 이번 세션에 새로 입력한 문항
+                btn.classList.add(`st-${newVal}`, 'new-entry');
+                btn.textContent = ICONS[newVal];
+                newCount++;
+                btn.addEventListener('click', () => cycleItem(i));
+            } else {
+                // 미입력
+                btn.textContent = i;
+                btn.addEventListener('click', () => cycleItem(i));
+            }
+
+            grid.appendChild(btn);
+        }
+
+        const totalDone = submittedCount + newCount;
+        document.getElementById('progress').textContent =
+            Math.round((submittedCount / TOTAL) * 100) + '%';
+        document.getElementById('status-count').textContent =
+            `${submittedCount} / ${TOTAL}`;
+        document.getElementById('newCountText').textContent =
+            `새로 입력한 문항: ${newCount}개`;
+        document.getElementById('saveBtn').disabled = newCount === 0;
+    }
+
+    function cycleItem(i) {
+        itemData[i] = (itemData[i] + 1) % 5;
+        renderGrid();
+    }
+
+    /* ── 제출 ── */
+    async function submitData() {
+        const newEntries = itemData.slice(1).filter(v => v > 0);
+        if (newEntries.length === 0) return alert('새로 입력한 기록이 없습니다.');
+        if (!confirm(`${newEntries.length}개의 결과를 전송하시겠습니까?`)) return;
+
+        const btn = document.getElementById('saveBtn');
+        btn.textContent = '전송 중...';
+        btn.disabled = true;
+
+        const payload = {
+            action:  'submit',
+            student: currentStudent,
+            class:   currentClass,
+            phone:   currentPhone,
+            data:    itemData.slice(1)   // 0-based 배열 (길이 600)
+        };
+
+        try {
+            // no-cors로 POST → 응답을 읽을 수 없으므로 전송만 한다
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode:   'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+            alert('전송 요청 완료! 잠시 후 데이터가 반영됩니다.\n(약 10~30초 후 다시 로그인하면 반영된 기록을 확인할 수 있습니다.)');
+            location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('전송 중 오류가 발생했습니다. 다시 시도해주세요.');
+            btn.textContent = '새로운 결과 전송하기';
+            btn.disabled = false;
+        }
+    }
+
+    // 엔터키로 로그인 가능
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && document.getElementById('login-section').style.display !== 'none') {
+            startChallenge();
+        }
+    });
+</script>
+</body>
+</html>
