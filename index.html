@@ -283,7 +283,8 @@ a{ text-decoration:none; color:inherit; }
         if(data.d1 !== undefined) document.getElementById('count-d1').innerText = data.d1;
         if(data.d2 !== undefined) document.getElementById('count-d2').innerText = data.d2;
         if(data.d3 !== undefined) document.getElementById('count-d3').innerText = data.d3;
-        // 경우의 수 01 (d4) 데이터 연동
+        if(data.d5 !== undefined) document.getElementById('count-d5').innerText = data.d5;
+                // 경우의 수 01 (d4) 데이터 연동
         if(data.d4 !== undefined) document.getElementById('count-d4').innerText = data.d4;
       }).catch(e => console.error(e));
   }
