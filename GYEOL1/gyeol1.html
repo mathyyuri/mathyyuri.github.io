@@ -26,14 +26,18 @@
         .guide-text { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .problem-display { background: #fffde7; border-left: 6px solid var(--accent); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
         .problem-num { color: var(--primary); font-weight: 900; font-size: 1rem; margin-bottom: 5px; }
-        .problem-text { font-size: 1.1rem; font-weight: 600; line-height: 1.8; word-break: keep-all; }
+        .problem-text { font-size: 1.1rem; font-weight: 600; line-height: 1.8; word-break: break-word; 
+    overflow-wrap: break-word; 
+}
         .q-image { display: block; margin: 15px auto 5px; max-width: 100%; height: auto; border-radius: 8px; }
         .shuffle-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; min-height: 100px; }
         .step-item { background: #fff; border: 1px solid #e0e0e0; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; cursor: grab; user-select: none; transition: background 0.2s; }
         .step-item.dragging { opacity: 0.5; border: 2px dashed var(--accent); background: #fffde7; cursor: grabbing; }
         .feedback-section { display: none; margin-top: 20px; }
         .ox-display { font-size: 1.8rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 15px; letter-spacing: 5px; }
-        .logic-box { padding: 18px; border-radius: 12px; font-size: 0.95rem; line-height: 2.2; margin-bottom: 15px; border-left: 5px solid var(--primary); }
+        .logic-box { padding: 18px; border-radius: 12px; font-size: 0.95rem; line-height: 2.2; margin-bottom: 15px; border-left: 5px solid var(--primary);word-break: break-word; 
+    overflow: hidden; 
+}
         .box-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; }
         .master-box { background: #e0f2f1; border-color: var(--primary); }
         .my-box { background: #f9f9f9; border-color: #ccc; }
@@ -92,7 +96,7 @@
         },
         {
             num: "서술형 2번",
-            text: "부등식 $|x-1|+|x+1| \\le 3$의 해를 구하시오.",
+            text: "부등식  $|x-1|+|x+1| \\le 3$의 해를 구하시오.",
             order: [
                 "절댓값 안이 $0$이 되는 $x=-1, x=1$을 기준으로 범위를 나눈다.",
                 "i) $x < -1$ 일 때, $-(x-1)-(x+1) \\le 3$ 에서 $x \\ge -\\displaystyle \\frac{3}{2}$ 이므로 $-\\displaystyle \\frac{3}{2} \\le x < -1$",
