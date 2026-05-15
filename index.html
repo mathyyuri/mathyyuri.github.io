@@ -125,6 +125,31 @@ a{ text-decoration:none; color:inherit; }
           <span class="dot"></span> 6모대비 성적차트 <span class="arrow">→</span>
         </a>
 
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; position: relative;">
+    
+    <div id="gyeol-ans-btn" class="live-chart-btn" style="padding: 10px 14px; border-radius: 15px; cursor: pointer; justify-content: flex-start;">
+        <span class="dot"></span>
+        <span style="font-size: 12px;">결모의고사 정답 ▾</span>
+    </div>
+
+    <a href="javascript:void(0)" class="live-chart-btn" style="padding: 10px 14px; border-radius: 15px; justify-content: space-between; cursor: default; opacity: 0.8;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="dot" style="margin: 0;"></span>
+            <span style="font-size: 12px; white-space: nowrap;">결모의고사 랭킹</span>
+        </div>
+        <span class="sq-status soon" style="font-size: 8px; padding: 2px 6px; transform: scale(0.9);">SOON</span>
+    </a>
+
+    <div id="gyeol-menu" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #ffffff; border: 1px solid var(--line); border-radius: 20px; padding: 12px; grid-template-columns: repeat(4, 1fr); gap: 6px; z-index: 100; box-shadow: 0 10px 30px rgba(60,90,60,0.15);">
+        <a href="gyeolmo1.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">1회</a>
+        <a href="gyeolmo2.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">2회</a>
+        <a href="gyeolmo3.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">3회</a>
+        <a href="gyeolmo4.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">4회</a>
+        <a href="gyeolmo5.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">5회</a>
+        <a href="gyeolmo6.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">6회</a>
+        <a href="gyeolmo7.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px; font-weight: 500;">7회</a>
+    </div>
+</div>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;">
         <a href="daily600.html" class="live-chart-btn" style="padding: 10px 14px; border-radius: 15px; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -298,14 +323,30 @@ a{ text-decoration:none; color:inherit; }
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
-  // 새로 업데이트해주신 시트 URL 반영
   const COUNT_URL = "https://script.google.com/macros/s/AKfycbzYOP4YNZwOAE-QdJzPUGT0HBw90hFJ91XFRn0-VV4xzKY7ly6Ru7FlAAD_oZYJclybBw/exec";
   
   window.onload = function() { 
+    // 1. 데이터 가져오기 실행
     fetchCountData();
     fetchAchievementSummary();
-  };
 
+    // 2. 결모의고사 정답 메뉴 토글 로직
+    const ansBtn = document.getElementById('gyeol-ans-btn');
+    const menu = document.getElementById('gyeol-menu');
+
+    if (ansBtn && menu) {
+      ansBtn.addEventListener('click', function(e) {
+        e.stopPropagation(); // 클릭 이벤트 전파 방지
+        const isHidden = (menu.style.display === 'none' || menu.style.display === '');
+        menu.style.display = isHidden ? 'grid' : 'none';
+      });
+    }
+
+    // 3. 메뉴 바깥쪽 클릭 시 자동 닫기
+    document.addEventListener('click', function() {
+      if(menu) menu.style.display = 'none';
+    });
+  }; // window.onload 끝
   function fetchCountData() {
     fetch(COUNT_URL + "?action=getCounts")
       .then(r => r.json())
