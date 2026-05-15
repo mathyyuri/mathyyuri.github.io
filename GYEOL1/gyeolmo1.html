@@ -40,9 +40,9 @@
             aspect-ratio: 1 / 1; display: flex; 
 flex-direction: column;
 align-items: center; justify-content: center;
-            font-family: 'Montserrat', sans-serif; 
-            font-size: 1.4rem; /* [수정] 기본 번호 글씨 크기 확대 */
-            font-weight: 800; color: var(--point-mint);
+            font-family: 'Nanum Myeongjo', serif; 
+            font-size: 1.1rem; /* [수정] 기본 번호 글씨 크기 확대 */
+            font-weight: 700; color: var(--point-mint);
             cursor: pointer; border-radius: 4px; transition: all 0.2s ease;
             gap: 2px;
         }
@@ -71,7 +71,11 @@ align-items: center; justify-content: center;
         .prob-label { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--point-mint); margin-bottom: 12px; border-bottom: 1px solid var(--bg-mint); padding-bottom: 6px; display: block; }
         .prob-text { font-family: 'Nanum Myeongjo', serif; font-size: 1.05rem; line-height: 1.7; font-weight: 700; margin-bottom: 20px; word-break: keep-all; }
         .img-area { width: 100%; min-height: 150px; background: #f4f8f8; border: 1px dashed var(--point-mint); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8rem; margin: 15px 0; border-radius: 4px; }
-        .options-row { display: flex; justify-content: space-between; gap: 4px; margin-bottom: 30px; flex-wrap: nowrap; overflow-x: auto; padding: 5px 0; -webkit-overflow-scrolling: touch; }
+        .options-row { 
+         display: flex; 
+         justify-content: space-between; gap: 4px; margin-bottom: 30px;
+         flex-wrap: wrap; 
+         padding: 5px 0; -webkit-overflow-scrolling: touch; }
         .option-item { font-family: 'Nanum Myeongjo', serif; font-size: 0.85rem; padding: 8px 4px; border: 1px solid #f0f4f4; border-radius: 4px; background: #fafcfc; flex: 1; text-align: center; white-space: nowrap; min-width: fit-content; }
         .sol-area { margin-top: 25px; padding-top: 20px; border-top: 1px double var(--bg-mint); }
         .sol-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.7rem; letter-spacing: 2px; color: var(--point-mint); margin-bottom: 12px; }
@@ -212,7 +216,7 @@ align-items: center; justify-content: center;
                     <span class="prob-label">서술형 ${num - 16}번 분석</span>
                     <div class="prob-text" style="text-align:center; padding: 40px 0;">
                         ${num}번은 서술형 평가 문항입니다.<br><br>
-                        <button class="btn-link" onclick="window.location.href='subjective_eval.html'">서술형 전용 답안지 이동</button>
+                        <button class="btn-link" onclick="window.location.href='gyeol1.html'">서술형 전용 답안지 이동</button>
                     </div>
                 `;
             } else {
