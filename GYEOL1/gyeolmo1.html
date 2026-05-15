@@ -217,7 +217,14 @@ align-items: center; justify-content: center;
                 `;
             } else {
                 const data = quizData[num];
-                let imgHtml = data.img ? `<div class="img-area">문항 관련 이미지 삽입 영역</div>` : '';
+              let imgHtml = '';
+            if (data.img) {
+                imgHtml = `
+                    <div class="img-area" style="background:none; border:none;">
+                        <img src="${data.img}" style="max-width:100%; height:auto; border-radius:4px; display:block; margin:0 auto;">
+                    </div>`;
+            }
+
                 let optionsHtml = data.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 viewer.innerHTML = `
                     <span class="prob-label">SEQUENCE #${num.toString().padStart(2, '0')}</span>
