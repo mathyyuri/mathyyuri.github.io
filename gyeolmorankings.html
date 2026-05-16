@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>결모의고사 RANKING | MATHY YURI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:        #f8f9fa;
+            --bg-card:   #ffffff;
+            --dark:      #212529;
+            --mid:       #6c757d;
+            --line:      #e9ecef;
+            --gold:      #c8a84b;
+            --gold-dk:   #9a7e32;
+            --gold-lt:   #fcf9f2; 
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 10px 30px rgba(0,0,0,0.05);
+            --shadow-gold: 0 4px 20px rgba(200, 168, 75, 0.15); 
+
+            /* 학습 신호등 컬러 */
+            --clr-green:  #00a854; 
+            --clr-yellow: #ffbf00; 
+            --clr-red:    #e51c23; 
+            --clr-black:  #111111; 
+            --clr-white:  #ffffff; 
+            
+            /* S+반 및 하이엔드 포인트 컬러 */
+            --pink-main:  #f48fb1;
+            --pink-lt:    #fce4ec;
+            --pink-dk:    #c2185b;
+            --bg-s-plus:  rgba(244, 143, 177, 0.02); 
+            --bg-s-plain: transparent; 
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); min-height: 100vh; overflow-x: hidden; -webkit-text-size-adjust: none; word-break: keep-all; }
+
+        /* HEADER */
+        .site-header { text-align: center; padding: 50px 20px 30px; border-bottom: 1px solid var(--line); background: #ffffff; }
+        .header-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 4px; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+        .site-header h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 300; letter-spacing: 3px; line-height: 1.1; margin-bottom: 6px; }
+        .site-header h1 em { font-style: italic; color: var(--gold); }
+        .site-header p { font-size: 0.65rem; color: var(--mid); letter-spacing: 2px; font-family: 'DM Mono', monospace; }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; width: 100%; }
+
+        /* 학생 로그인 박스 슬림 크기 유지 */
+        .main-insight-login-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(200, 168, 75, 0.15); 
+            border-radius: 24px;
+            padding: 24px 40px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-sm);
+        }
+        .insight-title-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-left: 3px solid var(--gold);
+            padding-left: 12px;
+        }
+        .insight-title-area h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: var(--dark);
+        }
+        
+        .insight-form-grid {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            gap: 12px;
+            width: 100%;
+        }
+        .insight-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1; 
+        }
+        .insight-input {
+            width: 100%;
+            padding: 0 16px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+            -webkit-appearance: none;
+            height: 42px;
+        }
+        .insight-input:focus {
+            background: #ffffff;
+            border-color: var(--dark);
+            box-shadow: 0 0 0 1px var(--dark);
+        }
+        
+        .btn-insight-submit {
+            background: #1c241f;
+            color: #ffffff;
+            border: none;
+            padding: 0 24px;
+            border-radius: 10px;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            height: 42px;
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+        .btn-insight-submit:hover {
+            background: var(--dark);
+        }
+        .btn-insight-submit:active,
+        .btn-insight-submit.active-gold {
+            background: var(--gold) !important;
+            color: #ffffff;
+            box-shadow: var(--shadow-gold);
+        }
+        
+        .insight-error-wrap {
+            width: 100%;
+            margin-top: 8px;
+        }
+        .insight-error-log {
+            font-size: 0.8rem;
+            color: var(--clr-red);
+            font-weight: 500;
+            text-align: left;
+            padding-left: 4px;
+        }
+
+        /* 개인 리포트 뷰 */
+        .private-report-embedded-zone {
+            margin-bottom: 40px;
+            padding: 28px;
+            background: #ffffff;
+            border: 1px solid var(--gold);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .premium-report-top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.2fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .premium-panel-card {
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 220px;
+        }
+        
+        .panel-inside-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .report-profile-list { list-style: none; }
+        .report-profile-list li {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+        .report-profile-list .p-lbl { color: var(--mid); }
+        .report-profile-list .p-val { font-weight: 600; color: var(--dark); }
+        .profile-score-summary {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--line);
+        }
+        .p-score-box { flex: 1; text-align: center; }
+        .p-score-box span { display: block; font-size: 0.65rem; color: var(--mid); }
+        .p-score-box strong { font-family: 'DM Mono'; font-size: 1.1rem; color: var(--gold-dk); }
+
+        .report-chart-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 120px;
+            padding: 0 10px;
+            margin-top: 10px;
+        }
+        .chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .chart-bar-pillar {
+            width: 20px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-lt) 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: height 0.4s ease;
+            min-height: 4px;
+        }
+        .chart-bar-pillar.active-bar {
+            background: linear-gradient(180deg, var(--pink-main) 0%, var(--pink-lt) 100%);
+        }
+        .chart-bar-score {
+            font-family: 'DM Mono';
+            font-size: 0.65rem;
+            font-weight: 700;
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--dark);
+            white-space: nowrap;
+        }
+        .chart-bar-label {
+            font-size: 0.62rem;
+            color: var(--mid);
+            margin-top: 8px;
+            font-family: 'DM Mono';
+        }
+
+        /* 공통 및 개인 단원별 막대그래프 통일 레이아웃 규칙 */
+        .report-type-graph-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .graph-row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            width: 100%;
+        }
+        .graph-row-label-zone {
+            width: 110px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--dark);
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .graph-bar-bg-line {
+            flex: 1;
+            height: 12px;
+            background: #f1f3f5;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .graph-bar-fill-avg {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-lt) 0%, var(--gold) 100%);
+            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .graph-bar-fill-current {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pink-lt) 0%, var(--pink-main) 100%);
+            border-radius: 6px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: width 0.4s ease;
+            z-index: 2;
+        }
+        
+        .graph-row-pcts {
+            width: 85px; 
+            font-family: 'DM Mono';
+            font-size: 0.75rem;
+            text-align: right;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        .graph-row-pcts .avg-label-text {
+            font-size: 0.65rem;
+            color: var(--mid);
+            font-weight: 400;
+        }
+
+        /* 신호등 구역 내부 레이아웃 */
+        .private-traffic-container-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .private-traffic-section { 
+            padding-bottom: 16px; 
+            border-bottom: 1px dashed var(--line); 
+        }
+        .private-traffic-section:last-of-type { border-bottom: none; padding-bottom: 0; }
+        .private-traffic-header { font-size: 0.8rem; font-weight: 700; color: var(--dark); margin-bottom: 12px; letter-spacing: 0.5px; }
+        
+        .traffic-with-vgraph-flex {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .traffic-matrix-left-block {
+            flex: 1;
+        }
+        .private-vgraph-right-block {
+            width: 320px;
+            background: #fafafa;
+            border: 1px solid var(--line);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        
+        /* 세로형 막대그래프 전용 스타일 사이드 패널 */
+        .vgraph-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 95px;
+            padding: 0 5px;
+            margin-top: 10px;
+        }
+        .vgraph-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+        .vgraph-pillar-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 70px;
+            justify-content: center;
+            width: 100%;
+        }
+        .vgraph-pillar {
+            width: 12px;
+            border-radius: 2px 2px 0 0;
+            position: relative;
+            min-height: 2px;
+        }
+        .vgraph-pillar.my-p {
+            background: linear-gradient(180deg, var(--pink-main) 0%, var(--pink-lt) 100%);
+        }
+        .vgraph-pillar.avg-p {
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-lt) 100%);
+            border: 1px solid rgba(200, 168, 75, 0.3);
+        }
+        .vgraph-label {
+            font-size: 0.6rem;
+            color: var(--dark);
+            font-weight: 600;
+            margin-top: 6px;
+            text-align: center;
+            width: 50px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .vgraph-tooltip-score {
+            font-family: 'DM Mono';
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .private-traffic-row-row {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            gap: 6px;
+            width: 100%;
+            background: #fafafa;
+            padding: 14px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+        }
+        .private-q-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .private-q-num { font-family: 'DM Mono'; font-size: 0.65rem; color: var(--mid); font-weight: 500; }
+        .private-q-dot { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+
+        /* 원장 피드백 코멘트 영역 스타일 */
+        .premium-comments-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--gold-lt);
+            border-left: 4px solid var(--gold);
+            padding: 20px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            margin-top: 24px;
+        }
+        .comment-row-item {
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(200, 168, 75, 0.2);
+        }
+        .comment-row-item:last-child { padding-bottom: 0; border-bottom: none; }
+
+        /* CONTROLS */
+        .controls-wrapper { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+        .round-filter, .class-filter { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .filter-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 1px; color: var(--mid); margin-right: 4px; }
+        
+        .round-btn, .class-btn { background: white; border: 1px solid var(--line); padding: 6px 14px; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--mid); cursor: pointer; transition: all 0.2s; }
+        .round-btn:hover, .class-btn:hover { border-color: var(--dark); color: var(--dark); }
+        .round-btn.active, .class-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
+
+        /* 대시보드 상단 평균 카드 */
+        .average-compare-card { 
+            display: inline-flex;
+            align-items: center; 
+            gap: 28px; 
+            background: #ffffff; 
+            border: 1px solid var(--line); 
+            border-radius: 30px; 
+            padding: 8px 24px; 
+            margin-bottom: 24px; 
+            box-shadow: var(--shadow-sm);
+        }
+        .avg-box { display: flex; align-items: center; gap: 8px; }
+        .avg-box .avg-label { font-size: 0.72rem; color: var(--mid); font-weight: 500; }
+        .avg-box .avg-val { font-family: 'DM Mono', monospace; font-size: 0.85rem; font-weight: 700; color: var(--dark); }
+        .avg-box.s-plus-premium .avg-label { color: var(--pink-dk); }
+        .avg-box.s-plus-premium .avg-val { color: var(--pink-main); }
+        .avg-divider { width: 1px; height: 12px; background-color: var(--line); }
+
+        /* 신호등 가이드 */
+        .legend-card { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+        .legend-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 500; color: var(--dark); margin-bottom: 14px; letter-spacing: 1px; }
+        
+        .legend-line-group { 
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px; 
+            width: 100%; 
+        }
+        .legend-box { display: flex; align-items: center; gap: 6px; background: #ffffff; }
+        .legend-badge { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: 900; }
+        .legend-info { text-align: left; }
+        .legend-info strong { display: block; font-size: 0.68rem; color: var(--dark); font-weight: 600; line-height: 1.2; }
+        .legend-info span { display: block; font-size: 0.58rem; color: var(--mid); }
+
+        /* 명예의 전당 보드 */
+        .podium-row { 
+            display: flex; 
+            flex-direction: row; 
+            align-items: flex-end; 
+            justify-content: center;
+            gap: 20px; 
+            margin: 40px auto 32px; 
+            width: 100%;
+            max-width: 900px;
+        }
+        .podium-card { 
+            background: white; 
+            border-radius: 20px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px; 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--line); 
+            flex: 1; 
+            aspect-ratio: 1 / 1; 
+            position: relative;
+            transition: transform 0.2s; 
+        }
+        .podium-card.rank-1 { 
+            border-color: var(--gold); 
+            background: linear-gradient(160deg, #fffdf9 0%, white 100%); 
+            box-shadow: var(--shadow-gold); 
+            transform: translateY(-15px);
+            z-index: 2;
+        }
+        .podium-card.rank-1:hover { transform: translateY(-17px); }
+        .podium-card.rank-2 { transform: translateY(0); z-index: 1; }
+        .podium-card.rank-2:hover { transform: translateY(-2px); }
+        .podium-card.rank-3 { transform: translateY(10px); z-index: 0; }
+        .podium-card.rank-3:hover { transform: translateY(8px); }
+
+        .podium-rank-mark { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; color: var(--gold); margin-bottom: 8px; line-height: 1; }
+        .podium-card.rank-1 .podium-rank-mark { font-size: 3rem; }
+        
+        .podium-center-info { text-align: center; width: 100%; margin-bottom: 12px; }
+        .podium-nick-text { font-size: 1.05rem; font-weight: 700; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .podium-card.rank-1 .podium-nick-text { font-size: 1.2rem; }
+        
+        .podium-tag-container { margin-top: 4px; }
+        .podium-badge-item { font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 700; display: inline-block; }
+        .podium-badge-item.s-plus { background: var(--pink-lt); color: var(--pink-dk); }
+        .podium-badge-item.s-plain { background: #e9ecef; color: var(--dark); }
+        
+        .podium-score-display { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--mid); border-top: 1px dashed var(--line); width: 100%; text-align: center; padding-top: 10px; }
+        .podium-score-display span { font-size: 1.5rem; font-weight: 700; color: var(--dark); }
+
+        /* RANKING TABLE */
+        .rank-table-wrap { background: white; border-radius: 16px; box-shadow: var(--shadow-md); overflow-x: auto; margin-bottom: 32px; border: 1px solid var(--line); }
+        .rank-table-container { min-width: 1040px; width: 100%; display: flex; flex-direction: column; }
+        .grid-layout { display: grid; align-items: center; padding: 0 24px; }
+        
+        .grid-total { grid-template-columns: 60px 140px 80px 100px 1fr; }
+        .grid-round { grid-template-columns: 60px 140px 70px 80px 80px 1fr; }
+        
+        .rank-table-head { background: #fafafa; color: var(--mid); font-family: 'DM Mono', monospace; font-size: 0.65rem; height: 48px; font-weight: 500; border-bottom: 1px solid var(--line); text-transform: uppercase; letter-spacing: 1px; }
+        .rank-table-head.extended-head { height: 56px; }
+        .rank-table-head .head-center-zone { display: flex; justify-content: space-around; width: 100%; text-align: center; }
+        .rank-table-head .head-cell { text-align: center; }
+        .rank-row { height: 54px; border-bottom: 1px solid var(--line); transition: background 0.15s; }
+        .rank-row:last-child { border-bottom: none; }
+        .rank-row.class-s-plus { background-color: var(--bg-s-plus); }
+        .rank-row.class-s-plain { background-color: var(--bg-s-plain); }
+        .rank-row:hover { background-color: #f8f9fa !important; }
+        
+        .r-rank { font-family: 'DM Mono', monospace; font-size: 0.85rem; text-align: center; color: var(--mid); font-weight: 500; }
+        .rank-row:nth-child(2) .r-rank { color: #d4af37; font-weight: 700; }
+        .rank-row:nth-child(3) .r-rank { color: #aaa; font-weight: 700; }
+        .rank-row:nth-child(4) .r-rank { color: #cd7f32; font-weight: 700; }
+        .r-class { text-align: center; display: flex; justify-content: center; }
+        .r-class-tag { font-family: 'DM Mono', monospace; font-size: 0.62rem; padding: 3px 8px; border-radius: 4px; display: inline-block; font-weight: 600; }
+        .class-s-plus .r-class-tag { background: var(--pink-lt); color: var(--pink-main); }
+        .class-s-plain .r-class-tag { background: #e9ecef; color: var(--mid); }
+        
+        .r-nick { font-weight: 600; font-size: 0.85rem; color: var(--dark); text-align: left; padding-left: 4px; width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .r-class { width: 60px; justify-content: flex-start; }
+        
+        .total-chart-zone { display: flex; justify-content: space-around; width: 100%; align-items: center; }
+        .total-chart-cell { font-family: 'DM Mono', monospace; font-size: 0.75rem; width: 50px; text-align: center; color: #ced4da; }
+        .total-chart-cell.has-score { color: var(--dark); font-weight: 500; }
+        .r-total-score { font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 600; text-align: center; color: var(--dark); }
+        .round-score-zone { font-family: 'DM Mono', monospace; font-size: 0.8rem; text-align: center; }
+        .score-box { color: var(--dark); font-weight: 600; }
+        .meta-score-box { color: var(--clr-green); font-weight: 600; }
+
+        .traffic-matrix-zone { display: flex; justify-content: space-around; width: 100%; align-items: center; padding: 0 4px; }
+        .traffic-cell { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        .traffic-cell .cell-sign { font-size: 0.5rem; line-height: 1; display: block; }
+        
+        .panel-11 { background-color: var(--clr-green);  color: transparent; }
+        .panel-12 { background-color: var(--clr-yellow); color: var(--clr-green); }
+        .panel-13 { background-color: var(--clr-yellow); color: transparent; }
+        .panel-21 { background-color: var(--clr-red);    color: #00ff55; }
+        .panel-22 { background-color: var(--clr-red);    color: var(--clr-yellow); }
+        .panel-23 { background-color: var(--clr-red);    color: transparent; }
+        .panel-3x { background-color: var(--clr-white);  color: var(--clr-red); border: 1px solid var(--line); }
+        .panel-0x { background-color: var(--clr-black);  color: transparent; }
+        .panel-empty { background-color: #e9ecef;    color: var(--mid); }
+
+        .head-q-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 24px; text-align: center; }
+        .head-q-label { font-size: 0.6rem; font-family: 'DM Mono'; color: var(--mid); }
+        .head-q-pct { font-size: 0.55rem; font-family: 'DM Mono'; font-weight: 500; margin-top: 2px; border-radius: 2px; padding: 1px 2px; width: 100%; }
+
+        /* [수정 반영 1] Performance Analysis 하단 단독 유형별 성취도 분석 세로 막대그래프 완벽 시각화 */
+        .analysis-card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 35px 24px; 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--line); 
+            margin-bottom: 40px; 
+            text-align: center; 
+        }
+        .card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: var(--dark); display: inline-block; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .card-sub { font-size: 0.75rem; color: var(--mid); margin-bottom: 35px; }
+        
+        /* 세로로 직관적으로 정렬되는 프리미엄 차트 그리드 바인딩 */
+        .type-grid { 
+            display: flex !important;
+            justify-content: space-around !important;
+            align-items: flex-end !important;
+            gap: 20px; 
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            height: 180px; 
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--line);
+        }
+        .type-grid .graph-row-item {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        .type-grid .graph-bar-bg-line {
+            width: 32px;
+            height: 100%;
+            background: #f1f3f5;
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            overflow: visible;
+        }
+        .type-grid .graph-bar-fill-current {
+            width: 100%;
+            height: 0%; /* JS 연동 후 세로로 차오름 */
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-lt) 100%) !important;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease-out;
+            position: relative;
+        }
+        .type-grid .graph-row-label-zone {
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-top: 4px;
+            word-break: keep-all;
+        }
+        .type-grid .graph-row-pcts {
+            width: 100%;
+            text-align: center;
+            font-family: 'DM Mono';
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--gold-dk);
+        }
+
+        .site-footer {
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.58rem;
+            color: var(--mid);
+            letter-spacing: 1px;
+            border-top: 1px solid var(--line);
+            background: #ffffff;
+        }
+
+        /* 반응형 모바일 최적화 규칙 */
+        @media (max-width: 992px) {
+            .premium-report-top-row { grid-template-columns: 1fr; gap: 16px; }
+            .traffic-with-vgraph-flex { flex-direction: column; gap: 16px; }
+            .private-vgraph-right-block { width: 100%; }
+        }
+        
+        @media (max-width: 768px) {
+            .main-insight-login-card { padding: 20px 16px; border-radius: 20px; }
+            .insight-form-grid { flex-direction: column; align-items: stretch; gap: 10px; }
+            .insight-input { padding: 0 14px; font-size: 0.85rem; height: 42px; }
+            .btn-insight-submit { height: 42px; padding: 0 16px; font-size: 0.85rem; width: 100%; margin-top: 4px; }
+            
+            .round-filter { display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px; width: 100%; }
+            .round-filter .filter-label { width: 100%; margin-bottom: 4px; display: block; }
+            .round-filter .round-btn:nth-of-type(1) { width: 100%; text-align: center; margin-bottom: 6px; border-radius: 12px; padding: 8px 14px; }
+            .round-filter .round-btn:not(:nth-of-type(1)) { flex: 1; min-width: 35px; padding: 6px 0; text-align: center; font-size: 0.65rem; border-radius: 14px; }
+
+            .average-compare-card { display: flex !important; flex-direction: row !important; justify-content: space-between; align-items: center; width: 100%; padding: 10px 14px; gap: 0; border-radius: 14px; }
+            .avg-box { flex: 1; flex-direction: column; gap: 2px; text-align: center; justify-content: center; }
+            .avg-box .avg-label { font-size: 0.58rem; }
+            .avg-box .avg-val { font-size: 0.72rem; }
+            .avg-divider { display: block; height: 16px; background-color: var(--line); margin: 0 4px; }
+
+            .podium-row { display: flex !important; flex-direction: row !important; align-items: flex-end !important; justify-content: center; gap: 8px; margin: 15px auto 10px !important; padding: 0; width: 100%; }
+            .podium-card { flex: 1; aspect-ratio: 1 / 1 !important; padding: 10px 4px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .podium-card.rank-1 { transform: translateY(-12px) !important; z-index: 2; border-color: var(--gold); }
+            .podium-card.rank-2 { transform: translateY(0px) !important; z-index: 1; }
+            .podium-card.rank-3 { transform: translateY(8px) !important; z-index: 0; }
+            
+            .podium-rank-mark { font-size: 1.3rem !important; margin-bottom: 2px; }
+            .podium-card.rank-1 .podium-rank-mark { font-size: 1.7rem !important; }
+            .podium-center-info { text-align: center; margin-bottom: 4px; width: 100%; }
+            .podium-nick-text { font-size: 0.7rem !important; font-weight: 700; line-height: 1.2; max-width: 100%; }
+            .podium-card.rank-1 .podium-nick-text { font-size: 0.78rem !important; }
+            .podium-tag-container { margin-top: 2px; display: block; }
+            .podium-badge-item { font-size: 0.52rem; padding: 1px 4px; border-radius: 3px; }
+            .podium-score-display { border-top: 1px dashed var(--line); width: 100%; padding-top: 4px; margin-top: 2px; font-size: 0.55rem; }
+            .podium-score-display span { font-size: 0.85rem; }
+
+            .legend-line-group { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 12px 6px; }
+            .legend-box { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+            .legend-info { text-align: center; }
+            .legend-info strong { font-size: 0.6rem; text-align: center; }
+            .legend-info span { font-size: 0.52rem; text-align: center; display: block; white-space: nowrap; }
+
+            .private-traffic-row-row { grid-template-columns: repeat(10, 1fr) !important; gap: 4px 2px !important; padding: 12px 10px !important; width: 100% !important; border-radius: 12px !important; }
+            .traffic-matrix-left-block { width: 100% !important; }
+            .private-vgraph-right-block { width: 100% !important; padding: 12px 10px !important; border-radius: 12px !important; margin-top: 4px; }
+            .private-q-box { gap: 2px !important; }
+            .private-q-num { font-size: 0.55rem !important; }
+            .private-q-dot { width: 18px !important; height: 18px !important; border-radius: 4px !important; }
+            .private-q-dot .cell-sign { font-size: 0.45rem !important; }
+
+            .report-type-graph-wrap .graph-row-label-zone { white-space: normal !important; word-break: break-all !important; font-size: 0.65rem !important; line-height: 1.2; }
+
+            .type-grid { gap: 12px !important; height: 140px !important; }
+            .type-grid .graph-row-item { width: 65px !important; gap: 6px !important; }
+            .type-grid .graph-bar-bg-line { width: 18px !important; }
+            .type-grid .graph-row-label-zone { font-size: 0.58rem !important; line-height: 1.2; min-height: 26px; }
+            .type-grid .graph-row-pcts { font-size: 0.7rem !important; }
+            
+            .grid-round { grid-template-columns: 28px 64px 34px 44px 32px 1fr !important; }
+            .rank-table-head { height: 32px !important; font-size: 0.52rem !important; }
+            .rank-row { height: 36px !important; }
+            .r-rank { font-size: 0.68rem !important; }
+            .r-nick { font-size: 0.68rem !important; padding-left: 0px !important; width: 62px !important; margin-right: 0px !important; }
+            .r-class { width: 34px !important; margin-right: 0px !important; }
+            .r-class-tag { font-size: 0.5rem !important; padding: 1px 2px !important; letter-spacing: 0px; }
+            .round-score-zone { width: 44px !important; font-size: 0.68rem !important; text-align: left !important; }
+            .round-score-zone:nth-of-type(5) { width: 32px !important; text-align: left !important; }
+            .r-total-score { font-size: 0.72rem !important; }
+            .total-chart-cell { width: 20px !important; font-size: 0.6rem !important; }
+            .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 12px !important; }
+            .insight-error-log { text-align: center; }
+            .rank-table-wrap { margin-bottom: 16px !important; }
+            .grid-total { grid-template-columns: 35px 85px 45px 55px 1fr !important; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-label">MATHY YURI SYSTEM</div>
+    <h1>결모의고사 <em>RANKING</em></h1>
+    <p>DAECHI S+ ACADEMY</p>
+</header>
+
+<main class="container">
+
+    <section class="main-insight-login-card">
+        <div class="insight-title-area">
+            <h2>Individual Student Insight</h2>
+        </div>
+        <div class="insight-form-grid">
+            <div class="insight-input-group">
+                <input type="text" class="insight-input" id="authName" placeholder="학생 실명" onkeydown="handleEnterKey(event)">
+            </div>
+            <div class="insight-input-group">
+                <input type="password" class="insight-input" id="authPhone" placeholder="비밀번호 (학부모 휴대폰 뒷자리)" onkeydown="handleEnterKey(event)">
+            </div>
+            <button class="btn-insight-submit" id="btnSubmit" onclick="executeVerification()">리포트 생성</button>
+        </div>
+        <div class="insight-error-wrap">
+            <div class="insight-error-log" id="authErrorLog"></div>
+        </div>
+    </section>
+
+    <div id="privateReportView" class="private-report-embedded-zone" style="display:none;"></div>
+    
+    <section id="section-public">
+        <div class="controls-wrapper">
+            <div class="round-filter">
+                <span class="filter-label">ROUND</span>
+                <button class="round-btn active" onclick="changeRoundMode('total', this)">TOTAL</button>
+                <button class="round-btn" onclick="changeRoundMode('1', this)">1회</button>
+                <button class="round-btn" onclick="changeRoundMode('2', this)">2회</button>
+                <button class="round-btn" onclick="changeRoundMode('3', this)">3회</button>
+                <button class="round-btn" onclick="changeRoundMode('4', this)">4회</button>
+                <button class="round-btn" onclick="changeRoundMode('5', this)">5회</button>
+                <button class="round-btn" onclick="changeRoundMode('6', this)">6회</button>
+                <button class="round-btn" onclick="changeRoundMode('7', this)">7회</button>
+            </div>
+            <div class="class-filter">
+                <span class="filter-label">CLASS</span>
+                <button class="class-btn active" onclick="changeClassMode('ALL', this)">ALL</button>
+                <button class="class-btn" onclick="changeClassMode('S+', this)">S+</button>
+                <button class="class-btn" onclick="changeClassMode('S', this)">S</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="average-compare-card" id="averageCompareZone">
+                <div class="avg-box">
+                    <div class="avg-label">ALL AVG</div>
+                    <div class="avg-val" id="avg-total-val">0.0점</div>
+                </div>
+                <div class="avg-divider"></div>
+                <div class="avg-box s-plus-premium">
+                    <div class="avg-label">S+ AVG</div>
+                    <div class="avg-val" id="avg-splus-val">0.0점</div>
+                </div>
+                <div class="avg-divider"></div>
+                <div class="avg-box">
+                    <div class="avg-label">S</div>
+                    <div class="avg-val" id="avg-s-val">0.0점</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="podium-row" id="podiumDisplay"></div>
+
+        <div class="rank-table-wrap">
+            <div class="rank-table-container" id="rankTableContainer"></div>
+        </div>
+
+        <div class="legend-card">
+            <div class="legend-title">학습 신호등 체계</div>
+            <div class="legend-line-group">
+                <div class="legend-box">
+                    <div class="legend-badge panel-11"></div>
+                    <div class="legend-info"><strong>확신형</strong><span>개념 숙달</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-12"><span class="cell-sign">●</span></div>
+                    <div class="legend-info"><strong>미완형</strong><span>풀이 불안정</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-13"></div>
+                    <div class="legend-info"><strong>요행형</strong><span>우연히 정답</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-21"><span class="cell-sign">●</span></div>
+                    <div class="legend-info"><strong>실수형</strong><span>수행 오류</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-22"><span class="cell-sign">▲</span></div>
+                    <div class="legend-info"><strong>혼동형</strong><span>개념 혼선</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-23"></div>
+                    <div class="legend-info"><strong>미달형</strong><span>개념 보강</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-3x"><span class="cell-sign">★</span></div>
+                    <div class="legend-info"><strong>성취형</strong><span>오답 분석완료</span></div>
+                </div>
+                <div class="legend-box">
+                    <div class="legend-badge panel-0x"></div>
+                    <div class="legend-info"><strong>미성찰</strong><span>미기록</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="analysis-card" id="analysisReportCard">
+            <div class="card-title" id="graph-title">영역별 분석</div>
+            <div class="card-sub" id="graph-sub">세부 성취도 분석 리포트 및 유형별 누적 정답률</div>
+            <div class="type-grid" id="typeStatsGrid"></div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    © 2026 MATHY YURI · DAECHI S+ ACADEMY · ALL RIGHTS RESERVED
+</footer>
+
+<script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwACWlcy9C9wfcDW9xqpWFa3yfQLwhkVVVxOQXYo46Ovjg-gC8B2BMTIOR6PfQTMA1tMg/exec";
+
+    let globalDataset = [];
+    let globalItemStats = [];
+    let stateRound = 'total';
+    let stateClass = 'ALL';
+
+    function handleEnterKey(event) {
+        if (event.key === "Enter" || event.keyCode === 13) {
+            event.preventDefault();
+            executeVerification();
+        }
+    }
+
+    function changeRoundMode(round, element) {
+        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+        element.classList.add('active');
+        stateRound = round;
+        
+        const subEl = document.getElementById('graph-sub');
+        if (round === 'total') {
+            document.getElementById('graph-title').textContent = "Performance Analysis";
+            subEl.textContent = "세부 성취도 분석 리포트 및 회차별 유형별 정답률";
+        } else {
+            document.getElementById('graph-title').textContent = `${round}회차 유형별 정답률`;
+            subEl.textContent = `${round}회차 단독 유형별 성취도 분석 결과`;
+        }
+        processAndRenderBoard();
+        
+        if (document.getElementById('privateReportView').style.display === "block") {
+            executeVerification();
+        }
+    }
+
+    function changeClassMode(cls, element) {
+        document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+        element.classList.add('active');
+        stateClass = cls;
+        processAndRenderBoard();
+    }
+
+    async function initializeSystem() {
+        const container = document.getElementById('rankTableContainer');
+        container.innerHTML = `<div style="padding: 40px; text-align: center; font-size: 0.8rem; color: var(--mid); font-family: 'DM Mono';">LOADING CENTRAL DATASET...</div>`;
+        try {
+            const response = await fetch(`${BACKEND_URL}?action=public`);
+            const result = await response.json();
+            if (result.success) {
+                globalDataset = result.data.filter(item => {
+                    const cleanName = item.name ? String(item.name).trim() : "";
+                    return cleanName !== "닉네임" && cleanName !== "이름" && cleanName !== "반" && cleanName !== "";
+                });
+                globalItemStats = result.itemAnalysis;
+                processAndRenderBoard();
+            } else {
+                renderErrorUI("SYSTEM DELAY: " + result.message);
+            }
+        } catch (error) {
+            renderErrorUI("FAILED TO CONNECT DATABASE.");
+        }
+    }
+
+    function renderErrorUI(msg) {
+        document.getElementById('rankTableContainer').innerHTML = `<div style="padding: 40px; text-align: center; color: var(--dark); font-size: 0.8rem;">⚠️ ${msg}</div>`;
+    }
+
+    function parseMetaSymbol(code) {
+        if (code === "12") return "●";
+        if (code === "21") return "●";
+        if (code === "22") return "▲";
+        if (code === "3X" || code.startsWith("3")) return "★";
+        return "";
+    }
+
+    function calculateMetaScore(items) {
+        if (!items || items.length === 0) return 0;
+        let scoreCount = 0;
+        items.forEach(code => {
+            const c = String(code).trim();
+            if (c === "11" || c === "3X" || c.startsWith("3")) {
+                scoreCount += 5; 
+            } else if (c === "12" || c === "21" || c === "22") {
+                scoreCount += 2;
+            }
+        });
+        return scoreCount;
+    }
+
+    /* [수정 반영 1] 메인 대시보드 및 유형별 정답률 세로 막대그래프 렌더링 동기화 */
+    function processAndRenderBoard() {
+        if (!globalDataset || globalDataset.length === 0) return;
+
+        let records = [...globalDataset];
+        let totalSum = 0, splusSum = 0, splainSum = 0;
+        let totalCount = 0, splusCount = 0, splainCount = 0;
+
+        globalDataset.forEach(r => {
+            let currentScore = 0;
+            if (stateRound === 'total') {
+                currentScore = r.total;
+            } else {
+                const rIdx = parseInt(stateRound) - 1;
+                currentScore = r.rounds[rIdx]?.score ?? 0;
+            }
+            
+            totalSum += currentScore;
+            totalCount++;
+            
+            if (r.class === "S+") {
+                splusSum += currentScore;
+                splusCount++;
+            } else {
+                splainSum += currentScore;
+                splainCount++;
+            }
+        });
+
+        document.getElementById('avg-total-val').textContent = totalCount > 0 ? (totalSum / totalCount).toFixed(1) + "점" : "0.0점";
+        document.getElementById('avg-splus-val').textContent = splusCount > 0 ? (splusSum / splusCount).toFixed(1) + "점" : "0.0점";
+        document.getElementById('avg-s-val').textContent = splainCount > 0 ? (splainSum / splainCount).toFixed(1) + "점" : "0.0점";
+
+        if (stateClass !== 'ALL') {
+            records = records.filter(r => r.class === stateClass);
+        }
+
+        if (stateRound === 'total') {
+            records.sort((a, b) => b.total - a.total);
+        } else {
+            const rIdx = parseInt(stateRound) - 1;
+            records.sort((a, b) => {
+                const scoreA = a.rounds[rIdx]?.score !== null && a.rounds[rIdx]?.score !== undefined ? a.rounds[rIdx].score : -1;
+                const scoreB = b.rounds[rIdx]?.score !== null && b.rounds[rIdx]?.score !== undefined ? b.rounds[rIdx].score : -1;
+                return scoreB - scoreA;
+            });
+        }
+
+        const podiumEl = document.getElementById('podiumDisplay');
+        if (records.length === 0) {
+            podiumEl.innerHTML = "";
+        } else {
+            const top3 = records.slice(0, 3);
+            const orderedPodium = [];
+            
+            const infoMap = top3.map((student, index) => {
+                let scoreVal = '—';
+                if (stateRound === 'total') {
+                    scoreVal = student.total;
+                } else {
+                    scoreVal = student.rounds[parseInt(stateRound)-1]?.score ?? '—';
+                }
+                const badgeCls = student.class === "S+" ? "s-plus" : "s-plain";
+                return { student, scoreVal, badgeCls, originalRank: index + 1 };
+            });
+
+            if (infoMap.length === 1) {
+                orderedPodium.push(infoMap[0]); 
+            } else if (infoMap.length === 2) {
+                orderedPodium.push(infoMap[1]); 
+                orderedPodium.push(infoMap[0]); 
+            } else if (infoMap.length >= 3) {
+                orderedPodium.push(infoMap[1]); 
+                orderedPodium.push(infoMap[0]); 
+                orderedPodium.push(infoMap[2]); 
+            }
+
+            const medals = { 1: "🥇", 2: "🥈", 3: "🥉" };
+
+            podiumEl.innerHTML = orderedPodium.map(item => `
+                <div class="podium-card rank-${item.originalRank}">
+                    <div class="podium-rank-mark">${medals[item.originalRank]}</div>
+                    <div class="podium-center-info">
+                        <div class="podium-nick-text">${item.student.nick}</div>
+                        <div class="podium-tag-container">
+                            <span class="podium-badge-item ${item.badgeCls}">${item.student.class}</span>
+                        </div>
+                    </div>
+                    <div class="podium-score-display"><span>${item.scoreVal}</span>점</div>
+                </div>
+            `).join('');
+        }
+
+        const container = document.getElementById('rankTableContainer');
+        let headerHtml = "";
+        let bodyHtml = "";
+
+        if (stateRound === 'total') {
+            headerHtml = `
+                <div class="rank-table-head grid-layout grid-total">
+                    <div class="head-cell">RANK</div>
+                    <div style="text-align: left; padding-left: 4px; width:110px;">NICKNAME</div>
+                    <div class="head-cell" style="width:60px; text-align:left;">CLASS</div>
+                    <div class="head-cell">AVERAGE</div>
+                    <div class="head-center-zone">
+                        <div class="total-chart-cell">1회</div>
+                        <div class="total-chart-cell">2회</div>
+                        <div class="total-chart-cell">3회</div>
+                        <div class="total-chart-cell">4회</div>
+                        <div class="total-chart-cell">5회</div>
+                        <div class="total-chart-cell">6회</div>
+                        <div class="total-chart-cell">7회</div>
+                    </div>
+                </div>
+            `;
+
+            bodyHtml = records.map((r, idx) => {
+                let roundCells = `<div class="total-chart-zone">`;
+                for (let m = 0; m < 7; m++) {
+                    const scr = r.rounds[m]?.score;
+                    roundCells += `<div class="total-chart-cell ${scr !== undefined && scr !== null ? 'has-score' : ''}">${scr ?? '—'}</div>`;
+                }
+                roundCells += `</div>`;
+
+                const rowClassStyle = r.class === "S+" ? "class-s-plus" : "class-s-plain";
+
+                return `
+                    <div class="rank-row grid-layout grid-total ${rowClassStyle}">
+                        <div class="r-rank">${idx + 1}</div>
+                        <div class="r-nick">${r.nick}</div>
+                        <div class="r-class"><span class="r-class-tag">${r.class}</span></div>
+                        <div class="r-total-score">${r.total}점</div>
+                        ${roundCells}
+                    </div>
+                `;
+            }).join('');
+
+        } else {
+            const roundIdx = parseInt(stateRound) - 1;
+            
+            headerHtml = `
+                <div class="rank-table-head extended-head grid-layout grid-round">
+                    <div class="head-cell">RANK</div>
+                    <div style="text-align: left; padding-left: 4px; width:62px;">NICKNAME</div>
+                    <div class="head-cell" style="width:34px; text-align:left;">CLASS</div>
+                    <div class="head-cell" style="width:44px; text-align:left;">SCORE</div>
+                    <div class="head-cell" style="width:32px; text-align:left;">META</div>
+                    <div class="traffic-matrix-zone">
+            `;
+            
+            for (let q = 1; q <= 20; q++) {
+                const probability = (globalItemStats && globalItemStats[q - 1]) ? globalItemStats[q - 1] : 0;
+                const parsedPct = Math.round(probability * 100);
+                
+                let cellBg = `rgba(0, 168, 84, 0.08)`;
+                let cellClr = `var(--clr-green)`;
+                if (parsedPct < 50) {
+                    cellBg = `rgba(229, 28, 35, 0.08)`;
+                    cellClr = `var(--clr-red)`;
+                } else if (parsedPct < 78) {
+                    cellBg = `rgba(255, 191, 0, 0.08)`;
+                    cellClr = `var(--gold-dk)`;
+                }
+
+                headerHtml += `
+                    <div class="head-q-box">
+                        <span class="head-q-label">${q}</span>
+                        <span class="head-q-pct" style="background-color: ${cellBg}; color: ${cellClr};">${parsedPct}%</span>
+                    </div>`;
+            }
+            headerHtml += `</div></div>`;
+
+            bodyHtml = records.map((r, idx) => {
+                const targetRoundData = r.rounds[roundIdx];
+                const finalScore = targetRoundData?.score ?? '—';
+                const rowClassStyle = r.class === "S+" ? "class-s-plus" : "class-s-plain";
+                const itemCodes = targetRoundData?.items || [];
+                
+                const metaCalculated = targetRoundData?.score !== undefined ? calculateMetaScore(itemCodes) : '—';
+
+                let trafficMatrixHtml = `<div class="traffic-matrix-zone">`;
+                for (let k = 0; k < 20; k++) {
+                    const code = itemCodes[k] ? String(itemCodes[k]).trim().toUpperCase() : "";
+                    let customStyleClass = "panel-empty";
+                    if (code) {
+                        if (["11", "12", "13", "21", "22", "23", "3X", "0X"].includes(code)) {
+                            customStyleClass = "panel-" + code.toLowerCase();
+                        } else if (code.startsWith("3")) {
+                            customStyleClass = "panel-3x";
+                        } else if (code.startsWith("0")) {
+                            customStyleClass = "panel-0x";
+                        }
+                    }
+                    const visualSymbol = parseMetaSymbol(code);
+                    trafficMatrixHtml += `<div class="traffic-cell ${customStyleClass}"><span class="cell-sign">${visualSymbol}</span></div>`;
+                }
+                trafficMatrixHtml += `</div>`;
+
+                return `
+                    <div class="rank-row grid-layout grid-round ${rowClassStyle}">
+                        <div class="r-rank">${idx + 1}</div>
+                        <div class="r-nick">${r.nick}</div>
+                        <div class="r-class"><span class="r-class-tag">${r.class}</span></div>
+                        <div class="round-score-zone"><span class="score-box">${finalScore}</span></div>
+                        <div class="round-score-zone"><span class="meta-score-box">${metaCalculated}</span></div>
+                        ${trafficMatrixHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        container.innerHTML = headerHtml + bodyHtml;
+
+        /* [세로 막대그래프 적용] 퍼포먼스 분석용 세로 막대 기둥 차트 높이 계산식 동기화 */
+        let sumA = 0, sumB = 0, sumC = 0, sumD = 0;
+        if (globalItemStats && globalItemStats.length > 0) {
+            globalItemStats.forEach((probability, i) => {
+                const parsedPct = (probability > 1) ? probability : Math.round(probability * 100);
+                if (i < 5) sumA += parsedPct;
+                else if (i < 10) sumB += parsedPct;
+                else if (i < 15) sumC += parsedPct;
+                else sumD += parsedPct;
+            });
+
+            const avgA = Math.round(sumA / 5);
+            const avgB = Math.round(sumB / 5);
+            const avgC = Math.round(sumC / 5);
+            const avgD = Math.round(sumD / 5);
+
+            const typeStatsGrid = document.getElementById('typeStatsGrid');
+            const typesMeta = [
+                { name: "여러가지 방정식", score: avgA },
+                { name: "여러가지 부등식", score: avgB },
+                { name: "경우의 수", score: avgC },
+                { name: "행렬", score: avgD }
+            ];
+
+            typeStatsGrid.innerHTML = typesMeta.map(t => `
+                <div class="graph-row-item">
+                    <div class="graph-row-pcts">${t.score}%</div>
+                    <div class="graph-bar-bg-line">
+                        <div class="graph-bar-fill-current" style="height: ${t.score}%;"></div>
+                    </div>
+                    <div class="graph-row-label-zone">${t.name}</div>
+                </div>
+            `).join('');
+        }
+    }
+
+    /* [수정 반영 2] MATHY YURI REPORT 구글 시트 AF열 코멘트 정상 추적 및 자동 업로드 매칭 */
+    async function executeVerification() {
+    const name = document.getElementById('authName').value.trim();
+    const phone = document.getElementById('authPhone').value.trim();
+    const logger = document.getElementById('authErrorLog');
+    const viewZone = document.getElementById('privateReportView');
+    const btnSubmit = document.getElementById('btnSubmit');
+    
+    if(!name || !phone) {
+        logger.style.color = "var(--clr-red)";
+        logger.textContent = "모든 필드를 기입하십시오.";
+        return;
+    }
+
+    btnSubmit.classList.add('active-gold');
+
+    try {
+        const response = await fetch(`${BACKEND_URL}?action=personal&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            logger.style.color = "var(--clr-red)";
+            logger.textContent = result.message;
+            viewZone.style.display = "none";
+            btnSubmit.classList.remove('active-gold');
+            return;
+        }
+        
+        logger.style.color = "var(--clr-green)";
+        logger.textContent = "인증 성공. 프리미엄 리포트를 로드했습니다.";
+        viewZone.style.display = "block";
+
+        // 구글 스크립트 백엔드 반환 데이터 구조 동기화
+        const studentData = result.data; 
+        const roundsArr = studentData.rounds || [];
+        
+        // 프로필용 통계 데이터
+        const averageScore = studentData.average !== undefined ? studentData.average : "—";
+        let validScores = roundsArr.map(r => r.score).filter(s => s !== null && s !== undefined && !isNaN(s));
+        let maxScore = validScores.length > 0 ? Math.max(...validScores) : "—";
+
+        // 1. 회차별 성적 변화 추이 차트 빌딩
+        let chartBarsHtml = "";
+        for (let i = 0; i < 7; i++) {
+            const rScore = roundsArr[i]?.score;
+            const displayScore = (rScore !== undefined && rScore !== null) ? rScore : "—";
+            const barHeight = (rScore !== undefined && rScore !== null) ? Math.max(rScore, 5) : 0; 
+            const isActive = (stateRound !== 'total' && parseInt(stateRound) === (i + 1)) ? "active-bar" : "";
+            
+            chartBarsHtml += `
+                <div class="chart-bar-wrapper">
+                    <div class="chart-bar-pillar ${isActive}" style="height: ${barHeight}px;">
+                        <span class="chart-bar-score">${displayScore}</span>
+                    </div>
+                    <div class="chart-bar-label">${i+1}회</div>
+                </div>
+            `;
+        }
+
+        // 2. 단원별 누적 성취도 작도 (구글 시트 연산 데이터 accurateSectionScores 100% 반영)
+        const sheetSectionScores = studentData.accurateSectionScores || [0, 0, 0, 0];
+        let calcTypes = [
+            { name: "여러가지 방정식", score: sheetSectionScores[0], avg: 62 },
+            { name: "여러가지 부등식", score: sheetSectionScores[1], avg: 58 },
+            { name: "경우의 수", score: sheetSectionScores[2], avg: 70 },
+            { name: "행렬", score: sheetSectionScores[3], avg: 52 }
+        ];
+
+        // 전역 통계 기반 평균 보정 로직
+        if (typeof globalItemStats !== 'undefined' && globalItemStats && globalItemStats.length >= 20) {
+            let sA=0, sB=0, sC=0, sD=0;
+            globalItemStats.forEach((p, idx) => {
+                let pct = Math.round(p * 100);
+                if(idx < 5) sA += pct;
+                else if(idx < 10) sB += pct;
+                else if(idx < 15) sC += pct;
+                else sD += pct;
+            });
+            calcTypes[0].avg = Math.round(sA / 5);
+            calcTypes[1].avg = Math.round(sB / 5);
+            calcTypes[2].avg = Math.round(sC / 5);
+            calcTypes[3].avg = Math.round(sD / 5);
+        }
+        
+        let typeGraphRowsHtml = `<div class="report-type-graph-wrap">`;
+        calcTypes.forEach(t => {
+            typeGraphRowsHtml += `
+                <div class="graph-row-item">
+                    <div class="graph-row-label-zone">${t.name}</div>
+                    <div class="graph-bar-bg-line">
+                        <div class="graph-bar-fill-avg" style="width: ${t.avg}%;"></div>
+                        <div class="graph-bar-fill-current" style="width: ${t.score}%;"></div>
+                    </div>
+                    <div class="graph-row-pcts">
+                        <span>${t.score}%</span> <span class="avg-label-text">/ ${t.avg}%</span>
+                    </div>
+                </div>
+            `;
+        });
+        typeGraphRowsHtml += `</div>`;
+
+        // 3. 회차별 학습 신호등 매트릭스 및 실시간 코멘트 정밀 매핑 추출
+        let cumulativeTrafficHtml = `<div class="private-traffic-container-grid">`;
+        let commentsStackHtml = "";
+
+        for (let i = 0; i < 7; i++) {
+            const roundData = roundsArr[i];
+            const roundScore = roundData?.score;
+            
+            // 미응시 회차 패스
+            if (i > 0 && (roundScore === null || roundScore === undefined)) {
+                continue; 
+            }
+            
+            const displayRoundScore = (roundScore !== undefined && roundScore !== null) ? roundScore : "—";
+            const roundItems = roundData?.items || [];
+            
+            // 구글 시트에 작성된 실제 코멘트 동적 누적 추출
+            if (roundData && roundData.comment) {
+                commentsStackHtml += `
+                    <div class="comment-row-item" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed rgba(200, 168, 75, 0.15);">
+                        <span style="font-weight:700; color:var(--gold-dk); margin-right:6px;">[결모 ${i + 1}회차 피드백]</span> ${roundData.comment}
+                    </div>
+                `;
+            }
+            
+            let dotsHtml = "";
+            let currentRoundTypeCounts = [0, 0, 0, 0];
+            
+            for (let k = 1; k <= 20; k++) {
+                const code = roundItems[k - 1] ? String(roundItems[k - 1]).trim().toUpperCase() : "";
+                
+                let panelClass = "panel-empty";
+                if (code) {
+                    if (["11","12","13","21","22","23","3X","0X"].includes(code)) {
+                        panelClass = "panel-" + code.toLowerCase();
+                    } else if (code.startsWith("3")) {
+                        panelClass = "panel-3x";
+                    } else if (code.startsWith("0")) {
+                        panelClass = "panel-0x";
+                    }
+                }
+                const symbol = typeof parseMetaSymbol === 'function' ? parseMetaSymbol(code) : code;
+                dotsHtml += `
+                    <div class="private-q-box">
+                        <span class="private-q-num">${k}</span>
+                        <div class="private-q-dot ${panelClass}"><span class="cell-sign" style="font-size:0.5rem;">${symbol}</span></div>
+                    </div>
+                `;
+            }
+
+            // 단원 성취도 비교 미니 가로바 연산
+            let vGraphBarsHtml = "";
+            calcTypes.forEach((ct) => {
+                let myRoundPct = ct.score; // 누적 성취도 연동
+                let myBarH = Math.round(myRoundPct * 0.6) + 5;
+                let avgBarH = Math.round(ct.avg * 0.6) + 5;
+                
+                vGraphBarsHtml += `
+                    <div class="vgraph-wrapper">
+                        <div class="vgraph-pillar-group">
+                            <div class="vgraph-pillar avg-p" style="height:${avgBarH}px;" title="전체평균: ${ct.avg}%">
+                                <div class="vgraph-tooltip-score" style="color:var(--mid);">${ct.avg}</div>
+                            </div>
+                            <div class="vgraph-pillar my-p" style="height:${myBarH}px;" title="내점수: ${myRoundPct}%">
+                                <div class="vgraph-tooltip-score" style="color:var(--dark);">${myRoundPct}</div>
+                            </div>
+                        </div>
+                        <div class="vgraph-label">${ct.name}</div>
+                    </div>
+                `;
+            });
+
+            cumulativeTrafficHtml += `
+                <div class="private-traffic-section">
+                    <div class="private-traffic-header">
+                        ${i + 1}회 학습 신호등 <span style="font-size:0.7rem; color:var(--mid); font-weight:400; margin-left:6px;">(원점수: ${displayRoundScore}점)</span>
+                    </div>
+                    <div class="traffic-with-vgraph-flex">
+                        <div class="traffic-matrix-left-block">
+                            <div class="private-traffic-row-row">
+                                ${dotsHtml}
+                            </div>
+                        </div>
+                        <div class="private-vgraph-right-block">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--mid); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">
+                                단원 성취도 비교 <span style="font-weight:400; color:var(--gold);">■ 평균</span> <span style="font-weight:400; color:var(--pink-main);">■ 내점수</span>
+                            </div>
+                            <div class="vgraph-container">
+                                ${vGraphBarsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        cumulativeTrafficHtml += `</div>`;
+        
+        // 코멘트가 시트에 없을 경우 기본 출력값 예외처리
+        if (!commentsStackHtml.trim()) {
+            commentsStackHtml = `
+                <div class="comment-row-item">
+                    <span style="font-weight:700; color:var(--gold-dk);">[누적 분석 피드백]</span> 구글 시트에 등록된 회차별 코멘트가 없습니다. 시트의 AF열(32번째 열) 내용을 확인해 주세요.
+                </div>
+            `;
+        }
+
+        // 4. 프리미엄 리포트 인터페이스 데이터 주입 및 화면 출력
+        viewZone.innerHTML = `
+            <div style="font-family:'Cormorant Garamond', serif; font-size:1.3rem; font-weight:600; color:var(--dark); margin-bottom:20px; border-bottom:2px solid var(--gold); padding-bottom:6px;">
+                [${studentData.name || name}] Student Insight Report
+            </div>
+            
+            <div class="premium-report-top-row">
+                <div class="premium-panel-card">
+                    <div class="panel-inside-title">학생 프로필 정보</div>
+                    <ul class="report-profile-list">
+                        <li><span class="p-lbl">이름</span><span class="p-val">${studentData.name || name}</span></li>
+                        <li><span class="p-lbl">CLASS</span><span class="p-val">${studentData.class || 'S+반'}</span></li>
+                        <li><span class="p-lbl">학교</span><span class="p-val">${studentData.school || '서천고등학교'}</span></li>
+                    </ul>
+                    <div class="profile-score-summary">
+                        <div class="p-score-box"><span>평균 성적</span><strong>${averageScore}점</strong></div>
+                        <div class="p-score-box"><span>최고 성적</span><strong>${maxScore}점</strong></div>
+                    </div>
+                </div>
+                
+                <div class="premium-panel-card">
+                    <div class="panel-inside-title">회차별 성적 변화 추이</div>
+                    <div class="report-chart-container">
+                        ${chartBarsHtml}
+                    </div>
+                </div>
+                
+                <div class="premium-panel-card">
+                    <div class="panel-inside-title">개인 단원별 누적 성취도 <span style="font-size:0.62rem; font-weight:400; color:var(--mid);">(내 점수 / 평균)</span></div>
+                    ${typeGraphRowsHtml}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                ${cumulativeTrafficHtml}
+            </div>
+
+            <div class="premium-comments-stack">
+                <strong style="color:var(--dark); font-size:0.85rem; display:block; margin-bottom:8px; border-bottom:1px solid rgba(200, 168, 75, 0.3); padding-bottom:4px;">
+                    MATHY YURI REPORT 
+                </strong>
+                ${commentsStackHtml}
+            </div>
+        `;
+        
+    } catch (e) {
+        console.error(e);
+        logger.style.color = "var(--clr-red)";
+        logger.textContent = "서버 인터페이스 통신 장애 또는 데이터 파싱 에러가 검출되었습니다.";
+        btnSubmit.classList.remove('active-gold');
+    }
+}
+
+window.addEventListener('DOMContentLoaded', initializeSystem);
+</script>
+</body>
+</html>
