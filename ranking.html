@@ -20,6 +20,10 @@
   --s-plus-text: #a67d7d;
   --s-bg: #edf2ee;
   --s-text: #7d9681;
+
+  /* 외부생 전용 스타일 */
+  --ext-bg: #f3effa;
+  --ext-text: #8a7ba2;
 }
 *{ margin:0; padding:0; box-sizing:border-box; }
 body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--main); padding:42px 20px 80px; }
@@ -32,7 +36,7 @@ body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--
 .sub{ color:var(--sub); font-size:13px; letter-spacing:0.25em; font-weight:500; text-transform:uppercase; }
 
 /* TABS */
-.rank-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; }
+.rank-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
 .tab-btn { 
   background: rgba(111, 125, 108, 0.1); border: 1px solid var(--line); padding: 10px 24px; 
   border-radius: 30px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--sub); 
@@ -65,7 +69,7 @@ body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--
 
 .rank-name { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
 
-/* [수정] 카드 내 반 정보 박스 스타일 */
+/* 카드 내 반 정보 박스 스타일 */
 .rank-class { 
   font-size: 11px; 
   margin-bottom: 12px; 
@@ -86,7 +90,7 @@ td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-s
 .row-rank { font-weight: 700; color: #a1ab9e; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
 .row-name { font-weight: 700; font-size: 16px; color: var(--main); white-space: nowrap; }
 
-/* [수정] 테이블 내 반 정보 박스 스타일 */
+/* 테이블 내 반 정보 박스 스타일 */
 .row-class-box {
   display: inline-block;
   padding: 2px 10px;
@@ -98,6 +102,7 @@ td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-s
 /* 반별 색상 조건 적용을 위한 클래스 */
 .tag-s-plus { background-color: var(--s-plus-bg); color: var(--s-plus-text); }
 .tag-s { background-color: var(--s-bg); color: var(--s-text); }
+.tag-ext { background-color: var(--ext-bg); color: var(--ext-text); }
 
 .row-score { font-weight: 700; color: var(--point); font-size: 18px; }
 
@@ -128,9 +133,10 @@ td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-s
   </div>
 
   <div class="rank-tabs">
-    <button class="tab-btn active" data-filter="ALL">TOTAL</button>
-    <button class="tab-btn" data-filter="S+">S+ CLASS</button>
-    <button class="tab-btn" data-filter="S">S CLASS</button>
+    <button class="tab-btn active" data-filter="ACADEMY">대치 S+학원</button>
+    <button class="tab-btn" data-filter="S+">S+ Class</button>
+    <button class="tab-btn" data-filter="S">S Class</button>
+    <button class="tab-btn" data-filter="TOTAL">TOTAL</button>
   </div>
 
   <div id="topSection" class="top-ranking"></div>
@@ -158,7 +164,13 @@ td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-s
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzlCHDzIVbeZld0A2E10eoQGzYZjzBjIYTDLJZlo2DOMZAPvXOvMdHYqYbXvKYf5qNuwA/exec';
 
 let allRankingData = [];
-let currentFilter = 'ALL';
+let currentFilter = 'ACADEMY'; // 기본 탭을 '대치 S+학원'으로 설정
+
+function getClassTag(className) {
+  if (className.includes('+')) return 'tag-s-plus';
+  if (className.includes('S')) return 'tag-s';
+  return 'tag-ext'; 
+}
 
 async function loadData() {
   try {
@@ -172,12 +184,10 @@ async function loadData() {
       const score = Number(row["점수"] || 0);
       if(!rawName) return;
 
-      if(rawClass.includes("S")) {
-        if(!studentMap[rawName]) {
-          studentMap[rawName] = { name: rawName, class: rawClass, totalScore: 0 };
-        }
-        studentMap[rawName].totalScore += score;
+      if(!studentMap[rawName]) {
+        studentMap[rawName] = { name: rawName, class: rawClass, totalScore: 0 };
       }
+      studentMap[rawName].totalScore += score;
     });
 
     allRankingData = Object.values(studentMap).sort((a, b) => b.totalScore - a.totalScore);
@@ -189,20 +199,29 @@ async function loadData() {
 }
 
 function renderRanking() {
-  const filtered = currentFilter === 'ALL' 
-    ? allRankingData 
-    : allRankingData.filter(s => {
-        if (currentFilter === 'S+') return s.class.includes('+');
-        if (currentFilter === 'S') return s.class.includes('S') && !s.class.includes('+');
-        return false;
-      });
+  // 💡 필터 조건문 재배치 및 분기 최적화 완료
+  const filtered = allRankingData.filter(s => {
+    if (currentFilter === 'TOTAL') {
+      return true; // 100% 전체 데이터 출력
+    }
+    if (currentFilter === 'ACADEMY') {
+      // S+, S, A, B Class 정규반만 포함 (외부생 필터링)
+      return s.class.includes('S') || s.class.includes('A') || s.class.includes('B');
+    }
+    if (currentFilter === 'S+') {
+      return s.class.includes('+');
+    }
+    if (currentFilter === 'S') {
+      return s.class.includes('S') && !s.class.includes('+');
+    }
+    return false;
+  });
 
   const topSection = document.getElementById('topSection');
   const top3 = filtered.slice(0, 3);
   
   topSection.innerHTML = top3.map((student, idx) => {
-    // 반 이름에 맞춰 클래스 부여
-    const tagCls = student.class.includes('+') ? 'tag-s-plus' : 'tag-s';
+    const tagCls = getClassTag(student.class);
     return `
       <div class="rank-card rank-${idx + 1}">
         <div class="rank-badge">${idx + 1}</div>
@@ -215,7 +234,7 @@ function renderRanking() {
 
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = filtered.map((student, idx) => {
-    const tagCls = student.class.includes('+') ? 'tag-s-plus' : 'tag-s';
+    const tagCls = getClassTag(student.class);
     return `
       <tr>
         <td class="row-rank">${idx + 1}</td>
