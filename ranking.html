@@ -16,14 +16,24 @@
   --bronze-grad: linear-gradient(135deg, #a0522d 0%, #cd7f32 50%, #a0522d 100%);
   
   /* 반별 박스 색상 정의 */
-  --s-plus-bg: #f8eeee;
+--s-plus-bg: #f8eeee;   /* 연한 로즈 오트밀 */
   --s-plus-text: #a67d7d;
-  --s-bg: #edf2ee;
+  
+  --s-bg: #edf2ee;        /* 세이지 그린 */
   --s-text: #7d9681;
+  
+  --a-plus-bg: #eef5f8;   /* 소프트 클래시 블루 */
+  --a-plus-text: #6d8d9c;
+  
+  --a-bg: #fef9e7;        /* 따뜻한 소프트 옐로우 */
+  --a-text: #96873d;
+  
+  --b-bg: #fbf0f8;        /* 세련된 라벤더 핑크 */
+  --b-text: #966b93;
 
   /* 외부생 전용 스타일 */
-  --ext-bg: #f3effa;
-  --ext-text: #8a7ba2;
+  --ext-bg: #f3effa;      /* 딥 바이올렛 그레이 */
+  --ext-text: #7a6a94;
 }
 *{ margin:0; padding:0; box-sizing:border-box; }
 body{ background:var(--bg); font-family:'Noto Sans KR', sans-serif; color:var(--main); padding:42px 20px 80px; }
@@ -102,6 +112,9 @@ td { padding: 18px; text-align: center; border-bottom: 1px solid #f2f7f1; font-s
 /* 반별 색상 조건 적용을 위한 클래스 */
 .tag-s-plus { background-color: var(--s-plus-bg); color: var(--s-plus-text); }
 .tag-s { background-color: var(--s-bg); color: var(--s-text); }
+.tag-a-plus { background-color: var(--a-plus-bg); color: var(--a-plus-text); }
+.tag-a { background-color: var(--a-bg); color: var(--a-text); }
+.tag-b { background-color: var(--b-bg); color: var(--b-text); }
 .tag-ext { background-color: var(--ext-bg); color: var(--ext-text); }
 
 .row-score { font-weight: 700; color: var(--point); font-size: 18px; }
@@ -167,8 +180,12 @@ let allRankingData = [];
 let currentFilter = 'ACADEMY'; // 기본 탭을 '대치 S+학원'으로 설정
 
 function getClassTag(className) {
-  if (className.includes('+')) return 'tag-s-plus';
+  // 💡 플러스(+)가 붙은 반명들을 최상단에서 명확하게 선행 분기합니다.
+  if (className.includes('S+')) return 'tag-s-plus';
+  if (className.includes('A+')) return 'tag-a-plus';
   if (className.includes('S')) return 'tag-s';
+  if (className.includes('A')) return 'tag-a';
+  if (className.includes('B')) return 'tag-b';
   return 'tag-ext'; 
 }
 
@@ -205,10 +222,11 @@ function renderRanking() {
       return true; // 100% 전체 데이터 출력
     }
     if (currentFilter === 'ACADEMY') {
-      // S+, S, A, B Class 정규반만 포함 (외부생 필터링)
-      return s.class.includes('S') || s.class.includes('A') || s.class.includes('B');
-    }
-    if (currentFilter === 'S+') {
+// 💡 학원 정규반 5개 명칭(S+, S, A+, A, B) 중 하나라도 포함되어 있으면 True
+  return s.class.includes('S+') || s.class.includes('S') || 
+         s.class.includes('A+') || s.class.includes('A') || 
+         s.class.includes('B');
+}    if (currentFilter === 'S+') {
       return s.class.includes('+');
     }
     if (currentFilter === 'S') {
