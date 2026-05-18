@@ -6,7 +6,7 @@
     <title>MATHY YURI System — Performance Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700&family=Cormorant+Garamond:wght=500;600;700&family=DM+Mono:wght=400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #f4f7f2; --card: #ffffff; --line: #e1e9df; --main: #233222;
@@ -66,6 +66,14 @@
         .tabs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
         .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .tab.active { background: var(--main); color: #fff; border-color: var(--main); }
+
+        /* 통계 박스 스타일 세팅 */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        .stats-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 15px 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01); }
+        .stats-label { font-size: 10px; font-weight: 700; color: var(--sub); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+        .stats-value { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: var(--main); line-height: 1.2; }
+        .stats-card.highlight .stats-value { color: var(--gold); }
 
         .table-container { background: var(--card); border-radius: 24px; border: 1px solid var(--line); padding: 20px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
@@ -138,7 +146,26 @@
         <div class="tab" onclick="switchTab('25년 6월 변형')">25년 6월 변형</div>
         <div class="tab" onclick="switchTab('24년 6월 기출')">24년 6월 기출</div>
         <div class="tab" onclick="switchTab('24년 6월 변형')">24년 6월 변형</div>
-    <div class="tab" onclick="switchTab('23년 6월 기출')">23년 6월 기출</div>
+        <div class="tab" onclick="switchTab('23년 6월 기출')">23년 6월 기출</div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-label">Total Students</div>
+            <div class="stats-value" id="stat-total-students">-</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Total Avg</div>
+            <div class="stats-value" id="stat-total-avg">-</div>
+        </div>
+        <div class="stats-card highlight">
+            <div class="stats-label">S+ Class Avg</div>
+            <div class="stats-value" id="stat-splus-avg">-</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">S Class Avg</div>
+            <div class="stats-value" id="stat-s-avg">-</div>
+        </div>
     </div>
 
     <div class="table-container">
@@ -184,8 +211,43 @@
     function render() {
         const body = document.getElementById('main-table');
         body.innerHTML = "";
+        
+        // 현재 선택된 시험에 해당하는 데이터 필터링
         const filtered = allData.filter(d => d.exam === currentTab).sort((a,b) => b.score - a.score);
         
+        // --- 통계 실시간 계산 로직 추가 ---
+        const totalCount = filtered.length;
+        document.getElementById('stat-total-students').innerText = totalCount + "명";
+
+        if (totalCount > 0) {
+            // 전체 평균
+            const totalSum = filtered.reduce((acc, curr) => acc + curr.score, 0);
+            document.getElementById('stat-total-avg').innerText = (totalSum / totalCount).toFixed(1);
+
+            // S+ 반 평균 계산 (구글 시트 '반' 열에 'S+'가 포함되어 있는지 대소문자 구분 없이 확인)
+            const splusStudents = filtered.filter(d => d.className.toUpperCase().includes('S+'));
+            if (splusStudents.length > 0) {
+                const splusSum = splusStudents.reduce((acc, curr) => acc + curr.score, 0);
+                document.getElementById('stat-splus-avg').innerText = (splusSum / splusStudents.length).toFixed(1);
+            } else {
+                document.getElementById('stat-splus-avg').innerText = "-";
+            }
+
+            // S 반 평균 계산 (S+를 제외하고 'S'만 단독으로 들어간 경우 매칭)
+            const sStudents = filtered.filter(d => d.className.toUpperCase() === 'S');
+            if (sStudents.length > 0) {
+                const sSum = sStudents.reduce((acc, curr) => acc + curr.score, 0);
+                document.getElementById('stat-s-avg').innerText = (sSum / sStudents.length).toFixed(1);
+            } else {
+                document.getElementById('stat-s-avg').innerText = "-";
+            }
+        } else {
+            document.getElementById('stat-total-avg').innerText = "-";
+            document.getElementById('stat-splus-avg').innerText = "-";
+            document.getElementById('stat-s-avg').innerText = "-";
+        }
+        // ----------------------------------
+
         filtered.forEach((s, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
