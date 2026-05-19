@@ -250,7 +250,11 @@ a{ text-decoration:none; color:inherit; }
             <div class="count-display"><span class="count-value" id="count-d4">0</span><span class="count-unit">MEMBERS</span></div>
             <div class="sq-status open">OPEN</div>
           </a>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing3-2/">
+  <div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div>
+  <div class="count-display"><span class="count-value" id="count-d6">0</span><span class="count-unit">MEMBERS</span></div>
+  <div class="sq-status open">OPEN</div>
+</a>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
@@ -322,8 +326,8 @@ a{ text-decoration:none; color:inherit; }
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbw55UMUvuqNmQq9oNFI9JTnTlD7zD6EXJdZjywHz8ya0Vlqu7Bknj0bo3PA1WshYl7QkQ/exec";
-  const COUNT_URL = "https://script.google.com/macros/s/AKfycbzYOP4YNZwOAE-QdJzPUGT0HBw90hFJ91XFRn0-VV4xzKY7ly6Ru7FlAAD_oZYJclybBw/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
+  const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
   
   window.onload = function() { 
     // 1. 데이터 가져오기 실행
@@ -357,6 +361,7 @@ a{ text-decoration:none; color:inherit; }
         if(data.d5 !== undefined) document.getElementById('count-d5').innerText = data.d5;
                 // 경우의 수 01 (d4) 데이터 연동
         if(data.d4 !== undefined) document.getElementById('count-d4').innerText = data.d4;
+if(data.d6 !== undefined) document.getElementById('count-d6').innerText = data.d6;
       }).catch(e => console.error(e));
   }
 
