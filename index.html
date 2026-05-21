@@ -263,8 +263,18 @@ a{ text-decoration:none; color:inherit; }
 <div class="subject">
         <div class="subject-name">행렬 <span>Matrices</span></div>
         <div class="square-grid">
-          <div class="square-link"><div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">02</div><div class="sq-title">Writing<br></div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing4/">
+            <div class="sq-number">01</div>
+            <div class="sq-title">Writing<br>Logic</div>
+            <div class="count-display"><span class="count-value" id="count-d7">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
+          </a>
+          <a class="square-link" href="https://mathyyuri.github.io/mathy_yuri_writing_logic/writing4-2/">
+            <div class="sq-number">02</div>
+            <div class="sq-title">Writing<br>Logic</div>
+            <div class="count-display"><span class="count-value" id="count-d8">0</span><span class="count-unit">MEMBERS</span></div>
+            <div class="sq-status open">OPEN</div>
+          </a>
           <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
@@ -327,7 +337,7 @@ a{ text-decoration:none; color:inherit; }
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
-  const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
+  const COUNT_URL = "https://script.google.com/macros/s/AKfycbzYOP4YNZwOAE-QdJzPUGT0HBw90hFJ91XFRn0-VV4xzKY7ly6Ru7FlAAD_oZYJclybBw/exec";
   
   window.onload = function() { 
     // 1. 데이터 가져오기 실행
@@ -362,6 +372,8 @@ a{ text-decoration:none; color:inherit; }
                 // 경우의 수 01 (d4) 데이터 연동
         if(data.d4 !== undefined) document.getElementById('count-d4').innerText = data.d4;
 if(data.d6 !== undefined) document.getElementById('count-d6').innerText = data.d6;
+        if(data.d7 !== undefined) document.getElementById('count-d7').innerText = data.d7;
+        if(data.d8 !== undefined) document.getElementById('count-d8').innerText = data.d8;
       }).catch(e => console.error(e));
   }
 
