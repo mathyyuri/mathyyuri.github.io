@@ -67,7 +67,6 @@
         .tab { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .tab.active { background: var(--main); color: #fff; border-color: var(--main); }
 
-        /* 통계 박스 스타일 세팅 */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
         @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
         .stats-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 15px 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01); }
@@ -109,8 +108,8 @@
             <h2>Individual Student Insight</h2>
         </div>
         <div class="login-box">
-            <input type="text" id="nameInput" placeholder="학생 실명">
-            <input type="password" id="pwInput" placeholder="비밀번호 (학부모 휴대폰 뒷자리)">
+            <input type="text" id="nameInput" placeholder="학생 실명" onkeydown="handleNameKeyDown(event)">
+            <input type="password" id="pwInput" placeholder="비밀번호 (학부모 휴대폰 뒷자리)" onkeydown="handlePwKeyDown(event)">
             <button onclick="generateReport()">리포트 생성</button>
         </div>
 
@@ -147,6 +146,7 @@
         <div class="tab" onclick="switchTab('24년 6월 기출')">24년 6월 기출</div>
         <div class="tab" onclick="switchTab('24년 6월 변형')">24년 6월 변형</div>
         <div class="tab" onclick="switchTab('23년 6월 기출')">23년 6월 기출</div>
+        <div class="tab" onclick="switchTab('23년 6월 변형')">23년 6월 변형</div>
     </div>
 
     <div class="stats-grid">
@@ -208,23 +208,35 @@
         } catch(e) { console.error(e); }
     }
 
+    // 이름 입력창에서 엔터 누르면 비밀번호 입력창으로 포커스 이동
+    function handleNameKeyDown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            document.getElementById('pwInput').focus();
+        }
+    }
+
+    // 비밀번호 입력창에서 엔터 누르면 리포트 생성 함수 실행
+    function handlePwKeyDown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            generateReport();
+        }
+    }
+
     function render() {
         const body = document.getElementById('main-table');
         body.innerHTML = "";
         
-        // 현재 선택된 시험에 해당하는 데이터 필터링
         const filtered = allData.filter(d => d.exam === currentTab).sort((a,b) => b.score - a.score);
         
-        // --- 통계 실시간 계산 로직 추가 ---
         const totalCount = filtered.length;
         document.getElementById('stat-total-students').innerText = totalCount + "명";
 
         if (totalCount > 0) {
-            // 전체 평균
             const totalSum = filtered.reduce((acc, curr) => acc + curr.score, 0);
             document.getElementById('stat-total-avg').innerText = (totalSum / totalCount).toFixed(1);
 
-            // S+ 반 평균 계산 (구글 시트 '반' 열에 'S+'가 포함되어 있는지 대소문자 구분 없이 확인)
             const splusStudents = filtered.filter(d => d.className.toUpperCase().includes('S+'));
             if (splusStudents.length > 0) {
                 const splusSum = splusStudents.reduce((acc, curr) => acc + curr.score, 0);
@@ -233,7 +245,6 @@
                 document.getElementById('stat-splus-avg').innerText = "-";
             }
 
-            // S 반 평균 계산 (S+를 제외하고 'S'만 단독으로 들어간 경우 매칭)
             const sStudents = filtered.filter(d => d.className.toUpperCase() === 'S');
             if (sStudents.length > 0) {
                 const sSum = sStudents.reduce((acc, curr) => acc + curr.score, 0);
@@ -246,7 +257,6 @@
             document.getElementById('stat-splus-avg').innerText = "-";
             document.getElementById('stat-s-avg').innerText = "-";
         }
-        // ----------------------------------
 
         filtered.forEach((s, idx) => {
             const tr = document.createElement('tr');
