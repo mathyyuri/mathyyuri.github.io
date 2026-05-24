@@ -866,7 +866,9 @@
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwACWlcy9C9wfcDW9xqpWFa3yfQLwhkVVVxOQXYo46Ovjg-gC8B2BMTIOR6PfQTMA1tMg/exec";
 
     let globalDataset = [];
-    let globalItemStats = [];
+    let globalItemStats = [];       // 전 회차 통합 문항별 정답률 (20개)
+    let globalRoundItemStats = {};      // 회차별 단원별 정답률 { 1:[A,B,C,D], ... }
+    let globalRoundItemAnalysis = {};   // 회차별 문항별 정답률 { 1:[q1~q20], ... } (신호등 헤더용)
     let stateRound = 'total';
     let stateClass = 'ALL';
 
@@ -915,7 +917,9 @@
                     const cleanName = item.name ? String(item.name).trim() : "";
                     return cleanName !== "닉네임" && cleanName !== "이름" && cleanName !== "반" && cleanName !== "";
                 });
-                globalItemStats = result.itemAnalysis;
+                globalItemStats = result.typeAnalysis || [];         // [A,B,C,D] 단원별 누적
+                globalRoundItemStats = result.roundTypeAnalysis || {};  // {1:[A,B,C,D],...} 회차별 단원
+                globalRoundItemAnalysis = result.roundItemAnalysis || {}; // {1:[q1~q20],...} 문항별(헤더용)
                 processAndRenderBoard();
             } else {
                 renderErrorUI("SYSTEM DELAY: " + result.message);
@@ -1101,8 +1105,12 @@
                     <div class="traffic-matrix-zone">
             `;
             
+            // 헤더 문항 정답률: 특정 회차 선택 시 해당 회차 데이터, total 이면 첫 유효 회차 or 평균
+            const headerItemStats = (stateRound !== 'total' && globalRoundItemAnalysis[parseInt(stateRound)])
+                ? globalRoundItemAnalysis[parseInt(stateRound)]
+                : (globalRoundItemAnalysis[1] || []);
             for (let q = 1; q <= 20; q++) {
-                const probability = (globalItemStats && globalItemStats[q - 1]) ? globalItemStats[q - 1] : 0;
+                const probability = headerItemStats[q - 1] || 0;
                 const parsedPct = Math.round(probability * 100);
                 
                 let cellBg = `rgba(0, 168, 84, 0.08)`;
@@ -1164,30 +1172,28 @@
 
         container.innerHTML = headerHtml + bodyHtml;
 
-        /* [세로 막대그래프 적용] 퍼포먼스 분석용 세로 막대 기둥 차트 높이 계산식 동기화 */
-        let sumA = 0, sumB = 0, sumC = 0, sumD = 0;
-        if (globalItemStats && globalItemStats.length > 0) {
-            globalItemStats.forEach((probability, i) => {
-                const parsedPct = (probability > 1) ? probability : Math.round(probability * 100);
-                if (i < 5) sumA += parsedPct;
-                else if (i < 10) sumB += parsedPct;
-                else if (i < 15) sumC += parsedPct;
-                else sumD += parsedPct;
+        /* [세로 막대그래프] stateRound 에 따라 회차별 or 전체 누적 데이터 선택 */
+        (function renderTypeStatsGrid() {
+            // GAS에서 이미 [A%, B%, C%, D%] 4개짜리로 단원별 정답률을 계산해서 내려줌
+            let sourceStats; // [0~1 소수 × 4]
+            if (stateRound === 'total') {
+                sourceStats = globalItemStats; // typeAnalysis: [전체A, 전체B, 전체C, 전체D]
+            } else {
+                const rKey = parseInt(stateRound);
+                sourceStats = (globalRoundItemStats && globalRoundItemStats[rKey]) || [];
+            }
+
+            if (!sourceStats || sourceStats.length === 0) return;
+
+            const typeNames = ["여러가지 방정식", "여러가지 부등식", "경우의 수", "행렬"];
+            const typesMeta = typeNames.map(function(name, idx) {
+                const raw = sourceStats[idx] !== undefined ? sourceStats[idx] : 0;
+                // GAS가 0~1 소수로 반환하므로 ×100 처리
+                const score = raw > 1 ? Math.round(raw) : Math.round(raw * 100);
+                return { name: name, score: score };
             });
 
-            const avgA = Math.round(sumA / 5);
-            const avgB = Math.round(sumB / 5);
-            const avgC = Math.round(sumC / 5);
-            const avgD = Math.round(sumD / 5);
-
             const typeStatsGrid = document.getElementById('typeStatsGrid');
-            const typesMeta = [
-                { name: "여러가지 방정식", score: avgA },
-                { name: "여러가지 부등식", score: avgB },
-                { name: "경우의 수", score: avgC },
-                { name: "행렬", score: avgD }
-            ];
-
             typeStatsGrid.innerHTML = typesMeta.map(t => `
                 <div class="graph-row-item">
                     <div class="graph-row-pcts">${t.score}%</div>
@@ -1197,7 +1203,7 @@
                     <div class="graph-row-label-zone">${t.name}</div>
                 </div>
             `).join('');
-        }
+        })();
     }
 
     /* [수정 반영 2] MATHY YURI REPORT 구글 시트 AF열 코멘트 정상 추적 및 자동 업로드 매칭 */
@@ -1261,28 +1267,17 @@
 
         // 2. 단원별 누적 성취도 작도 (구글 시트 연산 데이터 accurateSectionScores 100% 반영)
         const sheetSectionScores = studentData.accurateSectionScores || [0, 0, 0, 0];
-        let calcTypes = [
-            { name: "여러가지 방정식", score: sheetSectionScores[0], avg: 62 },
-            { name: "여러가지 부등식", score: sheetSectionScores[1], avg: 58 },
-            { name: "경우의 수", score: sheetSectionScores[2], avg: 70 },
-            { name: "행렬", score: sheetSectionScores[3], avg: 52 }
-        ];
+        // globalItemStats 는 이제 typeAnalysis: [A%, B%, C%, D%] 4개짜리 (0~1 소수)
+        const globalAvgs = (globalItemStats && globalItemStats.length === 4)
+            ? globalItemStats.map(p => p > 1 ? Math.round(p) : Math.round(p * 100))
+            : [0, 0, 0, 0];
 
-        // 전역 통계 기반 평균 보정 로직
-        if (typeof globalItemStats !== 'undefined' && globalItemStats && globalItemStats.length >= 20) {
-            let sA=0, sB=0, sC=0, sD=0;
-            globalItemStats.forEach((p, idx) => {
-                let pct = Math.round(p * 100);
-                if(idx < 5) sA += pct;
-                else if(idx < 10) sB += pct;
-                else if(idx < 15) sC += pct;
-                else sD += pct;
-            });
-            calcTypes[0].avg = Math.round(sA / 5);
-            calcTypes[1].avg = Math.round(sB / 5);
-            calcTypes[2].avg = Math.round(sC / 5);
-            calcTypes[3].avg = Math.round(sD / 5);
-        }
+        let calcTypes = [
+            { name: "여러가지 방정식", score: sheetSectionScores[0], avg: globalAvgs[0] },
+            { name: "여러가지 부등식", score: sheetSectionScores[1], avg: globalAvgs[1] },
+            { name: "경우의 수",       score: sheetSectionScores[2], avg: globalAvgs[2] },
+            { name: "행렬",            score: sheetSectionScores[3], avg: globalAvgs[3] }
+        ];
         
         let typeGraphRowsHtml = `<div class="report-type-graph-wrap">`;
         calcTypes.forEach(t => {
