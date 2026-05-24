@@ -1301,6 +1301,12 @@
         });
         typeGraphRowsHtml += `</div>`;
 
+        // 단원 유형 매핑 (문항 번호 → 유형 인덱스)
+        // 각 회차 items 배열은 20개. 유형 배치는 회차별로 다를 수 있으나
+        // 백엔드가 roundData.itemTypes 를 보내주지 않으면 기본 배치(A×5 B×5 C×5 D×5)로 fallback
+        const TYPE_NAMES = ["여러가지 방정식", "여러가지 부등식", "경우의 수", "행렬"];
+        const DEFAULT_ITEM_TYPES = [0,0,0,0,0, 1,1,1,1,1, 2,2,2,2,2, 3,3,3,3,3]; // 기본 배치
+
         // 3. 회차별 학습 신호등 매트릭스 및 실시간 코멘트 정밀 매핑 추출
         let cumulativeTrafficHtml = `<div class="private-traffic-container-grid">`;
         let commentsStackHtml = "";
@@ -1327,7 +1333,30 @@
             }
             
             let dotsHtml = "";
-            let currentRoundTypeCounts = [0, 0, 0, 0];
+
+            // ── 이 회차의 문항별 유형 배치 결정 ──────────────────────────────
+            // 백엔드가 roundData.itemTypes 를 줄 경우 우선 사용, 아니면 기본 배치
+            const itemTypes = (roundData?.itemTypes && roundData.itemTypes.length === 20)
+                ? roundData.itemTypes
+                : DEFAULT_ITEM_TYPES;
+
+            // ── 이 회차 단원별 정답률 계산 (프론트에서 직접 연산) ────────────
+            // sectionScores 를 백엔드가 이미 주면 그걸 쓰고, 없으면 items 에서 직접 계산
+            let thisRoundSectionScores;
+            if (roundData?.sectionScores && roundData.sectionScores.length === 4) {
+                thisRoundSectionScores = roundData.sectionScores;
+            } else {
+                // items 에서 직접 계산
+                const tc = [0,0,0,0], tt = [0,0,0,0];
+                for (let k = 0; k < 20; k++) {
+                    const code = roundItems[k] ? String(roundItems[k]).trim().toUpperCase() : "";
+                    if (!code || code === "0X") continue;
+                    const tIdx = itemTypes[k] ?? 0;
+                    tt[tIdx]++;
+                    if (["11","12","13"].includes(code)) tc[tIdx]++;
+                }
+                thisRoundSectionScores = tt.map((t, idx) => t > 0 ? Math.round((tc[idx]/t)*100) : null);
+            }
             
             for (let k = 1; k <= 20; k++) {
                 const code = roundItems[k - 1] ? String(roundItems[k - 1]).trim().toUpperCase() : "";
@@ -1351,24 +1380,27 @@
                 `;
             }
 
-            // 단원 성취도 비교 미니 가로바 연산
+            // ── 회차별 단원 성취도 세로 막대 ─────────────────────────────────
             let vGraphBarsHtml = "";
-            calcTypes.forEach((ct) => {
-                let myRoundPct = ct.score; // 누적 성취도 연동
-                let myBarH = Math.round(myRoundPct * 0.6) + 5;
-                let avgBarH = Math.round(ct.avg * 0.6) + 5;
-                
+            TYPE_NAMES.forEach((tName, tIdx) => {
+                const myPct  = thisRoundSectionScores[tIdx];     // 이 회차 내 점수 (null = 문항 없음)
+                const avgPct = calcTypes[tIdx]?.avg ?? 0;         // 전체 평균
+
+                const myBarH  = myPct  !== null ? Math.round(myPct  * 0.6) + 5 : 0;
+                const avgBarH = Math.round(avgPct * 0.6) + 5;
+                const myLabel = myPct !== null ? `${myPct}%` : `—`;
+
                 vGraphBarsHtml += `
                     <div class="vgraph-wrapper">
                         <div class="vgraph-pillar-group">
-                            <div class="vgraph-pillar avg-p" style="height:${avgBarH}px;" title="전체평균: ${ct.avg}%">
-                                <div class="vgraph-tooltip-score" style="color:var(--mid);">${ct.avg}</div>
+                            <div class="vgraph-pillar avg-p" style="height:${avgBarH}px;" title="전체평균: ${avgPct}%">
+                                <div class="vgraph-tooltip-score" style="color:var(--mid);">${avgPct}</div>
                             </div>
-                            <div class="vgraph-pillar my-p" style="height:${myBarH}px;" title="내점수: ${myRoundPct}%">
-                                <div class="vgraph-tooltip-score" style="color:var(--dark);">${myRoundPct}</div>
+                            <div class="vgraph-pillar my-p" style="height:${myBarH}px;" title="내점수: ${myLabel}">
+                                <div class="vgraph-tooltip-score" style="color:var(--dark);">${myLabel}</div>
                             </div>
                         </div>
-                        <div class="vgraph-label">${ct.name}</div>
+                        <div class="vgraph-label">${tName}</div>
                     </div>
                 `;
             });
@@ -1386,7 +1418,7 @@
                         </div>
                         <div class="private-vgraph-right-block">
                             <div style="font-size:0.65rem; font-weight:700; color:var(--mid); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">
-                                단원 성취도 비교 <span style="font-weight:400; color:var(--gold);">■ 평균</span> <span style="font-weight:400; color:var(--pink-main);">■ 내점수</span>
+                                ${i + 1}회차 단원별 성취도 <span style="font-weight:400; color:var(--gold);">■ 평균</span> <span style="font-weight:400; color:var(--pink-main);">■ 내점수</span>
                             </div>
                             <div class="vgraph-container">
                                 ${vGraphBarsHtml}
@@ -1435,7 +1467,7 @@
                 </div>
                 
                 <div class="premium-panel-card">
-                    <div class="panel-inside-title">개인 단원별 누적 성취도 <span style="font-size:0.62rem; font-weight:400; color:var(--mid);">(내 점수 / 평균)</span></div>
+                    <div class="panel-inside-title">단원별 <em style="color:var(--gold-dk);font-style:normal;">종합</em> 누적 성취도 <span style="font-size:0.62rem; font-weight:400; color:var(--mid);">(전 회차 합산 · 내 점수 / 평균)</span></div>
                     ${typeGraphRowsHtml}
                 </div>
             </div>
