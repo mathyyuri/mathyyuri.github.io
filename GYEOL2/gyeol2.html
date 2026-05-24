@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mathy Yuri | S+ LOGIC MASTER</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], processEscapes: true },
+            options: { processHtmlClass: 'tex2jax_process', enableMenu: false },
+            chtml: { scale: 1.0 },
+            menuSettings: { touchMenu: false, contextMenu: false }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root { --primary: #00796b; --primary-dark: #004d40; --accent: #c5a059; --bg: #f1f8e9; --card-bg: #ffffff; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
+        .container { width: 100%; max-width: 900px; margin: 0 auto; }
+        .header h1 { text-align: center; font-size: 1.5rem; color: var(--primary-dark); font-weight: 900; margin-bottom: 20px; }
+        .profile-area { text-align: center; margin-bottom: 20px; }
+        .profile-img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); object-fit: cover; }
+        .card { background: var(--card-bg); padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); border: 1px solid #e0f2f1; margin-bottom: 20px; }
+        .input-group { width: 100%; max-width: 380px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        input, select { height: 50px; padding: 0 15px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; background: #f0f4f9; }
+        .guide-text { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .problem-display { background: #fffde7; border-left: 6px solid var(--accent); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .problem-num { color: var(--primary); font-weight: 900; font-size: 1rem; margin-bottom: 5px; }
+        .problem-text { font-size: 1.1rem; font-weight: 600; line-height: 1.8; word-break: break-word; 
+    overflow-wrap: break-word; 
+}
+        .q-image { display: block; margin: 15px auto 5px; max-width: 100%; height: auto; border-radius: 8px; }
+        .shuffle-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; min-height: 100px; }
+        .step-item { background: #fff; border: 1px solid #e0e0e0; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; cursor: grab; user-select: none; transition: background 0.2s; }
+        .step-item.dragging { opacity: 0.5; border: 2px dashed var(--accent); background: #fffde7; cursor: grabbing; }
+        .feedback-section { display: none; margin-top: 20px; }
+        .ox-display { font-size: 1.8rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 15px; letter-spacing: 5px; }
+        .logic-box { padding: 18px; border-radius: 12px; font-size: 0.95rem; line-height: 2.2; margin-bottom: 15px; border-left: 5px solid var(--primary);word-break: break-word; 
+    overflow: hidden; 
+}
+        .box-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; }
+        .master-box { background: #e0f2f1; border-color: var(--primary); }
+        .my-box { background: #f9f9f9; border-color: #ccc; }
+        .primary-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 1.1rem; }
+        .txt { flex: 1; line-height: 1.6; }
+    </style>
+</head>
+<body class="tex2jax_process">
+<div class="container">
+    <div class="header"><h1>S+ LOGIC MASTER</h1></div>
+    <div id="loginStep" class="card">
+        <div class="profile-area">
+            <img src="profile1.png" class="profile-img" alt="Yuri Teacher">
+            <h2 style="margin-top:15px; color:var(--primary-dark); font-weight:900;">결 모의고사 2회 연습</h2>
+        </div>
+        <div class="input-group">
+            <input type="text" id="userName" placeholder="이름을 입력하세요">
+            <select id="userClass"><option value="S+반">S+반</option><option value="S반">S반</option><option value="외부생">외부생</option></select>
+            <button class="primary-btn" onclick="startQuiz()">챌린지 시작 ✨</button>
+        </div>
+    </div>
+    <div id="quizArea" style="display:none;">
+        <div class="problem-display"><div id="displayNum" class="problem-num"></div><div id="displayText" class="problem-text"></div></div>
+        <div class="guide-text"><span>🖱️ 웹: 드래그</span> / <span>📱 모바일: 0.5초 꾹 눌러서 이동</span></div>
+        <div id="shuffleList" class="shuffle-list"></div>
+        <button id="checkBtn" class="primary-btn" onclick="checkAnswer()">정답 확인하기 ➔</button>
+        <div id="feedbackSection" class="feedback-section">
+            <div id="currentOX" class="ox-display"></div>
+            <div class="logic-box master-box"><div class="box-title">🏆 Master's Logic (정답)</div><div id="masterLogic"></div></div>
+            <div class="logic-box my-box"><div class="box-title">📝 My Logic (제출)</div><div id="myLogic"></div></div>
+            <button id="nextBtn" class="primary-btn" style="background:var(--primary-dark);" onclick="goToNext()">다음 문제로 이동 ➔</button>
+        </div>
+    </div>
+    <div id="finalReport" class="card" style="display:none; text-align:center;">
+        <div id="totalOX" class="ox-display" style="font-size: 2.2rem; color: var(--accent); margin-bottom: 20px;"></div>
+        <p style="font-weight: 800; color: var(--primary-dark);">모든 챌린지를 완료했습니다!</p>
+        <button class="primary-btn" style="margin-top:20px;" onclick="location.reload()">처음으로 돌아가기</button>
+    </div>
+</div>
+<script>
+    // 구글 앱스 스크립트 배포 후 받은 URL을 아래 큰따옴표 안에 넣어주세요.
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzb__e_hDXbuSQoc13_ntXGQbhLHGNtmvMLXYKVNBwWbnN6XKAfz9bmOZEGvCgP9US8/exec";
+
+   const quizData = [
+        {
+           num: "서술형 1번",
+        text: "\\(x\\)에 대한 방정식 \\(x^3 + (2a+6)x^2 + 11ax - 2a^2 = 0\\)이 서로 다른 세 실근을 갖도록 하는 음의 정수 \\(a\\)의 개수를 구하시오.",
+        order: [
+            "방정식 $x^3 + (2a+6)x^2 + 11ax - 2a^2 = 0$에 $x=-2a$를 대입하면, <br>$\\begin{aligned} &(-2a)^3 + (2a+6)(-2a)^2 + 11a(-2a) - 2a^2 \\\\ &= -8a^3 + (2a+6)(4a^2) - 22a^2 - 2a^2 \\\\ &= -8a^3 + 8a^3 + 24a^2 - 24a^2 = 0 \\end{aligned}$ 이 성립한다.",
+        "따라서 $(x+2a)$를 인수로 가지며, 조립제법을 통해 방정식을 $(x+2a)(x^2 + 6x - a) = 0$으로 인수분해한다.",
+        "서로 다른 세 실근을 가지려면 이차방정식 $x^2 + 6x - a = 0$이 서로 다른 두 실근을 가져야 한다.",
+        "판별식 $\\dfrac{D}{4} = 3^2 - (-a) = 9+a > 0$ 이므로 $a > -9$ 이다.",
+        "단, 이차방정식이 $x=-2a$의 근을 가지면 삼차방정식이 중근이 되므로 $(-2a)^2 + 6(-2a) - a = 4a^2 - 13a \\neq 0$ , $a(4a-13)\\neq 0$이다.",
+        "$-9 < a < 0$ 인 정수 $a$ 중 $a=0$과 $a=\\dfrac{13}{4}$를 제외한 음의 정수 $a$를 구한다.",
+       "따라서 구하는 음의 정수 $a$는 $-8, -7, -6, -5, -4, -3, -2, -1$ 이며, 개수는 $8$개이다."
+    ]
+        },
+        {
+            num: "서술형 2번",
+    text: "부등식 \\(|2x + 4| \\ge |x - 8|\\) 의 해가 \\(x \\le a\\) 또는 \\(x \\ge b\\) 일 때, \\(ab\\)의 값을 구하시오.",
+    order: [
+        "절댓값 안의 식을 0으로 만드는 \\(x=-2\\)와 \\(x=8\\)을 기준으로 구간을 나눈다.",
+        "첫 번째, \\(x < -2\\)일 때:.",
+        " \\(-(2x+4) \\ge -(x-8)\\) 이므로 \\(-2x-4 \\ge -x+8\\), 즉 \\(x \\le -12\\)이다.",
+        "두 번째, \\(-2 \\le x < 8\\)일 때:",
+        " \\(2x+4 \\ge -(x-8)\\) 이므로 \\(3x \\ge 4\\), 즉 \\(x \\ge \\dfrac{4}{3}\\)이다. ",
+        " 따라서 구간 내의 해는 \\(\\dfrac{4}{3} \\le x < 8\\)이다.",
+        "세 번째, \\(x \\ge 8\\)일 때:",
+        " \\(2x+4 \\ge x-8\\) 이므로 \\(x \\ge -12\\)이다.",
+        " 따라서 구간 내의 해는 모두 만족하므로 \\(x \\ge 8\\)이다.",
+        "세 경우의 합집합을 구하면",
+        " \\(x \\le -12\\) 또는 \\(x \\ge \\dfrac{4}{3}\\)이므로, \\(a=-12, b=\\dfrac{4}{3}\\)이고 \\(ab = -16\\)이다."
+    ]
+        },
+        {
+           num: "서술형 3번",
+    text: "빗변의 길이가 $c$ 이고 둘레의 길이가 $12$)인 직각삼각형$ABC$가 있다. 직각삼각형의 빗변 $c$의 범위를 구하시오.<br><img src='triangle.png' class='q-image' alt='직각삼각형'>",
+    order: [
+        "$BC=a, CA=b$ 라 하면 둘레가 $12$이므로  $a+b = 12-c$ 이다.",
+        "직각삼각형이므로 $a^2+b^2=c^2$이고,  $(a+b)^{2}-2ab=c^{2}$ 에 대입하면  $ab = 72-12c $를 얻는다.",
+        "\\(a, b\\)의 합 곱을 이용하여 \\(a, b \\)를 두 실근으로 갖는 \\(x\\)에 대한 이차방정식은 \\(x^2 - (12-c)x + (72-12c) = 0\\)이다.",
+        "이차방정식이 실근을 가져야 하므로 판별식 \\(D \\ge 0\\) 이어야 하므로 \\(D = (12-c)^2 - 4(72-12c) = c^2 + 24c - 144 \\ge 0\\)이다.",
+        "이를 풀면 \\(c \\ge 12(\\sqrt{2}-1)\\) (단, \\(c>0\\))을 얻는다.",
+        "이 때 두 근 \\(a, b\\)가 양수이려면 합 \\(12-c > 0\\)과 곱 \\(72-12c > 0\\)을 만족해야 하므로 \\(c < 6\\)이다.",
+        "따라서 빗변의 길이 \\(c\\)의 범위는 \\(12(\\sqrt{2}-1) \\le c < 6\\)이다."
+    ]
+        },
+        {
+          num: "서술형 4번",
+    text: "행렬 \\(A = \\begin{pmatrix} -1 & 0 \\\\ 3 & 1 \\end{pmatrix}, B = \\begin{pmatrix} 1 & 1 \\\\ 0 & -1 \\end{pmatrix}\\)에 대하여 \\((AB)^{39} - B^{39}A^{39}\\)의 모든 성분의 합을 구하시오.",
+    order: [
+        "1) 식의 앞부분인 \\((AB)^{39}\\)를 구하기 위해 먼저 \\(AB = \\begin{pmatrix} -1 & 0 \\\\ 3 & 1 \\end{pmatrix} \\begin{pmatrix} 1 & 1 \\\\ 0 & -1 \\end{pmatrix} = \\begin{pmatrix} -1 & -1 \\\\ 3 & 2 \\end{pmatrix}\\)를 계산한다.", 
+        "계속하여 \\((AB)^2 = (AB)(AB) = \\begin{pmatrix} -2 & -1 \\\\ 3 & 1 \\end{pmatrix}\\)와 \\((AB)^3 = (AB)^2(AB) = \\begin{pmatrix} -1 & 0 \\\\  0 & -1 \\end{pmatrix} = -E\\)를 이용하여 주기성을 확인한다.",
+         "즉, \\((AB)^{39} = \\{(AB)^3\\}^{13} = (-E)^{13} = -E\\)이다.", 
+        "2) 식의 뒷부분을 계산하기 위해 행렬의 거듭제곱 성질에 따라 \\(A^2 = E, B^2 = E\\)를 확인한다.",
+        "위 결과에 의해 홀수 차수 거듭제곱인 \\(A^{39}=A, B^{39}=B\\)가 성립한다.",
+        "즉,  \\(B^{39}A^{39}\\)는 행렬의 곱셈 순서에 따라 \\(BA = \\begin{pmatrix} 1 & 1 \\\\ 0 & -1 \\end{pmatrix} \\begin{pmatrix} -1 & 0 \\\\ 3 & 1 \\end{pmatrix} = \\begin{pmatrix} 2 & 1 \\\\ -3 & -1 \\end{pmatrix}\\)이다.",
+        "최종식 \\((AB)^{39} - B^{39}A^{39}=-E - BA\\)를 연산하여 모든 성분의 합 \\(-1\\)을 얻는다."
+    ]
+        }
+    ];
+
+    let currentIdx = 0, allResults = [], draggingItem = null, pressTimer = null;
+
+    function startQuiz() {
+        if(!document.getElementById('userName').value.trim()) return alert("이름을 입력하세요!");
+        document.getElementById('loginStep').style.display = 'none';
+        document.getElementById('quizArea').style.display = 'block';
+        loadProblem();
+    }
+
+    function loadProblem() {
+        const q = quizData[currentIdx];
+        document.getElementById('displayNum').innerText = q.num;
+        document.getElementById('displayText').innerHTML = q.text;
+        document.getElementById('shuffleList').style.display = 'flex';
+        document.getElementById('checkBtn').style.display = 'block';
+        document.getElementById('feedbackSection').style.display = 'none';
+        const list = document.getElementById('shuffleList');
+        list.innerHTML = "";
+        [...q.order].sort(() => Math.random() - 0.5).forEach(text => {
+            const item = document.createElement('div');
+            item.className = 'step-item'; item.draggable = true; item.setAttribute('data-ans', text);
+            item.innerHTML = `<span style="margin-right:12px; color:#ddd;">☰</span><span class="txt">${text}</span>`;
+            item.addEventListener('dragstart', () => { draggingItem = item; item.classList.add('dragging'); });
+            item.addEventListener('dragend', () => { draggingItem = null; item.classList.remove('dragging'); });
+            item.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => { draggingItem = item; item.classList.add('dragging'); if(window.navigator.vibrate) window.navigator.vibrate(40); }, 500); }, {passive: true});
+            item.addEventListener('touchend', () => { clearTimeout(pressTimer); draggingItem = null; item.classList.remove('dragging'); });
+            list.appendChild(item);
+        });
+        list.addEventListener('dragover', (e) => { e.preventDefault(); const afterElement = getDragAfterElement(list, e.clientY); if (afterElement == null) list.appendChild(draggingItem); else list.insertBefore(draggingItem, afterElement); });
+        list.addEventListener('touchmove', (e) => { if(!draggingItem) return; e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.step-item'); if(target && target !== draggingItem) { const rect = target.getBoundingClientRect(); const next = (touch.clientY - rect.top) / (rect.bottom - rect.top) > 0.5; list.insertBefore(draggingItem, next ? target.nextSibling : target); } }, {passive: false});
+        MathJax.typesetPromise();
+    }
+
+    function getDragAfterElement(container, y) { const draggableElements = [...container.querySelectorAll('.step-item:not(.dragging)')]; return draggableElements.reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2; if (offset < 0 && offset > closest.offset) return { offset: offset, element: child }; else return closest; }, { offset: Number.NEGATIVE_INFINITY }).element; }
+
+    function checkAnswer() {
+        const currentItems = [...document.querySelectorAll('.step-item')].map(el => el.getAttribute('data-ans'));
+        const correct = quizData[currentIdx].order;
+        let ox = [], isCorrect = true;
+        for(let i=0; i<correct.length; i++) { if(isCorrect && currentItems[i] === correct[i]) ox.push("O"); else { ox.push("X"); isCorrect = false; } }
+        allResults[currentIdx] = isCorrect ? "O" : "X";
+        document.getElementById('shuffleList').style.display = 'none';
+        document.getElementById('checkBtn').style.display = 'none';
+        document.getElementById('feedbackSection').style.display = 'block';
+        document.getElementById('currentOX').innerText = ox.join(" ");
+        document.getElementById('masterLogic').innerHTML = correct.map((t, i) => `${i+1}. ${t}`).join("<br>");
+        document.getElementById('myLogic').innerHTML = currentItems.map((t, i) => `${i+1}. ${t}`).join("<br>");
+        if(currentIdx === quizData.length - 1) document.getElementById('nextBtn').innerText = "최종 결과 확인하기 ➔";
+        MathJax.typesetPromise();
+    }
+
+    function goToNext() { 
+        if(currentIdx < quizData.length - 1) { 
+            currentIdx++; 
+            loadProblem(); 
+            window.scrollTo(0,0); 
+        } else { 
+            // 마지막 결과 페이지로 넘어갈 때 구글 시트로 데이터 전송
+            sendDataToSheet();
+            document.getElementById('quizArea').style.display = 'none'; 
+            document.getElementById('finalReport').style.display = 'block'; 
+            document.getElementById('totalOX').innerText = allResults.join(" "); 
+        } 
+    }
+
+    // 구글 시트 전송 함수 추가
+    function sendDataToSheet() {
+        if (!SCRIPT_URL || SCRIPT_URL.includes("URL_붙여넣기")) return;
+        
+        const payload = {
+            name: document.getElementById('userName').value,
+            userClass: document.getElementById('userClass').value,
+examTitle: "결 모의고사 2회", // 이 줄이 추가되었습니다.
+            q1: allResults[0] || 'X',
+            q2: allResults[1] || 'X',
+            q3: allResults[2] || 'X',
+            q4: allResults[3] || 'X',
+            total: allResults.filter(r => r === 'O').length + ' / ' + quizData.length
+        };
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(err => console.error("Error sending data:", err));
+    }
+</script>
+</body>
+</html>
