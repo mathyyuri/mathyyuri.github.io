@@ -7,241 +7,329 @@
     <script>
         window.MathJax = {
             tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                inlineMath: [['\\(', '\\)'], ['\\\\(', '\\\\)']],
+                displayMath: [['\\[', '\\]'], ['\\\\[', '\\\\]']],
                 processEscapes: true
             },
-            options: { enableMenu: false }
+            options: { 
+                enableMenu: false
+            },
+            chtml: {
+                displayAlign: 'center',
+                displayIndent: '0'
+            }
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Montserrat:wght@300;700;800&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght=1,600&family=Montserrat:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-mint: #e0f2f1; --point-mint: #26a69a; --text-dark: #2c3e50; --white: #ffffff;
-            /* 17~20번 서술형 전용 - 더 진한 민트 계열 */
             --sub-mint-bg: #00796b; 
-            --sub-mint-active: #004d40;
         }
-        body {
-            background-color: var(--bg-mint); color: var(--text-dark);
-            font-family: 'Montserrat', 'Nanum Myeongjo', serif; margin: 0; padding: 15px;
-            display: flex; justify-content: center; overflow-x: hidden; -webkit-text-size-adjust: 100%;
-        }
-        .container { width: 100%; max-width: 800px; box-sizing: border-box; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header .brand { 
-             font-family: 'Cormorant Garamond', serif; 
-             font-style: italic; 
-             color: var(--point-mint); 
-             font-size: 0.9rem; 
-             letter-spacing: 2px; }
-        .header h1 { 
-             font-family: 'Nanum Myeongjo', serif; 
-             font-size: 2.2rem; 
-             font-weight: 800; 
-             margin: 10px 0; 
-             color: var(--text-dark);
-             letter-spacing: +1px; 
-}
-        .grid-area { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 20px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', 'Nanum Myeongjo', sans-serif; }
+        body { background-color: #f7fafc; color: var(--text-dark); padding: 20px 10px; line-height: 1.8; -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; }
+        .container { max-width: 750px; margin: 0 auto; background: var(--white); border-radius: 16px; padding: 25px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         
-        /* 문제 번호 박스 기본 스타일 */
-        .num-card {
-            background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(38, 166, 154, 0.2);
-            aspect-ratio: 1 / 1; display: flex; 
-flex-direction: column;
-align-items: center; justify-content: center;
-            font-family: 'Nanum Myeongjo', serif; 
-            font-size: 1.1rem; /* [수정] 기본 번호 글씨 크기 확대 */
-            font-weight: 700; color: var(--point-mint);
-            cursor: pointer; border-radius: 4px; transition: all 0.2s ease;
-            gap: 2px;
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px dashed var(--bg-mint); padding-bottom: 20px; }
+        .header h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-style: italic; color: var(--sub-mint-bg); letter-spacing: 1px; }
+        .header p { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; font-weight: 700; }
+        .header .subtitle { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; font-weight: 700; letter-spacing: 0.5px; }
+        .header .brand { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--point-mint); font-weight: 600; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+        .prob-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 5px; cursor: pointer; transition: all 0.2s ease; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        .prob-btn .num-lbl { font-size: 0.95rem; font-weight: 800; color: #64748b; }
+        .prob-btn .ans-lbl { font-size: 0.95rem; /* 기존 0.75rem에서 0.85rem으로 상향 */
+            font-weight: 800; 
+            color: #94a3b8; 
+            min-width: 18px; /* 숫자가 너무 작지 않게 유지 */
+            height: 18px; 
+            line-height: 18px; 
+            display: inline-block; 
+        }
+        
+        .prob-btn:hover { background: var(--bg-mint); }
+        .prob-btn:hover .num-lbl { color: var(--sub-mint-bg); }
+        
+        .prob-btn.active { background: var(--point-mint); border-color: var(--point-mint); box-shadow: 0 4px 12px rgba(38,166,154,0.3); }
+        .prob-btn.active .num-lbl { color: var(--white); }
+        .prob-btn.active .ans-lbl { color: var(--bg-mint); }
+        
+        .prob-btn.desc-type { background: #fff4e6; border-color: #ffd8a8; }
+        .prob-btn.desc-type .num-lbl { color: #d9480f; }
+        .prob-btn.desc-type .ans-lbl { color: #f76707; }
+        .prob-btn.desc-type.active { background: #d9480f; border-color: #d9480f; box-shadow: 0 4px 12px rgba(217,72,15,0.3); }
+        .prob-btn.desc-type.active .num-lbl, .prob-btn.desc-type.active .ans-lbl { color: var(--white); }
+
+        .viewer-card { display: none; background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 15px; position: relative; }
+        .viewer-card.active { display: block; animation: fadeIn 0.4s ease forwards; }
+        
+        .prob-label { display: inline-block; background: var(--sub-mint-bg); color: var(--white); font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .viewer-card.desc-mode .prob-label { background: #d9480f; }
+        .prob-text { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); margin-bottom: 18px; word-break: keep-all; line-height: 1.8; }
+        
+        .prob-img-area { display: flex; justify-content: center; align-items: center; margin: 18px 0; background: var(--white); padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; }
+        .prob-img-area img { max-width: 100%; height: auto; max-height: 220px; object-fit: contain; }
+
+    .options-row { 
+            display: flex !important; 
+            flex-direction: row !important; 
+            flex-wrap: wrap !important; /* 핵심: 항목이 넘치면 자동 줄바꿈 */
+            justify-content: center !important; /* 중앙 정렬 */
+            gap: 8px !important; 
+            margin-bottom: 22px; 
+            width: 100% !important; 
         }
 
-        /* [수정] 17~20번 서술형 박스 - 진한 민트 디자인 */
-        .num-card.subjective-card {
-            background: var(--sub-mint-bg);
-            border: 1px solid var(--sub-mint-bg);
-            color: #ffffff; /* 흰색 글자 */
-            font-size: 1.1rem; /* [수정] '서술형' 텍스트에 맞게 조정 */
-            text-align: center;
-            line-height: 1.1;
+        .option-item { 
+            flex: 0 1 auto !important; /* 핵심: 고정 폭 대신 내용물에 맞춰 크기 자동 조절 */
+            min-width: 60px !important; 
+            background: var(--white); 
+            border: 1px solid #e2e8f0; 
+            padding: 10px 15px !important; 
+            border-radius: 6px; 
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            text-align: center !important; 
+            display: flex !important; 
+            align-items: center !important; 
+            justify-content: center !important; 
         }
         
-        .num-card.active { background: var(--point-mint); color: white; border-color: var(--point-mint); }
+        /* 모바일 대응 */
+        @media (max-width: 600px) {
+            .options-row { gap: 6px !important; }
+            .option-item { 
+                font-size: 0.85rem; 
+                padding: 8px 10px !important; 
+            }
+        }
+        .sol-area { border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 18px; }
+        .sol-title { font-size: 0.85rem; font-weight: 800; color: var(--point-mint); letter-spacing: 0.5px; margin-bottom: 8px; }
+        .viewer-card.desc-mode .sol-title { color: #d9480f; }
+        .ans-highlight { display: inline-block; font-weight: 800; color: #e74c3c; margin-bottom: 10px; font-size: 1.05rem; }
         
-        /* 서술형 박스 활성화 시 더 진한 색상 */
-        .num-card.subjective-card.active { background: var(--sub-mint-active); color: #ffffff; border-color: var(--sub-mint-active); }
+        .sol-text { font-size: 0.98rem; color: #475569; word-break: keep-all; word-wrap: break-word; white-space: normal; line-height: 1.9; }
 
-        .viewer-box {
-            background: var(--white); padding: 25px 15px; border-radius: 2px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04); display: none; box-sizing: border-box;
-            width: 100%; word-break: break-word;
+        mjx-container { 
+            font-size: 105% !important; 
+            margin: 2px 0 !important; 
+            max-width: 100% !important; 
+            vertical-align: -0.12em !important; 
+            color: #1a252f;
         }
-        .viewer-box.active { display: block; animation: fadeIn 0.4s ease; }
-        .prob-label { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--point-mint); margin-bottom: 12px; border-bottom: 1px solid var(--bg-mint); padding-bottom: 6px; display: block; }
-        .prob-text { font-family: 'Nanum Myeongjo', serif; font-size: 1.05rem; line-height: 1.7; font-weight: 700; margin-bottom: 20px; word-break: keep-all; }
-        .img-area { width: 100%; min-height: 150px; background: #f4f8f8; border: 1px dashed var(--point-mint); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8rem; margin: 15px 0; border-radius: 4px; }
-        .options-row { 
-         display: flex; 
-         justify-content: space-between; gap: 4px; margin-bottom: 30px;
-         flex-wrap: wrap; 
-         padding: 5px 0; -webkit-overflow-scrolling: touch; }
-        .option-item { font-family: 'Nanum Myeongjo', serif; font-size: 0.85rem; padding: 8px 4px; border: 1px solid #f0f4f4; border-radius: 4px; background: #fafcfc; flex: 1; text-align: center; white-space: nowrap; min-width: fit-content; }
-        .sol-area { margin-top: 25px; padding-top: 20px; border-top: 1px double var(--bg-mint); }
-        .sol-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.7rem; letter-spacing: 2px; color: var(--point-mint); margin-bottom: 12px; }
-        .ans-highlight { font-family: 'Nanum Myeongjo', serif; font-weight: 800; color: var(--point-mint); font-size: 1.05rem; display: block; margin-bottom: 12px; }
-        .sol-text { font-family: 'Nanum Myeongjo', serif; font-size: 0.95rem; line-height: 1.9; color: #444; }
-        mjx-container { font-size: 115% !important; }
-        .btn-link { padding: 12px 20px; background: var(--point-mint); color: white; border: none; border-radius: 30px; font-family: 'Montserrat'; font-weight: 700; cursor: pointer; margin-top: 20px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .placeholder { text-align: center; padding: 60px 0; font-family: 'Nanum Myeongjo', serif; font-style: italic; opacity: 0.4; font-size: 0.85rem; }
+        mjx-frac { font-size: 100% !important; padding: 0 3px !important; }
+        mjx-num, mjx-den { font-size: 100% !important; }
+
+        .desc-notice { background: #fff5f5; border: 1px dashed #feb2b2; padding: 15px; border-radius: 8px; color: #c53030; font-size: 0.9rem; font-weight: 700; text-align: center; margin-top: 15px; line-height: 1.6; }
+        .btn-link { display: inline-block; width: 100%; text-align: center; background: #d9480f; color: var(--white); border: none; padding: 12px 0; border-radius: 8px; font-size: 1rem; font-weight: 800; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 10px rgba(217,72,15,0.2); }
+
+        @media (max-width: 600px) {
+            body { padding: 15px 6px; }
+            .container { padding: 18px 12px; }
+            mjx-container[display="true"] { 
+                display: block !important; 
+                text-align: left !important; 
+                padding-left: 8px; 
+overflow-x: visible !important; 
+                white-space: normal !important;
+                word-wrap: break-word !important;            }
+            .sol-text { font-size: 0.93rem; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div class="header">
         <div class="brand">The Perfection of Logic</div>
         <h1>결 모의고사 1회</h1>
         <div class="subtitle">DAECHI S+ ACADEMY | MATHY YURI CLASS</div>
     </div>
-    <div class="grid-area" id="grid"></div>
-    <div id="viewerContainer">
-        <div class="placeholder" id="placeholder">번호를 선택하여 분석을 시작하세요.</div>
-        <div class="viewer-box" id="viewer"></div>
-    </div>
+    <div class="grid-container" id="grid-box"></div>
+    <div id="prob-viewer" class="viewer-card"></div>
 </div>
 
 <script>
     const quizData = {
-        1: { text: "모자 $2$종류, 상의 $4$종류, 하의 $3$종류 중에서 각각 하나씩 택하여 착용하는 방법의 수는?", options: ["① $9$", "② $12$", "③ $24$", "④ $32$", "⑤ $40$"], ans: "③", sol: "곱의 법칙 적용: $2 \\times 4 \\times 3 = 24$" },
-      2: { 
-    text: "이차정사각행렬 $A$의 $(i, j)$성분 $a_{ij} = 2i - j + 3$일 때, 행렬 $A$는?", 
-    options: [
-        "① $A = \\begin{pmatrix} 3 & 4 \\\\ 2 & 3 \\end{pmatrix}$", 
-        "② $A = \\begin{pmatrix} 4 & 3 \\\\ 6 & 5 \\end{pmatrix}$", 
-        "③ $A = \\begin{pmatrix} 4 & 4 \\\\ 2 & 6 \\end{pmatrix}$", 
-        "④ $A = \\begin{pmatrix} 4 & 2 \\\\ 3 & 6 \\end{pmatrix}$", 
-        "⑤ $A = \\begin{pmatrix} 3 & 6 \\\\ 5 & 4 \\end{pmatrix}$"
-    ], 
-    ans: "②", 
-    sol: "행렬의 각 성분을 정의에 따라 구하는 과정입니다.<br>1) $1$행 $1$열: $a_{11} = 2(1) - 1 + 3 = 4$<br>2) $1$행 $2$열: $a_{12} = 2(1) - 2 + 3 = 3$<br>3) $2$행 $1$열: $a_{21} = 2(2) - 1 + 3 = 6$<br>4) $2$행 $2$열: $a_{22} = 2(2) - 2 + 3 = 5$<br>따라서 행렬 $A = \\begin{pmatrix} 4 & 3 \\\\ 6 & 5 \\end{pmatrix}$이며, 이는 선지의 **②**번과 일치합니다." 
-},
-        3: { text: "알파벳 문자 $6$개 $F, R, I, E, N, D$를 일렬로 배열할 때, 모음 $2$개를 서로 이웃하도록 배열하는 경우의 수는?", options: ["① $60$", "② $120$", "③ $180$", "④ $240$", "⑤ $300$"], ans: "④", sol: "모음 묶음 배열 $5!$과 내부 배열 $2!$의 곱: $120 \\times 2 = 240$" },
-        4: { 
-    text: "두 행렬 $A = \\begin{pmatrix} 1 & 6 \\\\ 2b-1 & 9 \\end{pmatrix}$, $B = \\begin{pmatrix} 1 & 3a-2b \\\\ 5 & 9 \\end{pmatrix}$가 서로 같을 때, $a+b$의 값은?", 
-    options: ["① $5$", "② $6$", "③ $7$", "④ $8$", "⑤ $9$"], 
-    ans: "③", 
-    sol: "두 행렬이 서로 같으려면 대응하는 성분이 모두 같아야 합니다.<br>1) $2b-1 = 5 \\rightarrow 2b = 6 \\rightarrow b = 3$<br>2) $3a-2b = 6 \\rightarrow 3a-6 = 6 \\rightarrow 3a = 12 \\rightarrow a = 4$<br>따라서 $a+b = 4+3 = 7$입니다." 
-},
-        5: { text: "부등식 $|3x-5| > 4$를 만족시키는 자연수의 최솟값은?", options: ["① $1$", "② $2$", "③ $3$", "④ $4$", "⑤ $5$"], ans: "④", sol: "$3x-5 > 4$ 또는 $3x-5 < -4$<br>1) $3x > 9 \\rightarrow x > 3$<br>2) $3x < 1 \\rightarrow x < \\dfrac{1}{3}$<br>만족하는 자연수 $x$는 $4, 5, \\dots$ 이므로 최솟값은 $4$" },
-        6: { text: "연립부등식 $4x-9 < 2x+2 \\le 5x-1$을 만족시키는 자연수의 개수는?", options: ["① $5$", "② $6$", "③ $7$", "④ $8$", "⑤ $9$"], ans: "①", sol: "1) $4x-9 < 2x+2 \\rightarrow 2x < 11 \\rightarrow x < \\dfrac{11}{2}$<br>2) $2x+2 \\le 5x-1 \\rightarrow 3 \\le 3x \\rightarrow 1 \\le x$<br>범위: $1 \\le x < 5.5$, 자연수: $\\{1, 2, 3, 4, 5\\}$ 총 $5$개" },
-        7: { text: "$x, y$가 음이 아닌 정수일 때, 부등식 $x+y < 3$을 만족시키는 순서쌍 $(x, y)$의 개수는?", options: ["① $6$", "② $7$", "③ $8$", "④ $9$", "⑤ $10$"], ans: "①", sol: "1) $x+y=0 \\rightarrow (0,0)$ [1개]<br>2) $x+y=1 \\rightarrow (1,0), (0,1)$ [2개]<br>3) $x+y=2 \\rightarrow (2,0), (1,1), (0,2)$ [3개]<br>합계: $1+2+3=6$" },
-        8: { text: "두 행렬 $A = \\begin{pmatrix} 4 & -2 \\\\ 2 & -1 \\end{pmatrix}$, $B = \\begin{pmatrix} a & 1 \\\\ 3 & b \\end{pmatrix}$에 대하여 $AB=O$일 때, $a+b$의 값은?", options: ["① $3$", "② $\\dfrac{7}{2}$", "③ $4$", "④ $\\dfrac{9}{2}$", "⑤ $5$"], ans: "②", sol: "$AB = \\begin{pmatrix} 4a-6 & 4-2b \\\\ 2a-3 & 2-b \\end{pmatrix} = O$<br>$4a-6=0 \\rightarrow a=\\dfrac{3}{2}$, $4-2b=0 \\rightarrow b=2$<br>$\\therefore a+b = \\dfrac{3}{2} + 2 = \\dfrac{7}{2}$" },
-        9: { 
-    text: "지점 $A$에서 지점 $D$로 가는데 건물 $B$와 $C$ 사이에 새로운 산책로를 추가하려고 한다. $A$에서 $D$까지 가는 모든 방법의 수가 $75$가지가 되도록 할 때, 추가해야 하는 산책로의 개수는? (단, 그림의 경로 및 지점 $C$에서 $D$로 가는 길은 $3$개이다.)", 
-    img: "gyeol109.png", 
-    options: ["① $1$", "② $2$", "③ $3$", "④ $4$", "⑤ $5$"], 
-    ans: "④", 
-    sol: "추가해야 하는 산책로의 개수를 $n$이라 할 때, 경로를 다음과 같이 분류하여 계산합니다.<br>1) $A \\rightarrow B \\rightarrow D$ : $3 \\times 3 = 9$<br>2) $A \\rightarrow C \\rightarrow D$ : $2 \\times 3 = 6$<br>3) $A \\rightarrow B \\rightarrow C \\rightarrow D$ : $3 \\times n \\times 3 = 9n$<br>4) $A \\rightarrow C \\rightarrow B \\rightarrow D$ : $2 \\times n \\times 3 = 6n$<br>모든 경우의 수의 합은 $9 + 6 + 9n + 6n = 15 + 15n$입니다.<br>$15 + 15n = 75$에서 $15n = 60$이므로, $n = 4$입니다." 
-},
-        10: { text: "이차부등식 $x^2+2(a-2)x-2a+12 < 0$의 해가 존재하지 않도록 하는 실수 $a$의 범위는?", options: ["① $-4 \\le a \\le -2$", "② $-4 \\le a \\le 2$", "③ $-2 \\le a \\le 4$", "④ $-2 < a < 6$", "⑤ $2 < a < 6$"], ans: "③", sol: "판별식 $\\dfrac{D}{4} = (a-2)^2 - (-2a+12) \\le 0$<br>$a^2-4a+4+2a-12 \\le 0 \\rightarrow a^2-2a-8 \\le 0$<br>$(a-4)(a+2) \\le 0 \\rightarrow -2 \\le a \\le 4$" },
-        11: { 
-            text: "그림과 같이 인접한 네 지역 $A, B, C, D$를 서로 다른 $5$가지 색으로 칠하려고 한다. 인접한 영역은 서로 다른 색으로 칠할 때, 칠하는 방법의 수는?", 
-            img: "gyeol111.png", options: ["① $260$", "② $280$", "③ $300$", "④ $320$", "⑤ $340$"], ans: "①", 
-            sol: "$A$와 $C$의 색이 같을 때와 다를 때로 분류합니다.<br>1) $A=C$일 때: $A$칠하기($5$) $\\times$ $B$칠하기($4$) $\\times$ $C$결정($1$) $\\times$ $D$칠하기($4$) $= 80$<br>2) $A \\neq C$일 때: $A$칠하기($5$) $\\times$ $B$칠하기($4$) $\\times$ $C$칠하기($3$) $\\times$ $D$칠하기($3$) $= 180$<br>총 $80 + 180 = 260$가지입니다." 
+        1: { 
+            text: "모자 \\(2\\)종류, 상의 \\(4\\)종류, 하의 \\(3\\)종류 중에서 각각 하나씩 택하여 착용하는 방법의 수는?", 
+            options: ["① \\(9\\)", "② \\(12\\)", "③ \\(24\\)", "④ \\(32\\)", "⑤ \\(40\\)"], 
+            ans: "③", 
+            sol: "곱의 법칙 적용: \\(2 \\times 4 \\times 3 = 24\\)" 
         },
-12: { 
-    text: "다항식 $x^6+5x+2$를 $x^2+x+1$로 나누었을 때의 나머지를 $R(x)$라 할 때, $R(1)$의 값은?", 
-    options: ["① $7$", "② $8$", "③ $9$", "④ $10$", "⑤ $11$"], 
-    ans: "②", 
-    sol: "다항식의 성질을 이용하여 나머지를 효율적으로 구하는 과정입니다.<br><br>1) $x^2+x+1=0$의 한 허근을 $\\omega$라 하면 $\\omega^2+\\omega+1=0$이고 $\\omega^3=1$이 성립합니다.<br>2) $x^6+5x+2$에 $x=\\omega$를 대입하면:<br>&nbsp;&nbsp;&nbsp;$(\\omega^3)^2 + 5\\omega + 2 = 1^2 + 5\\omega + 2 = 5\\omega + 3$<br>3) 이때 나누는 식이 $2$차식이므로 나머지 $R(x)$는 $1$차 이하의 식인 $ax+b$ 꼴입니다.<br>&nbsp;&nbsp;&nbsp;$R(\\omega) = 5\\omega + 3$이므로 $R(x) = 5x+3$임을 알 수 있습니다.<br>4) 구하고자 하는 값은 $R(1)$이므로:<br>&nbsp;&nbsp;&nbsp;$R(1) = 5(1) + 3 = 8$<br><br>따라서 정답은 **②**번입니다." 
-},
+        2: { 
+            text: "이차정사각행렬 \\(A\\)의 \\((i, j)\\)성분 \\(a_{ij} = 2i - j + 3\\)일 때, 행렬 \\(A\\)는?", 
+            options: [
+                "① \\(A = \\begin{pmatrix} 3 & 4 \\\\ 2 & 3 \\end{pmatrix}\\)", 
+                "② \\(A = \\begin{pmatrix} 4 & 3 \\\\ 6 & 5 \\end{pmatrix}\\)", 
+                "③ \\(A = \\begin{pmatrix} 4 & 4 \\\\ 2 & 6 \\end{pmatrix}\\)", 
+                "④ \\(A = \\begin{pmatrix} 4 & 2 \\\\ 3 & 6 \\end{pmatrix}\\)", 
+                "⑤ \\(A = \\begin{pmatrix} 3 & 6 \\\\ 5 & 4 \\end{pmatrix}\\)"
+            ], 
+            ans: "②", 
+            sol: "행렬의 각 성분을 정의에 따라 구하는 과정입니다.<br><br>1) \\(1\\)행 \\(1\\)열: \\(a_{11} = 2(1) - 1 + 3 = 4\\)<br>2) \\(1\\)행 \\(2\\)열: \\(a_{12} = 2(1) - 2 + 3 = 3\\)<br>3) \\(2\\)행 \\(1\\)열: \\(a_{21} = 2(2) - 1 + 3 = 6\\)<br>4) \\(2\\)행 \\(2\\)열: \\(a_{22} = 2(2) - 2 + 3 = 5\\)<br><br>따라서 행렬 \\(A = \\begin{pmatrix} 4 & 3 \\\\ 6 & 5 \\end{pmatrix}\\)이며, 이는 선지의  ②번과 일치합니다." 
+        },
+        3: { 
+            text: "알파벳 문자 \\(6\\)개 \\(F, R, I, E, N, D\\)를 일렬로 배열할 때, 모음 \\(2\\)개를 서로 이웃하도록 배열하는 경우의 수는?", 
+            options: ["① \\(60\\)", "② \\(120\\)", "③ \\(180\\)", "④ \\(240\\)", "⑤ \\(300\\)"], 
+            ans: "④", 
+            sol: "모음 묶음 배열 \\(5!\\)과 내부 배열 \\(2!\\)의 곱: \\(120 \\times 2 = 240\\)" 
+        },
+        4: { 
+            text: "두 행렬 \\(A = \\begin{pmatrix} 1 & 6 \\\\ 2b-1 & 9 \\end{pmatrix}\\), \\(B = \\begin{pmatrix} 1 & 3a-2b \\\\ 5 & 9 \\end{pmatrix}\\)가 서로 같을 때, \\(a+b\\)의 값은?", 
+            options: ["① \\(5\\)", "② \\(6\\)", "<b>③ \\(7\\)</b>", "④ \\(8\\)", "⑤ \\(9\\)"], 
+            ans: "③", 
+            sol: "두 행렬이 서로 같으려면 대응하는 성분이 모두 같아야 합니다.<br><br>1) \\(2b-1 = 5 \\rightarrow 2b = 6 \\rightarrow b = 3\\)<br>2) \\(3a-2b = 6 \\rightarrow 3a-6 = 6 \\rightarrow 3a = 12 \\rightarrow a = 4\\)<br><br>따라서 \\(a+b = 4+3 = 7\\)입니다." 
+        },
+        5: { 
+            text: "부등식 \\(|3x-5| > 4\\)를 만족시키는 자연수의 최솟값은?", 
+            options: ["① \\(1\\)", "② \\(2\\)", "③ \\(3\\)", "④ \\(4\\)", "⑤ \\(5\\)"], 
+            ans: "④", 
+            sol: "\\(3x-5 > 4\\) 또는 \\(3x-5 < -4\\)<br><br>1) \\(3x > 9 \\rightarrow x > 3\\)<br>2) \\(3x < 1 \\rightarrow x < \\dfrac{1}{3}\\)<br><br>만족하는 자연수 \\(x\\)는 \\(4, 5, \\dots\\) 이므로 최솟값은 \\(4\\)입니다." 
+        },
+        6: { 
+            text: "연립부등식 \\(4x-9 < 2x+2 \\le 5x-1\\)을 만족시키는 자연수의 개수는?", 
+            options: ["① \\(5\\)", "② \\(6\\)", "③ \\(7\\)", "④ \\(8\\)", "⑤ \\(9\\)"], 
+            ans: "①", 
+            sol: "1) \\(4x-9 < 2x+2 \\rightarrow 2x < 11 \\rightarrow x < \\dfrac{11}{2}\\)<br>2) \\(2x+2 \\le 5x-1 \\rightarrow 3 \\le 3x \\rightarrow 1 \\le x\\)<br><br>공통 범위: \\(1 \\le x < 5.5\\), 만족하는 자연수는 \\(\\{1, 2, 3, 4, 5\\}\\)로 총 \\(5\\)개입니다." 
+        },
+        7: { 
+            text: "\\(x, y\\)가 음이 아닌 정수일 때, 부등식 \\(x+y < 3\\)을 만족시키는 순서쌍 \\((x, y)\\)의 개수는?", 
+            options: ["① \\(6\\)", "② \\(7\\)", "③ \\(8\\)", "④ \\(9\\)", "⑤ \\(10\\)"], 
+            ans: "①", 
+            sol: "1) \\(x+y=0 \\rightarrow (0,0)\\) [1개]<br>2) \\(x+y=1 \\rightarrow (1,0), (0,1)\\) [2개]<br>3) \\(x+y=2 \\rightarrow (2,0), (1,1), (0,2)\\) [3개]<br><br>합계: \\(1+2+3=6\\)개입니다." 
+        },
+        8: { 
+            text: "두 행렬 \\(A = \\begin{pmatrix} 4 & -2 \\\\ 2 & -1 \\end{pmatrix}\\), \\(B = \\begin{pmatrix} a & 1 \\\\ 3 & b \\end{pmatrix}\\)에 대하여 \\(AB=O\\)일 때, \\(a+b\\)의 값은?", 
+            options: ["① \\(3\\)", "② \\(\\dfrac{7}{2}\\)", "③ \\(4\\)", "④ \\(\\dfrac{9}{2}\\)", "⑤ \\(5\\)"], 
+            ans: "②", 
+            sol: "\\(AB = \\begin{pmatrix} 4a-6 & 4-2b \\\\ 2a-3 & 2-b \\end{pmatrix} = O\\)<br><br>\\(4a-6=0 \\rightarrow a=\\dfrac{3}{2}\\)<br>\\(4-2b=0 \\rightarrow b=2\\)<br><br>\\(\\therefore a+b = \\dfrac{3}{2} + 2 = \\dfrac{7}{2}\\)입니다." 
+        },
+        9: { 
+            text: "지점 \\(A\\)에서 지점 \\(D\\)로 가는데 건물 \\(B\\)와 \\(C\\) 사이에 새로운 산책로를 추가하려고 한다. \\(A\\)에서 \\(D\\)까지 가는 모든 방법의 수가 \\(75\\)가지가 되도록 할 때, 추가해야 하는 산책로의 개수는? (단, 그림의 경로 및 지점 \\(C\\)에서 \\(D\\)로 가는 길은 \\(3\\)개이다.)", 
+            img: "gyeol109.png", 
+            options: ["① \\(1\\)", "② \\(2\\)", "③ \\(3\\)", "④ \\(4\\)", "⑤ \\(5\\)"], 
+            ans: "④", 
+            sol: "추가해야 하는 산책로의 개수를 \\(n\\)이라 할 때, 경로를 다음과 같이 분류하여 계산합니다.<br><br>1) \\(A \\rightarrow B \\rightarrow D\\) : \\(3 \\times 3 = 9\\)<br>2) \\(A \\rightarrow C \\rightarrow D\\) : \\(2 \\times 3 = 6\\)<br>3) \\(A \\rightarrow B \\rightarrow C \\rightarrow D\\) : \\(3 \\times n \\times 3 = 9n\\)<br>4) \\(A \\rightarrow C \\rightarrow B \\rightarrow D\\) : \\(2 \\times n \\times 3 = 6n\\)<br><br>모든 경우의 수의 합은 \\(9 + 6 + 9n + 6n = 15 + 15n\\)입니다.<br>\\(15 + 15n = 75\\)에서 \\(15n = 60\\)이므로, \\(n = 4\\)입니다." 
+        },
+        10: { 
+            text: "이차부등식 \\(x^2+2(a-2)x-2a+12 < 0\\)의 해가 존재하지 않도록 하는 실수 \\(a\\)의 범위는?", 
+            options: ["① \\(-4 \\le a \\le -2\\)", "② \\(-4 \\le a \\le 2\\)", "③ \\(-2 \\le a \\le 4\\)", "④ \\(-2 < a < 6\\)", "⑤ \\(2 < a < 6\\)"], 
+            ans: "③", 
+            sol: "판별식 \\(\\dfrac{D}{4} = (a-2)^2 - (-2a+12) \\le 0\\)<br>\\(a^2-4a+4+2a-12 \\le 0 \\rightarrow a^2-2a-8 \\le 0\\)<br>\\((a-4)(a+2) \\le 0 \\rightarrow -2 \\le a \\le 4\\)" 
+        },
+        11: { 
+            text: "그림과 같이 인접한 네 지역 \\(A, B, C, D\\)를 서로 다른 \\(5\\)가지 색으로 칠하려고 한다. 인접한 영역은 서로 다른 색으로 칠할 때, 칠하는 방법의 수는?", 
+            img: "gyeol111.png", 
+            options: ["① \\(260\\)", "② \\(280\\)", "③ \\(300\\)", "④ \\(320\\)", "⑤ \\(340\\)"], 
+            ans: "①", 
+            sol: "\\(A\\)와 \\(C\\)의 색이 같을 때와 다를 때로 분류합니다.<br><br>1) \\(A=C\\)일 때: \\(A\\)칠하기(\\(5\\)) \\(\\times\\) \\(B\\)칠하기(\\(4\\)) \\(\\times\\) \\(C\\)결정(\\(1\\)) \\(\\times\\) \\(D\\)칠하기(\\(4\\)) \\(= 80\\)<br>2) \\(A \\neq C\\)일 때: \\(A\\)칠하기(\\(5\\)) \\(\\times\\) \\(B\\)칠하기(\\(4\\)) \\(\\times\\) \\(C\\)칠하기(\\(3\\)) \\(\\times\\) \\(D\\)칠하기(\\(3\\)) \\(= 180\\)<br><br>총 \\(80 + 180 = 260\\)가지입니다." 
+        },
+        12: { 
+            text: "다항식 \\(x^6+5x+2\\)를 \\(x^2+x+1\\)로 나누었을 때의 나머지를 \\(R(x)\\)라 할 때, \\(R(1)\\)의 값은?", 
+            options: ["① \\(7\\)", "② \\(8\\)", "③ \\(9\\)", "④ \\(10\\)", "⑤ \\(11\\)"], 
+            ans: "②", 
+            sol: "다항식의 성질을 이용하여 나머지를 효율적으로 구하는 과정입니다.<br><br>1) \\(x^2+x+1=0\\)의 한 허근을 \\(\\omega\\)라 하면 \\(\\omega^2+\\omega+1=0\\)이고 \\(\\omega^3=1\\)이 성립합니다.<br>2) \\(x^6+5x+2\\)에 \\(x=\\omega\\)를 대입하면:<br>&nbsp;&nbsp;&nbsp;\\((\\omega^3)^2 + 5\\omega + 2 = 1^2 + 5\\omega + 2 = 5\\omega + 3\\)<br>3) 이때 나누는 식이 \\(2\\)차식이므로 나머지 \\(R(x)\\)는 \\(1\\)차 이하의 식인 \\(ax+b\\) 꼴입니다.<br>&nbsp;&nbsp;&nbsp;\\(R(\\omega) = 5\\omega + 3\\)이므로 \\(R(x) = 5x+3\\)임을 알 수 있습니다.<br>4) 구하고자 하는 값은 \\(R(1)\\)이므로:<br>&nbsp;&nbsp;&nbsp;\\(R(1) = 5(1) + 3 = 8\\)<br><br>따라서 정답은 **②**번입니다." 
+        },
         13: { 
-    text: "0이 아닌 실수 $a, b, c$에 대하여 이차부등식 $ax^2+bx+c > 0$의 해가 $-3 < x < 4$일 때, 이차부등식 $cx^2+ax-b < 0$의 해는?", 
-    options: [
-        "① $-4 < x < \\dfrac{1}{3}$", 
-        "② $-3 < x < \\dfrac{1}{4}$", 
-        "③ $-\\dfrac{1}{3} < x < \\dfrac{1}{4}$", 
-        "④ $-\\dfrac{1}{4} < x < \\dfrac{1}{3}$", 
-        "⑤ $\\dfrac{1}{4} < x < \\dfrac{1}{3}$"
-    ], 
-    ans: "④", 
-    sol: "계수의 관계를 이용하여 새로운 부등식의 해를 구하는 과정입니다.<br><br>1) 이차부등식 $ax^2+bx+c > 0$의 해가 $-3 < x < 4$이므로:<br>&nbsp;&nbsp;&nbsp;$a(x+3)(x-4) > 0$ 이고, 사이 범위이므로 **$a < 0$**임을 알 수 있습니다.<br>2) 식을 전개하여 계수를 비교하면:<br>&nbsp;&nbsp;&nbsp;$a(x^2-x-12) > 0 \\rightarrow ax^2-ax-12a > 0$<br>&nbsp;&nbsp;&nbsp;따라서 **$b = -a$, $c = -12a$**입니다.<br>3) 구하고자 하는 부등식 $cx^2+ax-b < 0$에 대입하면:<br>&nbsp;&nbsp;&nbsp;$-12ax^2 + ax - (-a) < 0 \\rightarrow -12ax^2 + ax + a < 0$<br>4) 양변을 $a$로 나누면 (**$a < 0$이므로 부등호 방향이 바뀜**):<br>&nbsp;&nbsp;&nbsp;$-12x^2 + x + 1 > 0 \\rightarrow 12x^2 - x - 1 < 0$<br>5) 인수분해하여 해를 구하면:<br>&nbsp;&nbsp;&nbsp;$(4x+1)(3x-1) < 0 \\rightarrow -\\dfrac{1}{4} < x < \\dfrac{1}{3}$<br><br>따라서 정답은 **④**번입니다." 
-},
-14: { 
-    text: "서로 다른 $6$개의 과자를 크기가 다른 두 상자에 나누어 담으려고 한다. 각 상자에는 과자를 최대 $4$개까지만 담을 수 있을 때, 두 상자에 과자를 나누어 담는 방법의 수는?", 
-    options: ["① $42$", "② $50$", "③ $64$", "④ $72$", "⑤ $80$"], 
-    ans: "②", 
-    sol: "여사건 대신, 각 상자에 담기는 과자의 개수를 직접 나누어 계산하는 방법입니다.<br><br>과자의 총개수가 $6$개이므로, 두 상자에 나누어 담는 경우를 (상자1, 상자2)의 개수로 분류합니다.<br>(단, 각 상자의 최대 한도는 $4$개이므로 한 상자에 $5$개나 $6$개가 들어가는 경우는 제외합니다.)<br><br>1) **(2개, 4개)** 담는 경우:<br>&nbsp;&nbsp;&nbsp;${}_6C_2 = 15$ (가지)<br>2) **(3개, 3개)** 담는 경우:<br>&nbsp;&nbsp;&nbsp;${}_6C_3 = 20$ (가지)<br>3) **(4개, 2개)** 담는 경우:<br>&nbsp;&nbsp;&nbsp;${}_6C_4 = 15$ (가지)<br><br>모든 경우의 수를 더하면:<br>$15 + 20 + 15 = 50$<br><br>따라서 정답은 **②**번입니다." 
-},
-15: { 
-    text: "그림과 같이 1열에 2명, 2열과 3열에 각각 3명이 앉을 수 있는 8인승 자동차에 운전할 수 있는 A, B, C와 운전을 할 수 없는 D, E, F, G, H가 함께 타고 가려고 한다. 1열에는 운전을 할 수 있는 사람만 앉을 수 있고, 3열에는 운전을 할 수 없는 사람만 앉을 수 있다고 할 때, 이 자동차에 앉는 방법의 수는?", 
-    img: "gyeol115.png", 
-    options: ["① $720$", "② $840$", "③ $1080$", "④ $1440$", "⑤ $2160$"], 
-    ans: "⑤", 
-    sol: "조건이 까다로운 좌석부터 먼저 배치한 후, 남은 사람들을 자유롭게 앉히는 방식으로 풀이합니다.<br><br>1) **운전석 배치 (가장 중요한 조건)**:<br>&nbsp;&nbsp;&nbsp;운전석에는 반드시 운전 가능한 A, B, C 중 1명이 앉아야 합니다.<br>&nbsp;&nbsp;&nbsp;👉 ${}_3P_1 = 3$가지<br><br>2) **3열 배치 (운전 못 하는 친구들 고정)**:<br>&nbsp;&nbsp;&nbsp;3열의 세 자리는 반드시 운전을 못 하는 5명(D, E, F, G, H) 중에서만 앉아야 합니다.<br>&nbsp;&nbsp;&nbsp;👉 ${}_5P_3 = 5 \\times 4 \\times 3 = 60$가지<br><br>3) **1열의 남은 자리 배치 (1열 조건 반영)**:<br>&nbsp;&nbsp;&nbsp;문제에서 '1열에는 운전 가능한 사람만 앉을 수 있다'고 했으므로,<br>&nbsp;&nbsp;&nbsp;운전석에 앉은 1명을 제외한 나머지 운전 가능자 2명 중 1명이 1열 남은 자리에 앉습니다.<br>&nbsp;&nbsp;&nbsp;👉 ${}_2P_1 = 2$가지<br><br>4) **나머지 인원 랜덤 배치 (2열 및 기타)**:<br>&nbsp;&nbsp;&nbsp;현재까지 총 5명(1열 2명, 3열 3명)이 자리에 앉았습니다.<br>&nbsp;&nbsp;&nbsp;남은 사람은 총 3명이며, 이들은 남은 2열의 세 자리에 아무렇게나 앉아도 됩니다.<br>&nbsp;&nbsp;&nbsp;👉 $3! = 3 \\times 2 \\times 1 = 6$가지<br><br>5) **최종 계산**:<br>&nbsp;&nbsp;&nbsp;$3(운전석) \\times 60(3열) \\times 2(1열 남은자리) \\times 6(나머지) = 2160$<br><br>따라서 정답은 **⑤**번입니다." 
-},
-16: { 
-    text: "$x$의 값의 범위가 $1 \\le x \\le 6$일 때, 이차부등식 $-2x^2+12x+6k-9 \\ge 0$이 성립하도록 하는 실수 $k$의 값의 범위는?", 
-    options: ["① $k > -\\dfrac{3}{2}$", "② $k \\le -\\dfrac{1}{6}$", "③ $k \\ge \\dfrac{3}{2}$", "④ $k \\le \\dfrac{3}{2}$", "⑤ $-\\dfrac{1}{6} \\le k \\le \\dfrac{3}{2}$"], 
-    ans: "③", 
-    sol: "주어진 범위에서 이차부등식이 항상 성립하려면, 해당 범위 내 함수의 **최솟값**이 $0$보다 크거나 같아야 합니다.<br><br>1) **함수의 표준형 변환 및 축 확인**:<br>&nbsp;&nbsp;&nbsp;$f(x) = -2x^2+12x+6k-9$라 하면,<br>&nbsp;&nbsp;&nbsp;$f(x) = -2(x-3)^2 + 6k + 9$가 되어 그래프의 축은 **$x=3$**입니다.<br><br>2) **그래프의 개형과 최솟값 위치 파악**:<br>&nbsp;&nbsp;&nbsp;이 함수는 위로 볼록한 포물선이며 축이 $x=3$입니다.<br>&nbsp;&nbsp;&nbsp;주어진 범위 $1 \\le x \\le 6$에서 축($x=3$)으로부터 더 멀리 떨어진 **$x=6$에서 최솟값**을 가집니다.<br><br>3) **조건 식 세우기 (최솟값 $\\ge 0$)**:<br>&nbsp;&nbsp;&nbsp;$f(6) = -2(6)^2 + 12(6) + 6k - 9 \\ge 0$<br>&nbsp;&nbsp;&nbsp;$-72 + 72 + 6k - 9 \\ge 0$<br>&nbsp;&nbsp;&nbsp;$6k - 9 \\ge 0$<br><br>4) **최종 계산**:<br>&nbsp;&nbsp;&nbsp;$6k \\ge 9 \\rightarrow k \\ge \\dfrac{9}{6}$<br>&nbsp;&nbsp;&nbsp;따라서 **$k \\ge \\dfrac{3}{2}$**입니다.<br><br>정답은 **③**번입니다." 
-},
+            text: "0이 아닌 실수 \\(a, b, c\\)에 대하여 이차부등식 \\(ax^2+bx+c > 0\\)의 해가 \\(-3 < x < 4\\)일 때, 이차부등식 \\(cx^2+ax-b < 0\\)의 해는?", 
+            options: [
+                "① \\(-4 < x < \\dfrac{1}{3}\\)", 
+                "② \\(-3 < x < \\dfrac{1}{4}\\)", 
+                "③ \\(-\\dfrac{1}{3} < x < \\dfrac{1}{4}\\)", 
+                "④ \\(-\\dfrac{1}{4} < x < \\dfrac{1}{3}\\)", 
+                "⑤ \\(\\dfrac{1}{4} < x < \\dfrac{1}{3}\\)"
+            ], 
+            ans: "④", 
+            sol: "계수의 관계를 이용하여 새로운 부등식의 해를 구하는 과정입니다.<br><br>1) 이차부등식 \\(ax^2+bx+c > 0\\)의 해가 \\(-3 < x < 4\\)이므로:<br>&nbsp;&nbsp;&nbsp;\\(a(x+3)(x-4) > 0\\) 이고, <br>사이 범위이므로 \\(a < 0\\)임을 알 수 있다.<br><br>2) 식을 전개하여 계수를 비교하면:<br>&nbsp;&nbsp;&nbsp;\\(a(x^2-x-12) > 0 \\rightarrow ax^2-ax-12a > 0\\)<br>&nbsp;&nbsp;&nbsp;따라서 \\(b = -a\\),  \\(c = -12a\\)<br><br>3) 구하고자 하는 부등식 \\(cx^2+ax-b < 0\\)에 대입하면:<br>&nbsp;&nbsp;&nbsp;\\(-12ax^2 + ax - (-a) < 0 \\rightarrow -12ax^2 + ax + a < 0\\)<br><br>4) 양변을 \\(a\\)로 나누면 (\\(a < 0\\)이므로 부등호 방향이 바뀜):<br>&nbsp;&nbsp;&nbsp;\\(-12x^2 + x + 1 > 0 \\rightarrow 12x^2 - x - 1 < 0\\)<br>5) 인수분해하여 해를 구하면:<br>&nbsp;&nbsp;&nbsp;\\((4x+1)(3x-1) < 0 \\rightarrow -\\dfrac{1}{4} < x < \\dfrac{1}{3}\\)<br><br>따라서 정답은 ④번이다." 
+        },
+        14: { 
+            text: "서로 다른 \\(6\\)개의 과자를 크기가 다른 두 상자에 나누어 담으려고 한다. 각 상자에는 과자를 최대 \\(4\\)개까지만 담을 수 있을 때, 두 상자에 과자를 나누어 담는 방법의 수는?", 
+            options: ["① \\(42\\)", "② \\(50\\)", "③ \\(64\\)", "④ \\(72\\)", "⑤ \\(80\\)"], 
+            ans: "②", 
+            sol: "각 상자에 담기는 과자의 개수를 직접 나누어 계산하는 방법입니다.<br><br>과자의 총개수가 \\(6\\)개이므로, 두 상자에 나누어 담는 경우를 (상자1, 상자2)의 개수로 분류합니다.<br>(단, 각 상자의 최대 한도는 \\(4\\)개이므로 한 상자에 \\(5\\)개나 \\(6\\)개가 들어가는 경우는 제외합니다.)<br><br>1)  (2개, 4개)  담는 경우:<br>&nbsp;&nbsp;&nbsp;\\({}_6C_2 = 15\\) (가지)<br>2)  (3개, 3개) 담는 경우:<br>&nbsp;&nbsp;&nbsp;\\({}_6C_3 = 20\\) (가지)<br>3)  (4개, 2개) 담는 경우:<br>&nbsp;&nbsp;&nbsp;\\({}_6C_4 = 15\\) (가지)<br><br>모든 경우의 수를 더하면:<br>\\(15 + 20 + 15 = 50\\)<br><br>따라서 정답은 **②**번입니다." 
+        },
+        15: { 
+            text: "그림과 같이 1열에 2명, 2열과 3열에 각각 3명이 앉을 수 있는 8인승 자동차에 운전할 수 있는 A, B, C와 운전을 할 수 없는 D, E, F, G, H가 함께 타고 가려고 한다. 1열에는 운전을 할 수 있는 사람만 앉을 수 있고, 3열에는 운전을 할 수 없는 사람만 앉을 수 있다고 할 때, 이 자동차에 앉는 방법의 수는?", 
+            img: "gyeol115.png", 
+            options: ["① \\(720\\)", "② \\(840\\)", "③ \\(1080\\)", "④ \\(1440\\)", "⑤ \\(2160\\)"], 
+            ans: "⑤", 
+            sol: "조건이 까다로운 좌석부터 먼저 배치한 후, 남은 사람들을 자유롭게 앉히는 방식으로 풀이합니다.<br><br>1) **운전석 배치 (가장 중요한 조건)**:<br>&nbsp;&nbsp;&nbsp;운전석에는 반드시 운전 가능한 A, B, C 중 1명이 앉아야 합니다.<br>&nbsp;&nbsp;&nbsp;👉 \\({}_3P_1 = 3\\)가지<br><br>2) **3열 배치 (운전 못 하는 친구들 고정)**:<br>&nbsp;&nbsp;&nbsp;3열의 세 자리는 반드시 운전을 못 하는 5명(D, E, F, G, H) 중에서만 앉아야 합니다.<br>&nbsp;&nbsp;&nbsp;👉 \\({}_5P_3 = 5 \\times 4 \\times 3 = 60\\)가지<br><br>3) **1열의 남은 자리 배치 (1열 조건 반영)**:<br>&nbsp;&nbsp;&nbsp;문제에서 '1열에는 운전 가능한 사람만 앉을 수 있다'고 했으므로,<br>&nbsp;&nbsp;&nbsp;운전석에 앉은 1명을 제외한 나머지 운전 가능자 2명 중 1명이 1열 남은 자리에 앉습니다.<br>&nbsp;&nbsp;&nbsp;👉 \\({}_2P_1 = 2\\)가지<br><br>4) **나머지 인원 랜덤 배치 (2열 및 기타)**:<br>&nbsp;&nbsp;&nbsp;현재까지 총 5명(1열 2명, 3열 3명)이 자리에 앉았습니다.<br>&nbsp;&nbsp;&nbsp;남은 사람은 총 3명이며, 이들은 남은 2열의 세 자리에 아무렇게나 앉아도 됩니다.<br>&nbsp;&nbsp;&nbsp;👉 \\(3! = 3 \\times 2 \\times 1 = 6\\)가지<br><br>5) **최종 계산**:<br>&nbsp;&nbsp;&nbsp;\\(3(운전석) \\times 60(3열) \\times 2(1열 남은자리) \\times 6(나머지) = 2160\\)<br><br>따라서 정답은 **⑤**번입니다." 
+        },
+        16: { 
+            text: "\\(x\\)의 값의 범위가 \\(1 \\le x \\le 6\\)일 때, 이차부등식 \\(-2x^2+12x+6k-9 \\ge 0\\)이 성립하도록 하는 실수 \\(k\\)의 값의 범위는?", 
+            options: ["① \\(k > -\\dfrac{3}{2}\\)", "② \\(k \\le -\\dfrac{1}{6}\\)", "<b>③ \\(k \\ge \\dfrac{3}{2}\\)</b>", "④ \\(k \\le \\dfrac{3}{2}\\)", "⑤ \\(-\\dfrac{1}{6} \\le k \\le \\dfrac{3}{2}\\)"], 
+            ans: "③", 
+            sol: "주어진 범위에서 이차부등식이 항상 성립하려면, 해당 범위 내 함수의 **최솟값**이 \\(0\\)보다 크거나 같아야 합니다.<br><br>1) **함수의 표준형 변환 및 축 확인**:<br>&nbsp;&nbsp;&nbsp;\\(f(x) = -2x^2+12x+6k-9\\)라 하면,<br>&nbsp;&nbsp;&nbsp;\\(f(x) = -2(x-3)^2 + 6k + 9\\)가 되어 그래프의 축은 **\\(x=3\\)**입니다.<br><br>2) **그래프의 개형과 최솟값 위치 파악**:<br>&nbsp;&nbsp;&nbsp;이 함수는 위로 볼록한 포물선이며 축이 \\(x=3\\)입니다.<br>&nbsp;&nbsp;&nbsp;주어진 범위 \\(1 \\le x \\le 6\\)에서 축(\\(x=3\\))으로부터 더 멀리 떨어진 **\\(x=6\\)에서 최솟값**을 가집니다.<br><br>3) **조건 식 세우기 (최솟값 \\(\\ge 0\\))**:<br>&nbsp;&nbsp;&nbsp;\\(f(6) = -2(6)^2 + 12(6) + 6k - 9 \\ge 0\\)<br>&nbsp;&nbsp;&nbsp;\\(-72 + 72 + 6k - 9 \\ge 0\\)<br>&nbsp;&nbsp;&nbsp;\\(6k - 9 \\ge 0\\)<br><br>4) **최종 계산**:<br>&nbsp;&nbsp;&nbsp;\\(6k \\ge 9 \\rightarrow k \\ge \\dfrac{9}{6}\\)<br>&nbsp;&nbsp;&nbsp;따라서 **\\(k \\ge \\dfrac{3}{2}\\)**입니다.<br><br>정답은 **③**번입니다." 
+        },
+        17: { 
+            ans: "서술형", 
+            text: "삼차방정식 \\(x^3 + x^2 - 2(k+1)x + 2k = 0\\)의 서로 다른 실근이 \\(2\\)개가 되도록 하는 실수 \\(k\\)의 값을 모두 구하는 풀이 과정과 답을 쓰시오.", 
+            isDesc: true 
+        },
+        18: { 
+            ans: "서술형", 
+            text: "부등식 \\(|x-1| + |x+1| \\le 3\\)의 해를 구하는 풀이 과정과 답을 쓰시오.", 
+            isDesc: true 
+        },
+        19: { 
+            ans: "서술형", 
+            text: "길이가 \\(10\\)인 지름 \\(AB\\)의 반원의 호 위에 양 끝점 \\(A, B\\)가 아닌 점 \\(P\\)를 잡아 넓이가 \\(24\\)인 삼각형 \\(ABP\\)를 만들었다. 이때, \\(AP\\)의 길이를 구하는 풀이 과정과 답을 쓰시오. (단, \\(\\overline{AP} > \\overline{BP}\\))", 
+            isDesc: true 
+        },
+        20: { 
+            ans: "서술형", 
+            text: "행렬 \\(A = \\begin{pmatrix} 2 & 3 \\\\ -1 & -1 \\end{pmatrix}\\)에 대하여 행렬 \\(A + A^2 + A^3 + \\dots + A^{2025}\\)의 모든 성분의 합을 구하는 풀이 과정과 답을 쓰시오.", 
+            isDesc: true 
+        }
     };
 
-    const grid = document.getElementById('grid');
-    const viewer = document.getElementById('viewer');
-    const placeholder = document.getElementById('placeholder');
-
+    const gridBox = document.getElementById('grid-box');
     for (let i = 1; i <= 20; i++) {
-        const div = document.createElement('div');
-        div.className = 'num-card';
+        const isDesc = quizData[i].isDesc;
+        const btn = document.createElement('button');
+        btn.className = `prob-btn ${isDesc ? 'desc-type' : ''}`;
+        btn.onclick = function() { showProb(i, btn); };
         
-        if (i >= 17) {
-            // [수정] 17~20번 서술형 명칭 및 디자인 클래스 추가
-            div.classList.add('subjective-card');
-            div.innerHTML = '서술형<br>' + (i - 16); 
-        } else {
-           const probNum = i.toString().padStart(2, '0');
-        const probAns = quizData[i] ? quizData[i].ans : ''; // 데이터가 있을 경우 정답 가져옴
-        
-        div.innerHTML = `
-            <span class="card-num">${probNum}</span>
-            <span class="card-ans">${probAns}</span>
+        btn.innerHTML = `
+            <span class="num-lbl">#${i.toString().padStart(2, '0')}</span>
+            <span class="ans-lbl">${quizData[i].ans}</span>
         `;
-    }
-        div.onclick = () => loadProb(i, div);
-        grid.appendChild(div);
+        gridBox.appendChild(btn);
     }
 
-    function loadProb(num, el) {
-        document.querySelectorAll('.num-card').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-        placeholder.style.display = 'none';
-        viewer.classList.remove('active');
+    function showProb(num, btn) {
+        document.querySelectorAll('.prob-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
 
+        const viewer = document.getElementById('prob-viewer');
+        viewer.classList.remove('active', 'desc-mode');
+        
         setTimeout(() => {
-            if (num >= 17) {
+            if (quizData[num].isDesc) {
+                viewer.classList.add('desc-mode');
                 viewer.innerHTML = `
-                    <span class="prob-label">서술형 ${num - 16}번 분석</span>
-                    <div class="prob-text" style="text-align:center; padding: 40px 0;">
-                        ${num}번은 서술형 평가 문항입니다.<br><br>
-                        <button class="btn-link" onclick="window.location.href='gyeol1.html'">서술형 전용 답안지 이동</button>
+                    <span class="prob-label">LOGIC WRITING CRITERIA #${num}</span>
+                    <div class="prob-text">${quizData[num].text}</div>
+                    <div class="desc-notice">
+                        ⚠️ 본 문항은 대치S+학원 서술형 평가 미션입니다.<br>
+                        감점 요인 없는 완벽한 인과관계 서술을 요구합니다. 
                     </div>
+                    <button class="btn-link" onclick="location.href='gyeol1.html'">서술형 전용 답안지 이동</button>
                 `;
             } else {
                 const data = quizData[num];
-              let imgHtml = '';
-            if (data.img) {
-                imgHtml = `
-                    <div class="img-area" style="background:none; border:none;">
-                        <img src="${data.img}" style="max-width:100%; height:auto; border-radius:4px; display:block; margin:0 auto;">
-                    </div>`;
-            }
-
+                let imgHtml = '';
+                if (data.img) {
+                    imgHtml = `<div class="prob-img-area"><img src="${data.img}" alt="Problem Diagram"></div>`;
+                }
+                
                 let optionsHtml = data.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
+                
                 viewer.innerHTML = `
                     <span class="prob-label">SEQUENCE #${num.toString().padStart(2, '0')}</span>
                     <div class="prob-text">${data.text}</div>
@@ -249,14 +337,18 @@ align-items: center; justify-content: center;
                     <div class="options-row">${optionsHtml}</div>
                     <div class="sol-area">
                         <div class="sol-title">LOGIC ARCHIVE</div>
-                        <span class="ans-highlight">[정답: ${data.ans}]</span>
+                        <span class="ans-highlight">[정답 : ${data.ans}]</span>
                         <div class="sol-text">${data.sol}</div>
                     </div>
                 `;
             }
             viewer.classList.add('active');
-            window.scrollTo({ top: viewer.offsetTop - 20, behavior: 'smooth' });
-            if(window.MathJax) MathJax.typesetPromise([viewer]);
+            
+            if(window.MathJax) {
+                MathJax.typesetPromise([viewer]).catch(function (err) {
+                    console.log(err.message);
+                });
+            }
         }, 50);
     }
 </script>
