@@ -1260,14 +1260,13 @@
         }
 
         // 2. 단원별 누적 성취도 작도 (구글 시트 연산 데이터 accurateSectionScores 100% 반영)
-       const sheetSectionScores = studentData.accurateSectionScores[currentRound] || [0, 0, 0, 0];
-
-let calcTypes = [
-    { name: "여러가지 방정식", score: sheetSectionScores[0], avg: 62 },
-    { name: "여러가지 부등식", score: sheetSectionScores[1], avg: 58 },
-    { name: "경우의 수", score: sheetSectionScores[2], avg: 70 },
-    { name: "행렬", score: sheetSectionScores[3], avg: 52 }
-];
+        const sheetSectionScores = studentData.accurateSectionScores || [0, 0, 0, 0];
+        let calcTypes = [
+            { name: "여러가지 방정식", score: sheetSectionScores[0], avg: 62 },
+            { name: "여러가지 부등식", score: sheetSectionScores[1], avg: 58 },
+            { name: "경우의 수", score: sheetSectionScores[2], avg: 70 },
+            { name: "행렬", score: sheetSectionScores[3], avg: 52 }
+        ];
 
         // 전역 통계 기반 평균 보정 로직
         if (typeof globalItemStats !== 'undefined' && globalItemStats && globalItemStats.length >= 20) {
