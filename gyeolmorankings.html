@@ -917,9 +917,25 @@
                     const cleanName = item.name ? String(item.name).trim() : "";
                     return cleanName !== "닉네임" && cleanName !== "이름" && cleanName !== "반" && cleanName !== "";
                 });
-                globalItemStats = result.typeAnalysis || [];         // [A,B,C,D] 단원별 누적
-                globalRoundItemStats = result.roundTypeAnalysis || {};  // {1:[A,B,C,D],...} 회차별 단원
-                globalRoundItemAnalysis = result.roundItemAnalysis || {}; // {1:[q1~q20],...} 문항별(헤더용)
+                // 신버전 GAS: typeAnalysis(4개) / roundTypeAnalysis
+                // 구버전 GAS: itemAnalysis(20개) fallback 처리
+                if (result.typeAnalysis && result.typeAnalysis.length === 4) {
+                    globalItemStats = result.typeAnalysis;
+                } else if (result.itemAnalysis && result.itemAnalysis.length === 20) {
+                    // 구버전 fallback: 문항 순서 고정(1~5=A, 6~10=B, 11~15=C, 16~20=D)으로 집계
+                    const ia = result.itemAnalysis;
+                    const avg = (arr) => Math.round(arr.reduce((s,v) => s + v, 0) / arr.length * 100) / 100;
+                    globalItemStats = [
+                        avg(ia.slice(0, 5)),
+                        avg(ia.slice(5, 10)),
+                        avg(ia.slice(10, 15)),
+                        avg(ia.slice(15, 20))
+                    ];
+                } else {
+                    globalItemStats = [];
+                }
+                globalRoundItemStats = result.roundTypeAnalysis || {};
+                globalRoundItemAnalysis = result.roundItemAnalysis || {};
                 processAndRenderBoard();
             } else {
                 renderErrorUI("SYSTEM DELAY: " + result.message);
@@ -1012,13 +1028,20 @@
             
             const infoMap = top3.map((student, index) => {
                 let scoreVal = '—';
+                let displayNick, displayClass;
                 if (stateRound === 'total') {
                     scoreVal = student.total;
+                    displayNick  = student.nick;
+                    displayClass = student.class;
                 } else {
-                    scoreVal = student.rounds[parseInt(stateRound)-1]?.score ?? '—';
+                    const rIdx = parseInt(stateRound) - 1;
+                    const rd = student.rounds[rIdx];
+                    scoreVal     = rd?.score ?? '—';
+                    displayNick  = (rd?.nick  && rd.nick.trim())  ? rd.nick  : student.nick;
+                    displayClass = (rd?.class && rd.class.trim()) ? rd.class : student.class;
                 }
-                const badgeCls = student.class === "S+" ? "s-plus" : "s-plain";
-                return { student, scoreVal, badgeCls, originalRank: index + 1 };
+                const badgeCls = displayClass === "S+" ? "s-plus" : "s-plain";
+                return { student, scoreVal, badgeCls, originalRank: index + 1, displayNick, displayClass };
             });
 
             if (infoMap.length === 1) {
@@ -1038,9 +1061,9 @@
                 <div class="podium-card rank-${item.originalRank}">
                     <div class="podium-rank-mark">${medals[item.originalRank]}</div>
                     <div class="podium-center-info">
-                        <div class="podium-nick-text">${item.student.nick}</div>
+                        <div class="podium-nick-text">${item.displayNick}</div>
                         <div class="podium-tag-container">
-                            <span class="podium-badge-item ${item.badgeCls}">${item.student.class}</span>
+                            <span class="podium-badge-item ${item.badgeCls}">${item.displayClass}</span>
                         </div>
                     </div>
                     <div class="podium-score-display"><span>${item.scoreVal}</span>점</div>
@@ -1134,7 +1157,10 @@
             bodyHtml = records.map((r, idx) => {
                 const targetRoundData = r.rounds[roundIdx];
                 const finalScore = targetRoundData?.score ?? '—';
-                const rowClassStyle = r.class === "S+" ? "class-s-plus" : "class-s-plain";
+                // 해당 회차 닉네임/반 우선, 없으면 대표값 fallback
+                const displayNick  = (targetRoundData?.nick  && targetRoundData.nick.trim())  ? targetRoundData.nick  : r.nick;
+                const displayClass = (targetRoundData?.class && targetRoundData.class.trim()) ? targetRoundData.class : r.class;
+                const rowClassStyle = displayClass === "S+" ? "class-s-plus" : "class-s-plain";
                 const itemCodes = targetRoundData?.items || [];
                 
                 const metaCalculated = targetRoundData?.score !== undefined ? calculateMetaScore(itemCodes) : '—';
@@ -1160,8 +1186,8 @@
                 return `
                     <div class="rank-row grid-layout grid-round ${rowClassStyle}">
                         <div class="r-rank">${idx + 1}</div>
-                        <div class="r-nick">${r.nick}</div>
-                        <div class="r-class"><span class="r-class-tag">${r.class}</span></div>
+                        <div class="r-nick">${displayNick}</div>
+                        <div class="r-class"><span class="r-class-tag">${displayClass}</span></div>
                         <div class="round-score-zone"><span class="score-box">${finalScore}</span></div>
                         <div class="round-score-zone"><span class="meta-score-box">${metaCalculated}</span></div>
                         ${trafficMatrixHtml}
@@ -1181,6 +1207,21 @@
             } else {
                 const rKey = parseInt(stateRound);
                 sourceStats = (globalRoundItemStats && globalRoundItemStats[rKey]) || [];
+            }
+
+            // roundTypeAnalysis 없으면(구버전GAS) roundItemAnalysis 20개에서 고정배치로 계산
+            if (stateRound !== 'total' && (!sourceStats || sourceStats.length === 0)) {
+                const rKey = parseInt(stateRound);
+                const itemArr = (globalRoundItemAnalysis && globalRoundItemAnalysis[rKey]) || [];
+                if (itemArr.length === 20) {
+                    const avg = (arr) => Math.round(arr.reduce((s,v) => s + v, 0) / arr.length * 100) / 100;
+                    sourceStats = [
+                        avg(itemArr.slice(0, 5)),
+                        avg(itemArr.slice(5, 10)),
+                        avg(itemArr.slice(10, 15)),
+                        avg(itemArr.slice(15, 20))
+                    ];
+                }
             }
 
             if (!sourceStats || sourceStats.length === 0) return;
