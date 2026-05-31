@@ -1,1 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mathy Yuri | 결 모의고사 3회</title>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: { 
+                enableMenu: false
+            },
+            chtml: {
+                displayAlign: 'center',
+                displayIndent: '0'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght=1,600&family=Montserrat:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-mint: #e0f2f1; --point-mint: #26a69a; --text-dark: #2c3e50; --white: #ffffff;
+            --sub-mint-bg: #00796b; 
+        }
+        * { box-shadow: border-box; margin: 0; padding: 0; font-family: 'Montserrat', 'Nanum Myeongjo', sans-serif; box-sizing: border-box; }
+        body { background-color: #f7fafc; color: var(--text-dark); padding: 20px 10px; line-height: 1.8; -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; }
+        .container { max-width: 750px; margin: 0 auto; background: var(--white); border-radius: 16px; padding: 25px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px dashed var(--bg-mint); padding-bottom: 20px; }
+        .header h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-style: italic; color: var(--sub-mint-bg); letter-spacing: 1px; }
+        .header p { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; font-weight: 700; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+        .prob-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 0; cursor: pointer; transition: all 0.2s ease; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        .prob-btn .num-lbl { font-size: 0.95rem; font-weight: 800; color: #64748b; }
+        .prob-btn .ans-lbl { font-size: 0.75rem; font-weight: 700; color: #94a3b8; }
+        
+        .prob-btn:hover { background: var(--bg-mint); }
+        .prob-btn:hover .num-lbl { color: var(--sub-mint-bg); }
+        
+        .prob-btn.active { background: var(--point-mint); border-color: var(--point-mint); box-shadow: 0 4px 12px rgba(38,166,154,0.3); }
+        .prob-btn.active .num-lbl { color: var(--white); }
+        .prob-btn.active .ans-lbl { color: var(--bg-mint); }
+        
+        .prob-btn.desc-type { background: #fff4e6; border-color: #ffd8a8; }
+        .prob-btn.desc-type .num-lbl { color: #d9480f; }
+        .prob-btn.desc-type .ans-lbl { color: #f76707; }
+        .prob-btn.desc-type.active { background: #d9480f; border-color: #d9480f; box-shadow: 0 4px 12px rgba(217,72,15,0.3); }
+        .prob-btn.desc-type.active .num-lbl, .prob-btn.desc-type.active .ans-lbl { color: var(--white); }
 
+        .viewer-card { display: none; background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 15px; position: relative; }
+        .viewer-card.active { display: block; animation: fadeIn 0.4s ease forwards; }
+        
+        .prob-label { display: inline-block; background: var(--sub-mint-bg); color: var(--white); font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .viewer-card.desc-mode .prob-label { background: #d9480f; }
+        .prob-text { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); margin-bottom: 18px; word-break: keep-all; line-height: 1.8; }
+        
+        .prob-img-area { display: flex; justify-content: center; align-items: center; margin: 18px 0; background: var(--white); padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; }
+        .prob-img-area img { max-width: 100%; height: auto; max-height: 220px; object-fit: contain; }
+
+        /* 기본 선지 스타일 (가로 한 줄 배치) */
+        .options-row { display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between; gap: 6px; margin-bottom: 22px; width: 100%; }
+        .option-item { flex: 1; background: var(--white); border: 1px solid #e2e8f0; padding: 10px 4px; border-radius: 6px; font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap; }
+        
+        /* 12번 전용: 3개 배치 후 행바꿈 + 가운데 정렬 스타일 */
+        .options-row.grid-3-2 { 
+            flex-wrap: wrap !important; 
+            justify-content: center !important; 
+            gap: 12px; 
+        }
+        .options-row.grid-3-2 .option-item { 
+            flex: 0 0 calc(33.333% - 12px) !important; 
+            min-width: 210px; 
+        }
+
+        .sol-area { border-top: 1px solid #e2e8f0; padding-top: 18px; margin-top: 18px; }
+        .sol-title { font-size: 0.85rem; font-weight: 800; color: var(--point-mint); letter-spacing: 0.5px; margin-bottom: 8px; }
+        .viewer-card.desc-mode .sol-title { color: #d9480f; }
+        .ans-highlight { display: inline-block; font-weight: 800; color: #e74c3c; margin-bottom: 10px; font-size: 1.05rem; }
+        
+        .sol-text { font-size: 0.98rem; color: #475569; word-break: keep-all; word-wrap: break-word; white-space: normal; line-height: 1.9; }
+
+        mjx-container { 
+            font-size: 112% !important; 
+            margin: 4px 0 !important; 
+            max-width: 100% !important; 
+            vertical-align: -0.12em !important; 
+            color: #1a252f;
+        }
+        mjx-frac { font-size: 100% !important; padding: 0 3px !important; }
+        mjx-num, mjx-den { font-size: 95% !important; }
+
+        .desc-notice { background: #fff5f5; border: 1px dashed #feb2b2; padding: 15px; border-radius: 8px; color: #c53030; font-size: 0.9rem; font-weight: 700; text-align: center; margin-top: 15px; line-height: 1.6; }
+        .btn-link { display: inline-block; width: 100%; text-align: center; background: #d9480f; color: var(--white); border: none; padding: 12px 0; border-radius: 8px; font-size: 1rem; font-weight: 800; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 10px rgba(217,72,15,0.2); }
+
+        @media (max-width: 600px) {
+            body { padding: 15px 6px; }
+            .container { padding: 18px 12px; }
+            
+            .options-row { flex-direction: row !important; flex-wrap: nowrap !important; gap: 4px; }
+            .option-item { font-size: 0.73rem; padding: 8px 2px; text-align: center; }
+            
+            /* 모바일 화면에서는 12번 전용 레이아웃도 보기 편하게 세로 정렬로 전환 */
+            .options-row.grid-3-2 { flex-direction: column !important; flex-wrap: wrap !important; gap: 8px; }
+            .options-row.grid-3-2 .option-item { font-size: 0.88rem; padding: 10px 12px; text-align: left; flex: 1 1 100% !important; white-space: normal; }
+
+            mjx-container[display="true"] { 
+                display: block !important; 
+                text-align: left !important; 
+                padding-left: 8px; 
+                overflow-x: auto !important; 
+                overflow-y: hidden !important;
+            }
+            .sol-text { font-size: 0.93rem; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="brand">The Perfection of Logic</div>
+        <h1>결 모의고사 3회</h1>
+        <div class="subtitle">DAECHI S+ ACADEMY | MATHY YURI CLASS</div>
+    </div>
+    <div class="grid-container" id="grid-box"></div>
+    <div id="prob-viewer" class="viewer-card"></div>
+</div>
+
+<script>
+    const quizData = {
+        1: {
+            ans: "⑤",
+            text: "주머니 속에 서로 다른 흰 공 \\(3\\)개, 서로 다른 빨간 공 \\(2\\)개, 서로 다른 파란 공이 \\(4\\)개 들어 있다. 이 주머니에서 동시에 \\(4\\)개의 공을 꺼낼 때, 꺼낸 공의 색이 \\(3\\)종류인 경우의 수를 구하시오.",
+            options: ["① \\(48\\)", "② \\(54\\)", "③ \\(60\\)", "④ \\(66\\)", "⑤ \\(72\\)"],
+            sol: "총 \\(4\\)개의 공을 꺼낼 때 색이 \\(3\\)종류이려면, 어느 한 색상에서 \\(2\\)개를 뽑고 나머지 두 색상에서 각각 \\(1\\)개씩 뽑아야 합니다.<br><br><b>1) 흰 공 \\(2\\)개, 빨간 공 \\(1\\)개, 파란 공 \\(1\\)개인 경우:</b><br>\\(_3C_2 \\times _2C_1 \\times _4C_1 = 3 \\times 2 \\times 4 = 24\\)<br><br><b>2) 흰 공 \\(1\\)개, 빨간 공 \\(2\\)개, 파란 공 \\(1\\)개인 경우:</b><br>\\(_3C_1 \\times _2C_2 \\times _4C_1 = 3 \\times 1 \\times 4 = 12\\)<br><br><b>3) 흰 공 \\(1\\)개, 빨간 공 \\(1\\)개, 파란 공 \\(2\\)개인 경우:</b><br>\\(_3C_1 \\times _2C_1 \\times _4C_2 = 3 \\times 2 \\times 6 = 36\\)<br><br>따라서 구하고자 하는 총 경우의 수는 합의 법칙에 의해 \\(24 + 12 + 36 = 72\\)입니다."
+        },
+        2: {
+            ans: "①",
+            text: "행렬 \\(A = \\begin{pmatrix} 1 & x & 2 \\\\ -3 & 6 & y \\end{pmatrix}\\)의 \\((i, j)\\) 성분 \\(a_{ij}\\)가 모든 열 인덱스 \\(j\\)에 대하여 \\(a_{2j} = -3a_{1j}\\)를 만족할 때, \\(x + y\\)의 값은?",
+            options: ["① \\(-8\\)", "② \\(-4\\)", "③ \\(0\\)", "④ \\(4\\)", "⑤ \\(8\\)"],
+            sol: "주어진 성분 정의 공식 \\(a_{2j} = -3a_{1j}\\)에 행렬 각 열의 성분을 대입합니다.<br><br>1) \\(j=1\\) 일 때 (\\(1\\)열): \\(a_{21} = -3a_{11} \\implies -3 = -3 \\times 1\\) (성립)<br>2) \\(j=2\\) 일 때 (\\(2\\)열): \\(a_{22} = -3a_{12} \\implies 6 = -3x \\implies x = -2\\)<br>3) \\(j=3\\) 일 때 (\\(3\\)열): \\(a_{23} = -3a_{13} \\implies y = -3 \\times 2 \\implies y = -6\\)<br><br>따라서 구하고자 하는 값은 \\(x + y = -2 + (-6) = -8\\)입니다."
+        },
+        3: {
+            ans: "⑤",
+            text: "어른 \\(2\\)명을 포함한 \\(7\\)명의 사람 중에서 어른 \\(2\\)명을 반드시 포함하여 총 \\(5\\)명을 뽑아 일렬로 세우는 모든 방법의 수를 구하시오.",
+            options: ["① \\(480\\)", "② \\(900\\)", "③ \\(1020\\)", "④ \\(1150\\)", "⑤ \\(1200\\)"],
+            sol: "어른 \\(2\\)명은 이미 선발이 고정되어 있으므로, 남은 \\(5\\)명의 일반 지원자 풀 중에서 추가 배치할 \\(3\\)명을 더 선택해야 합니다.<br><br><b>1단계 (인원 선별 조합):</b><br>\\[_5C_3 = _5C_2 = \\dfrac{5 \\times 4}{2 \\times 1} = 10\\]<b>2단계 (선발이 완료된 총 \\(5\\)명을 일렬 순열 배열):</b><br>\\[5! = 120\\]<b>최종 연산 (곱의 법칙):</b><br>\\[10 \\times 120 = 1200\\]"
+        },
+        4: {
+            ans: "②",
+            text: "두 실수 \\(x, y\\)에 대하여 두 행렬 \\(A = \\begin{pmatrix} -2 & x \\\\ 1 & 0 \\end{pmatrix}, B = \\begin{pmatrix} -1 & 4 \\\\ y & -3 \\end{pmatrix}\\)가 식 \\((A+B)(A-B) = A^2 - B^2\\)을 만족할 때, \\(x^2 + y^2\\)의 값은?",
+            options: ["① \\(13\\)", "② \\(17\\)", "③ \\(25\\)", "④ \\(27\\)", "⑤ \\(32\\)"],
+            sol: "행렬의 전개식 공식에 의해 \\((A+B)(A-B) = A^2 - AB + BA - B^2\\)이므로, 문제의 조건이 성립하려면 \\(AB = BA\\)가 성립해야 합니다.<br><br>두 행렬 곱셈을 연산하면 다음과 같습니다.<br>\\[AB = \\begin{pmatrix} -2 & x \\\\ 1 & 0 \\end{pmatrix} \\begin{pmatrix} -1 & 4 \\\\ y & -3 \\end{pmatrix} = \\begin{pmatrix} 2+xy & -8-3x \\\\ -1 & 4 \\end{pmatrix}\\]<br>\\[BA = \\begin{pmatrix} -1 & 4 \\\\ y & -3 \\end{pmatrix} \\begin{pmatrix} -2 & x \\\\ 1 & 0 \\end{pmatrix} = \\begin{pmatrix} 6 & -x \\\\ -2y-3 & xy \\end{pmatrix}\\]각 대응 성분이 완벽히 매칭되어야 하므로 방정식을 연립합니다.<br>1) \\(1\\)행 \\(2\\)열 비교: \\(-8 - 3x = -x \\implies 2x = -8 \\implies x = -4\\)<br>2) \\(1\\)행 \\(1\\)열 비교: \\(2 + xy = 6 \\implies xy = 4\\)<br>\\(x = -4\\)이므로 \\(-4y = 4 \\implies y = -1\\)<br><br>최종 연산 결과: \\(x^2 + y^2 = 16 + 1 = 17\\)이므로 정답은 ②번입니다."
+        },
+        5: {
+            ans: "③",
+            text: "부등식 \\(|2x - 7| > |x - 3|\\)의 해가 \\(x < a\\) 또는 \\(x > b\\) 일 때, 두 실수 \\(a, b\\)에 대하여 \\(3a - b\\)의 값은?",
+            options: ["① \\(2\\)", "② \\(4\\)", "③ \\(6\\)", "④ \\(8\\)", "⑤ \\(10\\)"],
+            sol: "양변이 모두 절댓값이므로 양변을 제곱하여 절댓값을 제거하는 방법을 사용합니다.<br>\\[(2x - 7)^2 > (x - 3)^2\\]\\[4x^2 - 28x + 49 > x^2 - 6x + 9\\]\\[3x^2 - 22x + 40 > 0\\]좌변을 인수분해하면 \\((3x - 10)(x - 4) > 0\\) 이므로 부등식의 최종 해는 다음과 같습니다.<br>\\[x < \\dfrac{10}{3} \\text{ 또는 } x > 4\\]따라서 \\(a = \\dfrac{10}{3}, b = 4\\)가 되므로<br>구하고자 하는 값: \\(3a - b = 3 \\times \\dfrac{10}{3} - 4 = 10 - 4 = 6\\)"
+        },
+        6: {
+            ans: "②",
+            text: "연립부등식 \\(\\begin{cases} \\dfrac{x+3}{4} - \\dfrac{1-x}{2} < 2 \\\\ 0.4x + 1.3 < 0.5x + 1.7 \\end{cases}\\)의 해를 올바르게 구한 것은?",
+            options: ["① \\(-6 < x < \\dfrac{3}{2}\\)", "② \\(-4 < x < \\dfrac{7}{3}\\)", "③ \\(-\\dfrac{4}{3} < x < 3\\)", "④ \\(2 < x < \\dfrac{11}{4}\\)", "⑤ \\(-\\dfrac{1}{3} < x < 5\\)"],
+            sol: "각각의 일차부등식을 분리하여 풀이합니다.<br><br><b>1) 첫 번째 식:</b> 양변에 \\(4\\)를 곱하여 분모를 정리합니다.<br>\\(x + 3 - 2(1 - x) < 8 \\implies x + 3 - 2 + 2x < 8\\)<br>\\(3x + 1 < 8 \\implies 3x < 7 \\implies x < \\dfrac{7}{3}\\)<br><br><b>2) 두 번째 식:</b> 양변에 계수를 정수화하기 위해 \\(10\\)을 곱합니다.<br>\\(4x + 13 < 5x + 17 \\implies -x < 4 \\implies x > -4\\)<br><br>두 일차부등식의 공통 범위를 구하면 \\(-4 < x < \\dfrac{7}{3}\\)가 되어 정답은 ②번입니다."
+        },
+        7: {
+            ans: "③",
+            text: "두 주사위를 동시에 던져 나오는 눈의 수를 차례로 \\(a, b\\)라 할 때, 이차함수 \\(y = x^2 + 2ax + 9b\\)의 그래프가 \\(x\\)축과 적어도 한 점에서 만나도록 하는 순서쌍 \\((a, b)\\)의 개수는?",
+            options: ["① \\(4\\)", "② \\(6\\)", "③ \\(8\\)", "④ \\(10\\)", "⑤ \\(12\\)"],
+            sol: "이차함수 그래프가 \\(x\\)축과 적어도 한 점에서 만난다는 것은 판별식 \\(D \\ge 0\\)임을 의미합니다.<br>\\[\\dfrac{D}{4} = a^2 - 9b \\ge 0 \\implies b \\le \\dfrac{a^2}{9}\\]주사위 눈의 조건 (\\(1 \\le a, b \\le 6\\)인 자연수)을 만족하는 순서쌍의 개수를 각 \\(a\\)의 값에 따라 구합니다.<br><br>1) \\(a=1\\) 일 때: \\(b \\le \\dfrac{1}{9} \\implies 0\\)개<br>2) \\(a=2\\) 일 때: \\(b \\le \\dfrac{4}{9} \\implies 0\\)개<br>3) \\(a=3\\) 일 때: \\(b \\le 1 \\implies 1\\)개 \\((b=1)\\)<br>4) \\(a=4\\) 일 때: \\(b \\le \\dfrac{16}{9} \\approx 1.77 \\implies 1\\)개 \\((b=1)\\)<br>5) \\(a=5\\) 일 때: \\(b \\le \\dfrac{25}{9} \\approx 2.77 \\implies 2\\)개 \\((b=1, 2)\\)<br>6) \\(a=6\\) 일 때: \\(b \\le 4 \\implies 4\\)개 \\((b=1, 2, 3, 4)\\)<br><br>따라서 만족하는 순서쌍의 총개수는 \\(0 + 0 + 1 + 1 + 2 + 4 = 8\\)개이므로 정답은 ③번입니다."
+        },
+        8: {
+            ans: "④",
+            text: "행렬 방정식 \\(\\begin{pmatrix} x & y \\\\ 2 & 1 \\end{pmatrix} \\begin{pmatrix} 3 & x \\\\ -1 & y \\end{pmatrix} = \\begin{pmatrix} 6 & 15 \\\\ 4 & 2x \\end{pmatrix} + \\begin{pmatrix} 3 & 10 \\\\ 1 & y \\end{pmatrix}\\)을 만족시키는 두 실수 \\(x, y\\)에 대하여 \\(xy\\)의 최댓값을 구하시오.",
+            options: ["① \\(30\\)", "② \\(24\\)", "③ \\(18\\)", "④ \\(12\\)", "⑤ \\(6\\)"],
+            sol: "좌변의 곱셈 연산과 우변의 덧셈 연산을 각각 정리합니다.<br>좌변: \\[\\begin{pmatrix} 3x-y & x^2+y^2 \\\\ 6-1 & 2x+y \\end{pmatrix} = \\begin{pmatrix} 3x-y & x^2+y^2 \\\\ 5 & 2x+y \\end{pmatrix}\\]우변: \\[\\begin{pmatrix} 6+3 & 15+10 \\\\ 4+1 & 2x+y \\end{pmatrix} = \\begin{pmatrix} 9 & 25 \\\\ 5 & 2x+y \\end{pmatrix}\\]각 대응 성분을 계수 대조법으로 비교합니다.<br>1) \\(1\\)행 \\(1\\)열 연립: \\(3x - y = 9 \\implies y = 3x - 9\\)<br>2) \\(1\\)행 \\(2\\)열 연립: \\(x^2 + y^2 = 25\\)<br><br>\\(y\\) 식을 대입하여 이차방정식으로 유도합니다.<br>\\(x^2 + (3x - 9)^2 = 25 \\implies 10x^2 - 54x + 56 = 0\\)<br>약분하면 \\(5x^2 - 27x + 28 = 0\\) 이며 인수분해 시 \\((5x - 7)(x - 4) = 0\\)이 됩니다.<br><br>- Case 1: \\(x = 4\\) 일 때, \\(y = 3(4) - 9 = 3 \\implies xy = 12\\)<br>- Case 2: \\(x = \\dfrac{7}{5}\\) 일 때, \\(y = 3(\\dfrac{7}{5}) - 9 = -\\dfrac{24}{5} \\implies xy = -\\dfrac{168}{25}\\)<br><br>따라서 구하고자 하는 곱 \\(xy\\)의 최댓값은 \\(12\\)이므로 정답은 ④번입니다."
+        },
+        9: {
+            ans: "③",
+            text: "9. 다음 그림과 같은 도로망에서 A 지역에서 D 지역으로 가는 모든 방법의 수가 90 이상이 되도록 하려면 B 지역과 C 지역을 잇는 도로를 최소 몇 개 건설하여야 하는지 구하시오. (단, 같은 지역은 두 번 이상 지나지 않고, 새로 건설하는 도로끼리는 만나지 않는다.)<br><br><div style=\"text-align: center;\"><img src=\"image9.png\" style=\"max-width: 45%; height: auto;\"></div>",
+            options: ["① \\(4\\)", "② \\(6\\)", "③ \\(8\\)", "④ \\(10\\)", "⑤ \\(12\\)"],
+            sol: "주어진 도로망 그림에서 각 지역을 연결하는 기존 도로의 개수를 정확히 세어보면 다음과 같습니다.<br>• A와 B 사이: \\(1\\)개<br>• A와 C 사이: \\(3\\)개<br>• B와 D 사이: \\(3\\)개<br>• C와 D 사이: \\(2\\)개<br><br>새로 건설할 B 지역과 C 지역 사이의 도로 개수를 \\(n\\)개라 두고, 같은 지역을 두 번 지나지 않는 규칙에 따라 A에서 D로 가는 모든 경로를 케이스별로 분류합니다.<br><br>1) \\(A \\rightarrow B \\rightarrow D\\) : \\(1 \\times 3 = 3\\)가지<br>2) \\(A \\rightarrow C \\rightarrow D\\) : \\(3 \\times 2 = 6\\)가지<br>3) \\(A \\rightarrow B \\rightarrow C \\rightarrow D\\) : \\(1 \\times n \\times 2 = 2n\\)가지<br>4) \\(A \\rightarrow C \\rightarrow B \\rightarrow D\\) : \\(3 \\times n \\times 3 = 9n\\)가지<br><br>따라서 전체 이동 방법의 총합은 다음과 같습니다.<br>\\[3 + 6 + 2n + 9n = 9 + 11n\\]이 총 경로의 수가 \\(90\\) 이상이어야 하므로 조건 부등식을 세웁니다.<br>\\[9 + 11n \\ge 90 \\implies 11n \\ge 81 \\implies n \\ge 7.3636\\cdots\\]새로 건설하는 도로의 개수 \\(n\\)은 자연수여야 하므로, 이 조건을 만족하는 최소의 개수는 \\(8\\)개입니다. 따라서 정답은 ③번입니다."
+        },
+        10: {
+            ans: "②",
+            text: "10. 다음 중 부등식 \\(ax^2 + 2ax - 6 > 0\\)이 해를 갖도록 하는 실수 \\(a\\)의 값이 아닌 것은?",
+            options: ["① \\(-8\\)", "② \\(-6\\)", "③ \\(2\\)", "④ \\(4\\)", "⑤ \\(6\\)"],
+            sol: "부등식 \\(ax^2 + 2ax - 6 > 0\\)이 해를 갖기 위한 실수 \\(a\\)의 범위를 경우를 나누어 구합니다.<br><br>1) \\(a = 0\\)일 때<br>\\(-6 > 0\\)이 되므로 이를 만족하는 실수 \\(x\\)는 존재하지 않습니다. 즉, 해가 없습니다.<br><br>2) \\(a > 0\\)일 때<br>아래로 볼록한 이차함수는 \\(x\\)가 커짐에 따라 Y값이 무한히 커지므로, \\(x\\)축 위쪽(\\(>0\\))에 항상 그래프가 존재합니다.<br> 따라서 판별식과 관계없이 항상 해를 가집니다.<br><br>3) \\(a < 0\\)일 때<br>위로 볼록한 이차함수가 \\(x\\)축 위쪽(\\(>0\\))에 조금이라도 해를 가지려면, 그래프가 \\(x\\)축과 서로 다른 두 점에서 만나야만 합니다. <br>즉, 판별식 \\(D\\)가 \\(0\\)보다 커야 합니다.<br>\\[\\dfrac{D}{4} = a^2 - a(-6) = a^2 + 6a > 0\\]\\[a(a + 6) > 0 \\implies a < -6 \\text{ 또는 } a > 0\\]현재 조건이 \\(a < 0\\)이므로 공통 범위를 구하면 \\(a < -6\\)이 됩니다.<br><br>따라서<br>주어진 부등식이 해를 가질 조건은 \\(a < -6\\) 또는 \\(a > 0\\)입니다.<br><br>선지 중 해를 갖지 않는 범위에 속하는 값을 찾으면 ②번 \\(-6\\)이 유일합니다."
+        },
+        11: {
+            ans: "③",
+            text: "11. 크기가 동일한 \\(6\\)개의 정사각형 영역에 \\(1\\)부터 \\(6\\)까지의 번호가 매겨진 \\(2 \\times 3\\) 격자판이 있다. 서로 다른 \\(4\\)가지 색의 일부 혹은 전부를 사용하여 색칠하려 할 때, 변을 공유하는 이웃한 정사각형은 다른 색을 칠하고 \\(1\\)번과 \\(6\\)번 영역에는 반드시 같은 색을 칠하는 총 경우의 수는?<br><br><div style=\"text-align: center;\"><img src=\"image11.png\" style=\"max-width: 45%; height: auto;\"></div>",
+            options: ["① \\(72\\)", "② \\(84\\)", "③ \\(96\\)", "④ \\(108\\)", "⑤ \\(120\\)"],
+            sol: "먼저 기준이 되는 \\(1\\)번과 \\(6\\)번에 동일한 메인 색상을 고르는 경우의 수는 \\(4\\)가지입니다 (이 색을 색 A라 지정). 나머지 칸들의 색 배치를 모순 없이 분석하기 위해 경우를 나누어 세어봅시다.<br><br><b>1) \\(4\\)번과 \\(2\\)번 사각형의 색상이 동일할 때:</b><br>색 A를 제외한 \\(3\\)가지 색 중 하나를 칠합니다. 이때 중심부인 \\(5\\)번 칸은 인접한 세 칸의 색 종류가 2가지(A, 그리고 4,2번의 공통색)이므로 남은 \\(2\\)가지 색이 가능하고, \\(3\\)번 칸도 \\(2\\)번 및 \\(6\\)번(A)과 다르므로 \\(2\\)가지 색이 선택 가능합니다.<br>\\(\\implies 4 \\times 3 \\times 2 \\times 2 = 48\\)가지<br><br><b>2) \\(4\\)번과 \\(2\\)번 사각형의 색상이 서로 다를 때:</b><br>색 A를 제외하고 서로 다른 두 색을 부여하는 경우의 수는 \\(3 \\times 2 = 6\\)가지입니다. 이 상황에서 \\(5\\)번 칸은 인접 칸인 \\(4, 2, 6\\)번의 색상이 모두 제각각이므로 남은 단 \\(1\\)가지 색만 칠할 수 있고, \\(3\\)번 칸은 \\(2, 6\\)번과만 다르면 되므로 \\(2\\)가지 색이 가능합니다.<br>\\(\\implies 4 \\times 6 \\times 1 \\times 2 = 48\\)가지<br><br>따라서 총 경우의 수는 두 케이스를 합산하여 \\(48 + 48 = 96\\)가지입니다."
+        },
+        12: {
+            ans: "③",
+            text: "12. 방정식 \\(x^3 = 1\\)의 한 허근을 \\(\\omega\\)라 할 때, 다음 중 옳지 않은 것은? (단, \\(\\overline{\\omega}\\)는 \\(\\omega\\)의 켤레복소수이다.)",
+            options: [
+                "① \\((1+\\omega)^3 = -1\\)", 
+                "② \\(\\omega^2\\overline{\\omega} + \\omega\\overline{\\omega}^2 = -1\\)", 
+                "③ \\(\\dfrac{1}{\\overline{\\omega}} + \\dfrac{1}{\\overline{\\omega}^2} = 1\\)", 
+                "④ \\(\\dfrac{1}{\\omega^{500}} + \\dfrac{1}{\\overline{\\omega}^{500}} = -1\\)", 
+                "⑤ \\(\\omega+\\omega^2+\\omega^3+\\dots+\\omega^{101} = -1\\)"
+            ],
+            sol: "방정식 \\(x^3 = 1\\)을 이항하여 인수분해하면 \\((x-1)(x^2+x+1) = 0\\)이 되므로, 허근 \\(\\omega\\)에 대해 \\(\\omega^2+\\omega+1 = 0\\)과 \\(\\omega^3 = 1\\)이 성립합니다. 또한, 두 허근의 근과 계수의 관계에 의해 \\(\\omega+\\overline{\\omega} = -1\\), \\(\\omega\\overline{\\omega} = 1\\)입니다.<br><br>① \\((1+\\omega)^3 = (-\\omega^2)^3 = -\\omega^6 = -1\\) (참)<br>② \\(\\omega^2\\overline{\\omega} + \\omega\\overline{\\omega}^2 = \\omega\\overline{\\omega}(\\omega+\\overline{\\omega}) = 1 \\times (-1) = -1\\) (참)<br>③ \\(\\dfrac{1}{\\overline{\\omega}} + \\dfrac{1}{\\overline{\\omega}^2} = \\dfrac{\\overline{\\omega}+1}{\\overline{\\omega}^2} = \\dfrac{-\\overline{\\omega}^2}{\\overline{\\omega}^2} = -1 \\neq 1\\) (거짓)<br>④ \\(\\omega^{500} = (\\omega^3)^{166}\\omega^2 = \\omega^2\\). 따라서 \\(\\dfrac{1}{\\omega^2} + \\dfrac{1}{\\overline{\\omega}^2} = \\dfrac{\\omega^2+\\overline{\\omega}^2}{(\\omega\\overline{\\omega})^2} = \\dfrac{(\\omega+\\overline{\\omega})^2 - 2\\omega\\overline{\\omega}}{1} = 1 - 2 = -1\\) (참)<br>⑤ \\(101\\)개의 항은 연속된 \\(3\\)개씩 더하면 \\(0\\)이 됩니다. \\(101 = 3 \\times 33 + 2\\)이므로 앞의 두 항만 남아 \\(\\omega+\\omega^2 = -1\\)이 됩니다. (참)<br><br>따라서 옳지 않은 것은 ③번입니다."
+        },
+        13: {
+            ans: "④",
+            text: "13. 실수 \\(a, b\\)에 대하여 이차부등식 \\(x^2+(b+4)x-a+1 < 0\\)의 해가 \\(-4 < x < 3\\) 일 때, 이차부등식 \\(bx^2+ax-4 \\ge 0\\)을 만족시키는 정수 \\(x\\)의 개수를 구하시오.",
+            options: ["① \\(0\\)", "② \\(1\\)", "③ \\(2\\)", "④ \\(4\\)", "⑤ \\(5\\)"],
+            sol: "이차부등식 \\(x^2+(b+4)x-a+1 < 0\\)의 해가 \\(-4 < x < 3\\)이므로, \\(-4\\)와 \\(3\\)은 방정식 \\(x^2+(b+4)x-a+1 = 0\\)의 두 근입니다. 근과 계수의 관계를 이용합니다.<br>1) 두 근의 합: \\(-4 + 3 = -(b+4) \\implies -1 = -b-4 \\implies b = -3\\)<br>2) 두 근의 곱: \\(-4 \\times 3 = -a + 1 \\implies -12 = -a+1 \\implies a = 13\\)<br><br>구한 \\(a, b\\)의 값을 두 번째 이차부등식에 대입합니다.<br>\\[-3x^2 + 13x - 4 \\ge 0\\]양변에 \\(-1\\)을 곱하여 부호 방향을 바꿉니다.<br>\\[3x^2 - 13x + 4 \\le 0 \\implies (3x - 1)(x - 4) \\le 0\\]해당 부등식의 최종 해는 \\(\\dfrac{1}{3} \\le x \\le 4\\)가 됩니다.<br>이를 만족하는 정수 \\(x\\)는 \\(1, 2, 3, 4\\)이므로 총 4개입니다."
+        },
+        14: {
+            ans: "④",
+            text: "14. 선수 \\(12\\)명을 보유하고 있는 농구팀이 있다. 특정 선수 \\(4\\)명 중에서 \\(2\\)명씩, 나머지 \\(8\\)명 중에서 \\(3\\)명씩을 뽑아 \\(5\\)명의 두 팀으로 나누어 연습 경기를 하려고 한다. 두 팀을 만들 수 있는 방법의 수는?",
+            options: ["① \\(1560\\)", "② \\(1600\\)", "③ \\(1640\\)", "④ \\(1680\\)", "⑤ \\(1720\\)"],
+            sol: "두 팀은 이름이나 역할 구분이 없는 무등가적 동질 그룹입니다. 특정 선수 그룹과 나머지 선수 그룹에서 각각 선발하여 팀을 합치는 방식으로 계산합니다.<br><br>1) 특정 선수 \\(4\\)명을 \\(2\\)명, \\(2\\)명의 두 조로 나누는 방법의 수:<br>\\[\\dfrac{_4C_2 \\times _2C_2}{2!} = \\dfrac{6 \\times 1}{2} = 3\\text{가지}\\]2) 나머지 선수 \\(8\\)명 중에서 \\(6\\)명을 뽑아 \\(3\\)명, \\(3\\)명의 두 조로 나누는 방법의 수:<br>\\[\\dfrac{_8C_3 \\times _5C_3}{2!} = \\dfrac{56 \\times 10}{2} = 280\\text{가지}\\]3) 나누어진 특정 선수 \\(2\\)개 조와 나머지 선수 \\(2\\)개 조를 짝지어 최종 두 팀을 구성하는 방법의 수(서로 교차 매칭이 가능하므로 \\(2!\\)을 곱함):<br>\\[3 \\times 280 \\times 2! = 1680\\]따라서 두 팀을 만들 수 있는 전체 방법의 수는 1680가지입니다."
+        },
+        15: {
+            ans: "②",
+            text: "15. 두 인형 A, B에게 색이 정해지지 않은 셔츠와 바지를 모두 입힌 후, 입힌 옷의 색을 정하는 컴퓨터 게임이 있다. 서로 다른 모양의 셔츠와 바지가 각각 \\(5\\)개씩 있고, 각 옷의 색은 빨강과 파랑 중 하나를 정한다. 한 인형에게 입힌 셔츠와 바지는 다른 인형에게 입히지 않는다. A 인형의 셔츠와 바지의 색은 서로 다르게 정하고, B 인형의 셔츠와 바지의 색도 서로 다르게 정한다. 이 게임에서 두 인형 A, B에게 셔츠와 바지를 입히고 색을 정할 때, 그 결과로 나타날 수 있는 경우의 수는?",
+            options: ["① \\(1500\\)", "② \\(1600\\)", "③ \\(1700\\)", "④ \\(1800\\)", "⑤ \\(1900\\)"],
+            sol: "순서대로 경우의 수를 구하여 곱해줍니다.<br><br>1단계: 인형 A, B에게 겹치지 않게 고유 셔츠 \\(5\\)개 중 \\(2\\)개를 순열 배정: \\(_5P_2 = 20\\)가지<br>2단계: 인형 A, B에게 겹치지 않게 고유 바지 \\(5\\)개 중 \\(2\\)개를 순열 배정: \\(_5P_2 = 20\\)가지<br>3단계: 인형 A의 상·하의 컬러 매칭 방식(빨강-파랑, 파랑-빨강): \\(2\\)가지<br>4단계: 인형 B의 상·하의 컬러 매칭 방식(빨강-파랑, 파랑-빨강): \\(2\\)가지<br><br>모든 조건 요소를 곱의 법칙으로 결합합니다:<br>\\[\\text{총 가짓수} = 20 \\times 20 \\times 2 \\times 2 = 1600\\]"
+        },
+        16: {
+            ans: "①",
+            text: "16. 이차부등식 \\(x^2+3ax+2a(a-1) \\ge 0\\)의 해가 모든 실수가 되도록 하는 실수 \\(a\\)의 값의 범위는?",
+            options: [
+                "① \\(-8 \\le a \\le 0\\)",
+                "② \\(-7 \\le a \\le 0\\)",
+                "③ \\(0 \\le a \\le 7\\)",
+                "④ \\(0 \\le a \\le 8\\)",
+                "⑤ \\(1 \\le a \\le 8\\)"
+            ],
+            sol: "최고차항 계수가 \\(1\\)(양수)로 확정되어 있으므로 전 영역에서 항상 \\(0\\) 이상이 유지되려면 그래프가 \\(x\\)축 위쪽에 떠 있거나 접해야 하므로 판별식 조건은 \\(D \\le 0\\) 이어야 합니다.<br>\\[D = (3a)^2 - 4 \\times 1 \\times 2a(a-1) \\le 0\\]\\[9a^2 - 8a^2 + 8a \\le 0\\]\\[a^2 + 8a \\le 0 \\implies a(a + 8) \\le 0\\]따라서 만족하는 실수 \\(a\\)의 값의 범위는 \\(-8 \\le a \\le 0\\)이 되어 정답은 ①번입니다."
+        },
+        17: { ans: "서술형", text: "17. 다음은 \\(x\\)에 대한 방정식 \\((x^2+ax+a)(x^2+x+a)=0\\)의 근 중 서로 다른 허근의 개수가 \\(2\\)이기 위한 실수 \\(a\\)의 값의 범위를 구하는 과정과 답을 쓰시오.", isDesc: true },
+        18: { ans: "서술형", text: "18. 부등식 \\(|x+2| - |3x-6| \\ge -4\\)를 만족시키는 \\(x\\)의 최댓값을 \\(M\\), 최솟값을 \\(m\\)이라 할 때, \\(M+m\\)의 값을 구하는 과정과 답을 쓰시오.", isDesc: true },
+        19: { ans: "서술형", text: "19. 밑면의 대각선의 길이가 \\(13\\text{cm}\\), 높이가 \\(15\\text{cm}\\)인 직육면체가 있다. 밑면의 가로와 세로의 길이를 각각 \\(3\\text{cm}\\)씩 늘이면 부피가 처음 직육면체의 부피보다 \\(900\\text{cm}^3\\) 만큼 증가한다고 한다. 처음 직육면체의 밑면의 가로의 길이를 구하는 풀이 과정과 답을 쓰시오. (단, 직육면체의 밑면의 가로의 길이는 세로의 길이보다 길다.)", isDesc: true },
+        20: { ans: "서술형", text: "20. 행렬 \\(A = \\begin{pmatrix} 2 & -1 \\\\ 5 & -2 \\end{pmatrix}\\) 에 대하여 행렬 \\(A^{2013}\\) 의 모든 성분의 합을 구하는 풀이 과정과 답을 쓰시오.", isDesc: true }
+    };
+
+    const gridBox = document.getElementById('grid-box');
+    for (let i = 1; i <= 20; i++) {
+        const isDesc = quizData[i].isDesc;
+        const btn = document.createElement('button');
+        btn.className = `prob-btn ${isDesc ? 'desc-type' : ''}`;
+        btn.onclick = function() { showProb(i, btn); };
+        
+        btn.innerHTML = `
+            <span class="num-lbl">#${i.toString().padStart(2, '0')}</span>
+            <span class="ans-lbl">${quizData[i].ans}</span>
+        `;
+        gridBox.appendChild(btn);
+    }
+
+    function showProb(num, btn) {
+        document.querySelectorAll('.prob-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const viewer = document.getElementById('prob-viewer');
+        viewer.classList.remove('active', 'desc-mode');
+        
+        setTimeout(() => {
+            if (quizData[num].isDesc) {
+                viewer.classList.add('desc-mode');
+                viewer.innerHTML = `
+                    <span class="prob-label">LOGIC WRITING CRITERIA #${num}</span>
+                    <div class="prob-text">${quizData[num].text}</div>
+                    <div class="desc-notice">
+                        ⚠️ 본 문항은 대치S+학원 서술형 평가 미션입니다.<br>
+                        감점 요인 없는 완벽한 인과관계 서술을 요구합니다. 
+                    </div>
+                    <button class="btn-link" onclick="window.location.href='gyeol3_desc.html'">서술형 전용 답안지 이동</button>
+                `;
+            } else {
+                const data = quizData[num];
+                let imgHtml = '';
+                if (data.img) {
+                    imgHtml = `<div class="prob-img-area"><img src="${data.img}" alt="Problem Diagram"></div>`;
+                }
+                
+                let optionsHtml = data.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
+                
+                // 💡 오직 12번 문항일 때만 3개 배치 후 행바꿈(grid-3-2) 클래스가 들어가도록 지정했습니다.
+                let isWrapMode = (num === 12) ? 'grid-3-2' : ''; 
+                
+                viewer.innerHTML = `
+                    <span class="prob-label">SEQUENCE #${num.toString().padStart(2, '0')}</span>
+                    <div class="prob-text">${data.text}</div>
+                    ${imgHtml}
+                    <div class="options-row ${isWrapMode}">${optionsHtml}</div>
+                    <div class="sol-area">
+                        <div class="sol-title">LOGIC ARCHIVE</div>
+                        <span class="ans-highlight">[정답 : ${data.ans}]</span>
+                        <div class="sol-text">${data.sol}</div>
+                    </div>
+                `;
+            }
+            viewer.classList.add('active');
+            
+            if(window.MathJax) {
+                MathJax.typesetPromise([viewer]).catch(function (err) {
+                    console.log(err.message);
+                });
+            }
+        }, 50);
+    }
+</script>
+</body>
+</html>
