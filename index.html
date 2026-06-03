@@ -149,17 +149,29 @@ a{ text-decoration:none; color:inherit; }
 /* 카드 그리드 */
 .square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
 .square-link{
-  position:relative; aspect-ratio:1/1; background:#f5faf3;
-  border:1px solid #dde9d8; border-radius:18px; padding:14px;
-  display:flex; flex-direction:column; justify-content:space-between;
-  transition:0.22s; overflow:hidden;
+  position:relative; background:#f5faf3;
+  border:1px solid #dde9d8; border-radius:18px;
+  padding:12px 12px 10px;
+  display:flex; flex-direction:column; gap:5px;
+  transition:0.22s; overflow:hidden; min-height:88px;
 }
 .square-link:hover{ background:#fff; border-color:var(--point); transform:translateY(-3px); }
-.sq-number{ font-size:11px; color:var(--point); font-weight:700; }
-.sq-title{ font-size:13px; font-weight:600; line-height:1.3; }
-.count-display{ position:absolute; right:8px; bottom:6px; text-align:right; }
-.count-value{ display:block; font-family:'Cormorant Garamond',serif; font-size:40px; font-weight:700; color:var(--point); line-height:0.8; opacity:0.65; }
-.count-unit{ font-size:9px; font-weight:700; color:var(--sub); }
+.sq-number{ font-size:10px; color:var(--point); font-weight:700; line-height:1; position:relative; z-index:1; }
+.sq-title{ font-size:12px; font-weight:700; line-height:1.35; color:var(--main); flex:1; position:relative; z-index:1; }
+.sq-footer{ display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:2px; position:relative; z-index:1; }
+.sq-count{ font-family:'Cormorant Garamond',serif; font-size:12px; font-weight:700; color:var(--point); opacity:0.8; white-space:nowrap; }
+/* 배경 장식 숫자 — 겹침 없이 우측 장식용 */
+.count-display{
+  position:absolute; right:4px; top:50%;
+  transform:translateY(-50%);
+  pointer-events:none; z-index:0;
+}
+.count-value{
+  display:block; font-family:'Cormorant Garamond',serif;
+  font-size:52px; font-weight:700; color:var(--point);
+  line-height:1; opacity:0.07;
+}
+.count-unit{ display:none; }
 
 /* 사이드 메뉴 */
 .menu{ display:flex; flex-direction:column; gap:10px; }
@@ -274,49 +286,49 @@ a{ text-decoration:none; color:inherit; }
       <div class="subject">
         <div class="subject-name">방정식 <span>Equations</span></div>
         <div class="square-grid">
-          <a class="square-link" href="writing1/"><div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d1">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <a class="square-link" href="writing1-2/"><div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d2">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="writing1/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d1">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d1-bg">0</span></div></a>
+          <a class="square-link" href="writing1-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d2">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d2-bg">0</span></div></a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
         </div>
       </div>
 
       <div class="subject">
         <div class="subject-name">부등식 <span>Inequalities</span></div>
         <div class="square-grid">
-          <a class="square-link" href="writing2/"><div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d3">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <a class="square-link" href="writing2-2/"><div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d5">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="writing2/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d3">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d3-bg">0</span></div></a>
+          <a class="square-link" href="writing2-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d5">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d5-bg">0</span></div></a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
         </div>
       </div>
 
       <div class="subject">
         <div class="subject-name">경우의 수 <span>Combinatorics</span></div>
         <div class="square-grid">
-          <a class="square-link" href="writing3/"><div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d4">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <a class="square-link" href="writing3-2/"><div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d6">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="writing3/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d4">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d4-bg">0</span></div></a>
+          <a class="square-link" href="writing3-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d6">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d6-bg">0</span></div></a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
         </div>
       </div>
 
       <div class="subject">
         <div class="subject-name">행렬 <span>Matrices</span></div>
         <div class="square-grid">
-          <a class="square-link" href="writing4/"><div class="sq-number">01</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d7">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <a class="square-link" href="writing4-2/"><div class="sq-number">02</div><div class="sq-title">Writing<br>Logic</div><div class="count-display"><span class="count-value" id="count-d8">0</span><span class="count-unit">MEMBERS</span></div><div class="sq-status open">OPEN</div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
+          <a class="square-link" href="writing4/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d7">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d7-bg">0</span></div></a>
+          <a class="square-link" href="writing4-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d8">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d8-bg">0</span></div></a>
+          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
+          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
         </div>
       </div>
 
       <div class="subject">
         <div class="subject-name" style="font-weight:800;">실전 Writing <span>Final Practice</span></div>
         <div class="square-grid">
-          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사<br>1회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
-          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>2회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
-          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>3회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
+          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사 1회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
+          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사 2회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
+          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사 3회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
         </div>
       </div>
     </div>
@@ -362,8 +374,11 @@ window.onload = function() {
   // 카운트
   fetch(COUNT_URL + "?action=getCounts").then(r => r.json()).then(data => {
     for (let i = 1; i <= 8; i++) {
-      const el = document.getElementById('count-d' + i);
-      if (el && data['d'+i] !== undefined) el.innerText = data['d'+i];
+      const el   = document.getElementById('count-d' + i);
+      const elBg = document.getElementById('count-d' + i + '-bg');
+      const val  = data['d'+i] !== undefined ? data['d'+i] : 0;
+      if (el)   el.innerText   = val;
+      if (elBg) elBg.innerText = val;
     }
   }).catch(()=>{});
 };
