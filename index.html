@@ -2,122 +2,243 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>MATHY YURI System — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{ --bg:#edf5ea; --card:#f9fdf7; --line:#d9e7d5; --main:#233222; --sub:#6f7d6c; --point:#7da27b; --hover:#f2f8ef; --open-bg:#e5f0e1; --open:#6f9270; --soon-bg:#eef1eb; --soon:#a1ab9e; }
+:root{
+  --bg:#edf5ea; --card:#f9fdf7; --line:#d9e7d5; --main:#233222;
+  --sub:#6f7d6c; --point:#7da27b; --hover:#f2f8ef;
+  --open-bg:#e5f0e1; --open:#6f9270; --soon-bg:#eef1eb; --soon:#a1ab9e;
+}
 *{ margin:0; padding:0; box-sizing:border-box; }
-body{ background:var(--bg); color:var(--main); font-family:'Noto Sans KR', sans-serif; padding:42px 20px 80px; }
+body{ background:var(--bg); color:var(--main); font-family:'Noto Sans KR',sans-serif; padding:28px 16px 80px; }
 a{ text-decoration:none; color:inherit; }
 .container{ max-width:1240px; margin:auto; }
-.header{ display:flex; justify-content:space-between; align-items:center; gap:30px; margin-bottom:52px; }
-.logo-wrap{ flex:1; }
-.logo{ font-family:'Cormorant Garamond', serif; font-size:76px; line-height:0.93; font-weight:600; letter-spacing:-1px; }
-.logo span{ color:var(--point); font-style:italic; }
-.sub{ margin-top:18px; color:var(--sub); font-size:13px; letter-spacing:0.28em; }
-.profile-section { display: flex; align-items: center; gap: 24px; }
-.profile { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 3px solid #ffffff; box-shadow: 0 10px 30px rgba(60,90,60,0.12); flex-shrink: 0; }
-.profile img { width: 100%; height: 100%; object-fit: cover; }
-.profile-links { display: flex; flex-direction: column; gap: 10px; }
-.dot { width: 7px; height: 7px; background-color: var(--point); border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
-@keyframes blink { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-.live-chart-btn { display: inline-flex; align-items: center; padding: 10px 18px; background: #ffffff; border: 1px solid var(--line); border-radius: 30px; color: var(--open); font-size: 13px; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(125, 162, 123, 0.05); cursor: pointer; }
-.achievement-card { margin-top: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 20px; cursor: pointer; }
-.ach-title { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.1em; font-family: 'DM Mono', monospace; }
-.ach-stats { display: flex; justify-content: space-between; align-items: center; }
-.ach-val { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; color: var(--main); }
-.ach-lab { font-size: 9px; color: var(--sub); }
-.layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
-.card{ background:var(--card); border:1px solid var(--line); border-radius:32px; padding:36px; box-shadow:0 10px 28px rgba(80,110,80,0.05); }
-.category{ color:var(--point); font-size:12px; letter-spacing:0.18em; margin-bottom:18px; font-weight:700; }
-.title{ font-family:'Cormorant Garamond', serif; font-size:42px; line-height:1.08; margin-bottom:14px; }
-.desc{ color:var(--sub); font-size:14px; line-height:1.8; margin-bottom:32px; }
-.subject{ margin-bottom:38px; }
-.subject-name { display: flex; align-items: center; justify-content: space-between; font-size:19px; font-weight:700; margin-bottom:16px; }
-.square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.square-link{ position: relative; aspect-ratio:1/1; background:#f5faf3; border:1px solid #dde9d8; border-radius:24px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; transition:0.24s; overflow: hidden; }
-.square-link:hover{ background:white; border-color:var(--point); transform:translateY(-4px); }
-.sq-number{ font-size:13px; color:var(--point); font-weight:700; }
-.sq-title{ font-size:16px; font-weight:600; line-height:1.3; }
-.count-display { position: absolute; right: 12px; bottom: 8px; text-align: right; }
-.count-value { display: block; font-family: 'Cormorant Garamond', serif; font-size: 58px; font-weight: 700; color: var(--point); line-height: 0.8; opacity: 0.7; }
-.count-unit { font-size: 10px; font-weight: 700; color: var(--sub); }
-.sq-status{ align-self:flex-start; font-size:10px; padding:6px 10px; border-radius:999px; font-weight:700; }
-.open{ background:var(--open-bg); color:var(--open); }
-.soon{ background:var(--soon-bg); color:var(--soon); opacity: 0.6; }
-.side{ display:flex; flex-direction:column; gap:22px; }
-.menu{ display:flex; flex-direction:column; gap:12px; }
-.link{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-radius:18px; background:#f5faf3; border:1px solid #dde9d8; }
-.footer { margin-top: 60px; text-align: center; color: var(--sub); font-size: 11px; }
 
-/* 추가된 깜박임 애니메이션 CSS */
-@keyframes bg-blink {
-  0% { background-color: #ffffff; color: var(--point); border-color: var(--point); }
-  50% { background-color: var(--point); color: #ffffff; border-color: var(--point); }
-  100% { background-color: #ffffff; color: var(--point); border-color: var(--point); }
+/* ── 헤더 ── */
+.header{ display:flex; flex-direction:column; gap:20px; margin-bottom:28px; }
+.logo{ font-family:'Cormorant Garamond',serif; font-size:52px; line-height:0.93; font-weight:600; letter-spacing:-1px; }
+.logo span{ color:var(--point); font-style:italic; }
+.logo-sub{ margin-top:10px; color:var(--sub); font-size:11px; letter-spacing:0.24em; }
+
+/* 프로필 영역 */
+.profile-row{ display:flex; align-items:center; gap:16px; }
+.profile{ width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow:0 6px 18px rgba(60,90,60,0.12); flex-shrink:0; }
+.profile img{ width:100%; height:100%; object-fit:cover; }
+
+/* 링크 버튼 그룹 */
+.btn-group{ display:flex; flex-direction:column; gap:8px; flex:1; }
+.dot{ width:7px; height:7px; background:var(--point); border-radius:50%; margin-right:7px; flex-shrink:0; animation:blink 1.5s infinite; }
+@keyframes blink{ 0%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.8)} 100%{opacity:1;transform:scale(1)} }
+.live-btn{
+  display:inline-flex; align-items:center; padding:9px 14px;
+  background:#fff; border:1px solid var(--line); border-radius:100px;
+  color:var(--open); font-size:12px; font-weight:700;
+  box-shadow:0 3px 10px rgba(125,162,123,0.06); cursor:pointer;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.blinking-btn {
-  animation: bg-blink 1.5s infinite;
-  justify-content: center;
+.btn-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.sq-status{ display:inline-flex; align-items:center; font-size:9px; padding:3px 8px; border-radius:999px; font-weight:700; flex-shrink:0; }
+.open{ background:var(--open-bg); color:var(--open); }
+.soon{ background:var(--soon-bg); color:var(--soon); opacity:0.7; }
+
+/* 드롭다운 */
+.dropdown-wrap{ position:relative; }
+.gyeol-menu{
+  display:none; position:absolute; top:44px; left:0; width:100%;
+  background:#fff; border:1px solid var(--line); border-radius:16px;
+  padding:10px; grid-template-columns:repeat(4,1fr); gap:5px;
+  z-index:100; box-shadow:0 10px 28px rgba(60,90,60,0.13);
+}
+.gyeol-menu a{ font-size:11px; padding:7px 0; background:var(--hover); text-align:center; border-radius:7px; }
+
+/* 실적 카드 */
+.ach-card{ padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:16px; cursor:pointer; }
+.ach-title{ font-size:10px; font-weight:700; color:var(--sub); letter-spacing:0.1em; font-family:'DM Mono',monospace; margin-bottom:10px; }
+.ach-stats{ display:flex; justify-content:space-between; }
+.ach-val{ font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; color:var(--main); }
+.ach-lab{ font-size:9px; color:var(--sub); }
+
+/* ── 6모 가채점 배너 ── */
+.score-banner{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  background:linear-gradient(135deg,#fff0f5 0%,#fce8f1 100%);
+  border:1.5px solid #f4c0d1; border-radius:20px;
+  padding:18px 20px; margin-bottom:22px;
+  box-shadow:0 6px 20px rgba(212,83,126,0.10);
+}
+.banner-text{}
+.banner-badge{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:10px; font-weight:700; letter-spacing:0.12em; color:#d4537e;
+  background:#fbeaf0; border:1px solid #f4c0d1;
+  border-radius:100px; padding:3px 10px; margin-bottom:6px;
+}
+.banner-badge .pulse{
+  width:6px; height:6px; background:#d4537e; border-radius:50%;
+  animation:pulse-ring 1.2s ease-in-out infinite;
+}
+@keyframes pulse-ring{
+  0%  {box-shadow:0 0 0 0 rgba(212,83,126,0.6);}
+  70% {box-shadow:0 0 0 6px rgba(212,83,126,0);}
+  100%{box-shadow:0 0 0 0 rgba(212,83,126,0);}
+}
+.banner-title{ font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:#72243e; line-height:1.35; }
+.banner-desc{ font-size:11px; color:#b06080; margin-top:3px; }
+.score-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 20px; background:#d4537e; color:#fff;
+  border:none; border-radius:100px; font-family:'Noto Sans KR',sans-serif;
+  font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  box-shadow:0 5px 16px rgba(212,83,126,0.30);
+  animation:btn-glow 1.8s ease-in-out infinite; text-decoration:none;
+  flex-shrink:0;
+}
+.score-btn:hover{ background:#b8325e; animation:none; }
+@keyframes btn-glow{
+  0%  {box-shadow:0 5px 16px rgba(212,83,126,0.30); transform:scale(1);}
+  50% {box-shadow:0 5px 28px rgba(212,83,126,0.58); transform:scale(1.03);}
+  100%{box-shadow:0 5px 16px rgba(212,83,126,0.30); transform:scale(1);}
+}
+.btn-arrow{ animation:arrow-bounce 1.2s ease-in-out infinite; }
+@keyframes arrow-bounce{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+
+/* ── 레이아웃 ── */
+.layout{ display:flex; flex-direction:column; gap:16px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:24px; padding:24px 20px; box-shadow:0 6px 20px rgba(80,110,80,0.05); }
+.category{ color:var(--point); font-size:11px; letter-spacing:0.16em; margin-bottom:14px; font-weight:700; }
+.card-title{ font-family:'Cormorant Garamond',serif; font-size:32px; line-height:1.1; margin-bottom:10px; }
+.desc{ color:var(--sub); font-size:13px; line-height:1.8; margin-bottom:24px; }
+
+/* 과목 섹션 */
+.subject{ margin-bottom:28px; }
+.subject:last-child{ margin-bottom:0; }
+.subject-name{ display:flex; align-items:center; justify-content:space-between; font-size:16px; font-weight:700; margin-bottom:12px; }
+.subject-name span{ font-size:12px; color:var(--sub); font-weight:400; }
+
+/* 카드 그리드 */
+.square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.square-link{
+  position:relative; aspect-ratio:1/1; background:#f5faf3;
+  border:1px solid #dde9d8; border-radius:18px; padding:14px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  transition:0.22s; overflow:hidden;
+}
+.square-link:hover{ background:#fff; border-color:var(--point); transform:translateY(-3px); }
+.sq-number{ font-size:11px; color:var(--point); font-weight:700; }
+.sq-title{ font-size:13px; font-weight:600; line-height:1.3; }
+.count-display{ position:absolute; right:8px; bottom:6px; text-align:right; }
+.count-value{ display:block; font-family:'Cormorant Garamond',serif; font-size:40px; font-weight:700; color:var(--point); line-height:0.8; opacity:0.65; }
+.count-unit{ font-size:9px; font-weight:700; color:var(--sub); }
+
+/* 사이드 메뉴 */
+.menu{ display:flex; flex-direction:column; gap:10px; }
+.link{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-radius:14px; background:#f5faf3; border:1px solid #dde9d8; font-size:14px; }
+
+.footer{ margin-top:48px; text-align:center; color:var(--sub); font-size:11px; line-height:1.8; }
+
+/* ── 데스크탑 ── */
+@media(min-width:768px){
+  body{ padding:42px 20px 80px; }
+  .header{ flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:40px; }
+  .logo{ font-size:76px; }
+  .logo-sub{ font-size:13px; }
+  .profile-row{ flex-direction:column; align-items:flex-end; gap:10px; }
+  .profile{ width:120px; height:120px; }
+  .btn-group{ align-items:stretch; }
+  .live-btn{ font-size:13px; }
+  .layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
+  .card{ border-radius:32px; padding:36px; }
+  .card-title{ font-size:42px; }
+  .square-grid{ gap:14px; }
+  .square-link{ border-radius:24px; padding:18px; }
+  .sq-title{ font-size:16px; }
+  .count-value{ font-size:58px; }
+  .subject-name{ font-size:19px; }
+  .score-banner{ border-radius:24px; padding:20px 28px; }
+  .banner-title{ font-size:22px; }
+}
+
+/* ── 초소형 화면 ── */
+@media(max-width:360px){
+  .square-grid{ grid-template-columns:repeat(2,1fr); }
+  .btn-grid2{ grid-template-columns:1fr; }
+  .score-banner{ flex-direction:column; }
+  .score-btn{ width:100%; justify-content:center; }
 }
 </style>
 </head>
 <body>
 <div class="container">
+
+  <!-- 헤더 -->
   <div class="header">
     <div class="logo-wrap">
       <div class="logo">MATHY YURI<br><span>System</span></div>
-      <div class="sub">DAECHI S+ ACADEMY</div>
+      <div class="logo-sub">DAECHI S+ ACADEMY</div>
     </div>
-    <div class="profile-section">
+
+    <div class="profile-row">
       <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
-      <div class="profile-links">
-        <!-- 추가된 가채점 제출 버튼 -->
-        <a href="score_form.html" class="live-chart-btn blinking-btn">26년 6월 모의고사 가채점 성적 제출 →</a>
-        
-        <a href="ranking.html" class="live-chart-btn"><span class="dot"></span> 서술형 성적차트 →</a>
-        <a href="motest.html" class="live-chart-btn"><span class="dot"></span> 6모대비 성적차트 →</a>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; position: relative;">
-          <div id="gyeol-ans-btn" class="live-chart-btn" style="border-radius: 15px; justify-content: flex-start;">
-            <span class="dot"></span> <span style="font-size: 12px;">결모의고사 정답 ▾</span>
+      <div class="btn-group">
+        <a href="ranking.html" class="live-btn"><span class="dot"></span>서술형 성적차트 →</a>
+        <a href="motest.html" class="live-btn"><span class="dot"></span>6모대비 성적차트 →</a>
+        <div class="btn-grid2">
+          <div class="dropdown-wrap">
+            <div id="gyeol-ans-btn" class="live-btn" style="border-radius:14px;">
+              <span class="dot"></span><span style="font-size:11px;">결모의고사 정답 ▾</span>
+            </div>
+            <div id="gyeol-menu" class="gyeol-menu">
+              <a href="GYEOL1/gyeolmo1.html">1회</a>
+              <a href="GYEOL2/gyeolmo2.html">2회</a>
+              <a href="GYEOL3/gyeolmo3.html">3회</a>
+              <a href="gyeolmo4.html">4회</a>
+              <a href="gyeolmo5.html">5회</a>
+              <a href="gyeolmo6.html">6회</a>
+              <a href="gyeolmo7.html">7회</a>
+            </div>
           </div>
-          <a href="gyeolmorankings.html" class="live-chart-btn" style="border-radius: 15px; justify-content: space-between;">
-             <div><span class="dot" style="display:inline-block;"></span> 결모의고사 랭킹</div>
-             <span class="sq-status open" style="font-size: 8px; padding: 2px 6px;">OPEN</span>
+          <a href="gyeolmorankings.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
+            <span><span class="dot" style="display:inline-block;"></span>결모 랭킹</span>
+            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
           </a>
-          <div id="gyeol-menu" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #ffffff; border: 1px solid var(--line); border-radius: 20px; padding: 12px; grid-template-columns: repeat(4, 1fr); gap: 6px; z-index: 100; box-shadow: 0 10px 30px rgba(60,90,60,0.15);">
-            <a href="GYEOL1/gyeolmo1.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">1회</a>
-            <a href="GYEOL2/gyeolmo2.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">2회</a>
-            <a href="GYEOL3/gyeolmo3.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">3회</a>
-            <a href="gyeolmo4.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">4회</a>
-            <a href="gyeolmo5.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">5회</a>
-            <a href="gyeolmo6.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">6회</a>
-            <a href="gyeolmo7.html" style="font-size: 11px; padding: 8px 0; background: var(--hover); text-align: center; border-radius: 8px;">7회</a>
-          </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;">
-          <a href="daily600.html" class="live-chart-btn" style="border-radius: 15px; justify-content: space-between;">일일일모 제출 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
-          <a href="dailyranking.html" class="live-chart-btn" style="border-radius: 15px; justify-content: space-between;">티어랭킹 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
+        <div class="btn-grid2">
+          <a href="daily600.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">일일일모 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
+          <a href="dailyranking.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">티어랭킹 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
         </div>
-        <div class="achievement-card" onclick="location.href='mathy_unit_chart.html'">
+        <div class="ach-card" onclick="location.href='mathy_unit_chart.html'">
           <div class="ach-title">ACHIEVEMENT SUMMARY</div>
           <div class="ach-stats">
-            <div class="ach-item"><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
-            <div class="ach-item"><div class="ach-val" id="sum-units">-</div><div class="ach-lab">ACTIVE UNITS</div></div>
-            <div class="ach-item"><div class="ach-val" id="sum-avg">-</div><div class="ach-lab">AVG CLEAR%</div></div>
+            <div><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
+            <div><div class="ach-val" id="sum-units">-</div><div class="ach-lab">ACTIVE UNITS</div></div>
+            <div><div class="ach-val" id="sum-avg">-</div><div class="ach-lab">AVG CLEAR%</div></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 6모 가채점 배너 -->
+  <div class="score-banner">
+    <div class="banner-text">
+      <div class="banner-badge"><span class="pulse"></span>2026.06.04 · D-DAY</div>
+      <div class="banner-title">6월 고1 전국연합 학력평가<br>가채점 성적 제출</div>
+      <div class="banner-desc">시험 후 바로 점수를 입력해 주세요 — 선생님이 확인합니다 :)</div>
+    </div>
+    <a href="score_form.html" class="score-btn">성적 입력하기 <span class="btn-arrow">→</span></a>
+  </div>
+
+  <!-- 메인 레이아웃 -->
   <div class="layout">
+
+    <!-- 왼쪽: 서술형 훈련 -->
     <div class="card">
       <div class="category">WRITING TRAINING</div>
-      <div class="title">공통수학Ⅰ<br>서술형 Logic Master</div>
+      <div class="card-title">공통수학Ⅰ<br>서술형 Logic Master</div>
       <div class="desc">단원별 논리 체계 구축 및 실전 FINAL 대비 시스템</div>
 
       <div class="subject">
@@ -129,7 +250,7 @@ a{ text-decoration:none; color:inherit; }
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
-      
+
       <div class="subject">
         <div class="subject-name">부등식 <span>Inequalities</span></div>
         <div class="square-grid">
@@ -159,54 +280,63 @@ a{ text-decoration:none; color:inherit; }
           <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-status soon">SOON</div></div>
         </div>
       </div>
-      
+
       <div class="subject">
-        <div class="subject-name" style="color:var(--main); font-weight: 800;">실전 Writing <span style="color:var(--sub)">Final Practice</span></div>
+        <div class="subject-name" style="font-weight:800;">실전 Writing <span>Final Practice</span></div>
         <div class="square-grid">
-          <a class="square-link" href="GYEOL1/gyeol1.html" style="background: #fff9f0; border-color: #e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사<br>1회 연습</div><div class="sq-status open" style="background:#b39470; color:white;">OPEN</div></a>
-          <a class="square-link" href="GYEOL2/gyeol2.html" style="background: #fff9f0; border-color: #e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>2회 연습</div><div class="sq-status open" style="background:#b39470; color:white;">OPEN</div></a>
-          <a class="square-link" href="GYEOL3/gyeol3.html" style="background: #fff9f0; border-color: #e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>3회 연습</div><div class="sq-status open" style="background:#b39470; color:white;">OPEN</div></a>
+          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사<br>1회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
+          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>2회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
+          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사<br>3회 연습</div><div class="sq-status open" style="background:#b39470;color:white;">OPEN</div></a>
         </div>
       </div>
     </div>
 
-    <div class="side">
+    <!-- 오른쪽: 사이드 카드 -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
       <div class="card">
         <div class="category">S+ LOGIC MASTER</div>
-        <div style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">Killer Problem<br>Training</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;margin-bottom:14px;">Killer Problem<br>Training</div>
         <div class="menu">
-          <div class="link"><div class="left">킬러문항 훈련</div><div class="sq-status soon">COMING SOON</div></div>
-          <div class="link"><div class="left">풀이 영상</div><div class="sq-status soon">COMING SOON</div></div>
+          <div class="link"><span>킬러문항 훈련</span><span class="sq-status soon">COMING SOON</span></div>
+          <div class="link"><span>풀이 영상</span><span class="sq-status soon">COMING SOON</span></div>
         </div>
       </div>
       <div class="card">
         <div class="category">2028 UNIVERSITY ADMISSION</div>
-        <div style="font-family:'Cormorant Garamond', serif; font-size:30px; margin-bottom:12px;">2028 대학 입시</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;margin-bottom:14px;">2028 대학 입시</div>
         <div class="menu">
-          <a class="link" href="splus-quiz/"><div class="left">서울대학교</div><div class="sq-status open">OPEN</div></a>
-          <div class="link"><div class="left">연세대학교</div><div class="sq-status soon">SOON</div></div>
-          <div class="link"><div class="left">고려대학교</div><div class="sq-status soon">SOON</div></div>
+          <a class="link" href="splus-quiz/"><span>서울대학교</span><span class="sq-status open">OPEN</span></a>
+          <div class="link"><span>연세대학교</span><span class="sq-status soon">SOON</span></div>
+          <div class="link"><span>고려대학교</span><span class="sq-status soon">SOON</span></div>
         </div>
       </div>
     </div>
+
   </div>
+
   <div class="footer">MATHY YURI · DAECHI S+ ACADEMY<br>Premium Writing Training Platform</div>
 </div>
 
 <script>
-  const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
-  window.onload = function() {
-    const ansBtn = document.getElementById('gyeol-ans-btn');
-    const menu = document.getElementById('gyeol-menu');
-    ansBtn.addEventListener('click', (e) => { e.stopPropagation(); menu.style.display = (menu.style.display === 'grid') ? 'none' : 'grid'; });
-    document.addEventListener('click', () => { menu.style.display = 'none'; });
-    fetch(COUNT_URL + "?action=getCounts").then(r => r.json()).then(data => {
-      for(let i=1; i<=8; i++) {
-        const el = document.getElementById('count-d' + i);
-        if(el && data['d'+i] !== undefined) el.innerText = data['d'+i];
-      }
-    });
-  };
+const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
+window.onload = function() {
+  // 드롭다운
+  const ansBtn = document.getElementById('gyeol-ans-btn');
+  const menu   = document.getElementById('gyeol-menu');
+  ansBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    menu.style.display = menu.style.display === 'grid' ? 'none' : 'grid';
+  });
+  document.addEventListener('click', () => { menu.style.display = 'none'; });
+
+  // 카운트
+  fetch(COUNT_URL + "?action=getCounts").then(r => r.json()).then(data => {
+    for (let i = 1; i <= 8; i++) {
+      const el = document.getElementById('count-d' + i);
+      if (el && data['d'+i] !== undefined) el.innerText = data['d'+i];
+    }
+  }).catch(()=>{});
+};
 </script>
 </body>
 </html>
