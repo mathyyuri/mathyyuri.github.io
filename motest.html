@@ -6,7 +6,7 @@
     <title>MATHY YURI System — Performance Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700&family=Cormorant+Garamond:wght=500;600;700&family=DM+Mono:wght=400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #f4f7f2; --card: #ffffff; --line: #e1e9df; --main: #233222;
@@ -150,6 +150,7 @@
         <div class="tab" onclick="switchTab('22년 6월 기출')">22년 6월 기출</div>
         <div class="tab" onclick="switchTab('22년 6월 변형')">22년 6월 변형</div>
         <div class="tab" onclick="switchTab('21년 6월 기출')">21년 6월 기출</div>
+        <div class="tab" onclick="switchTab('21년 6월 변형')">21년 6월 변형</div>
     </div>
 
     <div class="stats-grid">
@@ -309,7 +310,7 @@
             </div>
         `).join('');
 
-        let analysisHtml = `<div style="font-weight:700; margin-bottom:10px; color:var(--main);">MATHY YURI 분석 리포트</div>`;
+        let analysisHtml = `<div style="font-weight:700; margin-bottom:10px; color:var(--main);">MATH STUDIO 분석 리포트</div>`;
         const analysisContent = history
             .filter(h => h.analysis && h.analysis.trim() !== "")
             .map(h => `
