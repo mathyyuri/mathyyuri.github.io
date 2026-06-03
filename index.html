@@ -64,47 +64,74 @@ a{ text-decoration:none; color:inherit; }
 
 /* ── 6모 가채점 배너 ── */
 .score-banner{
-  display:flex; align-items:center; justify-content:space-between; gap:14px;
-  background:linear-gradient(135deg,#fff0f5 0%,#fce8f1 100%);
-  border:1.5px solid #f4c0d1; border-radius:20px;
-  padding:18px 20px; margin-bottom:22px;
-  box-shadow:0 6px 20px rgba(212,83,126,0.10);
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  background:linear-gradient(135deg, #2d1a24 0%, #4a1e32 50%, #3a1528 100%);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:22px; padding:22px 24px; margin-bottom:22px;
+  box-shadow:0 12px 40px rgba(80,10,40,0.28);
 }
-.banner-text{}
+/* 배경 장식 원 */
+.score-banner::before{
+  content:''; position:absolute;
+  top:-40px; right:-40px;
+  width:160px; height:160px;
+  background:radial-gradient(circle, rgba(212,83,126,0.22) 0%, transparent 70%);
+  pointer-events:none;
+}
+.score-banner::after{
+  content:''; position:absolute;
+  bottom:-30px; left:30px;
+  width:100px; height:100px;
+  background:radial-gradient(circle, rgba(180,120,160,0.15) 0%, transparent 70%);
+  pointer-events:none;
+}
+.banner-text{ position:relative; z-index:1; }
 .banner-badge{
-  display:inline-flex; align-items:center; gap:5px;
-  font-size:10px; font-weight:700; letter-spacing:0.12em; color:#d4537e;
-  background:#fbeaf0; border:1px solid #f4c0d1;
-  border-radius:100px; padding:3px 10px; margin-bottom:6px;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:10px; font-weight:600; letter-spacing:0.14em;
+  color:rgba(255,200,220,0.9);
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,180,200,0.2);
+  border-radius:100px; padding:4px 12px; margin-bottom:10px;
 }
 .banner-badge .pulse{
-  width:6px; height:6px; background:#d4537e; border-radius:50%;
-  animation:pulse-ring 1.2s ease-in-out infinite;
+  width:6px; height:6px;
+  background:#f08aaa; border-radius:50%;
+  animation:pulse-ring 1.4s ease-in-out infinite;
 }
 @keyframes pulse-ring{
-  0%  {box-shadow:0 0 0 0 rgba(212,83,126,0.6);}
-  70% {box-shadow:0 0 0 6px rgba(212,83,126,0);}
-  100%{box-shadow:0 0 0 0 rgba(212,83,126,0);}
+  0%  {box-shadow:0 0 0 0 rgba(240,138,170,0.7);}
+  70% {box-shadow:0 0 0 7px rgba(240,138,170,0);}
+  100%{box-shadow:0 0 0 0 rgba(240,138,170,0);}
 }
-.banner-title{ font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:#72243e; line-height:1.35; }
-.banner-desc{ font-size:11px; color:#b06080; margin-top:3px; }
+.banner-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:20px; font-weight:700; color:#fff;
+  line-height:1.35; letter-spacing:-0.01em;
+}
+.banner-title em{ font-style:italic; color:#f4b8cc; }
+.banner-desc{ font-size:11px; color:rgba(255,200,215,0.6); margin-top:6px; letter-spacing:0.02em; }
 .score-btn{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:12px 20px; background:#d4537e; color:#fff;
-  border:none; border-radius:100px; font-family:'Noto Sans KR',sans-serif;
+  position:relative; z-index:1;
+  display:inline-flex; align-items:center; gap:9px;
+  padding:13px 22px;
+  background:linear-gradient(135deg, #e8607f 0%, #c03060 100%);
+  color:#fff; border:none; border-radius:100px;
+  font-family:'Noto Sans KR',sans-serif;
   font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
-  box-shadow:0 5px 16px rgba(212,83,126,0.30);
-  animation:btn-glow 1.8s ease-in-out infinite; text-decoration:none;
-  flex-shrink:0;
+  box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+  animation:btn-glow 2s ease-in-out infinite; text-decoration:none;
+  flex-shrink:0; letter-spacing:0.02em;
 }
-.score-btn:hover{ background:#b8325e; animation:none; }
+.score-btn:hover{ background:linear-gradient(135deg,#f07090 0%,#d04070 100%); animation:none; transform:scale(1.04); }
 @keyframes btn-glow{
-  0%  {box-shadow:0 5px 16px rgba(212,83,126,0.30); transform:scale(1);}
-  50% {box-shadow:0 5px 28px rgba(212,83,126,0.58); transform:scale(1.03);}
-  100%{box-shadow:0 5px 16px rgba(212,83,126,0.30); transform:scale(1);}
+  0%  {box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);}
+  50% {box-shadow:0 4px 32px rgba(220,60,100,0.70), inset 0 1px 0 rgba(255,255,255,0.15);}
+  100%{box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);}
 }
-.btn-arrow{ animation:arrow-bounce 1.2s ease-in-out infinite; }
-@keyframes arrow-bounce{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+.btn-arrow{ display:inline-block; animation:arrow-bounce 1.3s ease-in-out infinite; }
+@keyframes arrow-bounce{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(5px)} }
 
 /* ── 레이아웃 ── */
 .layout{ display:flex; flex-direction:column; gap:16px; }
@@ -162,12 +189,15 @@ a{ text-decoration:none; color:inherit; }
   .banner-title{ font-size:22px; }
 }
 
+@media(max-width:480px){
+  .score-banner{ flex-direction:column; align-items:flex-start; padding:20px 18px; gap:14px; }
+  .score-btn{ width:100%; justify-content:center; }
+  .banner-title{ font-size:18px; }
+}
 /* ── 초소형 화면 ── */
 @media(max-width:360px){
   .square-grid{ grid-template-columns:repeat(2,1fr); }
   .btn-grid2{ grid-template-columns:1fr; }
-  .score-banner{ flex-direction:column; }
-  .score-btn{ width:100%; justify-content:center; }
 }
 </style>
 </head>
@@ -225,11 +255,11 @@ a{ text-decoration:none; color:inherit; }
   <!-- 6모 가채점 배너 -->
   <div class="score-banner">
     <div class="banner-text">
-      <div class="banner-badge"><span class="pulse"></span>2026.06.04 · D-DAY</div>
-      <div class="banner-title">6월 고1 전국연합 학력평가<br>가채점 성적 제출</div>
-      <div class="banner-desc">시험 후 바로 점수를 입력해 주세요 — 선생님이 확인합니다 :)</div>
+      <div class="banner-badge"><span class="pulse"></span>2026.06.04 &nbsp;·&nbsp; D-DAY</div>
+      <div class="banner-title">6월 고1 전국연합<br><em>가채점 성적 제출</em></div>
+      <div class="banner-desc">시험 후 바로 점수를 입력해 주세요 — 선생님이 확인합니다</div>
     </div>
-    <a href="score_form.html" class="score-btn">성적 입력하기 <span class="btn-arrow">→</span></a>
+    <a href="score_form.html" class="score-btn">성적 입력 <span class="btn-arrow">→</span></a>
   </div>
 
   <!-- 메인 레이아웃 -->
