@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>2026 6월 고1 전국연합 — 대치S+학원</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f2ee;
+  --surface:#ffffff;
+  --surface2:#faf8f6;
+  --mint:#5dcaa5;
+  --mint-light:#e1f5ee;
+  --mint-mid:#9fe1cb;
+  --mint-dark:#0f6e56;
+  --pink:#d4537e;
+  --pink-light:#fbeaf0;
+  --pink-mid:#f4c0d1;
+  --pink-dark:#72243e;
+  --border:#e8e4df;
+  --border2:#d3cfc9;
+  --text:#2c2c2a;
+  --text2:#5f5e5a;
+  --text3:#888780;
+  --radius:12px;
+  --radius-sm:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;padding-bottom:60px;}
+
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:32px 20px 28px;text-align:center;}
+.header-badge{display:inline-block;font-size:10px;letter-spacing:0.18em;color:var(--mint-dark);background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:100px;padding:4px 14px;margin-bottom:14px;font-weight:500;}
+.header h1{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:700;color:var(--text);line-height:1.4;letter-spacing:-0.02em;margin-bottom:6px;}
+.header h1 em{font-style:italic;color:var(--mint-dark);}
+.header-sub{font-size:12px;color:var(--text3);letter-spacing:0.04em;}
+.accent-line{width:32px;height:2px;background:var(--mint);border-radius:2px;margin:14px auto 12px;}
+
+.wrap{max-width:480px;margin:0 auto;padding:24px 16px 0;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 14px;margin-bottom:16px;}
+.card-title{font-size:10px;letter-spacing:0.16em;color:var(--text3);font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:400;}
+label .req{color:var(--pink);margin-left:2px;}
+
+input[type=text],select,textarea{
+  width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:400;
+  padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color .18s,background .18s;
+}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--mint);background:#fff;}
+input::placeholder,textarea::placeholder{color:var(--text3);}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888780' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+select option{background:#fff;color:var(--text);}
+textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+.score-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:4px;}
+.sc{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;}
+.sc-label{font-size:9px;color:var(--text3);font-weight:400;text-align:center;line-height:1.3;white-space:nowrap;letter-spacing:-0.02em;}
+.sc-input{
+  width:100%;background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:var(--radius-sm);
+  color:var(--mint-dark);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:500;
+  padding:10px 2px;text-align:center;outline:none;-webkit-appearance:none;
+  transition:border-color .18s,background .18s;
+  -moz-appearance:textfield;
+}
+.sc-input::-webkit-outer-spin-button,.sc-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.sc-input:focus{border-color:var(--mint);background:#fff;}
+.sc-input::placeholder{color:var(--mint-mid);font-weight:300;font-size:12px;}
+
+.total-card{background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+.total-label{font-size:12px;color:var(--mint-dark);font-weight:500;letter-spacing:0.06em;}
+.total-val{font-family:'Noto Serif KR',serif;font-size:26px;font-weight:700;color:var(--mint-dark);}
+.total-val small{font-size:12px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:#1d9e75;margin-left:4px;}
+
+.submit-btn{
+  width:100%;padding:16px;background:var(--pink);color:#fff;border:none;border-radius:var(--radius);
+  font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:500;letter-spacing:0.04em;
+  cursor:pointer;transition:background .18s, transform .1s;margin-top:4px;
+}
+.submit-btn:hover{background:var(--pink-dark);}
+.submit-btn:active{transform:scale(0.99);}
+.submit-btn:disabled{background:var(--border2);cursor:not-allowed;transform:none;}
+
+.note{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.7;}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);
+  background:var(--surface);border:1px solid var(--border2);border-radius:100px;
+  padding:11px 22px;font-size:13px;color:var(--text);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+  opacity:0;white-space:nowrap;z-index:100;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.ok{border-color:var(--mint-mid);color:var(--mint-dark);}
+.toast.err{border-color:var(--pink-mid);color:var(--pink-dark);}
+
+@media(max-width:360px){
+  .score-row{gap:4px;}
+  .sc-label{font-size:9px;}
+  .sc-input{font-size:13px;padding:9px 1px;}
+  .header h1{font-size:20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">DAECHI S+ ACADEMY</div>
+  <h1>2026년 6월 고1<br><em>전국연합 학력평가</em></h1>
+  <div class="accent-line"></div>
+  <div class="header-sub">2026.06.04 &nbsp;·&nbsp; 성적 입력 폼</div>
+</div>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="card-title">학생 정보</div>
+    <div class="row2" style="margin-bottom:14px;">
+      <div class="field" style="margin-bottom:0;">
+        <label>학교 <span class="req">*</span></label>
+        <select id="school">
+          <option value="">선택</option>
+          <option>보라고</option>
+          <option>신갈고</option>
+          <option>서천고</option>
+          <option>성지고</option>
+          <option>기타</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>반 <span class="req">*</span></label>
+        <select id="cls">
+          <option value="">선택</option>
+          <option>S+</option>
+          <option>S</option>
+          <option>A+</option>
+          <option>A</option>
+          <option>B</option>
+          <option>외부</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>이름 <span class="req">*</span></label>
+      <input type="text" id="name" placeholder="실명 입력" maxlength="10">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">영역별 점수</div>
+    <div class="score-row">
+      <div class="sc"><div class="sc-label">국어</div><input type="number" class="sc-input" id="s1" min="0" max="100" placeholder="—"></div>
+      <div class="sc"><div class="sc-label">수학</div><input type="number" class="sc-input" id="s2" min="0" max="100" placeholder="—"></div>
+      <div class="sc"><div class="sc-label">영어</div><input type="number" class="sc-input" id="s3" min="0" max="100" placeholder="—"></div>
+      <div class="sc"><div class="sc-label">한국사</div><input type="number" class="sc-input" id="s4" min="0" max="100" placeholder="—"></div>
+      <div class="sc"><div class="sc-label">통합사회</div><input type="number" class="sc-input" id="s5" min="0" max="100" placeholder="—"></div>
+      <div class="sc"><div class="sc-label">통합과학</div><input type="number" class="sc-input" id="s6" min="0" max="100" placeholder="—"></div>
+    </div>
+    <div class="total-card">
+      <div class="total-label">합계</div>
+      <div class="total-val" id="total-display">— <small>/ 600</small></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">시험 소감</div>
+    <textarea id="comment" placeholder="이번 6모를 치른 소감을 자유롭게 적어주세요. 어떤 과목이 어려웠나요? 전반적인 난이도는?"></textarea>
+  </div>
+
+  <button class="submit-btn" id="sbtn" onclick="submitForm()">성적 제출하기</button>
+  <p class="note">입력 정보는 구글 스프레드시트에 자동 저장됩니다.<br>수정이 필요하면 선생님께 문의하세요.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGAi5PglxuxoKCn2EmDmtdkX2qZXZ3GGbk66QJT0lfuLoNdxG9Exym2uUmbc1dCvBY/exec';
+const IDS = ['s1','s2','s3','s4','s5','s6'];
+
+function calcTotal(){
+  let sum=0,cnt=0;
+  IDS.forEach(id=>{const v=parseFloat(document.getElementById(id).value);if(!isNaN(v)){sum+=v;cnt++;}});
+  const el=document.getElementById('total-display');
+  el.innerHTML = cnt===0 ? '— <small>/ 600</small>' : `${sum} <small>/ 600</small>`;
+}
+
+IDS.forEach(id=>{
+  const inp=document.getElementById(id);
+  inp.addEventListener('input',()=>{
+    let v=parseInt(inp.value);
+    if(v>100)inp.value=100;
+    if(v<0)inp.value=0;
+    calcTotal();
+  });
+});
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>{t.className='toast '+type;},3000);
+}
+
+async function submitForm(){
+  if(!document.getElementById('school').value){toast('학교를 선택해 주세요','err');return;}
+  if(!document.getElementById('cls').value){toast('반을 선택해 주세요','err');return;}
+  if(!document.getElementById('name').value.trim()){toast('이름을 입력해 주세요','err');return;}
+
+  const btn=document.getElementById('sbtn');
+  btn.disabled=true; btn.textContent='제출 중…';
+
+  if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    toast('Apps Script URL을 설정해 주세요','err');
+    btn.disabled=false; btn.textContent='성적 제출하기'; return;
+  }
+
+  let sum=0;
+  IDS.forEach(id=>{const v=parseFloat(document.getElementById(id).value);if(!isNaN(v))sum+=v;});
+
+  const data={
+    timestamp:new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}),
+    school:document.getElementById('school').value,
+    class:document.getElementById('cls').value,
+    name:document.getElementById('name').value.trim(),
+    korean:document.getElementById('s1').value||'',
+    math:document.getElementById('s2').value||'',
+    english:document.getElementById('s3').value||'',
+    history:document.getElementById('s4').value||'',
+    society:document.getElementById('s5').value||'',
+    science:document.getElementById('s6').value||'',
+    total:sum||'',
+    comment:document.getElementById('comment').value.trim()
+  };
+
+  try{
+    await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    toast('제출 완료! 수고했어요 :)','ok');
+    btn.textContent='제출 완료';
+  }catch(e){
+    toast('오류가 발생했습니다. 다시 시도해 주세요.','err');
+    btn.disabled=false; btn.textContent='성적 제출하기';
+  }
+}
+</script>
+</body>
+</html>
