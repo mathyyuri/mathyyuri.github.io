@@ -110,7 +110,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     <div class="top-box" id="top-box"></div>
 
     <div class="card">
-      <div class="card-label">등급별 인원 분포 <span style="font-size:9px;color:var(--gold);font-weight:400;letter-spacing:0;">(예상 등급컷)</span></div>
+      <div class="card-label">등급별 인원 분포 <span style="font-size:9px;color:var(--gold);font-weight:400;letter-spacing:0;">(예상 등급컷 · 이투스 참고)</span></div>
       <div class="grade-grid" id="grade-grid"></div>
       <div class="chart-wrap h180"><canvas id="chart-grade"></canvas></div>
     </div>
@@ -126,7 +126,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     </div>
 
     <div class="card">
-      <div class="card-label">반별 등급 분포</div>
+      <div class="card-label">반별 평균 기준 등급</div>
       <div class="chart-wrap h200"><canvas id="chart-cls-grade"></canvas></div>
     </div>
 
@@ -141,7 +141,7 @@ const CUTS = { 1:77, 2:65, 3:51, 4:39, 5:28, 6:19, 7:13, 8:8 };
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const G_COLORS = ['rgba(184,154,80,0.85)','rgba(61,170,138,0.82)','rgba(91,159,216,0.8)','rgba(140,140,140,0.75)','rgba(200,72,112,0.75)'];
-const G_LABELS = ['1등급','2등급','3등급','4등급','5등급~'];
+const G_LABELS = ['1등급(77점)', '2등급(65점)', '3등급(51점)', '4등급(39점)', '5등급~(28점)'];
 
 let mathData = [];
 
@@ -164,8 +164,10 @@ const barLabelsPlugin = {
         ctx.textBaseline = 'bottom';
         
         let label = value;
-        if (chart.canvas.id === 'chart-dist' || chart.canvas.id === 'chart-cls-grade') {
+        if (chart.canvas.id === 'chart-dist') {
           label = value + '명';
+        } else if (chart.canvas.id === 'chart-cls-grade') {
+          label = dataset.customLabels ? dataset.customLabels[index] : value;
         } else if (chart.canvas.id === 'chart-class') {
           label = value + '점';
         }
@@ -224,15 +226,11 @@ function render(){
   const s=stats(scores);
   const n=scores.length;
 
-  const sorted = scores.slice().sort(function(a,b){return a-b;});
-  const midIdx = Math.floor(sorted.length/2);
-  const medianVal = sorted.length%2 ? sorted[midIdx] : ((sorted[midIdx-1]+sorted[midIdx])/2).toFixed(1);
-
   document.getElementById('stat-grid').innerHTML=
     '<div class="stat-box"><div class="stat-label">응시 인원</div><div class="stat-val">' + n + '<small>명</small></div></div>' +
-    '<div class="stat-box"><div class="stat-label">반 평균</div><div class="stat-val">' + s.avg + '<small>점</small></div></div>' +
-    '<div class="stat-box"><div class="stat-label">중앙값</div><div class="stat-val">' + medianVal + '<small>점</small></div></div>' +
-    '<div class="stat-box"><div class="stat-label">표준편차</div><div class="stat-val">' + s.sd + '</div></div>';
+    '<div class="stat-box"><div class="stat-label">학원 평균</div><div class="stat-val">' + s.avg + '<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">전국평균</div><div class="stat-val">36.28<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">전국표준편차</div><div class="stat-val">20.4</div></div>';
 
   const topStu=mathData.find(function(d){return d.math===s.max;});
   const topMetaStr = topStu ? topStu.school+' · '+topStu.cls+'반' : '—';
@@ -288,7 +286,7 @@ function initCharts(gradeCnt, scores) {
     }
   });
 
-  // 2. 점수대별 분포 히스토그램 (상단 수치 표시 추가)
+  // 2. 점수대별 분포 히스토그램
   const bins = Array(10).fill(0);
   scores.forEach(function(v){
     const idx = Math.min(Math.floor(v/10), 9);
@@ -314,14 +312,13 @@ function initCharts(gradeCnt, scores) {
     plugins: [barLabelsPlugin]
   });
 
-  // 3. 반별 수학 평균 / 최고점 비교 (요청 순서 정렬 및 수치 표기)
+  // 3. 반별 수학 평균 / 최고점 비교
   const classData = {};
   mathData.forEach(function(d){
     if(!classData[d.cls]) classData[d.cls] = [];
     classData[d.cls].push(d.math);
   });
 
-  // 반 정렬 기준: S+, A+, S, A, B, 기타
   const targetOrder = ['S+', 'A+', 'S', 'A', 'B', '기타'];
   const classLabels = Object.keys(classData).sort(function(a, b) {
     let idxA = targetOrder.indexOf(a);
@@ -357,23 +354,46 @@ function initCharts(gradeCnt, scores) {
     plugins: [barLabelsPlugin]
   });
 
-  // 4. 반별 1등급 인원 현황 (요청 순서 정렬 및 수치 표기)
+  // 4. 반별 평균 기준 등급 산출 및 시각화 역산 구조 구현 (6 - 등급값으로 처리하여 등급이 높을수록 막대가 높게 보이도록 설계)
+  const classGradeVals = classLabels.map(function(c){
+    const cScores = classData[c];
+    const avg = cScores.reduce(function(a,b){return a+b;},0)/cScores.length;
+    return 6 - gradeOf(avg);
+  });
+  
+  const classGradeTexts = classLabels.map(function(c){
+    const cScores = classData[c];
+    const avg = cScores.reduce(function(a,b){return a+b;},0)/cScores.length;
+    return gradeOf(avg) + '등급';
+  });
+
   new Chart(document.getElementById('chart-cls-grade'), {
     type: 'bar',
     data: {
       labels: classLabels,
       datasets: [{ 
-        label: '1등급 인원', 
-        data: classLabels.map(function(c){
-          return classData[c].filter(function(v){ return v >= CUTS[1]; }).length;
-        }), 
+        label: '평균 기준 등급', 
+        data: classGradeVals, 
+        customLabels: classGradeTexts,
         backgroundColor: 'rgba(184,154,80,0.8)' 
       }]
     },
     options: { 
       responsive: true, 
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      scales: { 
+        y: { 
+          beginAtZero: true, 
+          max: 5,
+          ticks: { 
+            stepSize: 1,
+            callback: function(value) {
+              const gMap = { 5: '1등급', 4: '2등급', 3: '3등급', 2: '4등급', 1: '5등급', 0: '' };
+              return gMap[value] || '';
+            }
+          } 
+        } 
+      }
     },
     plugins: [barLabelsPlugin]
   });
