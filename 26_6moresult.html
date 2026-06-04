@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>2026 6월 고1 수학 — 성적 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f2ee;--surface:#fff;--surface2:#faf8f5;
+  --mint:#3daa8a;--mint-light:#e4f5ef;--mint-mid:#9fd8c8;--mint-dark:#1a6e55;
+  --gold:#b89a50;--gold-light:#fff9f0;--gold-mid:#e8d5a8;
+  --text:#1e1d1a;--text2:#5a5854;--text3:#9a9690;
+  --border:#e8e3dd;--border2:#d5cfc8;
+  --g1:#b89a50;--g2:#3daa8a;--g3:#5b9fd8;--g4:#8a8a8a;--g5plus:#c84870;
+  --radius:16px;--radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;padding-bottom:60px;}
+
+/* 헤더 */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:28px 20px 22px;text-align:center;position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:400px;height:160px;background:radial-gradient(ellipse,rgba(61,170,138,0.07) 0%,transparent 70%);pointer-events:none;}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:500;letter-spacing:0.16em;color:var(--mint-dark);background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:100px;padding:4px 14px;margin-bottom:12px;}
+.badge-dot{width:6px;height:6px;background:var(--mint);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,170,138,0.5)}70%{box-shadow:0 0 0 6px rgba(61,170,138,0)}100%{box-shadow:0 0 0 0 rgba(61,170,138,0)}}
+.header h1{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;line-height:1.4;letter-spacing:-0.02em;margin-bottom:4px;}
+.header h1 em{font-style:italic;color:var(--mint-dark);}
+.header-sub{font-size:11px;color:var(--text3);}
+
+/* 예상 등급컷 알림 */
+.notice{display:flex;align-items:center;gap:8px;background:#fffbf0;border:1px solid var(--gold-mid);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#8a6a20;}
+.notice-icon{font-size:14px;flex-shrink:0;}
+
+.wrap{max-width:520px;margin:0 auto;padding:20px 16px 0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;margin-bottom:14px;}
+.card-label{font-size:10px;letter-spacing:0.14em;color:var(--text3);font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* 요약 4칸 */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 14px 13px;}
+.stat-label{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.04em;margin-bottom:6px;}
+.stat-val{font-family:'Noto Serif KR',serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;}
+.stat-val small{font-size:12px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--text3);margin-left:2px;}
+
+/* 최고점 */
+.top-box{background:linear-gradient(135deg,var(--gold-light) 0%,#fef3e2 100%);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.top-label{font-size:11px;color:#8a6a20;font-weight:500;letter-spacing:0.04em;}
+.top-meta{font-size:11px;color:#b89a50;margin-top:3px;}
+.top-val{font-family:'Noto Serif KR',serif;font-size:38px;font-weight:700;color:#8a6a20;line-height:1;}
+.top-val small{font-size:13px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:#b89a50;margin-left:3px;}
+
+/* 차트 */
+.chart-wrap{position:relative;}
+.h200{height:200px;}
+.h240{height:240px;}
+.h180{height:180px;}
+
+/* 등급 카드 그리드 */
+.grade-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:14px;}
+.grade-box{border-radius:var(--radius-sm);padding:10px 6px;text-align:center;border:1px solid transparent;}
+.g-label{font-size:10px;font-weight:700;margin-bottom:3px;}
+.g-cut{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:6px;line-height:1.3;}
+.g-count{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;line-height:1;}
+.g-pct{font-size:9px;margin-top:3px;}
+.gb1{background:#fffbf0;border-color:var(--gold-mid);}.gb1 .g-label{color:var(--g1);}.gb1 .g-count{color:var(--g1);}
+.gb2{background:var(--mint-light);border-color:var(--mint-mid);}.gb2 .g-label{color:var(--mint-dark);}.gb2 .g-count{color:var(--mint-dark);}
+.gb3{background:#eff5ff;border-color:#b0c8e8;}.gb3 .g-label{color:#2a5fa0;}.gb3 .g-count{color:#2a5fa0;}
+.gb4{background:#f5f5f5;border-color:#ccc;}.gb4 .g-label{color:#666;}.gb4 .g-count{color:#666;}
+.gb5{background:#fef0f4;border-color:#f0b0c4;}.gb5 .g-label{color:var(--g5plus);}.gb5 .g-count{color:var(--g5plus);}
+
+/* 로딩 */
+.loading{text-align:center;padding:40px 0;color:var(--text3);font-size:13px;}
+.ld{display:inline-block;width:6px;height:6px;background:var(--mint);border-radius:50%;margin:0 3px;animation:bounce .8s infinite;}
+.ld:nth-child(2){animation-delay:.15s;}.ld:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+@media(min-width:560px){
+  .stat-grid{grid-template-columns:repeat(4,1fr);}
+  .wrap{padding:24px 20px 0;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge"><span class="badge-dot"></span>MATH · 수학영역</div>
+  <h1>2026년 6월 고1<br><em>수학 성적 분석</em></h1>
+  <div style="width:32px;height:2px;background:var(--mint);border-radius:2px;margin:12px auto 10px;"></div>
+  <div class="header-sub">2026.06.04 &nbsp;·&nbsp; 대치S+ 학원</div>
+</div>
+
+<div class="wrap">
+  <div class="notice">
+    <span class="notice-icon">⚠️</span>
+    예상 등급컷 기준 분석 — 정식 등급컷 발표 후 업데이트 예정
+  </div>
+
+  <div id="loading" class="loading">
+    <span class="ld"></span><span class="ld"></span><span class="ld"></span>
+    <div style="margin-top:10px;">데이터 불러오는 중…</div>
+  </div>
+
+  <div id="content" style="display:none;">
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="top-box" id="top-box"></div>
+
+    <div class="card">
+      <div class="card-label">등급별 인원 분포 <span style="font-size:9px;color:var(--gold);font-weight:400;letter-spacing:0;">(예상 등급컷)</span></div>
+      <div class="grade-grid" id="grade-grid"></div>
+      <div class="chart-wrap h180"><canvas id="chart-grade"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">점수 분포 + 등급컷 라인</div>
+      <div class="chart-wrap h240"><canvas id="chart-dist"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">반별 수학 평균 / 최고점</div>
+      <div class="chart-wrap h200"><canvas id="chart-class"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">반별 등급 분포</div>
+      <div class="chart-wrap h200"><canvas id="chart-cls-grade"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzGAi5PglxuxoKCn2EmDmtdkX2qZXZ3GGbk66QJT0lfuLoNdxG9Exym2uUmbc1dCvBY/exec';
+
+const CUTS = { 1:77, 2:65, 3:51, 4:39, 5:28, 6:19, 7:13, 8:8 };
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const G_COLORS = ['rgba(184,154,80,0.85)','rgba(61,170,138,0.82)','rgba(91,159,216,0.8)','rgba(140,140,140,0.75)','rgba(200,72,112,0.75)'];
+const G_LABELS = ['1등급','2등급','3등급','4등급','5등급~'];
+
+let mathData = [];
+
+// 차트 상단 수치 표기 플러그인 정의
+const barLabelsPlugin = {
+  id: 'barLabelsPlugin',
+  afterDatasetsDraw: function(chart) {
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach(function(dataset, i) {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.type !== 'bar') return;
+      meta.data.forEach(function(bar, index) {
+        const value = dataset.data[index];
+        if (value === 0 || value === null || value === undefined) return;
+        
+        ctx.save();
+        ctx.fillStyle = '#5a5854';
+        ctx.font = 'bold 11px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        let label = value;
+        if (chart.canvas.id === 'chart-dist' || chart.canvas.id === 'chart-cls-grade') {
+          label = value + '명';
+        } else if (chart.canvas.id === 'chart-class') {
+          label = value + '점';
+        }
+        
+        ctx.fillText(label, bar.x, bar.y - 4);
+        ctx.restore();
+      });
+    });
+  }
+};
+
+function gradeOf(score){
+  if(score>=CUTS[1]) return 1;
+  if(score>=CUTS[2]) return 2;
+  if(score>=CUTS[3]) return 3;
+  if(score>=CUTS[4]) return 4;
+  return 5;
+}
+
+async function loadData(){
+  try{
+    const r = await fetch(SHEET_API_URL);
+    if(!r.ok) throw new Error('API 연결 오류');
+    const raw = await r.json();
+    
+    mathData = raw.map(function(row){
+      return {
+        school: row['학교']||'',
+        cls: row['반']||'',
+        name: row['이름']||'',
+        math: parseFloat(row['수학'])||0
+      };
+    }).filter(function(d){
+      return d.math>0;
+    });
+    
+  }catch(e){
+    document.getElementById('loading').innerHTML='<div style="text-align:center;padding:40px;color:#c84870;font-size:13px;">데이터를 불러올 수 없어요. (Apps Script 설정을 확인하세요)</div>';
+    return;
+  }
+  render();
+}
+
+function stats(arr){
+  if(!arr.length)return{avg:0,max:0,min:0,sd:0};
+  const avg=arr.reduce(function(a,b){return a+b;},0)/arr.length;
+  const sd=Math.sqrt(arr.map(function(v){return Math.pow(v-avg,2);}).reduce(function(a,b){return a+b;},0)/arr.length);
+  return{avg:Math.round(avg*10)/10,max:Math.max.apply(null,arr),min:Math.min.apply(null,arr),sd:Math.round(sd*10)/10};
+}
+
+function render(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+
+  const scores=mathData.map(function(d){return d.math;});
+  const s=stats(scores);
+  const n=scores.length;
+
+  const sorted = scores.slice().sort(function(a,b){return a-b;});
+  const midIdx = Math.floor(sorted.length/2);
+  const medianVal = sorted.length%2 ? sorted[midIdx] : ((sorted[midIdx-1]+sorted[midIdx])/2).toFixed(1);
+
+  document.getElementById('stat-grid').innerHTML=
+    '<div class="stat-box"><div class="stat-label">응시 인원</div><div class="stat-val">' + n + '<small>명</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">반 평균</div><div class="stat-val">' + s.avg + '<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">중앙값</div><div class="stat-val">' + medianVal + '<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">표준편차</div><div class="stat-val">' + s.sd + '</div></div>';
+
+  const topStu=mathData.find(function(d){return d.math===s.max;});
+  const topMetaStr = topStu ? topStu.school+' · '+topStu.cls+'반' : '—';
+  document.getElementById('top-box').innerHTML=
+    '<div><div class="top-label">🏆 최고 점수</div><div class="top-meta">' + topMetaStr + '</div></div>' +
+    '<div class="top-val">' + s.max + '<small>점</small></div>';
+
+  const gradeCnt=[0,0,0,0,0]; 
+  scores.forEach(function(v){
+    const g=gradeOf(v);
+    gradeCnt[Math.min(g,5)-1]++;
+  });
+
+  let gradeGridHtml = '';
+  for(let i=0; i<5; i++){
+    const pct = n > 0 ? Math.round((gradeCnt[i]/n)*100) : 0;
+    const label = G_LABELS[i];
+    let cutText = '';
+    if(i === 0) cutText = CUTS[1] + '점↑';
+    else if(i === 1) cutText = CUTS[2] + '~' + (CUTS[1]-1);
+    else if(i === 2) cutText = CUTS[3] + '~' + (CUTS[2]-1);
+    else if(i === 3) cutText = CUTS[4] + '~' + (CUTS[3]-1);
+    else cutText = '~' + (CUTS[4]-1);
+
+    gradeGridHtml += '<div class="grade-box gb' + (i+1) + '">' +
+      '<div class="g-label">' + label + '</div>' +
+      '<div class="g-cut">' + cutText + '</div>' +
+      '<div class="g-count">' + gradeCnt[i] + '</div>' +
+      '<div class="g-pct">' + pct + '%</div>' +
+      '</div>';
+  }
+  document.getElementById('grade-grid').innerHTML = gradeGridHtml;
+
+  initCharts(gradeCnt, scores);
+}
+
+function initCharts(gradeCnt, scores) {
+  // 1. 등급별 분포 원형 차트
+  new Chart(document.getElementById('chart-grade'), {
+    type: 'doughnut',
+    data: {
+      labels: G_LABELS,
+      datasets: [{
+        data: gradeCnt,
+        backgroundColor: G_COLORS,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
+    }
+  });
+
+  // 2. 점수대별 분포 히스토그램 (상단 수치 표시 추가)
+  const bins = Array(10).fill(0);
+  scores.forEach(function(v){
+    const idx = Math.min(Math.floor(v/10), 9);
+    bins[idx]++;
+  });
+  new Chart(document.getElementById('chart-dist'), {
+    type: 'bar',
+    data: {
+      labels: ['0-9','10-19','20-29','30-39','40-49','50-59','60-69','70-79','80-89','90-100'],
+      datasets: [{
+        label: '인원수',
+        data: bins,
+        backgroundColor: 'rgba(61,170,138,0.6)',
+        borderColor: '#3daa8a',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    },
+    plugins: [barLabelsPlugin]
+  });
+
+  // 3. 반별 수학 평균 / 최고점 비교 (요청 순서 정렬 및 수치 표기)
+  const classData = {};
+  mathData.forEach(function(d){
+    if(!classData[d.cls]) classData[d.cls] = [];
+    classData[d.cls].push(d.math);
+  });
+
+  // 반 정렬 기준: S+, A+, S, A, B, 기타
+  const targetOrder = ['S+', 'A+', 'S', 'A', 'B', '기타'];
+  const classLabels = Object.keys(classData).sort(function(a, b) {
+    let idxA = targetOrder.indexOf(a);
+    let idxB = targetOrder.indexOf(b);
+    if (idxA === -1) idxA = 999;
+    if (idxB === -1) idxB = 999;
+    return idxA - idxB;
+  });
+
+  const classAvgs = [];
+  const classMaxs = [];
+  classLabels.forEach(function(c){
+    const cScores = classData[c];
+    const avg = cScores.reduce(function(a,b){return a+b;},0)/cScores.length;
+    classAvgs.push(Math.round(avg*10)/10);
+    classMaxs.push(Math.max.apply(null, cScores));
+  });
+
+  new Chart(document.getElementById('chart-class'), {
+    type: 'bar',
+    data: {
+      labels: classLabels,
+      datasets: [
+        { label: '평균', data: classAvgs, backgroundColor: 'rgba(61,170,138,0.8)' },
+        { label: '최고점', data: classMaxs, backgroundColor: 'rgba(184,154,80,0.8)' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    },
+    plugins: [barLabelsPlugin]
+  });
+
+  // 4. 반별 1등급 인원 현황 (요청 순서 정렬 및 수치 표기)
+  new Chart(document.getElementById('chart-cls-grade'), {
+    type: 'bar',
+    data: {
+      labels: classLabels,
+      datasets: [{ 
+        label: '1등급 인원', 
+        data: classLabels.map(function(c){
+          return classData[c].filter(function(v){ return v >= CUTS[1]; }).length;
+        }), 
+        backgroundColor: 'rgba(184,154,80,0.8)' 
+      }]
+    },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    },
+    plugins: [barLabelsPlugin]
+  });
+}
+
+window.onload = loadData;
+</script>
+</body>
+</html>
