@@ -112,8 +112,11 @@ a{ text-decoration:none; color:inherit; }
 }
 .banner-title em{ font-style:italic; color:#f4b8cc; }
 .banner-desc{ font-size:11px; color:rgba(255,200,215,0.6); margin-top:6px; letter-spacing:0.02em; }
+
+/* 배너 버튼 그룹 */
+.banner-btn-group { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
+
 .score-btn{
-  position:relative; z-index:1;
   display:inline-flex; align-items:center; gap:9px;
   padding:13px 22px;
   background:linear-gradient(135deg, #e8607f 0%, #c03060 100%);
@@ -125,6 +128,19 @@ a{ text-decoration:none; color:inherit; }
   flex-shrink:0; letter-spacing:0.02em;
 }
 .score-btn:hover{ background:linear-gradient(135deg,#f07090 0%,#d04070 100%); animation:none; transform:scale(1.04); }
+
+.score-btn-alt {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 22px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 100px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  text-decoration: none; flex-shrink: 0; letter-spacing: 0.02em;
+  transition: background 0.2s, transform 0.2s;
+}
+.score-btn-alt:hover { background: rgba(255, 255, 255, 0.22); transform: scale(1.04); }
+
 @keyframes btn-glow{
   0%  {box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);}
   50% {box-shadow:0 4px 32px rgba(220,60,100,0.70), inset 0 1px 0 rgba(255,255,255,0.15);}
@@ -203,7 +219,9 @@ a{ text-decoration:none; color:inherit; }
 
 @media(max-width:480px){
   .score-banner{ flex-direction:column; align-items:flex-start; padding:20px 18px; gap:14px; }
+  .banner-btn-group{ width:100%; display:flex; flex-direction:column; gap:8px; }
   .score-btn{ width:100%; justify-content:center; }
+  .score-btn-alt{ width:100%; justify-content:center; }
   .banner-title{ font-size:18px; }
 }
 /* ── 초소형 화면 ── */
@@ -216,7 +234,6 @@ a{ text-decoration:none; color:inherit; }
 <body>
 <div class="container">
 
-  <!-- 헤더 -->
   <div class="header">
     <div class="logo-wrap">
       <div class="logo">MATHY YURI<br><span>System</span></div>
@@ -264,20 +281,20 @@ a{ text-decoration:none; color:inherit; }
     </div>
   </div>
 
-  <!-- 6모 가채점 배너 -->
   <div class="score-banner">
     <div class="banner-text">
       <div class="banner-badge"><span class="pulse"></span>2026.06.04 &nbsp;·&nbsp; D-DAY</div>
       <div class="banner-title">6월 고1 전국연합<br><em>가채점 성적 제출</em></div>
       <div class="banner-desc">시험 후 바로 점수를 입력해 주세요 — 선생님이 확인합니다</div>
     </div>
-    <a href="score_form.html" class="score-btn">성적 입력 <span class="btn-arrow">→</span></a>
+    <div class="banner-btn-group">
+      <a href="score_form.html" class="score-btn">성적 입력 <span class="btn-arrow">→</span></a>
+      <a href="26_6moresult.html" class="score-btn-alt">성적 분석 <span class="btn-arrow">→</span></a>
+    </div>
   </div>
 
-  <!-- 메인 레이아웃 -->
   <div class="layout">
 
-    <!-- 왼쪽: 서술형 훈련 -->
     <div class="card">
       <div class="category">WRITING TRAINING</div>
       <div class="card-title">공통수학Ⅰ<br>서술형 Logic Master</div>
@@ -333,7 +350,6 @@ a{ text-decoration:none; color:inherit; }
       </div>
     </div>
 
-    <!-- 오른쪽: 사이드 카드 -->
     <div style="display:flex;flex-direction:column;gap:16px;">
       <div class="card">
         <div class="category">S+ LOGIC MASTER</div>
