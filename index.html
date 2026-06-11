@@ -25,8 +25,8 @@ a{ text-decoration:none; color:inherit; }
 .logo-sub{ margin-top:10px; color:var(--sub); font-size:11px; letter-spacing:0.24em; }
 
 /* 프로필 영역 */
-.profile-row{ display:flex; align-items:center; gap:16px; }
-.profile{ width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow:0 6px 18px rgba(60,90,60,0.12); flex-shrink:0; }
+.profile-row{ display:flex; flex-direction:column; gap:16px; }
+.profile{ width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow:0 6px 18px rgba(60,90,60,0.12); flex-shrink:0; align-self:center; }
 .profile img{ width:100%; height:100%; object-fit:cover; }
 
 /* 링크 버튼 그룹 */
@@ -71,7 +71,6 @@ a{ text-decoration:none; color:inherit; }
   border-radius:22px; padding:22px 24px; margin-bottom:22px;
   box-shadow:0 12px 40px rgba(80,10,40,0.28);
 }
-/* 배경 장식 원 */
 .score-banner::before{
   content:''; position:absolute;
   top:-40px; right:-40px;
@@ -113,7 +112,6 @@ a{ text-decoration:none; color:inherit; }
 .banner-title em{ font-style:italic; color:#f4b8cc; }
 .banner-desc{ font-size:11px; color:rgba(255,200,215,0.6); margin-top:6px; letter-spacing:0.02em; }
 
-/* 배너 버튼 그룹 */
 .banner-btn-group { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
 
 .score-btn{
@@ -176,7 +174,6 @@ a{ text-decoration:none; color:inherit; }
 .sq-title{ font-size:12px; font-weight:700; line-height:1.35; color:var(--main); flex:1; position:relative; z-index:1; }
 .sq-footer{ display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:2px; position:relative; z-index:1; }
 .sq-count{ font-family:'Cormorant Garamond',serif; font-size:12px; font-weight:700; color:var(--point); opacity:0.8; white-space:nowrap; }
-/* 배경 장식 숫자 — 겹침 없이 우측 장식용 */
 .count-display{
   position:absolute; right:4px; top:50%;
   transform:translateY(-50%);
@@ -189,20 +186,20 @@ a{ text-decoration:none; color:inherit; }
 }
 .count-unit{ display:none; }
 
-/* 사이드 메뉴 */
+/* 메뉴 */
 .menu{ display:flex; flex-direction:column; gap:10px; }
 .link{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-radius:14px; background:#f5faf3; border:1px solid #dde9d8; font-size:14px; }
 
 .footer{ margin-top:48px; text-align:center; color:var(--sub); font-size:11px; line-height:1.8; }
 
-/* ── 데스크탑 ── */
+/* ── 데스크탑 미디어 쿼리 ── */
 @media(min-width:768px){
   body{ padding:42px 20px 80px; }
   .header{ flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:40px; }
   .logo{ font-size:76px; }
   .logo-sub{ font-size:13px; }
   .profile-row{ flex-direction:column; align-items:flex-end; gap:10px; }
-  .profile{ width:120px; height:120px; }
+  .profile{ width:120px; height:120px; align-self:flex-end; }
   .btn-group{ align-items:stretch; }
   .live-btn{ font-size:13px; }
   .layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
@@ -217,14 +214,14 @@ a{ text-decoration:none; color:inherit; }
   .banner-title{ font-size:22px; }
 }
 
+/* ── 모바일 미디어 쿼리 ── */
 @media(max-width:480px){
-  .score-banner{ flex-direction:column; align-items:flex-start; padding:20px 18px; gap:14px; }
-  .banner-btn-group{ width:100%; display:flex; flex-direction:column; gap:8px; }
-  .score-btn{ width:100%; justify-content:center; }
-  .score-btn-alt{ width:100%; justify-content:center; }
+  .score-banner{ flex-direction:column; align-items:flex-start; padding:20px 14px; gap:14px; }
+  .banner-btn-group{ width:100%; display:flex; flex-direction:row; gap:5px; }
+  .score-btn{ flex:1; justify-content:center; padding:10px 4px; font-size:10px; gap:4px; white-space:nowrap; letter-spacing:-0.5px; }
+  .score-btn-alt{ flex:1; justify-content:center; padding:10px 4px; font-size:10px; gap:4px; white-space:nowrap; letter-spacing:-0.5px; }
   .banner-title{ font-size:18px; }
 }
-/* ── 초소형 화면 ── */
 @media(max-width:360px){
   .square-grid{ grid-template-columns:repeat(2,1fr); }
   .btn-grid2{ grid-template-columns:1fr; }
@@ -244,11 +241,23 @@ a{ text-decoration:none; color:inherit; }
       <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
       <div class="btn-group">
         <a href="ranking.html" class="live-btn"><span class="dot"></span>서술형 성적차트 →</a>
-        <a href="motest.html" class="live-btn"><span class="dot"></span>6모대비 성적차트 →</a>
+        
+        <div class="btn-grid2">
+          <a href="splus_past.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
+            <span><span class="dot" style="display:inline-block;"></span>s+내신기출도장깨기</span>
+            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
+          </a>
+          <a href="s_textbook.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
+            <span><span class="dot" style="display:inline-block;"></span>s 교과서 정복하기</span>
+            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
+          </a>
+        </div>
+
         <div class="btn-grid2">
           <div class="dropdown-wrap">
-            <div id="gyeol-ans-btn" class="live-btn" style="border-radius:14px;">
-              <span class="dot"></span><span style="font-size:11px;">결모의고사 정답 ▾</span>
+            <div id="gyeol-ans-btn" class="live-btn" style="border-radius:14px; width:100%; justify-content:space-between;">
+              <span><span class="dot" style="display:inline-block;"></span>결모의고사 정답</span>
+              <span style="font-size:11px; margin-left:4px; color:var(--sub);">▾</span>
             </div>
             <div id="gyeol-menu" class="gyeol-menu">
               <a href="GYEOL1/gyeolmo1.html">1회</a>
@@ -265,9 +274,17 @@ a{ text-decoration:none; color:inherit; }
             <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
           </a>
         </div>
+        
+        <!-- 일일일모제출, 티어랭킹 글자 앞 도트 깜박임 처리 추가 -->
         <div class="btn-grid2">
-          <a href="daily600.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">일일일모 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
-          <a href="dailyranking.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">티어랭킹 <span class="sq-status soon" style="font-size:8px;">SOON</span></a>
+          <a href="daily600.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
+            <span><span class="dot" style="display:inline-block;"></span>일일일모제출</span>
+            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
+          </a>
+          <a href="dailyranking.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
+            <span><span class="dot" style="display:inline-block;"></span>티어랭킹</span>
+            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
+          </a>
         </div>
         <div class="ach-card" onclick="location.href='mathy_unit_chart.html'">
           <div class="ach-title">ACHIEVEMENT SUMMARY</div>
@@ -290,6 +307,7 @@ a{ text-decoration:none; color:inherit; }
     <div class="banner-btn-group">
       <a href="score_form.html" class="score-btn">성적 입력 <span class="btn-arrow">→</span></a>
       <a href="26_6moresult.html" class="score-btn-alt">성적 분석 <span class="btn-arrow">→</span></a>
+      <a href="motest.html" class="score-btn-alt">6모대비 성적차트 <span class="btn-arrow">→</span></a>
     </div>
   </div>
 
@@ -343,9 +361,9 @@ a{ text-decoration:none; color:inherit; }
       <div class="subject">
         <div class="subject-name" style="font-weight:800;">실전 Writing <span>Final Practice</span></div>
         <div class="square-grid">
-          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사 1회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
-          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사 2회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
-          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사 3회</div><div class="sq-footer"><span></span><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
+          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사 1회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
+          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사 2회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
+          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사 3회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
         </div>
       </div>
     </div>
@@ -378,7 +396,6 @@ a{ text-decoration:none; color:inherit; }
 <script>
 const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
 window.onload = function() {
-  // 드롭다운
   const ansBtn = document.getElementById('gyeol-ans-btn');
   const menu   = document.getElementById('gyeol-menu');
   ansBtn.addEventListener('click', e => {
@@ -387,7 +404,6 @@ window.onload = function() {
   });
   document.addEventListener('click', () => { menu.style.display = 'none'; });
 
-  // 카운트
   fetch(COUNT_URL + "?action=getCounts").then(r => r.json()).then(data => {
     for (let i = 1; i <= 8; i++) {
       const el   = document.getElementById('count-d' + i);
