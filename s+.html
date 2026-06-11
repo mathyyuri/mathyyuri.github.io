@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MATHY YURI — S+ Naesin Master Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #fdfcf9;
+            --card-white: #ffffff;
+            --gold-primary: #b39258;
+            --gold-light: #e5dec9;
+            --gold-dark: #8a6d3b;
+            --text-charcoal: #2a2723;
+            --text-muted: #7a736a;
+            --ox-o-bg: #f2fbf7;
+            --ox-o-txt: #1c8266;
+            --ox-x-bg: #fff5f5;
+            --ox-x-txt: #d64545;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg-cream); color: var(--text-charcoal); font-family: 'Noto Serif KR', serif; -webkit-font-smoothing: antialiased; }
+        
+        .premium-header { 
+            background: #121212; 
+            padding: 55px 24px 45px 24px; 
+            border-bottom: 2px solid var(--gold-primary); 
+            text-align: center; 
+        }
+        .header-inner { max-width: 1240px; margin: auto; position: relative; }
+        
+        .nav-brand { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; letter-spacing: 0.12em; color: var(--gold-primary); margin-bottom: 30px; text-transform: uppercase; }
+        .nav-brand span { font-size: 11px; font-weight: 400; color: #a69e94; margin-left: 12px; letter-spacing: 0.05em; }
+
+        .title-tag { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: var(--gold-light); letter-spacing: 0.35em; font-weight: 500; text-transform: uppercase; margin-bottom: 14px; }
+        .main-headline { font-size: 36px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .sub-headline { font-size: 14px; color: #a69e94; font-weight: 400; letter-spacing: 0.01em; margin-bottom: 45px; }
+
+        /* 6개 학교 대시보드 그리드 구조 */
+        .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; max-width: 1100px; margin: 0 auto; }
+        .stats-card { background: #1a1a1a; border: 1px solid rgba(179,146,88,0.3); padding: 18px 10px; border-radius: 4px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; }
+        .stats-val { display: block; font-size: 14px; font-weight: 500; color: #ffffff; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-lbl { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.05em; }
+        
+        /* 클리어 및 미공개 스타일 고도화 */
+        .stats-card.clear-status { border-color: var(--gold-primary); background: linear-gradient(135deg, #221c12 0%, #1a1a1a 100%); }
+        .stats-card.clear-status .stats-lbl { background: var(--gold-primary); color: #121212; }
+        .stats-card.lock-status { border-color: #2a2a2a; opacity: 0.6; }
+        .stats-card.lock-status .stats-lbl { background: #2a2a2a; color: #7a736a; }
+
+        .container-core { max-width: 1240px; margin: auto; padding: 40px 24px; }
+
+        .tab-bar { 
+            display: flex; 
+            gap: 14px; 
+            margin-bottom: 35px; 
+            overflow-x: auto; 
+            padding-bottom: 12px; 
+            border-bottom: 1px solid var(--gold-light);
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab-bar::-webkit-scrollbar { height: 4px; }
+        .tab-bar::-webkit-scrollbar-thumb { background-color: var(--gold-light); border-radius: 2px; }
+
+        .tab-item { 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 24px; 
+            border-radius: 6px; 
+            border: 1px solid var(--gold-light); 
+            background: #ffffff; 
+            cursor: pointer; 
+            min-width: 145px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 2px 8px rgba(179,146,88,0.04);
+        }
+        .tab-item:hover { background: var(--bg-cream); border-color: var(--gold-primary); }
+        
+        .tab-item .tab-name { 
+            font-size: 13px; 
+            font-weight: 500; 
+            color: var(--text-muted); 
+            margin-bottom: 5px; 
+            white-space: nowrap; 
+        }
+        .tab-item .tab-score { 
+            font-family: 'Cormorant Garamond', serif; 
+            font-size: 19px; 
+            font-weight: 700; 
+            color: var(--text-charcoal); 
+        }
+        .tab-item .tab-score.upcoming {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: #b0a99f;
+            letter-spacing: -0.02em;
+        }
+
+        .tab-item.active { 
+            background: #1a1a1a; 
+            border-color: var(--gold-primary); 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+        .tab-item.active .tab-name { color: var(--gold-light); font-weight: 600; }
+        .tab-item.active .tab-score { color: #ffffff; }
+        .tab-item.active .tab-score.upcoming { color: var(--gold-primary); }
+
+        .insight-board { background: var(--card-white); border-radius: 8px; border: 1px solid var(--gold-light); padding: 35px; margin-bottom: 50px; box-shadow: 0 10px 30px rgba(179,146,88,0.02); }
+        .insight-title { font-family: 'Cormorant Garamond', 'Noto Serif KR', serif; font-size: 20px; font-weight: 500; color: var(--text-charcoal); padding-bottom: 15px; margin-bottom: 30px; border-bottom: 1px solid var(--gold-primary); }
+        
+        /* 통합 검색 엔진 영역 (기본 Grid 설계) */
+        .search-engine { 
+            display: grid; 
+            grid-template-columns: 1.2fr 1.5fr 1fr; 
+            gap: 14px; 
+            margin-bottom: 30px; 
+        }
+        .search-engine input { width: 100%; padding: 15px 20px; border-radius: 4px; border: 1px solid var(--gold-light); background: var(--bg-cream); color: var(--text-charcoal); font-size: 14px; outline: none; font-family: 'Noto Serif KR', serif; transition: 0.3s; height: 50px; }
+        .search-engine input:focus { border-color: var(--gold-primary); background: #fff; }
+        .search-engine button { width: 100%; padding: 0 10px; background: var(--text-charcoal); color: #fff; border: none; border-radius: 4px; font-weight: 500; font-size: 13px; cursor: pointer; letter-spacing: 0.05em; transition: 0.3s; height: 50px; font-family: 'Noto Serif KR', serif; white-space: nowrap; }
+        .search-engine button:hover { background: var(--gold-dark); }
+
+        #personal-report { display: none; margin-top: 20px; }
+        .report-layout-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 35px; margin-bottom: 35px; }
+        
+        .profile-summary-box { background: #ffffff; padding: 25px; border: 1px solid var(--gold-light); border-radius: 6px; }
+        
+        .comparison-chart-frame { height: 160px; display: flex; align-items: flex-end; gap: 24px; margin-top: 35px; padding: 0 10px 5px; border-bottom: 1px solid var(--gold-light); }
+        .dual-bar-container { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .bars-twin { display: flex; align-items: flex-end; gap: 4px; width: 100%; justify-content: center; height: calc(100% - 25px); }
+        
+        .v-bar { width: 16px; border-radius: 2px 2px 0 0; position: relative; min-height: 4px; }
+        .v-bar.student-bar { background: linear-gradient(180deg, #d4af37 0%, #b39258 100%); box-shadow: 0 2px 6px rgba(179,146,88,0.25); }
+        .v-bar.average-bar { background: linear-gradient(180deg, #d5cebf 0%, #b8b09e 100%); }
+        
+        .v-bar::after { content: attr(data-score); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace; }
+        .v-bar.student-bar::after { color: var(--gold-dark); }
+        .v-bar.average-bar::after { color: var(--text-muted); }
+        
+        .chart-axis-name { font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; white-space: nowrap; }
+        .chart-legend-box { display: flex; gap: 15px; justify-content: flex-end; margin-top: 12px; font-size: 11px; color: var(--text-muted); }
+        .legend-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+        .ox-row-container { 
+            display: flex; 
+            flex-wrap: nowrap; 
+            gap: 5px; 
+            align-items: center;
+        }
+        .ox-bead { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; border-radius: 2px; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+        .ox-bead.ans-1 { background: var(--ox-o-bg); color: var(--ox-o-txt); border: 1px solid rgba(28,130,102,0.15); }
+        .ox-bead.ans-2 { background: var(--ox-x-bg); color: var(--ox-x-txt); border: 1px solid rgba(214,69,69,0.15); }
+        
+        .rate-bead { width: 24px; text-align: center; font-size: 11px; font-weight: 600; font-family: 'DM Mono', monospace; flex-shrink: 0; line-height: 24px; }
+
+        .report-check-line { display: flex; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--gold-light); }
+        .report-check-line:last-child { border-bottom: none; }
+        .report-exam-lbl { width: 150px; font-size: 13px; font-weight: 500; color: var(--text-charcoal); flex-shrink: 0; }
+
+        .board-table-holder { background: var(--card-white); border-radius: 4px; border: 1px solid var(--gold-light); padding: 30px; overflow-x: auto; box-shadow: 0 4px 20px rgba(179,146,88,0.01); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { font-size: 11px; color: var(--text-muted); padding: 16px 12px; border-bottom: 1px solid var(--gold-primary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg-cream); }
+        td { padding: 16px 12px; text-align: center; font-size: 13px; border-bottom: 1px solid var(--gold-light); color: var(--text-charcoal); }
+        tr:hover td { background-color: var(--bg-cream); }
+
+        .col-class-lbl { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+        .metric-analysis-row { background: #fdfbf7 !important; }
+        .metric-analysis-row td { color: var(--ox-o-txt); font-size: 12px; padding: 12px 12px; border-bottom: 1px solid var(--gold-light); }
+
+        .prescription-container { margin-top: 30px; padding: 25px; background: var(--bg-cream); border-radius: 4px; border-left: 3px solid var(--gold-primary); font-size: 13.5px; line-height: 1.7; }
+        .prescription-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--gold-light); }
+        .prescription-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .prescription-date { font-weight: 600; color: var(--gold-dark); font-size: 12px; margin-bottom: 4px; display: inline-block; }
+
+        /* ── 모바일 최적화 미디어 쿼리 ── */
+        @media (max-width: 768px) {
+            .premium-header { padding: 40px 16px 35px 16px; }
+            .main-headline { font-size: 24px; margin-bottom: 10px; line-height: 1.3; }
+            .sub-headline { font-size: 11px; margin-bottom: 25px; }
+            
+            /* 상단 학교 박스 모바일 3열 배열 배치 */
+            .stats-grid { 
+                grid-template-columns: repeat(3, 1fr); 
+                gap: 8px; 
+            }
+            .stats-card { padding: 12px 6px; }
+            .stats-val { font-size: 12px; margin-bottom: 4px; }
+            .stats-lbl { font-size: 9px; padding: 1px 6px; }
+
+            .container-core { padding: 20px 12px; }
+            .insight-board { padding: 16px; margin-bottom: 30px; }
+            
+            /* 모바일 로그인 엔진 1행(Row) 유지 핵심 스타일 */
+            .search-engine { 
+                grid-template-columns: 1fr 1.2fr 0.9fr !important; 
+                gap: 5px !important; 
+                margin-bottom: 20px; 
+            }
+            .search-engine input { 
+                padding: 10px 8px !important; 
+                font-size: 11px !important; 
+                height: 40px !important; 
+                letter-spacing: -0.03em;
+            }
+            .search-engine button { 
+                height: 40px !important; 
+                font-size: 10px !important; 
+                padding: 0 4px !important;
+                letter-spacing: 0;
+            }
+
+            .tab-bar { gap: 8px; margin-bottom: 20px; padding-bottom: 8px; }
+            .tab-item { padding: 10px 12px; min-width: 110px; border-radius: 4px; }
+            .tab-item .tab-name { font-size: 11px; margin-bottom: 3px; }
+            .tab-item .tab-score { font-size: 15px; }
+            .tab-item .tab-score.upcoming { font-size: 11px; }
+
+            .report-layout-grid { grid-template-columns: 1fr; gap: 20px; }
+            .profile-summary-box { padding: 16px; }
+            .comparison-chart-frame { gap: 14px; margin-top: 25px; height: 140px; }
+            
+            .ox-row-container { 
+                display: grid !important;
+                grid-template-columns: repeat(12, 1fr) !important; 
+                gap: 3px !important;
+                width: 100%;
+                flex-wrap: unset;
+            }
+            .ox-bead { 
+                width: 100% !important; 
+                height: auto !important; 
+                aspect-ratio: 1 / 1; 
+                font-size: 9px !important; 
+            }
+            .rate-bead { 
+                width: 100% !important; 
+                font-size: 9px !important; 
+                line-height: 22px !important; 
+            }
+            
+            .report-check-line {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 14px 0;
+            }
+            .report-exam-lbl {
+                width: 100%;
+                font-size: 12px;
+                border-left: 2px solid var(--gold-primary);
+                padding-left: 6px;
+                margin-bottom: 2px;
+            }
+
+            .board-table-holder { padding: 12px; border-radius: 4px; }
+            table { min-width: 640px; } 
+            th { padding: 10px 6px; font-size: 10px; }
+            td { padding: 10px 6px; font-size: 12px; }
+            
+            .prescription-container { margin-top: 20px; padding: 16px; font-size: 12px; }
+        }
+
+        @media (max-width: 380px) {
+            .ox-row-container { 
+                grid-template-columns: repeat(8, 1fr) !important; 
+            }
+            .tab-item { min-width: 100px; padding: 8px 10px; }
+            .search-engine input { font-size: 10px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="premium-header">
+    <div class="header-inner">
+        <div class="nav-brand">MATHY YURI <span>DAECHI S+ ACADEMY</span></div>
+
+        <div class="hero-center">
+            <div class="title-tag">PREMIUM NAESIN ARCHIVE</div>
+            <h1 class="main-headline">S+ 내신기출 도장깨기</h1>
+            <p class="sub-headline">명문고 정밀 내신기출 분석 및 실전 트레이닝 스코어 대시보드</p>
+            
+            <!-- 개편된 6개 학교 진행상황 상태 보드 -->
+            <div class="stats-grid">
+                <div class="stats-card clear-status">
+                    <span class="stats-val">25년 서천고</span>
+                    <span class="stats-lbl">CLEAR</span>
+                </div>
+                <div class="stats-card clear-status">
+                    <span class="stats-val">25년 신갈고</span>
+                    <span class="stats-lbl">CLEAR</span>
+                </div>
+                <div class="stats-card lock-status">
+                    <span class="stats-val">3회 기출</span>
+                    <span class="stats-lbl">미공개</span>
+                </div>
+                <div class="stats-card lock-status">
+                    <span class="stats-val">4회 기출</span>
+                    <span class="stats-lbl">미공개</span>
+                </div>
+                <div class="stats-card lock-status">
+                    <span class="stats-val">5회 기출</span>
+                    <span class="stats-lbl">미공개</span>
+                </div>
+                <div class="stats-card lock-status">
+                    <span class="stats-val">6회 기출</span>
+                    <span class="stats-lbl">미공개</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-core">
+    <!-- 학생 통합 진단 리포트 섹션 -->
+    <div class="insight-board">
+        <div class="insight-title">STUDENT INSIGHT REPORT</div>
+        <div class="search-engine">
+            <input type="text" id="nameInput" placeholder="학생 실명 입력">
+            <input type="password" id="pwInput" placeholder="비밀번호 (연락처 뒷자리)">
+            <button onclick="generateReport()">SEARCH</button>
+        </div>
+
+        <div id="personal-report">
+            <div class="report-layout-grid">
+                <div class="profile-summary-box">
+                    <div id="res-name" style="font-size:15px; font-weight:600; margin-bottom:20px; color:var(--text-charcoal); border-bottom:1px solid var(--gold-light); padding-bottom:10px;">-</div>
+                    <div style="display: flex; gap: 40px; margin-bottom: 5px;">
+                        <div><div style="font-size:11px; color:var(--text-muted); font-weight:500; margin-bottom:4px;">CUMULATIVE AVG</div><div id="res-avg" style="font-size:22px; font-weight:600; color:var(--ox-o-txt); font-family:'Cormorant Garamond';">-</div></div>
+                        <div><div style="font-size:11px; color:var(--text-muted); font-weight:500; margin-bottom:4px;">PEAK SCORE</div><div id="res-max" style="font-size:22px; font-weight:600; color:var(--text-charcoal); font-family:'Cormorant Garamond';">-</div></div>
+                    </div>
+                    
+                    <div class="chart-legend-box">
+                        <div><span class="legend-indicator" style="background:linear-gradient(180deg, #d4af37 0%, #b39258 100%);"></span>내 점수</div>
+                        <div><span class="legend-indicator" style="background:linear-gradient(180deg, #d5cebf 0%, #b8b09e 100%);"></span>S+반 평균</div>
+                    </div>
+                    <div class="comparison-chart-frame" id="res-chart"></div>
+                </div>
+                
+                <div style="overflow-x: auto; border: 1px solid var(--gold-light); padding: 20px; border-radius: 6px;">
+                    <table style="min-width: unset; width: 100%; font-size:13px;">
+                        <thead><tr style="text-align:left; color:var(--text-muted);"><th style="padding:10px 5px; background:none; font-size:11px;">TARGET EXAM</th><th style="text-align:right; padding-right:10px; background:none; font-size:11px;">SCORE</th></tr></thead>
+                        <tbody id="res-history"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 25px; background: #ffffff; border-radius: 4px; border: 1px solid var(--gold-light);">
+                <div style="font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 20px; letter-spacing: 0.05em;">📌 TEST ITEM ANALYSIS (시험별 세부 정오 진단표)</div>
+                <div id="item-rows-wrapper"></div>
+            </div>
+
+            <div class="prescription-container" id="res-memo"></div>
+        </div>
+    </div>
+
+    <!-- 버튼 바로 아래 평균이 결합된 고해상도 메트릭 컨트롤러 -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('전체 누적')">
+            <span class="tab-name">전체 누적 현황</span>
+            <span class="tab-score" id="tab-avg-all">-</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('25년 서천고')">
+            <span class="tab-name">25년 서천고</span>
+            <span class="tab-score" id="tab-avg-0">-</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('25년 신갈고')">
+            <span class="tab-name">25년 신갈고</span>
+            <span class="tab-score" id="tab-avg-1">-</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('3회 기출 (예정)')">
+            <span class="tab-name">3회 기출 (예정)</span>
+            <span class="tab-score upcoming" id="tab-avg-2">진행 예정</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('4회 기출 (예정)')">
+            <span class="tab-name">4회 기출 (예정)</span>
+            <span class="tab-score upcoming" id="tab-avg-3">진행 예정</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('5회 기출 (예정)')">
+            <span class="tab-name">5회 기출 (예정)</span>
+            <span class="tab-score upcoming" id="tab-avg-4">진행 예정</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('6회 기출 (예정)')">
+            <span class="tab-name">6회 기출 (예정)</span>
+            <span class="tab-score upcoming" id="tab-avg-5">진행 예정</span>
+        </div>
+    </div>
+
+    <!-- 메인 대시 스코어 테이블 -->
+    <div class="board-table-holder">
+        <table>
+            <thead id="table-head"></thead>
+            <tbody id="main-table"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const GAS_API = "https://script.google.com/macros/s/AKfycbwwAm3lYkaILE5xCGnzqKfeiofkN5Ocr4WWGPWhnfx47RIjhGXmgn1YhQRD8s527G8BMg/exec";
+    let allData = [];
+    let currentTab = "전체 누적";
+
+    const EXAM_ORDER = ["25년 서천고", "25년 신갈고", "3회 기출 (예정)", "4회 기출 (예정)", "5회 기출 (예정)", "6회 기출 (예정)"];
+
+    async function init() {
+        try {
+            const res = await fetch(GAS_API);
+            const json = await res.json();
+            
+            allData = json.map(r => {
+                let itemScores = [];
+                let idx = 1;
+                while (r[idx] !== undefined && r[idx] !== "") {
+                    itemScores.push(parseInt(r[idx]) || 2);
+                    idx++;
+                }
+
+                return {
+                    name: String(r["이름"]||"").trim(),
+                    nick: String(r["닉네임"]||"").trim(),
+                    pw: String(r["비밀번호"]||"").trim(),
+                    exam: String(r["시험명"]||"").trim(),
+                    className: String(r["반"]||"-").trim(),
+                    score: parseInt(r["원점수"])||0,
+                    analysis: String(r["분석"]||""),
+                    items: itemScores
+                };
+            }).filter(d => {
+                if (!d.name || d.exam.includes("모의고사")) return false;
+                return EXAM_ORDER.some(e => {
+                    const cleanTarget = e.replace(" (예정)", "");
+                    return d.exam === cleanTarget || d.exam === e;
+                });
+            });
+            
+            calculateOverallAvg();
+            injectTabAverages();
+            render();
+        } catch(e) { console.error(e); }
+    }
+
+    function calculateOverallAvg() {
+        const sPlusOverall = allData.filter(d => d.className.toUpperCase() === "S+");
+        if (sPlusOverall.length > 0) {
+            const totalSum = sPlusOverall.reduce((acc, curr) => acc + curr.score, 0);
+            const overallAvg = (totalSum / sPlusOverall.length).toFixed(1);
+            document.getElementById('tab-avg-all').innerText = overallAvg + "점";
+        } else {
+            document.getElementById('tab-avg-all').innerText = "-";
+        }
+    }
+
+    function injectTabAverages() {
+        EXAM_ORDER.forEach((examName, idx) => {
+            const el = document.getElementById('tab-avg-' + idx);
+            if (!el) return;
+
+            if (examName.includes("(예정)")) {
+                el.innerText = "진행 예정";
+                return;
+            }
+
+            const cleanTarget = examName.replace(" (예정)", "");
+            const matched = allData.filter(d => (d.exam === cleanTarget || d.exam === examName) && d.className.toUpperCase() === "S+");
+            
+            if (matched.length > 0) {
+                const avg = (matched.reduce((acc, curr) => acc + curr.score, 0) / matched.length).toFixed(1);
+                el.innerText = avg + "점";
+                el.classList.remove('upcoming');
+            } else {
+                el.innerText = "진행 예정";
+                el.classList.add('upcoming');
+            }
+        });
+    }
+
+    function render() {
+        const head = document.getElementById('table-head');
+        const body = document.getElementById('main-table');
+        head.innerHTML = "";
+        body.innerHTML = "";
+        
+        if (currentTab === "전체 누적") {
+            head.innerHTML = '<tr><th style="width:60px;">RANK</th><th style="text-align:left; padding-left:12px;">NICKNAME</th><th style="width:70px;">CLASS</th><th style="width:90px; color:var(--ox-o-txt); background:var(--bg-cream);">누적 평균</th><th>25년 서천</th><th>25년 신갈</th><th>3회 기출</th><th>4회 기출</th><th>5회 기출</th><th>6회 기출</th></tr>';
+
+            const studentMap = {};
+            allData.forEach(d => {
+                const key = d.name + "_" + d.pw;
+                if (!studentMap[key]) {
+                    studentMap[key] = { name: d.name, pw: d.pw, className: d.className, records: {} };
+                }
+                studentMap[key].records[d.exam] = d;
+            });
+
+            const studentList = Object.values(studentMap).map(student => {
+                let latestNick = student.name; 
+                let latestClass = student.className;
+                
+                for (let i = EXAM_ORDER.length - 1; i >= 0; i--) {
+                    const cleanTarget = EXAM_ORDER[i].replace(" (예정)", "");
+                    const record = student.records[cleanTarget] || student.records[EXAM_ORDER[i]];
+                    if (record && record.nick) { latestNick = record.nick; latestClass = record.className; break; }
+                }
+
+                let sum = 0, count = 0;
+                EXAM_ORDER.forEach(examName => {
+                    const cleanTarget = examName.replace(" (예정)", "");
+                    const record = student.records[cleanTarget] || student.records[examName];
+                    if (record) { sum += record.score; count++; }
+                });
+                return { ...student, nick: latestNick, className: latestClass, avg: count > 0 ? sum / count : 0, totalCount: count };
+            }).filter(s => s.totalCount > 0).sort((a, b) => b.avg - a.avg);
+
+            studentList.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                let roundCells = "";
+                EXAM_ORDER.forEach(examName => {
+                    const cleanTarget = examName.replace(" (예정)", "");
+                    const record = s.records[cleanTarget] || s.records[examName];
+                    if (record) {
+                        roundCells += '<td style="font-weight:500;">' + record.score + '</td>';
+                    } else {
+                        roundCells += '<td style="color:#ccc; font-weight:300;">-</td>';
+                    }
+                });
+
+                tr.innerHTML = '<td style="color:var(--text-charcoal); font-weight:600; font-family:\'Cormorant Garamond\';">' + (idx+1) + '</td><td style="text-align:left; padding-left:12px; font-weight:500;">' + s.nick + '</td><td class="col-class-lbl">' + s.className + '</td><td style="font-weight:600; color:var(--ox-o-txt); background:#f7fbf9;">' + s.avg.toFixed(1) + '</td>' + roundCells;
+                body.appendChild(tr);
+            });
+
+        } else {
+            const cleanCurrentTab = currentTab.replace(" (예정)", "");
+            const filtered = allData.filter(d => d.exam === cleanCurrentTab || d.exam === currentTab).sort((a,b) => b.score - a.score);
+
+            const sPlusStudents = filtered.filter(f => f.className.toUpperCase() === "S+");
+            const sPlusAvg = sPlusStudents.length > 0 
+                ? (sPlusStudents.reduce((acc, curr) => acc + curr.score, 0) / sPlusStudents.length).toFixed(1) 
+                : (filtered.reduce((acc, curr) => acc + curr.score, 0) / filtered.length).toFixed(1);
+
+            let maxItems = 0;
+            filtered.forEach(f => { if(f.items.length > maxItems) maxItems = f.items.length; });
+            if(maxItems === 0) maxItems = 24;
+
+            head.innerHTML = '<tr><th style="width:60px;">RANK</th><th style="text-align:left; padding-left:12px;">NICKNAME</th><th style="width:70px;">CLASS</th><th style="width:80px;">SCORE</th><th style="text-align:left; padding-left:5px;">ITEM ANALYSIS (S+반 평균: ' + sPlusAvg + '점)</th></tr>';
+
+            if (filtered.length > 0) {
+                const itemCorrectCounts = Array(maxItems).fill(0);
+                filtered.forEach(student => {
+                    student.items.forEach((val, idx) => {
+                        if (val === 1 && idx < maxItems) itemCorrectCounts[idx]++;
+                    });
+                });
+
+                const rateTr = document.createElement('tr');
+                rateTr.className = "metric-analysis-row";
+                
+                let beadsHtml = '';
+                itemCorrectCounts.forEach((count, i) => {
+                    const rate = ((count / filtered.length) * 100).toFixed(0);
+                    let rateColor = "var(--text-muted)";
+                    if (rate === "100") rateColor = "var(--ox-o-txt)";
+                    if (parseInt(rate) <= 40) rateColor = "var(--ox-x-txt)";
+                    beadsHtml += '<div class="rate-bead" style="color:' + rateColor + ';" title="' + (i+1) + '번 정답률">' + rate + '</div>';
+                });
+
+                rateTr.innerHTML = '<td colspan="4" style="text-align:right; font-weight:500; padding-right:12px; font-size:11px; color:var(--ox-o-txt);">정답률(%)</td><td style="text-align:left; padding-left:5px;"><div class="ox-row-container">' + beadsHtml + '</div></td>';
+                body.appendChild(rateTr);
+            }
+
+            filtered.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                let itemBeads = '';
+                s.items.forEach((v, i) => {
+                    itemBeads += '<div class="ox-bead ans-' + v + '">' + (i+1) + '</div>';
+                });
+
+                tr.innerHTML = '<td style="color:var(--text-charcoal); font-weight:600; font-family:\'Cormorant Garamond\';">' + (idx+1) + '</td><td style="text-align:left; padding-left:12px; font-weight:500;">' + s.nick + '</td><td class="col-class-lbl">' + s.className + '</td><td style="font-weight:600; color:var(--text-charcoal);">' + s.score + '점</td><td style="text-align:left; padding-left:5px;"><div class="ox-row-container">' + itemBeads + '</div></td>';
+                body.appendChild(tr);
+            });
+        }
+    }
+
+    function generateReport() {
+        const name = document.getElementById('nameInput').value.trim();
+        const pw = document.getElementById('pwInput').value.trim();
+        const history = allData.filter(d => d.name === name && d.pw === pw)
+                               .sort((a, b) => {
+                                   const idxA = EXAM_ORDER.findIndex(e => e.includes(a.exam));
+                                   const idxB = EXAM_ORDER.findIndex(e => e.includes(b.exam));
+                                   return idxA - idxB;
+                               });
+
+        if(history.length === 0) { alert("일치하는 학생 분석 정보를 찾을 수 없습니다."); return; }
+
+        document.getElementById('res-name').innerText = "🏰 " + name + " 학생 내신 정밀 분석 리포트 (" + (history[history.length-1].className || '-') + ")";
+        const scores = history.map(h => h.score);
+        document.getElementById('res-avg').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) + "점";
+        document.getElementById('res-max').innerText = Math.max(...scores) + "점";
+
+        let historyHtml = '';
+        history.forEach(h => {
+            historyHtml += '<tr><td style="padding:15px 5px; border-bottom:1px solid var(--gold-light); color:var(--text-charcoal); font-weight:400;">' + h.exam + '</td><td style="font-weight:600; text-align:right; padding-right:10px; border-bottom:1px solid var(--gold-light); color:var(--text-charcoal);">' + h.score + '점</td></tr>';
+        });
+        document.getElementById('res-history').innerHTML = historyHtml;
+
+        let chartHtml = '';
+        history.forEach(h => {
+            const currentExamData = allData.filter(d => d.exam === h.exam && d.className.toUpperCase() === "S+");
+            const currentExamAvg = currentExamData.length > 0 
+                ? (currentExamData.reduce((acc, curr) => acc + curr.score, 0) / currentExamData.length).toFixed(1)
+                : 0;
+
+            chartHtml += '<div class="dual-bar-container">';
+            chartHtml += '  <div class="bars-twin">';
+            chartHtml += '    <div class="v-bar student-bar" style="height: ' + Math.max(h.score, 12) + '%" data-score="' + h.score + '" title="내 점수: ' + h.score + '"></div>';
+            chartHtml += '    <div class="v-bar average-bar" style="height: ' + Math.max(parseFloat(currentExamAvg), 12) + '%" data-score="' + currentExamAvg + '" title="S+반 평균: ' + currentExamAvg + '"></div>';
+            chartHtml += '  </div>';
+            chartHtml += '  <div class="chart-axis-name">' + h.exam.replace("25년 ", "") + '</div>';
+            chartHtml += '</div>';
+        });
+        document.getElementById('res-chart').innerHTML = chartHtml;
+
+        let rowsHtml = '';
+        history.forEach(h => {
+            let rowBeads = '';
+            h.items.forEach((v, i) => {
+                rowBeads += '<div class="ox-bead ans-' + v + '" title="' + (i+1) + '번">' + (i+1) + '</div>';
+            });
+            rowsHtml += '<div class="report-check-line"><div class="report-exam-lbl">' + h.exam + ' <span style="font-size:11px; font-weight:300; color:var(--text-muted);">(' + h.items.length + '문항)</span></div><div class="ox-row-container">' + rowBeads + '</div></div>';
+        });
+        document.getElementById('item-rows-wrapper').innerHTML = rowsHtml;
+
+        let analysisHtml = '<div style="font-weight:600; margin-bottom:18px; color:var(--text-charcoal); font-size:14px; letter-spacing:-0.01em;">DAECHI S+ ACADEMY 클리닉 처방 피드백</div>';
+        let itemsHtml = '';
+        history.forEach(h => {
+            if (h.analysis && h.analysis.trim() !== "") {
+                itemsHtml += '<div class="prescription-item"><span class="prescription-date">[' + h.exam + ']</span><div style="color:var(--text-charcoal); font-weight:400;">' + h.analysis + '</div></div>';
+            }
+        });
+        
+        document.getElementById('res-memo').innerHTML = itemsHtml ? (analysisHtml + itemsHtml) : (analysisHtml + "아직 배정된 누적 처방 코멘트가 존재하지 않습니다.");
+        document.getElementById('personal-report').style.display = 'block';
+    }
+
+    function switchTab(n) {
+        currentTab = n;
+        document.querySelectorAll('.tab-item').forEach(t => {
+            const isTarget = t.querySelector('.tab-name').innerText === n || (n === '전체 누적' && t.querySelector('.tab-name').innerText === '전체 누적 현황');
+            t.classList.toggle('active', isTarget);
+        });
+        render();
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
