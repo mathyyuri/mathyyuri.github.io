@@ -297,9 +297,9 @@
                     <span class="stats-val">25년 신갈고</span>
                     <span class="stats-lbl">CLEAR</span>
                 </div>
-                <div class="stats-card lock-status">
-                    <span class="stats-val">3회 기출</span>
-                    <span class="stats-lbl">미공개</span>
+                <div class="stats-card clear-status">
+                    <span class="stats-val">25년 성지고</span>
+                    <span class="stats-lbl">CLEAR</span>
                 </div>
                 <div class="stats-card lock-status">
                     <span class="stats-val">4회 기출</span>
@@ -375,9 +375,9 @@
             <span class="tab-name">25년 신갈고</span>
             <span class="tab-score" id="tab-avg-1">-</span>
         </div>
-        <div class="tab-item" onclick="switchTab('3회 기출 (예정)')">
-            <span class="tab-name">3회 기출 (예정)</span>
-            <span class="tab-score upcoming" id="tab-avg-2">진행 예정</span>
+        <div class="tab-item" onclick="switchTab('25년 성지고')">
+            <span class="tab-name">25년 성지고</span>
+            <span class="tab-score" id="tab-avg-2">-</span>
         </div>
         <div class="tab-item" onclick="switchTab('4회 기출 (예정)')">
             <span class="tab-name">4회 기출 (예정)</span>
@@ -407,7 +407,7 @@
     let allData = [];
     let currentTab = "전체 누적";
 
-    const EXAM_ORDER = ["25년 서천고", "25년 신갈고", "3회 기출 (예정)", "4회 기출 (예정)", "5회 기출 (예정)", "6회 기출 (예정)"];
+    const EXAM_ORDER = ["25년 서천고", "25년 신갈고", "25년 성지고", "4회 기출 (예정)", "5회 기출 (예정)", "6회 기출 (예정)"];
 
     async function init() {
         try {
@@ -488,7 +488,7 @@
         body.innerHTML = "";
         
         if (currentTab === "전체 누적") {
-            head.innerHTML = '<tr><th style="width:60px;">RANK</th><th style="text-align:left; padding-left:12px;">NICKNAME</th><th style="width:70px;">CLASS</th><th style="width:90px; color:var(--ox-o-txt); background:var(--bg-cream);">누적 평균</th><th>25년 서천</th><th>25년 신갈</th><th>3회 기출</th><th>4회 기출</th><th>5회 기출</th><th>6회 기출</th></tr>';
+            head.innerHTML = '<tr><th style="width:60px;">RANK</th><th style="text-align:left; padding-left:12px;">NICKNAME</th><th style="width:70px;">CLASS</th><th style="width:90px; color:var(--ox-o-txt); background:var(--bg-cream);">누적 평균</th><th>25년 서천</th><th>25년 신갈</th><th>25년 성지</th><th>4회 기출</th><th>5회 기출</th><th>6회 기출</th></tr>';
 
             const studentMap = {};
             allData.forEach(d => {
