@@ -389,12 +389,73 @@ a{ text-decoration:none; color:inherit; }
     </div>
 
   </div>
+<!-- mathyyuri.com의 </div> 뒤, <div class="footer"> 위에만 이것을 추가 -->
 
+<style>
+.mock-exam-section {
+  background: linear-gradient(135deg, #1a3a1a 0%, #2d4a2d 50%, #1f3a1f 100%);
+  border: 1px solid rgba(125, 162, 123, 0.2);
+  border-radius: 24px;
+  padding: 32px 28px;
+  margin: 32px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.mock-exam-section::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(125, 162, 123, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.mock-exam-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, #7da27b 0%, #6f9270 100%);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  letter-spacing: 0.02em;
+}
+
+.mock-exam-btn:hover {
+  background: linear-gradient(135deg, #8db48b 0%, #7fa280 100%);
+  transform: translateY(-2px);
+}
+</style>
+
+<div class="mock-exam-section">
+  <div style="position: relative; z-index: 1;">
+    <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: rgba(125, 162, 123, 0.95); background: rgba(125, 162, 123, 0.12); border: 1px solid rgba(125, 162, 123, 0.25); border-radius: 100px; padding: 6px 14px; margin-bottom: 12px;">
+       MATH STUDIO
+    </div>
+    <div style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #f9fdf7; margin-bottom: 10px;">모의고사 기출 풀이</div>
+    <div style="font-size: 13px; color: rgba(249, 253, 247, 0.65); margin-bottom: 14px;">연도별·단원별로 정리된 기출 문제와 풀이 영상</div>
+    <a href="https://script.google.com/macros/s/AKfycbxvdTYeDqiIUxCdAfRFgga5CDUqTHise2FNObb90Z1WkE59tdZuI4nCcLnVOWkfmuQJ/exec" 
+   target="_blank"
+   class="mock-exam-btn">
+   풀이영상 보러가기 →
+    </a>
+  </div>
+</div>
   <div class="footer">MATHY YURI · DAECHI S+ ACADEMY<br>Premium Writing Training Platform</div>
 </div>
 
 <script>
-const COUNT_URL = "https://script.google.com/macros/s/AKfycbxgQIsmuxCVHDmgnTB3_Aw_qjd4cJHZtfUO22qM55RTmF0eZ3o3dbctW6f8nRUVE_yu6A/exec";
+const COUNT_URL = "https://script.google.com/macros/s/AKfycbxvdTYeDqiIUxCdAfRFgga5CDUqTHise2FNObb90Z1WkE59tdZuI4nCcLnVOWkfmuQJ/exec?mode=web";
 window.onload = function() {
   const ansBtn = document.getElementById('gyeol-ans-btn');
   const menu   = document.getElementById('gyeol-menu');
