@@ -240,38 +240,6 @@
             font-size: 13px;
         }
 
-        /* 체크박스 */
-        .checkbox-group {
-            margin-bottom: 32px;
-        }
-
-        .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background-color: #fafaf9;
-            border-radius: 2px;
-            border: 1px solid #e8e6e3;
-        }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #98c9a3;
-        }
-
-        .checkbox-label {
-            font-size: 14px;
-            color: #3d3d3d;
-            cursor: pointer;
-            margin: 0;
-            text-transform: none;
-            letter-spacing: normal;
-            font-weight: 400;
-        }
-
         /* 상담 카드 */
         .counseling-options {
             display: grid;
@@ -443,8 +411,8 @@
         }
 
         button[type="submit"]:disabled {
-            background-color: #c4c0bb;
-            cursor: not-allowed;
+            background-color: #98c9a3;
+            cursor: default;
         }
 
         button[type="reset"] {
@@ -454,55 +422,6 @@
 
         button[type="reset"]:hover {
             background-color: #d4d0cb;
-        }
-
-        /* 상태 메시지 */
-        .message {
-            padding: 20px;
-            border-radius: 2px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            display: none;
-            text-align: center;
-            line-height: 1.8;
-        }
-
-        .message.show {
-            display: block;
-        }
-
-        .message.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #c8e6c9;
-        }
-
-        .message.error {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
-        }
-
-        .message.loading {
-            background-color: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
-        }
-
-        /* 로딩 스피너 */
-        .spinner {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            border-top-color: currentColor;
-            animation: spin 0.6s linear infinite;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         /* 필수 표시 */
@@ -535,8 +454,6 @@
             <h1>6월 모의고사</h1>
             <p>대학 진학 상담신청</p>
         </div>
-
-        <div id="message" class="message"></div>
 
         <form id="counselingForm">
             <!-- 학생 정보 -->
@@ -681,7 +598,7 @@
                             <input type="radio" id="basic" name="counselingType" value="기본" class="counseling-radio">
                             <label for="basic" class="counseling-label">
                                 <div class="counseling-title">기본 상담</div>
-                                <div class="counseling-desc">결과지 제공 (학생+학부모)</div>
+                                <div class="counseling-desc">결과지 제공</div>
                             </label>
                         </div>
 
@@ -697,7 +614,7 @@
                             <input type="radio" id="phone" name="counselingType" value="전화상담" class="counseling-radio">
                             <label for="phone" class="counseling-label">
                                 <div class="counseling-title">전화상담</div>
-                                <div class="counseling-desc">학부모 대상, 10분 내외</div>
+                                <div class="counseling-desc">학부모, 10분 내외</div>
                             </label>
                         </div>
 
@@ -705,7 +622,7 @@
                             <input type="radio" id="none" name="counselingType" value="없음" class="counseling-radio">
                             <label for="none" class="counseling-label">
                                 <div class="counseling-title">상담 필요 없음</div>
-                                <div class="counseling-desc">결과지만 제공</div>
+                                <div class="counseling-desc">결과지 미제공</div>
                             </label>
                         </div>
                     </div>
@@ -742,7 +659,7 @@
 
             <!-- 제출 버튼 -->
             <div class="button-group">
-                <button type="submit" id="submitBtn">상담신청 제출</button>
+                <button type="submit" id="submitBtn">성적표 제출</button>
                 <button type="reset" id="resetBtn">초기화</button>
             </div>
         </form>
@@ -777,7 +694,6 @@
         const imagePreview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
         const removeImageBtn = document.getElementById('removeImage');
-        const messageDiv = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
         const classButtons = document.querySelectorAll('.class-btn');
         const classTypeInput = document.getElementById('classType');
@@ -986,27 +902,27 @@
             e.preventDefault();
 
             if (!classTypeInput.value) {
-                showMessage('학급을 선택해주세요', 'error');
+                alert('학급을 선택해주세요');
                 return;
             }
 
             if (!imageFile.files[0]) {
-                showMessage('성적표 사진을 업로드해주세요', 'error');
+                alert('성적표 사진을 업로드해주세요');
                 return;
             }
 
             const counselingType = document.querySelector('input[name="counselingType"]:checked')?.value;
             if (counselingType === '대면상담' && !selectedSchedule) {
-                showMessage('대면상담 일정을 선택해주세요', 'error');
+                alert('대면상담 일정을 선택해주세요');
                 return;
             }
             if (counselingType === '전화상담' && !selectedSchedule) {
-                showMessage('전화상담 일정을 선택해주세요', 'error');
+                alert('전화상담 일정을 선택해주세요');
                 return;
             }
 
             submitBtn.disabled = true;
-            showMessage('<span class="spinner"></span>제출 중입니다...', 'loading');
+            submitBtn.textContent = '제출 중...';
 
             try {
                 const file = imageFile.files[0];
@@ -1038,9 +954,10 @@
                             body: JSON.stringify(formData)
                         });
 
-                        // 응답 상관없이 1.5초 후 성공 메시지 표시
+                        // 응답 상관없이 1.5초 후 완료로 변경
                         setTimeout(() => {
-                            showMessage('✓ 상담신청이 완료되었습니다!<br><br>선생님이 확인 후 연락드리겠습니다.', 'success');
+                            submitBtn.textContent = '✓ 성적표 제출 완료';
+                            submitBtn.style.cursor = 'default';
                             
                             // 폼 초기화
                             form.reset();
@@ -1051,28 +968,19 @@
                             selectedScheduleDisplay.style.display = 'none';
                             selectedAttendees = '';
                             selectedSchedule = '';
-                            
-                            // 7초 후 메시지 자동 숨김
-                            setTimeout(() => {
-                                messageDiv.classList.remove('show');
-                                submitBtn.disabled = false;
-                            }, 7000);
                         }, 1500);
                     } catch (networkError) {
                         console.error('Network error:', networkError);
                         // 네트워크 오류도 성공으로 처리
                         setTimeout(() => {
-                            showMessage('✓ 상담신청이 완료되었습니다!<br><br>선생님이 확인 후 연락드리겠습니다.', 'success');
+                            submitBtn.textContent = '✓ 성적표 제출 완료';
+                            submitBtn.style.cursor = 'default';
                             form.reset();
                             classButtons.forEach(b => b.classList.remove('active'));
                             imagePreview.classList.remove('show');
                             faceToFaceOptions.style.display = 'none';
                             scheduleOptions.style.display = 'none';
                             selectedScheduleDisplay.style.display = 'none';
-                            setTimeout(() => {
-                                messageDiv.classList.remove('show');
-                                submitBtn.disabled = false;
-                            }, 7000);
                         }, 1500);
                     }
                 };
@@ -1080,15 +988,11 @@
                 reader.readAsDataURL(file);
             } catch (error) {
                 console.error('Error:', error);
-                showMessage('제출 중 오류가 발생했습니다. 다시 시도해주세요.', 'error');
+                alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
                 submitBtn.disabled = false;
+                submitBtn.textContent = '성적표 제출';
             }
         });
-
-        function showMessage(text, type) {
-            messageDiv.innerHTML = text;
-            messageDiv.className = `message show ${type}`;
-        }
     </script>
 </body>
 </html>
