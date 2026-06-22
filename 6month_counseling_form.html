@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6월 모의고사 상담신청 | MATHY YURI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f9f7f4;
+            font-family: 'Noto Serif KR', Georgia, serif;
+            color: #3d3d3d;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 2px;
+            padding: 60px 40px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 1px solid #e8e6e3;
+            padding-bottom: 30px;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #8b8885;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #98c9a3;
+            display: inline-block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 10px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e0dcd8;
+            border-radius: 2px;
+            font-family: 'Noto Serif KR', Georgia, serif;
+            font-size: 14px;
+            color: #3d3d3d;
+            background-color: #fafaf9;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            background-color: white;
+            border-color: #98c9a3;
+            box-shadow: 0 0 0 3px rgba(152, 201, 163, 0.1);
+        }
+
+        .class-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .class-btn {
+            padding: 14px;
+            border: 2px solid #e0dcd8;
+            background: white;
+            border-radius: 2px;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #3d3d3d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .class-btn:hover {
+            border-color: #98c9a3;
+        }
+
+        .class-btn.active {
+            background-color: #98c9a3;
+            border-color: #98c9a3;
+            color: white;
+        }
+
+        /* 이미지 업로드 */
+        .upload-area {
+            position: relative;
+            border: 2px dashed #d4d0cb;
+            border-radius: 2px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #fefdfb;
+        }
+
+        .upload-area:hover {
+            border-color: #98c9a3;
+            background-color: #f9f7f4;
+        }
+
+        .upload-area.active {
+            border-color: #98c9a3;
+            background-color: #f0f5f1;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            color: #98c9a3;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: #8b8885;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            font-size: 12px;
+            color: #b8b5b0;
+            letter-spacing: 0.3px;
+        }
+
+        #imageFile {
+            display: none;
+        }
+
+        .image-preview {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .image-preview.show {
+            display: block;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 2px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-remove {
+            font-size: 12px;
+            padding: 8px 16px;
+            background: #f0d5d9;
+            color: #d16b79;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Noto Serif KR', serif;
+            font-weight: 600;
+        }
+
+        .preview-remove:hover {
+            background: #e8bdc5;
+        }
+
+        /* 대학 입력 */
+        .university-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .university-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .university-input-group label {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .university-input-group input {
+            font-size: 13px;
+        }
+
+        /* 체크박스 */
+        .checkbox-group {
+            margin-bottom: 32px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background-color: #fafaf9;
+            border-radius: 2px;
+            border: 1px solid #e8e6e3;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #98c9a3;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #3d3d3d;
+            cursor: pointer;
+            margin: 0;
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 400;
+        }
+
+        /* 상담 카드 */
+        .counseling-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .counseling-card {
+            position: relative;
+        }
+
+        .counseling-radio {
+            display: none;
+        }
+
+        .counseling-label {
+            display: block;
+            padding: 16px;
+            border: 2px solid #e0dcd8;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: white;
+            margin: 0;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .counseling-radio:checked + .counseling-label {
+            border-color: #98c9a3;
+            background-color: #f0f5f1;
+        }
+
+        .counseling-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 6px;
+        }
+
+        .counseling-desc {
+            font-size: 12px;
+            color: #8b8885;
+            font-weight: 400;
+        }
+
+        /* 시간 선택 버튼 */
+        .time-select-btn {
+            padding: 12px 16px;
+            border: 2px solid #e0dcd8;
+            background: white;
+            border-radius: 2px;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #3d3d3d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-select-btn:hover:not(:disabled) {
+            border-color: #98c9a3;
+        }
+
+        .time-select-btn.active {
+            background-color: #98c9a3;
+            border-color: #98c9a3;
+            color: white;
+        }
+
+        .time-select-btn:disabled {
+            background-color: #e8e6e3;
+            border-color: #d4d0cb;
+            color: #b8b5b0;
+            cursor: not-allowed;
+        }
+
+        /* 날짜/시간 그룹 */
+        .schedule-date-group {
+            padding: 16px;
+            background-color: #fafaf9;
+            border-radius: 2px;
+            border: 1px solid #e8e6e3;
+        }
+
+        .schedule-date-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0dcd8;
+        }
+
+        .schedule-times {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .schedule-time-btn {
+            padding: 10px 12px;
+            border: 2px solid #e0dcd8;
+            background: white;
+            border-radius: 2px;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: #3d3d3d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .schedule-time-btn:hover:not(:disabled) {
+            border-color: #98c9a3;
+            background-color: #f9f7f4;
+        }
+
+        .schedule-time-btn.selected {
+            background-color: #98c9a3;
+            border-color: #98c9a3;
+            color: white;
+        }
+
+        .schedule-time-btn:disabled {
+            background-color: #f0d5d9;
+            border-color: #e8bdc5;
+            color: #d16b79;
+            cursor: not-allowed;
+        }
+
+        .schedule-time-btn:disabled::after {
+            content: " (예약됨)";
+            font-size: 10px;
+        }
+
+        /* 버튼 */
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        button[type="submit"],
+        button[type="reset"] {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 2px;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button[type="submit"] {
+            background-color: #2d2d2d;
+            color: white;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            background-color: #1a1a1a;
+            box-shadow: 0 4px 12px rgba(45, 45, 45, 0.2);
+        }
+
+        button[type="submit"]:disabled {
+            background-color: #c4c0bb;
+            cursor: not-allowed;
+        }
+
+        button[type="reset"] {
+            background-color: #e8e6e3;
+            color: #3d3d3d;
+        }
+
+        button[type="reset"]:hover {
+            background-color: #d4d0cb;
+        }
+
+        /* 상태 메시지 */
+        .message {
+            padding: 16px;
+            border-radius: 2px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+            text-align: center;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .message.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .message.loading {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+        }
+
+        /* 로딩 스피너 */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: currentColor;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 필수 표시 */
+        .required {
+            color: #d16b79;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 24px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .university-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>6월 모의고사</h1>
+            <p>대학 진학 상담신청</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <form id="counselingForm">
+            <!-- 학생 정보 -->
+            <div class="form-section">
+                <div class="section-title">기본정보</div>
+
+                <div class="form-group">
+                    <label for="studentName">이름 <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="studentName" 
+                        name="studentName" 
+                        placeholder="이름을 입력하세요"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>학급 <span class="required">*</span></label>
+                    <div class="class-buttons">
+                        <button type="button" class="class-btn" data-class="S+">S+ 반</button>
+                        <button type="button" class="class-btn" data-class="S">S 반</button>
+                    </div>
+                    <input type="hidden" id="classType" name="classType" required>
+                </div>
+            </div>
+
+            <!-- 성적표 사진 -->
+            <div class="form-section">
+                <div class="section-title">성적표 등록</div>
+
+                <div class="form-group">
+                    <label for="imageFile">성적표 사진 <span class="required">*</span></label>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">성적표 앞장 사진을 올려주세요</div>
+                        <div class="upload-subtext">클릭 또는 드래그해서 업로드</div>
+                    </div>
+                    <input type="file" id="imageFile" name="imageFile" accept="image/*" required>
+                    <div class="image-preview" id="imagePreview">
+                        <img class="preview-img" id="previewImg" alt="미리보기">
+                        <button type="button" class="preview-remove" id="removeImage">사진 제거</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 희망 대학/학과 -->
+            <div class="form-section">
+                <div class="section-title">희망 대학</div>
+
+                <div class="form-group">
+                    <label>희망 대학 및 학과 <span class="required">*</span></label>
+                    <div style="font-size: 12px; color: #8b8885; margin-bottom: 16px;">최대 3개까지 입력할 수 있습니다. (선택사항은 입력하지 않아도 됩니다)</div>
+
+                    <div class="university-grid">
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">1순위 대학</label>
+                            <input 
+                                type="text" 
+                                id="university1" 
+                                name="university1" 
+                                placeholder="예: 서울대학교"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">1순위 학과</label>
+                            <input 
+                                type="text" 
+                                id="department1" 
+                                name="department1" 
+                                placeholder="예: 수학과"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;"></label>
+                            <div></div>
+                        </div>
+                    </div>
+
+                    <div class="university-grid">
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">2순위 대학</label>
+                            <input 
+                                type="text" 
+                                id="university2" 
+                                name="university2" 
+                                placeholder="예: 연세대학교"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">2순위 학과</label>
+                            <input 
+                                type="text" 
+                                id="department2" 
+                                name="department2" 
+                                placeholder="예: 수학교육과"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;"></label>
+                            <div></div>
+                        </div>
+                    </div>
+
+                    <div class="university-grid">
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">3순위 대학</label>
+                            <input 
+                                type="text" 
+                                id="university3" 
+                                name="university3" 
+                                placeholder="예: 고려대학교"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;">3순위 학과</label>
+                            <input 
+                                type="text" 
+                                id="department3" 
+                                name="department3" 
+                                placeholder="예: 과학교육과"
+                            >
+                        </div>
+                        <div class="university-input-group">
+                            <label style="text-transform: none; letter-spacing: normal;"></label>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 상담신청 -->
+            <div class="form-section">
+                <div class="section-title">상담 신청</div>
+
+                <div class="form-group">
+                    <label>상담 종류 선택 <span class="required">*</span></label>
+                    <div style="font-size: 12px; color: #8b8885; margin-bottom: 16px;">기본 상담은 성적표 결과지를 학생과 학부모에게 제공합니다</div>
+                    
+                    <div class="counseling-options">
+                        <div class="counseling-card">
+                            <input type="radio" id="basic" name="counselingType" value="기본" class="counseling-radio">
+                            <label for="basic" class="counseling-label">
+                                <div class="counseling-title">기본 상담</div>
+                                <div class="counseling-desc">결과지 제공 (학생+학부모)</div>
+                            </label>
+                        </div>
+
+                        <div class="counseling-card">
+                            <input type="radio" id="face" name="counselingType" value="대면상담" class="counseling-radio">
+                            <label for="face" class="counseling-label">
+                                <div class="counseling-title">대면상담</div>
+                                <div class="counseling-desc">10분 내외</div>
+                            </label>
+                        </div>
+
+                        <div class="counseling-card">
+                            <input type="radio" id="phone" name="counselingType" value="전화상담" class="counseling-radio">
+                            <label for="phone" class="counseling-label">
+                                <div class="counseling-title">전화상담</div>
+                                <div class="counseling-desc">학부모 대상, 10분 내외</div>
+                            </label>
+                        </div>
+
+                        <div class="counseling-card">
+                            <input type="radio" id="none" name="counselingType" value="없음" class="counseling-radio">
+                            <label for="none" class="counseling-label">
+                                <div class="counseling-title">상담 필요 없음</div>
+                                <div class="counseling-desc">결과지만 제공</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="counselingType" name="counselingType" required>
+                </div>
+
+                <!-- 대면상담 옵션 -->
+                <div id="faceToFaceOptions" class="form-group" style="display: none;">
+                    <label>대면상담 참석자 선택 <span class="required">*</span></label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <button type="button" class="time-select-btn" data-attendee="학생">학생만</button>
+                        <button type="button" class="time-select-btn" data-attendee="학부모">학부모만</button>
+                        <button type="button" class="time-select-btn" data-attendee="둘다">학생+학부모</button>
+                    </div>
+                    <input type="hidden" id="attendees" name="attendees">
+                </div>
+
+                <!-- 상담 일정 선택 -->
+                <div id="scheduleOptions" class="form-group" style="display: none;">
+                    <label>상담 일정 선택 <span class="required">*</span></label>
+                    <div id="scheduleContainer" style="display: grid; gap: 20px;"></div>
+                    <input type="hidden" id="selectedSchedule" name="selectedSchedule">
+                </div>
+
+                <!-- 선택된 일정 표시 -->
+                <div id="selectedScheduleDisplay" class="form-group" style="display: none;">
+                    <div style="padding: 12px 16px; background-color: #f0f5f1; border: 1px solid #c8e6c9; border-radius: 2px;">
+                        <div style="font-size: 12px; color: #8b8885; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">선택된 일정</div>
+                        <div id="scheduleDisplayText" style="font-size: 14px; color: #2d2d2d; font-weight: 600;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 제출 버튼 -->
+            <div class="button-group">
+                <button type="submit" id="submitBtn">상담신청 제출</button>
+                <button type="reset" id="resetBtn">초기화</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Google Apps Script URL
+        // ⚠️ 아래 URL을 배포된 GAS URL로 교체하세요
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwf7jazxqNsGT0HNVGcl5YM9fZ3WhDsJDj397jazrpC3_WMvDw6-bWHWwDxRCe8m4l6/exec';
+
+        // 상담 일정 설정
+        const SCHEDULE_CONFIG = {
+            '대면상담': {
+                dates: [
+                    { date: '2026-07-01', day: '월' },
+                    { date: '2026-07-08', day: '월' }
+                ],
+                times: ['14:00', '14:15', '14:30', '14:45', '15:00', '15:15', '15:30', '15:45', '16:00', '16:15', '16:30', '16:45']
+            },
+            '전화상담': {
+                dates: [
+                    { date: '2026-07-01', day: '수' },
+                    { date: '2026-07-04', day: '토' },
+                    { date: '2026-07-08', day: '수' }
+                ],
+                times: ['19:00', '19:15', '19:30', '19:45', '20:00']
+            }
+        };
+
+        const form = document.getElementById('counselingForm');
+        const uploadArea = document.getElementById('uploadArea');
+        const imageFile = document.getElementById('imageFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeImageBtn = document.getElementById('removeImage');
+        const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        const classButtons = document.querySelectorAll('.class-btn');
+        const classTypeInput = document.getElementById('classType');
+        
+        // 상담 관련 요소
+        const counselingRadios = document.querySelectorAll('input[name="counselingType"]');
+        const faceToFaceOptions = document.getElementById('faceToFaceOptions');
+        const scheduleOptions = document.getElementById('scheduleOptions');
+        const scheduleContainer = document.getElementById('scheduleContainer');
+        const selectedScheduleDisplay = document.getElementById('selectedScheduleDisplay');
+        const scheduleDisplayText = document.getElementById('scheduleDisplayText');
+        const attendeesInput = document.getElementById('attendees');
+        const selectedScheduleInput = document.getElementById('selectedSchedule');
+
+        let selectedAttendees = '';
+        let selectedSchedule = '';
+        let bookedSchedules = {}; // 예약된 시간 저장
+
+        // 페이지 로드 시 예약된 시간 조회
+        window.addEventListener('load', () => {
+            loadBookedSchedules();
+        });
+
+        // 예약된 시간 조회
+        async function loadBookedSchedules() {
+            try {
+                const response = await fetch(GAS_URL + '?action=getBookedSchedules');
+                const data = await response.json();
+                if (data.booked) {
+                    bookedSchedules = data.booked;
+                    console.log('Booked schedules loaded:', bookedSchedules);
+                }
+            } catch (error) {
+                console.error('Error loading booked schedules:', error);
+            }
+        }
+
+        // 클래스 선택
+        classButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                classButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                classTypeInput.value = btn.dataset.class;
+            });
+        });
+
+        // 상담 종류 선택
+        counselingRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const selectedType = e.target.value;
+                classTypeInput.value = selectedType;
+
+                // 옵션 표시/숨김
+                if (selectedType === '대면상담') {
+                    faceToFaceOptions.style.display = 'block';
+                    scheduleOptions.style.display = 'none';
+                    selectedScheduleDisplay.style.display = 'none';
+                    selectedAttendees = '';
+                    selectedSchedule = '';
+                } else if (selectedType === '전화상담') {
+                    faceToFaceOptions.style.display = 'none';
+                    scheduleOptions.style.display = 'block';
+                    selectedScheduleDisplay.style.display = 'none';
+                    selectedAttendees = '학부모';
+                    renderSchedule('전화상담');
+                    selectedSchedule = '';
+                } else {
+                    faceToFaceOptions.style.display = 'none';
+                    scheduleOptions.style.display = 'none';
+                    selectedScheduleDisplay.style.display = 'none';
+                    selectedAttendees = '';
+                    selectedSchedule = '';
+                }
+
+                updateHiddenInputs();
+            });
+        });
+
+        // 대면상담 참석자 선택
+        document.querySelectorAll('[data-attendee]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('[data-attendee]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedAttendees = btn.dataset.attendee;
+                attendeesInput.value = selectedAttendees;
+                
+                // 일정 표시
+                scheduleOptions.style.display = 'block';
+                selectedScheduleDisplay.style.display = 'none';
+                renderSchedule('대면상담');
+                selectedSchedule = '';
+                updateHiddenInputs();
+            });
+        });
+
+        // 일정 렌더링
+        function renderSchedule(counselingType) {
+            const config = SCHEDULE_CONFIG[counselingType];
+            if (!config) return;
+
+            scheduleContainer.innerHTML = '';
+
+            config.dates.forEach(dateObj => {
+                const dateGroup = document.createElement('div');
+                dateGroup.className = 'schedule-date-group';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'schedule-date-title';
+                const [year, month, day] = dateObj.date.split('-');
+                titleDiv.textContent = `${month}월 ${day}일 (${dateObj.day})`;
+                dateGroup.appendChild(titleDiv);
+
+                const timesDiv = document.createElement('div');
+                timesDiv.className = 'schedule-times';
+
+                config.times.forEach(time => {
+                    const timeBtn = document.createElement('button');
+                    timeBtn.type = 'button';
+                    timeBtn.className = 'schedule-time-btn';
+                    timeBtn.textContent = time;
+                    
+                    const scheduleKey = `${counselingType}-${dateObj.date}-${time}`;
+                    
+                    // 이미 예약되었는지 확인
+                    if (bookedSchedules[scheduleKey]) {
+                        timeBtn.disabled = true;
+                    }
+
+                    timeBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (timeBtn.disabled) return;
+
+                        // 이전 선택 제거
+                        document.querySelectorAll('.schedule-time-btn.selected').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+
+                        timeBtn.classList.add('selected');
+                        selectedSchedule = scheduleKey;
+                        updateHiddenInputs();
+
+                        // 선택된 일정 표시
+                        scheduleDisplayText.textContent = `${titleDiv.textContent} ${time}`;
+                        selectedScheduleDisplay.style.display = 'block';
+                    });
+
+                    timesDiv.appendChild(timeBtn);
+                });
+
+                dateGroup.appendChild(timesDiv);
+                scheduleContainer.appendChild(dateGroup);
+            });
+        }
+
+        function updateHiddenInputs() {
+            attendeesInput.value = selectedAttendees;
+            selectedScheduleInput.value = selectedSchedule;
+        }
+
+        // 파일 업로드 핸들러
+        uploadArea.addEventListener('click', () => imageFile.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('active');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('active');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('active');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageFile.files = files;
+                handleImageUpload();
+            }
+        });
+
+        imageFile.addEventListener('change', handleImageUpload);
+
+        function handleImageUpload() {
+            const file = imageFile.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        removeImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            imageFile.value = '';
+            imagePreview.classList.remove('show');
+        });
+
+        // 폼 제출
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!classTypeInput.value) {
+                showMessage('학급을 선택해주세요', 'error');
+                return;
+            }
+
+            if (!imageFile.files[0]) {
+                showMessage('성적표 사진을 업로드해주세요', 'error');
+                return;
+            }
+
+            const counselingType = document.querySelector('input[name="counselingType"]:checked')?.value;
+            if (counselingType === '대면상담' && !selectedSchedule) {
+                showMessage('대면상담 일정을 선택해주세요', 'error');
+                return;
+            }
+            if (counselingType === '전화상담' && !selectedSchedule) {
+                showMessage('전화상담 일정을 선택해주세요', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            showMessage('<span class="spinner"></span>제출 중입니다...', 'loading');
+
+            try {
+                const file = imageFile.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = async (e) => {
+                    const imageBase64 = e.target.result;
+
+                    const formData = {
+                        action: 'submitCounseling',
+                        studentName: document.getElementById('studentName').value,
+                        classType: classTypeInput.value,
+                        image: imageBase64,
+                        university1: document.getElementById('university1').value,
+                        university2: document.getElementById('university2').value,
+                        university3: document.getElementById('university3').value,
+                        department1: document.getElementById('department1').value,
+                        department2: document.getElementById('department2').value,
+                        department3: document.getElementById('department3').value,
+                        counselingType: counselingType,
+                        attendees: attendeesInput.value,
+                        schedule: selectedScheduleInput.value,
+                        submittedAt: new Date().toLocaleString('ko-KR')
+                    };
+
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showMessage('✓ 상담신청이 완료되었습니다!', 'success');
+                        form.reset();
+                        classButtons.forEach(b => b.classList.remove('active'));
+                        imagePreview.classList.remove('show');
+                        faceToFaceOptions.style.display = 'none';
+                        scheduleOptions.style.display = 'none';
+                        selectedScheduleDisplay.style.display = 'none';
+                        setTimeout(() => {
+                            messageDiv.classList.remove('show');
+                        }, 3000);
+                    } else {
+                        showMessage('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('제출 중 오류가 발생했습니다.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.innerHTML = text;
+            messageDiv.className = `message show ${type}`;
+        }
+    </script>
+</body>
+</html>
