@@ -242,9 +242,9 @@
                     <span class="stats-val">교과서 4회</span>
                     <span class="stats-lbl">CLEAR</span>
                 </div>
-                <div class="stats-card lock-status">
+                <div class="stats-card clear-status">
                     <span class="stats-val">교과서 5회</span>
-                    <span class="stats-lbl">미공개</span>
+                    <span class="stats-lbl">CLEAR</span>
                 </div>
                 <div class="stats-card lock-status">
                     <span class="stats-val">교과서 6회</span>
@@ -318,9 +318,9 @@
             <span class="tab-name">교과서 4회</span>
             <span class="tab-score" id="tab-avg-3">-</span>
         </div>
-        <div class="tab-item" onclick="switchTab('교과서 5회 (예정)')">
-            <span class="tab-name">교과서 5회 (예정)</span>
-            <span class="tab-score upcoming" id="tab-avg-4">진행 예정</span>
+        <div class="tab-item" onclick="switchTab('교과서 5회')">
+            <span class="tab-name">교과서 5회</span>
+            <span class="tab-score" id="tab-avg-4">-</span>
         </div>
         <div class="tab-item" onclick="switchTab('교과서 6회 (예정)')">
             <span class="tab-name">교과서 6회 (예정)</span>
@@ -341,7 +341,7 @@
     let allData = [];
     let currentTab = "전체 누적";
 
-    const EXAM_ORDER = ["교과서 1회", "교과서 2회", "교과서 3회", "교과서 4회", "교과서 5회 (예정)", "교과서 6회 (예정)"];
+    const EXAM_ORDER = ["교과서 1회", "교과서 2회", "교과서 3회", "교과서 4회", "교과서 5회", "교과서 6회 (예정)"];
 
     async function init() {
         try {
