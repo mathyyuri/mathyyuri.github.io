@@ -1,481 +1,952 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>MATHY YURI System — Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MATHY YURI — Summer Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#edf5ea; --card:#f9fdf7; --line:#d9e7d5; --main:#233222;
-  --sub:#6f7d6c; --point:#7da27b; --hover:#f2f8ef;
-  --open-bg:#e5f0e1; --open:#6f9270; --soon-bg:#eef1eb; --soon:#a1ab9e;
+  --cream:#FBF8F1;
+  --ink:#1A1A1A;
+  --gold:#A8853F;
+  --gold-soft:rgba(168,133,63,.12);
+  --gold-line:#E6DCC6;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --mint-soft:rgba(127,200,180,.14);
+  --pink:#E58BA4;
+  --pink-deep:#C64E71;
+  --pink-soft:rgba(229,139,164,.14);
+  --line:rgba(26,26,26,.1);
+  --serif:'Playfair Display','Noto Serif KR',serif;
+  --kserif:'Noto Serif KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
 }
-*{ margin:0; padding:0; box-sizing:border-box; }
-body{ background:var(--bg); color:var(--main); font-family:'Noto Sans KR',sans-serif; padding:28px 16px 80px; }
-a{ text-decoration:none; color:inherit; }
-.container{ max-width:1240px; margin:auto; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+.hidden{display:none!important}
 
-/* ── 헤더 ── */
-.header{ display:flex; flex-direction:column; gap:20px; margin-bottom:28px; }
-.logo{ font-family:'Cormorant Garamond',serif; font-size:52px; line-height:0.93; font-weight:600; letter-spacing:-1px; }
-.logo span{ color:var(--point); font-style:italic; }
-.logo-sub{ margin-top:10px; color:var(--sub); font-size:11px; letter-spacing:0.24em; }
+/* ===== 공통 헤더 ===== */
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:22px 4vw 16px;border-bottom:1px solid var(--gold-line)}
+.brand{font-family:var(--serif);font-weight:900;font-size:clamp(18px,3vw,28px);letter-spacing:.04em;line-height:1}
+.brand span{font-style:italic;font-weight:600;color:var(--gold)}
+.eyebrow{font-size:9px;letter-spacing:.38em;font-weight:700;margin-bottom:7px;color:var(--gold)}
+.top-actions{display:flex;gap:8px}
+.ghost-btn{background:#fff;border:1px solid var(--gold-line);padding:8px 16px;font-size:11px;letter-spacing:.14em;font-weight:700;transition:.2s;white-space:nowrap;color:var(--ink);border-radius:3px}
+.ghost-btn:hover{background:var(--ink);border-color:var(--ink);color:var(--cream)}
 
-/* 프로필 영역 */
-.profile-row{ display:flex; flex-direction:column; gap:16px; }
-.profile{ width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow:0 6px 18px rgba(60,90,60,0.12); flex-shrink:0; align-self:center; }
-.profile img{ width:100%; height:100%; object-fit:cover; }
+/* ===== 로그인 ===== */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column}
+.login-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:50px 6vw}
+.hero-title{font-family:var(--serif);font-weight:900;font-size:clamp(46px,11vw,120px);line-height:.95;letter-spacing:-.01em}
+.hero-title em{font-style:italic;font-weight:600;color:var(--mint-deep)}
+.hero-sub{font-family:var(--kserif);font-size:clamp(12px,1.6vw,16px);margin-top:20px;letter-spacing:.14em}
+.login-card{margin-top:42px;width:min(360px,88vw);text-align:left}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:10px;letter-spacing:.32em;font-weight:700;margin-bottom:7px;color:var(--gold)}
+.field input{width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--gold-line);padding:10px 2px;font-size:17px;letter-spacing:.06em;outline:none;border-radius:0}
+.field input:focus{border-color:var(--gold)}
+.login-btn{width:100%;margin-top:14px;background:var(--ink);color:var(--cream);border:1px solid var(--ink);padding:15px;font-size:13px;letter-spacing:.34em;font-weight:700;transition:.25s;border-radius:3px}
+.login-btn:hover{background:var(--mint-deep);border-color:var(--mint-deep)}
+.back-board{display:block;width:100%;margin-top:12px;background:#fff;border:1px solid var(--gold-line);padding:13px;font-size:12px;letter-spacing:.2em;font-weight:700;text-align:center;transition:.2s;border-radius:3px}
+.back-board:hover{border-color:var(--gold);background:var(--gold-soft)}
+.login-msg{margin-top:14px;font-size:13px;color:var(--pink-deep);min-height:18px;text-align:center;font-weight:500}
+.login-foot{text-align:center;padding:18px;font-size:9px;letter-spacing:.3em;border-top:1px solid var(--gold-line);color:var(--gold)}
 
-/* 링크 버튼 그룹 */
-.btn-group{ display:flex; flex-direction:column; gap:8px; flex:1; }
-.dot{ width:7px; height:7px; background:var(--point); border-radius:50%; margin-right:7px; flex-shrink:0; animation:blink 1.5s infinite; }
-@keyframes blink{ 0%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.8)} 100%{opacity:1;transform:scale(1)} }
-.live-btn{
-  display:inline-flex; align-items:center; padding:9px 14px;
-  background:#fff; border:1px solid var(--line); border-radius:100px;
-  color:var(--open); font-size:12px; font-weight:700;
-  box-shadow:0 3px 10px rgba(125,162,123,0.06); cursor:pointer;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.btn-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
-.sq-status{ display:inline-flex; align-items:center; font-size:9px; padding:3px 8px; border-radius:999px; font-weight:700; flex-shrink:0; }
-.open{ background:var(--open-bg); color:var(--open); }
-.soon{ background:var(--soon-bg); color:var(--soon); opacity:0.7; }
+/* ===== 기수 선택 ===== */
+.cohort-bar{display:flex;gap:8px;padding:14px 4vw 0;background:#fff}
+.cohort-btn{flex:0 0 auto;background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:9px 18px;font-size:12px;font-weight:700;letter-spacing:.05em;font-family:var(--kserif);transition:.15s}
+.cohort-btn small{display:block;font-family:var(--serif);font-size:8.5px;letter-spacing:.24em;color:var(--gold);margin-top:2px}
+.cohort-btn.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.cohort-btn.active small{color:var(--mint)}
 
-/* 드롭다운 */
-.dropdown-wrap{ position:relative; }
-.gyeol-menu{
-  display:none; position:absolute; top:44px; left:0; width:100%;
-  background:#fff; border:1px solid var(--line); border-radius:16px;
-  padding:10px; grid-template-columns:repeat(4,1fr); gap:5px;
-  z-index:100; box-shadow:0 10px 28px rgba(60,90,60,0.13);
-}
-.gyeol-menu a{ font-size:11px; padding:7px 0; background:var(--hover); text-align:center; border-radius:7px; }
+/* ===== 탭 / 칩 ===== */
+.tabbar{display:flex;border-bottom:1px solid var(--gold-line);overflow-x:auto;padding:0 4vw;scrollbar-width:none;background:#fff}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:15px 15px;font-size:13px;font-weight:700;letter-spacing:.06em;white-space:nowrap;color:rgba(26,26,26,.38)}
+.tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+.chips{display:flex;gap:8px;padding:16px 4vw 0}
+.chip{background:#fff;border:1px solid var(--gold-line);border-radius:999px;padding:6px 18px;font-size:12px;font-weight:700;letter-spacing:.06em}
+.chip.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 
-/* 실적 카드 */
-.ach-card{ padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:16px; cursor:pointer; }
-.ach-title{ font-size:10px; font-weight:700; color:var(--sub); letter-spacing:0.1em; font-family:'DM Mono',monospace; margin-bottom:10px; }
-.ach-stats{ display:flex; justify-content:space-between; }
-.ach-val{ font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; color:var(--main); }
-.ach-lab{ font-size:9px; color:var(--sub); }
+/* ===== 카드 레일 = 미션 탭 ===== */
+.card-rail{display:flex;gap:8px;overflow-x:auto;padding:14px 4vw 6px;scroll-snap-type:x proximity;scrollbar-width:none}
+.card-rail::-webkit-scrollbar{display:none}
+.sum-card{flex:0 0 auto;scroll-snap-align:start;min-width:102px;border:1px solid var(--gold-line);background:#fff;padding:10px 12px 8px;text-align:center;transition:.18s;border-radius:4px}
+.sum-card:hover{border-color:var(--gold)}
+.sum-card.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.sum-card .k{font-family:var(--kserif);font-weight:600;font-size:11px;margin-bottom:4px;white-space:nowrap}
+.sum-card .v{font-family:var(--serif);font-weight:900;font-size:19px;letter-spacing:.02em}
+.sum-card .v small{font-size:.5em;font-weight:600}
+.sum-card .n{font-size:9px;letter-spacing:.08em;margin-top:2px;color:var(--gold)}
+.sum-card.active .n{color:var(--mint)}
 
-/* ── 6모 가채점 배너 ── */
-.score-banner{
-  position:relative; overflow:hidden;
-  display:flex; align-items:center; justify-content:space-between; gap:16px;
-  background:linear-gradient(135deg, #2d1a24 0%, #4a1e32 50%, #3a1528 100%);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:22px; padding:22px 24px; margin-bottom:22px;
-  box-shadow:0 12px 40px rgba(80,10,40,0.28);
-}
-.score-banner::before{
-  content:''; position:absolute;
-  top:-40px; right:-40px;
-  width:160px; height:160px;
-  background:radial-gradient(circle, rgba(212,83,126,0.22) 0%, transparent 70%);
-  pointer-events:none;
-}
-.score-banner::after{
-  content:''; position:absolute;
-  bottom:-30px; left:30px;
-  width:100px; height:100px;
-  background:radial-gradient(circle, rgba(180,120,160,0.15) 0%, transparent 70%);
-  pointer-events:none;
-}
-.banner-text{ position:relative; z-index:1; }
-.banner-badge{
-  display:inline-flex; align-items:center; gap:6px;
-  font-size:10px; font-weight:600; letter-spacing:0.14em;
-  color:rgba(255,200,220,0.9);
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,180,200,0.2);
-  border-radius:100px; padding:4px 12px; margin-bottom:10px;
-}
-.banner-badge .pulse{
-  width:6px; height:6px;
-  background:#f08aaa; border-radius:50%;
-  animation:pulse-ring 1.4s ease-in-out infinite;
-}
-@keyframes pulse-ring{
-  0%  {box-shadow:0 0 0 0 rgba(240,138,170,0.7);}
-  70% {box-shadow:0 0 0 7px rgba(240,138,170,0);}
-  100%{box-shadow:0 0 0 0 rgba(240,138,170,0);}
-}
-.banner-title{
-  font-family:'Cormorant Garamond',serif;
-  font-size:20px; font-weight:700; color:#fff;
-  line-height:1.35; letter-spacing:-0.01em;
-}
-.banner-title em{ font-style:italic; color:#f4b8cc; }
-.banner-desc{ font-size:11px; color:rgba(255,200,215,0.6); margin-top:6px; letter-spacing:0.02em; }
+/* ===== 섹션 / 테이블 ===== */
+.section-pad{padding:12px 3vw 50px}
+.paper{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:clamp(12px,2.5vw,24px)}
+.big-label{font-family:var(--serif);font-weight:900;font-size:clamp(18px,3.6vw,28px);margin-bottom:3px}
+.small-note{font-size:10px;letter-spacing:.12em;color:var(--gold);margin-bottom:12px}
+.grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.matrix{border-collapse:collapse;font-size:13px;min-width:100%}
+table.matrix th{font-family:var(--serif);font-size:10px;letter-spacing:.16em;font-weight:700;padding:9px 8px;border-bottom:1.5px solid var(--gold);background:#fff;white-space:nowrap;text-align:center;color:var(--gold)}
+table.matrix td{padding:9px 8px;border-bottom:1px solid var(--gold-line);text-align:center;white-space:nowrap;font-family:var(--kserif)}
+table.matrix .nick{font-weight:700;position:sticky;left:0;background:#fff;border-right:1px solid var(--gold-line);text-align:left;padding-left:10px;z-index:1}
+th.nick{z-index:2}
+table.matrix td.rank{font-family:var(--serif);font-weight:600;font-size:12px;opacity:.55}
+table.matrix td.avg{font-family:var(--serif);font-weight:900;font-size:15px;background:var(--mint-soft);color:var(--mint-deep)}
+table.matrix tr.top3 .nick{color:var(--gold)}
+.empty{padding:50px 0;text-align:center;font-family:var(--kserif);color:rgba(26,26,26,.45)}
 
-.banner-btn-group { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
+table.omr{border-collapse:collapse;font-size:11px}
+table.omr th{font-family:var(--serif);font-size:9px;letter-spacing:.1em;font-weight:700;padding:5px 3px;border-bottom:1.5px solid var(--gold);background:#fff;white-space:nowrap;text-align:center;color:var(--gold)}
+table.omr th .th-rate{font-family:var(--sans);font-size:8px;letter-spacing:0;font-weight:700;margin-top:1px;color:var(--pink-deep)}
+table.omr td{padding:4px 2px;border-bottom:1px solid var(--gold-line);text-align:center;white-space:nowrap}
+table.omr td.nick{font-family:var(--kserif);font-weight:700;font-size:12px;position:sticky;left:0;background:#fff;border-right:1px solid var(--gold-line);padding:4px 10px 4px 8px;text-align:left}
+table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color:var(--mint-deep);padding:4px 8px}
+.q-cell{display:inline-flex;width:17px;height:17px;align-items:center;justify-content:center;border:1px solid var(--gold-line);font-weight:700;font-size:9px;border-radius:2px}
+.q-cell.ok{background:var(--mint-soft);border-color:var(--mint-deep);color:var(--mint-deep)}
+.q-cell.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
+.q-cell.na{opacity:.3}
+.legend-row{display:flex;gap:14px;font-size:11px;font-weight:700;letter-spacing:.06em;margin-top:14px}
+.legend-row i{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+.legend-row .ok i{background:var(--mint)}
+.legend-row .no i{background:var(--pink)}
 
-.score-btn{
-  display:inline-flex; align-items:center; gap:9px;
-  padding:13px 22px;
-  background:linear-gradient(135deg, #e8607f 0%, #c03060 100%);
-  color:#fff; border:none; border-radius:100px;
-  font-family:'Noto Sans KR',sans-serif;
-  font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
-  box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
-  animation:btn-glow 2s ease-in-out infinite; text-decoration:none;
-  flex-shrink:0; letter-spacing:0.02em;
-}
-.score-btn:hover{ background:linear-gradient(135deg,#f07090 0%,#d04070 100%); animation:none; transform:scale(1.04); }
+/* ===== 등급 / 등급컷 ===== */
+table.omr td.grade{font-family:var(--serif);font-weight:900;font-size:13px;padding:4px 8px}
+table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600;margin-left:1px}
+.g-top{color:var(--mint-deep)}
+.g-mid{color:var(--gold)}
+.g-low{color:var(--pink-deep)}
+.cut-strip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 14px;padding:10px 14px;border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:4px;font-family:var(--serif);font-weight:900;font-size:13px}
+.cut-strip b{font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:2px}
+.cut-strip span i{font-style:normal;font-family:var(--sans);font-size:10px;font-weight:700;color:var(--gold);margin-right:4px}
+.ia-grade{font-family:var(--serif);font-weight:900;font-size:15px}
+.ia-grade small{font-family:var(--sans);font-size:9px;font-weight:600;margin-left:1px}
 
-.score-btn-alt {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 13px 22px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 100px;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
-  text-decoration: none; flex-shrink: 0; letter-spacing: 0.02em;
-  transition: background 0.2s, transform 0.2s;
-}
-.score-btn-alt:hover { background: rgba(255, 255, 255, 0.22); transform: scale(1.04); }
+/* ===== S+ BLACK 특강 탭 ===== */
+.tab.black{background:var(--ink);color:var(--cream);border-radius:4px;align-self:center;padding:8px 14px;margin:0 4px;border-bottom:none;letter-spacing:.08em}
+.tab.black::after{content:'SPECIAL';font-family:var(--serif);font-size:7.5px;letter-spacing:.2em;color:var(--gold);display:block;margin-top:1px}
+.tab.black.active{color:var(--mint);box-shadow:0 0 0 2px var(--gold)}
+.black-note{display:inline-block;background:var(--ink);color:var(--gold);font-family:var(--serif);font-size:9px;letter-spacing:.26em;font-weight:700;padding:4px 10px;border-radius:3px;margin-bottom:10px}
 
-@keyframes btn-glow{
-  0%  {box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);}
-  50% {box-shadow:0 4px 32px rgba(220,60,100,0.70), inset 0 1px 0 rgba(255,255,255,0.15);}
-  100%{box-shadow:0 4px 20px rgba(180,40,80,0.45), inset 0 1px 0 rgba(255,255,255,0.15);}
-}
-.btn-arrow{ display:inline-block; animation:arrow-bounce 1.3s ease-in-out infinite; }
-@keyframes arrow-bounce{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(5px)} }
+/* ===== 9모대비 자료 (문제 + 해설영상) ===== */
+.res-wrap{margin-top:16px}
+.res-title{font-family:var(--serif);font-weight:900;font-size:clamp(16px,3vw,22px);border-top:1.5px solid var(--gold);padding-top:14px;margin-bottom:2px}
+.res-sub{font-size:10px;letter-spacing:.14em;color:var(--gold);margin-bottom:14px}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.res-card{border:1px solid var(--gold-line);border-radius:4px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.res-head{display:flex;align-items:baseline;gap:8px;padding:12px 14px;border-bottom:1px solid var(--gold-line)}
+.res-head .num{font-family:var(--serif);font-weight:900;font-size:18px;color:var(--gold)}
+.res-head .yu{font-family:var(--kserif);font-weight:700;font-size:13px}
+.res-head .unit{font-size:11px;color:var(--pink-deep);font-weight:700;margin-left:auto;white-space:nowrap}
+.res-img{display:block;background:#fff;border-bottom:1px solid var(--gold-line)}
+.res-img img{width:100%;display:block}
+.res-video{position:relative;width:100%;aspect-ratio:16/9;background:var(--ink)}
+.res-video.shorts{aspect-ratio:9/16;max-height:440px;margin:0 auto;width:auto;min-width:min(100%,250px)}
+.res-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.res-note{padding:10px 14px;font-family:var(--kserif);font-size:12.5px;line-height:1.6;color:rgba(26,26,26,.8)}
+.res-note b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
 
-/* ── 레이아웃 ── */
-.layout{ display:flex; flex-direction:column; gap:16px; }
-.card{ background:var(--card); border:1px solid var(--line); border-radius:24px; padding:24px 20px; box-shadow:0 6px 20px rgba(80,110,80,0.05); }
-.category{ color:var(--point); font-size:11px; letter-spacing:0.16em; margin-bottom:14px; font-weight:700; }
-.card-title{ font-family:'Cormorant Garamond',serif; font-size:32px; line-height:1.1; margin-bottom:10px; }
-.desc{ color:var(--sub); font-size:13px; line-height:1.8; margin-bottom:24px; }
+/* ===== 개인 대시보드 ===== */
+.me-hero{padding:34px 4vw 22px;border-bottom:1px solid var(--gold-line);background:#fff}
+.me-nick{font-family:var(--serif);font-weight:900;font-size:clamp(38px,8vw,74px);line-height:.95}
+.me-meta{font-size:11px;letter-spacing:.24em;font-weight:700;margin-top:12px;color:var(--gold)}
+.me-meta b{color:var(--mint-deep)}
 
-/* 과목 섹션 */
-.subject{ margin-bottom:28px; }
-.subject:last-child{ margin-bottom:0; }
-.subject-name{ display:flex; align-items:center; justify-content:space-between; font-size:16px; font-weight:700; margin-bottom:12px; }
-.subject-name span{ font-size:12px; color:var(--sub); font-weight:400; }
+.block{padding:24px 3vw 4px}
+.block-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:14px;border-bottom:1.5px solid var(--gold);padding-bottom:8px}
+.block-head h2{font-family:var(--serif);font-weight:900;font-size:clamp(19px,3.2vw,28px)}
+.block-head .en{font-family:var(--serif);font-size:10px;letter-spacing:.32em;font-weight:700;color:var(--gold)}
 
-/* 카드 그리드 */
-.square-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.square-link{
-  position:relative; background:#f5faf3;
-  border:1px solid #dde9d8; border-radius:18px;
-  padding:12px 12px 10px;
-  display:flex; flex-direction:column; gap:5px;
-  transition:0.22s; overflow:hidden; min-height:88px;
-}
-.square-link:hover{ background:#fff; border-color:var(--point); transform:translateY(-3px); }
-.sq-number{ font-size:10px; color:var(--point); font-weight:700; line-height:1; position:relative; z-index:1; }
-.sq-title{ font-size:12px; font-weight:700; line-height:1.35; color:var(--main); flex:1; position:relative; z-index:1; }
-.sq-footer{ display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:2px; position:relative; z-index:1; }
-.sq-count{ font-family:'Cormorant Garamond',serif; font-size:12px; font-weight:700; color:var(--point); opacity:0.8; white-space:nowrap; }
-.count-display{
-  position:absolute; right:4px; top:50%;
-  transform:translateY(-50%);
-  pointer-events:none; z-index:0;
-}
-.count-value{
-  display:block; font-family:'Cormorant Garamond',serif;
-  font-size:52px; font-weight:700; color:var(--point);
-  line-height:1; opacity:0.07;
-}
-.count-unit{ display:none; }
+.chart-box{border:1px solid var(--gold-line);padding:16px 12px;background:#fff;margin-bottom:14px;border-radius:4px}
+.chart-box h3{font-family:var(--serif);font-size:10px;letter-spacing:.26em;font-weight:700;margin-bottom:4px;color:var(--gold)}
+.chart-box .cap{font-size:11px;color:rgba(26,26,26,.5);margin-bottom:8px}
+.chart-box .cap b.up{color:var(--mint-deep)}
+.chart-box .cap b.down{color:var(--pink-deep)}
+.chart-box .wrap{position:relative;height:240px}
+.chart-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.chart-grid2{grid-template-columns:1fr}}
 
-/* 메뉴 */
-.menu{ display:flex; flex-direction:column; gap:10px; }
-.link{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-radius:14px; background:#f5faf3; border:1px solid #dde9d8; font-size:14px; }
+.mini-stats{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.mini-stat{border:1px solid var(--gold-line);background:#fff;padding:12px 14px;flex:1;min-width:110px;text-align:center;border-radius:4px}
+.mini-stat .k{font-family:var(--serif);font-size:9px;letter-spacing:.24em;font-weight:700;margin-bottom:5px;color:var(--gold)}
+.mini-stat .v{font-family:var(--serif);font-weight:900;font-size:22px}
+.mini-stat .v small{font-size:.5em;font-weight:600}
+.mini-stat.mint .v{color:var(--mint-deep)}
+.mini-stat.pink .v{color:var(--pink-deep)}
 
-.footer{ margin-top:48px; text-align:center; color:var(--sub); font-size:11px; line-height:1.8; }
+.ia-title{font-family:var(--serif);font-size:10px;letter-spacing:.26em;font-weight:700;margin:4px 0 4px;color:var(--gold)}
+.ia-paper{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:4px 14px;margin-bottom:8px}
+.ia-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--gold-line)}
+.ia-row:last-child{border-bottom:none}
+.ia-name{font-family:var(--kserif);font-weight:700;font-size:13px;min-width:140px}
+.ia-name small{font-weight:400;font-size:11px;color:rgba(26,26,26,.45)}
+.ia-score{font-family:var(--serif);font-weight:900;font-size:16px;margin-left:auto;color:var(--mint-deep)}
+.ia-score small{font-size:10px;font-weight:600;color:var(--ink)}
+/* 정오표 칩: 모바일 세로 10개/줄, 넓은 화면 30개/줄 */
+.ia-chips{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;width:100%}
+@media(min-width:640px){.ia-chips{grid-template-columns:repeat(30,minmax(0,1fr));max-width:980px}}
+.chip-q{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--gold-line);font-weight:700;padding:3px 0 2px;border-radius:3px;line-height:1.15;min-width:0}
+.chip-q b{font-size:10px;font-weight:700}
+.chip-q small{font-size:8px;font-weight:700;opacity:.8;letter-spacing:0}
+.chip-q.ok{background:var(--mint-soft);border-color:var(--mint-deep);color:var(--mint-deep)}
+.chip-q.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
+.ia-comment{width:100%;font-family:var(--kserif);font-size:12.5px;line-height:1.65;color:rgba(26,26,26,.78)}
+.ia-comment b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
 
-/* ── 데스크탑 미디어 쿼리 ── */
-@media(min-width:768px){
-  body{ padding:42px 20px 80px; }
-  .header{ flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:40px; }
-  .logo{ font-size:76px; }
-  .logo-sub{ font-size:13px; }
-  .profile-row{ flex-direction:column; align-items:flex-end; gap:10px; }
-  .profile{ width:120px; height:120px; align-self:flex-end; }
-  .btn-group{ align-items:stretch; }
-  .live-btn{ font-size:13px; }
-  .layout{ display:grid; grid-template-columns:1.9fr 1fr; gap:22px; }
-  .card{ border-radius:32px; padding:36px; }
-  .card-title{ font-size:42px; }
-  .square-grid{ gap:14px; }
-  .square-link{ border-radius:24px; padding:18px; }
-  .sq-title{ font-size:16px; }
-  .count-value{ font-size:58px; }
-  .subject-name{ font-size:19px; }
-  .score-banner{ border-radius:24px; padding:20px 28px; }
-  .banner-title{ font-size:22px; }
-}
-
-/* ── 모바일 미디어 쿼리 ── */
-@media(max-width:480px){
-  .score-banner{ flex-direction:column; align-items:flex-start; padding:20px 14px; gap:14px; }
-  .banner-btn-group{ width:100%; display:flex; flex-direction:row; gap:5px; }
-  .score-btn{ flex:1; justify-content:center; padding:10px 4px; font-size:10px; gap:4px; white-space:nowrap; letter-spacing:-0.5px; }
-  .score-btn-alt{ flex:1; justify-content:center; padding:10px 4px; font-size:10px; gap:4px; white-space:nowrap; letter-spacing:-0.5px; }
-  .banner-title{ font-size:18px; }
-}
-@media(max-width:360px){
-  .square-grid{ grid-template-columns:repeat(2,1fr); }
-  .btn-grid2{ grid-template-columns:1fr; }
-}
+.loading{position:fixed;inset:0;background:rgba(251,248,241,.9);display:flex;align-items:center;justify-content:center;z-index:99;font-family:var(--serif);font-style:italic;font-size:22px;letter-spacing:.1em;color:var(--gold)}
+footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;letter-spacing:.28em;text-align:center;margin-top:44px;color:var(--gold)}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <div class="header">
-    <div class="logo-wrap">
-      <div class="logo">MATHY YURI<br><span>System</span></div>
-      <div class="logo-sub">DAECHI S+ ACADEMY</div>
-    </div>
+<div id="loading" class="loading hidden">Loading…</div>
 
-    <div class="profile-row">
-      <div class="profile"><img src="profile.png" alt="Mathy Yuri"></div>
-      <div class="btn-group">
-        <a href="ranking.html" class="live-btn"><span class="dot"></span>서술형 성적차트 →</a>
-        
-        <div class="btn-grid2">
-          <a href="s+.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
-            <span><span class="dot" style="display:inline-block;"></span>s+내신기출도장깨기</span>
-            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
-          </a>
-          <a href="s.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
-            <span><span class="dot" style="display:inline-block;"></span>s 교과서 정복하기</span>
-            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
-          </a>
-        </div>
+<!-- =============== ⓪ 메인 (랜딩) =============== -->
+<div id="view-landing" class="login-wrap">
+  <div class="login-hero">
+    <div class="eyebrow">MATHY YURI · SUMMER INTENSIVE 2026</div>
+    <h1 class="hero-title">SUMMER<br><em>Mission</em> BOARD</h1>
+    <p class="hero-sub">여름방학 진도 · 과제 · 오답 · TEST · 9월 모의고사 대비</p>
 
-        <div class="btn-grid2">
-          <div class="dropdown-wrap">
-            <div id="gyeol-ans-btn" class="live-btn" style="border-radius:14px; width:100%; justify-content:space-between;">
-              <span><span class="dot" style="display:inline-block;"></span>결모의고사 정답</span>
-              <span style="font-size:11px; margin-left:4px; color:var(--sub);">▾</span>
-            </div>
-            <div id="gyeol-menu" class="gyeol-menu">
-              <a href="GYEOL1/gyeolmo1.html">1회</a>
-              <a href="GYEOL2/gyeolmo2.html">2회</a>
-              <a href="GYEOL3/gyeolmo3.html">3회</a>
-              <a href="gyeolmo4.html">4회</a>
-              <a href="gyeolmo5.html">5회</a>
-              <a href="gyeolmo6.html">6회</a>
-              <a href="gyeolmo7.html">7회</a>
-            </div>
-          </div>
-          <a href="gyeolmorankings.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
-            <span><span class="dot" style="display:inline-block;"></span>결모 랭킹</span>
-            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
-          </a>
-        </div>
-        
-        <!-- 일일일모제출, 티어랭킹 글자 앞 도트 깜박임 처리 추가 -->
-        <div class="btn-grid2">
-          <a href="daily600.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
-            <span><span class="dot" style="display:inline-block;"></span>일일일모제출</span>
-            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
-          </a>
-          <a href="dailyranking.html" class="live-btn" style="border-radius:14px;justify-content:space-between;">
-            <span><span class="dot" style="display:inline-block;"></span>티어랭킹</span>
-            <span class="sq-status open" style="font-size:8px;padding:2px 6px;">OPEN</span>
-          </a>
-        </div>
-        <div class="ach-card" onclick="location.href='mathy_unit_chart.html'">
-          <div class="ach-title">ACHIEVEMENT SUMMARY</div>
-          <div class="ach-stats">
-            <div><div class="ach-val" id="sum-students">-</div><div class="ach-lab">STUDENTS</div></div>
-            <div><div class="ach-val" id="sum-units">-</div><div class="ach-lab">ACTIVE UNITS</div></div>
-            <div><div class="ach-val" id="sum-avg">-</div><div class="ach-lab">AVG CLEAR%</div></div>
-          </div>
-        </div>
-      </div>
+    <div class="login-card">
+      <button class="login-btn" onclick="enterBoard()">들어가기</button>
     </div>
   </div>
-
-  <div class="score-banner">
-    <div class="banner-text">
-      <div class="banner-badge"><span class="pulse"></span>2026.06.04 &nbsp;·&nbsp; D-DAY</div>
-      <div class="banner-title">2026년 6월 모의고사<br><em>최종 성적</em></div>
-      <div class="banner-desc">성적표를 사진으로 제출해주세요.</div>
-    </div>
-   <div class="banner-btn-group">
-  <a href="https://mathyyuri.com/6month_counseling_form.html" class="score-btn score-btn-pulse" target="_blank">성적표 제출하기 <span class="btn-arrow">→</span></a>
-<a href="26_6moresult.html" class="score-btn-alt">성적 분석 <span class="btn-arrow">→</span></a>
-<a href="motest.html" class="score-btn-alt">6모대비 성적차트 <span class="btn-arrow">→</span></a>
+  <div class="login-foot">MATHY YURI · DAECHI S+ ACADEMY</div>
 </div>
+
+<!-- =============== ① 전체 현황 =============== -->
+<div id="view-public" class="hidden">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">SUMMER 2026 · ALL STUDENTS</div>
+      <div class="brand">MATHY <span>YURI</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost-btn" onclick="goLogin()">LOGIN</button>
+    </div>
   </div>
 
-  <div class="layout">
+  <div class="cohort-bar" id="cohort-bar"></div>
+  <div class="tabbar" id="pub-tabs"></div>
+  <div class="chips" id="pub-chips"></div>
 
-    <div class="card">
-      <div class="category">WRITING TRAINING</div>
-      <div class="card-title">공통수학Ⅰ<br>서술형 Logic Master</div>
-      <div class="desc">단원별 논리 체계 구축 및 실전 FINAL 대비 시스템</div>
+  <!-- 카드 = 미션 탭 (항상 유지) -->
+  <div class="card-rail" id="pub-cards"></div>
 
-      <div class="subject">
-        <div class="subject-name">방정식 <span>Equations</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="writing1/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d1">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d1-bg">0</span></div></a>
-          <a class="square-link" href="writing1-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d2">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d2-bg">0</span></div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-        </div>
-      </div>
-
-      <div class="subject">
-        <div class="subject-name">부등식 <span>Inequalities</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="writing2/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d3">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d3-bg">0</span></div></a>
-          <a class="square-link" href="writing2-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d5">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d5-bg">0</span></div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-        </div>
-      </div>
-
-      <div class="subject">
-        <div class="subject-name">경우의 수 <span>Combinatorics</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="writing3/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d4">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d4-bg">0</span></div></a>
-          <a class="square-link" href="writing3-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d6">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d6-bg">0</span></div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-        </div>
-      </div>
-
-      <div class="subject">
-        <div class="subject-name">행렬 <span>Matrices</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="writing4/"><div class="sq-number">01</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d7">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d7-bg">0</span></div></a>
-          <a class="square-link" href="writing4-2/"><div class="sq-number">02</div><div class="sq-title">Writing Logic</div><div class="sq-footer"><span class="sq-count" id="count-d8">0</span><span class="sq-status open">OPEN</span></div><div class="count-display"><span class="count-value" id="count-d8-bg">0</span></div></a>
-          <div class="square-link"><div class="sq-number">03</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-          <div class="square-link"><div class="sq-number">04</div><div class="sq-title">Writing</div><div class="sq-footer"><span></span><span class="sq-status soon">SOON</span></div></div>
-        </div>
-      </div>
-
-      <div class="subject">
-        <div class="subject-name" style="font-weight:800;">실전 Writing <span>Final Practice</span></div>
-        <div class="square-grid">
-          <a class="square-link" href="GYEOL1/gyeol1.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">01</div><div class="sq-title" style="color:#4a3f35">결 모의고사 1회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
-          <a class="square-link" href="GYEOL2/gyeol2.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">02</div><div class="sq-title" style="color:var(--sub)">결 모의고사 2회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
-          <a class="square-link" href="GYEOL3/gyeol3.html" style="background:#fff9f0;border-color:#e6d5bc;"><div class="sq-number" style="color:#b39470">03</div><div class="sq-title" style="color:var(--sub)">결 모의고사 3회</div><div class="sq-footer"><span class="sq-status open" style="background:#b39470;color:white;">OPEN</span></div></a>
-        </div>
-      </div>
+  <!-- 누적 현황 -->
+  <div class="section-pad" id="pub-cum" style="padding-top:12px">
+    <div class="paper">
+      <div class="big-label" id="pub-title">종합</div>
+      <div class="small-note" id="pub-note">누적 평균 순 · 닉네임 기준</div>
+      <div class="grid-scroll" id="pub-matrix"></div>
+      <div class="res-wrap" id="pub-resources"></div>
     </div>
-
-    <div style="display:flex;flex-direction:column;gap:16px;">
-      <div class="card">
-        <div class="category">S+ LOGIC MASTER</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;margin-bottom:14px;">Killer Problem<br>Training</div>
-        <div class="menu">
-          <div class="link"><span>킬러문항 훈련</span><span class="sq-status soon">COMING SOON</span></div>
-          <div class="link"><span>풀이 영상</span><span class="sq-status soon">COMING SOON</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="category">2028 UNIVERSITY ADMISSION</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;margin-bottom:14px;">2028 대학 입시</div>
-        <div class="menu">
-          <a class="link" href="splus-quiz/"><span>서울대학교</span><span class="sq-status open">OPEN</span></a>
-          <div class="link"><span>연세대학교</span><span class="sq-status soon">SOON</span></div>
-          <div class="link"><span>고려대학교</span><span class="sq-status soon">SOON</span></div>
-        </div>
-      </div>
-    </div>
-
   </div>
-<!-- mathyyuri.com의 </div> 뒤, <div class="footer"> 위에만 이것을 추가 -->
 
-<style>
-.mock-exam-section {
-  background: linear-gradient(135deg, #1a3a1a 0%, #2d4a2d 50%, #1f3a1f 100%);
-  border: 1px solid rgba(125, 162, 123, 0.2);
-  border-radius: 24px;
-  padding: 32px 28px;
-  margin: 32px 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.mock-exam-section::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 140px;
-  height: 140px;
-  background: radial-gradient(circle, rgba(125, 162, 123, 0.15) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.mock-exam-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 22px;
-  background: linear-gradient(135deg, #7da27b 0%, #6f9270 100%);
-  color: #fff;
-  border: none;
-  border-radius: 100px;
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  letter-spacing: 0.02em;
-}
-
-.mock-exam-btn:hover {
-  background: linear-gradient(135deg, #8db48b 0%, #7fa280 100%);
-  transform: translateY(-2px);
-}
-</style>
-
-<div class="mock-exam-section">
-  <div style="position: relative; z-index: 1;">
-    <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: rgba(125, 162, 123, 0.95); background: rgba(125, 162, 123, 0.12); border: 1px solid rgba(125, 162, 123, 0.25); border-radius: 100px; padding: 6px 14px; margin-bottom: 12px;">
-       MATH STUDIO
+  <!-- 미션별 정오표 -->
+  <div class="section-pad hidden" id="pub-mission" style="padding-top:12px">
+    <div class="paper">
+      <div class="big-label" id="detail-title">—</div>
+      <div class="small-note" id="detail-sub">—</div>
+      <div class="grid-scroll" id="detail-table"></div>
+      <div class="legend-row"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span></div>
+      <div class="res-wrap" id="detail-resources"></div>
     </div>
-    <div style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #f9fdf7; margin-bottom: 10px;">모의고사 기출 풀이</div>
-    <div style="font-size: 13px; color: rgba(249, 253, 247, 0.65); margin-bottom: 14px;">연도별·단원별로 정리된 기출 문제와 풀이 영상</div>
-   <a href="https://mathyyuri.com/math-exam.html" 
-   target="_blank"
-   class="mock-exam-btn">
-   풀이영상 보러가기 →
-</a>
-</a>
   </div>
+
+  <footer>MATHY YURI · PREMIUM WRITING TRAINING PLATFORM</footer>
 </div>
-  <div class="footer">MATHY YURI · DAECHI S+ ACADEMY<br>Premium Writing Training Platform</div>
+
+<!-- =============== ② 로그인 =============== -->
+<div id="view-login" class="login-wrap hidden">
+  <div class="login-hero">
+    <div class="eyebrow">MATHY YURI · SUMMER INTENSIVE 2026</div>
+    <h1 class="hero-title">SUMMER<br><em>Mission</em> BOARD</h1>
+    <p class="hero-sub">여름방학 진도 · 과제 · 오답 · TEST · 9월 모의고사 대비</p>
+
+    <div class="login-card">
+      <div class="field">
+        <label>NAME · 이름</label>
+        <input id="in-name" type="text" autocomplete="off" placeholder="홍길동">
+      </div>
+      <div class="field">
+        <label>PARENT PHONE · 학부모 휴대폰 뒷 4자리</label>
+        <input id="in-pw" type="password" inputmode="numeric" maxlength="4" placeholder="뒷 4자리">
+      </div>
+      <button class="login-btn" onclick="login()">LOGIN</button>
+      <button class="back-board" onclick="show('view-public')">← 전체 현황으로</button>
+      <div id="login-msg" class="login-msg"></div>
+    </div>
+  </div>
+  <div class="login-foot">MATHY YURI · DAECHI S+ ACADEMY</div>
+</div>
+
+<!-- =============== ③ 개인 대시보드 =============== -->
+<div id="view-personal" class="hidden">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">SUMMER 2026 · MY REPORT</div>
+      <div class="brand">MATHY <span>YURI</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost-btn" onclick="show('view-public')">전체 현황</button>
+      <button class="ghost-btn" onclick="logout()">LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="me-hero">
+    <div class="me-nick" id="me-nick">—</div>
+    <div class="me-meta" id="me-meta">—</div>
+  </div>
+
+  <!-- ① OVERVIEW: 정답률 세로막대 + 종목별 오각형 -->
+  <div class="block">
+    <div class="block-head"><h2>Overview</h2><span class="en">MY DATA vs CLASS AVG</span></div>
+
+    <div class="chart-grid2">
+      <div class="chart-box">
+        <h3>ACCURACY · 정답률 비교</h3>
+        <div class="cap" id="acc-cap">전체 · 오답미션 정답률 — 내(민트) vs 반 평균(핑크)</div>
+        <div class="wrap"><canvas id="chart-acc"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>SCORE · 종목별 누적 비교</h3>
+        <div class="cap">5개 종목 누적 평균 — 내 점수(민트) vs <span id="ov-class">반</span> 평균(핑크)</div>
+        <div class="wrap"><canvas id="chart-overview"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 종목별 세부 -->
+  <div id="me-blocks"></div>
+
+  <footer>MATHY YURI · DAECHI S+ ACADEMY</footer>
 </div>
 
 <script>
-const COUNT_URL = "https://script.google.com/macros/s/AKfycbwf7jazxqNsGT0HNVGcl5YM9fZ3WhDsJDj397jazrpC3_WMvDw6-bWHWwDxRCe8m4l6/exec";
-window.onload = function() {
-  const ansBtn = document.getElementById('gyeol-ans-btn');
-  const menu   = document.getElementById('gyeol-menu');
-  ansBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    menu.style.display = menu.style.display === 'grid' ? 'none' : 'grid';
-  });
-  document.addEventListener('click', () => { menu.style.display = 'none'; });
+/* ============================================================
+   설정: GAS 웹앱 배포 후 exec URL을 아래에 붙여넣기
+============================================================ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 
-  fetch(COUNT_URL + "?action=getCounts").then(r => r.json()).then(data => {
-    for (let i = 1; i <= 8; i++) {
-      const el   = document.getElementById('count-d' + i);
-      const elBg = document.getElementById('count-d' + i + '-bg');
-      const val  = data['d'+i] !== undefined ? data['d'+i] : 0;
-      if (el)   el.innerText   = val;
-      if (elBg) elBg.innerText = val;
-    }
-  }).catch(()=>{});
+const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK'];
+const SUMMARY_CATS = ['진도미션','과제미션','오답미션','TEST','9모대비']; // 종합에서 S+ BLACK 제외
+const TAB_LIST = ['종합'].concat(SHEETS);
+const SHEET_EN = {'진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','9모대비':'MOCK 9','S+ BLACK':'BLACK'};
+const COHORT_LABELS = { '2':{name:'대치수학 2기',sub:'고1 · HIGH 1'}, '3':{name:'대치수학 3기',sub:'중3 · MIDDLE 3'} };
+
+/* ---- 등급 표시 설정 ----
+   등급 값은 시트(9모대비 G열)에서 내려오는 r.grade를 그대로 표시.
+   GRADE_CUTS는 표 위에 참고용 등급컷 띠를 띄우는 용도 (필요 없으면 비우면 됨).
+   25년 9월 고1 수학: 1등급 82(확정), 2~8등급은 EBSi 집계 기준 */
+const GRADE_CUTS = {
+  '25년 9월': [82, 75, 65, 54, 37, 25, 16, 13]
 };
+function cutsFor(mission){
+  const m = norm(mission);
+  if(!m) return null;
+  for(const k in GRADE_CUTS){
+    const nk = norm(k);
+    if(m.indexOf(nk)!==-1 || nk.indexOf(m)!==-1) return GRADE_CUTS[k];
+  }
+  return null;
+}
+function gradeCls(g){
+  const n = parseInt(g,10);
+  if(isNaN(n)) return '';
+  return n<=1?'g-top':n<=3?'g-mid':'g-low';
+}
+function gradeHTML(g){
+  if(g==null||g==='') return '—';
+  const s = String(g).replace(/등급$/,'').trim();
+  return esc(s)+'<small>등급</small>';
+}
+function cutStrip(cuts, compact){
+  if(!cuts) return '';
+  let html='<div class="cut-strip'+(compact?' compact':'')+'"><b>등급컷</b>';
+  cuts.forEach((c,i)=>{ html+='<span><i>'+(i+1)+'등급</i>'+c+'</span>'; });
+  return html+'</div>';
+}
+
+let publicData = null;
+let publicResources = null;
+let me = null;
+let pubCohort = '2';
+let pubTab = '종합';
+let pubClass = '전체';
+let pubMission = null; // null = 누적 현황
+let charts = {};
+
+/* ---------- 막대 위 점수 표시 플러그인 ---------- */
+const valueLabel = {
+  id:'valueLabel',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((ds,di)=>{
+      const meta = chart.getDatasetMeta(di);
+      if(meta.hidden) return;
+      meta.data.forEach((bar,i)=>{
+        const v = ds.data[i];
+        if(v==null) return;
+        ctx.save();
+        ctx.fillStyle = ds.labelColor || '#1A1A1A';
+        ctx.font = "700 10px 'Noto Sans KR'";
+        ctx.textAlign = 'center';
+        ctx.fillText(v + (ds.labelUnit || ''), bar.x, bar.y - 5);
+        ctx.restore();
+      });
+    });
+  }
+};
+
+/* ---------- 공통 ---------- */
+function show(id){
+  ['view-landing','view-login','view-public','view-personal'].forEach(v=>document.getElementById(v).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function loading(on){document.getElementById('loading').classList.toggle('hidden',!on);}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function r1(v){return Math.round(v*10)/10;}
+function mean(arr){return arr.length?r1(arr.reduce((a,b)=>a+b,0)/arr.length):null;}
+function cssColor(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+/* ---------- 로그인 ---------- */
+function goLogin(){ if(me){show('view-personal');} else {show('view-login');} }
+async function login(){
+  const name = document.getElementById('in-name').value.trim();
+  const pw = document.getElementById('in-pw').value.trim();
+  const msg = document.getElementById('login-msg');
+  msg.textContent='';
+  if(!name || !pw){msg.textContent='이름과 학부모 휴대폰 뒷 4자리를 입력해주세요.';return;}
+  loading(true);
+  try{
+    const res = await fetch(GAS_URL+'?action=login&name='+encodeURIComponent(name)+'&pw='+encodeURIComponent(pw));
+    const json = await res.json();
+    if(!json.ok){msg.textContent=json.error||'로그인에 실패했습니다.';loading(false);return;}
+    me = json;
+    renderPersonal();
+    show('view-personal');
+  }catch(e){
+    msg.textContent='서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+  }
+  loading(false);
+}
+document.getElementById('in-pw').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+function logout(){
+  me=null;
+  document.getElementById('in-name').value='';
+  document.getElementById('in-pw').value='';
+  document.getElementById('login-msg').textContent='';
+  show('view-public');
+}
+
+/* ================= 전체 현황 ================= */
+async function loadPublic(){
+  try{
+    const res = await fetch(GAS_URL+'?action=public');
+    const json = await res.json();
+    if(json.ok){publicData = json.data;publicResources = json.resources||{};}
+  }catch(e){}
+}
+async function enterBoard(){
+  if(!publicData){
+    loading(true);
+    await dataPromise;
+    loading(false);
+  }
+  renderPublic();
+  show('view-public');
+}
+function buildPubTabs(){
+  const bar = document.getElementById('pub-tabs');
+  if(bar.children.length) return;
+  TAB_LIST.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===pubTab?' active':'');
+    b.textContent=s;
+    b.onclick=()=>{
+      pubTab=s; pubMission=null;
+      [...bar.children].forEach(t=>t.classList.toggle('active',t.textContent===s));
+      renderPublic();
+    };
+    bar.appendChild(b);
+  });
+}
+function renderCohortBar(){
+  const box=document.getElementById('cohort-bar');
+  let html='';
+  Object.keys(COHORT_LABELS).forEach(c=>{
+    const L=COHORT_LABELS[c];
+    html+='<button class="cohort-btn'+(pubCohort===c?' active':'')+'" onclick="setCohort(\''+c+'\')">'
+      +esc(L.name)+'<small>'+esc(L.sub)+'</small></button>';
+  });
+  box.innerHTML=html;
+}
+function setCohort(c){
+  pubCohort=c; pubMission=null; pubClass='전체';
+  renderPublic();
+}
+function renderChips(){
+  const box=document.getElementById('pub-chips');
+  // 현재 기수 데이터에 존재하는 반 목록 (모든 카테고리 기준)
+  const set={},list=[];
+  const cd=(publicData&&publicData[pubCohort])||{};
+  SHEETS.forEach(k=>(cd[k]||[]).forEach(r=>{
+    if(r.class&&!set[r.class]){set[r.class]=1;list.push(r.class);}
+  }));
+  if(pubClass!=='전체'&&!set[pubClass])pubClass='전체';
+  let html='<button class="chip'+(pubClass==='전체'?' active':'')+'" onclick="setClassFilter(\'전체\')">전체</button>';
+  list.forEach(c=>{
+    html+='<button class="chip'+(pubClass===c?' active':'')+'" onclick="setClassFilter(\''+c.replace(/'/g,"\\'")+'\')">'+esc(c)+'</button>';
+  });
+  box.innerHTML=html;
+}
+function setClassFilter(c){
+  pubClass=c;
+  renderPublic(false);
+}
+function tabRows(){return (publicData&&publicData[pubCohort]&&publicData[pubCohort][pubTab])||[];}
+function filteredRows(){return tabRows().filter(r=>pubClass==='전체'||r.class===pubClass);}
+function missionOrder(rows){
+  const list=[],seen={};
+  rows.forEach(r=>{if(r.mission&&!seen[r.mission]){seen[r.mission]=1;list.push(r.mission);}});
+  return list;
+}
+function studentKey(r){ return r.sid!=null ? 's'+r.sid : 'n'+r.nickname; }
+function aggregate(rows){
+  const missions=missionOrder(rows);
+  const stu={},order=[];
+  rows.forEach(r=>{
+    const key=studentKey(r);
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{}};order.push(key);}
+    stu[key].nickname=r.nickname; // 가장 최근 닉네임
+    if(r.score!=null)stu[key].scores[r.mission]=r.score;
+  });
+  const students=order.map(id=>{
+    const s=stu[id];
+    const vals=Object.values(s.scores);
+    s.avg=mean(vals);
+    s.done=vals.length;
+    return s;
+  }).sort((a,b)=>(b.avg??-1)-(a.avg??-1));
+  return {missions,students};
+}
+function selectMission(name){
+  pubMission=name;
+  renderPublic(false);
+}
+function renderPublic(scrollTop){
+  renderCohortBar();
+  renderChips();
+  renderCards();
+  const cumView=document.getElementById('pub-cum');
+  const misView=document.getElementById('pub-mission');
+  if(pubTab==='종합'){
+    cumView.classList.remove('hidden');misView.classList.add('hidden');
+    renderSummary();
+  }else if(pubMission==null){
+    cumView.classList.remove('hidden');misView.classList.add('hidden');
+    renderCumulative();
+  }else{
+    cumView.classList.add('hidden');misView.classList.remove('hidden');
+    renderMissionDetail();
+  }
+  if(scrollTop!==false)window.scrollTo(0,0);
+}
+
+/* ---- 카드 레일 = 탭 (항상 표시) ---- */
+function renderCards(){
+  const box=document.getElementById('pub-cards');
+  if(!publicData){box.innerHTML='';return;}
+
+  /* 종합 탭: 카테고리별 누적 평균 카드 */
+  if(pubTab==='종합'){
+    const {students}=aggregateSummary();
+    const overall=mean(students.map(s=>s.overall).filter(v=>v!=null))??'—';
+    let html='<button class="sum-card active" onclick="void(0)">'
+      +'<div class="k">종합 누적 현황</div><div class="v">'+overall+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
+    SUMMARY_CATS.forEach(cat=>{
+      const rows=((publicData[pubCohort]||{})[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass);
+      const avg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
+      html+='<button class="sum-card" onclick="jumpTab(\''+cat+'\')">'
+        +'<div class="k">'+esc(cat)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">바로가기</div></button>';
+    });
+    box.innerHTML=html;
+    return;
+  }
+
+  const rows=filteredRows();
+  const missions=missionOrder(tabRows()); // 탭 목록은 반 필터와 무관하게 유지
+  const {students}=aggregate(rows);
+  const totalAvg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
+
+  let html='<button class="sum-card'+(pubMission==null?' active':'')+'" onclick="selectMission(null)">'
+    +'<div class="k">'+pubTab+' 누적 현황</div><div class="v">'+totalAvg+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
+  missions.forEach(m=>{
+    const avg=mean(rows.filter(r=>r.mission===m&&r.score!=null).map(r=>r.score))??'—';
+    html+='<button class="sum-card'+(pubMission===m?' active':'')+'" onclick="selectMission(\''+m.replace(/'/g,"\\'")+'\')">'
+      +'<div class="k">'+esc(m)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">정오표</div></button>';
+  });
+  box.innerHTML=html;
+}
+function jumpTab(name){
+  pubTab=name; pubMission=null;
+  document.querySelectorAll('#pub-tabs .tab').forEach(t=>t.classList.toggle('active',t.textContent===name));
+  renderPublic();
+}
+
+/* ---- 종합: 카테고리별 누적 평균 + 전체 랭킹 ---- */
+function aggregateSummary(){
+  const cd=(publicData&&publicData[pubCohort])||{};
+  const stu={},order=[];
+  SUMMARY_CATS.forEach(cat=>{
+    (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(r=>{
+      const key=studentKey(r);
+      if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,cats:{}};order.push(key);}
+      stu[key].nickname=r.nickname; // 가장 최근 닉네임
+      stu[key].class=r.class;
+      if(r.score!=null){
+        if(!stu[key].cats[cat])stu[key].cats[cat]=[];
+        stu[key].cats[cat].push(r.score);
+      }
+    });
+  });
+  const students=order.map(id=>{
+    const s=stu[id];
+    s.catAvg={};
+    const avgs=[];
+    SUMMARY_CATS.forEach(cat=>{
+      const a=mean(s.cats[cat]||[]);
+      s.catAvg[cat]=a;
+      if(a!=null)avgs.push(a);
+    });
+    s.overall=mean(avgs);
+    return s;
+  }).sort((a,b)=>(b.overall??-1)-(a.overall??-1));
+  return {students};
+}
+function renderSummary(){
+  document.getElementById('pub-title').textContent='종합';
+  document.getElementById('pub-note').textContent='TOTAL RANKING · 5개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)';
+  renderResources(false);
+  const matBox=document.getElementById('pub-matrix');
+  if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
+  const {students}=aggregateSummary();
+  if(!students.length){matBox.innerHTML='<div class="empty">아직 등록된 기록이 없습니다.</div>';return;}
+
+  let html='<table class="matrix"><tr>'
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>CLASS</th><th>종합 평균</th>';
+  SUMMARY_CATS.forEach(cat=>{html+='<th>'+esc(cat)+'</th>';});
+  html+='</tr>';
+  students.forEach((s,i)=>{
+    html+='<tr class="'+(i<3?'top3':'')+'">'
+      +'<td class="rank">'+(i+1)+'</td>'
+      +'<td class="nick">'+esc(s.nickname)+'</td>'
+      +'<td>'+esc(s.class)+'</td>'
+      +'<td class="avg">'+(s.overall??'—')+'</td>';
+    SUMMARY_CATS.forEach(cat=>{
+      html+='<td>'+(s.catAvg[cat]!=null?s.catAvg[cat]:'–')+'</td>';
+    });
+    html+='</tr>';
+  });
+  matBox.innerHTML=html+'</table>';
+}
+
+/* ---- 누적 현황 ---- */
+function renderCumulative(){
+  document.getElementById('pub-title').textContent=pubTab;
+  const isBlack=(pubTab==='S+ BLACK');
+  document.getElementById('pub-note').innerHTML=
+    (isBlack?'<span class="black-note">SPECIAL COURSE · 일부 학생 참여 특강</span><br>':'')
+    +'CUMULATIVE · 누적 평균 순 · 닉네임 기준 · 카드를 누르면 미션별 정오표';
+  renderResources(pubTab==='9모대비');
+  const matBox=document.getElementById('pub-matrix');
+  if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
+  const rows=filteredRows();
+  if(!rows.length){matBox.innerHTML='<div class="empty">아직 등록된 기록이 없습니다.</div>';return;}
+
+  const {missions,students}=aggregate(rows);
+
+  let html='<table class="matrix"><tr>'
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>CLASS</th><th>누적 평균</th>';
+  missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
+  html+='</tr>';
+  students.forEach((s,i)=>{
+    html+='<tr class="'+(i<3?'top3':'')+'">'
+      +'<td class="rank">'+(i+1)+'</td>'
+      +'<td class="nick">'+esc(s.nickname)+'</td>'
+      +'<td>'+esc(s.class)+'</td>'
+      +'<td class="avg">'+(s.avg??'—')+'</td>';
+    missions.forEach(m=>{
+      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
+    });
+    html+='</tr>';
+  });
+  matBox.innerHTML=html+'</table>';
+}
+function shortName(m){return m.length>10?m.slice(0,10)+'…':m;}
+
+/* ---- 9모대비 자료: 문제 이미지 + 해설 영상 ---- */
+function ytEmbed(url){
+  if(!url)return null;
+  let m=url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if(m)return {id:m[1],shorts:true};
+  m=url.match(/youtu\.be\/([\w-]{6,})/);
+  if(m)return {id:m[1],shorts:false};
+  m=url.match(/[?&]v=([\w-]{6,})/);
+  if(m)return {id:m[1],shorts:false};
+  return null;
+}
+function norm(s){return String(s||'').replace(/\s+/g,'').toLowerCase();}
+function resMatches(r,mission){
+  const a=norm(r.year),b=norm(mission);
+  if(!a||!b)return false;
+  return a===b||a.indexOf(b)!==-1||b.indexOf(a)!==-1;
+}
+function resCard(r,withVideo){
+  const yt=withVideo?ytEmbed(r.video):null;
+  return '<div class="res-card">'
+    +'<div class="res-head">'
+    +(r.num?'<span class="num">'+esc(r.num)+'번</span>':'')
+    +'<span class="yu">'+esc(r.year)+'</span>'
+    +(r.unit?'<span class="unit">'+esc(r.unit)+'</span>':'')
+    +'</div>'
+    +(r.img?'<a class="res-img" href="'+esc(r.img)+'" target="_blank" rel="noopener"><img src="'+esc(r.img)+'" alt="문제 이미지" loading="lazy"></a>':'')
+    +(yt?'<div class="res-video'+(yt.shorts?' shorts':'')+'"><iframe src="https://www.youtube.com/embed/'+esc(yt.id)+'" title="해설 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>':'')
+    +(r.note&&withVideo?'<div class="res-note"><b>NOTE</b>'+esc(r.note)+'</div>':'')
+    +'</div>';
+}
+/* 누적 현황: 이미지만 (양이 많아져도 가볍게) */
+function renderResources(showFor){
+  const box=document.getElementById('pub-resources');
+  if(!showFor){box.innerHTML='';return;}
+  const list=(publicResources&&publicResources[pubCohort])||[];
+  if(!list.length){box.innerHTML='';return;}
+
+  let html='<div class="res-title">9월 모의고사 <em style="font-style:italic;color:var(--gold)">자료실</em></div>'
+    +'<div class="res-sub">MOCK EXAM ARCHIVE · 해설 영상은 위 카드에서 시험을 선택하면 정오표 아래에 함께 표시됩니다</div>'
+    +'<div class="res-grid">';
+  list.forEach(r=>{html+=resCard(r,false);});
+  box.innerHTML=html+'</div>';
+}
+/* 미션 상세: 시험명과 일치하는 자료만 영상 포함 표시 */
+function renderDetailResources(){
+  const box=document.getElementById('detail-resources');
+  if(pubTab!=='9모대비'){box.innerHTML='';return;}
+  const list=((publicResources&&publicResources[pubCohort])||[]).filter(r=>resMatches(r,pubMission));
+  if(!list.length){box.innerHTML='';return;}
+
+  let html='<div class="res-title">'+esc(pubMission)+' <em style="font-style:italic;color:var(--gold)">문제 & 해설</em></div>'
+    +'<div class="res-sub">PROBLEM & SOLUTION · 문제를 다시 풀어보고 해설 영상으로 확인하세요</div>'
+    +'<div class="res-grid">';
+  list.forEach(r=>{html+=resCard(r,true);});
+  box.innerHTML=html+'</div>';
+}
+
+/* ---- 미션별 정오표 ---- */
+function renderMissionDetail(){
+  document.getElementById('detail-title').textContent=pubMission;
+  renderDetailResources();
+  let rows=filteredRows().filter(r=>r.mission===pubMission);
+  rows=rows.slice().sort((a,b)=>(b.score??-1)-(a.score??-1));
+  document.getElementById('detail-sub').textContent='ITEM ANALYSIS · '+rows.length+'명 · 점수 높은 순';
+
+  const box=document.getElementById('detail-table');
+  if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
+  const cuts=cutsFor(pubMission);
+  const hasGrade=rows.some(r=>r.grade!=null&&r.grade!=='');
+  const nQ=Math.max(...rows.map(r=>r.items.length),0);
+
+  // 문항별 정답률 (표시 중인 학생들 기준)
+  const rates=[];
+  for(let q=0;q<nQ;q++){
+    let ok=0,tot=0;
+    rows.forEach(r=>{const v=r.items[q];if(v===1){ok++;tot++;}else if(v===2){tot++;}});
+    rates.push(tot?Math.round(ok/tot*100):null);
+  }
+
+  let html=cutStrip(cuts)
+    +'<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>반</th><th>점수</th>'
+    +(hasGrade?'<th>등급</th>':'');
+  for(let q=1;q<=nQ;q++){
+    html+='<th>'+q+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
+  }
+  html+='</tr>';
+  rows.forEach(r=>{
+    html+='<tr><td class="nick">'+esc(r.nickname)+'</td>'
+      +'<td>'+esc(r.class)+'</td>'
+      +'<td class="score">'+(r.score??'—')+'</td>'
+      +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'');
+    for(let q=0;q<nQ;q++){
+      const v=r.items[q];
+      const cls=v===1?'ok':v===2?'no':'na';
+      html+='<td><span class="q-cell '+cls+'">'+(v===1?'○':v===2?'✕':'·')+'</span></td>';
+    }
+    html+='</tr>';
+  });
+  box.innerHTML=html+'</table>';
+}
+
+/* ================= 개인 대시보드 ================= */
+function myAcc(list){
+  let ok=0,tot=0;
+  list.forEach(r=>r.items.forEach(v=>{if(v!=null){tot++;if(v===1)ok++;}}));
+  return tot?Math.round(ok/tot*100):null;
+}
+function renderPersonal(){
+  const s=me.student, rec=me.records, avgMap=me.classAvg||{};
+  document.getElementById('me-nick').textContent=s.name;
+  const coh=COHORT_LABELS[s.cohort]||null;
+  document.getElementById('me-meta').innerHTML='<b>'+esc(s.class)+'</b> · '+esc(s.school)
+    +(coh?' · '+esc(coh.name):'')+' · SUMMER 2026';
+  document.getElementById('ov-class').textContent=s.class;
+
+  /* ---- 정답률 비교 (세로 막대) ---- */
+  const allRecs=SHEETS.flatMap(k=>rec[k]||[]);
+  const myTotalAcc=myAcc(allRecs);
+  let clsOk=0,clsTot=0;
+  SHEETS.forEach(k=>{
+    if(avgMap[k]){clsOk+=avgMap[k].__classOk||0;clsTot+=avgMap[k].__classTot||0;}
+  });
+  const clsTotalAcc=clsTot?Math.round(clsOk/clsTot*100):null;
+
+  const myRetryAcc=myAcc(rec['오답미션']||[]);
+  const rMap=avgMap['오답미션']||{};
+  const clsRetryAcc=rMap.__classTot?Math.round((rMap.__classOk||0)/rMap.__classTot*100):null;
+
+  drawBars('chart-acc',['전체 정답률','오답미션 정답률'],[myTotalAcc,myRetryAcc],[clsTotalAcc,clsRetryAcc],'%');
+  const d1=(myTotalAcc!=null&&clsTotalAcc!=null)?myTotalAcc-clsTotalAcc:null;
+  const d2=(myRetryAcc!=null&&clsRetryAcc!=null)?myRetryAcc-clsRetryAcc:null;
+  document.getElementById('acc-cap').innerHTML='반평균 대비 — 전체 '
+    +(d1==null?'—':'<b class="'+(d1>=0?'up':'down')+'">'+(d1>=0?'+':'')+d1+'%p</b>')
+    +' · 오답미션 '
+    +(d2==null?'—':'<b class="'+(d2>=0?'up':'down')+'">'+(d2>=0?'+':'')+d2+'%p</b>');
+
+  /* ---- Overview 오각형 (5개 종목 누적) ---- */
+  const catMine=[],catCls=[];
+  SHEETS.forEach(k=>{
+    catMine.push(mean((rec[k]||[]).map(r=>r.score).filter(v=>v!=null)));
+    const a=avgMap[k]?Object.keys(avgMap[k]).filter(m=>m.indexOf('__')!==0).map(m=>avgMap[k][m]):[];
+    catCls.push(mean(a));
+  });
+  drawRadar('chart-overview',SHEETS,catMine,catCls);
+
+  /* ---- 종목별 세부 블록 ---- */
+  const wrap=document.getElementById('me-blocks');
+  wrap.innerHTML='';
+  SHEETS.forEach((k,ki)=>{
+    const list=rec[k]||[];
+    const blk=document.createElement('div');
+    blk.className='block';
+
+    let html='<div class="block-head"><h2>'+k+'</h2><span class="en">'+SHEET_EN[k]+'</span></div>';
+
+    if(k==='진도미션'&&list.length){
+      const acc=myAcc(list);
+      html+='<div class="mini-stats">'
+        +'<div class="mini-stat mint"><div class="k">진도 정답률</div><div class="v">'+(acc??'—')+'<small>%</small></div></div>'
+        +'</div>';
+    }
+
+    if(!list.length){
+      html+='<div class="empty">아직 기록이 없습니다.</div>';
+      blk.innerHTML=html;
+      wrap.appendChild(blk);
+      return;
+    }
+
+    const cid='chart-'+ki;
+    html+='<div class="chart-box"><h3>MY SCORE vs '+esc(s.class)+' AVG</h3>'
+      +'<div class="cap">미션별 내 점수(민트) vs '+esc(s.class)+'반 평균(핑크)</div>'
+      +'<div class="wrap"><canvas id="'+cid+'"></canvas></div></div>';
+
+    html+='<div class="ia-title">ITEM ANALYSIS · 문항별 정오 <span style="color:var(--pink-deep)">(번호 아래 = 반 문항별 정답률)</span></div><div class="ia-paper">';
+    const itemAccMap=(avgMap[k]&&avgMap[k].__itemAcc)||{};
+    list.forEach(r=>{
+      const nQ=r.items.filter(v=>v!=null).length;
+      const clsAvg=avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null;
+      const diff=(r.score!=null&&clsAvg!=null)?r1(r.score-clsAvg):null;
+      const qRates=itemAccMap[r.mission]||[];
+      let chips='';
+      r.items.forEach((v,i)=>{
+        if(v==null)return;
+        const rate=qRates[i];
+        chips+='<span class="chip-q '+(v===1?'ok':'no')+'"><b>'+(i+1)+'</b>'
+          +(rate!=null?'<small>'+rate+'%</small>':'')+'</span>';
+      });
+      html+='<div class="ia-row">'
+        +'<span class="ia-name">'+esc(r.mission)+' <small>('+nQ+'문항'+(r.nickname?' · '+esc(r.nickname):'')+')</small></span>'
+        +'<span class="ia-score">'+(r.score??'—')+'<small> 점'
+        +(clsAvg!=null?' · 반평균 '+clsAvg+(diff!=null?(diff>=0?' (+':' (')+diff+')':''):'')+'</small>'
+        +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
+        +(chips?'<span class="ia-chips">'+chips+'</span>':'')
+        +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
+        +'</div>';
+    });
+    html+='</div>';
+
+    blk.innerHTML=html;
+    wrap.appendChild(blk);
+    const clsData=list.map(r=>avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null);
+    drawBars(cid,list.map(r=>r.mission),list.map(r=>r.score),clsData);
+  });
+}
+function drawBars(canvasId,labels,mine,cls,unit){
+  if(charts[canvasId])charts[canvasId].destroy();
+  const u=unit||'';
+  charts[canvasId]=new Chart(document.getElementById(canvasId),{
+    type:'bar',
+    plugins:[valueLabel],
+    data:{labels:labels,datasets:[
+      {label:'내 점수',data:mine,backgroundColor:cssColor('--mint'),borderColor:cssColor('--mint-deep'),borderWidth:1.5,maxBarThickness:38,labelColor:cssColor('--mint-deep'),labelUnit:u},
+      {label:'반 평균',data:cls,backgroundColor:cssColor('--pink'),borderColor:cssColor('--pink-deep'),borderWidth:1.5,maxBarThickness:38,labelColor:cssColor('--pink-deep'),labelUnit:u}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'top',labels:{font:{family:'Noto Sans KR',size:11},boxWidth:12}}},
+      scales:{
+        y:{min:0,max:100,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+        x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:10},maxRotation:45}}
+      }
+    }
+  });
+}
+function drawRadar(canvasId,labels,mine,cls){
+  if(charts[canvasId])charts[canvasId].destroy();
+  charts[canvasId]=new Chart(document.getElementById(canvasId),{
+    type:'radar',
+    data:{labels:labels,datasets:[
+      {label:'내 점수',data:mine,borderColor:cssColor('--mint-deep'),backgroundColor:'rgba(127,200,180,.28)',pointBackgroundColor:cssColor('--mint-deep'),pointRadius:3.5,borderWidth:2},
+      {label:'반 평균',data:cls,borderColor:cssColor('--pink-deep'),backgroundColor:'rgba(229,139,164,.22)',pointBackgroundColor:cssColor('--pink-deep'),pointRadius:3.5,borderWidth:2}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{family:'Noto Sans KR',size:11},boxWidth:12}}},
+      scales:{
+        r:{
+          min:0,max:100,
+          ticks:{stepSize:20,font:{family:'Noto Sans KR',size:9},backdropColor:'transparent',color:'rgba(26,26,26,.4)'},
+          grid:{color:'rgba(26,26,26,.09)'},
+          angleLines:{color:'rgba(26,26,26,.09)'},
+          pointLabels:{font:{family:'Noto Sans KR',size:11,weight:'700'},color:'#1A1A1A'}
+        }
+      }
+    }
+  });
+}
+
+/* ---------- 시작: 랜딩이 메인, 데이터는 백그라운드 로드 ---------- */
+buildPubTabs();
+const dataPromise = loadPublic();
 </script>
 </body>
 </html>
