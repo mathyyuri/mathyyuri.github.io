@@ -199,11 +199,36 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .ia-comment{width:100%;font-family:var(--kserif);font-size:12.5px;line-height:1.65;color:rgba(26,26,26,.78)}
 .ia-comment b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
+/* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 @media(min-width:900px){
-  .section-pad{padding:16px 3vw 60px}
-  .paper{padding:28px 32px}
+  /* ① 콘텐츠 최대폭 1280px 중앙 정렬 (배경은 화면 끝까지 유지) */
+  :root{--page-pad:max(4vw,calc((100vw - 1280px)/2))}
+  .topbar,.cohort-bar,.tabbar,.chips,.card-rail,.section-pad,.me-hero,.block{
+    padding-left:var(--page-pad);
+    padding-right:var(--page-pad);
+  }
 
-  /* 누적현황 매트릭스 — 화면 가득 채우되 행 높이·간격 균일화 */
+  /* ② 상단 요소 데스크톱 크기 */
+  .cohort-bar{padding-top:20px;gap:10px}
+  .cohort-btn{padding:12px 26px;font-size:14px}
+  .cohort-btn small{font-size:9.5px;margin-top:3px}
+  .tab{padding:17px 20px;font-size:14px}
+  .chips{padding-top:20px;gap:10px}
+  .chip{padding:8px 24px;font-size:13px}
+  .card-rail{gap:12px;padding-top:18px;padding-bottom:10px}
+  .sum-card{min-width:150px;padding:16px 18px 13px}
+  .sum-card .k{font-size:13px;margin-bottom:6px}
+  .sum-card .v{font-size:26px}
+  .sum-card .n{font-size:10px;margin-top:4px}
+
+  /* ③ 본문 여백 */
+  .section-pad{padding-top:18px;padding-bottom:60px}
+  .paper{padding:30px 36px}
+  .big-label{margin-bottom:5px}
+  .small-note{margin-bottom:16px}
+  .cut-strip{padding:13px 18px;font-size:14px;gap:8px 18px;margin-bottom:18px}
+
+  /* ④ 누적현황 매트릭스 */
   table.matrix{width:100%;font-size:14px}
   table.matrix th{font-size:11px;padding:12px 10px}
   table.matrix td{padding:12px 10px}
@@ -211,7 +236,7 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
   table.matrix th:first-child{width:64px}
   table.matrix td.avg{font-size:16px}
 
-  /* 정오표(OMR) — 매트릭스와 같은 행 리듬으로 간격 확대 */
+  /* ⑤ 정오표(OMR) */
   table.omr{width:100%;font-size:12px}
   table.omr th{font-size:10px;padding:9px 4px}
   table.omr th .th-rate{font-size:9px}
@@ -222,10 +247,11 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
   .q-cell{width:24px;height:24px;font-size:11px}
   .legend-row{font-size:12px}
 
-  /* 개인 대시보드 정오 칩 */
+  /* ⑥ 개인 대시보드 */
   .chip-q{padding:4px 0 3px}
   .chip-q b{font-size:11px}
   .chip-q small{font-size:9px}
+  .chart-box .wrap{height:280px}
 }
 .loading{position:fixed;inset:0;background:rgba(251,248,241,.9);display:flex;align-items:center;justify-content:center;z-index:99;font-family:var(--serif);font-style:italic;font-size:22px;letter-spacing:.1em;color:var(--gold)}
 footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;letter-spacing:.28em;text-align:center;margin-top:44px;color:var(--gold)}
