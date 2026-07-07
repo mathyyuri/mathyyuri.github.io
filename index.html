@@ -198,7 +198,35 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .chip-q.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
 .ia-comment{width:100%;font-family:var(--kserif);font-size:12.5px;line-height:1.65;color:rgba(26,26,26,.78)}
 .ia-comment b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
+/* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
+@media(min-width:900px){
+  .section-pad{padding:16px 3vw 60px}
+  .paper{padding:28px 32px}
 
+  /* 누적현황 매트릭스 — 화면 가득 채우되 행 높이·간격 균일화 */
+  table.matrix{width:100%;font-size:14px}
+  table.matrix th{font-size:11px;padding:12px 10px}
+  table.matrix td{padding:12px 10px}
+  table.matrix th.nick,table.matrix td.nick{width:180px;padding-left:14px}
+  table.matrix th:first-child{width:64px}
+  table.matrix td.avg{font-size:16px}
+
+  /* 정오표(OMR) — 매트릭스와 같은 행 리듬으로 간격 확대 */
+  table.omr{width:100%;font-size:12px}
+  table.omr th{font-size:10px;padding:9px 4px}
+  table.omr th .th-rate{font-size:9px}
+  table.omr td{padding:9px 3px}
+  table.omr td.nick{font-size:13px;width:150px;padding:9px 12px}
+  table.omr td.score{font-size:15px;padding:9px 10px}
+  table.omr td.grade{font-size:14px}
+  .q-cell{width:24px;height:24px;font-size:11px}
+  .legend-row{font-size:12px}
+
+  /* 개인 대시보드 정오 칩 */
+  .chip-q{padding:4px 0 3px}
+  .chip-q b{font-size:11px}
+  .chip-q small{font-size:9px}
+}
 .loading{position:fixed;inset:0;background:rgba(251,248,241,.9);display:flex;align-items:center;justify-content:center;z-index:99;font-family:var(--serif);font-style:italic;font-size:22px;letter-spacing:.1em;color:var(--gold)}
 footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;letter-spacing:.28em;text-align:center;margin-top:44px;color:var(--gold)}
 </style>
