@@ -373,7 +373,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       </div>
       <div class="chart-box">
         <h3>SCORE · 종목별 누적 비교</h3>
-        <div class="cap">5개 종목 누적 평균 — 내 점수(민트) vs <span id="ov-class">반</span> 평균(핑크)</div>
+        <div class="cap">종목별 누적 평균 — 내 점수(민트) vs <span id="ov-class">반</span> 평균(핑크)</div>
         <div class="wrap"><canvas id="chart-overview"></canvas></div>
       </div>
     </div>
@@ -392,8 +392,17 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 
 const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK'];
-const SUMMARY_CATS = ['진도미션','과제미션','오답미션','TEST','9모대비']; // 종합에서 S+ BLACK 제외
-const TAB_LIST = ['종합'].concat(SHEETS);
+/* ---- 기수별 표시 구성 ----
+   2기: 전체 6개 탭 / 3기: 9모대비·S+ BLACK 숨김
+   반 칩: 2기 = S+, S / 3기 = PRISM (명단에 다른 반명이 있으면 자동 추가) */
+const COHORT_SHEETS = {
+  '2': ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK'],
+  '3': ['진도미션','과제미션','오답미션','TEST']
+};
+const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
+function sheetsFor(c){ return COHORT_SHEETS[c] || SHEETS; }
+function catsFor(c){ return sheetsFor(c).filter(k=>k!=='S+ BLACK'); } /* 전체 통계에서 S+ BLACK 제외 */
+function tabListFor(c){ return ['종합'].concat(sheetsFor(c)); }
 const SHEET_EN = {'진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','9모대비':'MOCK 9','S+ BLACK':'BLACK'};
 const COHORT_LABELS = { '2':{name:'대치수학 2기',sub:'고1 · HIGH 1'}, '3':{name:'대치수학 3기',sub:'중3 · MIDDLE 3'} };
 
@@ -522,8 +531,10 @@ async function enterBoard(){
 }
 function buildPubTabs(){
   const bar = document.getElementById('pub-tabs');
-  if(bar.children.length) return;
-  TAB_LIST.forEach(s=>{
+  bar.innerHTML = '';
+  const list = tabListFor(pubCohort);
+  if(list.indexOf(pubTab)===-1) pubTab='종합';
+  list.forEach(s=>{
     const b=document.createElement('button');
     b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===pubTab?' active':'');
     b.textContent=s;
@@ -547,14 +558,16 @@ function renderCohortBar(){
 }
 function setCohort(c){
   pubCohort=c; pubMission=null; pubClass='전체';
+  buildPubTabs();
   renderPublic();
 }
 function renderChips(){
   const box=document.getElementById('pub-chips');
-  // 현재 기수 데이터에 존재하는 반 목록 (모든 카테고리 기준)
+  // 기수별 고정 반 목록 먼저, 데이터에 있는 다른 반명은 뒤에 자동 추가
   const set={},list=[];
+  (COHORT_CLASSES[pubCohort]||[]).forEach(c=>{ if(!set[c]){set[c]=1;list.push(c);} });
   const cd=(publicData&&publicData[pubCohort])||{};
-  SHEETS.forEach(k=>(cd[k]||[]).forEach(r=>{
+  sheetsFor(pubCohort).forEach(k=>(cd[k]||[]).forEach(r=>{
     if(r.class&&!set[r.class]){set[r.class]=1;list.push(r.class);}
   }));
   if(pubClass!=='전체'&&!set[pubClass])pubClass='전체';
@@ -628,7 +641,7 @@ function renderCards(){
     const overall=mean(students.map(s=>s.overall).filter(v=>v!=null))??'—';
     let html='<button class="sum-card active" onclick="void(0)">'
       +'<div class="k">종합 누적 현황</div><div class="v">'+overall+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
-    SUMMARY_CATS.forEach(cat=>{
+    catsFor(pubCohort).forEach(cat=>{
       const rows=((publicData[pubCohort]||{})[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass);
       const avg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
       html+='<button class="sum-card" onclick="jumpTab(\''+cat+'\')">'
@@ -661,8 +674,9 @@ function jumpTab(name){
 /* ---- 종합: 카테고리별 누적 평균 + 전체 랭킹 ---- */
 function aggregateSummary(){
   const cd=(publicData&&publicData[pubCohort])||{};
+  const cats=catsFor(pubCohort);
   const stu={},order=[];
-  SUMMARY_CATS.forEach(cat=>{
+  cats.forEach(cat=>{
     (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(r=>{
       const key=studentKey(r);
       if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,cats:{}};order.push(key);}
@@ -678,7 +692,7 @@ function aggregateSummary(){
     const s=stu[id];
     s.catAvg={};
     const avgs=[];
-    SUMMARY_CATS.forEach(cat=>{
+    cats.forEach(cat=>{
       const a=mean(s.cats[cat]||[]);
       s.catAvg[cat]=a;
       if(a!=null)avgs.push(a);
@@ -689,8 +703,9 @@ function aggregateSummary(){
   return {students};
 }
 function renderSummary(){
+  const sumCats=catsFor(pubCohort);
   document.getElementById('pub-title').textContent='종합';
-  document.getElementById('pub-note').textContent='TOTAL RANKING · 5개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)';
+  document.getElementById('pub-note').textContent='TOTAL RANKING · '+sumCats.length+'개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)';
   renderResources(false);
   const matBox=document.getElementById('pub-matrix');
   if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
@@ -699,7 +714,7 @@ function renderSummary(){
 
   let html='<table class="matrix"><tr>'
     +'<th>RANK</th><th class="nick">NICKNAME</th><th>CLASS</th><th>종합 평균</th>';
-  SUMMARY_CATS.forEach(cat=>{html+='<th>'+esc(cat)+'</th>';});
+  sumCats.forEach(cat=>{html+='<th>'+esc(cat)+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
@@ -707,7 +722,7 @@ function renderSummary(){
       +'<td class="nick">'+esc(s.nickname)+'</td>'
       +'<td>'+esc(s.class)+'</td>'
       +'<td class="avg">'+(s.overall??'—')+'</td>';
-    SUMMARY_CATS.forEach(cat=>{
+    sumCats.forEach(cat=>{
       html+='<td>'+(s.catAvg[cat]!=null?s.catAvg[cat]:'–')+'</td>';
     });
     html+='</tr>';
@@ -864,11 +879,12 @@ function renderPersonal(){
     +(coh?' · '+esc(coh.name):'')+' · SUMMER 2026';
   document.getElementById('ov-class').textContent=s.class;
 
-  /* ---- 정답률 비교 (세로 막대) ---- */
-  const allRecs=SHEETS.flatMap(k=>rec[k]||[]);
+  /* ---- 정답률 비교 (세로 막대) · 전체 통계는 S+ BLACK 제외 ---- */
+  const mySheets=catsFor(s.cohort);
+  const allRecs=mySheets.flatMap(k=>rec[k]||[]);
   const myTotalAcc=myAcc(allRecs);
   let clsOk=0,clsTot=0;
-  SHEETS.forEach(k=>{
+  mySheets.forEach(k=>{
     if(avgMap[k]){clsOk+=avgMap[k].__classOk||0;clsTot+=avgMap[k].__classTot||0;}
   });
   const clsTotalAcc=clsTot?Math.round(clsOk/clsTot*100):null;
@@ -885,19 +901,23 @@ function renderPersonal(){
     +' · 오답미션 '
     +(d2==null?'—':'<b class="'+(d2>=0?'up':'down')+'">'+(d2>=0?'+':'')+d2+'%p</b>');
 
-  /* ---- Overview 오각형 (5개 종목 누적) ---- */
+  /* ---- Overview 레이더 (종목별 누적 · S+ BLACK 제외) ---- */
   const catMine=[],catCls=[];
-  SHEETS.forEach(k=>{
+  mySheets.forEach(k=>{
     catMine.push(mean((rec[k]||[]).map(r=>r.score).filter(v=>v!=null)));
     const a=avgMap[k]?Object.keys(avgMap[k]).filter(m=>m.indexOf('__')!==0).map(m=>avgMap[k][m]):[];
     catCls.push(mean(a));
   });
-  drawRadar('chart-overview',SHEETS,catMine,catCls);
+  drawRadar('chart-overview',mySheets,catMine,catCls);
 
-  /* ---- 종목별 세부 블록 ---- */
+  /* ---- 종목별 세부 블록 (S+ BLACK은 수강 기록이 있는 학생에게만) ---- */
   const wrap=document.getElementById('me-blocks');
   wrap.innerHTML='';
-  SHEETS.forEach((k,ki)=>{
+  const blockSheets=mySheets.slice();
+  if(sheetsFor(s.cohort).indexOf('S+ BLACK')!==-1 && (rec['S+ BLACK']||[]).length){
+    blockSheets.push('S+ BLACK');
+  }
+  blockSheets.forEach((k,ki)=>{
     const list=rec[k]||[];
     const blk=document.createElement('div');
     blk.className='block';
