@@ -781,6 +781,13 @@ function resMatches(r,mission){
   if(!a||!b)return false;
   return a===b||a.indexOf(b)!==-1||b.indexOf(a)!==-1;
 }
+/* 자료 목록: 현재 기수에 등록된 자료가 있으면 그것을, 없으면 전체 자료에서 시험명으로 매칭 (기수 열 없이 사용 가능) */
+function resList(){
+  const pr=publicResources||{};
+  const own=pr[pubCohort]||[];
+  if(own.length) return own;
+  return Object.keys(pr).reduce((a,k)=>a.concat(pr[k]||[]),[]);
+}
 function resCard(r,withVideo){
   const yt=withVideo?ytEmbed(r.video):null;
   return '<div class="res-card">'
@@ -798,7 +805,7 @@ function resCard(r,withVideo){
 function renderResources(showFor){
   const box=document.getElementById('pub-resources');
   if(!showFor){box.innerHTML='';return;}
-  const list=(publicResources&&publicResources[pubCohort])||[];
+  const list=resList();
   if(!list.length){box.innerHTML='';return;}
 
   let html='<div class="res-title">9월 모의고사 <em style="font-style:italic;color:var(--gold)">자료실</em></div>'
@@ -807,11 +814,10 @@ function renderResources(showFor){
   list.forEach(r=>{html+=resCard(r,false);});
   box.innerHTML=html+'</div>';
 }
-/* 미션 상세: 시험명과 일치하는 자료만 영상 포함 표시 */
+/* 미션 상세: 미션명(시험명)이 일치하는 자료를 영상 포함 표시 — 모든 탭 공통 */
 function renderDetailResources(){
   const box=document.getElementById('detail-resources');
-  if(pubTab!=='9모대비'){box.innerHTML='';return;}
-  const list=((publicResources&&publicResources[pubCohort])||[]).filter(r=>resMatches(r,pubMission));
+  const list=resList().filter(r=>resMatches(r,pubMission));
   if(!list.length){box.innerHTML='';return;}
 
   let html='<div class="res-title">'+esc(pubMission)+' <em style="font-style:italic;color:var(--gold)">문제 & 해설</em></div>'
