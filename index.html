@@ -111,10 +111,29 @@ table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color
 .q-cell.ok{background:var(--mint-soft);border-color:var(--mint-deep);color:var(--mint-deep)}
 .q-cell.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
 .q-cell.na{opacity:.3}
+.q-cell.fix{background:rgba(168,133,63,.14);border-color:var(--gold);color:var(--gold)}
+.chip-q.fix{background:rgba(168,133,63,.14);border-color:var(--gold);color:var(--gold)}
+.legend-row .fix i{background:var(--gold)}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0;background:var(--gold-line)}
+.done-cell{font-family:var(--serif);font-weight:700;font-size:12px;color:var(--gold);white-space:nowrap}
+.clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-weight:700;font-size:9px;letter-spacing:.18em;padding:3px 8px;border-radius:3px}
 .legend-row{display:flex;gap:14px;font-size:11px;font-weight:700;letter-spacing:.06em;margin-top:14px}
 .legend-row i{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border-radius:2px}
 .legend-row .ok i{background:var(--mint)}
 .legend-row .no i{background:var(--pink)}
+.legend-row .tri i{background:var(--gold)}
+.q-cell.tri{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+.chip-q.tri{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+/* 반 색상 점 (S+ 골드 · S 민트 · PRISM 핑크) */
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;background:#B9AE97}
+.cdot.csp{background:var(--gold)}
+.cdot.cs{background:var(--mint-deep)}
+.cdot.cprism{background:var(--pink-deep)}
+.cls-legend{display:inline-flex;gap:10px;margin-left:10px;font-weight:700;letter-spacing:.04em}
+.cls-legend span{white-space:nowrap}
+/* 완성도 · CLEAR 배지 */
+table.omr td.comp{font-family:var(--serif);font-weight:900;font-size:12px;padding:4px 8px;color:var(--gold)}
+.clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-size:9px;letter-spacing:.18em;font-weight:900;padding:3px 8px;border-radius:999px}
 
 /* ===== 등급 / 등급컷 ===== */
 table.omr td.grade{font-family:var(--serif);font-weight:900;font-size:13px;padding:4px 8px}
@@ -311,7 +330,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       <div class="big-label" id="detail-title">—</div>
       <div class="small-note" id="detail-sub">—</div>
       <div class="grid-scroll" id="detail-table"></div>
-      <div class="legend-row"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span></div>
+      <div class="legend-row"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span><span class="tri"><i></i>오답완료 △</span></div>
       <div class="res-wrap" id="detail-resources"></div>
     </div>
   </div>
@@ -589,6 +608,27 @@ function missionOrder(rows){
   return list;
 }
 function studentKey(r){ return r.sid!=null ? 's'+r.sid : 'n'+r.nickname; }
+/* 반 색상 점: S+ 골드 · S 민트 · PRISM 핑크 */
+function classDot(cls){
+  const c=String(cls||'').trim().toUpperCase();
+  const key=c==='S+'?'csp':c==='PRISM'?'cprism':c==='S'?'cs':'';
+  return '<i class="cdot '+key+'" title="'+esc(cls)+'"></i>';
+}
+function clsLegendHTML(){
+  const arr=COHORT_CLASSES[pubCohort]||[];
+  if(!arr.length)return '';
+  return '<span class="cls-legend">'+arr.map(function(c){return '<span>'+classDot(c)+esc(c)+'</span>';}).join('')+'</span>';
+}
+/* 완성도: 1(정답)·3(오답완료)=완료, 2(미완료 오답) — (완료 문항)/(전체 문항) */
+function compOf(items){
+  let done=0,tot=0;
+  (items||[]).forEach(function(v){if(v===1||v===2||v===3){tot++;if(v!==2)done++;}});
+  return tot?Math.round(done/tot*100):null;
+}
+function compHTML(c){
+  if(c==null)return '—';
+  return c===100?'<span class="clear-badge">CLEAR</span>':c+'%';
+}
 function aggregate(rows){
   const missions=missionOrder(rows);
   const stu={},order=[];
@@ -705,7 +745,7 @@ function aggregateSummary(){
 function renderSummary(){
   const sumCats=catsFor(pubCohort);
   document.getElementById('pub-title').textContent='종합';
-  document.getElementById('pub-note').textContent='TOTAL RANKING · '+sumCats.length+'개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)';
+  document.getElementById('pub-note').innerHTML='TOTAL RANKING · '+sumCats.length+'개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)'+clsLegendHTML();
   renderResources(false);
   const matBox=document.getElementById('pub-matrix');
   if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
@@ -713,14 +753,13 @@ function renderSummary(){
   if(!students.length){matBox.innerHTML='<div class="empty">아직 등록된 기록이 없습니다.</div>';return;}
 
   let html='<table class="matrix"><tr>'
-    +'<th>RANK</th><th class="nick">NICKNAME</th><th>CLASS</th><th>종합 평균</th>';
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>종합 평균</th>';
   sumCats.forEach(cat=>{html+='<th>'+esc(cat)+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
       +'<td class="rank">'+(i+1)+'</td>'
-      +'<td class="nick">'+esc(s.nickname)+'</td>'
-      +'<td>'+esc(s.class)+'</td>'
+      +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
       +'<td class="avg">'+(s.overall??'—')+'</td>';
     sumCats.forEach(cat=>{
       html+='<td>'+(s.catAvg[cat]!=null?s.catAvg[cat]:'–')+'</td>';
@@ -736,7 +775,7 @@ function renderCumulative(){
   const isBlack=(pubTab==='S+ BLACK');
   document.getElementById('pub-note').innerHTML=
     (isBlack?'<span class="black-note">SPECIAL COURSE · 일부 학생 참여 특강</span><br>':'')
-    +'CUMULATIVE · 누적 평균 순 · 닉네임 기준 · 카드를 누르면 미션별 정오표';
+    +'CUMULATIVE · 누적 평균 순 · 닉네임 기준 · 카드를 누르면 미션별 정오표'+clsLegendHTML();
   renderResources(pubTab==='9모대비');
   const matBox=document.getElementById('pub-matrix');
   if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
@@ -746,14 +785,13 @@ function renderCumulative(){
   const {missions,students}=aggregate(rows);
 
   let html='<table class="matrix"><tr>'
-    +'<th>RANK</th><th class="nick">NICKNAME</th><th>CLASS</th><th>누적 평균</th>';
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>누적 평균</th>';
   missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
       +'<td class="rank">'+(i+1)+'</td>'
-      +'<td class="nick">'+esc(s.nickname)+'</td>'
-      +'<td>'+esc(s.class)+'</td>'
+      +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
       +'<td class="avg">'+(s.avg??'—')+'</td>';
     missions.forEach(m=>{
       html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
@@ -845,26 +883,26 @@ function renderMissionDetail(){
   const rates=[];
   for(let q=0;q<nQ;q++){
     let ok=0,tot=0;
-    rows.forEach(r=>{const v=r.items[q];if(v===1){ok++;tot++;}else if(v===2){tot++;}});
+    rows.forEach(r=>{const v=r.items[q];if(v===1){ok++;tot++;}else if(v===2||v===3){tot++;}});
     rates.push(tot?Math.round(ok/tot*100):null);
   }
 
   let html=cutStrip(cuts)
-    +'<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>반</th><th>점수</th>'
+    +'<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th><th>완성도</th>'
     +(hasGrade?'<th>등급</th>':'');
   for(let q=1;q<=nQ;q++){
     html+='<th>'+q+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
   }
   html+='</tr>';
   rows.forEach(r=>{
-    html+='<tr><td class="nick">'+esc(r.nickname)+'</td>'
-      +'<td>'+esc(r.class)+'</td>'
+    html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
       +'<td class="score">'+(r.score??'—')+'</td>'
+      +'<td class="comp">'+compHTML(compOf(r.items))+'</td>'
       +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'');
     for(let q=0;q<nQ;q++){
       const v=r.items[q];
-      const cls=v===1?'ok':v===2?'no':'na';
-      html+='<td><span class="q-cell '+cls+'">'+(v===1?'○':v===2?'✕':'·')+'</span></td>';
+      const cls=v===1?'ok':v===2?'no':v===3?'tri':'na';
+      html+='<td><span class="q-cell '+cls+'">'+(v===1?'○':v===2?'✕':v===3?'△':'·')+'</span></td>';
     }
     html+='</tr>';
   });
@@ -955,18 +993,21 @@ function renderPersonal(){
       const nQ=r.items.filter(v=>v!=null).length;
       const clsAvg=avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null;
       const diff=(r.score!=null&&clsAvg!=null)?r1(r.score-clsAvg):null;
+      const comp=compOf(r.items);
       const qRates=itemAccMap[r.mission]||[];
       let chips='';
       r.items.forEach((v,i)=>{
         if(v==null)return;
         const rate=qRates[i];
-        chips+='<span class="chip-q '+(v===1?'ok':'no')+'"><b>'+(i+1)+'</b>'
+        chips+='<span class="chip-q '+(v===1?'ok':v===2?'no':'tri')+'"><b>'+(i+1)+'</b>'
           +(rate!=null?'<small>'+rate+'%</small>':'')+'</span>';
       });
       html+='<div class="ia-row">'
         +'<span class="ia-name">'+esc(r.mission)+' <small>('+nQ+'문항'+(r.nickname?' · '+esc(r.nickname):'')+')</small></span>'
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'
-        +(clsAvg!=null?' · 반평균 '+clsAvg+(diff!=null?(diff>=0?' (+':' (')+diff+')':''):'')+'</small>'
+        +(clsAvg!=null?' · 반평균 '+clsAvg+(diff!=null?(diff>=0?' (+':' (')+diff+')':''):'')
+        +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
+        +(comp===100?' <span class="clear-badge">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
