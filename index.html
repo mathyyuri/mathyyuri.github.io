@@ -124,16 +124,37 @@ table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color
 .legend-row .tri i{background:var(--gold)}
 .q-cell.tri{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 .chip-q.tri{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
-/* 반 색상 점 (S+ 골드 · S 민트 · PRISM 핑크) */
-.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;background:#B9AE97}
-.cdot.csp{background:var(--gold)}
-.cdot.cs{background:var(--mint-deep)}
-.cdot.cprism{background:var(--pink-deep)}
-.cls-legend{display:inline-flex;gap:10px;margin-left:10px;font-weight:700;letter-spacing:.04em}
-.cls-legend span{white-space:nowrap}
-/* 완성도 · CLEAR 배지 */
+/* 반 배지 (S+ 골드 · S 민트 · PRISM 핑크) — 반명이 안에 들어감 */
+.ctag{display:inline-block;font-family:var(--serif);font-size:8.5px;letter-spacing:.08em;font-weight:900;color:#fff;background:#B9AE97;padding:2px 8px;border-radius:999px;margin-right:7px;vertical-align:1px}
+.ctag.csp{background:var(--gold)}
+.ctag.cs{background:var(--mint-deep)}
+.ctag.cprism{background:var(--pink-deep)}
+/* 완성도 · CLEAR 배지 (반별 색상) */
 table.omr td.comp{font-family:var(--serif);font-weight:900;font-size:12px;padding:4px 8px;color:var(--gold)}
 .clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-size:9px;letter-spacing:.18em;font-weight:900;padding:3px 8px;border-radius:999px}
+.clear-badge.csp{background:var(--gold)}
+.clear-badge.cs{background:var(--mint-deep)}
+.clear-badge.cprism{background:var(--pink-deep)}
+/* CLEAR 도장 스탬프 (개인 대시보드) */
+.stamp{position:absolute;right:8px;top:6px;transform:rotate(-11deg);font-family:var(--serif);font-weight:900;font-size:14px;letter-spacing:.24em;color:var(--mint-deep);border:3px double var(--mint-deep);border-radius:7px;padding:3px 9px 3px 11px;opacity:.82;pointer-events:none;background:rgba(255,255,255,.55)}
+.stamp.csp{color:var(--gold);border-color:var(--gold)}
+.stamp.cprism{color:var(--pink-deep);border-color:var(--pink-deep)}
+/* 누적표 셀 안 미니 CLEAR */
+.mini-clear{display:inline-block;font-family:var(--serif);font-size:7.5px;font-weight:900;letter-spacing:.16em;color:var(--mint-deep);border:1px solid var(--mint-deep);border-radius:999px;padding:1px 6px;margin-top:3px;line-height:1.3}
+.mini-clear.csp{color:var(--gold);border-color:var(--gold)}
+.mini-clear.cprism{color:var(--pink-deep);border-color:var(--pink-deep)}
+/* 종합 시상대 (칭호 카드) */
+.podium{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.p-card{flex:1;min-width:150px;border:1px solid var(--gold-line);border-radius:4px;background:#fff;text-align:center;padding:14px 10px 12px}
+.p-card.r1{background:var(--ink);border-color:var(--ink)}
+.p-card.r1 .p-sub,.p-card.r1 .p-nick{color:var(--cream)}
+.p-card.r1 .p-score{color:var(--mint)}
+.p-title{font-family:var(--serif);font-size:9.5px;letter-spacing:.26em;font-weight:900;color:var(--gold)}
+.p-sub{font-family:var(--kserif);font-size:11px;font-weight:700;margin:3px 0 7px;color:var(--ink)}
+.p-nick{font-family:var(--kserif);font-weight:700;font-size:15px;color:var(--ink)}
+.p-score{font-family:var(--serif);font-weight:900;font-size:20px;margin-top:4px;color:var(--mint-deep)}
+.p-score small{font-size:.5em;font-family:var(--sans);font-weight:600}
+.p-card.cmr .p-title{color:var(--pink-deep)}
 
 /* ===== 등급 / 등급컷 ===== */
 table.omr td.grade{font-family:var(--serif);font-weight:900;font-size:13px;padding:4px 8px}
@@ -201,7 +222,7 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 
 .ia-title{font-family:var(--serif);font-size:10px;letter-spacing:.26em;font-weight:700;margin:4px 0 4px;color:var(--gold)}
 .ia-paper{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:4px 14px;margin-bottom:8px}
-.ia-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--gold-line)}
+.ia-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--gold-line);position:relative}
 .ia-row:last-child{border-bottom:none}
 .ia-name{font-family:var(--kserif);font-weight:700;font-size:13px;min-width:140px}
 .ia-name small{font-weight:400;font-size:11px;color:rgba(26,26,26,.45)}
@@ -608,35 +629,45 @@ function missionOrder(rows){
   return list;
 }
 function studentKey(r){ return r.sid!=null ? 's'+r.sid : 'n'+r.nickname; }
-/* 반 색상 점: S+ 골드 · S 민트 · PRISM 핑크 */
-function classDot(cls){
+/* 반 키: S+ → csp · S → cs · PRISM → cprism */
+function clsKey(cls){
   const c=String(cls||'').trim().toUpperCase();
-  const key=c==='S+'?'csp':c==='PRISM'?'cprism':c==='S'?'cs':'';
-  return '<i class="cdot '+key+'" title="'+esc(cls)+'"></i>';
+  return c==='S+'?'csp':c==='PRISM'?'cprism':c==='S'?'cs':'';
+}
+/* 반명 컬러 배지: 색 안에 반 이름이 들어감 */
+function classDot(cls){
+  if(!cls) return '';
+  return '<span class="ctag '+clsKey(cls)+'">'+esc(cls)+'</span>';
 }
 function clsLegendHTML(){
-  const arr=COHORT_CLASSES[pubCohort]||[];
-  if(!arr.length)return '';
-  return '<span class="cls-legend">'+arr.map(function(c){return '<span>'+classDot(c)+esc(c)+'</span>';}).join('')+'</span>';
+  return ''; // 배지 안에 반명이 표시되므로 별도 범례 불필요
 }
-/* 완성도: 1(정답)·3(오답완료)=완료, 2(미완료 오답) — (완료 문항)/(전체 문항) */
+/* 완성도: 시트 H열 값을 우선 사용 (전체 문항수 기준으로 시트에서 계산)
+   H열이 비어 있으면 정오 기록 기반으로 임시 계산 */
 function compOf(items){
   let done=0,tot=0;
   (items||[]).forEach(function(v){if(v===1||v===2||v===3){tot++;if(v!==2)done++;}});
   return tot?Math.round(done/tot*100):null;
 }
-function compHTML(c){
+function compValOf(r){
+  const v=parseFloat(String(r.correct==null?'':r.correct).replace('%','').trim());
+  if(!isNaN(v)) return Math.round(v);
+  return compOf(r.items);
+}
+function compHTML(c,cls){
   if(c==null)return '—';
-  return c===100?'<span class="clear-badge">CLEAR</span>':c+'%';
+  return c>=100?'<span class="clear-badge '+clsKey(cls)+'">CLEAR</span>':c+'%';
 }
 function aggregate(rows){
   const missions=missionOrder(rows);
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{}};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{}};order.push(key);}
     stu[key].nickname=r.nickname; // 가장 최근 닉네임
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
+    const cp=compValOf(r);
+    if(cp!=null)stu[key].comps[r.mission]=cp;
   });
   const students=order.map(id=>{
     const s=stu[id];
@@ -742,6 +773,47 @@ function aggregateSummary(){
   }).sort((a,b)=>(b.overall??-1)-(a.overall??-1));
   return {students};
 }
+/* CLEAR MASTER: 완성도 100% 횟수 최다 (동률이면 완성도 합계) */
+function clearMaster(){
+  const cd=(publicData&&publicData[pubCohort])||{};
+  const map={},order=[];
+  catsFor(pubCohort).forEach(function(cat){
+    (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(function(r){
+      const cp=compValOf(r);
+      if(cp==null)return;
+      const k=studentKey(r);
+      if(!map[k]){map[k]={nickname:r.nickname,class:r.class,clears:0,sum:0};order.push(k);}
+      map[k].nickname=r.nickname;
+      if(cp>=100)map[k].clears++;
+      map[k].sum+=cp;
+    });
+  });
+  let best=null;
+  order.forEach(function(k){
+    const s=map[k];
+    if(!best||s.clears>best.clears||(s.clears===best.clears&&s.sum>best.sum))best=s;
+  });
+  return (best&&best.clears>0)?best:null;
+}
+function podiumHTML(students){
+  if(!students.length)return '';
+  const tt=[['DIAMOND','최우수'],['GOLD','우수'],['SILVER','모범']];
+  let pod='';
+  students.slice(0,3).forEach(function(s,i){
+    pod+='<div class="p-card r'+(i+1)+'"><div class="p-title">◆ '+tt[i][0]+'</div>'
+      +'<div class="p-sub">'+tt[i][1]+'</div>'
+      +'<div class="p-nick">'+classDot(s.class)+esc(s.nickname)+'</div>'
+      +'<div class="p-score">'+(s.overall??'—')+'<small>점</small></div></div>';
+  });
+  const cm=clearMaster();
+  if(cm){
+    pod+='<div class="p-card cmr"><div class="p-title">◆ CLEAR MASTER</div>'
+      +'<div class="p-sub">오답완성왕</div>'
+      +'<div class="p-nick">'+classDot(cm.class)+esc(cm.nickname)+'</div>'
+      +'<div class="p-score">'+cm.clears+'<small>회 CLEAR</small></div></div>';
+  }
+  return '<div class="podium">'+pod+'</div>';
+}
 function renderSummary(){
   const sumCats=catsFor(pubCohort);
   document.getElementById('pub-title').textContent='종합';
@@ -766,7 +838,7 @@ function renderSummary(){
     });
     html+='</tr>';
   });
-  matBox.innerHTML=html+'</table>';
+  matBox.innerHTML=podiumHTML(students)+html+'</table>';
 }
 
 /* ---- 누적 현황 ---- */
@@ -794,7 +866,10 @@ function renderCumulative(){
       +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
       +'<td class="avg">'+(s.avg??'—')+'</td>';
     missions.forEach(m=>{
-      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
+      const cp=s.comps[m];
+      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')
+        +(cp!=null&&cp>=100?'<div><span class="mini-clear '+clsKey(s.class)+'">CLEAR</span></div>':'')
+        +'</td>';
     });
     html+='</tr>';
   });
@@ -897,7 +972,7 @@ function renderMissionDetail(){
   rows.forEach(r=>{
     html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
       +'<td class="score">'+(r.score??'—')+'</td>'
-      +'<td class="comp">'+compHTML(compOf(r.items))+'</td>'
+      +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>'
       +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'');
     for(let q=0;q<nQ;q++){
       const v=r.items[q];
@@ -993,7 +1068,7 @@ function renderPersonal(){
       const nQ=r.items.filter(v=>v!=null).length;
       const clsAvg=avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null;
       const diff=(r.score!=null&&clsAvg!=null)?r1(r.score-clsAvg):null;
-      const comp=compOf(r.items);
+      const comp=compValOf(r);
       const qRates=itemAccMap[r.mission]||[];
       let chips='';
       r.items.forEach((v,i)=>{
@@ -1007,7 +1082,7 @@ function renderPersonal(){
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'
         +(clsAvg!=null?' · 반평균 '+clsAvg+(diff!=null?(diff>=0?' (+':' (')+diff+')':''):'')
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
-        +(comp===100?' <span class="clear-badge">CLEAR</span>':'')
+        +(comp!=null&&comp>=100?'<span class="stamp '+clsKey(s.class)+'">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
