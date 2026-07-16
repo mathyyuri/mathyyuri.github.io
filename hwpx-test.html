@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HWPX 생성 테스트</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
+    button { font-size: 16px; padding: 10px 20px; cursor: pointer; }
+    #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 16px; font-size: 13px; border-radius: 6px; min-height: 40px; }
+    .ok { color: #1a7f37; }
+    .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>HWPX 생성 테스트</h1>
+  <p>
+    이 페이지는 오답노트 자동 생성 기능을 만들기 전에, 브라우저에서 바로
+    <b>.hwpx</b> 파일을 만들어 실제 한글(한컴오피스)에서 정상적으로 열리는지
+    확인하기 위한 테스트용 페이지입니다.
+  </p>
+  <p>
+    버튼을 누르면 제목, 텍스트, 이미지 1개가 들어간 테스트 파일이 다운로드됩니다.
+    다운로드된 파일을 한글 프로그램으로 열어서 <b>제목/텍스트/이미지가 모두 정상적으로 보이는지</b> 확인해 주세요.
+  </p>
+  <button id="makeBtn">테스트 .hwpx 만들기</button>
+  <div id="log">(아직 생성하지 않음)</div>
+
+  <script type="module">
+    const logEl = document.getElementById('log');
+    const btn = document.getElementById('makeBtn');
+
+    function log(msg, cls) {
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = msg;
+      logEl.appendChild(line);
+    }
+
+    function makeTestImagePng() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 150;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#2b6cb0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('TEST IMAGE', canvas.width / 2, canvas.height / 2);
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
+        }, 'image/png');
+      });
+    }
+
+    btn.addEventListener('click', async () => {
+      logEl.innerHTML = '';
+      btn.disabled = true;
+      try {
+        log('hwpx-ts 라이브러리 불러오는 중...');
+        const { HwpxExporter } = await import('https://esm.sh/hwpx-ts@0.1.0');
+
+        log('테스트 이미지 생성 중...');
+        const imageData = await makeTestImagePng();
+
+        log('문서 조립 중...');
+        const exporter = new HwpxExporter();
+        exporter.addHeading('오답노트 테스트', 1);
+        exporter.addParagraph('학생: 홍길동');
+        exporter.addParagraph('시험지: 테스트 시험지 / 문항: 3, 7, 12');
+        exporter.addImage(imageData, 'test.png');
+
+        log('.hwpx 빌드 중...');
+        const data = await exporter.build();
+
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '오답노트_테스트.hwpx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        log('완료! 다운로드된 파일을 한글에서 열어 확인해 주세요.', 'ok');
+      } catch (e) {
+        console.error(e);
+        log('오류 발생: ' + (e && e.message ? e.message : String(e)), 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
