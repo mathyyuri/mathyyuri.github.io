@@ -256,6 +256,15 @@ function isBlankPara(p) {
   return stripTags(p.text).trim() === '';
 }
 
+// A blank paragraph with no picture in it is pure page-layout filler
+// (these documents commonly reserve a run of empty paragraphs before a
+// question so the next one starts at a nice position on the page) — safe
+// to drop. A blank paragraph that DOES contain a picture is a real
+// diagram belonging to the question and must be kept.
+function isEmptySpacerPara(p) {
+  return isBlankPara(p) && !p.text.includes('<hp:pic');
+}
+
 function detectEndnoteMarkers(xml) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const boundaries = [];
@@ -272,8 +281,11 @@ function detectEndnoteMarkers(xml) {
   });
   const result = new Map();
   for (let k = 0; k < boundaries.length; k++) {
-    const start = k > 0 ? choicesEnd[k - 1] : 0;
+    let start = k > 0 ? choicesEnd[k - 1] : 0;
     const end = choicesEnd[k];
+    // Trim leading spacer-only blanks — this is what created the big gap
+    // between the generated citation line and the actual problem text.
+    while (start < end - 1 && isEmptySpacerPara(paras[start])) start++;
     const blockXml = paras.slice(start, end).map(p => p.text).join('');
     if (blockXml.trim()) result.set(boundaries[k].key, blockXml);
   }
