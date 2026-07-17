@@ -272,6 +272,59 @@ function detectExplicitMarkers(xml) {
   }
   return result;
 }
+// A question's endnote marker and the VISIBLE start of the NEXT question's
+// stem often live in the SAME <hp:p> paragraph — the endnote's run closes
+// with </hp:endNote></hp:ctrl> and is immediately followed, inside that
+// very same run, by plain <hp:t> text that is actually the next question's
+// opening sentence. Treating the whole paragraph as belonging to the
+// question that ends there (the old behavior) silently ate that opening
+// sentence — the next question's block would start one paragraph too late
+// and be missing its stem. This splits that one paragraph in two at the
+// point the endnote closes, so the leftover visible text is carried over
+// to become the first paragraph of the NEXT block instead.
+function splitParagraphAtEndnote(paraXml) {
+  const runs = findTopLevelBlocks(paraXml, 'hp:run');
+  let runIdx = -1;
+  for (let i = 0; i < runs.length; i++) {
+    if (runs[i].text.includes('<hp:endNote')) { runIdx = i; break; }
+  }
+  if (runIdx === -1) return { before: paraXml, after: null };
+  const runXml = runs[runIdx].text;
+  const ctrlCloseIdx = runXml.indexOf('</hp:ctrl>');
+  const enCloseIdx = runXml.indexOf('</hp:endNote>');
+  let cut = -1;
+  if (ctrlCloseIdx !== -1 && ctrlCloseIdx > enCloseIdx) cut = ctrlCloseIdx + '</hp:ctrl>'.length;
+  else if (enCloseIdx !== -1) cut = enCloseIdx + '</hp:endNote>'.length;
+  if (cut === -1) return { before: paraXml, after: null };
+
+  const runOpenMatch = runXml.match(/^<hp:run\b[^>]*>/);
+  const runOpen = runOpenMatch ? runOpenMatch[0] : '<hp:run>';
+  const beforeRunInner = runXml.slice(runOpen.length, cut);
+  const afterRunInner = runXml.slice(cut, runXml.length - '</hp:run>'.length);
+
+  const pOpenMatch = paraXml.match(/^<hp:p\b[^>]*>/);
+  const pOpen = pOpenMatch ? pOpenMatch[0] : '<hp:p>';
+  const idMatch = pOpen.match(/\bid="(\d+)"/);
+  const restId = idMatch ? String(Number(idMatch[1]) + 1) : '0';
+  const pOpenRest = pOpen.replace(/\bid="\d+"/, `id="${restId}"`);
+
+  // A stale cached <hp:linesegarray> mismatched to the new (truncated)
+  // content is what caused "document is corrupted" errors before — give
+  // both halves a fresh generic one instead of keeping the original.
+  const genericLineseg = '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray>';
+
+  const runsBefore = runs.slice(0, runIdx).map(r => r.text).join('');
+  const before = pOpen + runsBefore + runOpen + beforeRunInner + '</hp:run>' + genericLineseg + '</hp:p>';
+
+  const afterHasVisible = /<hp:t>[^<]*[^\s<][^<]*<\/hp:t>/.test(afterRunInner) || /<hp:(pic|tbl|equation|rect)\b/.test(afterRunInner);
+  const runsAfter = runs.slice(runIdx + 1).map(r => r.text).join('');
+  let after = null;
+  if (afterHasVisible || runsAfter.trim()) {
+    after = pOpenRest + runOpen + afterRunInner + '</hp:run>' + runsAfter + genericLineseg + '</hp:p>';
+  }
+  return { before, after };
+}
+
 function detectEndnoteMarkers(xml) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const boundaries = [];
@@ -281,9 +334,16 @@ function detectEndnoteMarkers(xml) {
   }
   const result = new Map();
   let prevEnd = -1;
+  let carryOverAfter = null; // leftover visible text from splitting the previous boundary paragraph
   for (const { i, key } of boundaries) {
-    const blockXml = paras.slice(prevEnd + 1, i + 1).map(p => p.text).join('');
+    const middleParas = paras.slice(prevEnd + 1, i).map(p => p.text);
+    const { before, after } = splitParagraphAtEndnote(paras[i].text);
+    const blockParts = [];
+    if (carryOverAfter) blockParts.push(carryOverAfter);
+    blockParts.push(...middleParas, before);
+    const blockXml = blockParts.join('');
     if (blockXml.trim()) result.set(key, blockXml);
+    carryOverAfter = after;
     prevEnd = i;
   }
   return result;
@@ -649,7 +709,11 @@ genBtn.addEventListener('click', async () => {
     let foreignImageCounter = 0;
     const today = new Date().toISOString().slice(0, 10);
 
-    let demo = textParaXml(9001, '=== 오답노트 ===', textIds)
+    // "이 학생의 몇 번째 오답노트인지" — 같은 생성 시각(batch)을 하나로 묶어서 셉니다.
+    const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
+    const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
+
+    let demo = textParaXml(9001, titleText, textIds)
       + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
 
     demo += textParaXml(9003, '[오답 현황 요약]', textIds);
@@ -667,8 +731,8 @@ genBtn.addEventListener('click', async () => {
       const marker = entry.markers.get(num);
       if (!marker) continue;
 
-      demo += textParaXml(qCounter++, `${mission} — ${entry.filename}`, labelIds);
-      demo += textParaXml(qCounter++, `문항 ${num}  (${round}번째 오답노트 시도)`, textIds);
+      const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
+      demo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, labelIds);
 
       if (entry === carrierEntry) {
         demo += marker.blockXml;
@@ -690,6 +754,10 @@ genBtn.addEventListener('click', async () => {
         demo += blockXml;
       }
     }
+
+    // 미주(각주)로 들어간 해설은 한글이 문서 맨 끝에 자동으로 모아서 보여줍니다.
+    // 그 앞에 해설 섹션임을 알리는 안내 문구만 추가합니다.
+    demo += textParaXml(qCounter++, `${studentName}의 ${noteRound}번째 오답 해설`, textIds);
 
     const targetSection = carrierEntry.sectionOrder[0];
     strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
