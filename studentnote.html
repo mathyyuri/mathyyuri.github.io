@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학생별 오답노트 (강사용)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 0; display: flex; min-height: 100vh; }
+  #sidebar { width: 220px; flex: none; border-right: 1px solid #ddd; padding: 16px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; }
+  #sidebar h2 { font-size: 15px; margin: 16px 0 8px; }
+  #sidebar h2:first-child { margin-top: 0; }
+  .studentBtn { display: block; width: 100%; text-align: left; padding: 6px 8px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; }
+  .studentBtn:hover { background: #f0f0f0; }
+  .studentBtn.active { background: #e6f0ff; font-weight: bold; }
+  #main { flex: 1; padding: 24px; max-width: 820px; }
+  h1 { font-size: 20px; margin-top: 0; }
+  .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; }
+  input[type=text], select { padding: 8px; font-size: 14px; }
+  button { font-size: 15px; padding: 9px 18px; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 16px; font-size: 13px; border-radius: 6px; min-height: 20px; }
+  .ok { color: #1a7f37; }
+  .err { color: #c00; }
+  .hint { color: #666; font-size: 13px; }
+  .missionBlock { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; }
+  .missionBlock h3 { margin: 0 0 6px 0; font-size: 15px; }
+  .matchRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .matchRow select { flex: 1; }
+  .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
+  .qGrid label:has(input:checked) { background: #e6f0ff; border-color: #6699ff; }
+  .status2 { color: #c00; }
+  .status3 { color: #d97706; }
+  .roundBadge { font-size: 11px; color: #888; margin-left: 4px; }
+  .gradeToggle { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #ddd; background: #fdeaea; color: #c00; font-weight: bold; cursor: pointer; }
+  .gradeToggle.O { background: #e6f7ea; color: #1a7f37; border-color: #8fd19e; }
+  #counterBar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #ddd; padding: 12px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+  #counterBadge { font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <p class="hint" id="rosterStatus">명단 불러오는 중...</p>
+  <div id="cohort2"></div>
+  <div id="cohort3"></div>
+</div>
+
+<div id="main">
+  <h1>학생별 오답노트</h1>
+  <p id="emptyHint" class="hint">왼쪽에서 학생을 선택하세요.</p>
+
+  <div id="studentArea" style="display:none">
+    <p id="studentInfo"><b></b></p>
+
+    <div class="box" id="gradingBox" style="display:none">
+      <p><b>지난 오답노트 채점</b></p>
+      <p class="hint">오답노트를 만들면 회차가 기록됩니다. 학생이 풀어온 결과를 여기서 채점하면, 다음 오답노트 만들 때/노트 안에 반영됩니다.</p>
+      <div id="gradingRounds"></div>
+    </div>
+
+    <p class="hint">미션(시험)별로 오답/오답완료 문항이 나옵니다 (<span class="status2">빨강=오답</span>, <span class="status3">주황=오답완료</span>). 회차 표시는 이 문제가 오답노트에 몇 번째로 포함되는지입니다.</p>
+    <div id="missionBlocks"></div>
+
+    <div class="box">
+      <label>오답노트 제목 (선택)</label>
+      <input type="text" id="examName" placeholder="예: 7월 오답노트" style="width:100%;">
+    </div>
+
+    <div id="counterBar">
+      <span id="counterBadge">0문제 선택됨</span>
+      <button id="genBtn" disabled>오답노트 생성</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const TEACHER_KEY = 'mathyyuri2026'; // apps-script/dashboard-Code.gs의 TEACHER_KEY와 반드시 동일해야 합니다
+
+const logEl = document.getElementById('log');
+const emptyHint = document.getElementById('emptyHint');
+const studentArea = document.getElementById('studentArea');
+const gradingBox = document.getElementById('gradingBox');
+const gradingRoundsEl = document.getElementById('gradingRounds');
+const missionBlocksEl = document.getElementById('missionBlocks');
+const genBtn = document.getElementById('genBtn');
+const counterBadge = document.getElementById('counterBadge');
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  logEl.appendChild(line);
+}
+
+// ---------- JSONP ----------
+let jsonpCounter = 0;
+function callGetJsonp(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
+    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (30초)')); }, 30000);
+    const script = document.createElement('script');
+    function cleanup() { clearTimeout(timer); delete window[cbName]; script.remove(); }
+    window[cbName] = (data) => {
+      cleanup();
+      if (!data.ok) reject(new Error(data.error || '서버 오류'));
+      else resolve(data);
+    };
+    script.src = url + '?' + new URLSearchParams({ ...params, callback: cbName }).toString();
+    script.onerror = () => { cleanup(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(script);
+  });
+}
+async function callPostNoCors(url, body) {
+  await fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+}
+
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+// ---------- balanced-tag / hwpx helpers (same as oedapnotegenerator.html) ----------
+
+function findTopLevelBlocks(xml, tagName) {
+  const blocks = [];
+  let depth = 0, start = -1;
+  const tokenRe = new RegExp(`<${tagName}\\b[^>]*?/>|<${tagName}\\b[^>]*?>|</${tagName}>`, 'g');
+  let m;
+  const closeTag = `</${tagName}>`;
+  while ((m = tokenRe.exec(xml)) !== null) {
+    const tok = m[0];
+    if (tok.endsWith('/>')) continue;
+    if (tok === closeTag) {
+      if (depth > 0) {
+        depth--;
+        if (depth === 0) blocks.push({ start, end: m.index + tok.length, text: xml.slice(start, m.index + tok.length) });
+      }
+    } else {
+      if (depth === 0) start = m.index;
+      depth++;
+    }
+  }
+  return blocks;
+}
+function stripTags(s) { return s.replace(/<[^>]+>/g, ''); }
+function extractFirstRun(block) {
+  const runs = findTopLevelBlocks(block, 'hp:run');
+  return runs.length ? runs[0].text : null;
+}
+function stripSectionToSkeleton(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  let out = '';
+  let pos = 0;
+  for (const p of paras) {
+    out += xml.slice(pos, p.start);
+    const innerText = stripTags(p.text).trim();
+    if (innerText) {
+      if (p.text.includes('<hp:secPr')) {
+        const firstRun = extractFirstRun(p.text);
+        const attrsMatch = p.text.match(/<hp:p\b([^>]*)>/);
+        const attrs = attrsMatch ? attrsMatch[1] : '';
+        const charPrMatch = (firstRun || '').match(/charPrIDRef="(\d+)"/);
+        const charPr = charPrMatch ? charPrMatch[1] : '0';
+        out += `<hp:p${attrs}>${firstRun}` +
+               `<hp:run charPrIDRef="${charPr}"><hp:t/></hp:run>` +
+               `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" ` +
+               `baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray></hp:p>`;
+      }
+    } else {
+      out += p.text;
+    }
+    pos = p.end;
+  }
+  out += xml.slice(pos);
+  if (!/<hp:p[ >]/.test(out)) {
+    const fallback = '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
+      '<hp:run charPrIDRef="0"><hp:t/></hp:run>' +
+      '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" ' +
+      'baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray></hp:p>';
+    out = out.replace('</hs:sec>', fallback + '</hs:sec>');
+  }
+  return out;
+}
+function makeBmpPlaceholder() {
+  const w = 4, h = 4;
+  const rowSize = Math.ceil((w * 3) / 4) * 4;
+  const pixelDataSize = rowSize * h;
+  const fileSize = 54 + pixelDataSize;
+  const buf = new ArrayBuffer(fileSize);
+  const dv = new DataView(buf);
+  dv.setUint8(0, 0x42); dv.setUint8(1, 0x4D);
+  dv.setUint32(2, fileSize, true);
+  dv.setUint32(10, 54, true);
+  dv.setUint32(14, 40, true);
+  dv.setInt32(18, w, true);
+  dv.setInt32(22, h, true);
+  dv.setUint16(26, 1, true);
+  dv.setUint16(28, 24, true);
+  dv.setUint32(34, pixelDataSize, true);
+  let off = 54;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) { dv.setUint8(off++, 0xee); dv.setUint8(off++, 0xee); dv.setUint8(off++, 0xee); }
+    while ((off - 54) % rowSize !== 0) dv.setUint8(off++, 0);
+  }
+  return new Uint8Array(buf);
+}
+function canvasPlaceholder(mime) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 4; canvas.height = 4;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#eeeeee';
+    ctx.fillRect(0, 0, 4, 4);
+    canvas.toBlob((blob) => { blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf))); }, mime);
+  });
+}
+async function placeholderBytes(ext) {
+  const e = (ext || '').toLowerCase();
+  if (e === 'bmp') return makeBmpPlaceholder();
+  if (e === 'jpg' || e === 'jpeg') return canvasPlaceholder('image/jpeg');
+  return canvasPlaceholder('image/png');
+}
+function mediaTypeForExt(ext) {
+  const e = ext.toLowerCase();
+  if (e === 'jpg') return 'image/jpg';
+  if (e === 'jpeg') return 'image/jpeg';
+  if (e === 'bmp') return 'image/bmp';
+  return 'image/png';
+}
+function parseParaPrDefs(headerXml) {
+  const defs = [];
+  for (const m of headerXml.matchAll(/<hh:paraPr id="(\d+)"[^>]*>([\s\S]*?)<\/hh:paraPr>/g)) {
+    const body = m[2];
+    const alignM = body.match(/<hh:align horizontal="(\w+)"/);
+    const headingM = body.match(/<hh:heading type="(\w+)"/);
+    defs.push({ id: m[1], align: alignM ? alignM[1] : null, headingNone: !headingM || headingM[1] === 'NONE' });
+  }
+  return defs;
+}
+function pickParaPrId(defs, { align, noHeading } = {}) {
+  const match = defs.find(d => (!align || d.align === align) && (!noHeading || d.headingNone));
+  return match ? match.id : null;
+}
+function detectExplicitMarkers(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const markerIdx = [];
+  for (let i = 0; i < paras.length; i++) {
+    const t = stripTags(paras[i].text).trim();
+    const m = t.match(/^\[\[(\d+|END)\]\]$/);
+    if (m) markerIdx.push({ i, key: m[1] });
+  }
+  const result = new Map();
+  for (let k = 0; k < markerIdx.length - 1; k++) {
+    const { i: startI, key } = markerIdx[k];
+    if (key === 'END') continue;
+    const endI = markerIdx[k + 1].i;
+    const blockXml = paras.slice(startI + 1, endI).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(key, blockXml);
+  }
+  return result;
+}
+function detectEndnoteMarkers(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const boundaries = [];
+  for (let i = 0; i < paras.length; i++) {
+    const m = paras[i].text.match(/<hp:endNote\b[^>]*\bnumber="(\d+)"/);
+    if (m) boundaries.push({ i, key: m[1] });
+  }
+  const result = new Map();
+  let prevEnd = -1;
+  for (const { i, key } of boundaries) {
+    const blockXml = paras.slice(prevEnd + 1, i + 1).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(key, blockXml);
+    prevEnd = i;
+  }
+  return result;
+}
+function detectNumberedParagraphs(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const candidates = [];
+  for (let i = 0; i < paras.length; i++) {
+    const t = stripTags(paras[i].text).trim();
+    const m = t.match(/^(\d+)\.\s/);
+    if (m) candidates.push({ i, key: m[1], num: Number(m[1]) });
+  }
+  const kept = [];
+  let last = -Infinity;
+  for (const c of candidates) { if (c.num > last) { kept.push(c); last = c.num; } }
+  const result = new Map();
+  for (let k = 0; k < kept.length; k++) {
+    const startI = kept[k].i;
+    const endI = k + 1 < kept.length ? kept[k + 1].i : paras.length;
+    const blockXml = paras.slice(startI, endI).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(kept[k].key, blockXml);
+  }
+  return result;
+}
+function detectMarkers(sectionsXml) {
+  const result = new Map();
+  for (const { name, xml } of sectionsXml) {
+    const byMethod = [
+      ['미주 번호', detectEndnoteMarkers(xml)],
+      ['자동 번호 인식(N.)', detectNumberedParagraphs(xml)],
+      ['수동 표시([[N]])', detectExplicitMarkers(xml)],
+    ];
+    for (const [method, found] of byMethod) {
+      for (const [key, blockXml] of found) result.set(key, { sectionName: name, blockXml, method });
+    }
+  }
+  return result;
+}
+function deriveSafeIds(markers) {
+  for (const { blockXml } of markers.values()) {
+    const paras = findTopLevelBlocks(blockXml, 'hp:p');
+    for (const p of paras) {
+      const pAttrs = p.text.match(/<hp:p\b[^>]*paraPrIDRef="(\d+)"[^>]*styleIDRef="(\d+)"/);
+      const run = extractFirstRun(p.text);
+      const charPr = run && run.match(/charPrIDRef="(\d+)"/);
+      if (pAttrs && charPr) return { paraPrIDRef: pAttrs[1], styleIDRef: pAttrs[2], charPrIDRef: charPr[1] };
+    }
+  }
+  return { paraPrIDRef: '0', styleIDRef: '0', charPrIDRef: '0' };
+}
+function normalizeIds(blockXml, ids) {
+  return blockXml
+    .replace(/(<hp:p\b[^>]*\bparaPrIDRef=")\d+(")/g, `$1${ids.paraPrIDRef}$2`)
+    .replace(/(<hp:p\b[^>]*\bstyleIDRef=")\d+(")/g, `$1${ids.styleIDRef}$2`)
+    .replace(/(<hp:run\b[^>]*\bcharPrIDRef=")\d+(")/g, `$1${ids.charPrIDRef}$2`);
+}
+function textParaXml(pid, text, ids) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+         `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+         `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
+         `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+}
+function collectImageRefs(xml) {
+  return [...new Set([...xml.matchAll(/binaryItemIDRef="([^"]+)"/g)].map(m => m[1]))];
+}
+function rewriteImageRefs(xml, idMap) {
+  return xml.replace(/binaryItemIDRef="([^"]+)"/g, (full, id) => `binaryItemIDRef="${idMap[id] || id}"`);
+}
+async function parseHwpx(zipData) {
+  const hpf = await zipData.file('Contents/content.hpf').async('string');
+  const spineMatches = [...hpf.matchAll(/<opf:itemref idref="([^"]+)"/g)].map(m => m[1]);
+  const manifestItems = {};
+  for (const m of hpf.matchAll(/<opf:item id="([^"]+)" href="([^"]+)"/g)) manifestItems[m[1]] = m[2];
+  const sectionOrder = spineMatches.filter(id => manifestItems[id] && manifestItems[id].includes('section')).map(id => manifestItems[id]);
+  const sectionsXml = [];
+  for (const path of sectionOrder) sectionsXml.push({ name: path, xml: await zipData.file(path).async('string') });
+  const markers = detectMarkers(sectionsXml);
+  return { zipData, sectionOrder, manifestItems, markers };
+}
+
+// ---------- app state ----------
+
+let bankFiles = [];
+let missionMap = { byClass: {}, global: {} }; // from 미션매핑 sheet: "반||미션명" and "미션명" -> 파일명
+let currentStudent = null;
+let missionGroups = [];
+let noteHistory = [];      // [{name,mission,num,round,at}]
+let loadedFileCache = new Map();
+
+// ---------- init: roster + mission map + bank list ----------
+
+async function init() {
+  try {
+    const [rosterData, mapData, bankData] = await Promise.all([
+      callGetJsonp(DASHBOARD_URL, { action: 'roster', key: TEACHER_KEY }),
+      callGetJsonp(DASHBOARD_URL, { action: 'missionmap', key: TEACHER_KEY }),
+      callGetJsonp(DASHBOARD_URL, { action: 'list' }),
+    ]);
+    missionMap = { byClass: mapData.byClass, global: mapData.global };
+    bankFiles = bankData.files;
+    renderRoster(rosterData.students);
+    document.getElementById('rosterStatus').style.display = 'none';
+  } catch (e) {
+    document.getElementById('rosterStatus').textContent = '명단을 불러오지 못했습니다: ' + e.message;
+    document.getElementById('rosterStatus').className = 'hint err';
+  }
+}
+
+function renderRoster(students) {
+  const byClass = { '2': {}, '3': {} };
+  for (const s of students) {
+    const cohort = byClass[s.cohort] ? s.cohort : '2';
+    if (!byClass[cohort][s.class]) byClass[cohort][s.class] = [];
+    byClass[cohort][s.class].push(s);
+  }
+  renderCohort('cohort2', '대치수학 2기', byClass['2']);
+  renderCohort('cohort3', '대치수학 3기', byClass['3']);
+}
+
+function renderCohort(elId, title, byClass) {
+  const el = document.getElementById(elId);
+  const classNames = Object.keys(byClass);
+  if (!classNames.length) { el.innerHTML = ''; return; }
+  let html = `<h2>${title}</h2>`;
+  for (const cls of classNames) {
+    html += `<div class="hint" style="margin:6px 0 2px">${cls}</div>`;
+    for (const s of byClass[cls]) {
+      html += `<button class="studentBtn" data-name="${s.name}">${s.name}</button>`;
+    }
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.studentBtn').forEach(btn => btn.addEventListener('click', () => selectStudent(btn)));
+}
+
+async function selectStudent(btn) {
+  document.querySelectorAll('.studentBtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const name = btn.dataset.name;
+
+  emptyHint.style.display = 'none';
+  studentArea.style.display = '';
+  logEl.innerHTML = '';
+  missionBlocksEl.innerHTML = '<p class="hint">불러오는 중...</p>';
+  document.getElementById('studentInfo').innerHTML = `<b>${name}</b>`;
+
+  try {
+    const [wrongData, historyData] = await Promise.all([
+      callGetJsonp(DASHBOARD_URL, { action: 'teacherwronglist', name, key: TEACHER_KEY }),
+      callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name, key: TEACHER_KEY }),
+    ]);
+    currentStudent = wrongData.student;
+    noteHistory = historyData.history;
+    document.getElementById('studentInfo').innerHTML =
+      `<b>${currentStudent.name}</b> (${currentStudent.class}반) — 오답 ${wrongData.wrong.length}문항`;
+
+    const byMission = new Map();
+    for (const w of wrongData.wrong) {
+      if (!byMission.has(w.mission)) byMission.set(w.mission, { mission: w.mission, category: w.category, items: [] });
+      byMission.get(w.mission).items.push(w);
+    }
+    missionGroups = [...byMission.values()];
+    renderMissionBlocks();
+    updateCounter();
+    await refreshGrading(name);
+  } catch (e) {
+    missionBlocksEl.innerHTML = `<p class="hint err">불러오지 못했습니다: ${e.message}</p>`;
+  }
+}
+
+// ---------- grading (past generated rounds, not yet graded) ----------
+
+async function refreshGrading(name) {
+  try {
+    const data = await callGetJsonp(DASHBOARD_URL, { action: 'ungraded', name, key: TEACHER_KEY });
+    renderGradingRounds(data.rounds);
+  } catch (e) {
+    gradingBox.style.display = 'none';
+  }
+}
+
+function renderGradingRounds(rounds) {
+  if (!rounds.length) { gradingBox.style.display = 'none'; gradingRoundsEl.innerHTML = ''; return; }
+  gradingBox.style.display = '';
+  gradingRoundsEl.innerHTML = '';
+  for (const r of rounds) {
+    const at = r.at ? new Date(r.at).toLocaleDateString('ko-KR') : '';
+    const div = document.createElement('div');
+    div.className = 'missionBlock';
+    div.innerHTML = `
+      <h3>${r.mission} ${r.round}회차 <span class="hint">(${at})</span></h3>
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <tr>${r.items.map(it => `<th style="padding:4px;">${it.num}번</th>`).join('')}</tr>
+        <tr>${r.items.map(it => `
+          <td style="padding:4px; text-align:center;">
+            <button type="button" class="gradeToggle" data-value="2"
+              data-mission="${r.mission}" data-round="${r.round}" data-num="${it.num}">X</button>
+          </td>`).join('')}</tr>
+      </table>
+      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꿔주세요.</p>
+      <button type="button" class="saveGradeBtn" style="margin-top:8px;">이 회차 저장</button>
+      <span class="hint gradeStatus"></span>
+    `;
+    div.querySelectorAll('.gradeToggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isO = btn.dataset.value === '1';
+        btn.dataset.value = isO ? '2' : '1';
+        btn.textContent = isO ? 'X' : 'O';
+        btn.classList.toggle('O', !isO);
+      });
+    });
+    div.querySelector('.saveGradeBtn').addEventListener('click', async (ev) => {
+      const buttons = div.querySelectorAll('.gradeToggle');
+      const updates = [...buttons].map(b => ({
+        mission: b.dataset.mission, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
+      }));
+      if (!updates.length) return;
+      ev.target.disabled = true;
+      const statusEl = div.querySelector('.gradeStatus');
+      statusEl.textContent = '저장 중...';
+      try {
+        await callPostNoCors(DASHBOARD_URL, { action: 'gradenote', key: TEACHER_KEY, name: currentStudent.name, updates });
+        statusEl.textContent = '저장됨 ✓';
+        statusEl.className = 'hint ok';
+        await refreshGrading(currentStudent.name);
+      } catch (e) {
+        statusEl.textContent = '저장 실패: ' + e.message;
+        statusEl.className = 'hint err';
+        ev.target.disabled = false;
+      }
+    });
+    gradingRoundsEl.appendChild(div);
+  }
+}
+
+function resolveFileForMission(missionName) {
+  const cls = currentStudent ? currentStudent.class : '';
+  const byClassHit = missionMap.byClass[cls + '||' + missionName];
+  if (byClassHit) {
+    const exact = bankFiles.find(f => f.filename === byClassHit);
+    if (exact) return { file: exact, how: '반별 매핑표' };
+  }
+  const globalHit = missionMap.global[missionName];
+  if (globalHit) {
+    const exact = bankFiles.find(f => f.filename === globalHit);
+    if (exact) return { file: exact, how: '공통 매핑표' };
+  }
+  const norm = (s) => s.replace(/[\s.\[\]()]/g, '');
+  const target = norm(missionName);
+  const fuzzy = bankFiles.find(f => norm(f.filename).includes(target));
+  return fuzzy ? { file: fuzzy, how: '자동 매칭' } : null;
+}
+
+function roundFor(mission, num) {
+  const priorCount = noteHistory.filter(h => h.mission === mission && h.num === Number(num)).length;
+  return priorCount + 1;
+}
+
+// "X(1) X(2) O(4)" — one entry per past round this question was included in,
+// in round order, showing what actually happened that round (O=정답,
+// X=오답, ?=아직 채점 안 됨).
+function historyString(mission, num) {
+  const rounds = noteHistory
+    .filter(h => h.mission === mission && h.num === Number(num))
+    .sort((a, b) => a.round - b.round);
+  if (!rounds.length) return '';
+  return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?') + '(' + h.round + ')').join(' ');
+}
+
+function renderMissionBlocks() {
+  missionBlocksEl.innerHTML = '';
+  for (const group of missionGroups) {
+    const guess = resolveFileForMission(group.mission);
+    group.selectedFileId = guess ? guess.file.id : '';
+
+    const div = document.createElement('div');
+    div.className = 'missionBlock';
+    div.innerHTML = `
+      <h3>${group.mission} <span class="hint">(${group.category})</span></h3>
+      <div class="matchRow">
+        <span class="hint">시험지 파일:</span>
+        <select class="fileSelect">
+          <option value="">-- 선택 안 함 (이 미션 제외) --</option>
+          ${bankFiles.map(f => `<option value="${f.id}" ${f.id === group.selectedFileId ? 'selected' : ''}>${f.filename}</option>`).join('')}
+        </select>
+        ${guess ? `<span class="hint">✓ ${guess.how}</span>` : '<span class="hint err">매칭 실패 - 직접 선택</span>'}
+      </div>
+      <div class="qGrid">
+        ${group.items.map(it => {
+          const r = roundFor(group.mission, it.num);
+          const hist = historyString(group.mission, it.num);
+          return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
+            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-num="${it.num}" data-round="${r}"> ${it.num}${it.status === 3 ? '△' : ''}` +
+            (hist ? `<span class="roundBadge">${hist}</span>` : '') +
+            `</label>`;
+        }).join('')}
+      </div>
+    `;
+    div.querySelector('.fileSelect').addEventListener('change', (ev) => { group.selectedFileId = ev.target.value; });
+    div.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateCounter));
+    missionBlocksEl.appendChild(div);
+  }
+}
+
+function updateCounter() {
+  const n = document.querySelectorAll('.qChk:checked').length;
+  counterBadge.textContent = `${n}문제 선택됨`;
+  genBtn.disabled = n === 0;
+}
+
+async function getParsedFile(fileId, filename) {
+  if (loadedFileCache.has(fileId)) return loadedFileCache.get(fileId);
+  const json = await callGetJsonp(DASHBOARD_URL, { action: 'download', id: fileId });
+  const zipData = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
+  const parsed = await parseHwpx(zipData);
+  parsed.filename = filename;
+  loadedFileCache.set(fileId, parsed);
+  return parsed;
+}
+
+genBtn.addEventListener('click', async () => {
+  logEl.innerHTML = '';
+  genBtn.disabled = true;
+  try {
+    const checked = [...document.querySelectorAll('.qChk:checked')].map(chk => ({
+      mission: chk.dataset.mission, num: chk.dataset.num, round: chk.dataset.round,
+    }));
+    if (!checked.length) throw new Error('체크한 문제가 없습니다.');
+
+    const studentName = currentStudent.name;
+    const examName = document.getElementById('examName').value.trim();
+
+    const missionFileId = new Map(missionGroups.map(g => [g.mission, g.selectedFileId]));
+    const missing = checked.filter(c => !missionFileId.get(c.mission));
+    if (missing.length) throw new Error('시험지 파일이 선택 안 된 미션이 있습니다: ' + [...new Set(missing.map(m => m.mission))].join(', '));
+
+    log('시험지 파일들을 불러오는 중...');
+    const neededFileIds = [...new Set(checked.map(c => missionFileId.get(c.mission)))];
+    for (const fid of neededFileIds) {
+      const f = bankFiles.find(b => b.id === fid);
+      await getParsedFile(fid, f.filename);
+    }
+
+    const carrierFileId = missionFileId.get(checked[0].mission);
+    const carrierEntry = loadedFileCache.get(carrierFileId);
+    const carrierIds = deriveSafeIds(carrierEntry.markers);
+    const carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
+    const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
+    const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
+    const plainRightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
+    const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
+    const labelIds = { ...carrierIds, paraPrIDRef: plainRightParaPrId };
+
+    log('시험지 안의 내용을 정리하는 중...');
+    const strippedSections = {};
+    for (const path of carrierEntry.sectionOrder) {
+      const xml = await carrierEntry.zipData.file(path).async('string');
+      strippedSections[path] = stripSectionToSkeleton(xml);
+    }
+
+    log('선택한 문제들을 조립하는 중...');
+    const foreignImagesToAdd = [];
+    let foreignImageCounter = 0;
+    const today = new Date().toISOString().slice(0, 10);
+
+    let demo = textParaXml(9001, '=== 오답노트 ===', textIds)
+      + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
+
+    demo += textParaXml(9003, '[오답 현황 요약]', textIds);
+    let summaryId = 9004;
+    for (const g of missionGroups) {
+      const includedNums = checked.filter(c => c.mission === g.mission).map(c => c.num);
+      if (!includedNums.length) continue;
+      demo += textParaXml(summaryId++, `${g.mission}: ${includedNums.join(', ')}번 포함`, textIds);
+    }
+
+    let qCounter = summaryId + 100;
+    for (const { mission, num, round } of checked) {
+      const fileId = missionFileId.get(mission);
+      const entry = loadedFileCache.get(fileId);
+      const marker = entry.markers.get(num);
+      if (!marker) continue;
+
+      demo += textParaXml(qCounter++, `${mission} — ${entry.filename}`, labelIds);
+      demo += textParaXml(qCounter++, `문항 ${num}  (${round}번째 오답노트 시도)`, textIds);
+
+      if (entry === carrierEntry) {
+        demo += marker.blockXml;
+      } else {
+        let blockXml = normalizeIds(marker.blockXml, carrierIds);
+        const refs = collectImageRefs(blockXml);
+        const idMap = {};
+        for (const oldId of refs) {
+          const href = entry.manifestItems[oldId];
+          if (!href) continue;
+          const ext = href.split('.').pop();
+          const bytes = await entry.zipData.file(href).async('uint8array');
+          const newId = 'ximg' + (foreignImageCounter++);
+          const newPath = `BinData/${newId}.${ext}`;
+          foreignImagesToAdd.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
+          idMap[oldId] = newId;
+        }
+        blockXml = rewriteImageRefs(blockXml, idMap);
+        demo += blockXml;
+      }
+    }
+
+    const targetSection = carrierEntry.sectionOrder[0];
+    strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
+
+    const keepImageHrefs = new Set(collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean));
+
+    log('.hwpx 파일로 압축하는 중...');
+    const outZip = new JSZip();
+    for (const relPath of Object.keys(carrierEntry.zipData.files)) {
+      const entryFile = carrierEntry.zipData.files[relPath];
+      if (entryFile.dir) continue;
+      const storeOpt = relPath === 'mimetype' ? { compression: 'STORE' } : {};
+      if (strippedSections[relPath] !== undefined) {
+        outZip.file(relPath, strippedSections[relPath], storeOpt);
+      } else if (relPath === 'Preview/PrvText.txt') {
+        outZip.file(relPath, `${studentName} 오답노트`, storeOpt);
+      } else if (relPath === 'Preview/PrvImage.png') {
+        outZip.file(relPath, await placeholderBytes('png'), storeOpt);
+      } else if (relPath === 'Contents/content.hpf') {
+        let hpf = await entryFile.async('string');
+        if (foreignImagesToAdd.length) {
+          const items = foreignImagesToAdd
+            .map(img => `<opf:item id="${img.manifestId}" href="${img.path}" media-type="${img.mediaType}" isEmbeded="1"/>`)
+            .join('');
+          hpf = hpf.replace('</opf:manifest>', items + '</opf:manifest>');
+        }
+        outZip.file(relPath, hpf, storeOpt);
+      } else if (relPath.startsWith('BinData/') && !keepImageHrefs.has(relPath)) {
+        const ext = relPath.split('.').pop();
+        outZip.file(relPath, await placeholderBytes(ext), storeOpt);
+      } else {
+        const content = await entryFile.async('uint8array');
+        outZip.file(relPath, content, storeOpt);
+      }
+    }
+    for (const img of foreignImagesToAdd) outZip.file(img.path, img.bytes);
+
+    const blob = await outZip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream', compression: 'DEFLATE' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${studentName}_오답노트.hwpx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    log('생성 이력 기록 중...');
+    await callPostNoCors(DASHBOARD_URL, {
+      action: 'lognote', key: TEACHER_KEY, name: studentName,
+      items: checked.map(c => ({ mission: c.mission, num: c.num })),
+    });
+    // refresh history/grading so round badges + the new ungraded round show up right away
+    try {
+      const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name: studentName, key: TEACHER_KEY });
+      noteHistory = historyData.history;
+      renderMissionBlocks();
+      updateCounter();
+      await refreshGrading(studentName);
+    } catch (e) { /* non-fatal */ }
+
+    log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
+  } catch (e) {
+    console.error(e);
+    log('오류: ' + e.message, 'err');
+  } finally {
+    updateCounter();
+  }
+});
+
+init();
+</script>
+</body>
+</html>

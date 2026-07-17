@@ -191,13 +191,27 @@ function mediaTypeForExt(ext) {
   return 'image/png';
 }
 
-// Find an existing right-aligned paragraph style already defined in this
-// file's own header.xml (real documents almost always have at least one,
-// e.g. for signature blocks or page numbers), so the source-file label can
-// be right-aligned without inventing a new, unverified style definition.
-function findRightAlignParaPrId(headerXml) {
-  const m = headerXml.match(/<hh:paraPr id="(\d+)"[^>]*>\s*<hh:align horizontal="RIGHT"/);
-  return m ? m[1] : null;
+// Parse every <hh:paraPr> defined in this file's header.xml so we can pick
+// one that's actually safe to reuse for our own generated text. The
+// paragraph style used for a real question's number (e.g. "1.") almost
+// always has automatic outline/heading numbering baked in — reusing that
+// style for our own title/label paragraphs made THEM auto-number too
+// ("1. === 오답노트 ===", "2. 학생: ..."). We need a plain style instead
+// (heading type NONE), and a separate right-aligned+plain one for labels.
+function parseParaPrDefs(headerXml) {
+  const defs = [];
+  for (const m of headerXml.matchAll(/<hh:paraPr id="(\d+)"[^>]*>([\s\S]*?)<\/hh:paraPr>/g)) {
+    const body = m[2];
+    const alignM = body.match(/<hh:align horizontal="(\w+)"/);
+    const headingM = body.match(/<hh:heading type="(\w+)"/);
+    defs.push({ id: m[1], align: alignM ? alignM[1] : null, headingNone: !headingM || headingM[1] === 'NONE' });
+  }
+  return defs;
+}
+
+function pickParaPrId(defs, { align, noHeading } = {}) {
+  const match = defs.find(d => (!align || d.align === align) && (!noHeading || d.headingNone));
+  return match ? match.id : null;
 }
 
 // ---------- marker detection (merged, not strict priority) ----------
@@ -309,8 +323,8 @@ function textParaXml(pid, text, ids) {
 }
 
 // ---------- Apps Script access (JSONP — see problembank.html for why) ----------
-
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby02eKktOVJEXHTG4U_IowIYfLO9tCDjK93qjECOGA1uUaA1aefYegaYYZ3KZUez2A/exec';
+// 대시보드 Apps Script(단일 통합 스크립트) URL — 교재/시험지 저장소 기능도 여기 포함되어 있습니다.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 
 function base64ToArrayBuffer(base64) {
   const binary = atob(base64);
@@ -482,8 +496,15 @@ genBtn.addEventListener('click', async () => {
     const carrierEntry = byFile.get(checked[0].uid);
     const carrierIds = deriveSafeIds(carrierEntry.markers);
     const carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
-    const rightAlignId = findRightAlignParaPrId(carrierHeaderXml);
-    const labelIds = rightAlignId ? { ...carrierIds, paraPrIDRef: rightAlignId } : carrierIds;
+    const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
+    // plain (no auto-numbering) styles for our own generated text — the
+    // question-derived paraPrIDRef above often has heading/outline
+    // numbering baked in (that's what makes "1." show for a real
+    // question), which would auto-number our title/label text too.
+    const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
+    const plainRightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
+    const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
+    const labelIds = { ...carrierIds, paraPrIDRef: plainRightParaPrId };
 
     log('시험지 안의 내용을 정리하는 중...');
     const strippedSections = {};
@@ -496,8 +517,8 @@ genBtn.addEventListener('click', async () => {
     const foreignImagesToAdd = [];
     let foreignImageCounter = 0;
     const today = new Date().toISOString().slice(0, 10);
-    let demo = textParaXml(9001, '=== 오답노트 ===', carrierIds)
-      + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, carrierIds);
+    let demo = textParaXml(9001, '=== 오답노트 ===', textIds)
+      + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
     let qCounter = 9003;
 
     for (const { uid, num } of checked) {
@@ -507,7 +528,7 @@ genBtn.addEventListener('click', async () => {
       if (loadedFiles.length > 1) {
         demo += textParaXml(qCounter++, entry.filename, labelIds);
       }
-      demo += textParaXml(qCounter++, `문항 ${num}`, carrierIds);
+      demo += textParaXml(qCounter++, `문항 ${num}`, textIds);
 
       if (entry.uid === carrierEntry.uid) {
         demo += marker.blockXml;
