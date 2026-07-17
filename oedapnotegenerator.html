@@ -17,10 +17,10 @@
   .err { color: #c00; }
   .hint { color: #666; font-size: 13px; }
   code { background: #eee; padding: 1px 4px; border-radius: 3px; }
-  .fileRow { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-  .fileBlock { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; }
-  .fileBlock h3 { margin: 0 0 8px 0; font-size: 15px; }
-  .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fileRow { border-bottom: 1px solid #eee; padding: 10px 0; }
+  .fileRow .fileRowTop { display: flex; justify-content: space-between; align-items: center; }
+  .fileRow h3 { margin: 0 0 6px 0; font-size: 15px; }
+  .qGrid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
   .qGrid label:has(input:checked) { background: #e6f0ff; border-color: #6699ff; }
 </style>
@@ -35,25 +35,20 @@
     <li>불러온 시험지마다 감지된 문제 번호가 체크박스로 나타남 — 틀린 문제를 체크 (여러 시험지 섞어서 체크 가능)</li>
     <li>학생 이름 입력 후 생성</li>
   </ol>
-  <p class="hint">문제 번호는 자동으로 감지됩니다: <code>[[N]]</code> 수동 표시, 미주(각주) 번호, 또는 "1. " 처럼 이미 매겨진 번호 — 셋 다 있으면 합쳐서 인식합니다.</p>
+  <p class="hint">문제 번호는 자동으로 감지됩니다: <code>[[N]]</code> 수동 표시, 미주(각주) 번호, 또는 "1. " 처럼 이미 매겨진 번호 — 셋 다 있으면 합쳐서 인식합니다. 체크박스에 마우스를 올리면 해당 문제의 미리보기 텍스트가 뜹니다.</p>
 </div>
 
 <p class="hint"><a href="problembank.html">← 교재/시험지 목록으로 돌아가기</a></p>
 
 <div class="box">
-  <p><b>1. 시험지 불러오기</b></p>
+  <p><b>1. 시험지 불러오기 · 문제 선택</b></p>
   <div id="bankList"><p class="hint">교재 목록 불러오는 중...</p></div>
   <p class="hint" style="margin-top:12px">또는 내 컴퓨터에서 직접:</p>
   <input type="file" id="srcFile" accept=".hwpx">
 </div>
 
 <div class="box">
-  <p><b>2. 불러온 시험지 / 문제 선택</b></p>
-  <div id="fileBlocks"><p class="hint">아직 불러온 시험지가 없습니다.</p></div>
-</div>
-
-<div class="box">
-  <label>3. 학생 이름</label>
+  <label>2. 학생 이름</label>
   <input type="text" id="studentName" placeholder="예: 홍길동">
   <label>오답노트 제목 (선택)</label>
   <input type="text" id="examName" placeholder="예: 7월 모의고사 모음">
@@ -68,7 +63,6 @@ const logEl = document.getElementById('log');
 const genBtn = document.getElementById('genBtn');
 const srcFileInput = document.getElementById('srcFile');
 const bankListEl = document.getElementById('bankList');
-const fileBlocksEl = document.getElementById('fileBlocks');
 
 function log(msg, cls) {
   const line = document.createElement('div');
@@ -195,6 +189,15 @@ function mediaTypeForExt(ext) {
   if (e === 'jpeg') return 'image/jpeg';
   if (e === 'bmp') return 'image/bmp';
   return 'image/png';
+}
+
+// Find an existing right-aligned paragraph style already defined in this
+// file's own header.xml (real documents almost always have at least one,
+// e.g. for signature blocks or page numbers), so the source-file label can
+// be right-aligned without inventing a new, unverified style definition.
+function findRightAlignParaPrId(headerXml) {
+  const m = headerXml.match(/<hh:paraPr id="(\d+)"[^>]*>\s*<hh:align horizontal="RIGHT"/);
+  return m ? m[1] : null;
 }
 
 // ---------- marker detection (merged, not strict priority) ----------
@@ -351,36 +354,52 @@ async function parseHwpx(zipData) {
   return { zipData, sectionOrder, manifestItems, markers };
 }
 
-function renderFileBlock(entry) {
-  if (fileBlocksEl.querySelector('.hint')) fileBlocksEl.innerHTML = '';
-  const div = document.createElement('div');
-  div.className = 'fileBlock';
-  div.dataset.uid = entry.uid;
-  const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
-  const methods = [...new Set(nums.map(n => entry.markers.get(n).method))].join(', ');
-  div.innerHTML = `
-    <h3>${entry.filename}</h3>
-    <p class="hint">${nums.length ? `감지 방식: ${methods} · ${nums.length}문제` : '문제 번호를 찾지 못했습니다.'}</p>
-    <div class="qGrid">
-      ${nums.map(n => `<label><input type="checkbox" class="qChk" data-uid="${entry.uid}" data-num="${n}"> ${n}</label>`).join('')}
-    </div>
-  `;
-  fileBlocksEl.appendChild(div);
-  div.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
+function questionPreview(blockXml) {
+  const t = stripTags(blockXml).replace(/\s+/g, ' ').trim();
+  return t.slice(0, 100);
 }
 
-async function loadFile(filename, buf) {
-  try {
-    const zipData = await JSZip.loadAsync(buf);
-    const parsed = await parseHwpx(zipData);
-    const entry = { uid: fileUidCounter++, filename, ...parsed };
-    loadedFiles.push(entry);
-    renderFileBlock(entry);
-    updateGenBtn();
-  } catch (e) {
-    console.error(e);
-    log(`[${filename}] 불러오기 실패: ${e.message}`, 'err');
-  }
+// Renders (or re-renders) a single row in place: filename + a "불러오기"
+// button before loading, replaced by its own checkbox grid once loaded.
+// Each row owns its own DOM node from creation, so loading one file can
+// never wipe out another's already-rendered checkboxes.
+function makeFileRow(filename, memo) {
+  const row = document.createElement('div');
+  row.className = 'fileRow';
+  row.innerHTML = `
+    <div class="fileRowTop">
+      <span><b>${filename}</b>${memo ? ' · ' + memo : ''}</span>
+      <button type="button" class="loadBtn">불러오기</button>
+    </div>
+    <div class="qGrid"></div>
+  `;
+  return row;
+}
+
+function fillRowWithQuestions(row, entry) {
+  row.querySelector('.loadBtn')?.remove();
+  const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
+  const grid = row.querySelector('.qGrid');
+  const status = document.createElement('p');
+  status.className = 'hint';
+  status.textContent = nums.length
+    ? `${[...new Set(nums.map(n => entry.markers.get(n).method))].join(', ')} · ${nums.length}문제`
+    : '문제 번호를 찾지 못했습니다.';
+  row.querySelector('.fileRowTop').after(status);
+  grid.innerHTML = nums.map(n =>
+    `<label title="${questionPreview(entry.markers.get(n).blockXml).replace(/"/g, '&quot;')}">` +
+    `<input type="checkbox" class="qChk" data-uid="${entry.uid}" data-num="${n}"> ${n}</label>`
+  ).join('');
+  grid.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
+}
+
+async function loadFileIntoRow(row, filename, buf) {
+  const zipData = await JSZip.loadAsync(buf);
+  const parsed = await parseHwpx(zipData);
+  const entry = { uid: fileUidCounter++, filename, ...parsed };
+  loadedFiles.push(entry);
+  fillRowWithQuestions(row, entry);
+  updateGenBtn();
 }
 
 function updateGenBtn() {
@@ -390,7 +409,16 @@ function updateGenBtn() {
 srcFileInput.addEventListener('change', async () => {
   const file = srcFileInput.files[0];
   if (!file) return;
-  await loadFile(file.name, await file.arrayBuffer());
+  if (bankListEl.querySelector('.hint') && !bankListEl.querySelector('.fileRow')) bankListEl.innerHTML = '';
+  const row = makeFileRow(file.name, '');
+  row.querySelector('.loadBtn').remove();
+  bankListEl.appendChild(row);
+  try {
+    await loadFileIntoRow(row, file.name, await file.arrayBuffer());
+  } catch (e) {
+    console.error(e);
+    log(`[${file.name}] 불러오기 실패: ${e.message}`, 'err');
+  }
   srcFileInput.value = '';
 });
 
@@ -404,16 +432,13 @@ async function refreshBankList() {
     }
     bankListEl.innerHTML = '';
     for (const f of files) {
-      const row = document.createElement('div');
-      row.className = 'fileRow';
-      row.innerHTML = `<span>${f.filename}${f.memo ? ' · ' + f.memo : ''}</span><button type="button">불러오기</button>`;
-      row.querySelector('button').addEventListener('click', async (ev) => {
+      const row = makeFileRow(f.filename, f.memo);
+      row.querySelector('.loadBtn').addEventListener('click', async (ev) => {
         ev.target.disabled = true;
         ev.target.textContent = '불러오는 중...';
         try {
           const json = await callGetJsonp({ action: 'download', id: f.id });
-          await loadFile(f.filename, base64ToArrayBuffer(json.file.data));
-          ev.target.textContent = '불러옴 ✓';
+          await loadFileIntoRow(row, f.filename, base64ToArrayBuffer(json.file.data));
         } catch (e) {
           ev.target.disabled = false;
           ev.target.textContent = '불러오기';
@@ -456,6 +481,9 @@ genBtn.addEventListener('click', async () => {
 
     const carrierEntry = byFile.get(checked[0].uid);
     const carrierIds = deriveSafeIds(carrierEntry.markers);
+    const carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
+    const rightAlignId = findRightAlignParaPrId(carrierHeaderXml);
+    const labelIds = rightAlignId ? { ...carrierIds, paraPrIDRef: rightAlignId } : carrierIds;
 
     log('시험지 안의 내용을 정리하는 중...');
     const strippedSections = {};
@@ -476,8 +504,10 @@ genBtn.addEventListener('click', async () => {
       const entry = byFile.get(uid);
       const marker = entry.markers.get(num);
       if (!marker) continue;
-      const label = loadedFiles.length > 1 ? `[${entry.filename}] 문항 ${num}` : `문항 ${num}`;
-      demo += textParaXml(qCounter++, label, carrierIds);
+      if (loadedFiles.length > 1) {
+        demo += textParaXml(qCounter++, entry.filename, labelIds);
+      }
+      demo += textParaXml(qCounter++, `문항 ${num}`, carrierIds);
 
       if (entry.uid === carrierEntry.uid) {
         demo += marker.blockXml;
