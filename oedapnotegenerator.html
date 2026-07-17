@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오답노트 생성기</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.7; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 16px; margin-top: 32px; }
+  .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  label { display: block; font-weight: bold; margin-bottom: 6px; }
+  input[type=text], input[type=file] { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; margin-bottom: 4px; }
+  button { font-size: 16px; padding: 10px 20px; cursor: pointer; margin-top: 8px; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 16px; font-size: 13px; border-radius: 6px; min-height: 20px; }
+  .ok { color: #1a7f37; }
+  .err { color: #c00; }
+  .hint { color: #666; font-size: 13px; }
+  code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>오답노트 생성기 (베타)</h1>
+
+<div class="box">
+  <p><b>사용 순서</b></p>
+  <ol>
+    <li>선생님이 만든 원본 시험지 한글 파일을 <b>.hwpx</b>로 저장 (한글에서 "다른 이름으로 저장" → 파일 형식 "한글 표준 문서(*.hwpx)")</li>
+    <li>아래에서 그 파일을 업로드하면, 문제 번호를 <b>자동으로 감지</b>합니다 (아래 3가지 방식 중 하나가 이미 되어있으면 따로 손댈 필요 없음)</li>
+    <li>학생 이름과 틀린 문제 번호를 입력한 뒤 생성</li>
+  </ol>
+  <p class="hint">문제 번호 인식 방식 (위에서부터 우선순위로 시도):</p>
+  <ol class="hint">
+    <li><b>수동 표시</b>: 문제 앞에 <code>[[1]]</code>, <code>[[2]]</code>... 만 적힌 문단을 넣고 맨 끝에 <code>[[END]]</code></li>
+    <li><b>미주 번호</b>: 문제마다 해설을 미주(각주)로 순서대로 달아둔 경우, 그 미주 번호를 문제 번호로 자동 인식</li>
+    <li><b>자동 번호 인식</b>: 문제 문단이 이미 "1. ", "2. " 처럼 시작하면 그 번호를 자동 인식 (증가하는 순서일 때만)</li>
+  </ol>
+</div>
+
+<p class="hint"><a href="problem-bank.html">← 교재/시험지 목록으로 돌아가기</a></p>
+
+<div class="box">
+  <label>1. 원본 시험지 파일 (.hwpx)</label>
+  <input type="file" id="srcFile" accept=".hwpx">
+  <div id="detectLog" class="hint"></div>
+</div>
+
+<div class="box">
+  <label>2. 학생 이름</label>
+  <input type="text" id="studentName" placeholder="예: 홍길동">
+  <label>3. 시험지 이름 (선택)</label>
+  <input type="text" id="examName" placeholder="예: 7월 모의고사">
+  <label>4. 틀린 문제 번호 (쉼표로 구분)</label>
+  <input type="text" id="wrongNums" placeholder="예: 3,7,12">
+</div>
+
+<button id="genBtn" disabled>오답노트 생성</button>
+<div id="log"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+const logEl = document.getElementById('log');
+const detectLogEl = document.getElementById('detectLog');
+const genBtn = document.getElementById('genBtn');
+const srcFileInput = document.getElementById('srcFile');
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  logEl.appendChild(line);
+}
+
+// ---------- balanced-tag helpers (mirrors validated Python logic) ----------
+
+function findTopLevelBlocks(xml, tagName) {
+  // returns [{start, end, text}] for top-level <tagName ...>...</tagName> blocks (non-nested at top depth)
+  const openRe = new RegExp(`<${tagName}\\b[^>]*?/>|<${tagName}\\b[^>]*?>`, 'g');
+  const closeTag = `</${tagName}>`;
+  const blocks = [];
+  let depth = 0, start = -1, pos = 0;
+  const tokenRe = new RegExp(`<${tagName}\\b[^>]*?/>|<${tagName}\\b[^>]*?>|</${tagName}>`, 'g');
+  let m;
+  while ((m = tokenRe.exec(xml)) !== null) {
+    const tok = m[0];
+    if (tok.endsWith('/>')) continue; // self-closing, ignore for block purposes
+    if (tok === closeTag) {
+      if (depth > 0) {
+        depth--;
+        if (depth === 0) {
+          blocks.push({ start, end: m.index + tok.length, text: xml.slice(start, m.index + tok.length) });
+        }
+      }
+    } else {
+      if (depth === 0) start = m.index;
+      depth++;
+    }
+  }
+  return blocks;
+}
+
+function stripTags(s) {
+  return s.replace(/<[^>]+>/g, '');
+}
+
+function extractFirstRun(block) {
+  const runs = findTopLevelBlocks(block, 'hp:run');
+  return runs.length ? runs[0].text : null;
+}
+
+// Remove every real-content top-level paragraph from a section's XML, keeping
+// structural (empty) ones and preserving any embedded <hp:secPr> by keeping
+// just its run. Mirrors the validated Python remove_real_paragraphs().
+function stripSectionToSkeleton(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  let out = '';
+  let pos = 0;
+  for (const p of paras) {
+    out += xml.slice(pos, p.start);
+    const innerText = stripTags(p.text).trim();
+    if (innerText) {
+      if (p.text.includes('<hp:secPr')) {
+        const firstRun = extractFirstRun(p.text);
+        const attrsMatch = p.text.match(/<hp:p\b([^>]*)>/);
+        const attrs = attrsMatch ? attrsMatch[1] : '';
+        const charPrMatch = (firstRun || '').match(/charPrIDRef="(\d+)"/);
+        const charPr = charPrMatch ? charPrMatch[1] : '0';
+        out += `<hp:p${attrs}>${firstRun}` +
+               `<hp:run charPrIDRef="${charPr}"><hp:t/></hp:run>` +
+               `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" ` +
+               `baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray></hp:p>`;
+      }
+      // else: drop entirely
+    } else {
+      out += p.text;
+    }
+    pos = p.end;
+  }
+  out += xml.slice(pos);
+  if (!/<hp:p[ >]/.test(out)) {
+    const fallback = '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
+      '<hp:run charPrIDRef="0"><hp:t/></hp:run>' +
+      '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" ' +
+      'baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray></hp:p>';
+    out = out.replace('</hs:sec>', fallback + '</hs:sec>');
+  }
+  return out;
+}
+
+// ---- placeholder image bytes for images we intentionally drop (privacy) ----
+
+function makeBmpPlaceholder() {
+  const w = 4, h = 4;
+  const rowSize = Math.ceil((w * 3) / 4) * 4;
+  const pixelDataSize = rowSize * h;
+  const fileSize = 54 + pixelDataSize;
+  const buf = new ArrayBuffer(fileSize);
+  const dv = new DataView(buf);
+  dv.setUint8(0, 0x42); dv.setUint8(1, 0x4D); // 'BM'
+  dv.setUint32(2, fileSize, true);
+  dv.setUint32(10, 54, true); // pixel data offset
+  dv.setUint32(14, 40, true); // DIB header size
+  dv.setInt32(18, w, true);
+  dv.setInt32(22, h, true);
+  dv.setUint16(26, 1, true); // planes
+  dv.setUint16(28, 24, true); // bpp
+  dv.setUint32(34, pixelDataSize, true);
+  let off = 54;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      dv.setUint8(off++, 0xee); dv.setUint8(off++, 0xee); dv.setUint8(off++, 0xee);
+    }
+    while ((off - 54) % rowSize !== 0) dv.setUint8(off++, 0);
+  }
+  return new Uint8Array(buf);
+}
+
+function canvasPlaceholder(mime) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 4; canvas.height = 4;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#eeeeee';
+    ctx.fillRect(0, 0, 4, 4);
+    canvas.toBlob((blob) => {
+      blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
+    }, mime);
+  });
+}
+
+async function placeholderBytes(ext) {
+  const e = ext.toLowerCase();
+  if (e === 'bmp') return makeBmpPlaceholder();
+  if (e === 'jpg' || e === 'jpeg') return canvasPlaceholder('image/jpeg');
+  return canvasPlaceholder('image/png');
+}
+
+function collectReferencedImageIds(xml) {
+  const ids = new Set();
+  for (const m of xml.matchAll(/binaryItemIDRef="([^"]+)"/g)) ids.add(m[1]);
+  return ids;
+}
+
+function textParaXml(pid, text, paraPrIDRef, styleIDRef, charPrIDRef) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<hp:p id="${pid}" paraPrIDRef="${paraPrIDRef}" styleIDRef="${styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+         `<hp:run charPrIDRef="${charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+         `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
+         `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+}
+
+// ---------- marker detection ----------
+// Three strategies, tried in priority order per section:
+//  1. explicit [[N]] / [[END]] marker paragraphs (most reliable, most manual)
+//  2. endnote numbers (<hp:endNote number="N">) already embedded when each
+//     question's solution is attached as an endnote in order — needs no
+//     extra typing at all if the teacher already works this way
+//  3. paragraphs that visibly start with "N." in increasing order (last resort)
+
+function detectExplicitMarkers(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const markerIdx = [];
+  for (let i = 0; i < paras.length; i++) {
+    const t = stripTags(paras[i].text).trim();
+    const m = t.match(/^\[\[(\d+|END)\]\]$/);
+    if (m) markerIdx.push({ i, key: m[1] });
+  }
+  const result = new Map();
+  for (let k = 0; k < markerIdx.length - 1; k++) {
+    const { i: startI, key } = markerIdx[k];
+    if (key === 'END') continue;
+    const endI = markerIdx[k + 1].i;
+    const blockXml = paras.slice(startI + 1, endI).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(key, blockXml);
+  }
+  return result;
+}
+
+function detectEndnoteMarkers(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const boundaries = []; // {i, key}
+  for (let i = 0; i < paras.length; i++) {
+    const m = paras[i].text.match(/<hp:endNote\b[^>]*\bnumber="(\d+)"/);
+    if (m) boundaries.push({ i, key: m[1] });
+  }
+  const result = new Map();
+  let prevEnd = -1;
+  for (const { i, key } of boundaries) {
+    const blockXml = paras.slice(prevEnd + 1, i + 1).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(key, blockXml);
+    prevEnd = i;
+  }
+  return result;
+}
+
+function detectNumberedParagraphs(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  const candidates = [];
+  for (let i = 0; i < paras.length; i++) {
+    const t = stripTags(paras[i].text).trim();
+    const m = t.match(/^(\d+)\.\s/);
+    if (m) candidates.push({ i, key: m[1], num: Number(m[1]) });
+  }
+  // keep only a strictly increasing run to avoid matching answer choices, page numbers, etc.
+  const kept = [];
+  let last = -Infinity;
+  for (const c of candidates) {
+    if (c.num > last) { kept.push(c); last = c.num; }
+  }
+  const result = new Map();
+  for (let k = 0; k < kept.length; k++) {
+    const startI = kept[k].i;
+    const endI = k + 1 < kept.length ? kept[k + 1].i : paras.length;
+    const blockXml = paras.slice(startI, endI).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(kept[k].key, blockXml);
+  }
+  return result;
+}
+
+function detectMarkers(sectionsXml) {
+  // sectionsXml: [{name, xml}], returns Map(qNum -> {sectionName, blockXml, method})
+  const result = new Map();
+  for (const { name, xml } of sectionsXml) {
+    let found = detectExplicitMarkers(xml);
+    let method = '수동 표시([[N]])';
+    if (found.size === 0) {
+      found = detectEndnoteMarkers(xml);
+      method = '미주 번호';
+    }
+    if (found.size === 0) {
+      found = detectNumberedParagraphs(xml);
+      method = '자동 번호 인식(N.)';
+    }
+    for (const [key, blockXml] of found) {
+      if (!result.has(key)) result.set(key, { sectionName: name, blockXml, method });
+    }
+  }
+  return result;
+}
+
+// ---------- state ----------
+
+let zipData = null;
+let markers = null;
+let sectionOrder = [];
+let manifestItems = {}; // id -> href, from content.hpf
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby02eKktOVJEXHTG4U_IowIYfLO9tCDjK93qjECOGA1uUaA1aefYegaYYZ3KZUez2A/exec';
+
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function loadSourceBuffer(buf) {
+  detectLogEl.textContent = '';
+  genBtn.disabled = true;
+  try {
+    zipData = await JSZip.loadAsync(buf);
+    const hpf = await zipData.file('Contents/content.hpf').async('string');
+    const spineMatches = [...hpf.matchAll(/<opf:itemref idref="([^"]+)"/g)].map(m => m[1]);
+    manifestItems = {};
+    for (const m of hpf.matchAll(/<opf:item id="([^"]+)" href="([^"]+)"/g)) manifestItems[m[1]] = m[2];
+    sectionOrder = spineMatches.filter(id => manifestItems[id] && manifestItems[id].includes('section')).map(id => manifestItems[id]);
+
+    const sectionsXml = [];
+    for (const path of sectionOrder) {
+      const xml = await zipData.file(path).async('string');
+      sectionsXml.push({ name: path, xml });
+    }
+    markers = detectMarkers(sectionsXml);
+    const nums = [...markers.keys()].sort((a, b) => Number(a) - Number(b));
+    if (nums.length) {
+      const methods = [...new Set(nums.map(n => markers.get(n).method))].join(', ');
+      detectLogEl.textContent = `감지된 문제 번호(${methods}): ${nums.join(', ')} (총 ${nums.length}개)`;
+    } else {
+      detectLogEl.textContent = '문제 번호를 찾지 못했습니다. [[N]] 표시를 넣거나, 파일을 확인해주세요.';
+    }
+    genBtn.disabled = nums.length === 0;
+  } catch (e) {
+    console.error(e);
+    detectLogEl.textContent = '파일을 읽는 중 오류: ' + e.message;
+  }
+}
+
+srcFileInput.addEventListener('change', async () => {
+  const file = srcFileInput.files[0];
+  if (!file) return;
+  await loadSourceBuffer(await file.arrayBuffer());
+});
+
+// auto-load when arriving from problem-bank.html with ?src=<driveFileId>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const srcId = params.get('src');
+  if (!srcId) return;
+  detectLogEl.textContent = '교재 목록에서 파일을 불러오는 중...';
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=download&id=${encodeURIComponent(srcId)}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || '서버 오류');
+    await loadSourceBuffer(base64ToArrayBuffer(json.file.data));
+    const name = params.get('name');
+    if (name) detectLogEl.textContent = `[${decodeURIComponent(name)}] ` + detectLogEl.textContent;
+  } catch (e) {
+    detectLogEl.textContent = '파일을 불러오지 못했습니다: ' + e.message;
+  }
+})();
+
+genBtn.addEventListener('click', async () => {
+  logEl.innerHTML = '';
+  genBtn.disabled = true;
+  try {
+    const studentName = document.getElementById('studentName').value.trim() || '학생';
+    const examName = document.getElementById('examName').value.trim();
+    const wrongNums = document.getElementById('wrongNums').value.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (!wrongNums.length) throw new Error('틀린 문제 번호를 입력해주세요.');
+    const missing = wrongNums.filter(n => !markers.has(n));
+    if (missing.length) throw new Error('파일에서 찾지 못한 문제 번호: ' + missing.join(', '));
+
+    log('시험지 안의 내용을 정리하는 중...');
+    const strippedSections = {};
+    for (const path of sectionOrder) {
+      const xml = await zipData.file(path).async('string');
+      strippedSections[path] = stripSectionToSkeleton(xml);
+    }
+
+    log('오답노트 내용 조립 중...');
+    const today = new Date().toISOString().slice(0, 10);
+    let demo = textParaXml(9001, `=== 오답노트 ===`, 57, 0, 86)
+      + textParaXml(9002, `학생: ${studentName}   ${examName ? '시험지: ' + examName + '   ' : ''}날짜: ${today}`, 57, 0, 86);
+    let qCounter = 9003;
+    for (const n of wrongNums) {
+      demo += textParaXml(qCounter++, `문항 ${n}`, 57, 0, 86);
+      demo += markers.get(n).blockXml;
+    }
+
+    const targetSection = sectionOrder[0];
+    strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
+
+    // only images actually referenced by the kept (newly inserted) content may
+    // carry through unchanged; every other original image is unrelated to the
+    // selected questions and gets replaced with a placeholder for privacy.
+    const keepImageHrefs = new Set(
+      [...collectReferencedImageIds(demo)].map(id => manifestItems[id]).filter(Boolean)
+    );
+
+    log('.hwpx 파일로 압축하는 중...');
+    const outZip = new JSZip();
+    for (const relPath of Object.keys(zipData.files)) {
+      const entry = zipData.files[relPath];
+      if (entry.dir) continue;
+      const storeOpt = relPath === 'mimetype' ? { compression: 'STORE' } : {};
+      if (strippedSections[relPath] !== undefined) {
+        outZip.file(relPath, strippedSections[relPath], storeOpt);
+      } else if (relPath === 'Preview/PrvText.txt') {
+        outZip.file(relPath, `${studentName} 오답노트`, storeOpt);
+      } else if (relPath === 'Preview/PrvImage.png') {
+        outZip.file(relPath, await placeholderBytes('png'), storeOpt);
+      } else if (relPath.startsWith('BinData/') && !keepImageHrefs.has(relPath)) {
+        const ext = relPath.split('.').pop();
+        outZip.file(relPath, await placeholderBytes(ext), storeOpt);
+      } else {
+        const content = await entry.async('uint8array');
+        outZip.file(relPath, content, storeOpt);
+      }
+    }
+    const blob = await outZip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/octet-stream',
+      compression: 'DEFLATE',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${studentName}_오답노트.hwpx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
+  } catch (e) {
+    console.error(e);
+    log('오류: ' + e.message, 'err');
+  } finally {
+    genBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

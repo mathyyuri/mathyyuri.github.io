@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교재/시험지 관리</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
+  h1 { font-size: 22px; }
+  .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+  th { color: #555; }
+  input[type=text], input[type=file] { padding: 8px; font-size: 14px; }
+  button { font-size: 14px; padding: 8px 16px; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 12px; font-size: 13px; border-radius: 6px; min-height: 20px; }
+  .ok { color: #1a7f37; }
+  .err { color: #c00; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>교재 / 시험지 관리</h1>
+
+<div class="box">
+  <p><b>새 파일 업로드</b></p>
+  <input type="file" id="uploadFile" accept=".hwpx">
+  <input type="text" id="uploadMemo" placeholder="메모 (예: 7월 모의고사)">
+  <button id="uploadBtn">업로드</button>
+</div>
+
+<div class="box">
+  <p><b>업로드된 파일 목록</b></p>
+  <table id="fileTable">
+    <thead><tr><th></th><th>파일명</th><th>업로드일시</th><th>메모</th><th></th></tr></thead>
+    <tbody id="fileTbody"><tr><td colspan="5">불러오는 중...</td></tr></tbody>
+  </table>
+  <div class="toolbar">
+    <button id="genBtn" disabled>선택한 파일로 오답노트 만들기</button>
+  </div>
+</div>
+
+<div id="log"></div>
+
+<script>
+// TODO: 아래 URL을 실제 배포된 Apps Script 웹 앱 URL로 이미 채워뒀습니다.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby02eKktOVJEXHTG4U_IowIYfLO9tCDjK93qjECOGA1uUaA1aefYegaYYZ3KZUez2A/exec';
+
+const logEl = document.getElementById('log');
+const tbody = document.getElementById('fileTbody');
+const genBtn = document.getElementById('genBtn');
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  logEl.appendChild(line);
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function callGet(params) {
+  const url = APPS_SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || '서버 오류');
+  return json;
+}
+
+async function callPost(body) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || '서버 오류');
+  return json;
+}
+
+async function refreshList() {
+  tbody.innerHTML = '<tr><td colspan="5">불러오는 중...</td></tr>';
+  try {
+    const { files } = await callGet({ action: 'list' });
+    if (!files.length) {
+      tbody.innerHTML = '<tr><td colspan="5">업로드된 파일이 없습니다.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    for (const f of files) {
+      const tr = document.createElement('tr');
+      const uploadedAt = f.uploadedAt ? new Date(f.uploadedAt).toLocaleString('ko-KR') : '';
+      tr.innerHTML = `
+        <td><input type="checkbox" class="rowChk" data-id="${f.id}" data-name="${f.filename}"></td>
+        <td>${f.filename}</td>
+        <td>${uploadedAt}</td>
+        <td>${f.memo || ''}</td>
+        <td><button class="delBtn" data-id="${f.id}">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    tbody.querySelectorAll('.rowChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
+    tbody.querySelectorAll('.delBtn').forEach(btn => btn.addEventListener('click', onDelete));
+    updateGenBtn();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" class="err">목록을 불러오지 못했습니다: ${e.message}</td></tr>`;
+  }
+}
+
+function updateGenBtn() {
+  const checked = [...tbody.querySelectorAll('.rowChk:checked')];
+  genBtn.disabled = checked.length !== 1;
+}
+
+async function onDelete(e) {
+  const id = e.target.dataset.id;
+  if (!confirm('이 파일을 삭제할까요?')) return;
+  try {
+    await callPost({ action: 'delete', id });
+    await refreshList();
+  } catch (err) {
+    log('삭제 실패: ' + err.message, 'err');
+  }
+}
+
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('uploadFile');
+  const memo = document.getElementById('uploadMemo').value.trim();
+  const file = fileInput.files[0];
+  if (!file) { log('파일을 선택해주세요.', 'err'); return; }
+  logEl.innerHTML = '';
+  log('업로드 중...');
+  try {
+    const base64 = await fileToBase64(file);
+    await callPost({ action: 'upload', filename: file.name, data: base64, memo });
+    log('업로드 완료.', 'ok');
+    fileInput.value = '';
+    document.getElementById('uploadMemo').value = '';
+    await refreshList();
+  } catch (e) {
+    log('업로드 실패: ' + e.message, 'err');
+  }
+});
+
+genBtn.addEventListener('click', () => {
+  const checked = tbody.querySelector('.rowChk:checked');
+  if (!checked) return;
+  const id = checked.dataset.id;
+  const name = checked.dataset.name;
+  location.href = `oedapnote-generator.html?src=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+});
+
+refreshList();
+</script>
+</body>
+</html>
