@@ -67,23 +67,42 @@ function fileToBase64(file) {
   });
 }
 
-async function callGet(params) {
-  const url = APPS_SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  const res = await fetch(url);
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || '서버 오류');
-  return json;
+// fetch() can't reliably read a cross-origin Apps Script response (the
+// script.google.com -> script.googleusercontent.com redirect often isn't
+// readable under CORS, even though a direct browser visit works fine).
+// GET calls go through JSONP (a <script> tag isn't subject to CORS).
+let jsonpCounter = 0;
+function callGet(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
+    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (15초)')); }, 15000);
+    const script = document.createElement('script');
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      script.remove();
+    }
+    window[cbName] = (data) => {
+      cleanup();
+      if (!data.ok) reject(new Error(data.error || '서버 오류'));
+      else resolve(data);
+    };
+    script.src = APPS_SCRIPT_URL + '?' + new URLSearchParams({ ...params, callback: cbName }).toString();
+    script.onerror = () => { cleanup(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(script);
+  });
 }
 
+// POST responses have the same unreadable-cross-origin problem, so this
+// fires the request without reading the response (mode: 'no-cors') and
+// relies on the caller re-checking state afterward (e.g. refreshList()).
 async function callPost(body) {
-  const res = await fetch(APPS_SCRIPT_URL, {
+  await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
   });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || '서버 오류');
-  return json;
 }
 
 async function refreshList() {
@@ -128,23 +147,4 @@ async function onDelete(e) {
     await refreshList();
   } catch (err) {
     log('삭제 실패: ' + err.message, 'err');
-  }
-}
-
-document.getElementById('uploadBtn').addEventListener('click', async () => {
-  const fileInput = document.getElementById('uploadFile');
-  const memo = document.getElementById('uploadMemo').value.trim();
-  const file = fileInput.files[0];
-  if (!file) { log('파일을 선택해주세요.', 'err'); return; }
-  logEl.innerHTML = '';
-  log('업로드 중...');
-  try {
-    const base64 = await fileToBase64(file);
-    await callPost({ action: 'upload', filename: file.name, data: base64, memo });
-    log('업로드 완료.', 'ok');
-    fileInput.value = '';
-    document.getElementById('uploadMemo').value = '';
-    await refreshList();
-  } catch (e) {
-    log('업로드 실패: ' + e.message, 'err');
   }
