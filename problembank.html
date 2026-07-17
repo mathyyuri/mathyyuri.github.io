@@ -148,17 +148,3 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
   } catch (e) {
     log('업로드 실패: ' + e.message, 'err');
   }
-});
-
-genBtn.addEventListener('click', () => {
-  const checked = tbody.querySelector('.rowChk:checked');
-  if (!checked) return;
-  const id = checked.dataset.id;
-  const name = checked.dataset.name;
-  location.href = `oedapnote-generator.html?src=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
-});
-
-refreshList();
-</script>
-</body>
-</html>
