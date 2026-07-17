@@ -4,40 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>학생별 오답노트 (강사용)</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: 'Malgun Gothic', sans-serif; margin: 0; display: flex; min-height: 100vh; }
-  #sidebar { width: 220px; flex: none; border-right: 1px solid #ddd; padding: 16px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; }
-  #sidebar h2 { font-size: 15px; margin: 16px 0 8px; }
-  #sidebar h2:first-child { margin-top: 0; }
-  .studentBtn { display: block; width: 100%; text-align: left; padding: 6px 8px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; }
-  .studentBtn:hover { background: #f0f0f0; }
-  .studentBtn.active { background: #e6f0ff; font-weight: bold; }
-  #main { flex: 1; padding: 24px; max-width: 820px; }
-  h1 { font-size: 20px; margin-top: 0; }
-  .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 12px 0; }
-  label { display: block; font-weight: bold; margin-bottom: 6px; }
-  input[type=text], select { padding: 8px; font-size: 14px; }
-  button { font-size: 15px; padding: 9px 18px; cursor: pointer; }
-  button:disabled { opacity: 0.5; cursor: default; }
-  #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 16px; font-size: 13px; border-radius: 6px; min-height: 20px; }
-  .ok { color: #1a7f37; }
-  .err { color: #c00; }
-  .hint { color: #666; font-size: 13px; }
-  .missionBlock { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; }
-  .missionBlock h3 { margin: 0 0 6px 0; font-size: 15px; }
-  .matchRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
-  .matchRow select { flex: 1; }
-  .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
-  .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
-  .qGrid label:has(input:checked) { background: #e6f0ff; border-color: #6699ff; }
-  .status2 { color: #c00; }
-  .status3 { color: #d97706; }
-  .roundBadge { font-size: 11px; color: #888; margin-left: 4px; }
-  .gradeToggle { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #ddd; background: #fdeaea; color: #c00; font-weight: bold; cursor: pointer; }
-  .gradeToggle.O { background: #e6f7ea; color: #1a7f37; border-color: #8fd19e; }
-  #counterBar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #ddd; padding: 12px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
-  #counterBadge { font-weight: bold; }
+:root{
+  --cream:#FBF8F1;
+  --ink:#1A1A1A;
+  --gold:#A8853F;
+  --gold-soft:rgba(168,133,63,.12);
+  --gold-line:#E6DCC6;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --mint-soft:rgba(127,200,180,.14);
+  --pink:#E58BA4;
+  --pink-deep:#C64E71;
+  --pink-soft:rgba(229,139,164,.14);
+  --line:rgba(26,26,26,.1);
+  --serif:'Playfair Display','Noto Serif KR',serif;
+  --kserif:'Noto Serif KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--sans); margin: 0; display: flex; min-height: 100vh; background: var(--cream); color: var(--ink); -webkit-font-smoothing: antialiased; }
+#sidebar { width: 230px; flex: none; border-right: 1px solid var(--gold-line); padding: 20px 16px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; background: #fff; }
+#sidebar h2 { font-family: var(--serif); font-weight: 900; font-size: 14px; letter-spacing: .06em; margin: 20px 0 8px; color: var(--gold); }
+#sidebar h2:first-child { margin-top: 0; }
+.studentBtn { display: block; width: 100%; text-align: left; padding: 7px 10px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; font-family: var(--kserif); color: var(--ink); }
+.studentBtn:hover { background: var(--gold-soft); }
+.studentBtn.active { background: var(--ink); color: var(--cream); font-weight: 700; }
+#main { flex: 1; padding: 28px 4vw; max-width: 860px; }
+h1 { font-family: var(--serif); font-weight: 900; font-size: 24px; letter-spacing: .01em; margin: 0 0 4px; }
+.box { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; padding: 16px; margin: 12px 0; }
+label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(--kserif); font-size: 13px; letter-spacing: .04em; color: var(--gold); }
+input[type=text], select { padding: 8px; font-size: 14px; font-family: var(--sans); border: 1px solid var(--gold-line); border-radius: 3px; background: #fff; color: var(--ink); }
+input[type=text]:focus, select:focus { outline: none; border-color: var(--gold); }
+button { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; font-weight: 700; padding: 10px 20px; cursor: pointer; background: var(--ink); color: var(--cream); border: 1px solid var(--ink); border-radius: 3px; transition: .2s; }
+button:hover:not(:disabled) { background: var(--mint-deep); border-color: var(--mint-deep); }
+button:disabled { opacity: 0.4; cursor: default; }
+#log { white-space: pre-wrap; background: #fff; border: 1px solid var(--gold-line); padding: 12px; margin-top: 16px; font-size: 13px; border-radius: 4px; min-height: 20px; font-family: var(--sans); }
+.ok { color: var(--mint-deep); font-weight: 700; }
+.err { color: var(--pink-deep); font-weight: 700; }
+.hint { color: rgba(26,26,26,.55); font-size: 13px; font-family: var(--kserif); }
+.missionBlock { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; padding: 14px 16px; margin: 12px 0; }
+.missionBlock h3 { font-family: var(--serif); font-weight: 700; margin: 0 0 8px 0; font-size: 16px; }
+.matchRow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px 10px; border-radius: 3px; font-size: 13px; border: 1px solid var(--gold-line); background: #fafafa; }
+.matchRow.matched { background: var(--mint-soft); border-color: var(--mint-deep); }
+.matchRow.unmatched { background: var(--pink-soft); border-color: var(--pink-deep); }
+.matchRow select { flex: 1; }
+.matchRow .matchTag { font-family: var(--serif); font-size: 11px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.matchRow.matched .matchTag { color: var(--mint-deep); }
+.matchRow.unmatched .matchTag { color: var(--pink-deep); }
+.qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
+.qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid var(--gold-line); border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; font-family: var(--sans); background: #fff; }
+.qGrid label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
+.status2 { color: var(--pink-deep); }
+.status3 { color: var(--gold); }
+.roundBadge { font-size: 11px; color: rgba(26,26,26,.45); margin-left: 4px; }
+.gradeToggle { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; }
+.gradeToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
+#counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+#counterBadge { font-weight: 700; font-family: var(--serif); color: var(--gold); }
 </style>
 </head>
 <body>
@@ -290,12 +315,18 @@ function splitParagraphAtEndnote(paraXml) {
   }
   if (runIdx === -1) return { before: paraXml, after: null };
   const runXml = runs[runIdx].text;
-  const ctrlCloseIdx = runXml.indexOf('</hp:ctrl>');
+  // Anchor strictly on </hp:endNote> — searching for the first </hp:ctrl>
+  // anywhere in the run is wrong whenever the run ALSO contains an earlier,
+  // unrelated <hp:ctrl><hp:autoNum/></hp:ctrl> (e.g. the auto-numbered
+  // "[정답]" label), which these documents commonly have. That matched the
+  // wrong ctrl and cut the run apart mid-element, producing an orphaned
+  // </hp:ctrl> with no opener — invalid XML that 한글 reports as corrupted.
   const enCloseIdx = runXml.indexOf('</hp:endNote>');
-  let cut = -1;
-  if (ctrlCloseIdx !== -1 && ctrlCloseIdx > enCloseIdx) cut = ctrlCloseIdx + '</hp:ctrl>'.length;
-  else if (enCloseIdx !== -1) cut = enCloseIdx + '</hp:endNote>'.length;
-  if (cut === -1) return { before: paraXml, after: null };
+  if (enCloseIdx === -1) return { before: paraXml, after: null };
+  let cut = enCloseIdx + '</hp:endNote>'.length;
+  if (runXml.slice(cut, cut + '</hp:ctrl>'.length) === '</hp:ctrl>') {
+    cut += '</hp:ctrl>'.length;
+  }
 
   const runOpenMatch = runXml.match(/^<hp:run\b[^>]*>/);
   const runOpen = runOpenMatch ? runOpenMatch[0] : '<hp:run>';
@@ -623,13 +654,13 @@ function renderMissionBlocks() {
     div.className = 'missionBlock';
     div.innerHTML = `
       <h3>${group.mission} <span class="hint">(${group.category})</span></h3>
-      <div class="matchRow">
+      <div class="matchRow ${guess ? 'matched' : 'unmatched'}">
         <span class="hint">시험지 파일:</span>
         <select class="fileSelect">
           <option value="">-- 선택 안 함 (이 미션 제외) --</option>
           ${bankFiles.map(f => `<option value="${f.id}" ${f.id === group.selectedFileId ? 'selected' : ''}>${f.filename}</option>`).join('')}
         </select>
-        ${guess ? `<span class="hint">✓ ${guess.how}</span>` : '<span class="hint err">매칭 실패 - 직접 선택</span>'}
+        ${guess ? `<span class="matchTag">✓ ${guess.how}</span>` : '<span class="matchTag">매칭 실패 - 직접 선택</span>'}
       </div>
       <div class="qGrid">
         ${group.items.map(it => {
@@ -642,7 +673,14 @@ function renderMissionBlocks() {
         }).join('')}
       </div>
     `;
-    div.querySelector('.fileSelect').addEventListener('change', (ev) => { group.selectedFileId = ev.target.value; });
+    div.querySelector('.fileSelect').addEventListener('change', (ev) => {
+      group.selectedFileId = ev.target.value;
+      const row = ev.target.closest('.matchRow');
+      row.classList.toggle('matched', !!ev.target.value);
+      row.classList.toggle('unmatched', !ev.target.value);
+      const tag = row.querySelector('.matchTag');
+      if (tag) tag.textContent = ev.target.value ? '✓ 직접 선택' : '선택 안 함';
+    });
     div.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateCounter));
     missionBlocksEl.appendChild(div);
   }
