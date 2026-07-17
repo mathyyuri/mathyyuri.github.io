@@ -297,63 +297,21 @@ function detectExplicitMarkers(xml) {
   }
   return result;
 }
-// A question's endnote marker and the VISIBLE start of the NEXT question's
-// stem often live in the SAME <hp:p> paragraph — the endnote's run closes
-// with </hp:endNote></hp:ctrl> and is immediately followed, inside that
-// very same run, by plain <hp:t> text that is actually the next question's
-// opening sentence. Treating the whole paragraph as belonging to the
-// question that ends there (the old behavior) silently ate that opening
-// sentence — the next question's block would start one paragraph too late
-// and be missing its stem. This splits that one paragraph in two at the
-// point the endnote closes, so the leftover visible text is carried over
-// to become the first paragraph of the NEXT block instead.
-function splitParagraphAtEndnote(paraXml) {
-  const runs = findTopLevelBlocks(paraXml, 'hp:run');
-  let runIdx = -1;
-  for (let i = 0; i < runs.length; i++) {
-    if (runs[i].text.includes('<hp:endNote')) { runIdx = i; break; }
-  }
-  if (runIdx === -1) return { before: paraXml, after: null };
-  const runXml = runs[runIdx].text;
-  // Anchor strictly on </hp:endNote> — searching for the first </hp:ctrl>
-  // anywhere in the run is wrong whenever the run ALSO contains an earlier,
-  // unrelated <hp:ctrl><hp:autoNum/></hp:ctrl> (e.g. the auto-numbered
-  // "[정답]" label), which these documents commonly have. That matched the
-  // wrong ctrl and cut the run apart mid-element, producing an orphaned
-  // </hp:ctrl> with no opener — invalid XML that 한글 reports as corrupted.
-  const enCloseIdx = runXml.indexOf('</hp:endNote>');
-  if (enCloseIdx === -1) return { before: paraXml, after: null };
-  let cut = enCloseIdx + '</hp:endNote>'.length;
-  if (runXml.slice(cut, cut + '</hp:ctrl>'.length) === '</hp:ctrl>') {
-    cut += '</hp:ctrl>'.length;
-  }
-
-  const runOpenMatch = runXml.match(/^<hp:run\b[^>]*>/);
-  const runOpen = runOpenMatch ? runOpenMatch[0] : '<hp:run>';
-  const beforeRunInner = runXml.slice(runOpen.length, cut);
-  const afterRunInner = runXml.slice(cut, runXml.length - '</hp:run>'.length);
-
-  const pOpenMatch = paraXml.match(/^<hp:p\b[^>]*>/);
-  const pOpen = pOpenMatch ? pOpenMatch[0] : '<hp:p>';
-  const idMatch = pOpen.match(/\bid="(\d+)"/);
-  const restId = idMatch ? String(Number(idMatch[1]) + 1) : '0';
-  const pOpenRest = pOpen.replace(/\bid="\d+"/, `id="${restId}"`);
-
-  // A stale cached <hp:linesegarray> mismatched to the new (truncated)
-  // content is what caused "document is corrupted" errors before — give
-  // both halves a fresh generic one instead of keeping the original.
-  const genericLineseg = '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray>';
-
-  const runsBefore = runs.slice(0, runIdx).map(r => r.text).join('');
-  const before = pOpen + runsBefore + runOpen + beforeRunInner + '</hp:run>' + genericLineseg + '</hp:p>';
-
-  const afterHasVisible = /<hp:t>[^<]*[^\s<][^<]*<\/hp:t>/.test(afterRunInner) || /<hp:(pic|tbl|equation|rect)\b/.test(afterRunInner);
-  const runsAfter = runs.slice(runIdx + 1).map(r => r.text).join('');
-  let after = null;
-  if (afterHasVisible || runsAfter.trim()) {
-    after = pOpenRest + runOpen + afterRunInner + '</hp:run>' + runsAfter + genericLineseg + '</hp:p>';
-  }
-  return { before, after };
+// A question's endnote paragraph contains BOTH its solution text and,
+// concatenated in the very same run right after, the visible stem of that
+// SAME question — followed a paragraph or two later by that question's
+// own answer choices. (Verified against a real exam file: e.g. endnote 1's
+// paragraph is literally "[정답] ⑤ ...개수는 5" immediately followed by
+// "두 점 A(2,a), B(a,6) 사이의 거리가 4 이하가 되도록 하는 정수 a의
+// 개수는?" — solution then stem, same problem, same paragraph.) Extend
+// forward from each endnote through an optional blank gap, then through
+// the following non-blank "choices" run — capped at the next endnote's
+// own paragraph so a question with no gap before it never gets swallowed.
+// Everything between one question's own end and the next endnote (an
+// optional topic-label line, plus the next question's diagram image)
+// belongs to the NEXT question, not this one.
+function isBlankPara(p) {
+  return stripTags(p.text).trim() === '';
 }
 
 function detectEndnoteMarkers(xml) {
@@ -363,19 +321,19 @@ function detectEndnoteMarkers(xml) {
     const m = paras[i].text.match(/<hp:endNote\b[^>]*\bnumber="(\d+)"/);
     if (m) boundaries.push({ i, key: m[1] });
   }
+  const choicesEnd = boundaries.map(({ i }, idx) => {
+    const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
+    let j = i + 1;
+    while (j < nextI && isBlankPara(paras[j])) j++;
+    while (j < nextI && !isBlankPara(paras[j])) j++;
+    return j;
+  });
   const result = new Map();
-  let prevEnd = -1;
-  let carryOverAfter = null; // leftover visible text from splitting the previous boundary paragraph
-  for (const { i, key } of boundaries) {
-    const middleParas = paras.slice(prevEnd + 1, i).map(p => p.text);
-    const { before, after } = splitParagraphAtEndnote(paras[i].text);
-    const blockParts = [];
-    if (carryOverAfter) blockParts.push(carryOverAfter);
-    blockParts.push(...middleParas, before);
-    const blockXml = blockParts.join('');
-    if (blockXml.trim()) result.set(key, blockXml);
-    carryOverAfter = after;
-    prevEnd = i;
+  for (let k = 0; k < boundaries.length; k++) {
+    const start = k > 0 ? choicesEnd[k - 1] : 0;
+    const end = choicesEnd[k];
+    const blockXml = paras.slice(start, end).map(p => p.text).join('');
+    if (blockXml.trim()) result.set(boundaries[k].key, blockXml);
   }
   return result;
 }
@@ -624,8 +582,17 @@ function resolveFileForMission(missionName) {
   }
   const norm = (s) => s.replace(/[\s.\[\]()]/g, '');
   const target = norm(missionName);
-  const fuzzy = bankFiles.find(f => norm(f.filename).includes(target));
-  return fuzzy ? { file: fuzzy, how: '자동 매칭' } : null;
+  const candidates = bankFiles.filter(f => norm(f.filename).includes(target));
+  if (!candidates.length) return null;
+  // Same mission name can have a different file per class (e.g. "1차시
+  // 과제미션"의 S+반용/S반용 파일이 따로 있는 경우) — among filename
+  // matches, prefer the one whose name also contains this student's own
+  // class name, so 자동 매칭 doesn't just grab whichever file sorts first.
+  if (cls) {
+    const classHit = candidates.find(f => norm(f.filename).includes(norm(cls)));
+    if (classHit) return { file: classHit, how: '자동 매칭 (반 이름 포함)' };
+  }
+  return { file: candidates[0], how: '자동 매칭' };
 }
 
 function roundFor(mission, num) {
