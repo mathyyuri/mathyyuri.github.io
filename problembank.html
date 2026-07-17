@@ -148,3 +148,36 @@ async function onDelete(e) {
   } catch (err) {
     log('삭제 실패: ' + err.message, 'err');
   }
+}
+
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('uploadFile');
+  const memo = document.getElementById('uploadMemo').value.trim();
+  const file = fileInput.files[0];
+  if (!file) { log('파일을 선택해주세요.', 'err'); return; }
+  logEl.innerHTML = '';
+  log('업로드 중...');
+  try {
+    const base64 = await fileToBase64(file);
+    await callPost({ action: 'upload', filename: file.name, data: base64, memo });
+    log('업로드 완료.', 'ok');
+    fileInput.value = '';
+    document.getElementById('uploadMemo').value = '';
+    await refreshList();
+  } catch (e) {
+    log('업로드 실패: ' + e.message, 'err');
+  }
+});
+
+genBtn.addEventListener('click', () => {
+  const checked = tbody.querySelector('.rowChk:checked');
+  if (!checked) return;
+  const id = checked.dataset.id;
+  const name = checked.dataset.name;
+  location.href = `oedapnotegenerator.html?src=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+});
+
+refreshList();
+</script>
+</body>
+</html>
