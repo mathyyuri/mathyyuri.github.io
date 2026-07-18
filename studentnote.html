@@ -358,23 +358,22 @@ function detectEndnoteMarkers(xml) {
     while (j < nextI && isBlankPara(paras[j])) j++;
     while (j < nextI && !isBlankPara(paras[j]) && !looksLikeNextQuestionMarker(paras[j])) j++;
 
-    // A supplementary diagram sometimes appears AFTER a question's own
-    // choices instead of before the NEXT question's topic label (e.g. a
-    // coordinate-plane graph illustrating THIS question's own answer). If
-    // a picture shows up within a short blank gap here, and it sits
-    // closer to this question's own end than to the next question's own
-    // marker, treat it as this question's trailing diagram rather than
-    // silently handing it to the next question.
+    // Orphaned content — a stray choice list (e.g. a "<보기>"-style
+    // question whose "①ㄱ,ㄴ ②ㄱ,ㄷ..." line ended up separated from its
+    // own stem/topic-label by a blank gap) or an illustrating diagram —
+    // sometimes sits in the gap between this question's own end and the
+    // next question's topic label, instead of directly following either
+    // one with no gap at all. Whichever side it's structurally closer to
+    // is almost always where it actually belongs, so measure both
+    // distances and only absorb it into THIS block if it's closer here.
     let k = j, gap = 0;
     while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
-    if (k < nextI && paras[k].text.includes('<hp:pic')) {
+    if (k < nextI && !isBlankPara(paras[k]) && !looksLikeNextQuestionMarker(paras[k])) {
       const distHere = gap;
-      const distNext = nextI - k;
-      if (distHere <= distNext) {
-        k++;
-        while (k < nextI && !isBlankPara(paras[k]) && !looksLikeNextQuestionMarker(paras[k])) k++;
-        j = k;
-      }
+      let m = k;
+      while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
+      const distNext = nextI - m;
+      if (distHere <= distNext) j = m;
     }
     return j;
   });
