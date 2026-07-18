@@ -265,6 +265,17 @@ function isEmptySpacerPara(p) {
   return isBlankPara(p) && !p.text.includes('<hp:pic');
 }
 
+// A short-answer ("구하시오") question has no choices at all, so the
+// paragraph right after its stem can be the NEXT question's own topic
+// label or bracketed source citation with no blank line in between.
+// Without this guard, "consume the next non-blank run as choices" would
+// swallow that label — and everything up to the next blank — straight
+// into the wrong question.
+function looksLikeNextQuestionMarker(p) {
+  const t = stripTags(p.text).trim();
+  return /^유형\s*\d+\s*[:：]/.test(t) || /^\[[^\]]*\]$/.test(t);
+}
+
 function detectEndnoteMarkers(xml) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const boundaries = [];
@@ -276,7 +287,7 @@ function detectEndnoteMarkers(xml) {
     const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
     let j = i + 1;
     while (j < nextI && isBlankPara(paras[j])) j++;
-    while (j < nextI && !isBlankPara(paras[j])) j++;
+    while (j < nextI && !isBlankPara(paras[j]) && !looksLikeNextQuestionMarker(paras[j])) j++;
 
     // A supplementary diagram sometimes appears AFTER a question's own
     // choices instead of before the NEXT question's topic label (e.g. a
@@ -292,7 +303,7 @@ function detectEndnoteMarkers(xml) {
       const distNext = nextI - k;
       if (distHere <= distNext) {
         k++;
-        while (k < nextI && !isBlankPara(paras[k])) k++;
+        while (k < nextI && !isBlankPara(paras[k]) && !looksLikeNextQuestionMarker(paras[k])) k++;
         j = k;
       }
     }

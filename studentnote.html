@@ -70,8 +70,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingRowToggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
 .gradeItem { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .gradeNum { font-size: 10px; color: rgba(26,26,26,.45); }
-.gradingRow .saveGradeBtn { padding: 5px 12px; font-size: 12px; flex: 0 0 auto; }
-.gradingRow .gradeStatus { flex: 0 0 auto; }
+.gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
+.gradingFooter button { padding: 6px 16px; font-size: 12px; }
 #counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
 #counterBadge { font-weight: 700; font-family: var(--serif); color: var(--gold); }
 </style>
@@ -334,6 +334,17 @@ function isEmptySpacerPara(p) {
   return isBlankPara(p) && !p.text.includes('<hp:pic');
 }
 
+// A short-answer ("구하시오") question has no choices at all, so the
+// paragraph right after its stem can be the NEXT question's own topic
+// label or bracketed source citation with no blank line in between.
+// Without this guard, "consume the next non-blank run as choices" would
+// swallow that label — and everything up to the next blank — straight
+// into the wrong question.
+function looksLikeNextQuestionMarker(p) {
+  const t = stripTags(p.text).trim();
+  return /^유형\s*\d+\s*[:：]/.test(t) || /^\[[^\]]*\]$/.test(t);
+}
+
 function detectEndnoteMarkers(xml) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const boundaries = [];
@@ -345,7 +356,7 @@ function detectEndnoteMarkers(xml) {
     const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
     let j = i + 1;
     while (j < nextI && isBlankPara(paras[j])) j++;
-    while (j < nextI && !isBlankPara(paras[j])) j++;
+    while (j < nextI && !isBlankPara(paras[j]) && !looksLikeNextQuestionMarker(paras[j])) j++;
 
     // A supplementary diagram sometimes appears AFTER a question's own
     // choices instead of before the NEXT question's topic label (e.g. a
@@ -361,7 +372,7 @@ function detectEndnoteMarkers(xml) {
       const distNext = nextI - k;
       if (distHere <= distNext) {
         k++;
-        while (k < nextI && !isBlankPara(paras[k])) k++;
+        while (k < nextI && !isBlankPara(paras[k]) && !looksLikeNextQuestionMarker(paras[k])) k++;
         j = k;
       }
     }
@@ -574,8 +585,6 @@ function renderGradingRounds(rounds) {
             <span class="gradeNum">${it.num}</span>
           </span>`).join('')}
       </div>
-      <button type="button" class="saveGradeBtn">저장</button>
-      <span class="hint gradeStatus"></span>
     `;
     div.querySelectorAll('.gradeToggle').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -585,28 +594,32 @@ function renderGradingRounds(rounds) {
         btn.classList.toggle('O', !isO);
       });
     });
-    div.querySelector('.saveGradeBtn').addEventListener('click', async (ev) => {
-      const buttons = div.querySelectorAll('.gradeToggle');
-      const updates = [...buttons].map(b => ({
-        mission: b.dataset.mission, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
-      }));
-      if (!updates.length) return;
-      ev.target.disabled = true;
-      const statusEl = div.querySelector('.gradeStatus');
-      statusEl.textContent = '저장 중...';
-      try {
-        await callPostNoCors(DASHBOARD_URL, { action: 'gradenote', key: TEACHER_KEY, name: currentStudent.name, updates });
-        statusEl.textContent = '저장됨 ✓';
-        statusEl.className = 'hint ok';
-        await refreshGrading(currentStudent.name);
-      } catch (e) {
-        statusEl.textContent = '저장 실패: ' + e.message;
-        statusEl.className = 'hint err';
-        ev.target.disabled = false;
-      }
-    });
     gradingRoundsEl.appendChild(div);
   }
+  const footer = document.createElement('div');
+  footer.className = 'gradingFooter';
+  footer.innerHTML = `<button type="button" id="saveAllGradesBtn">전체 저장</button><span class="hint gradeStatus"></span>`;
+  footer.querySelector('#saveAllGradesBtn').addEventListener('click', async (ev) => {
+    const buttons = gradingRoundsEl.querySelectorAll('.gradeToggle');
+    const updates = [...buttons].map(b => ({
+      mission: b.dataset.mission, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
+    }));
+    if (!updates.length) return;
+    ev.target.disabled = true;
+    const statusEl = footer.querySelector('.gradeStatus');
+    statusEl.textContent = '저장 중...';
+    try {
+      await callPostNoCors(DASHBOARD_URL, { action: 'gradenote', key: TEACHER_KEY, name: currentStudent.name, updates });
+      statusEl.textContent = '저장됨 ✓';
+      statusEl.className = 'hint ok';
+      await refreshGrading(currentStudent.name);
+    } catch (e) {
+      statusEl.textContent = '저장 실패: ' + e.message;
+      statusEl.className = 'hint err';
+      ev.target.disabled = false;
+    }
+  });
+  gradingRoundsEl.appendChild(footer);
 }
 
 function resolveFileForMission(missionName) {
