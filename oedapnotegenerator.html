@@ -277,6 +277,25 @@ function detectEndnoteMarkers(xml) {
     let j = i + 1;
     while (j < nextI && isBlankPara(paras[j])) j++;
     while (j < nextI && !isBlankPara(paras[j])) j++;
+
+    // A supplementary diagram sometimes appears AFTER a question's own
+    // choices instead of before the NEXT question's topic label (e.g. a
+    // coordinate-plane graph illustrating THIS question's own answer). If
+    // a picture shows up within a short blank gap here, and it sits
+    // closer to this question's own end than to the next question's own
+    // marker, treat it as this question's trailing diagram rather than
+    // silently handing it to the next question.
+    let k = j, gap = 0;
+    while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
+    if (k < nextI && paras[k].text.includes('<hp:pic')) {
+      const distHere = gap;
+      const distNext = nextI - k;
+      if (distHere <= distNext) {
+        k++;
+        while (k < nextI && !isBlankPara(paras[k])) k++;
+        j = k;
+      }
+    }
     return j;
   });
   const result = new Map();

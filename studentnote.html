@@ -62,8 +62,16 @@ button:disabled { opacity: 0.4; cursor: default; }
 .status2 { color: var(--pink-deep); }
 .status3 { color: var(--gold); }
 .roundBadge { font-size: 11px; color: rgba(26,26,26,.45); margin-left: 4px; }
-.gradeToggle { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; }
+.gradeToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
 .gradeToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
+.gradingRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 6px 0; border-bottom: 1px solid var(--gold-line); font-size: 13px; }
+.gradingRow:last-child { border-bottom: none; }
+.gradingRowLabel { font-weight: 700; font-family: var(--kserif); flex: 0 0 auto; min-width: 140px; }
+.gradingRowToggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
+.gradeItem { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.gradeNum { font-size: 10px; color: rgba(26,26,26,.45); }
+.gradingRow .saveGradeBtn { padding: 5px 12px; font-size: 12px; flex: 0 0 auto; }
+.gradingRow .gradeStatus { flex: 0 0 auto; }
 #counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
 #counterBadge { font-weight: 700; font-family: var(--serif); color: var(--gold); }
 </style>
@@ -85,7 +93,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div class="box" id="gradingBox" style="display:none">
       <p><b>지난 오답노트 채점</b></p>
-      <p class="hint">오답노트를 만들면 회차가 기록됩니다. 학생이 풀어온 결과를 여기서 채점하면, 다음 오답노트 만들 때/노트 안에 반영됩니다.</p>
+      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾼 뒤 저장하세요.</p>
       <div id="gradingRounds"></div>
     </div>
 
@@ -338,6 +346,25 @@ function detectEndnoteMarkers(xml) {
     let j = i + 1;
     while (j < nextI && isBlankPara(paras[j])) j++;
     while (j < nextI && !isBlankPara(paras[j])) j++;
+
+    // A supplementary diagram sometimes appears AFTER a question's own
+    // choices instead of before the NEXT question's topic label (e.g. a
+    // coordinate-plane graph illustrating THIS question's own answer). If
+    // a picture shows up within a short blank gap here, and it sits
+    // closer to this question's own end than to the next question's own
+    // marker, treat it as this question's trailing diagram rather than
+    // silently handing it to the next question.
+    let k = j, gap = 0;
+    while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
+    if (k < nextI && paras[k].text.includes('<hp:pic')) {
+      const distHere = gap;
+      const distNext = nextI - k;
+      if (distHere <= distNext) {
+        k++;
+        while (k < nextI && !isBlankPara(paras[k])) k++;
+        j = k;
+      }
+    }
     return j;
   });
   const result = new Map();
@@ -536,19 +563,18 @@ function renderGradingRounds(rounds) {
   for (const r of rounds) {
     const at = r.at ? new Date(r.at).toLocaleDateString('ko-KR') : '';
     const div = document.createElement('div');
-    div.className = 'missionBlock';
+    div.className = 'gradingRow';
     div.innerHTML = `
-      <h3>${r.mission} ${r.round}회차 <span class="hint">(${at})</span></h3>
-      <table style="width:100%; border-collapse:collapse; font-size:13px;">
-        <tr>${r.items.map(it => `<th style="padding:4px;">${it.num}번</th>`).join('')}</tr>
-        <tr>${r.items.map(it => `
-          <td style="padding:4px; text-align:center;">
+      <div class="gradingRowLabel">${r.mission} ${r.round}회차 <span class="hint">(${at})</span></div>
+      <div class="gradingRowToggles">
+        ${r.items.map(it => `
+          <span class="gradeItem">
             <button type="button" class="gradeToggle" data-value="2"
               data-mission="${r.mission}" data-round="${r.round}" data-num="${it.num}">X</button>
-          </td>`).join('')}</tr>
-      </table>
-      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꿔주세요.</p>
-      <button type="button" class="saveGradeBtn" style="margin-top:8px;">이 회차 저장</button>
+            <span class="gradeNum">${it.num}</span>
+          </span>`).join('')}
+      </div>
+      <button type="button" class="saveGradeBtn">저장</button>
       <span class="hint gradeStatus"></span>
     `;
     div.querySelectorAll('.gradeToggle').forEach(btn => {
