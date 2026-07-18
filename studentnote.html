@@ -53,6 +53,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 .matchRow .matchTag { font-family: var(--serif); font-size: 11px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
 .matchRow.matched .matchTag { color: var(--mint-deep); }
 .matchRow.unmatched .matchTag { color: var(--pink-deep); }
+.qGridHead { margin-bottom: 6px; }
+.selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 4px 10px; font-size: 11px; letter-spacing: .04em; }
+.selectAllBtn:hover { background: var(--gold-soft); border-color: var(--gold); }
 .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
 .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid var(--gold-line); border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; font-family: var(--sans); background: #fff; }
 .qGrid label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
@@ -647,6 +650,9 @@ function renderMissionBlocks() {
         </select>
         ${guess ? `<span class="matchTag">✓ ${guess.how}</span>` : '<span class="matchTag">매칭 실패 - 직접 선택</span>'}
       </div>
+      <div class="qGridHead">
+        <button type="button" class="selectAllBtn">전체 선택</button>
+      </div>
       <div class="qGrid">
         ${group.items.map(it => {
           const r = roundFor(group.mission, it.num);
@@ -667,6 +673,13 @@ function renderMissionBlocks() {
       if (tag) tag.textContent = ev.target.value ? '✓ 직접 선택' : '선택 안 함';
     });
     div.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateCounter));
+    div.querySelector('.selectAllBtn').addEventListener('click', (ev) => {
+      const boxes = [...div.querySelectorAll('.qChk')];
+      const allChecked = boxes.every(b => b.checked);
+      boxes.forEach(b => { b.checked = !allChecked; });
+      ev.target.textContent = allChecked ? '전체 선택' : '전체 해제';
+      updateCounter();
+    });
     missionBlocksEl.appendChild(div);
   }
 }
@@ -741,13 +754,17 @@ genBtn.addEventListener('click', async () => {
 
     demo += textParaXml(9003, '[오답 현황 요약]', textIds);
     let summaryId = 9004;
+    let qOrderNum = 1;
     for (const g of missionGroups) {
-      const includedNums = checked.filter(c => c.mission === g.mission).map(c => c.num);
-      if (!includedNums.length) continue;
-      demo += textParaXml(summaryId++, `${g.mission}: ${includedNums.join(', ')}번 포함`, textIds);
+      const inGroup = checked.filter(c => c.mission === g.mission);
+      for (const c of inGroup) {
+        demo += textParaXml(summaryId++, `${qOrderNum}번   :   ${g.category}   :   ${g.mission}   :   ${c.num}번`, textIds);
+        qOrderNum++;
+      }
     }
 
     let qCounter = summaryId + 100;
+    let qBodyOrderNum = 1;
     for (const { mission, num, round } of checked) {
       const fileId = missionFileId.get(mission);
       const entry = loadedFileCache.get(fileId);
@@ -755,7 +772,8 @@ genBtn.addEventListener('click', async () => {
       if (!marker) continue;
 
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
-      demo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, labelIds);
+      demo += textParaXml(qCounter++, `${qBodyOrderNum}번  [ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, labelIds);
+      qBodyOrderNum++;
 
       if (entry === carrierEntry) {
         demo += marker.blockXml;
