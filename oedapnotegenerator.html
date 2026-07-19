@@ -99,23 +99,39 @@ function stripTags(s) {
   return s.replace(/<[^>]+>/g, '');
 }
 
-// The solution text always starts with "[정답] <answer>" — pull out just
-// that answer for a quick-answer-key page. Not every file marks the start
-// of the explanation with "[풀이]"/"해설" text, so this ALSO looks for an
-// explicit <hp:lineBreak/> in the raw XML (an actual manual line break the
-// author put right after the answer) before falling back to a short
-// character cap — without that, the cut point can land mid-sentence deep
-// into the explanation instead of right after the answer.
+// "[정답]" always sits inside its own <hp:p> paragraph, but that paragraph
+// is usually NESTED (an endnote's <hp:subList> paragraph, itself inside
+// the outer body paragraph carrying the note reference) — so a plain
+// top-level paragraph split treats the whole outer paragraph, endnote and
+// all, as one block. Find the INNERMOST <hp:p> that actually contains the
+// "[정답]" text (nesting-aware) and use only that one; the explanation
+// always starts in a fresh paragraph right after it.
 function extractQuickAnswer(blockXml) {
-  const startIdx = blockXml.indexOf('[정답]');
-  if (startIdx === -1) return '';
-  const rest = blockXml.slice(startIdx + '[정답]'.length);
-  const stops = ['[풀이]', '해설', '<hp:lineBreak'].map(s => rest.indexOf(s)).filter(i => i !== -1);
-  const cut = stops.length ? Math.min(...stops) : rest.length;
+  const idx = blockXml.indexOf('[정답]');
+  if (idx === -1) return '';
+  const tokenRe = /<hp:p\b[^>]*?\/>|<hp:p\b[^>]*?>|<\/hp:p>/g;
+  const stack = [];
+  let m, target = null;
+  while ((m = tokenRe.exec(blockXml)) !== null) {
+    const tok = m[0];
+    if (tok.endsWith('/>')) continue;
+    if (tok === '</hp:p>') {
+      const top = stack.pop();
+      if (top !== undefined && idx >= top && idx < m.index + tok.length) {
+        target = { start: top, end: m.index + tok.length };
+        break;
+      }
+    } else {
+      stack.push(m.index);
+    }
+  }
+  if (!target) return '';
+  const t = stripTags(blockXml.slice(target.start, target.end));
+  const ansIdx = t.indexOf('[정답]');
+  if (ansIdx === -1) return '';
   // "수식입니다." is just an equation's generic alt-text label ("this is
   // an equation"), not part of the actual answer — pure noise here.
-  const ans = stripTags(rest.slice(0, cut)).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
-  return ans.slice(0, 16);
+  return t.slice(ansIdx + '[정답]'.length).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
 }
 
 function extractFirstRun(block) {
