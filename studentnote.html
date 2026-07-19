@@ -192,10 +192,10 @@ function findTopLevelBlocks(xml, tagName) {
   return blocks;
 }
 function stripTags(s) { return s.replace(/<[^>]+>/g, ''); }
-// "그냥 복붙" — just take the endnote's own FIRST line (the first paragraph
-// inside its <hp:subList>) verbatim, whatever it says, instead of
-// searching for a "[정답]" marker — some files don't mark the answer with
-// that text at all, so searching for it silently failed for them.
+// "그냥 복붙" — copy the endnote's own first NON-BLANK line (a paragraph
+// inside its <hp:subList>) verbatim. Not necessarily the very first
+// paragraph: some solutions start with a blank spacer line before the
+// real content, and stopping there produced a false "인식 실패".
 function extractQuickAnswer(blockXml) {
   // NOT indexOf('<hp:endNote') — that also matches the unrelated
   // document-wide <hp:endNotePr> (endnote FORMATTING definition, appears
@@ -204,27 +204,27 @@ function extractQuickAnswer(blockXml) {
   // top of the section, where that boilerplate lives).
   const enMatch = blockXml.match(/<hp:endNote\s+number=/);
   if (!enMatch) return '';
-  const enIdx = enMatch.index;
-  // NOT indexOf('<hp:p', ...) either — that matches unrelated tags sharing
-  // the same prefix (<hp:placement>, <hp:pageBorderFill>, <hp:pic>…).
-  const pRe = /<hp:p(?=[\s>])/g;
-  pRe.lastIndex = enIdx;
-  const pMatch = pRe.exec(blockXml);
-  if (!pMatch) return '';
-  const pStart = pMatch.index;
-  const tokenRe = /<hp:p\b[^>]*?\/>|<hp:p\b[^>]*?>|<\/hp:p>/g;
-  tokenRe.lastIndex = pStart;
-  let depth = 0, m, end = -1;
-  while ((m = tokenRe.exec(blockXml)) !== null) {
+  const subListIdx = blockXml.indexOf('<hp:subList', enMatch.index);
+  if (subListIdx === -1) return '';
+  const closeRe = /<hp:subList\b[^>]*?\/>|<hp:subList\b[^>]*?>|<\/hp:subList>/g;
+  closeRe.lastIndex = subListIdx;
+  let depth = 0, m, subListEnd = -1;
+  while ((m = closeRe.exec(blockXml)) !== null) {
     const tok = m[0];
     if (tok.endsWith('/>')) continue;
-    if (tok === '</hp:p>') { depth--; if (depth === 0) { end = m.index + tok.length; break; } }
+    if (tok === '</hp:subList>') { depth--; if (depth === 0) { subListEnd = m.index + tok.length; break; } }
     else depth++;
   }
-  if (end === -1) return '';
-  // "수식입니다." is just an equation's generic alt-text label ("this is
-  // an equation"), not part of the actual content — pure noise here.
-  return stripTags(blockXml.slice(pStart, end)).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+  if (subListEnd === -1) return '';
+  const subListXml = blockXml.slice(subListIdx, subListEnd);
+  const paras = findTopLevelBlocks(subListXml, 'hp:p');
+  for (const p of paras) {
+    // "수식입니다." is just an equation's generic alt-text label ("this is
+    // an equation"), not part of the actual content — pure noise here.
+    const t = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+    if (t) return t;
+  }
+  return '';
 }
 function extractFirstRun(block) {
   const runs = findTopLevelBlocks(block, 'hp:run');
@@ -915,6 +915,16 @@ function historyString(mission, num) {
   return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?') + '(' + h.round + ')').join(' ');
 }
 
+// "OOX" — the same past-round results as historyString, but as a plain
+// concatenated string with no round numbers (round order is already
+// implicit left-to-right) for the printed [오답 현황 요약] summary line.
+function compactHistoryString(mission, num) {
+  const rounds = noteHistory
+    .filter(h => h.mission === mission && h.num === Number(num))
+    .sort((a, b) => a.round - b.round);
+  return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?')).join('');
+}
+
 function renderMissionBlocks() {
   missionBlocksEl.innerHTML = '';
   for (const group of missionGroups) {
@@ -1040,7 +1050,8 @@ genBtn.addEventListener('click', async () => {
     for (const g of missionGroups) {
       const inGroup = checked.filter(c => c.mission === g.mission);
       for (const c of inGroup) {
-        demo += textParaXml(summaryId++, `${qOrderNum}번   :   ${g.category}   :   ${g.mission}   :   ${c.num}번`, textIds);
+        const hist = compactHistoryString(g.mission, c.num) || '기록없음';
+        demo += textParaXml(summaryId++, `${qOrderNum}번   :   ${g.category}   :   ${g.mission}   :   ${c.num}번   :   ${c.round}차시도   :   ${hist}`, textIds);
         qOrderNum++;
       }
     }
