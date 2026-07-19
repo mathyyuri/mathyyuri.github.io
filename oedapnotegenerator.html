@@ -99,6 +99,25 @@ function stripTags(s) {
   return s.replace(/<[^>]+>/g, '');
 }
 
+// The solution text always starts with "[정답] <answer>" — pull out just
+// that answer for a quick-answer-key page. Not every file marks the start
+// of the explanation with "[풀이]"/"해설" text, so this ALSO looks for an
+// explicit <hp:lineBreak/> in the raw XML (an actual manual line break the
+// author put right after the answer) before falling back to a short
+// character cap — without that, the cut point can land mid-sentence deep
+// into the explanation instead of right after the answer.
+function extractQuickAnswer(blockXml) {
+  const startIdx = blockXml.indexOf('[정답]');
+  if (startIdx === -1) return '';
+  const rest = blockXml.slice(startIdx + '[정답]'.length);
+  const stops = ['[풀이]', '해설', '<hp:lineBreak'].map(s => rest.indexOf(s)).filter(i => i !== -1);
+  const cut = stops.length ? Math.min(...stops) : rest.length;
+  // "수식입니다." is just an equation's generic alt-text label ("this is
+  // an equation"), not part of the actual answer — pure noise here.
+  const ans = stripTags(rest.slice(0, cut)).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+  return ans.slice(0, 16);
+}
+
 function extractFirstRun(block) {
   const runs = findTopLevelBlocks(block, 'hp:run');
   return runs.length ? runs[0].text : null;
@@ -214,6 +233,123 @@ function pickParaPrId(defs, { align, noHeading } = {}) {
   return match ? match.id : null;
 }
 
+// ---------- 서식 파일에서 머리말/꼬리말(반복 헤더) 이식 ----------
+// Copies a small number of style definitions (paraPr/charPr/style/
+// borderFill) from a DIFFERENT file's header.xml into the carrier's, so a
+// fragment that references those IDs (like a running header/footer
+// control) can be safely reused without corrupting the output — the same
+// technique already validated for cross-file question merging, just
+// applied to a handful of style IDs instead of question content.
+const STYLE_ID_WRAPPERS = {
+  paraPrIDRef: ['paraPr', 'hh:paraProperties'],
+  charPrIDRef: ['charPr', 'hh:charProperties'],
+  styleIDRef: ['style', 'hh:styles'],
+  borderFillIDRef: ['borderFill', 'hh:borderFills'],
+};
+function extractHeaderDef(headerXml, tag, id) {
+  // hh:style is self-closing; the balanced-tag finder below skips
+  // self-closing tags entirely, so it needs its own simple extraction.
+  const selfClosing = headerXml.match(new RegExp(`<hh:${tag}\\b[^>]*\\bid="${id}"[^>]*/>`));
+  if (selfClosing) return selfClosing[0];
+  const blocks = findTopLevelBlocks(headerXml, `hh:${tag}`);
+  for (const b of blocks) {
+    const m = b.text.match(/^<hh:\w+\s+id="(\d+)"/);
+    if (m && m[1] === id) return b.text;
+  }
+  return null;
+}
+function maxHeaderId(headerXml, tag) {
+  const ids = [...headerXml.matchAll(new RegExp(`<hh:${tag}\\b[^>]*\\bid="(\\d+)"`, 'g'))].map(m => Number(m[1]));
+  return ids.length ? Math.max(...ids) : -1;
+}
+function importForeignStyleIds(carrierHeaderXml, foreignHeaderXml, fragmentXml) {
+  let patchedHeader = carrierHeaderXml;
+  let patchedFragment = fragmentXml;
+  for (const [attr, [tag, wrapper]] of Object.entries(STYLE_ID_WRAPPERS)) {
+    const used = [...new Set([...fragmentXml.matchAll(new RegExp(attr + '="(\\d+)"', 'g'))].map(m => m[1]))];
+    let nextId = maxHeaderId(patchedHeader, tag) + 1;
+    const map = {};
+    for (const oldId of used) {
+      const def = extractHeaderDef(foreignHeaderXml, tag, oldId);
+      if (!def) continue;
+      const newId = String(nextId++);
+      const newDef = def.replace(/^(<hh:\w+\s+id=")\d+(")/, `$1${newId}$2`);
+      const closeTag = `</${wrapper}>`;
+      if (!patchedHeader.includes(closeTag)) continue;
+      patchedHeader = patchedHeader.replace(closeTag, newDef + closeTag);
+      map[oldId] = newId;
+    }
+    patchedFragment = patchedFragment.replace(new RegExp(attr + '="(\\d+)"', 'g'), (full, id) => `${attr}="${map[id] || id}"`);
+  }
+  return { patchedHeader, patchedFragment };
+}
+// Every section's first paragraph carries its <hp:secPr> (page setup) in
+// its own run; a repeating header/footer control lives in the NEXT run,
+// right after that one closes. Insert the ported run there, matching
+// where it would naturally sit in a real document.
+function insertHeaderFooterRun(sectionXml, runXml) {
+  const paras = findTopLevelBlocks(sectionXml, 'hp:p');
+  if (!paras.length) return sectionXml;
+  const p0 = paras[0].text;
+  const cut = p0.indexOf('</hp:run>') + '</hp:run>'.length;
+  if (cut < '</hp:run>'.length) return sectionXml;
+  const newP0 = p0.slice(0, cut) + runXml + p0.slice(cut);
+  return sectionXml.slice(0, paras[0].start) + newP0 + sectionXml.slice(paras[0].end);
+}
+// Finds a real header/footer control (with actual text, not an empty
+// placeholder) in ANY of the format-template file's sections, so this
+// isn't hard-coded to assume it's always in a specific section index.
+async function findHeaderFooterRun(entry) {
+  for (const path of entry.sectionOrder) {
+    const xml = await entry.zipData.file(path).async('string');
+    const paras = findTopLevelBlocks(xml, 'hp:p');
+    if (!paras.length) continue;
+    const runs = findTopLevelBlocks(paras[0].text, 'hp:run');
+    for (const r of runs) {
+      if ((r.text.includes('<hp:header') || r.text.includes('<hp:footer')) &&
+          stripTags(r.text).trim()) {
+        return r.text;
+      }
+    }
+  }
+  return null;
+}
+// This file has no shared "bankFiles" list loaded up front (files are
+// loaded lazily, one row at a time) — fetch+cache the bank listing and the
+// parsed format file ourselves, the same way loadFileIntoRow() does for a
+// user-picked row.
+let formatBankListPromise = null;
+let formatEntryPromise = null;
+async function getFormatEntry() {
+  if (!formatEntryPromise) {
+    formatEntryPromise = (async () => {
+      if (!formatBankListPromise) formatBankListPromise = callGetJsonp({ action: 'list' }).then(r => r.files).catch(() => []);
+      const files = await formatBankListPromise;
+      const formatFile = files.find(f => f.filename.includes('서식'));
+      if (!formatFile) return null;
+      const json = await callGetJsonp({ action: 'download', id: formatFile.id });
+      const zipData = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
+      return parseHwpx(zipData);
+    })();
+  }
+  return formatEntryPromise;
+}
+async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml) {
+  try {
+    const formatEntry = await getFormatEntry();
+    if (!formatEntry) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+    const hfRun = await findHeaderFooterRun(formatEntry);
+    if (!hfRun) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+    const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
+    const { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfRun);
+    const newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
+    return { headerXml: patchedHeader, sectionXml: newSectionXml };
+  } catch (e) {
+    console.error('머리말/꼬리말 이식 실패 (건너뜀):', e);
+    return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+  }
+}
+
 // ---------- marker detection (merged, not strict priority) ----------
 // A single method winning outright breaks files that mix approaches (e.g.
 // a couple of manual [[N]] tags plus endnotes for the rest) — a question
@@ -276,6 +412,19 @@ function looksLikeNextQuestionMarker(p) {
   return /^유형\s*\d+\s*[:：]/.test(t) || /^\[[^\]]*\]$/.test(t);
 }
 
+// Orphaned-content absorption (below) must only grab things we can
+// positively identify as belonging to SOME question — a picture, or a
+// choice list starting with ①/㉠/ㄱ — never "any non-blank paragraph".
+// Some documents carry a repeating watermark/copyright notice
+// ("이 자료를 무단으로 복제...") in the gap between questions; treating
+// that as orphaned content silently corrupted unrelated questions with
+// the watermark text instead of their real answer.
+function looksLikeOrphanedFragment(p) {
+  if (p.text.includes('<hp:pic')) return true;
+  const t = stripTags(p.text).trim();
+  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t);
+}
+
 function detectEndnoteMarkers(xml) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const boundaries = [];
@@ -299,7 +448,7 @@ function detectEndnoteMarkers(xml) {
     // distances and only absorb it into THIS block if it's closer here.
     let k = j, gap = 0;
     while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
-    if (k < nextI && !isBlankPara(paras[k]) && !looksLikeNextQuestionMarker(paras[k])) {
+    if (k < nextI && looksLikeOrphanedFragment(paras[k])) {
       const distHere = gap;
       let m = k;
       while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
@@ -379,9 +528,10 @@ function normalizeIds(blockXml, ids) {
     .replace(/(<hp:run\b[^>]*\bcharPrIDRef=")\d+(")/g, `$1${ids.charPrIDRef}$2`);
 }
 
-function textParaXml(pid, text, ids) {
+function textParaXml(pid, text, ids, opts) {
   const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+  const pageBreak = (opts && opts.pageBreak) ? '1' : '0';
+  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="${pageBreak}" columnBreak="0" merged="0">` +
          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
          `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
          `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
@@ -560,7 +710,7 @@ genBtn.addEventListener('click', async () => {
 
     const carrierEntry = byFile.get(checked[0].uid);
     const carrierIds = deriveSafeIds(carrierEntry.markers);
-    const carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
+    let carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
     const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
     // plain (no auto-numbering) styles for our own generated text — the
     // question-derived paraPrIDRef above often has heading/outline
@@ -586,14 +736,19 @@ genBtn.addEventListener('click', async () => {
       + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
     let qCounter = 9003;
 
+    let qIdx = 0;
     for (const { uid, num } of checked) {
       const entry = byFile.get(uid);
       const marker = entry.markers.get(num);
       if (!marker) continue;
+      const pageBreak = qIdx > 0;
+      qIdx++;
       if (loadedFiles.length > 1) {
-        demo += textParaXml(qCounter++, entry.filename, labelIds);
+        demo += textParaXml(qCounter++, entry.filename, labelIds, { pageBreak });
+        demo += textParaXml(qCounter++, `문항 ${num}`, textIds);
+      } else {
+        demo += textParaXml(qCounter++, `문항 ${num}`, textIds, { pageBreak });
       }
-      demo += textParaXml(qCounter++, `문항 ${num}`, textIds);
 
       if (entry.uid === carrierEntry.uid) {
         demo += marker.blockXml;
@@ -616,8 +771,28 @@ genBtn.addEventListener('click', async () => {
       }
     }
 
+    // 빠른 정답 — 문제가 다 끝나고, 미주(해설)가 자동으로 모여 나오기 직전에
+    // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
+    demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
+    let quickOrderNum = 1;
+    for (const { uid, num } of checked) {
+      const entry = byFile.get(uid);
+      const marker = entry && entry.markers.get(num);
+      const answer = marker ? extractQuickAnswer(marker.blockXml) : '';
+      demo += textParaXml(qCounter++, `${quickOrderNum}번   :   ${answer || '(정답 인식 실패)'}`, textIds);
+      quickOrderNum++;
+    }
+
     const targetSection = carrierEntry.sectionOrder[0];
     strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
+
+    log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
+    {
+      const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection } =
+        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection]);
+      carrierHeaderXml = patchedHeaderXml;
+      strippedSections[targetSection] = patchedTargetSection;
+    }
 
     const keepImageHrefs = new Set(
       collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean)
@@ -631,6 +806,8 @@ genBtn.addEventListener('click', async () => {
       const storeOpt = relPath === 'mimetype' ? { compression: 'STORE' } : {};
       if (strippedSections[relPath] !== undefined) {
         outZip.file(relPath, strippedSections[relPath], storeOpt);
+      } else if (relPath === 'Contents/header.xml') {
+        outZip.file(relPath, carrierHeaderXml, storeOpt);
       } else if (relPath === 'Preview/PrvText.txt') {
         outZip.file(relPath, `${studentName} 오답노트`, storeOpt);
       } else if (relPath === 'Preview/PrvImage.png') {
