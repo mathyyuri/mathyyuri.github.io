@@ -384,17 +384,53 @@ function isPairedOddEven(ctrls) {
 // graphic) only ever contributes ONE ctrl and never both an ODD and an EVEN
 // variant — prefer whichever section actually has a real paired ODD/EVEN
 // design; fall back to "most ctrls found" if no section is fully paired.
+// Also returns the WINNING section's own raw xml, since its page setup
+// (margins) and master page (column layout) need to be ported from that
+// same section for a consistent result — not just its header/footer text.
 async function findHeaderFooterCtrls(entry) {
   let best = [];
   let bestPaired = false;
+  let bestSectionXml = null;
   for (const path of entry.sectionOrder) {
     const xml = await entry.zipData.file(path).async('string');
     const found = collectHeaderFooterCtrls(xml);
     const paired = isPairedOddEven(found);
-    if (paired && !bestPaired) { best = found; bestPaired = true; }
-    else if (!bestPaired && found.length > best.length) { best = found; }
+    if (paired && !bestPaired) { best = found; bestPaired = true; bestSectionXml = xml; }
+    else if (!bestPaired && found.length > best.length) { best = found; bestSectionXml = xml; }
   }
-  return best;
+  return { ctrls: best, sectionXml: bestSectionXml };
+}
+// The section's own page size/margins/gutter (<hp:pagePr>) is what
+// actually controls page margins — porting just the header/footer control
+// never touched it, so the carrier kept its own exam-paper margins.
+function portPageSetup(carrierSectionXml, formatSectionXml) {
+  const m = formatSectionXml.match(/<hp:pagePr\b[\s\S]*?<\/hp:pagePr>/);
+  if (!m) return carrierSectionXml;
+  return carrierSectionXml.replace(/<hp:pagePr\b[\s\S]*?<\/hp:pagePr>/, m[0]);
+}
+// A "다단" (multi-column, e.g. 2-column newspaper-style) layout is a
+// <hp:ctrl><hp:colPr>...</hp:colPr></hp:ctrl> control — structurally just
+// like header/footer/pageNum — but it lives in the section's MASTER PAGE,
+// not the section itself.
+async function findColumnCtrl(entry, sectionXml) {
+  const m = sectionXml.match(/<hp:masterPage idRef="([^"]+)"/);
+  if (!m) return null;
+  const mpFile = entry.zipData.file(`Contents/${m[1]}.xml`);
+  if (!mpFile) return null;
+  const mpXml = await mpFile.async('string');
+  const paras = findTopLevelBlocks(mpXml, 'hp:p');
+  for (const p of paras) {
+    const runs = findTopLevelBlocks(p.text, 'hp:run');
+    for (const r of runs) {
+      const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
+      const charPr = charPrM ? charPrM[1] : '0';
+      const ctrls = findTopLevelBlocks(r.text, 'hp:ctrl');
+      for (const c of ctrls) {
+        if (c.text.includes('<hp:colPr')) return { ctrlXml: c.text, charPrIDRef: charPr };
+      }
+    }
+  }
+  return null;
 }
 // The ODD-page header commonly shows a specific example student's own
 // class/name (e.g. "대치수학 2기 S+ 백승진" in the example file this
@@ -445,9 +481,11 @@ function stripPictures(xml) {
   for (const p of pics) out = out.replace(p.text, '');
   return out;
 }
-async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize) {
+async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, formatSectionXml, personalize) {
   const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
   let hfFragment = ctrls.map(({ ctrlXml, charPrIDRef }) => `<hp:run charPrIDRef="${charPrIDRef}">${ctrlXml}</hp:run>`).join('');
+  const colCtrl = await findColumnCtrl(formatEntry, formatSectionXml);
+  if (colCtrl) hfFragment += `<hp:run charPrIDRef="${colCtrl.charPrIDRef}">${colCtrl.ctrlXml}</hp:run>`;
   hfFragment = stripPictures(hfFragment);
   if (personalize) hfFragment = personalize(hfFragment);
   let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfFragment);
@@ -471,7 +509,8 @@ async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, forma
     idMap[oldId] = newId;
   }
   patchedFragment = rewriteImageRefs(patchedFragment, idMap);
-  const newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
+  let newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
+  newSectionXml = portPageSetup(newSectionXml, formatSectionXml);
   return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
 }
 async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml, personalize) {
@@ -484,15 +523,15 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
     let fallback = null;
     for (const file of candidates) {
       const formatEntry = await loadFormatEntry(file);
-      const ctrls = await findHeaderFooterCtrls(formatEntry);
+      const { ctrls, sectionXml: formatSectionXml } = await findHeaderFooterCtrls(formatEntry);
       if (!ctrls.length) continue;
       if (isPairedOddEven(ctrls)) {
-        return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize);
+        return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, formatSectionXml, personalize);
       }
-      if (!fallback) fallback = { formatEntry, ctrls };
+      if (!fallback) fallback = { formatEntry, ctrls, formatSectionXml };
     }
     if (fallback) {
-      return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, fallback.formatEntry, fallback.ctrls, personalize);
+      return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, fallback.formatEntry, fallback.ctrls, fallback.formatSectionXml, personalize);
     }
     return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
   } catch (e) {
