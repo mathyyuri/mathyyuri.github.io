@@ -388,57 +388,122 @@ function insertHeaderFooterRun(sectionXml, runXml) {
   const newP0 = p0.slice(0, cut) + runXml + p0.slice(cut);
   return sectionXml.slice(0, paras[0].start) + newP0 + sectionXml.slice(paras[0].end);
 }
-// Real header/footer templates spread header(ODD)/header(EVEN)/footer(ODD)/
-// footer(EVEN)/footer(BOTH) across SEPARATE sibling runs in the SAME
-// paragraph — and that paragraph isn't always the section's first one
-// either (verified against the real 오답노트_서식 file: its header/footer
-// runs sit in the SECOND paragraph, not the first). Scan every paragraph in
-// every section; the first paragraph found with ANY qualifying run wins,
-// and ALL of its header/footer runs (in original order) are ported
-// together — porting only ONE would leave, say, EVEN pages unbranded.
-async function findHeaderFooterRuns(entry) {
-  for (const path of entry.sectionOrder) {
-    const xml = await entry.zipData.file(path).async('string');
-    const paras = findTopLevelBlocks(xml, 'hp:p');
-    for (const p of paras) {
-      const runs = findTopLevelBlocks(p.text, 'hp:run');
-      const hits = runs.filter(r => (r.text.includes('<hp:header') || r.text.includes('<hp:footer')) && stripTags(r.text).trim());
-      if (hits.length) return hits.map(r => r.text).join('');
+// Real header/footer designs put each ODD/EVEN/BOTH variant in its OWN
+// <hp:ctrl>, and those ctrls can be scattered across DIFFERENT paragraphs
+// (even different SECTIONS) — e.g. the EVEN header + both footers sit in
+// one paragraph, while the ODD header sits in a totally separate paragraph
+// later in the same section. Extracting a whole RUN is unsafe too: a ctrl
+// can share its run with unrelated body content (verified against a real
+// file where a run was "<header ctrl>④ ... ⑤ ..." — actual question
+// choices tacked on after the header control in the SAME run). So: pull
+// out just the <hp:ctrl> elements themselves, each individually re-wrapped
+// in a minimal run using its original charPrIDRef.
+function collectHeaderFooterCtrls(xml) {
+  const found = [];
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  for (const p of paras) {
+    const runs = findTopLevelBlocks(p.text, 'hp:run');
+    for (const r of runs) {
+      const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
+      const charPr = charPrM ? charPrM[1] : '0';
+      const ctrls = findTopLevelBlocks(r.text, 'hp:ctrl');
+      for (const c of ctrls) {
+        // A deliberately-BLANK footer/header (e.g. an ODD-page footer with
+        // no visible text, by design) is still real authored content — do
+        // NOT filter by "has visible text", or a genuinely blank-by-design
+        // variant gets silently dropped.
+        if (/^<hp:ctrl><hp:(header|footer)\b/.test(c.text)) found.push({ ctrlXml: c.text, charPrIDRef: charPr });
+      }
     }
   }
-  return null;
+  return found;
 }
-async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml) {
+function isPairedOddEven(ctrls) {
+  const types = new Set();
+  for (const { ctrlXml } of ctrls) {
+    const m = ctrlXml.match(/applyPageType="(\w+)"/);
+    if (m) types.add(m[1]);
+  }
+  return types.has('ODD') && types.has('EVEN');
+}
+// A lone BOTH-type banner elsewhere in a document (e.g. a section-divider
+// graphic) only ever contributes ONE ctrl and never both an ODD and an EVEN
+// variant — prefer whichever section actually has a real paired ODD/EVEN
+// design; fall back to "most ctrls found" if no section is fully paired.
+async function findHeaderFooterCtrls(entry) {
+  let best = [];
+  let bestPaired = false;
+  for (const path of entry.sectionOrder) {
+    const xml = await entry.zipData.file(path).async('string');
+    const found = collectHeaderFooterCtrls(xml);
+    const paired = isPairedOddEven(found);
+    if (paired && !bestPaired) { best = found; bestPaired = true; }
+    else if (!bestPaired && found.length > best.length) { best = found; }
+  }
+  return best;
+}
+// The ODD-page header commonly shows THIS student's own class/name (e.g.
+// "대치수학 2기 S+ 백승진" in the example file this technique was verified
+// against) — that literal text has to be swapped for whoever the note is
+// actually being generated for.
+function personalizeOddHeaderText(fragmentXml, replacementText) {
+  return fragmentXml.replace(
+    /(<hp:t>)대치수학\s*\d+기\s*\S+\s*\S+(<\/hp:t>)/,
+    (full, open, close) => open + replacementText + close
+  );
+}
+async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize) {
+  const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
+  let hfFragment = ctrls.map(({ ctrlXml, charPrIDRef }) => `<hp:run charPrIDRef="${charPrIDRef}">${ctrlXml}</hp:run>`).join('');
+  if (personalize) hfFragment = personalize(hfFragment);
+  let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfFragment);
+  // Some header/footer designs carry their own images (e.g. a logo in a
+  // table cell) — copy those binary assets across too, the same way a
+  // foreign question's images are ported elsewhere, using a separate
+  // "himg" id prefix so these can never collide with a question's own
+  // "ximg" ids.
+  const images = [];
+  const refs = collectImageRefs(patchedFragment);
+  const idMap = {};
+  let himgCounter = 0;
+  for (const oldId of refs) {
+    const href = formatEntry.manifestItems[oldId];
+    if (!href) continue;
+    const ext = href.split('.').pop();
+    const bytes = await formatEntry.zipData.file(href).async('uint8array');
+    const newId = 'himg' + (himgCounter++);
+    const newPath = `BinData/${newId}.${ext}`;
+    images.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
+    idMap[oldId] = newId;
+  }
+  patchedFragment = rewriteImageRefs(patchedFragment, idMap);
+  const newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
+  return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
+}
+async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml, personalize) {
   try {
-    const formatFile = bankFiles.find(f => f.filename.includes('서식'));
-    if (!formatFile) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
-    const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
-    const hfRuns = await findHeaderFooterRuns(formatEntry);
-    if (!hfRuns) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
-    const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
-    let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfRuns);
-    // A real 서식 header/footer commonly carries its own images (e.g. a
-    // logo in a table cell) — copy those binary assets across too, the
-    // same way a foreign question's images are ported elsewhere, using a
-    // separate "himg" id prefix so these can never collide with a
-    // question's own "ximg" ids.
-    const images = [];
-    const refs = collectImageRefs(patchedFragment);
-    const idMap = {};
-    let himgCounter = 0;
-    for (const oldId of refs) {
-      const href = formatEntry.manifestItems[oldId];
-      if (!href) continue;
-      const ext = href.split('.').pop();
-      const bytes = await formatEntry.zipData.file(href).async('uint8array');
-      const newId = 'himg' + (himgCounter++);
-      const newPath = `BinData/${newId}.${ext}`;
-      images.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
-      idMap[oldId] = newId;
+    // Deliberately narrow to files literally named with "서식" — a real
+    // exam paper in the bank can carry its OWN paired ODD/EVEN header (its
+    // own exam branding, e.g. running the same title in the corner of
+    // every page), which is unrelated to the 오답노트 template design.
+    // Scanning the whole bank risked silently grabbing an unrelated exam
+    // file's own header/footer whenever it happened to look "paired" —
+    // confirmed against real files, so this stays scoped to "서식" only.
+    const candidates = bankFiles.filter(f => f.filename.includes('서식'));
+    let fallback = null;
+    for (const formatFile of candidates) {
+      const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
+      const ctrls = await findHeaderFooterCtrls(formatEntry);
+      if (!ctrls.length) continue;
+      if (isPairedOddEven(ctrls)) {
+        return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize);
+      }
+      if (!fallback) fallback = { formatEntry, ctrls };
     }
-    patchedFragment = rewriteImageRefs(patchedFragment, idMap);
-    const newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
-    return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
+    if (fallback) {
+      return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, fallback.formatEntry, fallback.ctrls, personalize);
+    }
+    return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
   } catch (e) {
     console.error('머리말/꼬리말 이식 실패 (건너뜀):', e);
     return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
@@ -1035,8 +1100,10 @@ genBtn.addEventListener('click', async () => {
 
     log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
     {
+      const oddHeaderText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class} ${studentName}`;
+      const personalize = (fragmentXml) => personalizeOddHeaderText(fragmentXml, oddHeaderText);
       const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
-        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection]);
+        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize);
       carrierHeaderXml = patchedHeaderXml;
       strippedSections[targetSection] = patchedTargetSection;
       foreignImagesToAdd.push(...headerImages);
