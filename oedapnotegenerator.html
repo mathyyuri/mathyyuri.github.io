@@ -99,39 +99,39 @@ function stripTags(s) {
   return s.replace(/<[^>]+>/g, '');
 }
 
-// "[정답]" always sits inside its own <hp:p> paragraph, but that paragraph
-// is usually NESTED (an endnote's <hp:subList> paragraph, itself inside
-// the outer body paragraph carrying the note reference) — so a plain
-// top-level paragraph split treats the whole outer paragraph, endnote and
-// all, as one block. Find the INNERMOST <hp:p> that actually contains the
-// "[정답]" text (nesting-aware) and use only that one; the explanation
-// always starts in a fresh paragraph right after it.
+// "그냥 복붙" — just take the endnote's own FIRST line (the first paragraph
+// inside its <hp:subList>) verbatim, whatever it says, instead of
+// searching for a "[정답]" marker — some files don't mark the answer with
+// that text at all, so searching for it silently failed for them.
 function extractQuickAnswer(blockXml) {
-  const idx = blockXml.indexOf('[정답]');
-  if (idx === -1) return '';
+  // NOT indexOf('<hp:endNote') — that also matches the unrelated
+  // document-wide <hp:endNotePr> (endnote FORMATTING definition, appears
+  // once per document) whenever it precedes the real instance in this
+  // block. Only broke question 1 (the only block starting from the very
+  // top of the section, where that boilerplate lives).
+  const enMatch = blockXml.match(/<hp:endNote\s+number=/);
+  if (!enMatch) return '';
+  const enIdx = enMatch.index;
+  // NOT indexOf('<hp:p', ...) either — that matches unrelated tags sharing
+  // the same prefix (<hp:placement>, <hp:pageBorderFill>, <hp:pic>…).
+  const pRe = /<hp:p(?=[\s>])/g;
+  pRe.lastIndex = enIdx;
+  const pMatch = pRe.exec(blockXml);
+  if (!pMatch) return '';
+  const pStart = pMatch.index;
   const tokenRe = /<hp:p\b[^>]*?\/>|<hp:p\b[^>]*?>|<\/hp:p>/g;
-  const stack = [];
-  let m, target = null;
+  tokenRe.lastIndex = pStart;
+  let depth = 0, m, end = -1;
   while ((m = tokenRe.exec(blockXml)) !== null) {
     const tok = m[0];
     if (tok.endsWith('/>')) continue;
-    if (tok === '</hp:p>') {
-      const top = stack.pop();
-      if (top !== undefined && idx >= top && idx < m.index + tok.length) {
-        target = { start: top, end: m.index + tok.length };
-        break;
-      }
-    } else {
-      stack.push(m.index);
-    }
+    if (tok === '</hp:p>') { depth--; if (depth === 0) { end = m.index + tok.length; break; } }
+    else depth++;
   }
-  if (!target) return '';
-  const t = stripTags(blockXml.slice(target.start, target.end));
-  const ansIdx = t.indexOf('[정답]');
-  if (ansIdx === -1) return '';
+  if (end === -1) return '';
   // "수식입니다." is just an equation's generic alt-text label ("this is
-  // an equation"), not part of the actual answer — pure noise here.
-  return t.slice(ansIdx + '[정답]'.length).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+  // an equation"), not part of the actual content — pure noise here.
+  return stripTags(blockXml.slice(pStart, end)).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
 }
 
 function extractFirstRun(block) {
