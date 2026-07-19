@@ -99,11 +99,26 @@ function stripTags(s) {
   return s.replace(/<[^>]+>/g, '');
 }
 
+// The endnote's own auto-numbering marker (its "1)" reference label) is a
+// <hp:ctrl><hp:autoNum .../></hp:ctrl> tied to that ORIGINAL location —
+// copying it onto the quick-answer page (which already has its own "N번"
+// label) would duplicate/misplace that marker, so strip just that ctrl and
+// keep everything else (the actual answer text/equation) intact.
+function stripAutoNumCtrls(runXml) {
+  const ctrls = findTopLevelBlocks(runXml, 'hp:ctrl');
+  let out = runXml;
+  for (const c of ctrls) {
+    if (c.text.includes('<hp:autoNum')) out = out.replace(c.text, '');
+  }
+  return out;
+}
 // "그냥 복붙" — copy the endnote's own first NON-BLANK line (a paragraph
-// inside its <hp:subList>) verbatim. Not necessarily the very first
-// paragraph: some solutions start with a blank spacer line before the
-// real content, and stopping there produced a false "인식 실패".
-function extractQuickAnswer(blockXml) {
+// inside its <hp:subList>) verbatim, AS REAL CONTENT — including any
+// <hp:equation> objects, not just their stripped text, so a rendered
+// fraction/coordinate pair shows as an actual equation instead of raw
+// script syntax. Returns the paragraph's inner <hp:run> XML (unwrapped —
+// caller embeds it directly into its own paragraph).
+function extractQuickAnswerXml(blockXml) {
   // NOT indexOf('<hp:endNote') — that also matches the unrelated
   // document-wide <hp:endNotePr> (endnote FORMATTING definition, appears
   // once per document) whenever it precedes the real instance in this
@@ -127,11 +142,26 @@ function extractQuickAnswer(blockXml) {
   const paras = findTopLevelBlocks(subListXml, 'hp:p');
   for (const p of paras) {
     // "수식입니다." is just an equation's generic alt-text label ("this is
-    // an equation"), not part of the actual content — pure noise here.
-    const t = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
-    if (t) return t;
+    // an equation"), not part of the actual content — pure noise here for
+    // deciding whether this paragraph counts as blank.
+    const stripped = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+    if (!stripped) continue;
+    const runs = findTopLevelBlocks(p.text, 'hp:run');
+    return runs.map(r => stripAutoNumCtrls(r.text)).join('');
   }
   return '';
+}
+// Every <hp:equation> carries its own unique object id (like a shape/table
+// id) — copying one verbatim would duplicate the id still used by the SAME
+// equation sitting in the endnote area. Give each copy a fresh id in a
+// high, unclaimed range (real ids seen in practice cluster well under 2
+// billion) — scoped per-generation via the counter closure.
+function makeEquationIdRenumberer() {
+  let counter = 0;
+  return (xml) => xml.replace(/(<hp:equation\b[^>]*\bid=")\d+(")/g, (full, pre, post) => {
+    const newId = String(3000000000 + (counter++));
+    return pre + newId + post;
+  });
 }
 
 function extractFirstRun(block) {
@@ -405,9 +435,20 @@ async function loadFormatEntry(file) {
   const zipData = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
   return parseHwpx(zipData);
 }
+// Drop any <hp:pic> (image/logo) objects from a header/footer design,
+// keeping everything else (table layout, text, borders) — used so a
+// design's picture doesn't have to be carried over just because its table
+// structure is.
+function stripPictures(xml) {
+  const pics = findTopLevelBlocks(xml, 'hp:pic');
+  let out = xml;
+  for (const p of pics) out = out.replace(p.text, '');
+  return out;
+}
 async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize) {
   const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
   let hfFragment = ctrls.map(({ ctrlXml, charPrIDRef }) => `<hp:run charPrIDRef="${charPrIDRef}">${ctrlXml}</hp:run>`).join('');
+  hfFragment = stripPictures(hfFragment);
   if (personalize) hfFragment = personalize(hfFragment);
   let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfFragment);
   // Some header/footer designs carry their own images (e.g. a logo in a
@@ -643,6 +684,16 @@ function textParaXml(pid, text, ids, opts) {
   const pageBreak = (opts && opts.pageBreak) ? '1' : '0';
   return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="${pageBreak}" columnBreak="0" merged="0">` +
          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+         `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
+         `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+}
+// Label text as a plain run, followed by copied answer content (verbatim
+// runs, including any <hp:equation> objects) in the SAME paragraph.
+function mixedAnswerParaXml(pid, labelText, contentXml, ids) {
+  const esc = labelText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+         `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+         contentXml +
          `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
          `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
 }
@@ -885,11 +936,18 @@ genBtn.addEventListener('click', async () => {
     // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
     demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
     let quickOrderNum = 1;
+    const renumberEquationIds = makeEquationIdRenumberer();
     for (const { uid, num } of checked) {
       const entry = byFile.get(uid);
       const marker = entry && entry.markers.get(num);
-      const answer = marker ? extractQuickAnswer(marker.blockXml) : '';
-      demo += textParaXml(qCounter++, `${quickOrderNum}번   :   ${answer || '(정답 인식 실패)'}`, textIds);
+      let answerXml = marker ? extractQuickAnswerXml(marker.blockXml) : '';
+      if (answerXml) {
+        if (entry.uid !== carrierEntry.uid) answerXml = normalizeIds(answerXml, carrierIds);
+        answerXml = renumberEquationIds(answerXml);
+        demo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
+      } else {
+        demo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
+      }
       quickOrderNum++;
     }
 

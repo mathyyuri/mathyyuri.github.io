@@ -192,11 +192,26 @@ function findTopLevelBlocks(xml, tagName) {
   return blocks;
 }
 function stripTags(s) { return s.replace(/<[^>]+>/g, ''); }
+// The endnote's own auto-numbering marker (its "1)" reference label) is a
+// <hp:ctrl><hp:autoNum .../></hp:ctrl> tied to that ORIGINAL location —
+// copying it onto the quick-answer page (which already has its own "N번"
+// label) would duplicate/misplace that marker, so strip just that ctrl and
+// keep everything else (the actual answer text/equation) intact.
+function stripAutoNumCtrls(runXml) {
+  const ctrls = findTopLevelBlocks(runXml, 'hp:ctrl');
+  let out = runXml;
+  for (const c of ctrls) {
+    if (c.text.includes('<hp:autoNum')) out = out.replace(c.text, '');
+  }
+  return out;
+}
 // "그냥 복붙" — copy the endnote's own first NON-BLANK line (a paragraph
-// inside its <hp:subList>) verbatim. Not necessarily the very first
-// paragraph: some solutions start with a blank spacer line before the
-// real content, and stopping there produced a false "인식 실패".
-function extractQuickAnswer(blockXml) {
+// inside its <hp:subList>) verbatim, AS REAL CONTENT — including any
+// <hp:equation> objects, not just their stripped text, so a rendered
+// fraction/coordinate pair shows as an actual equation instead of raw
+// script syntax. Returns the paragraph's inner <hp:run> XML (unwrapped —
+// caller embeds it directly into its own paragraph).
+function extractQuickAnswerXml(blockXml) {
   // NOT indexOf('<hp:endNote') — that also matches the unrelated
   // document-wide <hp:endNotePr> (endnote FORMATTING definition, appears
   // once per document) whenever it precedes the real instance in this
@@ -220,11 +235,26 @@ function extractQuickAnswer(blockXml) {
   const paras = findTopLevelBlocks(subListXml, 'hp:p');
   for (const p of paras) {
     // "수식입니다." is just an equation's generic alt-text label ("this is
-    // an equation"), not part of the actual content — pure noise here.
-    const t = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
-    if (t) return t;
+    // an equation"), not part of the actual content — pure noise here for
+    // deciding whether this paragraph counts as blank.
+    const stripped = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
+    if (!stripped) continue;
+    const runs = findTopLevelBlocks(p.text, 'hp:run');
+    return runs.map(r => stripAutoNumCtrls(r.text)).join('');
   }
   return '';
+}
+// Every <hp:equation> carries its own unique object id (like a shape/table
+// id) — copying one verbatim would duplicate the id still used by the SAME
+// equation sitting in the endnote area. Give each copy a fresh id in a
+// high, unclaimed range (real ids seen in practice cluster well under 2
+// billion) — scoped per-generation via the counter closure.
+function makeEquationIdRenumberer() {
+  let counter = 0;
+  return (xml) => xml.replace(/(<hp:equation\b[^>]*\bid=")\d+(")/g, (full, pre, post) => {
+    const newId = String(3000000000 + (counter++));
+    return pre + newId + post;
+  });
 }
 function extractFirstRun(block) {
   const runs = findTopLevelBlocks(block, 'hp:run');
@@ -452,9 +482,20 @@ function personalizeOddHeaderText(fragmentXml, replacementText) {
     (full, open, close) => open + replacementText + close
   );
 }
+// Drop any <hp:pic> (image/logo) objects from a header/footer design,
+// keeping everything else (table layout, text, borders) — used so a
+// design's picture doesn't have to be carried over just because its table
+// structure is.
+function stripPictures(xml) {
+  const pics = findTopLevelBlocks(xml, 'hp:pic');
+  let out = xml;
+  for (const p of pics) out = out.replace(p.text, '');
+  return out;
+}
 async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, personalize) {
   const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
   let hfFragment = ctrls.map(({ ctrlXml, charPrIDRef }) => `<hp:run charPrIDRef="${charPrIDRef}">${ctrlXml}</hp:run>`).join('');
+  hfFragment = stripPictures(hfFragment);
   if (personalize) hfFragment = personalize(hfFragment);
   let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfFragment);
   // Some header/footer designs carry their own images (e.g. a logo in a
@@ -681,6 +722,69 @@ function textParaXml(pid, text, ids, opts) {
          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
          `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
          `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+}
+// Label text as a plain run, followed by copied answer content (verbatim
+// runs, including any <hp:equation> objects) in the SAME paragraph.
+function mixedAnswerParaXml(pid, labelText, contentXml, ids) {
+  const esc = labelText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+         `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+         contentXml +
+         `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
+         `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+}
+// Any existing borderFill definition works for a plain grid table — we're
+// not trying to match a specific visual style, just need a valid IDREF.
+function pickAnyBorderFillId(headerXml) {
+  const m = headerXml.match(/<hh:borderFill\b[^>]*\bid="(\d+)"/);
+  return m ? m[1] : '0';
+}
+// Builds a real HWP table (not a ported one — constructed from scratch)
+// for [오답 현황 요약]. rows[0] is the header row. treatAsChar="1" makes it
+// flow inline as part of the paragraph, like an equation, rather than
+// floating. Each generation gets its own counter closure so a table id
+// never collides with anything else built in the same run.
+function makeSummaryTableBuilder() {
+  let counter = 0;
+  return function summaryTableXml(pid, rows, ids, borderFillId) {
+    const rowCnt = rows.length;
+    const colCnt = rows[0].length;
+    const colWidths = [2500, 5000, 9000, 3500, 3500, 4500];
+    const totalWidth = colWidths.reduce((a, b) => a + b, 0);
+    const rowHeight = 1200;
+    const tblId = String(3200000000 + (counter++));
+
+    let trXml = '';
+    for (let r = 0; r < rowCnt; r++) {
+      let tcXml = '';
+      for (let c = 0; c < colCnt; c++) {
+        const text = String(rows[r][c] ?? '');
+        const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        tcXml += `<hp:tc name="" header="${r === 0 ? 1 : 0}" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${borderFillId}">` +
+          `<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">` +
+          `<hp:p id="2147483648" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+          `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" baseline="850" spacing="500" horzpos="0" horzsize="${colWidths[c]}" flags="393216"/></hp:linesegarray>` +
+          `</hp:p></hp:subList>` +
+          `<hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/>` +
+          `<hp:cellSz width="${colWidths[c]}" height="${rowHeight}"/>` +
+          `<hp:cellMargin left="141" right="141" top="70" bottom="70"/></hp:tc>`;
+      }
+      trXml += `<hp:tr>${tcXml}</hp:tr>`;
+    }
+
+    const tblXml = `<hp:tbl id="${tblId}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="${rowCnt}" colCnt="${colCnt}" cellSpacing="0" borderFillIDRef="${borderFillId}" noAdjust="0">` +
+      `<hp:sz width="${totalWidth}" widthRelTo="ABSOLUTE" height="${rowHeight * rowCnt}" heightRelTo="ABSOLUTE" protect="0"/>` +
+      `<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>` +
+      `<hp:outMargin left="0" right="0" top="0" bottom="0"/>` +
+      `<hp:inMargin left="141" right="141" top="70" bottom="70"/>` +
+      trXml +
+      `</hp:tbl>`;
+
+    return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+      `<hp:run charPrIDRef="${ids.charPrIDRef}">${tblXml}<hp:t/></hp:run>` +
+      `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="${rowHeight}" textheight="${rowHeight}" baseline="850" spacing="500" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+  };
 }
 function collectImageRefs(xml) {
   return [...new Set([...xml.matchAll(/binaryItemIDRef="([^"]+)"/g)].map(m => m[1]))];
@@ -1047,13 +1151,19 @@ genBtn.addEventListener('click', async () => {
     demo += textParaXml(9003, '[오답 현황 요약]', textIds);
     let summaryId = 9004;
     let qOrderNum = 1;
+    const summaryRows = [['순번', '종류', '미션', '문제번호', '차시도', '정오기록']];
     for (const g of missionGroups) {
       const inGroup = checked.filter(c => c.mission === g.mission);
       for (const c of inGroup) {
         const hist = compactHistoryString(g.mission, c.num) || '기록없음';
-        demo += textParaXml(summaryId++, `${qOrderNum}번   :   ${g.category}   :   ${g.mission}   :   ${c.num}번   :   ${c.round}차시도   :   ${hist}`, textIds);
+        summaryRows.push([`${qOrderNum}`, g.category, g.mission, `${c.num}번`, `${c.round}차시도`, hist]);
         qOrderNum++;
       }
+    }
+    {
+      const summaryTableXml = makeSummaryTableBuilder();
+      const summaryBorderFillId = pickAnyBorderFillId(carrierHeaderXml);
+      demo += summaryTableXml(summaryId, summaryRows, textIds, summaryBorderFillId);
     }
 
     let qCounter = summaryId + 100;
@@ -1095,14 +1205,23 @@ genBtn.addEventListener('click', async () => {
 
     // 빠른 정답 — 문제가 다 끝나고, 미주(해설)가 자동으로 모여 나오기 직전에
     // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
+    // 수식이 포함된 정답은 텍스트가 아니라 수식 개체 자체를 그대로
+    // 복사해서 넣습니다 — 등호/분수/좌표 같은 게 실제로 렌더링됩니다.
     demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
     let quickOrderNum = 1;
+    const renumberEquationIds = makeEquationIdRenumberer();
     for (const { mission, num } of checked) {
       const fileId = missionFileId.get(mission);
       const entry = loadedFileCache.get(fileId);
       const marker = entry && entry.markers.get(num);
-      const answer = marker ? extractQuickAnswer(marker.blockXml) : '';
-      demo += textParaXml(qCounter++, `${quickOrderNum}번   :   ${answer || '(정답 인식 실패)'}`, textIds);
+      let answerXml = marker ? extractQuickAnswerXml(marker.blockXml) : '';
+      if (answerXml) {
+        if (entry !== carrierEntry) answerXml = normalizeIds(answerXml, carrierIds);
+        answerXml = renumberEquationIds(answerXml);
+        demo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
+      } else {
+        demo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
+      }
       quickOrderNum++;
     }
 
