@@ -388,20 +388,22 @@ function insertHeaderFooterRun(sectionXml, runXml) {
   const newP0 = p0.slice(0, cut) + runXml + p0.slice(cut);
   return sectionXml.slice(0, paras[0].start) + newP0 + sectionXml.slice(paras[0].end);
 }
-// Finds a real header/footer control (with actual text, not an empty
-// placeholder) in ANY of the format-template file's sections, so this
-// isn't hard-coded to assume it's always in a specific section index.
-async function findHeaderFooterRun(entry) {
+// Real header/footer templates spread header(ODD)/header(EVEN)/footer(ODD)/
+// footer(EVEN)/footer(BOTH) across SEPARATE sibling runs in the SAME
+// paragraph — and that paragraph isn't always the section's first one
+// either (verified against the real 오답노트_서식 file: its header/footer
+// runs sit in the SECOND paragraph, not the first). Scan every paragraph in
+// every section; the first paragraph found with ANY qualifying run wins,
+// and ALL of its header/footer runs (in original order) are ported
+// together — porting only ONE would leave, say, EVEN pages unbranded.
+async function findHeaderFooterRuns(entry) {
   for (const path of entry.sectionOrder) {
     const xml = await entry.zipData.file(path).async('string');
     const paras = findTopLevelBlocks(xml, 'hp:p');
-    if (!paras.length) continue;
-    const runs = findTopLevelBlocks(paras[0].text, 'hp:run');
-    for (const r of runs) {
-      if ((r.text.includes('<hp:header') || r.text.includes('<hp:footer')) &&
-          stripTags(r.text).trim()) {
-        return r.text;
-      }
+    for (const p of paras) {
+      const runs = findTopLevelBlocks(p.text, 'hp:run');
+      const hits = runs.filter(r => (r.text.includes('<hp:header') || r.text.includes('<hp:footer')) && stripTags(r.text).trim());
+      if (hits.length) return hits.map(r => r.text).join('');
     }
   }
   return null;
@@ -409,17 +411,37 @@ async function findHeaderFooterRun(entry) {
 async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml) {
   try {
     const formatFile = bankFiles.find(f => f.filename.includes('서식'));
-    if (!formatFile) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+    if (!formatFile) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
     const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
-    const hfRun = await findHeaderFooterRun(formatEntry);
-    if (!hfRun) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+    const hfRuns = await findHeaderFooterRuns(formatEntry);
+    if (!hfRuns) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
     const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
-    const { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfRun);
+    let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfRuns);
+    // A real 서식 header/footer commonly carries its own images (e.g. a
+    // logo in a table cell) — copy those binary assets across too, the
+    // same way a foreign question's images are ported elsewhere, using a
+    // separate "himg" id prefix so these can never collide with a
+    // question's own "ximg" ids.
+    const images = [];
+    const refs = collectImageRefs(patchedFragment);
+    const idMap = {};
+    let himgCounter = 0;
+    for (const oldId of refs) {
+      const href = formatEntry.manifestItems[oldId];
+      if (!href) continue;
+      const ext = href.split('.').pop();
+      const bytes = await formatEntry.zipData.file(href).async('uint8array');
+      const newId = 'himg' + (himgCounter++);
+      const newPath = `BinData/${newId}.${ext}`;
+      images.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
+      idMap[oldId] = newId;
+    }
+    patchedFragment = rewriteImageRefs(patchedFragment, idMap);
     const newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
-    return { headerXml: patchedHeader, sectionXml: newSectionXml };
+    return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
   } catch (e) {
     console.error('머리말/꼬리말 이식 실패 (건너뜀):', e);
-    return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml };
+    return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
   }
 }
 
@@ -1013,10 +1035,11 @@ genBtn.addEventListener('click', async () => {
 
     log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
     {
-      const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection } =
+      const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
         await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection]);
       carrierHeaderXml = patchedHeaderXml;
       strippedSections[targetSection] = patchedTargetSection;
+      foreignImagesToAdd.push(...headerImages);
     }
 
     const keepImageHrefs = new Set(collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean));

@@ -4,27 +4,73 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>교재/시험지 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
-  h1 { font-size: 22px; }
-  .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
-  th { color: #555; }
-  input[type=text], input[type=file] { padding: 8px; font-size: 14px; }
-  button { font-size: 14px; padding: 8px 16px; cursor: pointer; }
-  button:disabled { opacity: 0.5; cursor: default; }
-  #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 12px; font-size: 13px; border-radius: 6px; min-height: 20px; }
-  .ok { color: #1a7f37; }
-  .err { color: #c00; }
-  .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+:root{
+  --cream:#FBF8F1;
+  --ink:#1A1A1A;
+  --gold:#A8853F;
+  --gold-soft:rgba(168,133,63,.12);
+  --gold-line:#E6DCC6;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --mint-soft:rgba(127,200,180,.14);
+  --pink:#E58BA4;
+  --pink-deep:#C64E71;
+  --pink-soft:rgba(229,139,164,.14);
+  --serif:'Playfair Display','Noto Serif KR',serif;
+  --kserif:'Noto Serif KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--sans); max-width: 900px; margin: 40px auto; padding: 0 4vw 60px; line-height: 1.6; background: var(--cream); color: var(--ink); -webkit-font-smoothing: antialiased; }
+h1 { font-family: var(--serif); font-weight: 900; font-size: 26px; margin-bottom: 4px; }
+.box { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; padding: 18px; margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--gold-line); font-size: 14px; }
+th { color: var(--gold); font-family: var(--kserif); font-size: 12px; letter-spacing: .04em; font-weight: 700; }
+input[type=text], input[type=file] { padding: 8px; font-size: 14px; font-family: var(--sans); border: 1px solid var(--gold-line); border-radius: 3px; background: #fff; }
+button { font-family: var(--sans); font-size: 13px; letter-spacing: .06em; font-weight: 700; padding: 8px 16px; cursor: pointer; background: var(--ink); color: var(--cream); border: 1px solid var(--ink); border-radius: 3px; transition: .2s; }
+button:hover:not(:disabled) { background: var(--mint-deep); border-color: var(--mint-deep); }
+button:disabled { opacity: 0.4; cursor: default; }
+.delBtn { background: #fff; color: var(--pink-deep); border-color: var(--pink-deep); padding: 5px 10px; font-size: 12px; }
+.delBtn:hover { background: var(--pink-soft); }
+#log { white-space: pre-wrap; background: #fff; border: 1px solid var(--gold-line); padding: 12px; margin-top: 12px; font-size: 13px; border-radius: 4px; min-height: 20px; }
+.ok { color: var(--mint-deep); font-weight: 700; }
+.err { color: var(--pink-deep); font-weight: 700; }
+.hint { color: rgba(26,26,26,.55); font-size: 13px; font-family: var(--kserif); }
+.toolbar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(--kserif); font-size: 13px; color: var(--gold); }
+
+.catGroup { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; margin: 12px 0; overflow: hidden; }
+.catHead { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--gold-soft); cursor: pointer; user-select: none; }
+.catHead h2 { font-family: var(--serif); font-weight: 700; font-size: 16px; margin: 0; }
+.catHead .count { font-size: 12px; color: var(--gold); font-family: var(--kserif); }
+.catHead .toggleIcon { font-size: 12px; color: var(--gold); transition: transform .15s; }
+.catGroup.collapsed .toggleIcon { transform: rotate(-90deg); }
+.catGroup.collapsed .catBody { display: none; }
+.catBody { padding: 0 16px 12px; }
+.catTag { display: inline-block; font-family: var(--serif); font-size: 10px; font-weight: 900; letter-spacing: .06em; color: #fff; background: var(--gold); padding: 2px 8px; border-radius: 999px; margin-right: 6px; }
+.catTag.common { background: var(--mint-deep); }
+
+.typeGroup { margin: 10px 0; }
+.typeGroup h3 { font-family: var(--kserif); font-size: 13px; font-weight: 700; color: var(--gold); margin: 0 0 4px; padding-bottom: 4px; border-bottom: 1px solid var(--gold-line); }
+.fileRow { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--gold-line); font-size: 14px; }
+.fileRow:last-child { border-bottom: none; }
+.fileRow.dragOver { background: var(--gold-soft); }
+.fileRow .dragHandle { cursor: grab; color: rgba(26,26,26,.35); font-size: 14px; flex: 0 0 auto; }
+.fileRow .fName { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.fileRow .fMeta { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); font-family: var(--kserif); width: 150px; }
+.fileRow .fMemo { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); width: 120px; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
 <h1>교재 / 시험지 관리</h1>
+<p class="hint"><a href="studentnote.html">← 학생별 오답노트로 이동</a> · <a href="oedapnotegenerator.html">오답노트 생성기</a></p>
 
 <div class="box">
   <p><b>새 파일 업로드</b></p>
+  <p class="hint">파일명 맨 앞에 <code>[S+반]</code>, <code>[S반]</code>처럼 대괄호로 반 이름을 붙이면 아래 목록에서 그 반 카테고리로 자동 분류됩니다. 대괄호가 없으면 "공통" 카테고리로 들어갑니다.</p>
   <input type="file" id="uploadFile" accept=".hwpx">
   <input type="text" id="uploadMemo" placeholder="메모 (예: 7월 모의고사)">
   <button id="uploadBtn">업로드</button>
@@ -32,10 +78,8 @@
 
 <div class="box">
   <p><b>업로드된 파일 목록</b></p>
-  <table id="fileTable">
-    <thead><tr><th></th><th>파일명</th><th>업로드일시</th><th>메모</th><th></th></tr></thead>
-    <tbody id="fileTbody"><tr><td colspan="5">불러오는 중...</td></tr></tbody>
-  </table>
+  <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다.</p>
+  <div id="fileGroups"><p class="hint">불러오는 중...</p></div>
   <div class="toolbar">
     <button id="genBtn" disabled>선택한 파일로 오답노트 만들기</button>
   </div>
@@ -48,7 +92,7 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 
 const logEl = document.getElementById('log');
-const tbody = document.getElementById('fileTbody');
+const groupsEl = document.getElementById('fileGroups');
 const genBtn = document.getElementById('genBtn');
 
 function log(msg, cls) {
@@ -105,37 +149,180 @@ async function callPost(body) {
   });
 }
 
+// Files named "[S+반] 1. 평면좌표 진도미션.hwpx" get grouped under "S+반";
+// files with no leading bracket (e.g. "24년 9월 편집.hwpx", "오답노트_서식")
+// fall into "공통" so common/shared materials aren't mixed in with any one
+// class's list.
+function categoryOf(filename) {
+  const m = filename.match(/^\[([^\]]+)\]/);
+  return m ? m[1] : '공통';
+}
+
+// Within a class, materials are always one of these three kinds (plus a
+// catch-all for anything that doesn't say which). Order here is also the
+// display order of the sub-sections.
+const TYPE_ORDER = ['개념', '진도미션', '과제미션', '기타'];
+function typeOf(filename) {
+  if (filename.includes('개념')) return '개념';
+  if (filename.includes('진도미션')) return '진도미션';
+  if (filename.includes('과제미션')) return '과제미션';
+  return '기타';
+}
+
+// Default ordering inside a type uses the first number in the filename
+// (e.g. "1. 평면좌표" / "2회차 과제미션") so files line up 1,2,3... without
+// any manual work; a teacher can still drag to override, and that
+// override is remembered per class+type in localStorage.
+function extractNum(filename) {
+  const m = filename.match(/(\d+)/);
+  return m ? Number(m[1]) : Infinity;
+}
+
+const ORDER_KEY = 'problembank_order_v1';
+function loadOrderMap() {
+  try { return JSON.parse(localStorage.getItem(ORDER_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveOrderMap(map) {
+  localStorage.setItem(ORDER_KEY, JSON.stringify(map));
+}
+
+function sortWithSavedOrder(items, groupKey, orderMap) {
+  const saved = orderMap[groupKey];
+  const byDefault = [...items].sort((a, b) => extractNum(a.filename) - extractNum(b.filename) || a.filename.localeCompare(b.filename, 'ko'));
+  if (!saved || !saved.length) return byDefault;
+  const savedIndex = new Map(saved.map((id, i) => [id, i]));
+  return byDefault.sort((a, b) => {
+    const ia = savedIndex.has(a.id) ? savedIndex.get(a.id) : Infinity;
+    const ib = savedIndex.has(b.id) ? savedIndex.get(b.id) : Infinity;
+    return ia - ib;
+  });
+}
+
+const collapsedState = {};
+let latestFiles = [];
+
+function renderGroups(files) {
+  latestFiles = files;
+  if (!files.length) {
+    groupsEl.innerHTML = '<p class="hint">업로드된 파일이 없습니다.</p>';
+    return;
+  }
+  const orderMap = loadOrderMap();
+  const byCat = new Map();
+  for (const f of files) {
+    const cat = categoryOf(f.filename);
+    if (!byCat.has(cat)) byCat.set(cat, []);
+    byCat.get(cat).push(f);
+  }
+  // 공통 last, everything else alphabetical.
+  const cats = [...byCat.keys()].sort((a, b) => {
+    if (a === '공통') return 1;
+    if (b === '공통') return -1;
+    return a.localeCompare(b, 'ko');
+  });
+
+  groupsEl.innerHTML = '';
+  for (const cat of cats) {
+    const isCommon = cat === '공통';
+    const catItems = byCat.get(cat);
+    const group = document.createElement('div');
+    group.className = 'catGroup' + (collapsedState[cat] ? ' collapsed' : '');
+    group.innerHTML = `
+      <div class="catHead">
+        <h2><span class="catTag${isCommon ? ' common' : ''}">${cat}</span>${catItems.length}개 파일</h2>
+        <span class="toggleIcon">▼</span>
+      </div>
+      <div class="catBody"></div>
+    `;
+    const catBody = group.querySelector('.catBody');
+
+    const byType = new Map();
+    for (const f of catItems) {
+      const t = typeOf(f.filename);
+      if (!byType.has(t)) byType.set(t, []);
+      byType.get(t).push(f);
+    }
+    for (const type of TYPE_ORDER) {
+      if (!byType.has(type)) continue;
+      const groupKey = cat + '||' + type;
+      const items = sortWithSavedOrder(byType.get(type), groupKey, orderMap);
+      const typeDiv = document.createElement('div');
+      typeDiv.className = 'typeGroup';
+      typeDiv.innerHTML = `<h3>${type} (${items.length})</h3>`;
+      for (const f of items) {
+        const uploadedAt = f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('ko-KR') : '';
+        const row = document.createElement('div');
+        row.className = 'fileRow';
+        row.draggable = true;
+        row.dataset.id = f.id;
+        row.dataset.groupKey = groupKey;
+        row.innerHTML = `
+          <span class="dragHandle" title="드래그해서 순서 변경">⠿</span>
+          <input type="checkbox" class="rowChk" data-id="${f.id}" data-name="${f.filename}">
+          <span class="fName">${f.filename}</span>
+          <span class="fMemo">${f.memo || ''}</span>
+          <span class="fMeta">${uploadedAt}</span>
+          <button class="delBtn" data-id="${f.id}">삭제</button>
+        `;
+        attachDragHandlers(row, groupKey, orderMap);
+        typeDiv.appendChild(row);
+      }
+      catBody.appendChild(typeDiv);
+    }
+
+    group.querySelector('.catHead').addEventListener('click', () => {
+      group.classList.toggle('collapsed');
+      collapsedState[cat] = group.classList.contains('collapsed');
+    });
+    groupsEl.appendChild(group);
+  }
+  groupsEl.querySelectorAll('.rowChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
+  groupsEl.querySelectorAll('.delBtn').forEach(btn => btn.addEventListener('click', onDelete));
+  updateGenBtn();
+}
+
+let dragSrcRow = null;
+
+function attachDragHandlers(row, groupKey, orderMap) {
+  row.addEventListener('dragstart', (ev) => {
+    dragSrcRow = row;
+    ev.dataTransfer.effectAllowed = 'move';
+  });
+  row.addEventListener('dragover', (ev) => {
+    if (!dragSrcRow || dragSrcRow.dataset.groupKey !== groupKey) return;
+    ev.preventDefault();
+    row.classList.add('dragOver');
+  });
+  row.addEventListener('dragleave', () => row.classList.remove('dragOver'));
+  row.addEventListener('drop', (ev) => {
+    ev.preventDefault();
+    row.classList.remove('dragOver');
+    if (!dragSrcRow || dragSrcRow === row || dragSrcRow.dataset.groupKey !== groupKey) return;
+    const parent = row.parentElement;
+    const rows = [...parent.querySelectorAll('.fileRow')];
+    const srcIdx = rows.indexOf(dragSrcRow);
+    const dstIdx = rows.indexOf(row);
+    if (srcIdx < dstIdx) parent.insertBefore(dragSrcRow, row.nextSibling);
+    else parent.insertBefore(dragSrcRow, row);
+    const newOrder = [...parent.querySelectorAll('.fileRow')].map(r => r.dataset.id);
+    orderMap[groupKey] = newOrder;
+    saveOrderMap(orderMap);
+    dragSrcRow = null;
+  });
+}
+
 async function refreshList() {
-  tbody.innerHTML = '<tr><td colspan="5">불러오는 중...</td></tr>';
+  groupsEl.innerHTML = '<p class="hint">불러오는 중...</p>';
   try {
     const { files } = await callGet({ action: 'list' });
-    if (!files.length) {
-      tbody.innerHTML = '<tr><td colspan="5">업로드된 파일이 없습니다.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = '';
-    for (const f of files) {
-      const tr = document.createElement('tr');
-      const uploadedAt = f.uploadedAt ? new Date(f.uploadedAt).toLocaleString('ko-KR') : '';
-      tr.innerHTML = `
-        <td><input type="checkbox" class="rowChk" data-id="${f.id}" data-name="${f.filename}"></td>
-        <td>${f.filename}</td>
-        <td>${uploadedAt}</td>
-        <td>${f.memo || ''}</td>
-        <td><button class="delBtn" data-id="${f.id}">삭제</button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-    tbody.querySelectorAll('.rowChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
-    tbody.querySelectorAll('.delBtn').forEach(btn => btn.addEventListener('click', onDelete));
-    updateGenBtn();
+    renderGroups(files);
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" class="err">목록을 불러오지 못했습니다: ${e.message}</td></tr>`;
+    groupsEl.innerHTML = `<p class="hint err">목록을 불러오지 못했습니다: ${e.message}</p>`;
   }
 }
 
 function updateGenBtn() {
-  const checked = [...tbody.querySelectorAll('.rowChk:checked')];
+  const checked = [...groupsEl.querySelectorAll('.rowChk:checked')];
   genBtn.disabled = checked.length !== 1;
 }
 
@@ -170,7 +357,7 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
 });
 
 genBtn.addEventListener('click', () => {
-  const checked = tbody.querySelector('.rowChk:checked');
+  const checked = groupsEl.querySelector('.rowChk:checked');
   if (!checked) return;
   const id = checked.dataset.id;
   const name = checked.dataset.name;
