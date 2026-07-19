@@ -1009,7 +1009,17 @@ function renderGradingRounds(rounds) {
   gradingRoundsEl.appendChild(footer);
 }
 
-function resolveFileForMission(missionName) {
+// Same classification problembank.html uses to group files by type — a
+// mission's own category ("진도미션"/"개념"/"과제미션") must be checked
+// against this, not just the topic name, or e.g. "평면좌표 진도미션" can
+// silently auto-match "평면좌표 개념" (same topic, wrong file type).
+function typeOfFilename(filename) {
+  if (filename.includes('개념')) return '개념';
+  if (filename.includes('진도미션')) return '진도미션';
+  if (filename.includes('과제미션')) return '과제미션';
+  return '기타';
+}
+function resolveFileForMission(missionName, category) {
   const cls = currentStudent ? currentStudent.class : '';
   const byClassHit = missionMap.byClass[cls + '||' + missionName];
   if (byClassHit) {
@@ -1023,8 +1033,17 @@ function resolveFileForMission(missionName) {
   }
   const norm = (s) => s.replace(/[\s.\[\]()]/g, '');
   const target = norm(missionName);
-  const candidates = bankFiles.filter(f => norm(f.filename).includes(target));
+  let candidates = bankFiles.filter(f => norm(f.filename).includes(target));
   if (!candidates.length) return null;
+  // Narrow to files whose TYPE matches this mission's own category first —
+  // several files can share the same topic name across 개념/진도미션/
+  // 과제미션. Only apply the narrowing when it actually leaves something
+  // (an unrecognized/mismatched category string shouldn't zero out all
+  // candidates).
+  if (category && ['개념', '진도미션', '과제미션'].includes(category)) {
+    const typeMatched = candidates.filter(f => typeOfFilename(f.filename) === category);
+    if (typeMatched.length) candidates = typeMatched;
+  }
   // Same mission name can have a different file per class (e.g. "1차시
   // 과제미션"의 S+반용/S반용 파일이 따로 있는 경우) — among filename
   // matches, prefer the one whose name also contains this student's own
@@ -1071,7 +1090,7 @@ function compactHistoryString(mission, num) {
 function renderMissionBlocks() {
   missionBlocksEl.innerHTML = '';
   for (const group of missionGroups) {
-    const guess = resolveFileForMission(group.mission);
+    const guess = resolveFileForMission(group.mission, group.category);
     group.selectedFileId = guess ? guess.file.id : '';
 
     const div = document.createElement('div');
