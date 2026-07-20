@@ -573,15 +573,39 @@ async function findColumnCtrl(entry, sectionXml) {
   }
   return null;
 }
+// The name itself is captured via a pure-hangul token (never digits/"+"),
+// since a class label like "S+" would otherwise get mistaken for it.
+function detectOldHeaderName(fragmentXml) {
+  const m = fragmentXml.match(/<hp:t>대치수학\s*\d+기\s*\S+\s*([가-힣]+)[^<]*<\/hp:t>/);
+  return m ? m[1] : null;
+}
 // The ODD-page header commonly shows THIS student's own class/name (e.g.
-// "대치수학 2기 S+ 백승진" in the example file this technique was verified
-// against) — that literal text has to be swapped for whoever the note is
-// actually being generated for.
-function personalizeOddHeaderText(fragmentXml, replacementText) {
-  return fragmentXml.replace(
-    /(<hp:t>)대치수학\s*\d+기\s*\S+\s*\S+(<\/hp:t>)/,
-    (full, open, close) => open + replacementText + close
+// "대치수학 2기 S+ 백승진 1회" in the example file this technique was
+// verified against — note the trailing " 1회" round number, which has to
+// survive the swap unless a real noteRound is given) — that literal text
+// has to be swapped for whoever the note is actually being generated for.
+// Some designs (e.g. a cover-page sidebar tab or "VOL. 이름" badge) repeat
+// just the BARE name a second time, separately from that header line and
+// possibly in a DIFFERENT section that never has the header line itself
+// — oldName (from detectOldHeaderName, run once across whichever section
+// actually has the header) has to be passed in explicitly so every
+// section's standalone repeat of that same name gets swapped too.
+function personalizeOddHeaderText(fragmentXml, { cohort, className, studentName, noteRound, oldName: knownOldName }) {
+  const fullText = `대치수학 ${cohort}기 ${className} ${studentName}`;
+  let oldName = knownOldName || null;
+  let out = fragmentXml.replace(
+    /(<hp:t>)대치수학\s*\d+기\s*\S+\s*([가-힣]+)([^<]*)(<\/hp:t>)/,
+    (full, open, capturedOldName, rest, close) => {
+      oldName = capturedOldName;
+      const newRest = (noteRound != null && /^\s*\d+회$/.test(rest)) ? ` ${noteRound}회` : rest;
+      return open + fullText + newRest + close;
+    }
   );
+  if (oldName && oldName !== studentName) {
+    const escaped = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp(`(<hp:t>)${escaped}(</hp:t>)`, 'g'), (full, open, close) => open + studentName + close);
+  }
+  return out;
 }
 // Drop any <hp:pic> (image/logo) objects from a header/footer design,
 // keeping everything else (table layout, text, borders) — used so a
@@ -643,7 +667,15 @@ async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, forma
 // operates on the already-built section) would otherwise discover it.
 async function findFormatTemplateInfo() {
   try {
-    const candidates = bankFiles.filter(f => f.filename.includes('서식'));
+    // Newest upload first — re-uploading a corrected 서식 file (to replace
+    // an old one) just APPENDS a new row in the 교재목록 sheet; the old
+    // row is still there unless someone deletes it. Bank list order is
+    // upload order (oldest first), so picking the first match would keep
+    // silently grabbing a stale 서식 file forever even after a fresh one
+    // is uploaded. uploadedAt comes straight from the 교재목록 sheet.
+    const candidates = bankFiles
+      .filter(f => f.filename.includes('서식'))
+      .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
     let fallback = null;
     for (const formatFile of candidates) {
       const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
@@ -668,6 +700,106 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
   } catch (e) {
     console.error('머리말/꼬리말 이식 실패 (건너뜀):', e);
     return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
+  }
+}
+
+// ---------- 서식 파일 자체를 그대로 뼈대로 쓰는 방식 (다구역: 표지/문제/해설) ----------
+// A ctrl (secPr/header/footer/colPr/...) can share its paragraph — even
+// its own run — with unrelated visible text (verified elsewhere in this
+// project). When reusing a FORMAT file's own section as the output
+// skeleton directly, every run in a ctrl-carrying paragraph has to
+// survive; only the run(s) with actual visible text get blanked out.
+function keepCtrlsBlankVisibleText(paraText) {
+  const runs = findTopLevelBlocks(paraText, 'hp:run');
+  if (!runs.length) return paraText;
+  let out = '';
+  let pos = 0;
+  for (const r of runs) {
+    out += paraText.slice(pos, r.start);
+    if (/<hp:ctrl\b/.test(r.text)) {
+      out += r.text;
+    } else {
+      const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
+      const charPr = charPrM ? charPrM[1] : '0';
+      out += `<hp:run charPrIDRef="${charPr}"><hp:t/></hp:run>`;
+    }
+    pos = r.end;
+  }
+  out += paraText.slice(pos);
+  return out;
+}
+// Like stripSectionToSkeleton, but for reusing a FORMAT file's OWN section
+// as the output skeleton directly (rather than porting fragments of it
+// into a different carrier): any paragraph carrying a ctrl is kept whole
+// with its ctrls intact and just its visible text blanked, instead of
+// collapsing it down to only its first run — a format file's
+// header/footer/colPr controls routinely share the SAME paragraph as
+// secPr, in later runs the plain stripper's "keep only the first run"
+// shortcut would have silently discarded.
+function stripSectionToSkeletonKeepCtrls(xml) {
+  const paras = findTopLevelBlocks(xml, 'hp:p');
+  let out = '';
+  let pos = 0;
+  for (const p of paras) {
+    out += xml.slice(pos, p.start);
+    if (p.text.includes('<hp:ctrl')) {
+      out += keepCtrlsBlankVisibleText(p.text);
+    } else {
+      const innerText = stripTags(p.text).trim();
+      if (!innerText) out += p.text; // blank / picture-only paragraph, keep
+      // else: drop — this is the format file's own sample content
+    }
+    pos = p.end;
+  }
+  out += xml.slice(pos);
+  if (!/<hp:p[ >]/.test(out)) {
+    const fallback = '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
+      '<hp:run charPrIDRef="0"><hp:t/></hp:run>' +
+      '<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" ' +
+      'baseline="850" spacing="500" horzpos="0" horzsize="30000" flags="393216"/></hp:linesegarray></hp:p>';
+    out = out.replace('</hs:sec>', fallback + '</hs:sec>');
+  }
+  return out;
+}
+// Finds the 서식(design template) file and splits it into up to THREE
+// regions by locating its "questions" section (the one with a real paired
+// ODD/EVEN header/footer) and treating whichever section comes right
+// BEFORE it as the cover/summary page design, and whichever comes right
+// AFTER it as the quick-answer/해설 page design — matching how a 3-section
+// 서식 file (cover · 2-column questions · answers) is actually laid out,
+// while still degrading gracefully to a single region for a simpler
+// 서식 file that only has the one (questions) section.
+async function findFormatRegions() {
+  try {
+    const candidates = bankFiles
+      .filter(f => f.filename.includes('서식'))
+      .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
+    for (const formatFile of candidates) {
+      const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
+      let best = null; // { index, ctrls, sectionXml }
+      let bestPaired = false;
+      for (let i = 0; i < formatEntry.sectionOrder.length; i++) {
+        const xml = await formatEntry.zipData.file(formatEntry.sectionOrder[i]).async('string');
+        const found = collectHeaderFooterCtrls(xml);
+        const paired = isPairedOddEven(found);
+        if (paired && !bestPaired) { best = { index: i, ctrls: found, sectionXml: xml }; bestPaired = true; }
+        else if (!bestPaired && (!best || found.length > best.ctrls.length)) { best = { index: i, ctrls: found, sectionXml: xml }; }
+      }
+      if (!best || !best.ctrls.length) continue;
+      const colCtrl = await findColumnCtrl(formatEntry, best.sectionXml);
+      const coverXml = best.index > 0 ? await formatEntry.zipData.file(formatEntry.sectionOrder[best.index - 1]).async('string') : null;
+      const answersXml = best.index < formatEntry.sectionOrder.length - 1 ? await formatEntry.zipData.file(formatEntry.sectionOrder[best.index + 1]).async('string') : null;
+      return {
+        formatEntry,
+        questions: { sectionXml: best.sectionXml, sectionPath: formatEntry.sectionOrder[best.index], colCtrl },
+        cover: coverXml ? { sectionXml: coverXml, sectionPath: formatEntry.sectionOrder[best.index - 1] } : null,
+        answers: answersXml ? { sectionXml: answersXml, sectionPath: formatEntry.sectionOrder[best.index + 1] } : null,
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error('서식 파일(구역별) 탐색 실패:', e);
+    return null;
   }
 }
 
@@ -879,7 +1011,7 @@ function pickAnyBorderFillId(headerXml) {
 // equation, rather than floating. Each generation gets its own counter
 // closure so a table id never collides with anything else built in the
 // same run. style: { headerBorderFillId, bodyBorderFillId, headerCharPrId,
-// bodyCharPrId, centerParaPrId }.
+// bodyCharPrId, cellParaPrId }.
 function makeSummaryTableBuilder() {
   let counter = 0;
   return function summaryTableXml(pid, rows, ids, style) {
@@ -889,7 +1021,7 @@ function makeSummaryTableBuilder() {
     const totalWidth = colWidths.reduce((a, b) => a + b, 0);
     const rowHeight = 1200;
     const tblId = String(3200000000 + (counter++));
-    const cellParaPrId = style.centerParaPrId || ids.paraPrIDRef;
+    const cellParaPrId = style.cellParaPrId || ids.paraPrIDRef;
 
     let trXml = '';
     for (let r = 0; r < rowCnt; r++) {
@@ -930,7 +1062,7 @@ function makeSummaryTableBuilder() {
 // real 1x1 HWP table (not text) so it can carry a colored fill + border,
 // matching the boxed banner in the target design — a plain paragraph has
 // no way to carry a background fill of its own. style: { width,
-// borderFillId, charPrId, centerParaPrId, columnBreak, prefixCtrlXml }.
+// borderFillId, charPrId, cellParaPrId, columnBreak, prefixCtrlXml }.
 function makeLabelBoxBuilder() {
   let counter = 0;
   return function labelBoxXml(pid, text, ids, style) {
@@ -938,7 +1070,7 @@ function makeLabelBoxBuilder() {
     const width = style.width;
     const rowHeight = 460;
     const tblId = String(3300000000 + (counter++));
-    const cellParaPrId = style.centerParaPrId || ids.paraPrIDRef;
+    const cellParaPrId = style.cellParaPrId || ids.paraPrIDRef;
     const tcXml = `<hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${style.borderFillId}">` +
       `<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">` +
       `<hp:p id="2147483648" paraPrIDRef="${cellParaPrId}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
@@ -1315,47 +1447,41 @@ genBtn.addEventListener('click', async () => {
       await getParsedFile(fid, f.filename);
     }
 
-    const carrierFileId = missionFileId.get(checked[0].mission);
-    const carrierEntry = loadedFileCache.get(carrierFileId);
+    log('서식(바탕쪽) 파일을 찾는 중...');
+    // 실제 시험지 파일 하나를 "내용 재료"로 쓰던 것과 별개로, 서식 파일 자체를
+    // (표지 · 2단 문제 · 해설, 최대 3개 구역) 최종 산출물의 뼈대로 그대로
+    // 씁니다 — 서식이 하나도 없으면(설정 오류) 실제 시험지 파일을 대신
+    // 뼈대로 써서라도 결과물은 만들어냅니다.
+    const contentCarrierFileId = missionFileId.get(checked[0].mission);
+    const contentCarrierEntry = loadedFileCache.get(contentCarrierFileId);
+    const regions = (await findFormatRegions()) || {
+      formatEntry: contentCarrierEntry,
+      questions: { sectionXml: await contentCarrierEntry.zipData.file(contentCarrierEntry.sectionOrder[0]).async('string'), sectionPath: contentCarrierEntry.sectionOrder[0], colCtrl: null },
+      cover: null,
+      answers: null,
+    };
+
+    const carrierEntry = regions.formatEntry;
     const carrierIds = deriveSafeIds(carrierEntry.markers);
     let carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
     const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
     const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
     const centerParaPrId = pickParaPrId(paraPrDefs, { align: 'CENTER', noHeading: true }) || plainParaPrId;
+    const rightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
     const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
 
-    // 서식 파일의 다단(2단) 정의를 먼저 찾아둡니다 — 문제 출처 박스 너비와
-    // 몇 번째 문제부터 2단으로 전환할지를 본문(demo)을 만들기 전에 알아야
-    // 하기 때문에, 머리말/꼬리말 이식보다 먼저 실행합니다.
-    const formatInfo = await findFormatTemplateInfo();
-    const colCtrl = formatInfo && formatInfo.colCtrl;
-    const FULL_WIDTH = 30756; // 기존 1단 기준 폭 (제목/요약표/빠른정답에 그대로 사용)
-    const colGap = colCtrl ? Number((colCtrl.ctrlXml.match(/sameGap="(\d+)"/) || [])[1] || 0) : 0;
-    const perColumnWidth = colCtrl ? Math.max(4000, Math.floor((FULL_WIDTH - colGap) / 2)) : FULL_WIDTH;
-    // Wrap using the CARRIER's own charPrIDRef, not the format template's —
-    // the ctrl itself carries no visible text (so any valid id renders
-    // identically), and colCtrl.charPrIDRef is a foreign id from the
-    // format file's masterpage that was never imported into this
-    // document's header.xml (only buildHeaderFooterResult's hfFragment
-    // goes through importForeignStyleIds; this run is built separately).
-    const colPr2RunXml = colCtrl ? `<hp:run charPrIDRef="${textIds.charPrIDRef}">${colCtrl.ctrlXml}</hp:run>` : '';
-    // 다시 1단으로 되돌리는 용도 — 제목/요약표, [빠른 정답], 해설 안내문 앞에 붙여
-    // 그 구간만은 항상 전체 폭 1단으로 나오게 합니다.
-    const colPr1RunXml = `<hp:run charPrIDRef="${textIds.charPrIDRef}"><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl></hp:run>`;
-    const accentColorMatch = colCtrl && colCtrl.ctrlXml.match(/<hp:colLine[^>]*\bcolor="(#[0-9A-Fa-f]{6})"/);
-    const accentColor = accentColorMatch ? accentColorMatch[1] : '#068273';
+    // 문제 출처 줄(예: "[ 1차시도 ] 평면좌표 · [S+반] 1. 평면좌표 진도미션
+    // 16번") 전용 스타일 — 오른쪽 정렬, 8pt 볼드, 박스 없이 텍스트 그대로.
+    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 800, bold: true, textColor: '#000000' }));
+    carrierHeaderXml = styleRes.headerXml;
+    const citationIds = { ...carrierIds, paraPrIDRef: rightParaPrId, charPrIDRef: styleRes.id };
 
-    // 문제 출처 박스(8pt 볼드) / 요약표 헤더행 스타일용 charPr·borderFill을
-    // 새로 만들어 header.xml에 추가합니다 — carrier 문서에 정확히 맞는
-    // 스타일이 이미 있으리라는 보장이 없으므로, 기존 정의를 베이스로
-    // 색/굵기/크기만 바꿔 파생시킵니다.
+    // [오답 현황 요약] 표 스타일 (강조색 헤더행 + 흰 볼드, 본문은 가운데 정렬).
+    // 강조색은 서식의 다단 구분선 색을 그대로 따라갑니다.
+    const accentColorMatch = regions.questions.colCtrl &&
+      regions.questions.colCtrl.ctrlXml.match(/<hp:colLine[^>]*\bcolor="(#[0-9A-Fa-f]{6})"/);
+    const accentColor = accentColorMatch ? accentColorMatch[1] : '#068273';
     const solidBorderBaseId = pickSolidBorderFillId(carrierHeaderXml);
-    const boxFillColor = lightenColor(accentColor, 0.85);
-    let styleRes;
-    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, boxFillColor));
-    carrierHeaderXml = styleRes.headerXml; const labelBoxBorderFillId = styleRes.id;
-    styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 800, bold: true, textColor: '#000000' }));
-    carrierHeaderXml = styleRes.headerXml; const labelBoxCharPrId = styleRes.id;
     styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, accentColor));
     carrierHeaderXml = styleRes.headerXml; const summaryHeaderBorderFillId = styleRes.id;
     styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 850, bold: true, textColor: '#FFFFFF' }));
@@ -1364,26 +1490,54 @@ genBtn.addEventListener('click', async () => {
     carrierHeaderXml = styleRes.headerXml; const summaryBodyCharPrId = styleRes.id;
     const summaryBodyBorderFillId = solidBorderBaseId;
 
+    // 표지/문제/해설 구역이 따로 없는(단일 구역짜리) 서식일 때만 쓰는
+    // 다단 전환용 ctrl — 그 경우 한 구역 안에서 제목·요약표는 1단,
+    // 문제는 2단, 빠른정답·해설은 다시 1단으로 돌아가야 합니다.
+    const colCtrl = regions.questions.colCtrl;
+    const colPr2RunXml = colCtrl ? `<hp:run charPrIDRef="${textIds.charPrIDRef}">${colCtrl.ctrlXml}</hp:run>` : '';
+    const colPr1RunXml = `<hp:run charPrIDRef="${textIds.charPrIDRef}"><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl></hp:run>`;
+
     log('시험지 안의 내용을 정리하는 중...');
+    // "이 학생의 몇 번째 오답노트인지" — 같은 생성 시각(batch)을 하나로 묶어서 셉니다.
+    const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
+    // "대치수학 N기 X 이름" 패턴은 보통 문제 구역의 머리말에만 있고, 이름만
+    // 단독으로 반복되는 표지 배지 같은 건 다른 구역에 있을 수 있어서, 이전
+    // 학생 이름은 구역 하나가 아니라 서식 전체에서 한 번만 찾아둡니다.
+    const oldName = detectOldHeaderName(regions.questions.sectionXml) ||
+      (regions.cover && detectOldHeaderName(regions.cover.sectionXml)) ||
+      (regions.answers && detectOldHeaderName(regions.answers.sectionXml)) || null;
+    const studentInfo = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound, oldName };
     const strippedSections = {};
-    for (const path of carrierEntry.sectionOrder) {
-      const xml = await carrierEntry.zipData.file(path).async('string');
-      strippedSections[path] = stripSectionToSkeleton(xml);
+    strippedSections[regions.questions.sectionPath] =
+      personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.questions.sectionXml), studentInfo);
+    if (regions.cover) {
+      strippedSections[regions.cover.sectionPath] =
+        personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.cover.sectionXml), studentInfo);
     }
+    if (regions.answers) {
+      strippedSections[regions.answers.sectionPath] =
+        personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.answers.sectionXml), studentInfo);
+    }
+
+    const coverPath = regions.cover ? regions.cover.sectionPath : regions.questions.sectionPath;
+    const questionsPath = regions.questions.sectionPath;
+    const answersPath = regions.answers ? regions.answers.sectionPath : regions.questions.sectionPath;
+    // "구역이 안 나뉜" 경우에만(표지/해설이 문제 구역과 같은 파일을 공유할
+    // 때만) 한 구역 안에서 직접 다단을 전환해야 합니다 — 구역이 진짜로
+    // 나뉘어 있으면 각 구역이 자기 자신의 다단 설정을 그대로 갖고 있으므로
+    // 손댈 필요가 없습니다.
+    const singleRegion = coverPath === questionsPath;
 
     log('선택한 문제들을 조립하는 중...');
     const foreignImagesToAdd = [];
     let foreignImageCounter = 0;
     const today = new Date().toISOString().slice(0, 10);
-
-    // "이 학생의 몇 번째 오답노트인지" — 같은 생성 시각(batch)을 하나로 묶어서 셉니다.
-    const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
     const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
 
-    let demo = textParaXml(9001, titleText, textIds, { prefixCtrlXml: colPr1RunXml })
+    let coverDemo = textParaXml(9001, titleText, textIds, singleRegion ? { prefixCtrlXml: colPr1RunXml } : undefined)
       + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
 
-    demo += textParaXml(9003, '[오답 현황 요약]', textIds);
+    coverDemo += textParaXml(9003, '[오답 현황 요약]', textIds);
     let summaryId = 9004;
     let qOrderNum = 1;
     const summaryRows = [['순번', '종류', '미션', '문제번호', '차시도', '정오기록']];
@@ -1397,18 +1551,18 @@ genBtn.addEventListener('click', async () => {
     }
     {
       const summaryTableXml = makeSummaryTableBuilder();
-      demo += summaryTableXml(summaryId, summaryRows, textIds, {
+      coverDemo += summaryTableXml(summaryId, summaryRows, textIds, {
         headerBorderFillId: summaryHeaderBorderFillId,
         bodyBorderFillId: summaryBodyBorderFillId,
         headerCharPrId: summaryHeaderCharPrId,
         bodyCharPrId: summaryBodyCharPrId,
-        centerParaPrId,
+        cellParaPrId: centerParaPrId,
       });
     }
 
     let qCounter = summaryId + 100;
     let qBodyOrderNum = 1;
-    const labelBoxXml = makeLabelBoxBuilder();
+    let questionsDemo = '';
     for (const { mission, num, round } of checked) {
       const fileId = missionFileId.get(mission);
       const entry = loadedFileCache.get(fileId);
@@ -1417,24 +1571,17 @@ genBtn.addEventListener('click', async () => {
 
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
       const isFirstQuestion = qBodyOrderNum === 1;
-      // Each question gets its own column — the first one switches the
-      // whole document into 2단 (2-column) mode right here (colPr2), every
-      // one after that just moves the flow into the NEXT column
-      // (columnBreak); a page holds exactly 2 columns, so every 2nd
-      // question naturally starts a new page too, with no separate
-      // pageBreak needed.
-      demo += labelBoxXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, textIds, {
-        width: perColumnWidth,
-        borderFillId: labelBoxBorderFillId,
-        charPrId: labelBoxCharPrId,
-        centerParaPrId,
-        columnBreak: !isFirstQuestion,
-        prefixCtrlXml: isFirstQuestion ? colPr2RunXml : '',
-      });
+      // Each question gets its own column. In a real 2-column questions
+      // section, that's just a columnBreak per question (the section's
+      // own native colPr already applies). In a single merged region, the
+      // FIRST question also has to switch the section into 2단 mode itself.
+      const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1 };
+      if (singleRegion && isFirstQuestion) opts.prefixCtrlXml = colPr2RunXml;
+      questionsDemo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, citationIds, opts);
       qBodyOrderNum++;
 
       if (entry === carrierEntry) {
-        demo += marker.blockXml;
+        questionsDemo += marker.blockXml;
       } else {
         let blockXml = normalizeIds(marker.blockXml, carrierIds);
         const refs = collectImageRefs(blockXml);
@@ -1450,7 +1597,7 @@ genBtn.addEventListener('click', async () => {
           idMap[oldId] = newId;
         }
         blockXml = rewriteImageRefs(blockXml, idMap);
-        demo += blockXml;
+        questionsDemo += blockXml;
       }
     }
 
@@ -1458,7 +1605,12 @@ genBtn.addEventListener('click', async () => {
     // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
     // 수식이 포함된 정답은 텍스트가 아니라 수식 개체 자체를 그대로
     // 복사해서 넣습니다 — 등호/분수/좌표 같은 게 실제로 렌더링됩니다.
-    demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true, prefixCtrlXml: colPr1RunXml });
+    // 해설 구역이 실제로는 문제 구역과 같은 파일을 쓰는 경우(둘의 경로가
+    // 같음) 페이지가 저절로 안 넘어가므로 명시적으로 pageBreak가 필요합니다
+    // — 진짜 별도 구역이면 구역 전환 자체가 이미 새 페이지를 강제합니다.
+    const answersShareSection = answersPath === questionsPath;
+    let answersDemo = textParaXml(qCounter++, '[빠른 정답]', textIds,
+      answersShareSection ? { pageBreak: true, prefixCtrlXml: singleRegion ? colPr1RunXml : undefined } : { pageBreak: false });
     let quickOrderNum = 1;
     const renumberEquationIds = makeEquationIdRenumberer();
     for (const { mission, num } of checked) {
@@ -1469,32 +1621,31 @@ genBtn.addEventListener('click', async () => {
       if (answerXml) {
         if (entry !== carrierEntry) answerXml = normalizeIds(answerXml, carrierIds);
         answerXml = renumberEquationIds(answerXml);
-        demo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
+        answersDemo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
       } else {
-        demo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
+        answersDemo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
       }
       quickOrderNum++;
     }
 
     // 미주(각주)로 들어간 해설은 한글이 문서 맨 끝에 자동으로 모아서 보여줍니다.
     // 그 앞에 해설 섹션임을 알리는 안내 문구만 추가합니다.
-    demo += textParaXml(qCounter++, `${studentName}의 ${noteRound}번째 오답 해설`, textIds, { pageBreak: true, prefixCtrlXml: colPr1RunXml });
+    answersDemo += textParaXml(qCounter++, `${studentName}의 ${noteRound}번째 오답 해설`, textIds, { pageBreak: true, prefixCtrlXml: singleRegion ? colPr1RunXml : undefined });
 
-    const targetSection = carrierEntry.sectionOrder[0];
-    strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
-
-    log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
-    {
-      const oddHeaderText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class} ${studentName}`;
-      const personalize = (fragmentXml) => personalizeOddHeaderText(fragmentXml, oddHeaderText);
-      const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
-        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize, formatInfo);
-      carrierHeaderXml = patchedHeaderXml;
-      strippedSections[targetSection] = patchedTargetSection;
-      foreignImagesToAdd.push(...headerImages);
+    // 표지/문제/해설을 각자 자기 구역에 붙입니다 — 구역이 안 나뉜 서식이면
+    // 셋 다 같은 구역(경로)이라 자연히 순서대로 한 곳에 다 들어갑니다.
+    const sectionAppends = {};
+    for (const [path, xml] of [[coverPath, coverDemo], [questionsPath, questionsDemo], [answersPath, answersDemo]]) {
+      sectionAppends[path] = (sectionAppends[path] || '') + xml;
+    }
+    for (const [path, xml] of Object.entries(sectionAppends)) {
+      strippedSections[path] = strippedSections[path].replace('</hs:sec>', xml + '</hs:sec>');
     }
 
-    const keepImageHrefs = new Set(collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean));
+    const keepImageHrefs = new Set(
+      collectImageRefs(Object.values(strippedSections).join('') + carrierHeaderXml)
+        .map(id => carrierEntry.manifestItems[id]).filter(Boolean)
+    );
 
     log('.hwpx 파일로 압축하는 중...');
     const outZip = new JSZip();
