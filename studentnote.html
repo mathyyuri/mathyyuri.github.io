@@ -405,6 +405,71 @@ function importForeignStyleIds(carrierHeaderXml, foreignHeaderXml, fragmentXml) 
   }
   return { patchedHeader, patchedFragment };
 }
+
+// ---------- 문제 출처 박스 / 표 스타일용 새 charPr·borderFill 정의 ----------
+// The "[ N차시도 ] 미션명 · 출처 N번" citation line and the [오답 현황
+// 요약] table need styling (8pt bold box, colored header row) that no
+// existing charPr/borderFill in the carrier's own header.xml necessarily
+// matches — so new ones are derived from an EXISTING valid definition
+// (never hand-built from scratch) by copying its structure and overriding
+// just the attributes that matter. This keeps fontRef/ratio/etc pointing
+// at font-table indices that are guaranteed to actually exist in THIS
+// carrier document, instead of guessing indices that happen to work in
+// one file and not another.
+function deriveStyledCharPr(headerXml, baseId, { height, bold, textColor }) {
+  const baseDef = extractHeaderDef(headerXml, 'charPr', baseId);
+  if (!baseDef) return null;
+  let def = baseDef.replace(/^(<hh:charPr\s+id=")\d+(")/, '$1__NEW__$2');
+  def = def.replace(/\bheight="\d+"/, `height="${height}"`);
+  if (textColor) def = def.replace(/\btextColor="[^"]*"/, `textColor="${textColor}"`);
+  def = def.replace(/<hh:bold\/>/g, '');
+  if (bold) def = def.replace('</hh:charPr>', '<hh:bold/></hh:charPr>');
+  return def;
+}
+function deriveFilledBorderFill(headerXml, baseId, faceColor) {
+  const baseDef = extractHeaderDef(headerXml, 'borderFill', baseId);
+  if (!baseDef) return null;
+  let def = baseDef.replace(/^(<hh:borderFill\s+id=")\d+(")/, '$1__NEW__$2');
+  def = def.replace(/<hc:fillBrush>[\s\S]*?<\/hc:fillBrush>/, '');
+  def = def.replace('</hh:borderFill>', `<hc:fillBrush><hc:winBrush faceColor="${faceColor}" hatchColor="#000000" alpha="0"/></hc:fillBrush></hh:borderFill>`);
+  return def;
+}
+function appendCharPrDef(headerXml, defWithPlaceholder) {
+  if (!defWithPlaceholder) return { headerXml, id: '0' };
+  const newId = String(maxHeaderId(headerXml, 'charPr') + 1);
+  const newDef = defWithPlaceholder.replace('id="__NEW__"', `id="${newId}"`);
+  const patched = headerXml.replace('</hh:charProperties>', newDef + '</hh:charProperties>');
+  return { headerXml: patched, id: newId };
+}
+function appendBorderFillDef(headerXml, defWithPlaceholder) {
+  if (!defWithPlaceholder) return { headerXml, id: '0' };
+  const newId = String(maxHeaderId(headerXml, 'borderFill') + 1);
+  const newDef = defWithPlaceholder.replace('id="__NEW__"', `id="${newId}"`);
+  const patched = headerXml.replace('</hh:borderFills>', newDef + '</hh:borderFills>');
+  return { headerXml: patched, id: newId };
+}
+// A borderFill with SOLID borders on all 4 sides is a safe base for a
+// bordered box/table cell — picking one avoids ending up with a
+// NONE-type border (invisible) as the base.
+function pickSolidBorderFillId(headerXml) {
+  const blocks = findTopLevelBlocks(headerXml, 'hh:borderFill');
+  for (const b of blocks) {
+    const t = b.text;
+    if (/<hh:leftBorder type="SOLID"/.test(t) && /<hh:rightBorder type="SOLID"/.test(t) &&
+        /<hh:topBorder type="SOLID"/.test(t) && /<hh:bottomBorder type="SOLID"/.test(t)) {
+      const m = t.match(/^<hh:borderFill\s+id="(\d+)"/);
+      if (m) return m[1];
+    }
+  }
+  return pickAnyBorderFillId(headerXml);
+}
+function lightenColor(hex, amount) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  const mix = c => Math.round(c + (255 - c) * amount);
+  return '#' + [mix(r), mix(g), mix(b)].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+}
+
 // Every section's first paragraph carries its <hp:secPr> (page setup) in
 // its own run; a repeating header/footer control lives in the NEXT run,
 // right after that one closes. Insert the ported run there, matching
@@ -530,9 +595,13 @@ function stripPictures(xml) {
 }
 async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, formatSectionXml, personalize) {
   const formatHeaderXml = await formatEntry.zipData.file('Contents/header.xml').async('string');
+  // The 다단(column) layout is applied separately, at the exact point in
+  // the generated body where questions actually start (see
+  // findFormatTemplateInfo / colPr1RunXml / colPr2RunXml in genBtn) —
+  // NOT bundled in here with header/footer, which always land in
+  // paragraph 0 (before the title and summary table, which must stay
+  // single-column).
   let hfFragment = ctrls.map(({ ctrlXml, charPrIDRef }) => `<hp:run charPrIDRef="${charPrIDRef}">${ctrlXml}</hp:run>`).join('');
-  const colCtrl = await findColumnCtrl(formatEntry, formatSectionXml);
-  if (colCtrl) hfFragment += `<hp:run charPrIDRef="${colCtrl.charPrIDRef}">${colCtrl.ctrlXml}</hp:run>`;
   hfFragment = stripPictures(hfFragment);
   if (personalize) hfFragment = personalize(hfFragment);
   let { patchedHeader, patchedFragment } = importForeignStyleIds(carrierHeaderXml, formatHeaderXml, hfFragment);
@@ -560,30 +629,42 @@ async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, forma
   newSectionXml = portPageSetup(newSectionXml, formatSectionXml);
   return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
 }
-async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml, personalize) {
+// Deliberately narrow to files literally named with "서식" — a real exam
+// paper in the bank can carry its OWN paired ODD/EVEN header (its own exam
+// branding, e.g. running the same title in the corner of every page),
+// which is unrelated to the 오답노트 template design. Scanning the whole
+// bank risked silently grabbing an unrelated exam file's own header/footer
+// whenever it happened to look "paired" — confirmed against real files, so
+// this stays scoped to "서식" only.
+// Run this ONCE, early, before the body is built — genBtn needs the
+// template's colPr (column width, divider color) to size/color the
+// per-question label boxes and the 2-column switch, both of which are
+// baked into the body XML long before header/footer application (which
+// operates on the already-built section) would otherwise discover it.
+async function findFormatTemplateInfo() {
   try {
-    // Deliberately narrow to files literally named with "서식" — a real
-    // exam paper in the bank can carry its OWN paired ODD/EVEN header (its
-    // own exam branding, e.g. running the same title in the corner of
-    // every page), which is unrelated to the 오답노트 template design.
-    // Scanning the whole bank risked silently grabbing an unrelated exam
-    // file's own header/footer whenever it happened to look "paired" —
-    // confirmed against real files, so this stays scoped to "서식" only.
     const candidates = bankFiles.filter(f => f.filename.includes('서식'));
     let fallback = null;
     for (const formatFile of candidates) {
       const formatEntry = await getParsedFile(formatFile.id, formatFile.filename);
       const { ctrls, sectionXml: formatSectionXml } = await findHeaderFooterCtrls(formatEntry);
       if (!ctrls.length) continue;
+      const colCtrl = formatSectionXml ? await findColumnCtrl(formatEntry, formatSectionXml) : null;
       if (isPairedOddEven(ctrls)) {
-        return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatEntry, ctrls, formatSectionXml, personalize);
+        return { formatEntry, ctrls, formatSectionXml, colCtrl };
       }
-      if (!fallback) fallback = { formatEntry, ctrls, formatSectionXml };
+      if (!fallback) fallback = { formatEntry, ctrls, formatSectionXml, colCtrl };
     }
-    if (fallback) {
-      return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, fallback.formatEntry, fallback.ctrls, fallback.formatSectionXml, personalize);
-    }
-    return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
+    return fallback;
+  } catch (e) {
+    console.error('서식 파일 탐색 실패 (건너뜀):', e);
+    return null;
+  }
+}
+async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXml, personalize, formatInfo) {
+  try {
+    if (!formatInfo) return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
+    return await buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, formatInfo.formatEntry, formatInfo.ctrls, formatInfo.formatSectionXml, personalize);
   } catch (e) {
     console.error('머리말/꼬리말 이식 실패 (건너뜀):', e);
     return { headerXml: carrierHeaderXml, sectionXml: targetSectionXml, images: [] };
@@ -697,6 +778,12 @@ function detectEndnoteMarkers(xml) {
     // Trim leading spacer-only blanks — this is what created the big gap
     // between the generated citation line and the actual problem text.
     while (start < end - 1 && isEmptySpacerPara(paras[start])) start++;
+    // Anything still left before the endnote's OWN paragraph (e.g. a
+    // leftover topic-label line like "[유형 5]" that stopped the PREVIOUS
+    // question's consumption) duplicates our own generated citation box —
+    // the block should start right at the endnote paragraph itself, not
+    // the line before it.
+    if (start < boundaries[k].i) start = boundaries[k].i;
     const blockXml = paras.slice(start, end).map(p => p.text).join('');
     if (blockXml.trim()) result.set(boundaries[k].key, blockXml);
   }
@@ -757,7 +844,14 @@ function normalizeIds(blockXml, ids) {
 function textParaXml(pid, text, ids, opts) {
   const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const pageBreak = (opts && opts.pageBreak) ? '1' : '0';
-  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="${pageBreak}" columnBreak="0" merged="0">` +
+  const columnBreak = (opts && opts.columnBreak) ? '1' : '0';
+  // A ctrl (e.g. a colPr column-layout switch) that needs to take effect
+  // starting at exactly this paragraph gets prepended as its own run,
+  // sitting alongside the visible-text run in the same paragraph — the
+  // same technique already used for porting header/footer/colPr ctrls.
+  const prefix = (opts && opts.prefixCtrlXml) || '';
+  return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="${pageBreak}" columnBreak="${columnBreak}" merged="0">` +
+         prefix +
          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
          `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1200" textheight="1200" baseline="1020" ` +
          `spacing="540" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
@@ -779,30 +873,37 @@ function pickAnyBorderFillId(headerXml) {
   return m ? m[1] : '0';
 }
 // Builds a real HWP table (not a ported one — constructed from scratch)
-// for [오답 현황 요약]. rows[0] is the header row. treatAsChar="1" makes it
-// flow inline as part of the paragraph, like an equation, rather than
-// floating. Each generation gets its own counter closure so a table id
-// never collides with anything else built in the same run.
+// for [오답 현황 요약]. rows[0] is the header row, rendered with its own
+// (colored, bold) style; body rows get a separate (plain-border) style.
+// treatAsChar="1" makes it flow inline as part of the paragraph, like an
+// equation, rather than floating. Each generation gets its own counter
+// closure so a table id never collides with anything else built in the
+// same run. style: { headerBorderFillId, bodyBorderFillId, headerCharPrId,
+// bodyCharPrId, centerParaPrId }.
 function makeSummaryTableBuilder() {
   let counter = 0;
-  return function summaryTableXml(pid, rows, ids, borderFillId) {
+  return function summaryTableXml(pid, rows, ids, style) {
     const rowCnt = rows.length;
     const colCnt = rows[0].length;
     const colWidths = [2500, 5000, 9000, 3500, 3500, 4500];
     const totalWidth = colWidths.reduce((a, b) => a + b, 0);
     const rowHeight = 1200;
     const tblId = String(3200000000 + (counter++));
+    const cellParaPrId = style.centerParaPrId || ids.paraPrIDRef;
 
     let trXml = '';
     for (let r = 0; r < rowCnt; r++) {
       let tcXml = '';
+      const isHeader = r === 0;
+      const borderFillId = isHeader ? style.headerBorderFillId : style.bodyBorderFillId;
+      const charPrId = isHeader ? style.headerCharPrId : style.bodyCharPrId;
       for (let c = 0; c < colCnt; c++) {
         const text = String(rows[r][c] ?? '');
         const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        tcXml += `<hp:tc name="" header="${r === 0 ? 1 : 0}" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${borderFillId}">` +
+        tcXml += `<hp:tc name="" header="${isHeader ? 1 : 0}" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${borderFillId}">` +
           `<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">` +
-          `<hp:p id="2147483648" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
-          `<hp:run charPrIDRef="${ids.charPrIDRef}"><hp:t>${esc}</hp:t></hp:run>` +
+          `<hp:p id="2147483648" paraPrIDRef="${cellParaPrId}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+          `<hp:run charPrIDRef="${charPrId}"><hp:t>${esc}</hp:t></hp:run>` +
           `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" baseline="850" spacing="500" horzpos="0" horzsize="${colWidths[c]}" flags="393216"/></hp:linesegarray>` +
           `</hp:p></hp:subList>` +
           `<hp:cellAddr colAddr="${c}" rowAddr="${r}"/><hp:cellSpan colSpan="1" rowSpan="1"/>` +
@@ -812,7 +913,7 @@ function makeSummaryTableBuilder() {
       trXml += `<hp:tr>${tcXml}</hp:tr>`;
     }
 
-    const tblXml = `<hp:tbl id="${tblId}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="${rowCnt}" colCnt="${colCnt}" cellSpacing="0" borderFillIDRef="${borderFillId}" noAdjust="0">` +
+    const tblXml = `<hp:tbl id="${tblId}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="${rowCnt}" colCnt="${colCnt}" cellSpacing="0" borderFillIDRef="${style.bodyBorderFillId}" noAdjust="0">` +
       `<hp:sz width="${totalWidth}" widthRelTo="ABSOLUTE" height="${rowHeight * rowCnt}" heightRelTo="ABSOLUTE" protect="0"/>` +
       `<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>` +
       `<hp:outMargin left="0" right="0" top="0" bottom="0"/>` +
@@ -823,6 +924,43 @@ function makeSummaryTableBuilder() {
     return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
       `<hp:run charPrIDRef="${ids.charPrIDRef}">${tblXml}<hp:t/></hp:run>` +
       `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="${rowHeight}" textheight="${rowHeight}" baseline="850" spacing="500" horzpos="0" horzsize="30756" flags="393216"/></hp:linesegarray></hp:p>`;
+  };
+}
+// Builds the "[ N차시도 ] 미션명 · 출처 N번" problem-source citation as a
+// real 1x1 HWP table (not text) so it can carry a colored fill + border,
+// matching the boxed banner in the target design — a plain paragraph has
+// no way to carry a background fill of its own. style: { width,
+// borderFillId, charPrId, centerParaPrId, columnBreak, prefixCtrlXml }.
+function makeLabelBoxBuilder() {
+  let counter = 0;
+  return function labelBoxXml(pid, text, ids, style) {
+    const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const width = style.width;
+    const rowHeight = 460;
+    const tblId = String(3300000000 + (counter++));
+    const cellParaPrId = style.centerParaPrId || ids.paraPrIDRef;
+    const tcXml = `<hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${style.borderFillId}">` +
+      `<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">` +
+      `<hp:p id="2147483648" paraPrIDRef="${cellParaPrId}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+      `<hp:run charPrIDRef="${style.charPrId}"><hp:t>${esc}</hp:t></hp:run>` +
+      `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="800" textheight="800" baseline="680" spacing="400" horzpos="0" horzsize="${width}" flags="393216"/></hp:linesegarray>` +
+      `</hp:p></hp:subList>` +
+      `<hp:cellAddr colAddr="0" rowAddr="0"/><hp:cellSpan colSpan="1" rowSpan="1"/>` +
+      `<hp:cellSz width="${width}" height="${rowHeight}"/>` +
+      `<hp:cellMargin left="141" right="141" top="70" bottom="70"/></hp:tc>`;
+    const tblXml = `<hp:tbl id="${tblId}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="0" rowCnt="1" colCnt="1" cellSpacing="0" borderFillIDRef="${style.borderFillId}" noAdjust="0">` +
+      `<hp:sz width="${width}" widthRelTo="ABSOLUTE" height="${rowHeight}" heightRelTo="ABSOLUTE" protect="0"/>` +
+      `<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>` +
+      `<hp:outMargin left="0" right="0" top="0" bottom="140"/>` +
+      `<hp:inMargin left="141" right="141" top="70" bottom="70"/>` +
+      `<hp:tr>${tcXml}</hp:tr>` +
+      `</hp:tbl>`;
+    const columnBreak = style.columnBreak ? '1' : '0';
+    const prefix = style.prefixCtrlXml || '';
+    return `<hp:p id="${pid}" paraPrIDRef="${ids.paraPrIDRef}" styleIDRef="${ids.styleIDRef}" pageBreak="0" columnBreak="${columnBreak}" merged="0">` +
+      prefix +
+      `<hp:run charPrIDRef="${ids.charPrIDRef}">${tblXml}<hp:t/></hp:run>` +
+      `<hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="${rowHeight}" textheight="${rowHeight}" baseline="${Math.round(rowHeight * 0.85)}" spacing="500" horzpos="0" horzsize="${width}" flags="393216"/></hp:linesegarray></hp:p>`;
   };
 }
 function collectImageRefs(xml) {
@@ -1183,9 +1321,48 @@ genBtn.addEventListener('click', async () => {
     let carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
     const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
     const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
-    const plainRightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
+    const centerParaPrId = pickParaPrId(paraPrDefs, { align: 'CENTER', noHeading: true }) || plainParaPrId;
     const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
-    const labelIds = { ...carrierIds, paraPrIDRef: plainRightParaPrId };
+
+    // 서식 파일의 다단(2단) 정의를 먼저 찾아둡니다 — 문제 출처 박스 너비와
+    // 몇 번째 문제부터 2단으로 전환할지를 본문(demo)을 만들기 전에 알아야
+    // 하기 때문에, 머리말/꼬리말 이식보다 먼저 실행합니다.
+    const formatInfo = await findFormatTemplateInfo();
+    const colCtrl = formatInfo && formatInfo.colCtrl;
+    const FULL_WIDTH = 30756; // 기존 1단 기준 폭 (제목/요약표/빠른정답에 그대로 사용)
+    const colGap = colCtrl ? Number((colCtrl.ctrlXml.match(/sameGap="(\d+)"/) || [])[1] || 0) : 0;
+    const perColumnWidth = colCtrl ? Math.max(4000, Math.floor((FULL_WIDTH - colGap) / 2)) : FULL_WIDTH;
+    // Wrap using the CARRIER's own charPrIDRef, not the format template's —
+    // the ctrl itself carries no visible text (so any valid id renders
+    // identically), and colCtrl.charPrIDRef is a foreign id from the
+    // format file's masterpage that was never imported into this
+    // document's header.xml (only buildHeaderFooterResult's hfFragment
+    // goes through importForeignStyleIds; this run is built separately).
+    const colPr2RunXml = colCtrl ? `<hp:run charPrIDRef="${textIds.charPrIDRef}">${colCtrl.ctrlXml}</hp:run>` : '';
+    // 다시 1단으로 되돌리는 용도 — 제목/요약표, [빠른 정답], 해설 안내문 앞에 붙여
+    // 그 구간만은 항상 전체 폭 1단으로 나오게 합니다.
+    const colPr1RunXml = `<hp:run charPrIDRef="${textIds.charPrIDRef}"><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl></hp:run>`;
+    const accentColorMatch = colCtrl && colCtrl.ctrlXml.match(/<hp:colLine[^>]*\bcolor="(#[0-9A-Fa-f]{6})"/);
+    const accentColor = accentColorMatch ? accentColorMatch[1] : '#068273';
+
+    // 문제 출처 박스(8pt 볼드) / 요약표 헤더행 스타일용 charPr·borderFill을
+    // 새로 만들어 header.xml에 추가합니다 — carrier 문서에 정확히 맞는
+    // 스타일이 이미 있으리라는 보장이 없으므로, 기존 정의를 베이스로
+    // 색/굵기/크기만 바꿔 파생시킵니다.
+    const solidBorderBaseId = pickSolidBorderFillId(carrierHeaderXml);
+    const boxFillColor = lightenColor(accentColor, 0.85);
+    let styleRes;
+    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, boxFillColor));
+    carrierHeaderXml = styleRes.headerXml; const labelBoxBorderFillId = styleRes.id;
+    styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 800, bold: true, textColor: '#000000' }));
+    carrierHeaderXml = styleRes.headerXml; const labelBoxCharPrId = styleRes.id;
+    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, accentColor));
+    carrierHeaderXml = styleRes.headerXml; const summaryHeaderBorderFillId = styleRes.id;
+    styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 850, bold: true, textColor: '#FFFFFF' }));
+    carrierHeaderXml = styleRes.headerXml; const summaryHeaderCharPrId = styleRes.id;
+    styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 850, bold: false, textColor: '#000000' }));
+    carrierHeaderXml = styleRes.headerXml; const summaryBodyCharPrId = styleRes.id;
+    const summaryBodyBorderFillId = solidBorderBaseId;
 
     log('시험지 안의 내용을 정리하는 중...');
     const strippedSections = {};
@@ -1203,7 +1380,7 @@ genBtn.addEventListener('click', async () => {
     const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
     const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
 
-    let demo = textParaXml(9001, titleText, textIds)
+    let demo = textParaXml(9001, titleText, textIds, { prefixCtrlXml: colPr1RunXml })
       + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
 
     demo += textParaXml(9003, '[오답 현황 요약]', textIds);
@@ -1220,12 +1397,18 @@ genBtn.addEventListener('click', async () => {
     }
     {
       const summaryTableXml = makeSummaryTableBuilder();
-      const summaryBorderFillId = pickAnyBorderFillId(carrierHeaderXml);
-      demo += summaryTableXml(summaryId, summaryRows, textIds, summaryBorderFillId);
+      demo += summaryTableXml(summaryId, summaryRows, textIds, {
+        headerBorderFillId: summaryHeaderBorderFillId,
+        bodyBorderFillId: summaryBodyBorderFillId,
+        headerCharPrId: summaryHeaderCharPrId,
+        bodyCharPrId: summaryBodyCharPrId,
+        centerParaPrId,
+      });
     }
 
     let qCounter = summaryId + 100;
     let qBodyOrderNum = 1;
+    const labelBoxXml = makeLabelBoxBuilder();
     for (const { mission, num, round } of checked) {
       const fileId = missionFileId.get(mission);
       const entry = loadedFileCache.get(fileId);
@@ -1233,11 +1416,21 @@ genBtn.addEventListener('click', async () => {
       if (!marker) continue;
 
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
-      // No leading "N번" here — the question's own auto-numbered endnote
-      // reference sits right at the start of the content that follows,
-      // and having our own sequence number right before it read as two
-      // conflicting numbers on the same line.
-      demo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, labelIds, { pageBreak: qBodyOrderNum > 1 });
+      const isFirstQuestion = qBodyOrderNum === 1;
+      // Each question gets its own column — the first one switches the
+      // whole document into 2단 (2-column) mode right here (colPr2), every
+      // one after that just moves the flow into the NEXT column
+      // (columnBreak); a page holds exactly 2 columns, so every 2nd
+      // question naturally starts a new page too, with no separate
+      // pageBreak needed.
+      demo += labelBoxXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, textIds, {
+        width: perColumnWidth,
+        borderFillId: labelBoxBorderFillId,
+        charPrId: labelBoxCharPrId,
+        centerParaPrId,
+        columnBreak: !isFirstQuestion,
+        prefixCtrlXml: isFirstQuestion ? colPr2RunXml : '',
+      });
       qBodyOrderNum++;
 
       if (entry === carrierEntry) {
@@ -1265,7 +1458,7 @@ genBtn.addEventListener('click', async () => {
     // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
     // 수식이 포함된 정답은 텍스트가 아니라 수식 개체 자체를 그대로
     // 복사해서 넣습니다 — 등호/분수/좌표 같은 게 실제로 렌더링됩니다.
-    demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
+    demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true, prefixCtrlXml: colPr1RunXml });
     let quickOrderNum = 1;
     const renumberEquationIds = makeEquationIdRenumberer();
     for (const { mission, num } of checked) {
@@ -1285,7 +1478,7 @@ genBtn.addEventListener('click', async () => {
 
     // 미주(각주)로 들어간 해설은 한글이 문서 맨 끝에 자동으로 모아서 보여줍니다.
     // 그 앞에 해설 섹션임을 알리는 안내 문구만 추가합니다.
-    demo += textParaXml(qCounter++, `${studentName}의 ${noteRound}번째 오답 해설`, textIds, { pageBreak: true });
+    demo += textParaXml(qCounter++, `${studentName}의 ${noteRound}번째 오답 해설`, textIds, { pageBreak: true, prefixCtrlXml: colPr1RunXml });
 
     const targetSection = carrierEntry.sectionOrder[0];
     strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
@@ -1295,7 +1488,7 @@ genBtn.addEventListener('click', async () => {
       const oddHeaderText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class} ${studentName}`;
       const personalize = (fragmentXml) => personalizeOddHeaderText(fragmentXml, oddHeaderText);
       const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
-        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize);
+        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize, formatInfo);
       carrierHeaderXml = patchedHeaderXml;
       strippedSections[targetSection] = patchedTargetSection;
       foreignImagesToAdd.push(...headerImages);

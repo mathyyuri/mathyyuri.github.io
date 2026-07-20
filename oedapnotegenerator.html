@@ -654,6 +654,12 @@ function detectEndnoteMarkers(xml) {
     // Trim leading spacer-only blanks — this is what created the big gap
     // between the generated citation line and the actual problem text.
     while (start < end - 1 && isEmptySpacerPara(paras[start])) start++;
+    // Anything still left before the endnote's OWN paragraph (e.g. a
+    // leftover topic-label line like "[유형 5]" that stopped the PREVIOUS
+    // question's consumption) duplicates our own generated citation line —
+    // the block should start right at the endnote paragraph itself, not
+    // the line before it.
+    if (start < boundaries[k].i) start = boundaries[k].i;
     const blockXml = paras.slice(start, end).map(p => p.text).join('');
     if (blockXml.trim()) result.set(boundaries[k].key, blockXml);
   }
