@@ -174,6 +174,34 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .tab.black.active{color:var(--mint);box-shadow:0 0 0 2px var(--gold)}
 .black-note{display:inline-block;background:var(--ink);color:var(--gold);font-family:var(--serif);font-size:9px;letter-spacing:.26em;font-weight:700;padding:4px 10px;border-radius:3px;margin-bottom:10px}
 
+/* ===== 대수연마 1000제 탭 ===== */
+.tab.algebra{background:var(--mint-deep);color:var(--cream);border-radius:4px;align-self:center;padding:8px 14px;margin:0 4px;border-bottom:none;letter-spacing:.08em}
+.tab.algebra::after{content:'MISSION';font-family:var(--serif);font-size:7.5px;letter-spacing:.2em;color:var(--gold-soft);display:block;margin-top:1px}
+.tab.algebra.active{color:#fff;box-shadow:0 0 0 2px var(--gold)}
+.gauge-wrap{border:1px solid var(--gold-line);border-radius:6px;padding:20px 16px 16px;margin-bottom:20px;background:linear-gradient(180deg,#fff,var(--mint-soft))}
+.gauge-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.gauge-title{font-family:var(--serif);font-weight:700;font-size:12px;letter-spacing:.06em;color:var(--mint-deep)}
+.gauge-total{font-family:var(--serif);font-weight:900;font-size:24px}
+.gauge-total small{font-size:.5em;font-weight:600;margin-left:2px}
+.gauge-track{position:relative;height:14px;background:var(--gold-line);border-radius:7px;margin:30px 6px 36px;overflow:visible}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--mint),var(--mint-deep));border-radius:7px;transition:width .4s}
+.gauge-mark{position:absolute;top:-32px;transform:translateX(-50%);text-align:center;opacity:.4}
+.gauge-mark.reached{opacity:1}
+.gauge-mark::before{content:'';position:absolute;top:32px;left:50%;width:2px;height:14px;background:var(--ink);transform:translateX(-50%)}
+.gm-emoji{font-size:16px;line-height:1}
+.gm-label{font-size:8px;font-weight:700;white-space:nowrap;color:var(--ink)}
+.gm-label small{display:block;font-size:8px;color:var(--gold);font-weight:600}
+.gauge-status{text-align:center;font-size:12px;font-weight:600;margin-bottom:14px}
+.gauge-status b{color:var(--mint-deep)}
+.reward-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.reward-card{flex:1 1 100px;min-width:96px;text-align:center;border:1px solid var(--gold-line);border-radius:6px;padding:10px 8px;background:#fff;opacity:.55;transition:.2s}
+.reward-card.unlocked{opacity:1;border-color:var(--mint-deep);box-shadow:0 0 0 1px var(--mint-deep)}
+.rw-emoji{font-size:26px;line-height:1}
+.rw-name{font-size:11px;font-weight:700;margin-top:4px}
+.rw-req{font-size:9px;color:var(--gold);margin-top:2px}
+.rw-badge{margin-top:6px;font-size:9px;font-weight:700;color:var(--mint-deep)}
+.rw-badge.todo{color:rgba(26,26,26,.4)}
+
 /* ===== 9모대비 자료 (문제 + 해설영상) ===== */
 .res-wrap{margin-top:16px}
 .res-title{font-family:var(--serif);font-weight:900;font-size:clamp(16px,3vw,22px);border-top:1.5px solid var(--gold);padding-top:14px;margin-bottom:2px}
@@ -436,14 +464,17 @@ const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비'
    2기: 전체 6개 탭 / 3기: 9모대비·S+ BLACK 숨김
    반 칩: 2기 = S+, S / 3기 = PRISM (명단에 다른 반명이 있으면 자동 추가) */
 const COHORT_SHEETS = {
-  '2': ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK'],
+  '2': ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK','대수연마 1000제'],
   '3': ['진도미션','과제미션','오답미션','TEST']
 };
 const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
 function sheetsFor(c){ return COHORT_SHEETS[c] || SHEETS; }
-function catsFor(c){ return sheetsFor(c).filter(k=>k!=='S+ BLACK'); } /* 전체 통계에서 S+ BLACK 제외 */
+function catsFor(c){ return sheetsFor(c).filter(k=>k!=='S+ BLACK'&&k!=='대수연마 1000제'); } /* 전체 통계에서 S+ BLACK·대수연마 1000제 제외 (점수 체계가 달라 평균에 섞을 수 없음) */
 function tabListFor(c){ return ['종합'].concat(sheetsFor(c)); }
-const SHEET_EN = {'진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','9모대비':'MOCK 9','S+ BLACK':'BLACK'};
+const SHEET_EN = {'진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
+const ALG_TAB = '대수연마 1000제';
+const ALG_THRESHOLDS = [10000,20000,30000];
+const ALG_REWARDS = [{emoji:'🍦',name:'아이스크림'},{emoji:'🍔',name:'햄버거 세트'},{emoji:'🍕',name:'피자'}];
 const COHORT_LABELS = { '2':{name:'대치수학 2기',sub:'고1 · HIGH 1'}, '3':{name:'대치수학 3기',sub:'중3 · MIDDLE 3'} };
 
 /* ---- 등급 표시 설정 ----
@@ -576,7 +607,7 @@ function buildPubTabs(){
   if(list.indexOf(pubTab)===-1) pubTab='종합';
   list.forEach(s=>{
     const b=document.createElement('button');
-    b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===pubTab?' active':'');
+    b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===ALG_TAB?' algebra':'')+(s===pubTab?' active':'');
     b.textContent=s;
     b.onclick=()=>{
       pubTab=s; pubMission=null;
@@ -691,6 +722,9 @@ function renderPublic(scrollTop){
   if(pubTab==='종합'){
     cumView.classList.remove('hidden');misView.classList.add('hidden');
     renderSummary();
+  }else if(pubTab===ALG_TAB && pubMission==null){
+    cumView.classList.remove('hidden');misView.classList.add('hidden');
+    renderAlgebra1000();
   }else if(pubMission==null){
     cumView.classList.remove('hidden');misView.classList.add('hidden');
     renderCumulative();
@@ -725,10 +759,13 @@ function renderCards(){
   const rows=filteredRows();
   const missions=missionOrder(tabRows()); // 탭 목록은 반 필터와 무관하게 유지
   const {students}=aggregate(rows);
-  const totalAvg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
+  const isAlgebra=pubTab===ALG_TAB;
+  const totalAvg=isAlgebra
+    ? r1(rows.reduce((a,r)=>a+(r.score||0),0))
+    : (mean(rows.map(r=>r.score).filter(v=>v!=null))??'—');
 
   let html='<button class="sum-card'+(pubMission==null?' active':'')+'" onclick="selectMission(null)">'
-    +'<div class="k">'+pubTab+' 누적 현황</div><div class="v">'+totalAvg+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
+    +'<div class="k">'+pubTab+(isAlgebra?' 누적 총점':' 누적 현황')+'</div><div class="v">'+totalAvg+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
   missions.forEach(m=>{
     const avg=mean(rows.filter(r=>r.mission===m&&r.score!=null).map(r=>r.score))??'—';
     html+='<button class="sum-card'+(pubMission===m?' active':'')+'" onclick="selectMission(\''+m.replace(/'/g,"\\'")+'\')">'
@@ -876,6 +913,86 @@ function renderCumulative(){
   matBox.innerHTML=html+'</table>';
 }
 function shortName(m){return m.length>10?m.slice(0,10)+'…':m;}
+
+/* ---- 대수연마 1000제: 정오표 없이 회차별 총점만 기록 · 누적 총점 순위 + 전체 목표 게이지 ---- */
+function algAggregate(rows){
+  const missions=missionOrder(rows);
+  const stu={},order=[];
+  rows.forEach(r=>{
+    const key=studentKey(r);
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{}};order.push(key);}
+    stu[key].nickname=r.nickname;
+    stu[key].class=r.class;
+    if(r.score!=null)stu[key].scores[r.mission]=r.score;
+  });
+  const students=order.map(id=>{
+    const s=stu[id];
+    const vals=Object.values(s.scores);
+    s.total=vals.length?r1(vals.reduce((a,b)=>a+b,0)):0;
+    s.done=vals.length;
+    return s;
+  }).sort((a,b)=>b.total-a.total);
+  return {missions,students};
+}
+function algTableHTML(rows){
+  const {missions,students}=algAggregate(rows);
+  if(!students.length) return '<div class="empty">아직 등록된 기록이 없습니다.</div>';
+  let html='<table class="matrix"><tr><th>RANK</th><th class="nick">NICKNAME</th><th>누적 총점</th>';
+  missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
+  html+='</tr>';
+  students.forEach((s,i)=>{
+    html+='<tr class="'+(i<3?'top3':'')+'">'
+      +'<td class="rank">'+(i+1)+'</td>'
+      +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
+      +'<td class="avg">'+s.total+'</td>';
+    missions.forEach(m=>{
+      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
+    });
+    html+='</tr>';
+  });
+  return html+'</table>';
+}
+function algGaugeHTML(total){
+  const maxT=ALG_THRESHOLDS[ALG_THRESHOLDS.length-1];
+  const pct=Math.round(Math.min(total,maxT)/maxT*100);
+  let markers='';
+  ALG_THRESHOLDS.forEach((t,i)=>{
+    const left=Math.round(t/maxT*100);
+    const reached=total>=t;
+    markers+='<div class="gauge-mark'+(reached?' reached':'')+'" style="left:'+left+'%">'
+      +'<div class="gm-emoji">'+ALG_REWARDS[i].emoji+'</div>'
+      +'<div class="gm-label">'+t.toLocaleString()+'<small>'+esc(ALG_REWARDS[i].name)+'</small></div></div>';
+  });
+  const nextIdx=ALG_THRESHOLDS.findIndex(t=>total<t);
+  const status=nextIdx===-1
+    ? '<div class="gauge-status">🎉 모든 목표 달성! 최종 보상 '+ALG_REWARDS[ALG_REWARDS.length-1].name+' 획득!</div>'
+    : '<div class="gauge-status">다음 목표 <b>'+ALG_REWARDS[nextIdx].emoji+' '+esc(ALG_REWARDS[nextIdx].name)+'</b>까지 <b>'+r1(ALG_THRESHOLDS[nextIdx]-total).toLocaleString()+'점</b> 남았습니다</div>';
+  const rewardRow=ALG_REWARDS.map((rw,i)=>{
+    const unlocked=total>=ALG_THRESHOLDS[i];
+    return '<div class="reward-card'+(unlocked?' unlocked':'')+'">'
+      +'<div class="rw-emoji">'+rw.emoji+'</div><div class="rw-name">'+esc(rw.name)+'</div>'
+      +'<div class="rw-req">'+ALG_THRESHOLDS[i].toLocaleString()+'점</div>'
+      +(unlocked?'<div class="rw-badge">달성!</div>':'<div class="rw-badge todo">'+r1(ALG_THRESHOLDS[i]-total).toLocaleString()+'점 남음</div>')
+      +'</div>';
+  }).join('');
+  return '<div class="gauge-wrap">'
+    +'<div class="gauge-head"><span class="gauge-title">전체 인원 누적 점수</span><span class="gauge-total">'+total.toLocaleString()+'<small>점</small></span></div>'
+    +'<div class="gauge-track"><div class="gauge-fill" style="width:'+pct+'%"></div>'+markers+'</div>'
+    +status
+    +'<div class="reward-row">'+rewardRow+'</div>'
+    +'</div>';
+}
+function renderAlgebra1000(){
+  document.getElementById('pub-title').textContent=ALG_TAB;
+  document.getElementById('pub-note').innerHTML=
+    '<span class="black-note" style="background:var(--mint-deep)">SPECIAL MISSION · 특강반 전용</span><br>'
+    +'CUMULATIVE · 누적 총점 순 (평균 아님) · 카드를 누르면 회차별 순위'+clsLegendHTML();
+  renderResources(false);
+  const matBox=document.getElementById('pub-matrix');
+  if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
+  const classTotal=r1(tabRows().reduce((a,r)=>a+(r.score||0),0));
+  matBox.innerHTML=algGaugeHTML(classTotal)+algTableHTML(filteredRows());
+}
 
 /* ---- 9모대비 자료: 문제 이미지 + 해설 영상 ---- */
 function ytEmbed(url){
