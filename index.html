@@ -129,6 +129,7 @@ table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color
 .ctag.csp{background:var(--gold)}
 .ctag.cs{background:var(--mint-deep)}
 .ctag.cprism{background:var(--pink-deep)}
+.ctag.calg{background:var(--mint-deep)}
 /* 완성도 · CLEAR 배지 (반별 색상) */
 table.omr td.comp{font-family:var(--serif);font-weight:900;font-size:12px;padding:4px 8px;color:var(--gold)}
 .clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-size:9px;letter-spacing:.18em;font-weight:900;padding:3px 8px;border-radius:999px}
@@ -201,6 +202,7 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .rw-req{font-size:9px;color:var(--gold);margin-top:2px}
 .rw-badge{margin-top:6px;font-size:9px;font-weight:700;color:var(--mint-deep)}
 .rw-badge.todo{color:rgba(26,26,26,.4)}
+.alg-chart-wrap{position:relative;height:260px;margin-bottom:20px;border:1px solid var(--gold-line);border-radius:6px;padding:16px 10px 6px;background:#fff}
 
 /* ===== 9모대비 자료 (문제 + 해설영상) ===== */
 .res-wrap{margin-top:16px}
@@ -660,10 +662,10 @@ function missionOrder(rows){
   return list;
 }
 function studentKey(r){ return r.sid!=null ? 's'+r.sid : 'n'+r.nickname; }
-/* 반 키: S+ → csp · S → cs · PRISM → cprism */
+/* 반 키: S+ → csp · S → cs · PRISM → cprism · 대수연마 → calg */
 function clsKey(cls){
   const c=String(cls||'').trim().toUpperCase();
-  return c==='S+'?'csp':c==='PRISM'?'cprism':c==='S'?'cs':'';
+  return c==='S+'?'csp':c==='PRISM'?'cprism':c==='S'?'cs':c==='대수연마'?'calg':'';
 }
 /* 반명 컬러 배지: 색 안에 반 이름이 들어감 */
 function classDot(cls){
@@ -934,8 +936,7 @@ function algAggregate(rows){
   }).sort((a,b)=>b.total-a.total);
   return {missions,students};
 }
-function algTableHTML(rows){
-  const {missions,students}=algAggregate(rows);
+function algTableHTML(missions,students){
   if(!students.length) return '<div class="empty">아직 등록된 기록이 없습니다.</div>';
   let html='<table class="matrix"><tr><th>RANK</th><th class="nick">NICKNAME</th><th>누적 총점</th>';
   missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
@@ -982,16 +983,48 @@ function algGaugeHTML(total){
     +'<div class="reward-row">'+rewardRow+'</div>'
     +'</div>';
 }
+/* 누적 총점 비교 막대그래프 — 숫자표 대신 시각적으로 경쟁을 보여줌 */
+function drawAlgChart(students){
+  const id='alg-chart';
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  charts[id]=new Chart(canvas,{
+    type:'bar',
+    plugins:[valueLabel],
+    data:{labels:students.map(s=>s.nickname),datasets:[{
+      label:'누적 총점',
+      data:students.map(s=>s.total),
+      backgroundColor:students.map((s,i)=>i<3?cssColor('--gold'):cssColor('--mint')),
+      borderColor:students.map((s,i)=>i<3?cssColor('--gold'):cssColor('--mint-deep')),
+      borderWidth:1.5,maxBarThickness:46,
+      labelColor:cssColor('--mint-deep')
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+        x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}
+      }
+    }
+  });
+}
 function renderAlgebra1000(){
   document.getElementById('pub-title').textContent=ALG_TAB;
   document.getElementById('pub-note').innerHTML=
     '<span class="black-note" style="background:var(--mint-deep)">SPECIAL MISSION · 특강반 전용</span><br>'
-    +'CUMULATIVE · 누적 총점 순 (평균 아님) · 카드를 누르면 회차별 순위'+clsLegendHTML();
+    +'CUMULATIVE · 누적 총점 순 (평균 아님) · 막대그래프로 순위 비교'+clsLegendHTML();
   renderResources(false);
   const matBox=document.getElementById('pub-matrix');
   if(!publicData){matBox.innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>';return;}
   const classTotal=r1(tabRows().reduce((a,r)=>a+(r.score||0),0));
-  matBox.innerHTML=algGaugeHTML(classTotal)+algTableHTML(filteredRows());
+  const {missions,students}=algAggregate(filteredRows());
+  matBox.innerHTML=algGaugeHTML(classTotal)
+    +(students.length?'<div class="alg-chart-wrap"><canvas id="alg-chart"></canvas></div>':'')
+    +algTableHTML(missions,students);
+  if(students.length)drawAlgChart(students);
 }
 
 /* ---- 9모대비 자료: 문제 이미지 + 해설 영상 ---- */
