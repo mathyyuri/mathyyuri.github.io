@@ -381,7 +381,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       <div class="big-label" id="detail-title">—</div>
       <div class="small-note" id="detail-sub">—</div>
       <div class="grid-scroll" id="detail-table"></div>
-      <div class="legend-row"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span><span class="tri"><i></i>오답완료 △</span></div>
+      <div class="legend-row" id="detail-legend"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span><span class="tri"><i></i>오답완료 △</span></div>
       <div class="res-wrap" id="detail-resources"></div>
     </div>
   </div>
@@ -636,6 +636,7 @@ function setCohort(c){
 }
 function renderChips(){
   const box=document.getElementById('pub-chips');
+  if(pubTab===ALG_TAB){ box.innerHTML=''; pubClass='전체'; return; } /* 특강 전용 탭 — 반 필터 불필요 */
   // 기수별 고정 반 목록 먼저, 데이터에 있는 다른 반명은 뒤에 자동 추가
   const set={},list=[];
   (COHORT_CLASSES[pubCohort]||[]).forEach(c=>{ if(!set[c]){set[c]=1;list.push(c);} });
@@ -730,6 +731,9 @@ function renderPublic(scrollTop){
   }else if(pubMission==null){
     cumView.classList.remove('hidden');misView.classList.add('hidden');
     renderCumulative();
+  }else if(pubTab===ALG_TAB){
+    cumView.classList.add('hidden');misView.classList.remove('hidden');
+    renderAlgebraMissionDetail();
   }else{
     cumView.classList.add('hidden');misView.classList.remove('hidden');
     renderMissionDetail();
@@ -771,7 +775,7 @@ function renderCards(){
   missions.forEach(m=>{
     const avg=mean(rows.filter(r=>r.mission===m&&r.score!=null).map(r=>r.score))??'—';
     html+='<button class="sum-card'+(pubMission===m?' active':'')+'" onclick="selectMission(\''+m.replace(/'/g,"\\'")+'\')">'
-      +'<div class="k">'+esc(m)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">정오표</div></button>';
+      +'<div class="k">'+esc(m)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">'+(isAlgebra?'회차 순위':'정오표')+'</div></button>';
   });
   box.innerHTML=html;
 }
@@ -1026,6 +1030,46 @@ function renderAlgebra1000(){
     +algTableHTML(missions,students);
   if(students.length)drawAlgChart(students);
 }
+/* 회차별(단원별) 상세 — 정오표 대신 그 회차 점수 막대그래프 */
+function drawAlgRoundChart(rows){
+  const id='alg-round-chart';
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  charts[id]=new Chart(canvas,{
+    type:'bar',
+    plugins:[valueLabel],
+    data:{labels:rows.map(r=>r.nickname),datasets:[{
+      label:'점수',
+      data:rows.map(r=>r.score),
+      backgroundColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint')),
+      borderColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint-deep')),
+      borderWidth:1.5,maxBarThickness:46,
+      labelColor:cssColor('--mint-deep')
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+        x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}
+      }
+    }
+  });
+}
+function renderAlgebraMissionDetail(){
+  document.getElementById('detail-title').textContent=pubMission;
+  document.getElementById('detail-legend').classList.add('hidden');
+  renderDetailResources();
+  let rows=filteredRows().filter(r=>r.mission===pubMission&&r.score!=null);
+  rows=rows.slice().sort((a,b)=>b.score-a.score);
+  document.getElementById('detail-sub').textContent='ROUND SCORE · '+rows.length+'명 · 점수 높은 순';
+  const box=document.getElementById('detail-table');
+  if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
+  box.innerHTML='<div class="alg-chart-wrap"><canvas id="alg-round-chart"></canvas></div>';
+  drawAlgRoundChart(rows);
+}
 
 /* ---- 9모대비 자료: 문제 이미지 + 해설 영상 ---- */
 function ytEmbed(url){
@@ -1093,6 +1137,7 @@ function renderDetailResources(){
 /* ---- 미션별 정오표 ---- */
 function renderMissionDetail(){
   document.getElementById('detail-title').textContent=pubMission;
+  document.getElementById('detail-legend').classList.remove('hidden');
   renderDetailResources();
   let rows=filteredRows().filter(r=>r.mission===pubMission);
   rows=rows.slice().sort((a,b)=>(b.score??-1)-(a.score??-1));
