@@ -383,34 +383,58 @@ const validateArea = document.getElementById('validateArea');
 const uploadBtnEl = document.getElementById('uploadBtn');
 let validatedFiles = new Map(); // filename -> { ok, hasCritical, questionData }
 
+// hwpx-lib.js has to sit in the SAME folder as this file and load
+// successfully for any of the validation below to work — if it 404s (or
+// the CDN scripts fail), every function it defines is undefined, and
+// without this check the file-select handler below would throw on its
+// very first line (building the "검증 중..." box) BEFORE ever reaching a
+// try/catch, silently leaving the upload button disabled forever with no
+// visible error at all. Detect that up front and degrade to "skip
+// validation, just allow upload" instead of bricking the whole page.
+const HWPX_LIB_OK = typeof parseHwpx === 'function' && typeof hwpBodyXmlToHtml === 'function' && typeof escapeHtml === 'function';
+if (!HWPX_LIB_OK) {
+  const warn = document.createElement('p');
+  warn.className = 'hint err';
+  warn.textContent = 'hwpx-lib.js를 불러오지 못해 업로드 전 검증 기능이 꺼져 있습니다 — problembank.html과 같은 폴더에 hwpx-lib.js 파일이 있는지 확인해주세요. (검증 없이 업로드는 그대로 가능합니다)';
+  document.getElementById('uploadFile').closest('.box').appendChild(warn);
+}
+
 document.getElementById('uploadFile').addEventListener('change', async (ev) => {
   const files = [...ev.target.files];
   validateArea.innerHTML = '';
   validatedFiles = new Map();
+  if (!files.length) { uploadBtnEl.disabled = true; return; }
+  if (!HWPX_LIB_OK) { uploadBtnEl.disabled = false; return; }
   uploadBtnEl.disabled = true;
-  if (!files.length) return;
-  for (const file of files) {
-    if (file.name.includes('서식')) {
-      validatedFiles.set(file.name, { ok: true, hasCritical: false, questionData: [] });
+  try {
+    for (const file of files) {
+      if (file.name.includes('서식')) {
+        validatedFiles.set(file.name, { ok: true, hasCritical: false, questionData: [] });
+        const box = document.createElement('div');
+        box.className = 'validateFile';
+        box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">서식(디자인 골격) 파일로 보여 문제 검증을 생략합니다.</p>`;
+        validateArea.appendChild(box);
+        continue;
+      }
       const box = document.createElement('div');
       box.className = 'validateFile';
-      box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">서식(디자인 골격) 파일로 보여 문제 검증을 생략합니다.</p>`;
+      box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">검증 중...</p>`;
       validateArea.appendChild(box);
-      continue;
+      try {
+        const result = await validateOneFile(file, box);
+        validatedFiles.set(file.name, result);
+      } catch (e) {
+        box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="qErr">검증 실패: ${escapeHtml(e.message)} — .hwpx 형식을 확인해주세요.</p>`;
+        validatedFiles.set(file.name, { ok: false, hasCritical: true, questionData: [] });
+      }
     }
-    const box = document.createElement('div');
-    box.className = 'validateFile';
-    box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">검증 중...</p>`;
-    validateArea.appendChild(box);
-    try {
-      const result = await validateOneFile(file, box);
-      validatedFiles.set(file.name, result);
-    } catch (e) {
-      box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="qErr">검증 실패: ${escapeHtml(e.message)} — .hwpx 형식을 확인해주세요.</p>`;
-      validatedFiles.set(file.name, { ok: false, hasCritical: true, questionData: [] });
-    }
+    updateUploadGate();
+  } catch (e) {
+    // Final safety net — an unexpected error here must never leave the
+    // upload button silently stuck disabled with no feedback at all.
+    validateArea.innerHTML = `<p class="hint err">검증 중 예상치 못한 오류: ${String((e && e.message) || e)}</p>`;
+    uploadBtnEl.disabled = false;
   }
-  updateUploadGate();
 });
 
 async function validateOneFile(file, box) {
