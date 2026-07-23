@@ -566,8 +566,15 @@ async function hwpRectToHtml(rectXml, entry) {
     if (!sz || sz.w > 40 || sz.h > 20) return '';
     return `<span class="hwpBlankBox" style="width:${sz.w.toFixed(1)}mm;height:${sz.h.toFixed(1)}mm"></span>`;
   }
+  // hwpBodyXmlToHtml's output is block-level (<p>, <div>...) — a <span> is
+  // inline and CANNOT legally contain block children; the browser's own
+  // error-recovery silently closes the span early and re-parents those
+  // <p>s as SIBLINGS right after it, so the text visually lands outside
+  // the box instead of inside it (confirmed by rendering a real question:
+  // an empty bordered box appeared, with all its text below/outside it).
+  // A <div> has no such restriction.
   const style = sz ? `min-width:${sz.w.toFixed(1)}mm;min-height:${sz.h.toFixed(1)}mm;` : '';
-  return `<span class="hwpRectBox" style="${style}">${inner}</span>`;
+  return `<div class="hwpRectBox" style="${style}">${inner}</div>`;
 }
 
 // hp:tab/hp:lineBreak/hp:fwSpace are inline formatting controls that can
@@ -711,7 +718,14 @@ async function hwpBodyXmlToHtml(xml, entry) {
   }
   function resolveSingle(it) {
     const condBox = formatConditionBox(it.inner, it.raw);
-    return condBox || `<p>${it.inner}</p>`;
+    if (condBox) return condBox;
+    // it.inner can itself contain block-level content (a hwpRectBox <div>,
+    // from an <hp:rect> that held real paragraphs) — a <p> cannot legally
+    // contain a <div>, and wrapping it in one anyway just repeats the same
+    // "browser silently un-nests it" bug one level up. Use a <div> wrapper
+    // instead whenever that's the case; plain <p> still handles everything
+    // else exactly as before.
+    return /<div\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
   }
   const resolved = [];
   let i = 0;
