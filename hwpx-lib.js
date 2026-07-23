@@ -595,7 +595,14 @@ async function hwpRunInnerToHtml(runXml, entry) {
       const cleaned = hwpInlineControlsToHtml(raw);
       out += escapeHtml(decodeXmlEntities(cleaned)).replace(/\n/g, '<br>');
     } else if (c.tag === 'hp:equation') {
-      const sm = c.text.match(/<hp:script>([\s\S]*?)<\/hp:script>/);
+      // HWP adds xml:space="preserve" to <hp:script> whenever the script
+      // text has meaningful leading/trailing whitespace (confirmed against
+      // a real file: choice-list equations like " 3 sqrt6 " get this
+      // attribute, plain ones don't) — an exact "<hp:script>" match missed
+      // that variant entirely and silently dropped the whole equation with
+      // no fallback either, since the empty rawScript short-circuits both
+      // branches below.
+      const sm = c.text.match(/<hp:script\b[^>]*>([\s\S]*?)<\/hp:script>/);
       const rawScript = sm ? decodeXmlEntities(sm[1]) : '';
       let latex = '';
       try { latex = rawScript ? convertHwpEquationToLatex(rawScript) : ''; } catch (e) { latex = ''; }

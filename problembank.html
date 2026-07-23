@@ -551,7 +551,7 @@ async function validateOneFile(file, box) {
     const rawText = decodeXmlEntities(stripTags(blockXml));
 
     let eqErrCount = 0;
-    const scripts = [...blockXml.matchAll(/<hp:script>([\s\S]*?)<\/hp:script>/g)].map(m => decodeXmlEntities(m[1]));
+    const scripts = [...blockXml.matchAll(/<hp:script\b[^>]*>([\s\S]*?)<\/hp:script>/g)].map(m => decodeXmlEntities(m[1]));
     for (const s of scripts) {
       let latex = '';
       try { latex = convertHwpEquationToLatex(s); } catch (e) { eqErrCount++; continue; }
