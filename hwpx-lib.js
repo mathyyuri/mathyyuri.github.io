@@ -712,8 +712,18 @@ function formatChoiceRow(paraInners) {
   });
   const totalItems = rows.reduce((n, r) => n + r.length, 0);
   if (totalItems < 2) return null;
+  // Use the LARGEST row's item count as a single SHARED column count for
+  // every row, instead of each row getting its own column count. The
+  // common "3 then 2" layout (5 short choices) needs ④ sitting directly
+  // under ①, ⑤ under ② — two independently-sized grids (3 columns, then
+  // 2 columns) can't align like that since their column widths differ.
+  // A shared template fixes that (a short row just leaves trailing
+  // columns empty) while still keeping a real 2/2/1 layout (long
+  // fraction-heavy choices that don't fit 3-per-row) visually distinct
+  // from a plain 3/2 — both confirmed against real files.
+  const cols = Math.max(...rows.map(r => r.length));
   const rowsHtml = rows.map(parts =>
-    `<div class="choiceRow" style="grid-template-columns:repeat(${parts.length},1fr)">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`
+    `<div class="choiceRow" style="grid-template-columns:repeat(${cols},1fr)">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`
   ).join('');
   return (prefixHtml ? `<p>${prefixHtml}</p>` : '') + rowsHtml;
 }
@@ -754,7 +764,18 @@ async function hwpBodyXmlToHtml(xml, entry) {
   for (const p of paras) {
     const inner = await hwpFragmentRunsToHtml(p.text, entry);
     if (!inner.trim()) continue;
-    items.push({ raw: decodeXmlEntities(stripTags(stripRectBlocksForRaw(p.text))).trim(), inner });
+    // `.raw` has to reflect the SAME content `.inner` actually renders, or
+    // detection gets fooled by text that's invisible/already-handled
+    // elsewhere. Two real cases found: (1) a run's own <hp:ctrl> can wrap
+    // an entire hidden <hp:endNote> ("[정답] ③ ...") that hwpRunInnerToHtml
+    // already excludes from `.inner` via stripCtrlBlocks — without the
+    // same exclusion here, a stray circled-number answer letter buried in
+    // that hidden endnote reference falsely looked like a REAL choice
+    // marker, pulling the whole stem paragraph into the choice-merge run
+    // and then silently dropping it (its clean `.inner` has no markers of
+    // its own to find). (2) an <hp:rect> shape's nested content, already
+    // independently rendered as its own box — see stripRectBlocksForRaw.
+    items.push({ raw: decodeXmlEntities(stripTags(stripRectBlocksForRaw(stripCtrlBlocks(p.text)))).trim(), inner });
   }
 
   // A "①...⑤" choice list is normally one paragraph with tab characters
