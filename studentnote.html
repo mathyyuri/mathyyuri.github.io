@@ -744,6 +744,21 @@ async function hwpRectToHtml(rectXml, entry) {
   // min-width regularly made the box wider than its own column and stick
   // out past the edge (confirmed against a real file). Let it size
   // naturally to its content instead, up to the container's own width.
+  //
+  // A <보기> ㄱ/ㄴ/ㄷ list (or a 조건박스) that hwpBodyXmlToHtml already
+  // detected and boxed on its own doesn't need THIS rect's own border
+  // drawn around it too — the source document's rect shape and our
+  // automatic 보기/조건 detection can both fire for the very same content,
+  // nesting two borders around one thing (confirmed against a real file:
+  // one particular 보기 question came out with a visibly doubled/thicker
+  // border than every other 보기 question in the same file, which only
+  // ever gets the single automatic box). If the rect's ENTIRE content is
+  // already exactly one such self-bordered box, skip the redundant one.
+  const trimmedInner = inner.trim();
+  const innerTopBlocks = findTopLevelBlocks(trimmedInner, 'div');
+  const isSingleStyledBox = innerTopBlocks.length === 1 && innerTopBlocks[0].start === 0 &&
+    innerTopBlocks[0].end === trimmedInner.length && /^<div class="hwp(Bogi|CondBox)"/.test(trimmedInner);
+  if (isSingleStyledBox) return trimmedInner;
   return `<div class="hwpRectBox">${inner}</div>`;
 }
 // stripTags has no concept of nesting — for a paragraph that CONTAINS an
@@ -2907,8 +2922,8 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 /* 그림(도형/그래프)은 대부분 흰 배경이라 크림색 지면 위에서 튀어 보이므로,
    얇은 테두리 + 둥근 모서리 + 옅은 그림자로 "액자"처럼 의도된 느낌을 줌 */
 .mbQBlock img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid var(--mb-line);border-radius:4px;box-shadow:0 1px 5px rgba(26,26,26,.08)}
-.mbQBlock table{border-collapse:collapse;margin:2mm 0}
-.mbQBlock td{border:1px solid var(--mb-line);padding:1mm 2mm;font-size:11px}
+.mbQBlock table{border-collapse:collapse;margin:2mm 0;table-layout:auto}
+.mbQBlock td{border:1px solid var(--mb-line);padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap}
 .ansBlock{font-size:12px;line-height:1.7}
 .explNum{font-weight:800;color:var(--mb-navy);font-size:12px;margin-bottom:1.5mm}
 .eqFallback{font-family:monospace;font-size:11px;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}

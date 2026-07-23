@@ -597,6 +597,21 @@ async function hwpRectToHtml(rectXml, entry) {
   // min-width regularly made the box wider than its own column and stick
   // out past the edge (confirmed against a real file). Let it size
   // naturally to its content instead, up to the container's own width.
+  //
+  // A <보기> ㄱ/ㄴ/ㄷ list (or a 조건박스) that hwpBodyXmlToHtml already
+  // detected and boxed on its own doesn't need THIS rect's own border
+  // drawn around it too — the source document's rect shape and our
+  // automatic 보기/조건 detection can both fire for the very same content,
+  // nesting two borders around one thing (confirmed against a real file:
+  // one particular 보기 question came out with a visibly doubled/thicker
+  // border than every other 보기 question in the same file, which only
+  // ever gets the single automatic box). If the rect's ENTIRE content is
+  // already exactly one such self-bordered box, skip the redundant one.
+  const trimmedInner = inner.trim();
+  const innerTopBlocks = findTopLevelBlocks(trimmedInner, 'div');
+  const isSingleStyledBox = innerTopBlocks.length === 1 && innerTopBlocks[0].start === 0 &&
+    innerTopBlocks[0].end === trimmedInner.length && /^<div class="hwp(Bogi|CondBox)"/.test(trimmedInner);
+  if (isSingleStyledBox) return trimmedInner;
   return `<div class="hwpRectBox">${inner}</div>`;
 }
 
