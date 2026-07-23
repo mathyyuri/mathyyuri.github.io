@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>오답노트 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- ?v=... busts CDN/browser caching on a custom domain (mathyyuri.com sits
+     in front of GitHub Pages) — a plain hard-refresh doesn't reliably clear
+     an edge cache, but a changed URL always fetches fresh. Bump this any
+     time hwpx-lib.js changes. -->
+<script src="hwpx-lib.js?v=20260723-5"></script>
 <style>
   body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
   h1 { font-size: 22px; }
@@ -23,6 +32,13 @@
   .qGrid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
   .qGrid label:has(input:checked) { background: #e6f0ff; border-color: #6699ff; }
+  .qGridHead { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .selectAllBtn { background: #fff; color: #333; border: 1px solid #ccc; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; }
+  .selectAllBtn:hover { background: #f0f0f0; }
+  .counterBadge { font-size: 13px; font-weight: bold; color: #1a4a8f; margin: 10px 0; }
+  .modeBox { border: 1px solid #cddcf0; background: #f4f8ff; }
+  .btnRow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .btnRow .hint { flex-basis: 100%; margin: 2px 0 0; }
 </style>
 </head>
 <body>
@@ -32,8 +48,8 @@
   <p><b>사용 순서</b></p>
   <ol>
     <li>아래에서 교재 목록의 파일을 불러오거나(여러 개 가능), 내 컴퓨터에서 직접 업로드</li>
-    <li>불러온 시험지마다 감지된 문제 번호가 체크박스로 나타남 — 틀린 문제를 체크 (여러 시험지 섞어서 체크 가능)</li>
-    <li>학생 이름 입력 후 생성</li>
+    <li>불러온 시험지마다 감지된 문제 번호가 체크박스로 나타남 — 틀린 문제를 체크 (여러 시험지 섞어서 체크 가능, 시험지별 "전체 선택" 버튼 있음)</li>
+    <li>개별 학생용은 학생 이름을 입력 후 생성, 수업용(전체 학생 공용)은 이름 없이 바로 한글파일 또는 HTML로 생성</li>
   </ol>
   <p class="hint">문제 번호는 자동으로 감지됩니다: <code>[[N]]</code> 수동 표시, 미주(각주) 번호, 또는 "1. " 처럼 이미 매겨진 번호 — 셋 다 있으면 합쳐서 인식합니다. 체크박스에 마우스를 올리면 해당 문제의 미리보기 텍스트가 뜹니다.</p>
 </div>
@@ -45,22 +61,38 @@
   <div id="bankList"><p class="hint">교재 목록 불러오는 중...</p></div>
   <p class="hint" style="margin-top:12px">또는 내 컴퓨터에서 직접:</p>
   <input type="file" id="srcFile" accept=".hwpx">
+  <p class="counterBadge" id="counterBadge">0문제 선택됨</p>
 </div>
 
 <div class="box">
-  <label>2. 학생 이름</label>
-  <input type="text" id="studentName" placeholder="예: 홍길동">
-  <label>오답노트 제목 (선택)</label>
+  <label>2. 제목 (선택, 개별/수업용 공통)</label>
   <input type="text" id="examName" placeholder="예: 7월 모의고사 모음">
 </div>
 
-<button id="genBtn" disabled>선택한 문제로 오답노트 생성</button>
+<div class="box">
+  <p><b>3. 개별 학생용 오답노트</b></p>
+  <label>학생 이름</label>
+  <input type="text" id="studentName" placeholder="예: 홍길동">
+  <button id="genBtn" disabled>선택한 문제로 개별 오답노트 생성 (한글)</button>
+</div>
+
+<div class="box modeBox">
+  <p><b>4. 수업용 자료 (개별 학생 이름 없이, 전체 학생 공용)</b></p>
+  <p class="hint">선택한 문제를 학생 이름 없이 한글 파일 또는 HTML로 만듭니다. HTML은 PPT 화면 비율(16:9)로 한 화면에 2문제씩 배치되어 수업 중 화면 공유·프로젝터용으로 바로 쓸 수 있습니다.</p>
+  <div class="btnRow">
+    <button id="classHwpxBtn" disabled>수업용 문제모음 생성 (한글)</button>
+    <button id="classHtmlBtn" disabled>수업용 HTML 만들기 (화면당 2문제)</button>
+  </div>
+</div>
+
 <div id="log"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 const logEl = document.getElementById('log');
 const genBtn = document.getElementById('genBtn');
+const classHwpxBtn = document.getElementById('classHwpxBtn');
+const classHtmlBtn = document.getElementById('classHtmlBtn');
+const counterBadge = document.getElementById('counterBadge');
 const srcFileInput = document.getElementById('srcFile');
 const bankListEl = document.getElementById('bankList');
 
@@ -72,85 +104,11 @@ function log(msg, cls) {
 }
 
 // ---------- balanced-tag helpers ----------
+// findTopLevelBlocks / stripTags / stripAutoNumCtrls / extractQuickAnswerXml
+// now come from hwpx-lib.js (shared with studentnote.html/problembank.html)
+// — no longer duplicated here, so marker-detection fixes made there apply
+// here automatically instead of silently drifting out of sync.
 
-function findTopLevelBlocks(xml, tagName) {
-  const blocks = [];
-  let depth = 0, start = -1;
-  const tokenRe = new RegExp(`<${tagName}\\b[^>]*?/>|<${tagName}\\b[^>]*?>|</${tagName}>`, 'g');
-  let m;
-  const closeTag = `</${tagName}>`;
-  while ((m = tokenRe.exec(xml)) !== null) {
-    const tok = m[0];
-    if (tok.endsWith('/>')) continue;
-    if (tok === closeTag) {
-      if (depth > 0) {
-        depth--;
-        if (depth === 0) blocks.push({ start, end: m.index + tok.length, text: xml.slice(start, m.index + tok.length) });
-      }
-    } else {
-      if (depth === 0) start = m.index;
-      depth++;
-    }
-  }
-  return blocks;
-}
-
-function stripTags(s) {
-  return s.replace(/<[^>]+>/g, '');
-}
-
-// The endnote's own auto-numbering marker (its "1)" reference label) is a
-// <hp:ctrl><hp:autoNum .../></hp:ctrl> tied to that ORIGINAL location —
-// copying it onto the quick-answer page (which already has its own "N번"
-// label) would duplicate/misplace that marker, so strip just that ctrl and
-// keep everything else (the actual answer text/equation) intact.
-function stripAutoNumCtrls(runXml) {
-  const ctrls = findTopLevelBlocks(runXml, 'hp:ctrl');
-  let out = runXml;
-  for (const c of ctrls) {
-    if (c.text.includes('<hp:autoNum')) out = out.replace(c.text, '');
-  }
-  return out;
-}
-// "그냥 복붙" — copy the endnote's own first NON-BLANK line (a paragraph
-// inside its <hp:subList>) verbatim, AS REAL CONTENT — including any
-// <hp:equation> objects, not just their stripped text, so a rendered
-// fraction/coordinate pair shows as an actual equation instead of raw
-// script syntax. Returns the paragraph's inner <hp:run> XML (unwrapped —
-// caller embeds it directly into its own paragraph).
-function extractQuickAnswerXml(blockXml) {
-  // NOT indexOf('<hp:endNote') — that also matches the unrelated
-  // document-wide <hp:endNotePr> (endnote FORMATTING definition, appears
-  // once per document) whenever it precedes the real instance in this
-  // block. Only broke question 1 (the only block starting from the very
-  // top of the section, where that boilerplate lives).
-  const enMatch = blockXml.match(/<hp:endNote\s+number=/);
-  if (!enMatch) return '';
-  const subListIdx = blockXml.indexOf('<hp:subList', enMatch.index);
-  if (subListIdx === -1) return '';
-  const closeRe = /<hp:subList\b[^>]*?\/>|<hp:subList\b[^>]*?>|<\/hp:subList>/g;
-  closeRe.lastIndex = subListIdx;
-  let depth = 0, m, subListEnd = -1;
-  while ((m = closeRe.exec(blockXml)) !== null) {
-    const tok = m[0];
-    if (tok.endsWith('/>')) continue;
-    if (tok === '</hp:subList>') { depth--; if (depth === 0) { subListEnd = m.index + tok.length; break; } }
-    else depth++;
-  }
-  if (subListEnd === -1) return '';
-  const subListXml = blockXml.slice(subListIdx, subListEnd);
-  const paras = findTopLevelBlocks(subListXml, 'hp:p');
-  for (const p of paras) {
-    // "수식입니다." is just an equation's generic alt-text label ("this is
-    // an equation"), not part of the actual content — pure noise here for
-    // deciding whether this paragraph counts as blank.
-    const stripped = stripTags(p.text).replace(/수식입니다\./g, '').replace(/\s+/g, ' ').trim();
-    if (!stripped) continue;
-    const runs = findTopLevelBlocks(p.text, 'hp:run');
-    return runs.map(r => stripAutoNumCtrls(r.text)).join('');
-  }
-  return '';
-}
 // Every <hp:equation> carries its own unique object id (like a shape/table
 // id) — copying one verbatim would duplicate the id still used by the SAME
 // equation sitting in the endnote area. Give each copy a fresh id in a
@@ -248,13 +206,7 @@ async function placeholderBytes(ext) {
   return canvasPlaceholder('image/png');
 }
 
-function mediaTypeForExt(ext) {
-  const e = ext.toLowerCase();
-  if (e === 'jpg') return 'image/jpg';
-  if (e === 'jpeg') return 'image/jpeg';
-  if (e === 'bmp') return 'image/bmp';
-  return 'image/png';
-}
+// mediaTypeForExt now comes from hwpx-lib.js too.
 
 // Parse every <hh:paraPr> defined in this file's header.xml so we can pick
 // one that's actually safe to reuse for our own generated text. The
@@ -461,7 +413,13 @@ async function getFormatCandidates() {
       // an unrelated exam file's own header/footer whenever it happened to
       // look "paired" — confirmed against real files, so this stays
       // scoped to "서식" only.
-      return files.filter(f => f.filename.includes('서식'));
+      // Newest upload first — re-uploading a corrected 서식 file just
+      // APPENDS a new row in 교재목록; an old leftover row would otherwise
+      // keep winning forever since bank list order is upload order
+      // (oldest first).
+      return files
+        .filter(f => f.filename.includes('서식'))
+        .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
     })();
   }
   return formatCandidatesPromise;
@@ -540,169 +498,9 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
   }
 }
 
-// ---------- marker detection (merged, not strict priority) ----------
-// A single method winning outright breaks files that mix approaches (e.g.
-// a couple of manual [[N]] tags plus endnotes for the rest) — a question
-// number found by ANY method is kept; when more than one method finds the
-// same number, prefer explicit > endnote > numbered for that one.
-
-function detectExplicitMarkers(xml) {
-  const paras = findTopLevelBlocks(xml, 'hp:p');
-  const markerIdx = [];
-  for (let i = 0; i < paras.length; i++) {
-    const t = stripTags(paras[i].text).trim();
-    const m = t.match(/^\[\[(\d+|END)\]\]$/);
-    if (m) markerIdx.push({ i, key: m[1] });
-  }
-  const result = new Map();
-  for (let k = 0; k < markerIdx.length - 1; k++) {
-    const { i: startI, key } = markerIdx[k];
-    if (key === 'END') continue;
-    const endI = markerIdx[k + 1].i;
-    const blockXml = paras.slice(startI + 1, endI).map(p => p.text).join('');
-    if (blockXml.trim()) result.set(key, blockXml);
-  }
-  return result;
-}
-
-// A question's endnote paragraph contains BOTH its solution text and,
-// concatenated in the very same run right after, the visible stem of that
-// SAME question — followed a paragraph or two later by that question's
-// own answer choices. (Verified against a real exam file: e.g. endnote 1's
-// paragraph is literally "[정답] ⑤ ...개수는 5" immediately followed by
-// "두 점 A(2,a), B(a,6) 사이의 거리가 4 이하가 되도록 하는 정수 a의
-// 개수는?" — solution then stem, same problem, same paragraph.) Extend
-// forward from each endnote through an optional blank gap, then through
-// the following non-blank "choices" run — capped at the next endnote's
-// own paragraph so a question with no gap before it never gets swallowed.
-// Everything between one question's own end and the next endnote (an
-// optional topic-label line, plus the next question's diagram image)
-// belongs to the NEXT question, not this one.
-function isBlankPara(p) {
-  return stripTags(p.text).trim() === '';
-}
-
-// A blank paragraph with no picture in it is pure page-layout filler
-// (these documents commonly reserve a run of empty paragraphs before a
-// question so the next one starts at a nice position on the page) — safe
-// to drop. A blank paragraph that DOES contain a picture is a real
-// diagram belonging to the question and must be kept.
-function isEmptySpacerPara(p) {
-  return isBlankPara(p) && !p.text.includes('<hp:pic');
-}
-
-// A short-answer ("구하시오") question has no choices at all, so the
-// paragraph right after its stem can be the NEXT question's own topic
-// label or bracketed source citation with no blank line in between.
-// Without this guard, "consume the next non-blank run as choices" would
-// swallow that label — and everything up to the next blank — straight
-// into the wrong question.
-function looksLikeNextQuestionMarker(p) {
-  const t = stripTags(p.text).trim();
-  return /^유형\s*\d+\s*[:：]/.test(t) || /^\[[^\]]*\]$/.test(t);
-}
-
-// Orphaned-content absorption (below) must only grab things we can
-// positively identify as belonging to SOME question — a picture, or a
-// choice list starting with ①/㉠/ㄱ — never "any non-blank paragraph".
-// Some documents carry a repeating watermark/copyright notice
-// ("이 자료를 무단으로 복제...") in the gap between questions; treating
-// that as orphaned content silently corrupted unrelated questions with
-// the watermark text instead of their real answer.
-function looksLikeOrphanedFragment(p) {
-  if (p.text.includes('<hp:pic')) return true;
-  const t = stripTags(p.text).trim();
-  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t);
-}
-
-function detectEndnoteMarkers(xml) {
-  const paras = findTopLevelBlocks(xml, 'hp:p');
-  const boundaries = [];
-  for (let i = 0; i < paras.length; i++) {
-    const m = paras[i].text.match(/<hp:endNote\b[^>]*\bnumber="(\d+)"/);
-    if (m) boundaries.push({ i, key: m[1] });
-  }
-  const choicesEnd = boundaries.map(({ i }, idx) => {
-    const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
-    let j = i + 1;
-    while (j < nextI && isBlankPara(paras[j])) j++;
-    while (j < nextI && !isBlankPara(paras[j]) && !looksLikeNextQuestionMarker(paras[j])) j++;
-
-    // Orphaned content — a stray choice list (e.g. a "<보기>"-style
-    // question whose "①ㄱ,ㄴ ②ㄱ,ㄷ..." line ended up separated from its
-    // own stem/topic-label by a blank gap) or an illustrating diagram —
-    // sometimes sits in the gap between this question's own end and the
-    // next question's topic label, instead of directly following either
-    // one with no gap at all. Whichever side it's structurally closer to
-    // is almost always where it actually belongs, so measure both
-    // distances and only absorb it into THIS block if it's closer here.
-    let k = j, gap = 0;
-    while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
-    if (k < nextI && looksLikeOrphanedFragment(paras[k])) {
-      const distHere = gap;
-      let m = k;
-      while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
-      const distNext = nextI - m;
-      if (distHere <= distNext) j = m;
-    }
-    return j;
-  });
-  const result = new Map();
-  for (let k = 0; k < boundaries.length; k++) {
-    let start = k > 0 ? choicesEnd[k - 1] : 0;
-    const end = choicesEnd[k];
-    // Trim leading spacer-only blanks — this is what created the big gap
-    // between the generated citation line and the actual problem text.
-    while (start < end - 1 && isEmptySpacerPara(paras[start])) start++;
-    // Anything still left before the endnote's OWN paragraph (e.g. a
-    // leftover topic-label line like "[유형 5]" that stopped the PREVIOUS
-    // question's consumption) duplicates our own generated citation line —
-    // the block should start right at the endnote paragraph itself, not
-    // the line before it.
-    if (start < boundaries[k].i) start = boundaries[k].i;
-    const blockXml = paras.slice(start, end).map(p => p.text).join('');
-    if (blockXml.trim()) result.set(boundaries[k].key, blockXml);
-  }
-  return result;
-}
-
-function detectNumberedParagraphs(xml) {
-  const paras = findTopLevelBlocks(xml, 'hp:p');
-  const candidates = [];
-  for (let i = 0; i < paras.length; i++) {
-    const t = stripTags(paras[i].text).trim();
-    const m = t.match(/^(\d+)\.\s/);
-    if (m) candidates.push({ i, key: m[1], num: Number(m[1]) });
-  }
-  const kept = [];
-  let last = -Infinity;
-  for (const c of candidates) { if (c.num > last) { kept.push(c); last = c.num; } }
-  const result = new Map();
-  for (let k = 0; k < kept.length; k++) {
-    const startI = kept[k].i;
-    const endI = k + 1 < kept.length ? kept[k + 1].i : paras.length;
-    const blockXml = paras.slice(startI, endI).map(p => p.text).join('');
-    if (blockXml.trim()) result.set(kept[k].key, blockXml);
-  }
-  return result;
-}
-
-function detectMarkers(sectionsXml) {
-  const result = new Map(); // key -> {sectionName, blockXml, method}
-  for (const { name, xml } of sectionsXml) {
-    const byMethod = [
-      ['미주 번호', detectEndnoteMarkers(xml)],
-      ['자동 번호 인식(N.)', detectNumberedParagraphs(xml)],
-      ['수동 표시([[N]])', detectExplicitMarkers(xml)], // applied last so it overrides on conflict
-    ];
-    for (const [method, found] of byMethod) {
-      for (const [key, blockXml] of found) {
-        result.set(key, { sectionName: name, blockXml, method });
-      }
-    }
-  }
-  return result;
-}
+// ---------- marker detection ----------
+// detectExplicitMarkers / detectEndnoteMarkers / detectNumberedParagraphs /
+// detectMarkers now come from hwpx-lib.js too.
 
 function deriveSafeIds(markers) {
   for (const { blockXml } of markers.values()) {
@@ -777,17 +575,7 @@ function callGetJsonp(params) {
 let loadedFiles = []; // {uid, filename, zipData, sectionOrder, manifestItems, markers}
 let fileUidCounter = 0;
 
-async function parseHwpx(zipData) {
-  const hpf = await zipData.file('Contents/content.hpf').async('string');
-  const spineMatches = [...hpf.matchAll(/<opf:itemref idref="([^"]+)"/g)].map(m => m[1]);
-  const manifestItems = {};
-  for (const m of hpf.matchAll(/<opf:item id="([^"]+)" href="([^"]+)"/g)) manifestItems[m[1]] = m[2];
-  const sectionOrder = spineMatches.filter(id => manifestItems[id] && manifestItems[id].includes('section')).map(id => manifestItems[id]);
-  const sectionsXml = [];
-  for (const path of sectionOrder) sectionsXml.push({ name: path, xml: await zipData.file(path).async('string') });
-  const markers = detectMarkers(sectionsXml);
-  return { zipData, sectionOrder, manifestItems, markers };
-}
+// parseHwpx now comes from hwpx-lib.js too.
 
 function questionPreview(blockXml) {
   const t = stripTags(blockXml).replace(/\s+/g, ' ').trim();
@@ -806,11 +594,15 @@ function makeFileRow(filename, memo) {
       <span><b>${filename}</b>${memo ? ' · ' + memo : ''}</span>
       <button type="button" class="loadBtn">불러오기</button>
     </div>
+    <div class="qGridHead"></div>
     <div class="qGrid"></div>
   `;
   return row;
 }
 
+// Mirrors studentnote.html's per-group "전체 선택" pattern: one button per
+// loaded file that selects/deselects every question in THAT file's grid
+// only (checking one file's boxes shouldn't silently also check another's).
 function fillRowWithQuestions(row, entry) {
   row.querySelector('.loadBtn')?.remove();
   const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
@@ -826,6 +618,17 @@ function fillRowWithQuestions(row, entry) {
     `<input type="checkbox" class="qChk" data-uid="${entry.uid}" data-num="${n}"> ${n}</label>`
   ).join('');
   grid.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
+  const head = row.querySelector('.qGridHead');
+  if (nums.length) {
+    head.innerHTML = `<button type="button" class="selectAllBtn">전체 선택</button>`;
+    head.querySelector('.selectAllBtn').addEventListener('click', (ev) => {
+      const boxes = [...grid.querySelectorAll('.qChk')];
+      const allChecked = boxes.every(b => b.checked);
+      boxes.forEach(b => { b.checked = !allChecked; });
+      ev.target.textContent = allChecked ? '전체 선택' : '전체 해제';
+      updateGenBtn();
+    });
+  }
 }
 
 async function loadFileIntoRow(row, filename, buf) {
@@ -838,7 +641,11 @@ async function loadFileIntoRow(row, filename, buf) {
 }
 
 function updateGenBtn() {
-  genBtn.disabled = document.querySelectorAll('.qChk:checked').length === 0;
+  const n = document.querySelectorAll('.qChk:checked').length;
+  counterBadge.textContent = `${n}문제 선택됨`;
+  genBtn.disabled = n === 0;
+  classHwpxBtn.disabled = n === 0;
+  classHtmlBtn.disabled = n === 0;
 }
 
 srcFileInput.addEventListener('change', async () => {
@@ -898,13 +705,295 @@ function rewriteImageRefs(xml, idMap) {
   return xml.replace(/binaryItemIDRef="([^"]+)"/g, (full, id) => `binaryItemIDRef="${idMap[id] || id}"`);
 }
 
+// Shared by both the individual-student flow (genBtn) and the class-wide
+// flow (classHwpxBtn) — the two only differ in the title/name text baked
+// into the document and the output filename, not in how the .hwpx itself
+// gets assembled.
+async function generateHwpxNote({ isClassMode }) {
+  const studentName = isClassMode ? '' : (document.getElementById('studentName').value.trim() || '학생');
+  const examName = document.getElementById('examName').value.trim();
+
+  const checked = [...document.querySelectorAll('.qChk:checked')].map(chk => ({
+    uid: Number(chk.dataset.uid),
+    num: chk.dataset.num,
+  }));
+  if (!checked.length) throw new Error('체크한 문제가 없습니다.');
+
+  const byFile = new Map(); // uid -> entry
+  for (const f of loadedFiles) byFile.set(f.uid, f);
+
+  const carrierEntry = byFile.get(checked[0].uid);
+  const carrierIds = deriveSafeIds(carrierEntry.markers);
+  let carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
+  const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
+  // plain (no auto-numbering) styles for our own generated text — the
+  // question-derived paraPrIDRef above often has heading/outline
+  // numbering baked in (that's what makes "1." show for a real
+  // question), which would auto-number our title/label text too.
+  const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
+  const plainRightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
+  const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
+  const labelIds = { ...carrierIds, paraPrIDRef: plainRightParaPrId };
+
+  log('시험지 안의 내용을 정리하는 중...');
+  const strippedSections = {};
+  for (const path of carrierEntry.sectionOrder) {
+    const xml = await carrierEntry.zipData.file(path).async('string');
+    strippedSections[path] = stripSectionToSkeleton(xml);
+  }
+
+  log('선택한 문제들을 조립하는 중...');
+  const foreignImagesToAdd = [];
+  let foreignImageCounter = 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const titleLine = isClassMode ? '=== 수업용 문제모음 ===' : '=== 오답노트 ===';
+  const infoLine = isClassMode
+    ? `${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`
+    : `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`;
+  let demo = textParaXml(9001, titleLine, textIds) + textParaXml(9002, infoLine, textIds);
+  let qCounter = 9003;
+
+  let qIdx = 0;
+  for (const { uid, num } of checked) {
+    const entry = byFile.get(uid);
+    const marker = entry.markers.get(num);
+    if (!marker) continue;
+    const pageBreak = qIdx > 0;
+    qIdx++;
+    if (loadedFiles.length > 1) {
+      demo += textParaXml(qCounter++, entry.filename, labelIds, { pageBreak });
+      demo += textParaXml(qCounter++, `문항 ${num}`, textIds);
+    } else {
+      demo += textParaXml(qCounter++, `문항 ${num}`, textIds, { pageBreak });
+    }
+
+    if (entry.uid === carrierEntry.uid) {
+      demo += marker.blockXml;
+    } else {
+      let blockXml = normalizeIds(marker.blockXml, carrierIds);
+      const refs = collectImageRefs(blockXml);
+      const idMap = {};
+      for (const oldId of refs) {
+        const href = entry.manifestItems[oldId];
+        if (!href) continue;
+        const ext = href.split('.').pop();
+        const bytes = await entry.zipData.file(href).async('uint8array');
+        const newId = 'ximg' + (foreignImageCounter++);
+        const newPath = `BinData/${newId}.${ext}`;
+        foreignImagesToAdd.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
+        idMap[oldId] = newId;
+      }
+      blockXml = rewriteImageRefs(blockXml, idMap);
+      demo += blockXml;
+    }
+  }
+
+  // 빠른 정답 — 문제가 다 끝나고, 미주(해설)가 자동으로 모여 나오기 직전에
+  // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
+  demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
+  let quickOrderNum = 1;
+  const renumberEquationIds = makeEquationIdRenumberer();
+  for (const { uid, num } of checked) {
+    const entry = byFile.get(uid);
+    const marker = entry && entry.markers.get(num);
+    let answerXml = marker ? extractQuickAnswerXml(marker.blockXml) : '';
+    if (answerXml) {
+      if (entry.uid !== carrierEntry.uid) answerXml = normalizeIds(answerXml, carrierIds);
+      answerXml = renumberEquationIds(answerXml);
+      demo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
+    } else {
+      demo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
+    }
+    quickOrderNum++;
+  }
+
+  const targetSection = carrierEntry.sectionOrder[0];
+  strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
+
+  log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
+  {
+    // 개별 모드는 헤더의 예시 이름을 학생 이름으로 바꾸고, 수업용은 특정
+    // 학생 이름이 남으면 안 되므로 제목(또는 "전체")으로 대체합니다.
+    const personalizeText = isClassMode ? (examName || '전체') : studentName;
+    const personalize = (fragmentXml) => personalizeOddHeaderText(fragmentXml, personalizeText);
+    const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
+      await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize);
+    carrierHeaderXml = patchedHeaderXml;
+    strippedSections[targetSection] = patchedTargetSection;
+    foreignImagesToAdd.push(...headerImages);
+  }
+
+  const keepImageHrefs = new Set(
+    collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean)
+  );
+
+  log('.hwpx 파일로 압축하는 중...');
+  const outZip = new JSZip();
+  const previewText = isClassMode ? `${examName || '수업용'} 문제모음` : `${studentName} 오답노트`;
+  for (const relPath of Object.keys(carrierEntry.zipData.files)) {
+    const entryFile = carrierEntry.zipData.files[relPath];
+    if (entryFile.dir) continue;
+    const storeOpt = relPath === 'mimetype' ? { compression: 'STORE' } : {};
+    if (strippedSections[relPath] !== undefined) {
+      outZip.file(relPath, strippedSections[relPath], storeOpt);
+    } else if (relPath === 'Contents/header.xml') {
+      outZip.file(relPath, carrierHeaderXml, storeOpt);
+    } else if (relPath === 'Preview/PrvText.txt') {
+      outZip.file(relPath, previewText, storeOpt);
+    } else if (relPath === 'Preview/PrvImage.png') {
+      outZip.file(relPath, await placeholderBytes('png'), storeOpt);
+    } else if (relPath === 'Contents/content.hpf') {
+      let hpf = await entryFile.async('string');
+      if (foreignImagesToAdd.length) {
+        const items = foreignImagesToAdd
+          .map(img => `<opf:item id="${img.manifestId}" href="${img.path}" media-type="${img.mediaType}" isEmbeded="1"/>`)
+          .join('');
+        hpf = hpf.replace('</opf:manifest>', items + '</opf:manifest>');
+      }
+      outZip.file(relPath, hpf, storeOpt);
+    } else if (relPath.startsWith('BinData/') && !keepImageHrefs.has(relPath)) {
+      const ext = relPath.split('.').pop();
+      outZip.file(relPath, await placeholderBytes(ext), storeOpt);
+    } else {
+      const content = await entryFile.async('uint8array');
+      outZip.file(relPath, content, storeOpt);
+    }
+  }
+  for (const img of foreignImagesToAdd) {
+    outZip.file(img.path, img.bytes);
+  }
+
+  const blob = await outZip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream', compression: 'DEFLATE' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = isClassMode ? `${examName || '수업용'}_문제모음.hwpx` : `${studentName}_오답노트.hwpx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 genBtn.addEventListener('click', async () => {
   logEl.innerHTML = '';
   genBtn.disabled = true;
   try {
-    const studentName = document.getElementById('studentName').value.trim() || '학생';
-    const examName = document.getElementById('examName').value.trim();
+    await generateHwpxNote({ isClassMode: false });
+    log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
+  } catch (e) {
+    console.error(e);
+    log('오류: ' + e.message, 'err');
+  } finally {
+    updateGenBtn();
+  }
+});
 
+classHwpxBtn.addEventListener('click', async () => {
+  logEl.innerHTML = '';
+  classHwpxBtn.disabled = true;
+  try {
+    await generateHwpxNote({ isClassMode: true });
+    log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
+  } catch (e) {
+    console.error(e);
+    log('오류: ' + e.message, 'err');
+  } finally {
+    updateGenBtn();
+  }
+});
+
+// ---------- 수업용 HTML (화면당 2문제, PPT 16:9 비율) ----------
+// 표준 위젯/카드 CSS 클래스(choiceRow, hwpBogi, hwpCondBox, hwpBlankBox,
+// hwpRectBox, eqFallback)는 hwpx-lib.js의 hwpBodyXmlToHtml이 그대로 출력하는
+// 이름들 — studentnote.html의 인쇄용 스타일과 동일한 규칙을 그대로 재사용해
+// 여기서만 다르게 보이는 일이 없게 함, 다만 크기는 A4가 아니라 화면 슬라이드
+// 절반 폭에 맞춰 rem 단위로 새로 조정.
+function buildClassHtmlDocument({ titleText, slidesHtml }) {
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(titleText)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+<style>
+:root{--navy:#0F325D;--teal:#5FB5A3;--teal-deep:#3E8F79;--ink:#1A1A1A;--line:#E3D9C8;--kserif:'Noto Serif KR',serif;--sans:'Noto Sans KR',sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#20242c;font-family:var(--sans);color:var(--ink)}
+.deckWrap{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+/* 16:9 letterbox — width 100% capped by a vh-derived max-width so the
+   slide always keeps the PPT widescreen ratio no matter the window shape,
+   instead of stretching to whatever the browser window happens to be. */
+.slide{width:100%;max-width:177.78vh;aspect-ratio:16/9;max-height:100vh;margin:0 auto;background:#fff;display:flex;scroll-snap-align:start;position:relative;box-shadow:0 0 24px rgba(0,0,0,.35)}
+.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#ccc;z-index:5;font-family:var(--sans)}
+@media print{
+  .deckWrap{height:auto;overflow:visible}
+  .slide{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
+  .navHint{display:none}
+  @page{size:landscape;margin:0}
+}
+.slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4%}
+.slideTitle h1{font-family:var(--kserif);font-weight:900;font-size:2.6rem;color:var(--navy);margin:0 0 .6em}
+.slideTitle .sub{font-size:1.1rem;color:rgba(26,26,26,.6)}
+.slidePane{flex:1 1 0;min-width:0;padding:2.2% 2.4%;overflow-y:auto;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.slidePane:last-child{border-right:none}
+.slidePane.single{flex:1 1 100%}
+.paneNum{font-family:var(--kserif);font-weight:900;font-size:1.3rem;color:var(--navy);margin-bottom:.5em;flex:0 0 auto}
+.paneCite{font-size:.72rem;color:rgba(26,26,26,.5);margin-bottom:.6em;flex:0 0 auto}
+.paneBody{font-size:.92rem;line-height:1.6;flex:1 1 auto;min-height:0}
+.paneBody p{margin:0 0 .5em}
+.paneBody img{max-width:100%;height:auto;display:block;margin:.6em auto;border:1px solid var(--line);border-radius:4px}
+.paneBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
+.paneBody td{border:1px solid var(--line);padding:.15em .4em;font-size:.82em;white-space:nowrap}
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.7em;margin:.4em 0}
+.choiceItem{font-size:.92em;min-width:0;overflow-wrap:break-word}
+.hwpBogi,.hwpCondBox{border:1.3px solid var(--ink);border-radius:2px;padding:.7em .9em;margin:.5em 0}
+.hwpBogi p,.hwpCondBox p{margin:0 0 .3em}
+.hwpBlankBox{display:inline-block;border:1.3px solid var(--ink);vertical-align:middle;margin:0 .2em}
+.hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--line);padding:.4em .6em;margin:.4em 0}
+.eqFallback{font-family:monospace;font-size:.85em;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="deckWrap">
+${slidesHtml.join('\n')}
+</div>
+<div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space로 화면 전환</div>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  function tryRender() {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{ left: '\\\\(', right: '\\\\)', display: false }], throwOnError: false });
+    } else { setTimeout(tryRender, 100); }
+  }
+  tryRender();
+  var slides = [...document.querySelectorAll('.slide')];
+  document.addEventListener('keydown', function (e) {
+    if (!['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].includes(e.key)) return;
+    e.preventDefault();
+    var idx = slides.findIndex(function (s) {
+      var r = s.getBoundingClientRect();
+      return r.top > -10 && r.top < window.innerHeight / 2;
+    });
+    if (idx === -1) idx = 0;
+    var forward = e.key === 'PageDown' || e.key === 'ArrowRight' || e.key === ' ';
+    var target = slides[Math.max(0, Math.min(slides.length - 1, idx + (forward ? 1 : -1)))];
+    target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+<\/script>
+</body>
+</html>`;
+}
+
+classHtmlBtn.addEventListener('click', async () => {
+  logEl.innerHTML = '';
+  classHtmlBtn.disabled = true;
+  try {
+    const examName = document.getElementById('examName').value.trim();
     const checked = [...document.querySelectorAll('.qChk:checked')].map(chk => ({
       uid: Number(chk.dataset.uid),
       num: chk.dataset.num,
@@ -914,151 +1003,45 @@ genBtn.addEventListener('click', async () => {
     const byFile = new Map(); // uid -> entry
     for (const f of loadedFiles) byFile.set(f.uid, f);
 
-    const carrierEntry = byFile.get(checked[0].uid);
-    const carrierIds = deriveSafeIds(carrierEntry.markers);
-    let carrierHeaderXml = await carrierEntry.zipData.file('Contents/header.xml').async('string');
-    const paraPrDefs = parseParaPrDefs(carrierHeaderXml);
-    // plain (no auto-numbering) styles for our own generated text — the
-    // question-derived paraPrIDRef above often has heading/outline
-    // numbering baked in (that's what makes "1." show for a real
-    // question), which would auto-number our title/label text too.
-    const plainParaPrId = pickParaPrId(paraPrDefs, { noHeading: true }) || carrierIds.paraPrIDRef;
-    const plainRightParaPrId = pickParaPrId(paraPrDefs, { align: 'RIGHT', noHeading: true }) || plainParaPrId;
-    const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
-    const labelIds = { ...carrierIds, paraPrIDRef: plainRightParaPrId };
-
-    log('시험지 안의 내용을 정리하는 중...');
-    const strippedSections = {};
-    for (const path of carrierEntry.sectionOrder) {
-      const xml = await carrierEntry.zipData.file(path).async('string');
-      strippedSections[path] = stripSectionToSkeleton(xml);
-    }
-
-    log('선택한 문제들을 조립하는 중...');
-    const foreignImagesToAdd = [];
-    let foreignImageCounter = 0;
-    const today = new Date().toISOString().slice(0, 10);
-    let demo = textParaXml(9001, '=== 오답노트 ===', textIds)
-      + textParaXml(9002, `학생: ${studentName}   ${examName ? '제목: ' + examName + '   ' : ''}날짜: ${today}`, textIds);
-    let qCounter = 9003;
-
-    let qIdx = 0;
-    for (const { uid, num } of checked) {
-      const entry = byFile.get(uid);
-      const marker = entry.markers.get(num);
-      if (!marker) continue;
-      const pageBreak = qIdx > 0;
-      qIdx++;
-      if (loadedFiles.length > 1) {
-        demo += textParaXml(qCounter++, entry.filename, labelIds, { pageBreak });
-        demo += textParaXml(qCounter++, `문항 ${num}`, textIds);
-      } else {
-        demo += textParaXml(qCounter++, `문항 ${num}`, textIds, { pageBreak });
-      }
-
-      if (entry.uid === carrierEntry.uid) {
-        demo += marker.blockXml;
-      } else {
-        let blockXml = normalizeIds(marker.blockXml, carrierIds);
-        const refs = collectImageRefs(blockXml);
-        const idMap = {};
-        for (const oldId of refs) {
-          const href = entry.manifestItems[oldId];
-          if (!href) continue;
-          const ext = href.split('.').pop();
-          const bytes = await entry.zipData.file(href).async('uint8array');
-          const newId = 'ximg' + (foreignImageCounter++);
-          const newPath = `BinData/${newId}.${ext}`;
-          foreignImagesToAdd.push({ path: newPath, bytes, manifestId: newId, mediaType: mediaTypeForExt(ext) });
-          idMap[oldId] = newId;
-        }
-        blockXml = rewriteImageRefs(blockXml, idMap);
-        demo += blockXml;
-      }
-    }
-
-    // 빠른 정답 — 문제가 다 끝나고, 미주(해설)가 자동으로 모여 나오기 직전에
-    // 정답만 한 줄씩 모아서 보여줍니다. 채점을 빨리 하고 싶을 때 씁니다.
-    demo += textParaXml(qCounter++, '[빠른 정답]', textIds, { pageBreak: true });
-    let quickOrderNum = 1;
-    const renumberEquationIds = makeEquationIdRenumberer();
+    log('문제 내용을 변환하는 중 (수식 포함)...');
+    const paneHtmls = [];
+    let qOrder = 1;
     for (const { uid, num } of checked) {
       const entry = byFile.get(uid);
       const marker = entry && entry.markers.get(num);
-      let answerXml = marker ? extractQuickAnswerXml(marker.blockXml) : '';
-      if (answerXml) {
-        if (entry.uid !== carrierEntry.uid) answerXml = normalizeIds(answerXml, carrierIds);
-        answerXml = renumberEquationIds(answerXml);
-        demo += mixedAnswerParaXml(qCounter++, `${quickOrderNum}번   :   `, answerXml, textIds);
-      } else {
-        demo += textParaXml(qCounter++, `${quickOrderNum}번   :   (정답 인식 실패)`, textIds);
-      }
-      quickOrderNum++;
+      if (!marker) continue;
+      const bodyHtml = await hwpBodyXmlToHtml(marker.blockXml, entry);
+      const cite = loadedFiles.length > 1
+        ? `${escapeHtml(entry.filename.replace(/\.hwpx$/i, ''))} · ${num}번`
+        : `${num}번`;
+      paneHtmls.push(`<div class="slidePane"><div class="paneNum">${qOrder}</div><div class="paneCite">${cite}</div><div class="paneBody">${bodyHtml}</div></div>`);
+      qOrder++;
+    }
+    if (!paneHtmls.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
+
+    log('화면(슬라이드)을 배치하는 중 (한 화면에 2문제씩)...');
+    const titleText = examName || '수업용 문제모음';
+    const today = new Date().toISOString().slice(0, 10);
+    const slides = [];
+    slides.push(`<div class="slide"><div class="slideTitle"><h1>${escapeHtml(titleText)}</h1><div class="sub">${today}</div></div></div>`);
+    for (let i = 0; i < paneHtmls.length; i += 2) {
+      const pair = paneHtmls.slice(i, i + 2);
+      if (pair.length === 1) pair[0] = pair[0].replace('class="slidePane"', 'class="slidePane single"');
+      slides.push(`<div class="slide">${pair.join('')}</div>`);
     }
 
-    const targetSection = carrierEntry.sectionOrder[0];
-    strippedSections[targetSection] = strippedSections[targetSection].replace('</hs:sec>', demo + '</hs:sec>');
-
-    log('바탕쪽(머리말/꼬리말) 서식을 입히는 중...');
-    {
-      const personalize = (fragmentXml) => personalizeOddHeaderText(fragmentXml, studentName);
-      const { headerXml: patchedHeaderXml, sectionXml: patchedTargetSection, images: headerImages } =
-        await applyFormatTemplateHeaderFooter(carrierHeaderXml, strippedSections[targetSection], personalize);
-      carrierHeaderXml = patchedHeaderXml;
-      strippedSections[targetSection] = patchedTargetSection;
-      foreignImagesToAdd.push(...headerImages);
-    }
-
-    const keepImageHrefs = new Set(
-      collectImageRefs(demo).map(id => carrierEntry.manifestItems[id]).filter(Boolean)
-    );
-
-    log('.hwpx 파일로 압축하는 중...');
-    const outZip = new JSZip();
-    for (const relPath of Object.keys(carrierEntry.zipData.files)) {
-      const entryFile = carrierEntry.zipData.files[relPath];
-      if (entryFile.dir) continue;
-      const storeOpt = relPath === 'mimetype' ? { compression: 'STORE' } : {};
-      if (strippedSections[relPath] !== undefined) {
-        outZip.file(relPath, strippedSections[relPath], storeOpt);
-      } else if (relPath === 'Contents/header.xml') {
-        outZip.file(relPath, carrierHeaderXml, storeOpt);
-      } else if (relPath === 'Preview/PrvText.txt') {
-        outZip.file(relPath, `${studentName} 오답노트`, storeOpt);
-      } else if (relPath === 'Preview/PrvImage.png') {
-        outZip.file(relPath, await placeholderBytes('png'), storeOpt);
-      } else if (relPath === 'Contents/content.hpf') {
-        let hpf = await entryFile.async('string');
-        if (foreignImagesToAdd.length) {
-          const items = foreignImagesToAdd
-            .map(img => `<opf:item id="${img.manifestId}" href="${img.path}" media-type="${img.mediaType}" isEmbeded="1"/>`)
-            .join('');
-          hpf = hpf.replace('</opf:manifest>', items + '</opf:manifest>');
-        }
-        outZip.file(relPath, hpf, storeOpt);
-      } else if (relPath.startsWith('BinData/') && !keepImageHrefs.has(relPath)) {
-        const ext = relPath.split('.').pop();
-        outZip.file(relPath, await placeholderBytes(ext), storeOpt);
-      } else {
-        const content = await entryFile.async('uint8array');
-        outZip.file(relPath, content, storeOpt);
-      }
-    }
-    for (const img of foreignImagesToAdd) {
-      outZip.file(img.path, img.bytes);
-    }
-
-    const blob = await outZip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream', compression: 'DEFLATE' });
+    const html = buildClassHtmlDocument({ titleText, slidesHtml: slides });
+    const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${studentName}_오답노트.hwpx`;
+    a.download = `${titleText}.html`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
 
-    log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
+    log('완료! 다운로드된 HTML을 열어 확인해주세요 — 브라우저 전체화면(F11)으로 프로젝터에 띄우면 됩니다.', 'ok');
   } catch (e) {
     console.error(e);
     log('오류: ' + e.message, 'err');
