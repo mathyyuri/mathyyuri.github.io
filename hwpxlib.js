@@ -396,9 +396,22 @@ function substituteSymbolsInRun(run) {
   return out;
 }
 
+// A blank-fill label inside box{...} (e.g. "빈칸의 (가)에 알맞은 식은?")
+// is sometimes written as ONE precomposed Unicode "parenthesized Hangul"
+// character (U+320E–U+3210 = ㈎㈏㈐, "PARENTHESIZED HANGUL KIYEOK/NIEUN/
+// TIKEUT A" etc.) instead of three separate characters — confirmed against
+// a real file where box{~㈎~} rendered as an oversized/overflowing box
+// because KaTeX has NO font metrics at all for that codepoint (it isn't a
+// missing-style issue \text{} can fix; the glyph itself isn't in KaTeX's
+// fonts). Expand it to the plain 3-character "(가)" wrapped in \text{}
+// before anything else touches the script, since normal Hangul syllables
+// render fine with the page's own Korean web font.
+const HWP_ENCLOSED_HANGUL = { '㈎': '(가)', '㈏': '(나)', '㈐': '(다)', '㈑': '(라)', '㈒': '(마)' };
+
 function convertHwpEquationToLatex(script) {
   if (!script) return '';
   let s = script;
+  s = s.replace(/[㈎㈏㈐㈑㈒]/g, (ch) => `\\text{${HWP_ENCLOSED_HANGUL[ch]}}`);
   s = s.replace(/`/g, ' ');
   // Quoted labels ("⑦", "또는", ...) are literal text, not math — \text{}
   // keeps them upright instead of math-italicizing each character.
@@ -487,8 +500,17 @@ function extractOrderedChildren(xml, tagNames) {
   for (const tag of tagNames) {
     for (const b of findTopLevelBlocks(xml, tag)) all.push({ tag, ...b });
   }
-  all.sort((a, b) => a.start - b.start);
-  return all;
+  // A container tag (hp:rect can hold its own <hp:t>/<hp:equation>/<hp:pic>
+  // deep inside its own subList) gets its inner content matched a SECOND
+  // time by that inner tag's own independent scan above — findTopLevelBlocks
+  // only tracks nesting relative to its OWN tag name, so it has no idea
+  // those matches sit inside a rect. Without this filter they'd render
+  // twice: once via the rect's own recursive rendering, once again here as
+  // if they were direct run-level siblings.
+  const containers = all.filter(b => b.tag === 'hp:rect');
+  const filtered = all.filter(b => b.tag === 'hp:rect' || !containers.some(c => b.start > c.start && b.start < c.end));
+  filtered.sort((a, b) => a.start - b.start);
+  return filtered;
 }
 
 async function hwpPicToHtml(picXml, entry) {
@@ -502,7 +524,11 @@ async function hwpPicToHtml(picXml, entry) {
     const base64 = await file.async('base64');
     const ext = href.split('.').pop().toLowerCase();
     const mime = mediaTypeForExt(ext);
-    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt="">`;
+    // data-bin-id ties the rendered <img> back to its manifest entry
+    // (binaryItemIDRef) and zip path — needed by problembank.html's
+    // pre-upload image editor to know which BinData/ file to overwrite
+    // when the user recolors an image's background.
+    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt="" data-bin-id="${escapeHtml(refM[1])}" data-bin-href="${escapeHtml(href)}">`;
   } catch (e) { return ''; }
 }
 
@@ -525,6 +551,69 @@ async function hwpTblToHtml(tblXml, entry) {
   return `<table class="hwpTbl">${rowsHtml}</table>`;
 }
 
+// A "다음은 ~ 과정이다. (가), (나)에 알맞은 것은?"-style proof-completion
+// question draws its blank(s) as an <hp:rect> SHAPE, not text — confirmed
+// against a real file: a small rect (curSz ~11mm×5mm) with an EMPTY draw
+// run is the literal empty box the student would fill in. HWP shape sizes
+// here use HWPUNIT (1/7200 inch, confirmed by cross-checking this file's
+// own <hp:pagePr> width/height against its real A4-ish page size), NOT the
+// 1/100mm convention used elsewhere in this codebase for paragraph/table
+// coordinates — the two must not be confused.
+function hwpUnitToMm(u) { return u / 7200 * 25.4; }
+
+function rectSizeMm(rectXml) {
+  const m = rectXml.match(/<hp:curSz width="(\d+)" height="(\d+)"/);
+  return m ? { w: hwpUnitToMm(Number(m[1])), h: hwpUnitToMm(Number(m[2])) } : null;
+}
+
+async function hwpRectToHtml(rectXml, entry) {
+  const sub = findTopLevelBlocks(rectXml, 'hp:subList')[0];
+  const inner = sub ? await hwpBodyXmlToHtml(sub.text, entry) : '';
+  const hasContent = stripTags(inner).trim() !== '' || /<img/.test(inner);
+  const sz = rectSizeMm(rectXml);
+  if (!hasContent) {
+    // A large EMPTY rect (real file: ~83mm×37mm, carrying nothing but a
+    // stray colPr layout-switch control) is a structural/anchor artifact,
+    // not a visible blank box — only small empty rects are genuine
+    // fill-in-the-blank boxes.
+    if (!sz || sz.w > 40 || sz.h > 20) return '';
+    return `<span class="hwpBlankBox" style="width:${sz.w.toFixed(1)}mm;height:${sz.h.toFixed(1)}mm"></span>`;
+  }
+  // hwpBodyXmlToHtml's output is block-level (<p>, <div>...) — a <span> is
+  // inline and CANNOT legally contain block children; the browser's own
+  // error-recovery silently closes the span early and re-parents those
+  // <p>s as SIBLINGS right after it, so the text visually lands outside
+  // the box instead of inside it (confirmed by rendering a real question:
+  // an empty bordered box appeared, with all its text below/outside it).
+  // A <div> has no such restriction.
+  //
+  // NOT sizing this to the original rect's own w/h: those dimensions were
+  // calibrated for THAT document's own page/column width, not whatever
+  // container this ends up rendered into here — forcing them via
+  // min-width regularly made the box wider than its own column and stick
+  // out past the edge (confirmed against a real file). Let it size
+  // naturally to its content instead, up to the container's own width.
+  return `<div class="hwpRectBox">${inner}</div>`;
+}
+
+// stripTags has no concept of nesting — for a paragraph that CONTAINS an
+// <hp:rect> (itself holding its own nested paragraphs/markers), it exposes
+// the rect's deeply-nested text as if it belonged directly to the outer
+// paragraph. That fooled hwpBodyXmlToHtml's choice/보기 detection into
+// treating an already-rendered, already-boxed rect (e.g. a <보기> ㄱㄴㄷ
+// list drawn inside a real hp:rect box) as raw unprocessed text and
+// wrapping it in a SECOND, redundant box around the first (confirmed
+// against a real file). Strip rect blocks out before computing `.raw` so
+// detection only ever sees a paragraph's own direct text.
+function stripRectBlocksForRaw(xml) {
+  const rects = findTopLevelBlocks(xml, 'hp:rect');
+  let out = '';
+  let pos = 0;
+  for (const r of rects) { out += xml.slice(pos, r.start); pos = r.end; }
+  out += xml.slice(pos);
+  return out;
+}
+
 // hp:tab/hp:lineBreak/hp:fwSpace are inline formatting controls that can
 // sit NESTED INSIDE <hp:t>...</hp:t> itself (verified against real files —
 // not just as sibling elements), so they have to be swapped for their
@@ -541,7 +630,7 @@ function hwpInlineControlsToHtml(raw) {
 
 async function hwpRunInnerToHtml(runXml, entry) {
   runXml = stripCtrlBlocks(runXml);
-  const children = extractOrderedChildren(runXml, ['hp:t', 'hp:equation', 'hp:pic', 'hp:tbl']);
+  const children = extractOrderedChildren(runXml, ['hp:t', 'hp:equation', 'hp:pic', 'hp:tbl', 'hp:rect']);
   let out = '';
   for (const c of children) {
     if (c.tag === 'hp:t') {
@@ -550,7 +639,14 @@ async function hwpRunInnerToHtml(runXml, entry) {
       const cleaned = hwpInlineControlsToHtml(raw);
       out += escapeHtml(decodeXmlEntities(cleaned)).replace(/\n/g, '<br>');
     } else if (c.tag === 'hp:equation') {
-      const sm = c.text.match(/<hp:script>([\s\S]*?)<\/hp:script>/);
+      // HWP adds xml:space="preserve" to <hp:script> whenever the script
+      // text has meaningful leading/trailing whitespace (confirmed against
+      // a real file: choice-list equations like " 3 sqrt6 " get this
+      // attribute, plain ones don't) — an exact "<hp:script>" match missed
+      // that variant entirely and silently dropped the whole equation with
+      // no fallback either, since the empty rawScript short-circuits both
+      // branches below.
+      const sm = c.text.match(/<hp:script\b[^>]*>([\s\S]*?)<\/hp:script>/);
       const rawScript = sm ? decodeXmlEntities(sm[1]) : '';
       let latex = '';
       try { latex = rawScript ? convertHwpEquationToLatex(rawScript) : ''; } catch (e) { latex = ''; }
@@ -566,6 +662,8 @@ async function hwpRunInnerToHtml(runXml, entry) {
       out += await hwpPicToHtml(c.text, entry);
     } else if (c.tag === 'hp:tbl') {
       out += await hwpTblToHtml(c.text, entry);
+    } else if (c.tag === 'hp:rect') {
+      out += await hwpRectToHtml(c.text, entry);
     }
   }
   return out;
@@ -590,14 +688,44 @@ async function hwpFragmentRunsToHtml(xml, entry) {
 // ("...범위는?①-3≤m≤...") — confirmed against a real file — so anything
 // before that first marker has to be split off as its own line, or it
 // silently becomes a fake "choice item" with no marker of its own.
-function formatChoiceRow(inner) {
-  const markerIdx = inner.search(/[①②③④⑤]/);
-  if (markerIdx === -1) return null;
-  const prefix = inner.slice(0, markerIdx).trim();
-  const parts = inner.slice(markerIdx).split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
-  const row = `<div class="choiceRow">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`;
-  return prefix ? `<p>${prefix}</p>${row}` : row;
+// paraInners: one inner-HTML string per SOURCE paragraph that carries
+// choice markers (the caller passes each original <hp:p>'s own inner HTML
+// separately, not pre-joined) — a real file lays choices out as 2/2/1 per
+// line rather than a uniform grid (long fraction-heavy choices don't fit
+// 3-per-row), so each source paragraph becomes its own row with exactly
+// as many columns as it originally held, instead of every choice getting
+// reflowed into a fixed 3-column grid regardless of the source layout.
+function formatChoiceRow(paraInners) {
+  const rows = [];
+  let prefixHtml = '';
+  paraInners.forEach((inner, idx) => {
+    const markerIdx = inner.search(/[①②③④⑤]/);
+    if (markerIdx === -1) return;
+    // The question STEM is routinely glued into the SAME paragraph right
+    // before the first marker ("...범위는?①-3≤m≤...") — confirmed against
+    // a real file — so anything before that first marker has to be split
+    // off as its own line, or it silently becomes a fake "choice item"
+    // with no marker of its own. Only the first paragraph can have this.
+    if (idx === 0 && markerIdx > 0) prefixHtml = inner.slice(0, markerIdx).trim();
+    const parts = inner.slice(markerIdx).split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
+    if (parts.length) rows.push(parts);
+  });
+  const totalItems = rows.reduce((n, r) => n + r.length, 0);
+  if (totalItems < 2) return null;
+  // Use the LARGEST row's item count as a single SHARED column count for
+  // every row, instead of each row getting its own column count. The
+  // common "3 then 2" layout (5 short choices) needs ④ sitting directly
+  // under ①, ⑤ under ② — two independently-sized grids (3 columns, then
+  // 2 columns) can't align like that since their column widths differ.
+  // A shared template fixes that (a short row just leaves trailing
+  // columns empty) while still keeping a real 2/2/1 layout (long
+  // fraction-heavy choices that don't fit 3-per-row) visually distinct
+  // from a plain 3/2 — both confirmed against real files.
+  const cols = Math.max(...rows.map(r => r.length));
+  const rowsHtml = rows.map(parts =>
+    `<div class="choiceRow" style="grid-template-columns:repeat(${cols},1fr)">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`
+  ).join('');
+  return (prefixHtml ? `<p>${prefixHtml}</p>` : '') + rowsHtml;
 }
 
 // Multi-part "다음 조건을 만족시킬 때..." problems label each condition
@@ -614,6 +742,17 @@ function formatConditionBox(inner, rawText) {
   if (foundCount < 2) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
+  // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
+  // 알맞은 식은?") matches the same "(가)(나)..." pattern but ISN'T a real
+  // multi-clause condition list — each "part" is just the marker plus a
+  // trailing comma, nothing else. Boxing that produced a box the source
+  // document never had (confirmed against a real file). Require most
+  // parts to carry real content beyond the marker itself before boxing.
+  const substantiveCount = parts.filter(p => {
+    const stripped = stripTags(p).replace(/^\([가나다라마]\)/, '').replace(/[,.\s]/g, '');
+    return stripped.length >= 2;
+  }).length;
+  if (substantiveCount < parts.length - 1) return null;
   return `<div class="hwpCondBox">${parts.map(p => `<p>${p}</p>`).join('')}</div>`;
 }
 
@@ -625,7 +764,18 @@ async function hwpBodyXmlToHtml(xml, entry) {
   for (const p of paras) {
     const inner = await hwpFragmentRunsToHtml(p.text, entry);
     if (!inner.trim()) continue;
-    items.push({ raw: decodeXmlEntities(stripTags(p.text)).trim(), inner });
+    // `.raw` has to reflect the SAME content `.inner` actually renders, or
+    // detection gets fooled by text that's invisible/already-handled
+    // elsewhere. Two real cases found: (1) a run's own <hp:ctrl> can wrap
+    // an entire hidden <hp:endNote> ("[정답] ③ ...") that hwpRunInnerToHtml
+    // already excludes from `.inner` via stripCtrlBlocks — without the
+    // same exclusion here, a stray circled-number answer letter buried in
+    // that hidden endnote reference falsely looked like a REAL choice
+    // marker, pulling the whole stem paragraph into the choice-merge run
+    // and then silently dropping it (its clean `.inner` has no markers of
+    // its own to find). (2) an <hp:rect> shape's nested content, already
+    // independently rendered as its own box — see stripRectBlocksForRaw.
+    items.push({ raw: decodeXmlEntities(stripTags(stripRectBlocksForRaw(stripCtrlBlocks(p.text)))).trim(), inner });
   }
 
   // A "①...⑤" choice list is normally one paragraph with tab characters
@@ -657,7 +807,14 @@ async function hwpBodyXmlToHtml(xml, entry) {
   }
   function resolveSingle(it) {
     const condBox = formatConditionBox(it.inner, it.raw);
-    return condBox || `<p>${it.inner}</p>`;
+    if (condBox) return condBox;
+    // it.inner can itself contain block-level content (a hwpRectBox <div>,
+    // from an <hp:rect> that held real paragraphs) — a <p> cannot legally
+    // contain a <div>, and wrapping it in one anyway just repeats the same
+    // "browser silently un-nests it" bug one level up. Use a <div> wrapper
+    // instead whenever that's the case; plain <p> still handles everything
+    // else exactly as before.
+    return /<div\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
   }
   const resolved = [];
   let i = 0;
@@ -668,7 +825,7 @@ async function hwpBodyXmlToHtml(xml, entry) {
       const run = items.slice(start, i);
       const combinedRaw = run.map(it => it.raw).join('');
       const markerCount = (combinedRaw.match(/[①②③④⑤]/g) || []).length;
-      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner).join('')) : null;
+      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner)) : null;
       if (row) { resolved.push({ raw: '', html: row }); continue; }
       for (const it of run) resolved.push({ raw: it.raw, html: resolveSingle(it) });
       continue;
