@@ -500,15 +500,19 @@ function extractOrderedChildren(xml, tagNames) {
   for (const tag of tagNames) {
     for (const b of findTopLevelBlocks(xml, tag)) all.push({ tag, ...b });
   }
-  // A container tag (hp:rect can hold its own <hp:t>/<hp:equation>/<hp:pic>
-  // deep inside its own subList) gets its inner content matched a SECOND
-  // time by that inner tag's own independent scan above — findTopLevelBlocks
-  // only tracks nesting relative to its OWN tag name, so it has no idea
-  // those matches sit inside a rect. Without this filter they'd render
-  // twice: once via the rect's own recursive rendering, once again here as
-  // if they were direct run-level siblings.
-  const containers = all.filter(b => b.tag === 'hp:rect');
-  const filtered = all.filter(b => b.tag === 'hp:rect' || !containers.some(c => b.start > c.start && b.start < c.end));
+  // A container tag (hp:rect or hp:tbl can each hold their own
+  // <hp:t>/<hp:equation>/<hp:pic> deep inside their own subList/cells) gets
+  // its inner content matched a SECOND time by that inner tag's own
+  // independent scan above — findTopLevelBlocks only tracks nesting
+  // relative to its OWN tag name, so it has no idea those matches sit
+  // inside a container. Without this filter they'd render twice: once via
+  // the container's own recursive rendering (hwpRectToHtml / hwpTblToHtml),
+  // once again here as if they were direct run-level siblings — confirmed
+  // against a real file where a table's per-cell "①" choice letters leaked
+  // out and got double-processed by the OUTER choice-row detection too,
+  // producing malformed mismatched HTML.
+  const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl');
+  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || !containers.some(c => b.start > c.start && b.start < c.end));
   filtered.sort((a, b) => a.start - b.start);
   return filtered;
 }
@@ -597,19 +601,21 @@ async function hwpRectToHtml(rectXml, entry) {
 }
 
 // stripTags has no concept of nesting — for a paragraph that CONTAINS an
-// <hp:rect> (itself holding its own nested paragraphs/markers), it exposes
-// the rect's deeply-nested text as if it belonged directly to the outer
-// paragraph. That fooled hwpBodyXmlToHtml's choice/보기 detection into
-// treating an already-rendered, already-boxed rect (e.g. a <보기> ㄱㄴㄷ
-// list drawn inside a real hp:rect box) as raw unprocessed text and
-// wrapping it in a SECOND, redundant box around the first (confirmed
-// against a real file). Strip rect blocks out before computing `.raw` so
-// detection only ever sees a paragraph's own direct text.
+// <hp:rect> or <hp:tbl> (each can hold their own nested paragraphs/
+// markers), it exposes their deeply-nested text as if it belonged
+// directly to the outer paragraph. That fooled hwpBodyXmlToHtml's
+// choice/보기 detection into treating an already-rendered, already-boxed
+// rect (e.g. a <보기> ㄱㄴㄷ list drawn inside a real hp:rect box) as raw
+// unprocessed text and wrapping it in a SECOND, redundant box around the
+// first, and separately treating a table's own per-cell "①②③④⑤" choice
+// letters as if they belonged to the OUTER paragraph (both confirmed
+// against real files). Strip rect/table blocks out before computing
+// `.raw` so detection only ever sees a paragraph's own direct text.
 function stripRectBlocksForRaw(xml) {
-  const rects = findTopLevelBlocks(xml, 'hp:rect');
+  const blocks = [...findTopLevelBlocks(xml, 'hp:rect'), ...findTopLevelBlocks(xml, 'hp:tbl')].sort((a, b) => a.start - b.start);
   let out = '';
   let pos = 0;
-  for (const r of rects) { out += xml.slice(pos, r.start); pos = r.end; }
+  for (const b of blocks) { out += xml.slice(pos, b.start); pos = b.end; }
   out += xml.slice(pos);
   return out;
 }
@@ -931,14 +937,22 @@ function looksLikeNextQuestionMarker(p) {
 }
 
 // Orphaned-content absorption (below) must only grab things we can
-// positively identify as belonging to SOME question — a picture, or a
-// choice list starting with ①/㉠/ㄱ — never "any non-blank paragraph".
-// Some documents carry a repeating watermark/copyright notice
+// positively identify as belonging to SOME question — a picture, a real
+// HWP table, or a choice list starting with ①/㉠/ㄱ — never "any non-blank
+// paragraph". Some documents carry a repeating watermark/copyright notice
 // ("이 자료를 무단으로 복제...") in the gap between questions; treating
 // that as orphaned content silently corrupted unrelated questions with
 // the watermark text instead of their real answer.
+//
+// A tabular multiple-choice grid (columns (가)(나)(다)(라), rows ①-⑤ —
+// common for "빈칸 채우기" proof-completion questions) is a real <hp:tbl>,
+// not a picture and not text starting with a circled number — without
+// this it fell into the gap between two questions' own endnote boundaries
+// and got silently dropped by BOTH (confirmed against a real file: the
+// question's entire answer-choice table vanished, showing no choices at
+// all even though the source definitely had them).
 function looksLikeOrphanedFragment(p) {
-  if (p.text.includes('<hp:pic')) return true;
+  if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
   return /^[①②③④⑤㉠㉡㉢㉣]/.test(t);
 }
@@ -971,7 +985,18 @@ function detectEndnoteMarkers(xml) {
       let m = k;
       while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
       const distNext = nextI - m;
-      if (distHere <= distNext) j = m;
+      // A tabular answer-choice grid ("(가)(나)(다)(라)" columns × "①-⑤"
+      // rows, common for 빈칸채우기 proof-completion questions) is a real
+      // <hp:tbl> — it's ALWAYS the immediately-preceding question's own
+      // choices, never a preview of the next one, but the distance
+      // measure alone got this backwards: with nothing else between the
+      // table and the NEXT question's own endnote paragraph, distNext
+      // came out as 0 and "closer" always won — even though the table is
+      // unambiguously this question's, not a leftover near the next one
+      // (confirmed against a real file: the table fell in this exact gap
+      // and vanished from BOTH questions). Tables always absorb here.
+      const isTable = paras[k].text.includes('<hp:tbl');
+      if (isTable || distHere <= distNext) j = m;
     }
     return j;
   });
