@@ -640,8 +640,17 @@ function extractOrderedChildren(xml, tagNames) {
   for (const tag of tagNames) {
     for (const b of findTopLevelBlocks(xml, tag)) all.push({ tag, ...b });
   }
-  all.sort((a, b) => a.start - b.start);
-  return all;
+  // A container tag (hp:rect can hold its own <hp:t>/<hp:equation>/<hp:pic>
+  // deep inside its own subList) gets its inner content matched a SECOND
+  // time by that inner tag's own independent scan above — findTopLevelBlocks
+  // only tracks nesting relative to its OWN tag name, so it has no idea
+  // those matches sit inside a rect. Without this filter they'd render
+  // twice: once via the rect's own recursive rendering, once again here as
+  // if they were direct run-level siblings.
+  const containers = all.filter(b => b.tag === 'hp:rect');
+  const filtered = all.filter(b => b.tag === 'hp:rect' || !containers.some(c => b.start > c.start && b.start < c.end));
+  filtered.sort((a, b) => a.start - b.start);
+  return filtered;
 }
 async function hwpPicToHtml(picXml, entry) {
   const refM = picXml.match(/binaryItemIDRef="([^"]+)"/);
@@ -654,7 +663,11 @@ async function hwpPicToHtml(picXml, entry) {
     const base64 = await file.async('base64');
     const ext = href.split('.').pop().toLowerCase();
     const mime = mediaTypeForExt(ext);
-    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt="">`;
+    // data-bin-id ties the rendered <img> back to its manifest entry
+    // (binaryItemIDRef) and zip path — needed by problembank.html's
+    // pre-upload image editor to know which BinData/ file to overwrite
+    // when the user recolors an image's background.
+    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt="" data-bin-id="${escapeHtml(refM[1])}" data-bin-href="${escapeHtml(href)}">`;
   } catch (e) { return ''; }
 }
 async function hwpTblToHtml(tblXml, entry) {
@@ -675,6 +688,35 @@ async function hwpTblToHtml(tblXml, entry) {
   }
   return `<table class="hwpTbl">${rowsHtml}</table>`;
 }
+// A "다음은 ~ 과정이다. (가), (나)에 알맞은 것은?"-style proof-completion
+// question draws its blank(s) as an <hp:rect> SHAPE, not text — confirmed
+// against a real file: a small rect (curSz ~11mm×5mm) with an EMPTY draw
+// run is the literal empty box the student would fill in. HWP shape sizes
+// here use HWPUNIT (1/7200 inch, confirmed by cross-checking this file's
+// own <hp:pagePr> width/height against its real A4-ish page size), NOT the
+// 1/100mm convention used elsewhere in this codebase for paragraph/table
+// coordinates — the two must not be confused.
+function hwpUnitToMm(u) { return u / 7200 * 25.4; }
+function rectSizeMm(rectXml) {
+  const m = rectXml.match(/<hp:curSz width="(\d+)" height="(\d+)"/);
+  return m ? { w: hwpUnitToMm(Number(m[1])), h: hwpUnitToMm(Number(m[2])) } : null;
+}
+async function hwpRectToHtml(rectXml, entry) {
+  const sub = findTopLevelBlocks(rectXml, 'hp:subList')[0];
+  const inner = sub ? await hwpBodyXmlToHtml(sub.text, entry) : '';
+  const hasContent = stripTags(inner).trim() !== '' || /<img/.test(inner);
+  const sz = rectSizeMm(rectXml);
+  if (!hasContent) {
+    // A large EMPTY rect (real file: ~83mm×37mm, carrying nothing but a
+    // stray colPr layout-switch control) is a structural/anchor artifact,
+    // not a visible blank box — only small empty rects are genuine
+    // fill-in-the-blank boxes.
+    if (!sz || sz.w > 40 || sz.h > 20) return '';
+    return `<span class="hwpBlankBox" style="width:${sz.w.toFixed(1)}mm;height:${sz.h.toFixed(1)}mm"></span>`;
+  }
+  const style = sz ? `min-width:${sz.w.toFixed(1)}mm;min-height:${sz.h.toFixed(1)}mm;` : '';
+  return `<span class="hwpRectBox" style="${style}">${inner}</span>`;
+}
 // hp:tab/hp:lineBreak/hp:fwSpace are inline formatting controls that can
 // sit NESTED INSIDE <hp:t>...</hp:t> itself (verified against real files —
 // not just as sibling elements), so they have to be swapped for their
@@ -690,7 +732,7 @@ function hwpInlineControlsToHtml(raw) {
 }
 async function hwpRunInnerToHtml(runXml, entry) {
   runXml = stripCtrlBlocks(runXml);
-  const children = extractOrderedChildren(runXml, ['hp:t', 'hp:equation', 'hp:pic', 'hp:tbl']);
+  const children = extractOrderedChildren(runXml, ['hp:t', 'hp:equation', 'hp:pic', 'hp:tbl', 'hp:rect']);
   let out = '';
   for (const c of children) {
     if (c.tag === 'hp:t') {
@@ -715,6 +757,8 @@ async function hwpRunInnerToHtml(runXml, entry) {
       out += await hwpPicToHtml(c.text, entry);
     } else if (c.tag === 'hp:tbl') {
       out += await hwpTblToHtml(c.text, entry);
+    } else if (c.tag === 'hp:rect') {
+      out += await hwpRectToHtml(c.text, entry);
     }
   }
   return out;
@@ -2713,6 +2757,8 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .hwpCondBox{border:1.3px solid var(--mb-ink);border-radius:2px;padding:4mm 5mm;margin:3mm 0}
 .hwpCondBox p{margin:0 0 1.5mm}
 .hwpCondBox p:last-child{margin-bottom:0}
+.hwpBlankBox{display:inline-block;border:1.3px solid var(--mb-ink);vertical-align:middle;margin:0 1mm}
+.hwpRectBox{display:inline-block;border:1px solid var(--mb-line);padding:1mm 2mm;vertical-align:middle;margin:1mm 0}
 
 /* ---- 표지 ---- */
 .coverSide{position:absolute;left:0;top:0;bottom:0;width:16mm;background:var(--mb-navy);display:flex;flex-direction:column;align-items:center;padding:14mm 0}
