@@ -99,7 +99,7 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .hwpBogi, .hwpCondBox { border: 1.3px solid var(--ink); border-radius: 2px; padding: 4mm 5mm; margin: 3mm 0; }
 .hwpBogi p, .hwpCondBox p { margin: 0 0 1.5mm; }
 .hwpBlankBox { display: inline-block; border: 1.3px solid var(--ink); vertical-align: middle; margin: 0 1mm; }
-.hwpRectBox { display: inline-block; border: 1px solid var(--gold-line); padding: 1mm 2mm; vertical-align: middle; margin: 1mm 0; }
+.hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; }
 .overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
 .uploadGate { font-size: 13px; margin-top: 10px; padding: 8px 10px; background: var(--pink-soft); border-radius: 4px; }
 .uploadGate label { display: inline; font-weight: 400; color: var(--ink); margin: 0; }
@@ -569,8 +569,10 @@ async function validateOneFile(file, box) {
     const choiceCount = (html.match(/class="choiceItem"/g) || []).length;
     if (choiceCount > 0 && choiceCount < 5) issues.push(`선택지 ${choiceCount}개만 인식됨 (5개 기대)`);
     if (/<\s*보\s*기\s*>/.test(rawText) && !html.includes('hwpBogi')) issues.push('<보기> 표시가 있지만 박스로 인식되지 않음');
-    const condCount = ['(가)', '(나)', '(다)', '(라)', '(마)'].filter(mk => rawText.includes(mk)).length;
-    if (condCount >= 2 && !html.includes('hwpCondBox')) issues.push('조건 (가)(나)... 표시가 있지만 박스로 인식되지 않음');
+    // "(가)(나)..." 표시가 있다고 항상 조건박스가 나와야 하는 건 아니다 —
+    // "빈칸의 (가),(나)에 알맞은 식은?"처럼 그냥 빈칸 라벨을 나열만 하는
+    // 경우도 있고, 그건 formatConditionBox가 이제 의도적으로 박스 없이
+    // 그냥 텍스트로 둔다. 이 필드만 보고 판단할 수 없어서 검사를 없앴다.
 
     if (!extractQuickAnswerXml(blockXml)) issues.push('정답을 인식하지 못함');
     if (!extractEndnoteFullBodyXml(blockXml)) issues.push('해설을 인식하지 못함');

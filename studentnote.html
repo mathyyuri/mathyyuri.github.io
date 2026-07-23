@@ -552,9 +552,21 @@ function substituteSymbolsInRun(run) {
   }
   return out;
 }
+// A blank-fill label inside box{...} (e.g. "빈칸의 (가)에 알맞은 식은?")
+// is sometimes written as ONE precomposed Unicode "parenthesized Hangul"
+// character (U+320E–U+3210 = ㈎㈏㈐, "PARENTHESIZED HANGUL KIYEOK/NIEUN/
+// TIKEUT A" etc.) instead of three separate characters — confirmed against
+// a real file where box{~㈎~} rendered as an oversized/overflowing box
+// because KaTeX has NO font metrics at all for that codepoint (it isn't a
+// missing-style issue \text{} can fix; the glyph itself isn't in KaTeX's
+// fonts). Expand it to the plain 3-character "(가)" wrapped in \text{}
+// before anything else touches the script, since normal Hangul syllables
+// render fine with the page's own Korean web font.
+const HWP_ENCLOSED_HANGUL = { '㈎': '(가)', '㈏': '(나)', '㈐': '(다)', '㈑': '(라)', '㈒': '(마)' };
 function convertHwpEquationToLatex(script) {
   if (!script) return '';
   let s = script;
+  s = s.replace(/[㈎㈏㈐㈑㈒]/g, (ch) => `\\text{${HWP_ENCLOSED_HANGUL[ch]}}`);
   s = s.replace(/`/g, ' ');
   // Quoted labels ("⑦", "또는", ...) are literal text, not math — \text{}
   // keeps them upright instead of math-italicizing each character.
@@ -721,8 +733,31 @@ async function hwpRectToHtml(rectXml, entry) {
   // the box instead of inside it (confirmed by rendering a real question:
   // an empty bordered box appeared, with all its text below/outside it).
   // A <div> has no such restriction.
-  const style = sz ? `min-width:${sz.w.toFixed(1)}mm;min-height:${sz.h.toFixed(1)}mm;` : '';
-  return `<div class="hwpRectBox" style="${style}">${inner}</div>`;
+  //
+  // NOT sizing this to the original rect's own w/h: those dimensions were
+  // calibrated for THAT document's own page/column width, not whatever
+  // container this ends up rendered into here — forcing them via
+  // min-width regularly made the box wider than its own column and stick
+  // out past the edge (confirmed against a real file). Let it size
+  // naturally to its content instead, up to the container's own width.
+  return `<div class="hwpRectBox">${inner}</div>`;
+}
+// stripTags has no concept of nesting — for a paragraph that CONTAINS an
+// <hp:rect> (itself holding its own nested paragraphs/markers), it exposes
+// the rect's deeply-nested text as if it belonged directly to the outer
+// paragraph. That fooled hwpBodyXmlToHtml's choice/보기 detection into
+// treating an already-rendered, already-boxed rect (e.g. a <보기> ㄱㄴㄷ
+// list drawn inside a real hp:rect box) as raw unprocessed text and
+// wrapping it in a SECOND, redundant box around the first (confirmed
+// against a real file). Strip rect blocks out before computing `.raw` so
+// detection only ever sees a paragraph's own direct text.
+function stripRectBlocksForRaw(xml) {
+  const rects = findTopLevelBlocks(xml, 'hp:rect');
+  let out = '';
+  let pos = 0;
+  for (const r of rects) { out += xml.slice(pos, r.start); pos = r.end; }
+  out += xml.slice(pos);
+  return out;
 }
 // hp:tab/hp:lineBreak/hp:fwSpace are inline formatting controls that can
 // sit NESTED INSIDE <hp:t>...</hp:t> itself (verified against real files —
@@ -795,14 +830,34 @@ async function hwpFragmentRunsToHtml(xml, entry) {
 // ("...범위는?①-3≤m≤...") — confirmed against a real file — so anything
 // before that first marker has to be split off as its own line, or it
 // silently becomes a fake "choice item" with no marker of its own.
-function formatChoiceRow(inner) {
-  const markerIdx = inner.search(/[①②③④⑤]/);
-  if (markerIdx === -1) return null;
-  const prefix = inner.slice(0, markerIdx).trim();
-  const parts = inner.slice(markerIdx).split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
-  const row = `<div class="choiceRow">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`;
-  return prefix ? `<p>${prefix}</p>${row}` : row;
+// paraInners: one inner-HTML string per SOURCE paragraph that carries
+// choice markers (the caller passes each original <hp:p>'s own inner HTML
+// separately, not pre-joined) — a real file lays choices out as 2/2/1 per
+// line rather than a uniform grid (long fraction-heavy choices don't fit
+// 3-per-row), so each source paragraph becomes its own row with exactly
+// as many columns as it originally held, instead of every choice getting
+// reflowed into a fixed 3-column grid regardless of the source layout.
+function formatChoiceRow(paraInners) {
+  const rows = [];
+  let prefixHtml = '';
+  paraInners.forEach((inner, idx) => {
+    const markerIdx = inner.search(/[①②③④⑤]/);
+    if (markerIdx === -1) return;
+    // The question STEM is routinely glued into the SAME paragraph right
+    // before the first marker ("...범위는?①-3≤m≤...") — confirmed against
+    // a real file — so anything before that first marker has to be split
+    // off as its own line, or it silently becomes a fake "choice item"
+    // with no marker of its own. Only the first paragraph can have this.
+    if (idx === 0 && markerIdx > 0) prefixHtml = inner.slice(0, markerIdx).trim();
+    const parts = inner.slice(markerIdx).split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
+    if (parts.length) rows.push(parts);
+  });
+  const totalItems = rows.reduce((n, r) => n + r.length, 0);
+  if (totalItems < 2) return null;
+  const rowsHtml = rows.map(parts =>
+    `<div class="choiceRow" style="grid-template-columns:repeat(${parts.length},1fr)">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`
+  ).join('');
+  return (prefixHtml ? `<p>${prefixHtml}</p>` : '') + rowsHtml;
 }
 // Multi-part "다음 조건을 만족시킬 때..." problems label each condition
 // (가)/(나)/(다)... — normally boxed off in the source, same idea as a
@@ -817,6 +872,17 @@ function formatConditionBox(inner, rawText) {
   if (foundCount < 2) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
+  // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
+  // 알맞은 식은?") matches the same "(가)(나)..." pattern but ISN'T a real
+  // multi-clause condition list — each "part" is just the marker plus a
+  // trailing comma, nothing else. Boxing that produced a box the source
+  // document never had (confirmed against a real file). Require most
+  // parts to carry real content beyond the marker itself before boxing.
+  const substantiveCount = parts.filter(p => {
+    const stripped = stripTags(p).replace(/^\([가나다라마]\)/, '').replace(/[,.\s]/g, '');
+    return stripped.length >= 2;
+  }).length;
+  if (substantiveCount < parts.length - 1) return null;
   return `<div class="hwpCondBox">${parts.map(p => `<p>${p}</p>`).join('')}</div>`;
 }
 // Converts a body of one or more <hp:p> paragraphs (a question's
@@ -827,7 +893,7 @@ async function hwpBodyXmlToHtml(xml, entry) {
   for (const p of paras) {
     const inner = await hwpFragmentRunsToHtml(p.text, entry);
     if (!inner.trim()) continue;
-    items.push({ raw: decodeXmlEntities(stripTags(p.text)).trim(), inner });
+    items.push({ raw: decodeXmlEntities(stripTags(stripRectBlocksForRaw(p.text))).trim(), inner });
   }
 
   // A "①...⑤" choice list is normally one paragraph with tab characters
@@ -877,7 +943,7 @@ async function hwpBodyXmlToHtml(xml, entry) {
       const run = items.slice(start, i);
       const combinedRaw = run.map(it => it.raw).join('');
       const markerCount = (combinedRaw.match(/[①②③④⑤]/g) || []).length;
-      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner).join('')) : null;
+      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner)) : null;
       if (row) { resolved.push({ raw: '', html: row }); continue; }
       for (const it of run) resolved.push({ raw: it.raw, html: resolveSingle(it) });
       continue;
@@ -2779,7 +2845,7 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .hwpCondBox p{margin:0 0 1.5mm}
 .hwpCondBox p:last-child{margin-bottom:0}
 .hwpBlankBox{display:inline-block;border:1.3px solid var(--mb-ink);vertical-align:middle;margin:0 1mm}
-.hwpRectBox{display:inline-block;border:1px solid var(--mb-line);padding:1mm 2mm;vertical-align:middle;margin:1mm 0}
+.hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--mb-line);padding:2mm 3mm;margin:2mm 0}
 
 /* ---- 표지 ---- */
 .coverSide{position:absolute;left:0;top:0;bottom:0;width:16mm;background:var(--mb-navy);display:flex;flex-direction:column;align-items:center;padding:14mm 0}
