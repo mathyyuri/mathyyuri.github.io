@@ -1727,10 +1727,19 @@ function looksLikeNextQuestionMarker(p) {
 // and got silently dropped by BOTH (confirmed against a real file: the
 // question's entire answer-choice table vanished, showing no choices at
 // all even though the source definitely had them).
+//
+// A <보기> reference-statement line ("ㄱ. 점 A는...", "ㄴ. ...") is a real
+// isolated jamo marker (never how an ordinary Korean sentence — built from
+// full syllable blocks like "가"/"나" — begins), so it's just as safely
+// identifiable as a picture or a circled-number choice. Without this, a
+// 보기 list separated from the question's own diagram by an extra blank
+// paragraph (confirmed in a real file: image, blank, then the ㄱ/ㄴ/ㄷ
+// list, then another blank, then the ①-⑤ choices referencing it) never
+// got absorbed at all — it silently fell outside every question's block.
 function looksLikeOrphanedFragment(p) {
   if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
-  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t);
+  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t);
 }
 
 function detectEndnoteMarkers(xml) {
@@ -1754,9 +1763,19 @@ function detectEndnoteMarkers(xml) {
     // one with no gap at all. Whichever side it's structurally closer to
     // is almost always where it actually belongs, so measure both
     // distances and only absorb it into THIS block if it's closer here.
-    let k = j, gap = 0;
-    while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
-    if (k < nextI && looksLikeOrphanedFragment(paras[k])) {
+    // A single question can leave MULTIPLE orphaned fragments in the gap
+    // (e.g. an illustrating image, then another blank run, then its own
+    // answer-choice table) — absorbing only the first and stopping there
+    // silently dropped every fragment after it (confirmed against a real
+    // file: an image absorbed fine, but the table right after it — the
+    // question's actual choices — was left behind and vanished). Keep
+    // re-attempting absorption from wherever the previous one left off
+    // until a gap doesn't lead to another orphaned fragment, or that
+    // fragment turns out to be structurally closer to the NEXT question.
+    for (;;) {
+      let k = j, gap = 0;
+      while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
+      if (!(k < nextI && looksLikeOrphanedFragment(paras[k]))) break;
       const distHere = gap;
       let m = k;
       while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
@@ -1772,7 +1791,19 @@ function detectEndnoteMarkers(xml) {
       // (confirmed against a real file: the table fell in this exact gap
       // and vanished from BOTH questions). Tables always absorb here.
       const isTable = paras[k].text.includes('<hp:tbl');
-      if (isTable || distHere <= distNext) j = m;
+      if (!(isTable || distHere <= distNext)) break;
+      // A paragraph carrying an <hp:pic>/<hp:tbl> ANYWHERE in its markup
+      // trips looksLikeOrphanedFragment regardless of what its stripped
+      // text starts with — so a captioned image whose visible text also
+      // happens to read like a topic label ("[유형 5] ...") can satisfy
+      // looksLikeOrphanedFragment AND looksLikeNextQuestionMarker at the
+      // same time. That makes the inner scan's while-loop above execute
+      // zero times, leaving m === k — no forward progress at all. Without
+      // this guard the outer for(;;) would recompute the exact same
+      // k/m/j on every pass and spin forever (confirmed: hung a real
+      // regression file indefinitely). Bail out rather than loop in place.
+      if (m <= k) break;
+      j = m;
     }
     return j;
   });
