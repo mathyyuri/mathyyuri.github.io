@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>교재/시험지 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="hwpx-lib.js"></script>
 <style>
 :root{
   --cream:#FBF8F1;
@@ -62,6 +67,37 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .fileRow .fName { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .fileRow .fMeta { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); font-family: var(--kserif); width: 150px; }
 .fileRow .fMemo { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); width: 120px; overflow-wrap: anywhere; }
+
+/* ---- 업로드 전 검증 ---- */
+.validateFile { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; margin: 12px 0; padding: 12px 16px; }
+.validateFile h3 { font-family: var(--kserif); font-size: 14px; margin: 0 0 6px; }
+.validateSummary { font-size: 13px; margin-bottom: 8px; }
+.validateSummary .qOk { color: var(--mint-deep); font-weight: 700; }
+.validateSummary .qWarn { color: #B8860B; font-weight: 700; }
+.validateSummary .qErr { color: var(--pink-deep); font-weight: 700; }
+.qChecklist { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.qChip { font-family: var(--kserif); font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; cursor: pointer; border: 1px solid transparent; }
+.qChip.ok { background: var(--mint-soft); color: var(--mint-deep); }
+.qChip.warn { background: rgba(184,134,11,.14); color: #8a6508; }
+.qChip.err { background: var(--pink-soft); color: var(--pink-deep); }
+.qChip.selected { border-color: currentColor; }
+.qIssueList { font-size: 12px; color: var(--pink-deep); margin: 0 0 10px; padding-left: 18px; }
+.previewWrap { display: flex; gap: 10px; overflow-x: auto; padding: 8px; background: #f2ede1; border-radius: 4px; }
+.previewCol { width: 85mm; max-height: 255mm; overflow: hidden; background: var(--cream); border: 1px solid var(--gold-line); padding: 6mm; position: relative; flex: 0 0 auto; font-size: 12px; line-height: 1.65; }
+.previewCol.overflowed { outline: 3px solid var(--pink-deep); outline-offset: -3px; }
+.previewCol .qNumLabel { font-weight: 800; color: var(--gold); margin-bottom: 3mm; font-family: var(--kserif); }
+.previewCol p { margin: 0 0 2mm; }
+.previewCol img { max-width: 100%; height: auto; display: block; margin: 3mm auto; border: 1px solid var(--gold-line); border-radius: 4px; }
+.previewCol table { border-collapse: collapse; margin: 2mm 0; }
+.previewCol td { border: 1px solid var(--gold-line); padding: 1mm 2mm; font-size: 11px; }
+.eqFallback { font-family: monospace; font-size: 11px; color: var(--pink-deep); background: rgba(198,78,113,.08); padding: 1px 4px; border-radius: 2px; }
+.choiceRow { display: grid; grid-template-columns: repeat(3,1fr); row-gap: 2mm; column-gap: 4mm; margin: 2mm 0; }
+.choiceItem { white-space: nowrap; font-size: 12px; }
+.hwpBogi, .hwpCondBox { border: 1.3px solid var(--ink); border-radius: 2px; padding: 4mm 5mm; margin: 3mm 0; }
+.hwpBogi p, .hwpCondBox p { margin: 0 0 1.5mm; }
+.overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
+.uploadGate { font-size: 13px; margin-top: 10px; padding: 8px 10px; background: var(--pink-soft); border-radius: 4px; }
+.uploadGate label { display: inline; font-weight: 400; color: var(--ink); margin: 0; }
 </style>
 </head>
 <body>
@@ -70,11 +106,13 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 
 <div class="box">
   <p><b>새 파일 업로드</b></p>
-  <p class="hint">파일명 맨 앞에 <code>[S+반]</code>, <code>[S반]</code>처럼 대괄호로 반 이름을 붙이면 아래 목록에서 그 반 카테고리로 자동 분류됩니다. 대괄호가 없으면 "공통" 카테고리로 들어갑니다.</p>
-  <input type="file" id="uploadFile" accept=".hwpx">
+  <p class="hint">파일명 맨 앞에 <code>[S+반]</code>, <code>[S반]</code>처럼 대괄호로 반 이름을 붙이면 아래 목록에서 그 반 카테고리로 자동 분류됩니다. 대괄호가 없으면 "공통" 카테고리로 들어갑니다. 파일을 선택하면 업로드 전에 자동으로 검증됩니다 — 문제별 미리보기(A4 2단 기준)와 수식/보기/조건박스/선택지 오류를 먼저 확인하세요.</p>
+  <input type="file" id="uploadFile" accept=".hwpx" multiple>
   <input type="text" id="uploadMemo" placeholder="메모 (예: 7월 모의고사)">
-  <button id="uploadBtn">업로드</button>
+  <button id="uploadBtn" disabled>업로드</button>
 </div>
+
+<div id="validateArea"></div>
 
 <div class="box">
   <p><b>업로드된 파일 목록</b></p>
@@ -337,23 +375,211 @@ async function onDelete(e) {
   }
 }
 
-document.getElementById('uploadBtn').addEventListener('click', async () => {
+// ---------- 업로드 전 검증 ----------
+// A "서식" 파일은 표지/문제/해설 디자인 골격일 뿐 번호가 매겨진 문제가
+// 없는 게 정상이라, 문제 검출 여부로 판단하는 이 검증은 서식 파일에는
+// 적용하지 않는다 (genBtn이 서식 파일을 다루는 방식과 동일한 구분).
+const validateArea = document.getElementById('validateArea');
+const uploadBtnEl = document.getElementById('uploadBtn');
+let validatedFiles = new Map(); // filename -> { ok, hasCritical, questionData }
+
+document.getElementById('uploadFile').addEventListener('change', async (ev) => {
+  const files = [...ev.target.files];
+  validateArea.innerHTML = '';
+  validatedFiles = new Map();
+  uploadBtnEl.disabled = true;
+  if (!files.length) return;
+  for (const file of files) {
+    if (file.name.includes('서식')) {
+      validatedFiles.set(file.name, { ok: true, hasCritical: false, questionData: [] });
+      const box = document.createElement('div');
+      box.className = 'validateFile';
+      box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">서식(디자인 골격) 파일로 보여 문제 검증을 생략합니다.</p>`;
+      validateArea.appendChild(box);
+      continue;
+    }
+    const box = document.createElement('div');
+    box.className = 'validateFile';
+    box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="hint">검증 중...</p>`;
+    validateArea.appendChild(box);
+    try {
+      const result = await validateOneFile(file, box);
+      validatedFiles.set(file.name, result);
+    } catch (e) {
+      box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="qErr">검증 실패: ${escapeHtml(e.message)} — .hwpx 형식을 확인해주세요.</p>`;
+      validatedFiles.set(file.name, { ok: false, hasCritical: true, questionData: [] });
+    }
+  }
+  updateUploadGate();
+});
+
+async function validateOneFile(file, box) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const entry = await parseHwpx(zip);
+  const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
+  if (!nums.length) {
+    box.innerHTML = `<h3>${escapeHtml(file.name)}</h3><p class="qErr">문제를 하나도 찾지 못했습니다 — 번호 매기기/형식을 확인해주세요.</p>`;
+    return { ok: false, hasCritical: true, questionData: [] };
+  }
+
+  const questionData = [];
+  const previewHtmlByNum = {};
+  for (const num of nums) {
+    const marker = entry.markers.get(num);
+    const blockXml = marker.blockXml;
+    const issues = [];
+    const rawText = decodeXmlEntities(stripTags(blockXml));
+
+    let eqErrCount = 0;
+    const scripts = [...blockXml.matchAll(/<hp:script>([\s\S]*?)<\/hp:script>/g)].map(m => decodeXmlEntities(m[1]));
+    for (const s of scripts) {
+      let latex = '';
+      try { latex = convertHwpEquationToLatex(s); } catch (e) { eqErrCount++; continue; }
+      if (!latex) { eqErrCount++; continue; }
+      try { katex.renderToString(latex, { throwOnError: true }); } catch (e) { eqErrCount++; }
+    }
+    if (eqErrCount) issues.push(`수식 변환/렌더링 오류 ${eqErrCount}건`);
+
+    const html = await hwpBodyXmlToHtml(blockXml, entry);
+    // rawText spans the WHOLE block (stem + choices + endnote answer/설명),
+    // so circled-number markers show up again inside the answer/explanation
+    // text — counting them there too would flag almost every question as
+    // "선택지 부족". Count only what formatChoiceRow actually rendered as
+    // the real choice row instead.
+    const choiceCount = (html.match(/class="choiceItem"/g) || []).length;
+    if (choiceCount > 0 && choiceCount < 5) issues.push(`선택지 ${choiceCount}개만 인식됨 (5개 기대)`);
+    if (/<\s*보\s*기\s*>/.test(rawText) && !html.includes('hwpBogi')) issues.push('<보기> 표시가 있지만 박스로 인식되지 않음');
+    const condCount = ['(가)', '(나)', '(다)', '(라)', '(마)'].filter(mk => rawText.includes(mk)).length;
+    if (condCount >= 2 && !html.includes('hwpCondBox')) issues.push('조건 (가)(나)... 표시가 있지만 박스로 인식되지 않음');
+
+    if (!extractQuickAnswerXml(blockXml)) issues.push('정답을 인식하지 못함');
+    if (!extractEndnoteFullBodyXml(blockXml)) issues.push('해설을 인식하지 못함');
+
+    previewHtmlByNum[num] = html;
+    questionData.push({
+      num, choiceCount, hasBogi: html.includes('hwpBogi'), hasCondition: html.includes('hwpCondBox'),
+      warnings: issues, // overflow(다단 초과)는 렌더 후 아래에서 채워짐
+    });
+  }
+
+  // 문제별 미리보기를 A4 2단 실제 폭(85mm)·높이(255mm) 그대로 렌더해서
+  // 인쇄시 한 단에 안 들어가고 잘리는 문제를 실제로 눈으로/자동으로 확인.
+  const previewWrap = document.createElement('div');
+  previewWrap.className = 'previewWrap';
+  for (const num of nums) {
+    const col = document.createElement('div');
+    col.className = 'previewCol';
+    col.dataset.num = num;
+    col.innerHTML = `<div class="qNumLabel">${num}번</div>${previewHtmlByNum[num]}`;
+    previewWrap.appendChild(col);
+  }
+  box.innerHTML = '';
+  const chipsEl = document.createElement('div');
+  chipsEl.className = 'qChecklist';
+  box.appendChild(chipsEl);
+  const issueListEl = document.createElement('ul');
+  issueListEl.className = 'qIssueList';
+  box.appendChild(issueListEl);
+  box.appendChild(previewWrap);
+
+  if (window.renderMathInElement) {
+    try {
+      renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+    } catch (e) {}
+  }
+
+  let warnCount = 0;
+  for (const qd of questionData) {
+    const col = previewWrap.querySelector(`.previewCol[data-num="${qd.num}"]`);
+    if (col && col.scrollHeight > col.clientHeight + 1) {
+      col.classList.add('overflowed');
+      qd.warnings.push('A4 2단 한 칸에 다 안 들어감 (인쇄 시 잘릴 수 있음)');
+    }
+    const status = qd.warnings.length === 0 ? 'ok' : 'warn';
+    if (status === 'warn') warnCount++;
+    const chip = document.createElement('span');
+    chip.className = 'qChip ' + status;
+    chip.textContent = `${qd.num}번${qd.warnings.length ? ' ⚠' : ''}`;
+    chip.addEventListener('click', () => {
+      chipsEl.querySelectorAll('.qChip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      issueListEl.innerHTML = qd.warnings.length
+        ? qd.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')
+        : '<li style="color:var(--mint-deep);list-style:none;margin-left:-18px">문제 없음</li>';
+      if (col) col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    });
+    chipsEl.appendChild(chip);
+  }
+
+  const summary = document.createElement('p');
+  summary.className = 'validateSummary';
+  summary.innerHTML = `총 <b>${nums.length}</b>문제 인식됨 — ` +
+    (warnCount ? `<span class="qWarn">${warnCount}개 문제에 경고 있음</span> (문제 번호를 클릭하면 내용을 확인할 수 있습니다)` : `<span class="qOk">전부 이상 없음</span>`);
+  box.insertBefore(summary, chipsEl);
+  const title = document.createElement('h3');
+  title.textContent = file.name;
+  box.insertBefore(title, summary);
+
+  return { ok: warnCount === 0, hasCritical: false, questionData };
+}
+
+function updateUploadGate() {
+  const results = [...validatedFiles.values()];
+  const anyCritical = results.some(r => r.hasCritical);
+  const anyWarn = results.some(r => !r.ok);
+  let gate = document.getElementById('uploadGate');
+  if (gate) gate.remove();
+  if (!results.length) { uploadBtnEl.disabled = true; return; }
+  if (anyCritical) {
+    uploadBtnEl.disabled = true;
+    gate = document.createElement('div');
+    gate.id = 'uploadGate';
+    gate.className = 'uploadGate';
+    gate.innerHTML = '문제를 하나도 인식하지 못한 파일이 있습니다. 파일을 다시 확인해주세요. (업로드가 막혀 있습니다)';
+    validateArea.appendChild(gate);
+    return;
+  }
+  if (anyWarn) {
+    uploadBtnEl.disabled = true;
+    gate = document.createElement('div');
+    gate.id = 'uploadGate';
+    gate.className = 'uploadGate';
+    gate.innerHTML = `<label><input type="checkbox" id="overrideChk"> 위 경고를 확인했고, 그래도 업로드하겠습니다.</label>`;
+    validateArea.appendChild(gate);
+    document.getElementById('overrideChk').addEventListener('change', (e) => { uploadBtnEl.disabled = !e.target.checked; });
+    return;
+  }
+  uploadBtnEl.disabled = false;
+}
+
+document.getElementById('uploadBtn').addEventListener('click', async (ev) => {
   const fileInput = document.getElementById('uploadFile');
   const memo = document.getElementById('uploadMemo').value.trim();
-  const file = fileInput.files[0];
-  if (!file) { log('파일을 선택해주세요.', 'err'); return; }
+  const files = [...fileInput.files];
+  if (!files.length) { log('파일을 선택해주세요.', 'err'); return; }
   logEl.innerHTML = '';
-  log('업로드 중...');
-  try {
-    const base64 = await fileToBase64(file);
-    await callPost({ action: 'upload', filename: file.name, data: base64, memo });
-    log('업로드 완료.', 'ok');
-    fileInput.value = '';
-    document.getElementById('uploadMemo').value = '';
-    await refreshList();
-  } catch (e) {
-    log('업로드 실패: ' + e.message, 'err');
+  ev.target.disabled = true;
+  let okCount = 0;
+  for (const file of files) {
+    log(`업로드 중... (${file.name})`);
+    try {
+      const base64 = await fileToBase64(file);
+      const validated = validatedFiles.get(file.name);
+      const questionData = validated && validated.questionData ? validated.questionData : [];
+      await callPost({ action: 'upload', filename: file.name, data: base64, memo, questionData: JSON.stringify(questionData) });
+      okCount++;
+    } catch (e) {
+      log(`실패: ${file.name} — ${e.message}`, 'err');
+    }
   }
+  log(`완료: ${okCount}/${files.length}개 업로드됨.`, 'ok');
+  fileInput.value = '';
+  document.getElementById('uploadMemo').value = '';
+  validateArea.innerHTML = '';
+  validatedFiles = new Map();
+  ev.target.disabled = true;
+  await refreshList();
 });
 
 genBtn.addEventListener('click', () => {

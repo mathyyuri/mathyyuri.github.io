@@ -732,11 +732,19 @@ async function hwpFragmentRunsToHtml(xml, entry) {
 // between choices — converted to a handful of literal spaces, those read
 // as cramped/lopsided rather than evenly laid out. When 2+ circled-number
 // markers show up in the same paragraph, split on them and lay the
-// choices out as a wrapping flex row instead.
+// choices out as a wrapping flex row instead. The question STEM is
+// routinely glued into the SAME paragraph right before the first marker
+// ("...범위는?①-3≤m≤...") — confirmed against a real file — so anything
+// before that first marker has to be split off as its own line, or it
+// silently becomes a fake "choice item" with no marker of its own.
 function formatChoiceRow(inner) {
-  const parts = inner.split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
+  const markerIdx = inner.search(/[①②③④⑤]/);
+  if (markerIdx === -1) return null;
+  const prefix = inner.slice(0, markerIdx).trim();
+  const parts = inner.slice(markerIdx).split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
-  return `<div class="choiceRow">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`;
+  const row = `<div class="choiceRow">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`;
+  return prefix ? `<p>${prefix}</p>${row}` : row;
 }
 // Multi-part "다음 조건을 만족시킬 때..." problems label each condition
 // (가)/(나)/(다)... — normally boxed off in the source, same idea as a
@@ -753,28 +761,68 @@ function formatConditionBox(inner, rawText) {
   if (parts.length < 2) return null;
   return `<div class="hwpCondBox">${parts.map(p => `<p>${p}</p>`).join('')}</div>`;
 }
-async function hwpParaToHtml(paraXml, entry) {
-  const inner = await hwpFragmentRunsToHtml(paraXml, entry);
-  if (!inner.trim()) return '';
-  const rawText = decodeXmlEntities(stripTags(paraXml));
-  const condBox = formatConditionBox(inner, rawText);
-  if (condBox) return condBox;
-  const markerCount = (rawText.match(/[①②③④⑤]/g) || []).length;
-  if (markerCount >= 2) {
-    const row = formatChoiceRow(inner);
-    if (row) return row;
-  }
-  return `<p>${inner}</p>`;
-}
 // Converts a body of one or more <hp:p> paragraphs (a question's
 // blockXml, an endnote's full subList, or a table cell's subList) to HTML.
 async function hwpBodyXmlToHtml(xml, entry) {
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const items = [];
   for (const p of paras) {
-    const html = await hwpParaToHtml(p.text, entry);
-    if (html) items.push({ raw: decodeXmlEntities(stripTags(p.text)).trim(), html });
+    const inner = await hwpFragmentRunsToHtml(p.text, entry);
+    if (!inner.trim()) continue;
+    items.push({ raw: decodeXmlEntities(stripTags(p.text)).trim(), inner });
   }
+
+  // A "①...⑤" choice list is normally one paragraph with tab characters
+  // between choices, but a real file showed it can also be split across
+  // SEPARATE paragraphs (line-wrap in the source document — e.g. "①②" in
+  // one paragraph, "③④" in the next, and a lone "⑤" in a third). Treating
+  // each paragraph in isolation left that lone "⑤" outside the choice box
+  // entirely, since a single marker never meets the "2+ per paragraph"
+  // threshold. Merge a RUN of consecutive marker-bearing paragraphs first
+  // and count markers across the whole run, before resolving anything else.
+  //
+  // A <보기> ㄱ/ㄴ/ㄷ/ㄹ list has the OPPOSITE problem in a different real
+  // file: all 4 items sat glued into ONE single paragraph ("ㄱ. ...ㄴ.
+  // ...ㄷ. ...ㄹ. ...") instead of one-per-paragraph, so the cross-paragraph
+  // grouping below (which counts consecutive ㄱ-prefixed PARAGRAPHS) never
+  // fires — it only ever sees that one paragraph, never reaching its "2+"
+  // threshold. formatBogiBox handles that single-paragraph case directly,
+  // the same way formatConditionBox already does for (가)(나)(다).
+  function formatBogiBox(inner, rawText) {
+    const count = (rawText.match(/[ㄱ-ㅎ]\s*[.)]/g) || []).length;
+    if (count < 2) return null;
+    const markerIdx = inner.search(/[ㄱ-ㅎ]\s*[.)]/);
+    if (markerIdx === -1) return null;
+    const prefix = inner.slice(0, markerIdx).trim();
+    const parts = inner.slice(markerIdx).split(/(?=[ㄱ-ㅎ]\s*[.)])/).map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+    const box = `<div class="hwpBogi">${parts.map(p => `<p>${p}</p>`).join('')}</div>`;
+    return prefix ? `<p>${prefix}</p>${box}` : box;
+  }
+  function resolveSingle(it) {
+    const condBox = formatConditionBox(it.inner, it.raw);
+    return condBox || `<p>${it.inner}</p>`;
+  }
+  const resolved = [];
+  let i = 0;
+  while (i < items.length) {
+    if (/[①②③④⑤]/.test(items[i].raw)) {
+      const start = i;
+      while (i < items.length && /[①②③④⑤]/.test(items[i].raw)) i++;
+      const run = items.slice(start, i);
+      const combinedRaw = run.map(it => it.raw).join('');
+      const markerCount = (combinedRaw.match(/[①②③④⑤]/g) || []).length;
+      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner).join('')) : null;
+      if (row) { resolved.push({ raw: '', html: row }); continue; }
+      for (const it of run) resolved.push({ raw: it.raw, html: resolveSingle(it) });
+      continue;
+    }
+    const bogiBox = formatBogiBox(items[i].inner, items[i].raw);
+    if (bogiBox) { resolved.push({ raw: '', html: bogiBox }); i++; continue; }
+    resolved.push({ raw: items[i].raw, html: resolveSingle(items[i]) });
+    i++;
+  }
+
   // "<보기>" reference-statement lists (ㄱ./ㄴ./ㄷ./ㄹ...) are normally
   // shown inside a bordered box in the source — group them into one boxed
   // div, since we don't otherwise carry over the original paragraph
@@ -784,23 +832,23 @@ async function hwpBodyXmlToHtml(xml, entry) {
   // require a standalone marker paragraph; it just looks for a run of
   // 2+ consecutive ㄱ/ㄴ/ㄷ/ㄹ-prefixed lines, optionally preceded by one.
   const htmlParas = [];
-  let i = 0;
-  while (i < items.length) {
-    const isMarker = /^<\s*보\s*기\s*>/.test(items[i].raw);
-    const isBogiLine = /^[ㄱ-ㅎ]\s*[.)]/.test(items[i].raw);
+  let j = 0;
+  while (j < resolved.length) {
+    const isMarker = /^<\s*보\s*기\s*>/.test(resolved[j].raw);
+    const isBogiLine = /^[ㄱ-ㅎ]\s*[.)]/.test(resolved[j].raw);
     if (isMarker || isBogiLine) {
-      const start = i;
-      let k = isMarker ? i + 1 : i;
+      const start = j;
+      let k = isMarker ? j + 1 : j;
       let count = 0;
-      while (k < items.length && /^[ㄱ-ㅎ]\s*[.)]/.test(items[k].raw)) { k++; count++; }
+      while (k < resolved.length && /^[ㄱ-ㅎ]\s*[.)]/.test(resolved[k].raw)) { k++; count++; }
       if (count >= 2) {
-        htmlParas.push(`<div class="hwpBogi">${items.slice(start, k).map(it => it.html).join('')}</div>`);
-        i = k;
+        htmlParas.push(`<div class="hwpBogi">${resolved.slice(start, k).map(it => it.html).join('')}</div>`);
+        j = k;
         continue;
       }
     }
-    htmlParas.push(items[i].html);
-    i++;
+    htmlParas.push(resolved[j].html);
+    j++;
   }
   return htmlParas.join('\n');
 }
