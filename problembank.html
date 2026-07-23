@@ -9,7 +9,11 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="hwpx-lib.js"></script>
+<!-- ?v=... busts CDN/browser caching on a custom domain (mathyyuri.com sits
+     in front of GitHub Pages) — a plain hard-refresh doesn't reliably clear
+     an edge cache, but a changed URL always fetches fresh. Bump this any
+     time hwpx-lib.js changes. -->
+<script src="hwpx-lib.js?v=20260723-4"></script>
 <style>
 :root{
   --cream:#FBF8F1;
@@ -85,8 +89,21 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .qEditPanel { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .imgEditRow { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .imgEditRow input[type=color] { width: 32px; height: 26px; padding: 2px; cursor: pointer; }
-.previewWrap { display: flex; gap: 10px; overflow-x: auto; padding: 8px; background: #f2ede1; border-radius: 4px; }
-.previewCol { width: 85mm; max-height: 255mm; overflow: hidden; background: var(--cream); border: 1px solid var(--gold-line); padding: 6mm; position: relative; flex: 0 0 auto; font-size: 12px; line-height: 1.65; }
+.previewWrap { display: flex; align-items: flex-start; gap: 10px; overflow-x: auto; padding: 8px; background: #f2ede1; border-radius: 4px; }
+/* No max-height/overflow here on purpose — this box previously clipped
+   at 255mm with overflow:hidden, which made content past that point
+   silently INVISIBLE with no on-screen indication anything was missing.
+   The box now always grows to show its full content; the "doesn't fit
+   one printed column" warning is still measured (see the 255mm marker
+   line below) and flagged via .overflowed, just without ever hiding
+   anything from view. */
+.previewCol { width: 85mm; background: var(--cream); border: 1px solid var(--gold-line); padding: 6mm; position: relative; flex: 0 0 auto; font-size: 12px; line-height: 1.65; }
+.previewCol.overflowed::after {
+  content: '↑ 인쇄 시 한 단(255mm)에 안 들어가는 지점 — 아래는 다음 단/페이지로 넘어감';
+  position: absolute; left: 0; right: 0; top: 255mm;
+  border-top: 2px dashed var(--pink-deep); color: var(--pink-deep);
+  font-size: 10px; padding-top: 2px; pointer-events: none;
+}
 .previewCol.overflowed { outline: 3px solid var(--pink-deep); outline-offset: -3px; }
 .previewCol .qNumLabel { font-weight: 800; color: var(--gold); margin-bottom: 3mm; font-family: var(--kserif); }
 .previewCol p { margin: 0 0 2mm; }
@@ -446,6 +463,22 @@ function recolorImageBackground(dataUrl, hexColor, threshold = 235) {
   });
 }
 
+// .previewCol has no CSS height cap anymore (so nothing is ever silently
+// clipped/invisible) — overflow now has to be measured against a real
+// pixel reference instead of relying on the DOM's own clipping. mm->px
+// depends on the browser's own CSS length resolution, so measure it with
+// a one-off probe element rather than hardcoding a DPI assumption.
+let _mm255PxCache = null;
+function get255mmInPx() {
+  if (_mm255PxCache) return _mm255PxCache;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;visibility:hidden;height:255mm;width:0;';
+  document.body.appendChild(probe);
+  _mm255PxCache = probe.getBoundingClientRect().height;
+  probe.remove();
+  return _mm255PxCache;
+}
+
 // 문제 미리보기 안의 그림마다 배경색 조정 컨트롤을 그린다 — hwpPicToHtml이
 // 심어 둔 data-bin-id로 원본 zip의 어느 BinData/ 파일을 바꿔야 할지 알아낸다.
 function renderImageEditRows(editPanelEl, col, filename) {
@@ -613,12 +646,16 @@ async function validateOneFile(file, box) {
     } catch (e) {}
   }
 
+  // .previewCol no longer clips (no max-height), so scrollHeight always
+  // equals clientHeight now — measure each column's real content height
+  // in px against a one-off 255mm probe element instead.
+  const mm255Px = get255mmInPx();
   let warnCount = 0;
   for (const qd of questionData) {
     const col = previewWrap.querySelector(`.previewCol[data-num="${qd.num}"]`);
-    if (col && col.scrollHeight > col.clientHeight + 1) {
+    if (col && col.scrollHeight > mm255Px + 1) {
       col.classList.add('overflowed');
-      qd.warnings.push('A4 2단 한 칸에 다 안 들어감 (인쇄 시 잘릴 수 있음)');
+      qd.warnings.push('A4 2단 한 칸에 다 안 들어감 (인쇄 시 잘릴 수 있음) — 아래 빨간 점선 아래 내용은 실제로는 다음 단/페이지로 넘어갑니다');
     }
     const status = qd.warnings.length === 0 ? 'ok' : 'warn';
     if (status === 'warn') warnCount++;
