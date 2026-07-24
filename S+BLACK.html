@@ -161,13 +161,13 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <div class="box modeBox" id="sheetExportBox">
   <p><b>[mathyyuri.com 연동 — 구글시트 붙여넣기용 데이터]</b></p>
   <div class="hint">
-    구글시트 <b>"9모대비"</b> 탭에는 이미 이름/닉네임/반/비밀번호/미션명("9월 모의고사
-    대비 실전 모의고사 1회")까지 채워진 15명분 빈 줄이 미리 만들어져 있습니다.
-    아래 버튼을 누르면 그 줄들에 채워 넣을 <b>원점수·등급·맞은개수·1~30번 정오</b>만
-    생성됩니다 — 시트에서 해당 15줄의 <b>F열(원점수) 첫 칸</b>을 클릭한 뒤 붙여넣으세요
-    (이름 등은 이미 있으니 새 줄을 추가하지 마세요). 이 명단 표의 학생 순서가
-    시트의 줄 순서(고준성~최진우, 김영찬~허이준 등)와 같아야 정확히 맞습니다.
+    <b>"2026 여름 SUMMER"</b> 스프레드시트의 <b>"9모대비"</b> 탭에 붙여넣을 데이터를
+    만듭니다(이름/닉네임/반/비밀번호/미션명/원점수/등급/맞은개수/1~30번 정오 전체 줄).
+    그 탭에 이미 만들어둔 빈 줄이 있으면 A열부터 그대로 덮어써도 되고(이름 등은
+    같은 값이라 무해함), 새 시험이면 맨 아래 새 블록으로 붙여넣어도 됩니다.
   </div>
+  <label>미션명/시험명</label>
+  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 1회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
   <div class="btnRow">
     <button class="smallBtn" onclick="buildSheetExport()">붙여넣기용 데이터 만들기</button>
     <button class="smallBtn ghostBtn" id="copySheetExportBtn" onclick="copySheetExport()" disabled>클립보드에 복사</button>
@@ -608,7 +608,12 @@ function escapeHtml(s) {
 // 15명분 빈 줄이 미리 만들어져 있음(선생님이 미리 세팅해둔 템플릿) — 그
 // 줄들을 새로 추가/중복시키지 않도록, 여기서는 점수 칸(원점수부터 30번
 // 문항까지)만 만든다. 대상 줄의 F열(원점수)에 붙여넣으면 된다.
+// "2026 여름 SUMMER" 스프레드시트의 "9모대비" 탭 구조(이름,닉네임,반,비밀번호,
+// 미션명,원점수,등급,맞은개수,1..30)에 맞춘 전체 줄 — 이미 만들어둔 빈 템플릿
+// 줄 위에 그대로 덮어써도 되고(이름 등은 똑같은 값이라 무해함), 새 시험을
+// 새로 시작할 때는 그 아래 새 블록으로 붙여넣어도 된다.
 function buildSheetExport() {
+  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 1회';
   const cuts = getGradeCuts();
   const rows = [...document.querySelectorAll('#rosterBody tr')];
   const lines = [];
@@ -616,24 +621,30 @@ function buildSheetExport() {
   for (const row of rows) {
     const name = row.querySelector('.nameInput').value.trim();
     if (!name) continue;
+    const nick = row.querySelector('.nickInput').value.trim();
+    const className = row.querySelector('.classInput').value.trim();
+    const pw = row.querySelector('.pwInput').value.trim();
+    if (!nick || !className || !pw) { skipped++; continue; }
     const wrongNums = computeWrongNumsForRow(row);
     const s = scoreStudent(wrongNums);
     const gradeInfo = getEstimatedGrade(s.totalScore, cuts);
     const correctCount = s.perQuestion.filter(q => q.status === 'O').length;
     const itemCols = s.perQuestion.map(q => q.status === 'O' ? '1' : '2');
-    lines.push([s.totalScore, `${gradeInfo.grade}등급`, correctCount, ...itemCols].join('\t'));
+    lines.push([name, nick, className, pw, examName, s.totalScore, `${gradeInfo.grade}등급`, correctCount, ...itemCols].join('\t'));
   }
   const area = document.getElementById('sheetExportArea');
   area.value = lines.join('\n');
   const status = document.getElementById('sheetExportStatus');
   const copyBtn = document.getElementById('copySheetExportBtn');
   if (!lines.length) {
-    status.textContent = '이름이 입력된 학생이 없습니다.';
+    status.textContent = skipped
+      ? `⚠ 이름은 있지만 닉네임/반/비밀번호가 없는 학생 ${skipped}명은 제외됐습니다 — 위 명단 표에서 채워주세요.`
+      : '이름이 입력된 학생이 없습니다.';
     status.style.color = 'var(--pink-deep)';
     copyBtn.disabled = true;
     return;
   }
-  status.textContent = `✓ ${lines.length}명분 생성됨 — 시트의 원점수(F열) 칸부터 순서대로 붙여넣으세요. 시트 줄 순서(고준성~최진우, 김영찬~허이준 등)와 이 명단 순서가 같아야 합니다.`;
+  status.textContent = `✓ ${lines.length}명분 생성됨` + (skipped ? ` (닉네임/반/비밀번호 누락 ${skipped}명은 제외됨)` : '') + ' — "2026 여름 SUMMER" 시트의 "9모대비" 탭에 붙여넣으세요.';
   status.style.color = 'var(--mint-deep)';
   copyBtn.disabled = false;
 }

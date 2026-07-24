@@ -138,13 +138,14 @@ table.rankTbl tr:hover td { background: var(--gold-soft); }
 
 <script>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// "MATHY YURI System — 모의고사 성적 기록부" 시트를 읽는 기존 페이지들
-// (s+.html, s.html, motest.html)과 완전히 같은 Apps Script Web App —
-// 새 write API를 만들지 않고 그 세 페이지와 동일한 방식으로 GET만 한다.
-const GAS_API = 'https://script.google.com/macros/s/AKfycbwwAm3lYkaILE5xCGnzqKfeiofkN5Ocr4WWGPWhnfx47RIjhGXmgn1YhQRD8s527G8BMg/exec';
-// S+BLACK.html의 "구글시트 붙여넣기용 데이터" 섹션의 "시험명" 입력값과 반드시
-// 일치해야 이 페이지가 해당 시험 행들을 찾아낸다 — 시험명을 바꿔서 붙여넣었다면
-// 아래 값도 같이 바꿀 것.
+// "2026 여름 SUMMER" 스프레드시트의 "9모대비" 탭을 읽는 전용 Apps Script
+// Web App (9moresult_gas_code.gs 참고) — 그 시트에 배포한 뒤 나온 실제
+// URL로 아래 값을 바꿔야 함. s+.html/s.html/motest.html이 읽는
+// "MATHY YURI System — 모의고사 성적 기록부"와는 다른, 별도의 시트/스크립트.
+const GAS_API = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+// S+BLACK.html의 "구글시트 붙여넣기용 데이터" 섹션의 "미션명/시험명" 입력값과
+// 반드시 일치해야 이 페이지가 해당 시험 행들을 찾아낸다 — 값을 바꿔서
+// 붙여넣었다면 아래 값도 같이 바꿀 것.
 const EXAM_NAME = '9월 모의고사 대비 실전 모의고사 1회';
 
 // S+BLACK.html의 examData와 완전히 동일 — 단원별 분석을 위해 문항-단원
@@ -173,12 +174,17 @@ function gradeNumFrom(text) {
 }
 
 async function loadData() {
+  if (GAS_API.includes('PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE')) {
+    document.getElementById('loading').innerHTML =
+      '<div style="color:var(--pink-deep)">설정이 안 끝났습니다 — "2026 여름 SUMMER" 시트에 9moresult_gas_code.gs를 배포한 뒤, 그 URL을 이 파일 상단 GAS_API 값에 붙여넣어야 합니다.</div>';
+    return;
+  }
   try {
     const res = await fetch(GAS_API);
     if (!res.ok) throw new Error('API 연결 오류');
     const raw = await res.json();
     students = raw
-      .filter(r => String(r['시험명'] || '').trim() === EXAM_NAME)
+      .filter(r => String(r['미션명'] || '').trim() === EXAM_NAME)
       .map(r => {
         const items = [];
         for (let i = 1; i <= 30; i++) items.push(parseInt(r[i]) || 2);
