@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대치 S+ BLACK | 9월 모의고사 실전 리포트 & 다차원 분석 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream: #FBF8F1;
+  --ink: #1A1A1A;
+  --gold: #A8853F;
+  --gold-soft: rgba(168,133,63,.12);
+  --gold-line: #E6DCC6;
+  --mint-deep: #3E8F79;
+  --mint-soft: rgba(62,143,121,.1);
+  --pink-deep: #C64E71;
+  --pink-soft: rgba(198,78,113,.08);
+  --serif: 'Playfair Display', 'Noto Serif KR', serif;
+  --sans: 'Noto Sans KR', sans-serif;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--sans); max-width: 1100px; margin: 40px auto; padding: 0 4vw 60px; line-height: 1.6; background: var(--cream); color: var(--ink); }
+
+h1 { font-family: var(--serif); font-weight: 900; font-size: 26px; margin-bottom: 4px; letter-spacing: -0.5px; text-align: center; }
+.subtitle { text-align: center; font-size: 14px; color: var(--gold); font-weight: 700; margin-bottom: 30px; letter-spacing: 1px; }
+
+.box { border: 1px solid var(--gold-line); background: #fff; border-radius: 6px; padding: 24px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+
+button { font-family: var(--sans); font-size: 14px; letter-spacing: .06em; font-weight: 700; padding: 12px 24px; cursor: pointer; background: var(--ink); color: var(--cream); border: 1px solid var(--ink); border-radius: 4px; transition: .2s; }
+button:hover { background: var(--mint-deep); border-color: var(--mint-deep); }
+.wideBtn { display: block; width: 100%; margin-top: 20px; }
+.smallBtn { padding: 7px 14px; font-size: 12px; }
+.ghostBtn { background: #fff; color: var(--ink); }
+.ghostBtn:hover { background: var(--gold-soft); border-color: var(--gold); color: var(--ink); }
+
+.hint { color: rgba(26,26,26,.6); font-size: 13px; margin-bottom: 15px; }
+.saveHint { font-size: 12px; color: var(--mint-deep); font-weight: 700; }
+
+.modeToggle { display: flex; gap: 10px; margin-bottom: 6px; }
+.modeOpt { flex: 1; display: block; border: 1px solid var(--gold-line); border-radius: 6px; padding: 12px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.modeOpt:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
+.modeOpt input { margin-right: 6px; }
+
+.cutGrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 6px; }
+.cutGrid div { text-align: center; }
+.cutGrid label { display: block; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+.cutGrid input { width: 100%; padding: 6px; border: 1px solid var(--gold-line); border-radius: 4px; font-size: 13px; text-align: center; }
+
+/* ---- 학생별 빠른 입력 (틀린 문제 번호만 타이핑) ---- */
+.rosterTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rosterTable th { background: var(--ink); color: var(--cream); font-weight: 600; padding: 8px; text-align: left; font-size: 12px; }
+.rosterTable td { border-bottom: 1px solid var(--gold-line); padding: 6px 8px; vertical-align: middle; }
+.rosterTable tr:last-child td { border-bottom: none; }
+.rosterTable input[type=text] { width: 100%; padding: 8px; border: 1px solid var(--gold-line); border-radius: 4px; font-size: 13px; font-family: var(--sans); }
+.rosterTable .noCol { width: 34px; text-align: center; color: var(--gold); font-weight: 700; }
+.rosterTable .nameCol { width: 110px; }
+.rosterTable .nickCol { width: 90px; }
+.rosterTable .classCol { width: 56px; }
+.rosterTable .pwCol { width: 90px; }
+.rosterTable .wrongCol input { font-family: monospace; }
+.livePreview { font-size: 12px; font-weight: 700; white-space: nowrap; min-width: 92px; display: inline-block; }
+.livePreview.pending { color: rgba(26,26,26,.35); }
+
+/* 리포트 화면 스타일 */
+#reportContainer { display: none; }
+.classSummaryTable { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+.classSummaryTable th { background: var(--ink); color: var(--cream); padding: 9px; font-weight: 600; }
+.classSummaryTable td { border-bottom: 1px solid var(--gold-line); padding: 9px; text-align: center; }
+.classSummaryTable tr:hover td { background: var(--gold-soft); }
+.classSummaryTable a { color: var(--ink); font-weight: 700; text-decoration: none; border-bottom: 1px dotted var(--gold); }
+
+.studentReport { border-top: 3px solid var(--ink); padding-top: 20px; margin-top: 34px; }
+.studentReport:first-of-type { margin-top: 10px; }
+.report-header { border-bottom: 2px solid var(--ink); padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+.score-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+.summary-card { background: var(--gold-soft); border: 1px solid var(--gold); padding: 15px; border-radius: 6px; text-align: center; }
+.summary-card h3 { font-size: 24px; color: var(--gold); margin: 5px 0; font-family: var(--serif); }
+
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+
+.chart-box { background: #faf8f5; border: 1px solid var(--gold-line); padding: 15px; border-radius: 6px; }
+.bar-chart-row { display: flex; align-items: center; margin-bottom: 10px; font-size: 13px; }
+.bar-label { width: 80px; font-weight: bold; }
+.bar-track { flex: 1; background: #e0d8c5; height: 16px; border-radius: 3px; overflow: hidden; margin: 0 10px; position: relative; }
+.bar-fill { height: 100%; background: var(--mint-deep); border-radius: 3px; }
+.bar-fill.target { background: var(--gold); }
+
+table.analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+table.analysis-table th, table.analysis-table td { border: 1px solid var(--gold-line); padding: 10px; text-align: center; }
+table.analysis-table th { background: var(--ink); color: var(--cream); font-weight: 600; }
+.wrong-row { background-color: rgba(198,78,113,0.08); }
+
+@media print {
+    body { background: #fff; margin: 0; padding: 0; }
+    .box, h1, .subtitle, .no-print { display: none !important; }
+    #reportContainer { display: block !important; }
+    .studentReport { page-break-before: always; border-top: none; padding-top: 0; }
+    .studentReport:first-of-type { page-break-before: auto; }
+    .classSummaryWrap { page-break-after: always; }
+}
+</style>
+</head>
+<body>
+
+<h1>대치 S+ BLACK 성적 정밀 분석 리포트</h1>
+<div class="subtitle">9월 모의고사 대비 실전 모의고사 [1회] 다차원 진단 시스템 · 대치수학 2기 전원(15명)</div>
+
+<!-- 입력 섹션 -->
+<div class="box" id="inputBox">
+  <p><b>[입력 방식 선택]</b></p>
+  <div class="modeToggle">
+    <label class="modeOpt"><input type="radio" name="inputMode" value="wrong" checked> ① 틀린 문항 번호만 직접 입력 (이미 채점된 경우 — 빠름)</label>
+    <label class="modeOpt"><input type="radio" name="inputMode" value="answer"> ② 정답을 입력해두면 학생 답안을 넣었을 때 자동 채점</label>
+  </div>
+
+  <div id="answerKeyBox" style="display:none">
+    <p style="margin-top:16px"><b>[정답 입력 — 1번부터 순서대로]</b></p>
+    <div class="hint">
+      객관식은 <code>1~5</code>(또는 ①~⑤), 단답형은 실제 값(예: <code>48</code>)을 문제 순서대로 쉼표/공백으로 구분해서 입력하세요.
+      아직 입력 안 된 문항은 채점에서 자동으로 제외됩니다(모두 정답 처리 아님 — 판정을 유보).
+    </div>
+    <input type="text" id="answerKeyInput" placeholder="예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:13px;">
+    <div class="hint" id="answerKeyStatus" style="margin-top:6px"></div>
+  </div>
+
+  <details style="margin-top:16px">
+    <summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--gold);">[등급컷 설정 — 실제 9모대비 데이터에 맞게 조정 가능]</summary>
+    <div class="hint" style="margin-top:8px">
+      실제 9모대비 데이터가 없어 "1등급 컷 82점 정도"라는 기준만 반영해 나머지 등급은 전형적인 누적 비율로 추정한 값이에요.
+      정확한 자체 데이터가 있으면 아래 숫자를 직접 고쳐서 쓰세요 — 고친 값은 자동 저장됩니다.
+    </div>
+    <div class="cutGrid" id="cutGrid"></div>
+  </details>
+
+  <p style="margin-top:18px"><b id="rosterHeading">[학생별 정오 입력 — 틀린 문제 번호만 입력하세요]</b></p>
+  <div class="hint" id="rosterHint">
+    이름을 입력하고, "틀린 문항" 칸에 <b>틀린 문제 번호만</b> 쉼표(또는 공백)로 구분해서 입력하세요 (예: <code>3, 7, 15, 22</code>). 비워두면 전부 정답으로 처리됩니다.
+    한 명씩 O/X 버튼을 30번 누를 필요 없이 오답 번호만 빠르게 입력하면 됩니다. 입력 내용은 자동으로 이 브라우저에 저장되어 새로고침해도 유지됩니다.
+    <span class="saveHint" id="saveHint"></span>
+  </div>
+
+  <table class="rosterTable">
+    <thead>
+      <tr>
+        <th class="noCol">#</th>
+        <th class="nameCol">학생 성함</th>
+        <th class="nickCol">닉네임<span class="hint" style="display:block;font-weight:400">(사이트 공개용)</span></th>
+        <th class="classCol">반</th>
+        <th class="pwCol">비밀번호<span class="hint" style="display:block;font-weight:400">(조회용)</span></th>
+        <th id="rosterColHead">틀린 문항 번호 (1~30, 쉼표/공백 구분)</th>
+        <th style="width:100px">실시간 예상</th>
+      </tr>
+    </thead>
+    <tbody id="rosterBody"></tbody>
+  </table>
+
+  <button class="wideBtn" onclick="generateAllReports()">15명 전체 다차원 분석 리포트 생성</button>
+</div>
+
+<div class="box modeBox" id="sheetExportBox">
+  <p><b>[mathyyuri.com 연동 — 구글시트 붙여넣기용 데이터]</b></p>
+  <div class="hint">
+    "MATHY YURI System — 모의고사 성적 기록부" 구글시트를 열어서 맨 아래 빈 줄에
+    아래 내용을 그대로 붙여넣으면, <code>9moresult.html</code>에서 학생들이 이름+비밀번호로
+    자기 성적을 조회하고 닉네임 기준 전체 순위/차트도 바로 볼 수 있게 됩니다.
+    (이름/닉네임/반/비밀번호를 입력 안 한 학생은 빠집니다 — 위 명단 표에서 채워주세요.)
+  </div>
+  <label>시험명 (시트의 "시험명" 컬럼에 그대로 들어감)</label>
+  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 1회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
+  <div class="btnRow">
+    <button class="smallBtn" onclick="buildSheetExport()">붙여넣기용 데이터 만들기</button>
+    <button class="smallBtn ghostBtn" id="copySheetExportBtn" onclick="copySheetExport()" disabled>클립보드에 복사</button>
+  </div>
+  <textarea id="sheetExportArea" readonly style="width:100%; height:160px; margin-top:10px; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:11px; white-space:pre;" placeholder="위 버튼을 누르면 여기에 붙여넣기용 데이터가 만들어집니다."></textarea>
+  <div class="hint" id="sheetExportStatus" style="margin-top:6px"></div>
+</div>
+
+<!-- 분석 리포트 출력 섹션 -->
+<div class="box" id="reportContainer">
+  <div class="report-header no-print">
+    <div>
+      <h2 style="margin:0; font-family:var(--serif);">대치 S+ BLACK 실전 모의고사 1회 · 전체 분석서</h2>
+      <p style="margin:5px 0 0 0; color:#555;" id="reportMetaInfo"></p>
+    </div>
+    <div>
+      <button class="smallBtn ghostBtn" onclick="document.getElementById('inputBox').scrollIntoView({behavior:'smooth'})">입력으로 돌아가기</button>
+      <button class="smallBtn" style="background:var(--mint-deep); border-color:var(--mint-deep);" onclick="window.print()">전체 인쇄 / PDF 저장</button>
+    </div>
+  </div>
+
+  <div class="classSummaryWrap">
+    <h3 style="font-family:var(--serif); border-left:4px solid var(--gold); padding-left:10px;">반 전체 순위 요약</h3>
+    <table class="classSummaryTable">
+      <thead>
+        <tr><th>등수</th><th>이름</th><th>총점</th><th>예상 등급</th><th>예상 백분위</th><th>반 평균 대비</th></tr>
+      </thead>
+      <tbody id="classSummaryBody"></tbody>
+    </table>
+  </div>
+
+  <div id="studentReportsWrap"></div>
+
+  <div style="margin-top:30px; text-align:center;" class="no-print">
+    <button class="ghostBtn" onclick="document.getElementById('inputBox').scrollIntoView({behavior:'smooth'})" style="display:inline-block; width:auto;">입력 화면으로 돌아가서 수정하기</button>
+  </div>
+</div>
+
+<script>
+const STUDENT_COUNT = 15;
+const STORAGE_KEY = 'sblack_sept1_grades_v1';
+
+// 1회 시험 문항 데이터 정의 (1~30번)
+const examData = [
+  { no: 1, score: 2, unit: "다항식", topic: "다항식의 연산" },
+  { no: 2, score: 2, unit: "복소수", topic: "복소수의 상등" },
+  { no: 3, score: 2, unit: "다항식", topic: "곱셈공식의 변형" },
+  { no: 4, score: 3, unit: "다항식", topic: "나머지정리" },
+  { no: 5, score: 3, unit: "다항식", topic: "다항식의 항등식" },
+  { no: 6, score: 3, unit: "행렬", topic: "행렬의 성분과 연산" },
+  { no: 7, score: 3, unit: "부등식", topic: "연립이차부등식" },
+  { no: 8, score: 3, unit: "다항식", topic: "인수분해 공식" },
+  { no: 9, score: 3, unit: "방정식과 부등식", topic: "이차함수와 이차방정식" },
+  { no: 10, score: 3, unit: "부등식", topic: "부등식 영역과 경우의 수" },
+  { no: 11, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
+  { no: 12, score: 3, unit: "다항식", topic: "나머지정리 응용" },
+  { no: 13, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
+  { no: 14, score: 4, unit: "경우의 수", topic: "순열과 조합 (최댓값 추론)" },
+  { no: 15, score: 4, unit: "다항식", topic: "삼차다항식의 인수정리" },
+  { no: 16, score: 4, unit: "방정식과 부등식", topic: "이차부등식의 성립 조건" },
+  { no: 17, score: 4, unit: "행렬", topic: "행렬의 거듭제곱 규칙성" },
+  { no: 18, score: 4, unit: "방정식과 부등식", topic: "이차함수의 그래프 성질" },
+  { no: 19, score: 4, unit: "도형의 방정식", topic: "도형의 이동 및 접힘" },
+  { no: 20, score: 4, unit: "경우의 수", topic: "조건부 경우의 수" },
+  { no: 21, score: 4, unit: "방정식과 부등식", topic: "허근(오메가)과 함수 그래프" },
+  { no: 22, score: 3, unit: "다항식", topic: "인수정리 (단답형)" },
+  { no: 23, score: 3, unit: "다항식", topic: "항등식 계수비교 (단답형)" },
+  { no: 24, score: 3, unit: "방정식과 부등식", topic: "절댓값 부등식 (단답형)" },
+  { no: 25, score: 3, unit: "경우의 수", topic: "이차방정식 실근 조건 (단답형)" },
+  { no: 26, score: 4, unit: "방정식과 부등식", topic: "사차방정식의 실근 개수" },
+  { no: 27, score: 4, unit: "도형의 방정식", topic: "삼각형의 인수분해 및 넓이" },
+  { no: 28, score: 4, unit: "행렬", topic: "행렬과 삼각형의 넓이 공식" },
+  { no: 29, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최솟값 자취 (킬러)" },
+  { no: 30, score: 4, unit: "방정식과 부등식", topic: "부등식 정수해 함수 (킬러)" }
+];
+const TOTAL_POSSIBLE = examData.reduce((s, q) => s + q.score, 0); // 100
+
+// 9등급 등급 컷 기준 — 실제 9모대비 데이터가 없어 정확한 컷은 알 수 없으므로
+// "1컷 82점 정도"라는 기준만 반영해 나머지는 전형적인 등급별 누적 비율
+// (1등급 4%, 2등급 11%, 3등급 23%, 4등급 40%, 5등급 60%, 6등급 77%, 7등급
+// 89%, 8등급 96%)에 맞춰 추정한 값 — 아래 [등급컷 설정]에서 실제 데이터에
+// 맞게 직접 조정 가능, 조정한 값은 자동 저장됨.
+const DEFAULT_GRADE_CUTS = { 1: 82, 2: 74, 3: 65, 4: 54, 5: 42, 6: 30, 7: 20, 8: 12 };
+const PERCENTILE_BY_GRADE = { 1: '상위 4%', 2: '상위 11%', 3: '상위 23%', 4: '상위 40%', 5: '상위 60%', 6: '상위 77%', 7: '상위 89%', 8: '상위 96%', 9: '상위 96% 초과' };
+
+function getEstimatedGrade(score, cuts) {
+  for (let g = 1; g <= 8; g++) {
+    if (score >= cuts[g]) return { grade: g, cut: `${g}등급 컷 (${cuts[g]}점 이상)` };
+  }
+  return { grade: 9, cut: "9등급" };
+}
+function getPercentile(grade) {
+  return PERCENTILE_BY_GRADE[grade] || PERCENTILE_BY_GRADE[9];
+}
+
+// "3, 7 15,22" 같은 자유 형식 입력을 [3,7,15,22] 정수 배열로 — 쉼표/공백 어느
+// 쪽으로 구분해도, 잘못 섞여 있어도 1~30 범위의 숫자만 뽑아냄.
+function parseWrongNumbers(str) {
+  return [...new Set((str.match(/\d+/g) || []).map(Number).filter(n => n >= 1 && n <= 30))];
+}
+
+// 정답/학생 답안 공용 파서 — 객관식 ①~⑤(원문자)와 단답형 숫자(48 같은
+// 여러 자리 값도 하나의 토큰)를 문제 순서대로 뽑아낸다. 원문자는 붙여넣기로
+// 들어올 수도 있어 지원하되, 실제 입력은 키보드로 치기 쉬운 1~5 숫자를
+// 기본으로 안내한다.
+const CIRCLED_TO_DIGIT = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
+function parseAnswerSequence(str) {
+  const tokens = str.match(/[①②③④⑤]|\d+/g) || [];
+  return tokens.map(t => CIRCLED_TO_DIGIT[t] || t);
+}
+
+// 정답 키와 학생 답안을 문항 순서대로 비교해 틀린 문항 번호 목록을 만든다.
+// 정답이 아직 입력 안 된 문항(예: 스캔본이 잘려서 못 받은 마지막 문항)은
+// 판정을 유보 — 전원 정답 처리해버리면 실제로 틀린 학생을 놓치고, 전원
+// 오답 처리하면 실제로 맞은 학생까지 억울하게 틀리게 되므로 아예 채점에서
+// 뺀다(총점 계산에서도 자동으로 제외됨 — scoreStudent가 wrongSet에 없는
+// 문항은 정답으로 간주하기 때문에, 여기서 만들어 넘기지 않는 게 맞다는
+// 뜻이 아니라 "안 틀림"으로 잠정 처리한다는 뜻).
+function diffAnswersAgainstKey(answerTokens, keyTokens) {
+  const wrong = [];
+  for (let i = 0; i < 30; i++) {
+    const key = keyTokens[i];
+    if (key === undefined) continue; // 정답 미입력 — 판정 유보
+    const ans = answerTokens[i];
+    if (ans === undefined || ans !== key) wrong.push(i + 1);
+  }
+  return wrong;
+}
+
+function getInputMode() {
+  const el = document.querySelector('input[name="inputMode"]:checked');
+  return el ? el.value : 'wrong';
+}
+function getAnswerKeyTokens() {
+  return parseAnswerSequence(document.getElementById('answerKeyInput').value);
+}
+
+// 한 학생의 틀린 문항 번호 목록으로 점수/배점별 정답률/단원별 성취도를 계산.
+function scoreStudent(wrongNums) {
+  const wrongSet = new Set(wrongNums);
+  let totalScore = 0;
+  let score2Total = 0, score2Earned = 0;
+  let score3Total = 0, score3Earned = 0;
+  let score4Total = 0, score4Earned = 0;
+  const unitStats = {};
+  const perQuestion = [];
+
+  examData.forEach(item => {
+    const isWrong = wrongSet.has(item.no);
+    const earned = isWrong ? 0 : item.score;
+    totalScore += earned;
+    if (item.score === 2) { score2Total += 2; score2Earned += earned; }
+    if (item.score === 3) { score3Total += 3; score3Earned += earned; }
+    if (item.score === 4) { score4Total += 4; score4Earned += earned; }
+    if (!unitStats[item.unit]) unitStats[item.unit] = { total: 0, earned: 0 };
+    unitStats[item.unit].total += item.score;
+    unitStats[item.unit].earned += earned;
+    perQuestion.push({ ...item, status: isWrong ? 'X' : 'O', earned });
+  });
+
+  return {
+    totalScore, score2Total, score2Earned, score3Total, score3Earned, score4Total, score4Earned,
+    unitStats, perQuestion,
+  };
+}
+
+// ---------- 등급컷 설정 UI ----------
+function loadSavedCuts() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY + '_cuts'));
+    if (saved && typeof saved === 'object') return { ...DEFAULT_GRADE_CUTS, ...saved };
+  } catch (e) {}
+  return { ...DEFAULT_GRADE_CUTS };
+}
+function getGradeCuts() {
+  const cuts = {};
+  for (let g = 1; g <= 8; g++) {
+    const inp = document.getElementById('cut_' + g);
+    cuts[g] = inp ? Number(inp.value) || 0 : DEFAULT_GRADE_CUTS[g];
+  }
+  return cuts;
+}
+function renderCutGrid() {
+  const saved = loadSavedCuts();
+  const grid = document.getElementById('cutGrid');
+  grid.innerHTML = Array.from({ length: 8 }, (_, i) => i + 1).map(g => `
+    <div><label>${g}등급</label><input type="number" id="cut_${g}" value="${saved[g]}"></div>
+  `).join('');
+  grid.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      localStorage.setItem(STORAGE_KEY + '_cuts', JSON.stringify(getGradeCuts()));
+    });
+  });
+}
+renderCutGrid();
+
+// ---------- 입력 방식(모드) 전환 ----------
+function updateModeUi() {
+  const mode = getInputMode();
+  document.getElementById('answerKeyBox').style.display = mode === 'answer' ? 'block' : 'none';
+  if (mode === 'answer') {
+    document.getElementById('rosterHeading').textContent = '[학생별 답안 입력 — 문제 순서대로 입력하면 정답과 비교해 자동 채점]';
+    document.getElementById('rosterHint').innerHTML = '이름을 입력하고, "학생 답안" 칸에 1번부터 순서대로 그 학생이 실제로 고른 답(객관식 1~5, 단답형은 값)을 쉼표/공백으로 구분해서 입력하세요 — 정답과 자동으로 비교해서 채점합니다. 입력 내용은 자동으로 이 브라우저에 저장되어 새로고침해도 유지됩니다. <span class="saveHint" id="saveHint"></span>';
+    document.getElementById('rosterColHead').textContent = '학생 답안 (1번부터 순서대로, 쉼표/공백 구분)';
+  } else {
+    document.getElementById('rosterHeading').textContent = '[학생별 정오 입력 — 틀린 문제 번호만 입력하세요]';
+    document.getElementById('rosterHint').innerHTML = '이름을 입력하고, "틀린 문항" 칸에 <b>틀린 문제 번호만</b> 쉼표(또는 공백)로 구분해서 입력하세요 (예: <code>3, 7, 15, 22</code>). 비워두면 전부 정답으로 처리됩니다. 입력 내용은 자동으로 이 브라우저에 저장되어 새로고침해도 유지됩니다. <span class="saveHint" id="saveHint"></span>';
+    document.getElementById('rosterColHead').textContent = '틀린 문항 번호 (1~30, 쉼표/공백 구분)';
+  }
+  updateAnswerKeyStatus();
+  renderRosterTable();
+}
+function updateAnswerKeyStatus() {
+  const status = document.getElementById('answerKeyStatus');
+  if (getInputMode() !== 'answer') return;
+  const keyTokens = getAnswerKeyTokens();
+  const missing = [];
+  for (let i = 0; i < 30; i++) if (keyTokens[i] === undefined) missing.push(i + 1);
+  status.textContent = missing.length
+    ? `⚠ ${missing.join(', ')}번 정답이 아직 입력되지 않았습니다 — 해당 문항은 전원 채점에서 제외됩니다.`
+    : `✓ 30문항 정답이 모두 입력되었습니다.`;
+  status.style.color = missing.length ? 'var(--pink-deep)' : 'var(--mint-deep)';
+}
+document.querySelectorAll('input[name="inputMode"]').forEach(r => r.addEventListener('change', () => { updateModeUi(); saveMeta(); }));
+document.getElementById('answerKeyInput').addEventListener('input', () => { updateAnswerKeyStatus(); renderRosterTable(); saveMeta(); });
+
+function saveMeta() {
+  localStorage.setItem(STORAGE_KEY + '_meta', JSON.stringify({
+    mode: getInputMode(),
+    answerKeyStr: document.getElementById('answerKeyInput').value,
+  }));
+}
+function loadSavedMeta() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta'));
+    if (saved && typeof saved === 'object') return saved;
+  } catch (e) {}
+  return { mode: 'wrong', answerKeyStr: '' };
+}
+
+// ---------- 명단 입력 UI ----------
+// 학생 한 명당 wrongStr(틀린 번호 직접입력용)과 answerStr(답안입력용) 두
+// 값을 모두 저장해둬서, 모드를 오갈 때 어느 쪽도 지워지지 않게 한다.
+function loadSavedRoster() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch (e) {}
+  return Array.from({ length: STUDENT_COUNT }, () => ({ name: '', nick: '', className: '', pw: '', wrongStr: '', answerStr: '' }));
+}
+function saveRoster() {
+  const mode = getInputMode();
+  const rows = [...document.querySelectorAll('#rosterBody tr')];
+  const prev = loadSavedRoster();
+  const data = rows.map((row, i) => {
+    const valueInput = row.querySelector('.valueInput').value;
+    return {
+      name: row.querySelector('.nameInput').value,
+      nick: row.querySelector('.nickInput').value,
+      className: row.querySelector('.classInput').value,
+      pw: row.querySelector('.pwInput').value,
+      wrongStr: mode === 'wrong' ? valueInput : (prev[i] ? prev[i].wrongStr : ''),
+      answerStr: mode === 'answer' ? valueInput : (prev[i] ? prev[i].answerStr : ''),
+    };
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const hint = document.getElementById('saveHint');
+  if (hint) hint.textContent = '✓ 저장됨 (' + new Date().toLocaleTimeString('ko-KR') + ')';
+}
+// 현재 모드에서 한 학생의 틀린 문항 번호를 계산 — mode='wrong'이면 입력값을
+// 그대로 파싱하고, mode='answer'면 정답 키와 비교해서 뽑아낸다.
+function computeWrongNumsForRow(row) {
+  const mode = getInputMode();
+  const value = row.querySelector('.valueInput').value;
+  if (mode === 'answer') {
+    return diffAnswersAgainstKey(parseAnswerSequence(value), getAnswerKeyTokens());
+  }
+  return parseWrongNumbers(value);
+}
+function updateLivePreview(row) {
+  const name = row.querySelector('.nameInput').value.trim();
+  const value = row.querySelector('.valueInput').value;
+  const preview = row.querySelector('.livePreview');
+  if (!name && !value.trim()) { preview.textContent = ''; preview.className = 'livePreview pending'; return; }
+  const wrongNums = computeWrongNumsForRow(row);
+  const { totalScore } = scoreStudent(wrongNums);
+  const gradeInfo = getEstimatedGrade(totalScore, getGradeCuts());
+  preview.textContent = `${totalScore}점 · ${gradeInfo.grade}등급`;
+  preview.className = 'livePreview';
+}
+
+function renderRosterTable() {
+  const roster = loadSavedRoster();
+  const mode = getInputMode();
+  const body = document.getElementById('rosterBody');
+  body.innerHTML = roster.map((s, i) => {
+    const value = mode === 'answer' ? (s.answerStr || '') : (s.wrongStr || '');
+    const placeholder = mode === 'answer'
+      ? '예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30'
+      : '예: 3, 7, 15, 22 (없으면 비워두기)';
+    return `
+    <tr>
+      <td class="noCol">${i + 1}</td>
+      <td><input type="text" class="nameInput" placeholder="이름" value="${(s.name || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="nickInput" placeholder="닉네임" value="${(s.nick || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="classInput" placeholder="S+/S" value="${(s.className || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="pwInput" placeholder="비밀번호" value="${(s.pw || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="valueInput" placeholder="${placeholder}" value="${value.replace(/"/g, '&quot;')}"></td>
+      <td><span class="livePreview pending"></span></td>
+    </tr>
+  `;
+  }).join('');
+  body.querySelectorAll('tr').forEach(row => {
+    updateLivePreview(row);
+    row.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => { updateLivePreview(row); saveRoster(); });
+    });
+  });
+}
+
+// 초기화: 저장된 모드/정답 키를 먼저 복원한 뒤 명단을 렌더링.
+(function initFromSaved() {
+  const meta = loadSavedMeta();
+  document.querySelector(`input[name="inputMode"][value="${meta.mode}"]`).checked = true;
+  document.getElementById('answerKeyInput').value = meta.answerKeyStr || '';
+  updateModeUi();
+})();
+
+// ---------- 전체 리포트 생성 ----------
+// 단원별 강/약점 요약 — 학생 리포트 카드와 구글시트 붙여넣기용 "분석" 컬럼이
+// 똑같은 계산을 공유하도록 분리해둔다.
+function unitAnalysisOf(s) {
+  let strongestUnit = "없음", lowestUnit = "없음", maxRate = -1, minRate = 101;
+  for (const u in s.unitStats) {
+    if (s.unitStats[u].total > 0) {
+      const rate = (s.unitStats[u].earned / s.unitStats[u].total) * 100;
+      if (rate > maxRate) { maxRate = rate; strongestUnit = u; }
+      if (rate < minRate) { minRate = rate; lowestUnit = u; }
+    }
+  }
+  const summary = s.totalScore >= 85
+    ? "상위권 변별력 문항(4점) 소화 능력이 우수하며 안정적인 점수대를 확보하고 있습니다."
+    : "개념의 허점을 메우고 준킬러 및 4점 문항 접근법을 훈련하는 집중 보완이 필요합니다.";
+  return { strongestUnit, lowestUnit, maxRate, minRate, summary };
+}
+
+function buildStudentReportHtml(student, rank, totalCount, classAvg, cuts) {
+  const { name, wrongNums } = student;
+  const s = scoreStudent(wrongNums);
+  const gradeInfo = getEstimatedGrade(s.totalScore, cuts);
+  const percentile = getPercentile(gradeInfo.grade);
+  const diff = s.totalScore - classAvg;
+  const diffText = (diff >= 0 ? `+${diff.toFixed(1)}점` : `${diff.toFixed(1)}점`) + ' (반평균 대비)';
+
+  const p2 = s.score2Total ? Math.round((s.score2Earned / s.score2Total) * 100) : 0;
+  const p3 = s.score3Total ? Math.round((s.score3Earned / s.score3Total) * 100) : 0;
+  const p4 = s.score4Total ? Math.round((s.score4Earned / s.score4Total) * 100) : 0;
+
+  const { strongestUnit, lowestUnit, maxRate, minRate } = unitAnalysisOf(s);
+
+  const tableRows = s.perQuestion.map(item => `
+    <tr class="${item.status === 'X' ? 'wrong-row' : ''}">
+      <td><b>${item.no}번</b></td>
+      <td>${item.score}점</td>
+      <td>${item.unit}</td>
+      <td><span style="color:${item.status === 'O' ? '#3E8F79' : '#C64E71'}; font-weight:bold;">${item.status === 'O' ? '정답' : '오답'}</span></td>
+      <td style="text-align:left; font-size:12px;"><b>[${item.topic}]</b> ${item.status === 'O' ? '안정적인 개념 적용 완료' : '오답 분석 및 유사 문항 반복 학습 필요'}</td>
+    </tr>
+  `).join('');
+
+  return `
+  <div class="studentReport" id="student_${rank}">
+    <div class="report-header">
+      <div>
+        <h2 style="margin:0; font-family:var(--serif);">${escapeHtml(name)} 학생 · 실전 모의고사 1회 분석서</h2>
+        <p style="margin:5px 0 0 0; color:#555;">대치수학 2기 · 반 내 등수 ${rank}/${totalCount}위 · 대치 S+ BLACK</p>
+      </div>
+    </div>
+    <div class="score-summary-grid">
+      <div class="summary-card">
+        <div style="font-size:12px; font-weight:bold;">획득 총점</div>
+        <h3>${s.totalScore}점</h3>
+        <div style="font-size:11px; color:#555;">원점수 / ${TOTAL_POSSIBLE}점 만점</div>
+      </div>
+      <div class="summary-card">
+        <div style="font-size:12px; font-weight:bold;">예상 9모 등급</div>
+        <h3>${gradeInfo.grade}등급</h3>
+        <div style="font-size:11px; color:#555;">${gradeInfo.cut}</div>
+      </div>
+      <div class="summary-card">
+        <div style="font-size:12px; font-weight:bold;">예상 전국 백분위</div>
+        <h3>${percentile}</h3>
+        <div style="font-size:11px; color:#555;">표준 추정치</div>
+      </div>
+      <div class="summary-card">
+        <div style="font-size:12px; font-weight:bold;">반 평균 비교</div>
+        <h3>${diff >= 0 ? '+' : ''}${diff.toFixed(1)}점</h3>
+        <div style="font-size:11px; color:#555;">S+ BLACK 반 평균(${classAvg.toFixed(1)}점) 대비</div>
+      </div>
+    </div>
+    <div class="analysis-grid">
+      <div class="chart-box">
+        <h4 style="margin-top:0; font-family:var(--serif); border-bottom:1px solid var(--gold-line); padding-bottom:8px;">배점별 정답률 및 성취도 분석</h4>
+        <div class="bar-chart-row"><span class="bar-label">2점 (총 ${s.score2Total}점)</span><div class="bar-track"><div class="bar-fill" style="width:${p2}%;"></div></div><span style="width:45px; text-align:right;">${p2}%</span></div>
+        <div class="bar-chart-row"><span class="bar-label">3점 (총 ${s.score3Total}점)</span><div class="bar-track"><div class="bar-fill" style="width:${p3}%;"></div></div><span style="width:45px; text-align:right;">${p3}%</span></div>
+        <div class="bar-chart-row"><span class="bar-label">4점 (총 ${s.score4Total}점)</span><div class="bar-track"><div class="bar-fill target" style="width:${p4}%;"></div></div><span style="width:45px; text-align:right;">${p4}%</span></div>
+        <div class="hint" style="margin-top:10px; font-size:12px;">* 4점 문항 및 킬러/준킬러 문항 정복 여부가 최종 등급을 결정합니다.</div>
+      </div>
+      <div class="chart-box">
+        <h4 style="margin-top:0; font-family:var(--serif); border-bottom:1px solid var(--gold-line); padding-bottom:8px;">단원별 강·약점 진단</h4>
+        <div style="font-size:13px; line-height:1.7;">
+          <b>• 최강점 단원:</b> <span style="color:var(--mint-deep);">${strongestUnit}</span> (성취도 ${Math.round(maxRate)}%)<br>
+          <b>• 집중 보완 단원:</b> <span style="color:var(--pink-deep);">${lowestUnit}</span> (성취도 ${Math.round(minRate)}%)<br>
+          <b>• 총평:</b> ${s.totalScore >= 85 ? "상위권 변별력 문항(4점) 소화 능력이 우수하며 안정적인 점수대를 확보하고 있습니다." : "개념의 허점을 메우고 준킬러 및 4점 문항 접근법을 훈련하는 집중 보완이 필요합니다."}
+        </div>
+      </div>
+    </div>
+    <h3 style="font-family:var(--serif); border-left:4px solid var(--gold); padding-left:10px; margin-top:25px;">30개 문항 상세 정오표 및 피드백</h3>
+    <table class="analysis-table">
+      <thead><tr><th>문항</th><th>배점</th><th>단원 영역</th><th>정오 상태</th><th>출제 개념 및 맞춤 피드백</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ---------- mathyyuri.com 연동: 구글시트 붙여넣기용 TSV ----------
+// "MATHY YURI System — 모의고사 성적 기록부" 시트(9moresult.html이 읽는 시트)의
+// 컬럼 순서와 정확히 맞춘다: 이름,닉네임,반,비밀번호,시험명,원점수,등급,맞은개수,
+// 1..30,분석 — 문항 값은 그 시트의 기존 관례(s+.html의 ans-1/ans-2)를 따라
+// 1=정답, 2=오답으로 인코딩한다. 실제 자동 저장 API가 없으므로(이 시트에 쓰는
+// Apps Script write 엔드포인트가 저장소에 없음) 선생님이 직접 시트에 붙여넣는
+// 방식으로 연동한다.
+function buildSheetExport() {
+  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 1회';
+  const cuts = getGradeCuts();
+  const rows = [...document.querySelectorAll('#rosterBody tr')];
+  const lines = [];
+  let skipped = 0;
+  for (const row of rows) {
+    const name = row.querySelector('.nameInput').value.trim();
+    if (!name) continue;
+    const nick = row.querySelector('.nickInput').value.trim();
+    const className = row.querySelector('.classInput').value.trim();
+    const pw = row.querySelector('.pwInput').value.trim();
+    if (!nick || !className || !pw) { skipped++; continue; }
+    const wrongNums = computeWrongNumsForRow(row);
+    const s = scoreStudent(wrongNums);
+    const gradeInfo = getEstimatedGrade(s.totalScore, cuts);
+    const correctCount = s.perQuestion.filter(q => q.status === 'O').length;
+    const { strongestUnit, lowestUnit, maxRate, minRate, summary } = unitAnalysisOf(s);
+    const analysis = `최강점 ${strongestUnit}(${Math.round(maxRate)}%) · 보완 ${lowestUnit}(${Math.round(minRate)}%) — ${summary}`;
+    const itemCols = s.perQuestion.map(q => q.status === 'O' ? '1' : '2');
+    lines.push([name, nick, className, pw, examName, s.totalScore, `${gradeInfo.grade}등급`, correctCount, ...itemCols, analysis].join('\t'));
+  }
+  const area = document.getElementById('sheetExportArea');
+  area.value = lines.join('\n');
+  const status = document.getElementById('sheetExportStatus');
+  const copyBtn = document.getElementById('copySheetExportBtn');
+  if (!lines.length) {
+    status.textContent = skipped
+      ? `⚠ 이름은 있지만 닉네임/반/비밀번호가 없는 학생 ${skipped}명은 제외됐습니다 — 위 명단 표에서 채워주세요.`
+      : '이름이 입력된 학생이 없습니다.';
+    status.style.color = 'var(--pink-deep)';
+    copyBtn.disabled = true;
+    return;
+  }
+  status.textContent = `✓ ${lines.length}명분 생성됨` + (skipped ? ` (닉네임/반/비밀번호 누락 ${skipped}명은 제외됨)` : '');
+  status.style.color = 'var(--mint-deep)';
+  copyBtn.disabled = false;
+}
+async function copySheetExport() {
+  const area = document.getElementById('sheetExportArea');
+  if (!area.value) return;
+  try {
+    await navigator.clipboard.writeText(area.value);
+    document.getElementById('sheetExportStatus').textContent = '✓ 클립보드에 복사됨 — 구글시트 맨 아래 빈 줄에 붙여넣으세요.';
+  } catch (e) {
+    area.select();
+    document.execCommand('copy');
+    document.getElementById('sheetExportStatus').textContent = '✓ 복사됨 (수동 선택) — 구글시트 맨 아래 빈 줄에 붙여넣으세요.';
+  }
+}
+
+function generateAllReports() {
+  saveRoster();
+  saveMeta();
+  const cuts = getGradeCuts();
+  const rows = [...document.querySelectorAll('#rosterBody tr')];
+  const students = rows.map(row => ({
+    name: row.querySelector('.nameInput').value.trim(),
+    wrongNums: computeWrongNumsForRow(row),
+  })).filter(s => s.name);
+
+  if (!students.length) { alert('이름이 입력된 학생이 한 명도 없습니다.'); return; }
+
+  // 실제 입력된 학생들의 평균으로 반 평균을 계산 (더 이상 가정값이 아님).
+  const scored = students.map(s => ({ ...s, totalScore: scoreStudent(s.wrongNums).totalScore }));
+  const classAvg = scored.reduce((sum, s) => sum + s.totalScore, 0) / scored.length;
+
+  // 등수: 총점 내림차순, 동점자는 같은 등수.
+  const ranked = [...scored].sort((a, b) => b.totalScore - a.totalScore);
+  const rankOf = new Map();
+  ranked.forEach((s, i) => {
+    const rank = i > 0 && ranked[i - 1].totalScore === s.totalScore ? rankOf.get(ranked[i - 1].name) : i + 1;
+    rankOf.set(s.name, rank);
+  });
+
+  const summaryRows = ranked.map(s => {
+    const gradeInfo = getEstimatedGrade(s.totalScore, cuts);
+    const diff = s.totalScore - classAvg;
+    return `<tr>
+      <td>${rankOf.get(s.name)}</td>
+      <td><a href="#student_${rankOf.get(s.name)}_${escapeHtml(s.name)}">${escapeHtml(s.name)}</a></td>
+      <td><b>${s.totalScore}점</b></td>
+      <td>${gradeInfo.grade}등급</td>
+      <td>${getPercentile(gradeInfo.grade)}</td>
+      <td style="color:${diff >= 0 ? '#3E8F79' : '#C64E71'}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}점</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('classSummaryBody').innerHTML = summaryRows;
+
+  const wrap = document.getElementById('studentReportsWrap');
+  wrap.innerHTML = ranked.map(s => buildStudentReportHtml(
+    { name: s.name, wrongNums: s.wrongNums }, rankOf.get(s.name), students.length, classAvg, cuts
+  ).replace(`id="student_${rankOf.get(s.name)}"`, `id="student_${rankOf.get(s.name)}_${escapeHtml(s.name)}"`)).join('');
+
+  document.getElementById('reportMetaInfo').textContent =
+    `응시 ${students.length}명 · 반 평균 ${classAvg.toFixed(1)}점 · 생성 시각 ${new Date().toLocaleString('ko-KR')}`;
+
+  document.getElementById('inputBox').style.display = 'none';
+  document.getElementById('reportContainer').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
