@@ -161,13 +161,13 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <div class="box modeBox" id="sheetExportBox">
   <p><b>[mathyyuri.com 연동 — 구글시트 붙여넣기용 데이터]</b></p>
   <div class="hint">
-    "MATHY YURI System — 모의고사 성적 기록부" 구글시트를 열어서 맨 아래 빈 줄에
-    아래 내용을 그대로 붙여넣으면, <code>9moresult.html</code>에서 학생들이 이름+비밀번호로
-    자기 성적을 조회하고 닉네임 기준 전체 순위/차트도 바로 볼 수 있게 됩니다.
-    (이름/닉네임/반/비밀번호를 입력 안 한 학생은 빠집니다 — 위 명단 표에서 채워주세요.)
+    구글시트 <b>"9모대비"</b> 탭에는 이미 이름/닉네임/반/비밀번호/미션명("9월 모의고사
+    대비 실전 모의고사 1회")까지 채워진 15명분 빈 줄이 미리 만들어져 있습니다.
+    아래 버튼을 누르면 그 줄들에 채워 넣을 <b>원점수·등급·맞은개수·1~30번 정오</b>만
+    생성됩니다 — 시트에서 해당 15줄의 <b>F열(원점수) 첫 칸</b>을 클릭한 뒤 붙여넣으세요
+    (이름 등은 이미 있으니 새 줄을 추가하지 마세요). 이 명단 표의 학생 순서가
+    시트의 줄 순서(고준성~최진우, 김영찬~허이준 등)와 같아야 정확히 맞습니다.
   </div>
-  <label>시험명 (시트의 "시험명" 컬럼에 그대로 들어감)</label>
-  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 1회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
   <div class="btnRow">
     <button class="smallBtn" onclick="buildSheetExport()">붙여넣기용 데이터 만들기</button>
     <button class="smallBtn ghostBtn" id="copySheetExportBtn" onclick="copySheetExport()" disabled>클립보드에 복사</button>
@@ -224,7 +224,7 @@ const examData = [
   { no: 10, score: 3, unit: "부등식", topic: "부등식 영역과 경우의 수" },
   { no: 11, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
   { no: 12, score: 3, unit: "다항식", topic: "나머지정리 응용" },
-  { no: 13, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
+  { no: 13, score: 3, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
   { no: 14, score: 4, unit: "경우의 수", topic: "순열과 조합 (최댓값 추론)" },
   { no: 15, score: 4, unit: "다항식", topic: "삼차다항식의 인수정리" },
   { no: 16, score: 4, unit: "방정식과 부등식", topic: "이차부등식의 성립 조건" },
@@ -604,8 +604,11 @@ function escapeHtml(s) {
 // 1=정답, 2=오답으로 인코딩한다. 실제 자동 저장 API가 없으므로(이 시트에 쓰는
 // Apps Script write 엔드포인트가 저장소에 없음) 선생님이 직접 시트에 붙여넣는
 // 방식으로 연동한다.
+// 구글시트 "9모대비" 탭에는 이미 이름/닉네임/반/비밀번호/미션명까지 채워진
+// 15명분 빈 줄이 미리 만들어져 있음(선생님이 미리 세팅해둔 템플릿) — 그
+// 줄들을 새로 추가/중복시키지 않도록, 여기서는 점수 칸(원점수부터 30번
+// 문항까지)만 만든다. 대상 줄의 F열(원점수)에 붙여넣으면 된다.
 function buildSheetExport() {
-  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 1회';
   const cuts = getGradeCuts();
   const rows = [...document.querySelectorAll('#rosterBody tr')];
   const lines = [];
@@ -613,32 +616,24 @@ function buildSheetExport() {
   for (const row of rows) {
     const name = row.querySelector('.nameInput').value.trim();
     if (!name) continue;
-    const nick = row.querySelector('.nickInput').value.trim();
-    const className = row.querySelector('.classInput').value.trim();
-    const pw = row.querySelector('.pwInput').value.trim();
-    if (!nick || !className || !pw) { skipped++; continue; }
     const wrongNums = computeWrongNumsForRow(row);
     const s = scoreStudent(wrongNums);
     const gradeInfo = getEstimatedGrade(s.totalScore, cuts);
     const correctCount = s.perQuestion.filter(q => q.status === 'O').length;
-    const { strongestUnit, lowestUnit, maxRate, minRate, summary } = unitAnalysisOf(s);
-    const analysis = `최강점 ${strongestUnit}(${Math.round(maxRate)}%) · 보완 ${lowestUnit}(${Math.round(minRate)}%) — ${summary}`;
     const itemCols = s.perQuestion.map(q => q.status === 'O' ? '1' : '2');
-    lines.push([name, nick, className, pw, examName, s.totalScore, `${gradeInfo.grade}등급`, correctCount, ...itemCols, analysis].join('\t'));
+    lines.push([s.totalScore, `${gradeInfo.grade}등급`, correctCount, ...itemCols].join('\t'));
   }
   const area = document.getElementById('sheetExportArea');
   area.value = lines.join('\n');
   const status = document.getElementById('sheetExportStatus');
   const copyBtn = document.getElementById('copySheetExportBtn');
   if (!lines.length) {
-    status.textContent = skipped
-      ? `⚠ 이름은 있지만 닉네임/반/비밀번호가 없는 학생 ${skipped}명은 제외됐습니다 — 위 명단 표에서 채워주세요.`
-      : '이름이 입력된 학생이 없습니다.';
+    status.textContent = '이름이 입력된 학생이 없습니다.';
     status.style.color = 'var(--pink-deep)';
     copyBtn.disabled = true;
     return;
   }
-  status.textContent = `✓ ${lines.length}명분 생성됨` + (skipped ? ` (닉네임/반/비밀번호 누락 ${skipped}명은 제외됨)` : '');
+  status.textContent = `✓ ${lines.length}명분 생성됨 — 시트의 원점수(F열) 칸부터 순서대로 붙여넣으세요. 시트 줄 순서(고준성~최진우, 김영찬~허이준 등)와 이 명단 순서가 같아야 합니다.`;
   status.style.color = 'var(--mint-deep)';
   copyBtn.disabled = false;
 }
