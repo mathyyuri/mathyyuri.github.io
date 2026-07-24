@@ -903,11 +903,18 @@ classHwpxBtn.addEventListener('click', async () => {
 });
 
 // ---------- 수업용 HTML (화면당 2문제, PPT 16:9 비율) ----------
-// 표준 위젯/카드 CSS 클래스(choiceRow, hwpBogi, hwpCondBox, hwpBlankBox,
-// hwpRectBox, eqFallback)는 hwpx-lib.js의 hwpBodyXmlToHtml이 그대로 출력하는
-// 이름들 — studentnote.html의 인쇄용 스타일과 동일한 규칙을 그대로 재사용해
-// 여기서만 다르게 보이는 일이 없게 함, 다만 크기는 A4가 아니라 화면 슬라이드
-// 절반 폭에 맞춰 rem 단위로 새로 조정.
+// 색상/폰트 변수(--mb-*)와 mbCite/mbQNum 같은 클래스 이름·값은 studentnote.html
+// buildHtmlDocument(개별 오답노트 HTML)의 디자인을 그대로 가져온 것 — "개별
+// 오답노트 html과 같은 디자인으로" 요청에 맞춰 두 출력물이 같은 브랜드로
+// 보이게 함. choiceRow/hwpBogi/hwpCondBox/hwpBlankBox/hwpRectBox/eqFallback
+// 은 hwpx-lib.js의 hwpBodyXmlToHtml이 그대로 출력하는 이름들이라 여기서도
+// 같은 이름을 스타일링.
+//
+// 폰트 크기는 rem이 아니라 슬라이드의 실제 렌더링 폭 기준으로 JS가 매번
+// document 루트 font-size를 다시 계산해서 넣는다("강의용이라 문제가 더 크게
+// 보였으면" 요청) — 창 크기나 프로젝터 해상도가 달라져도 늘 같은 비율로
+// 크게 보이도록, 1280px 폭을 기준(1rem=16px)으로 실제 슬라이드 폭에 맞춰
+// 스케일을 곱한다.
 function buildClassHtmlDocument({ titleText, slidesHtml }) {
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -920,41 +927,50 @@ function buildClassHtmlDocument({ titleText, slidesHtml }) {
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
 <style>
-:root{--navy:#0F325D;--teal:#5FB5A3;--teal-deep:#3E8F79;--ink:#1A1A1A;--line:#E3D9C8;--kserif:'Noto Serif KR',serif;--sans:'Noto Sans KR',sans-serif}
+:root{
+  --mb-cream:#FBF3E7; --mb-cream2:#F4ECDD; --mb-navy:#0F325D; --mb-teal:#5FB5A3; --mb-teal-deep:#3E8F79;
+  --mb-citebar:#CFE3E0; --mb-ink:#1A1A1A; --mb-line:#E3D9C8;
+  --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#20242c;font-family:var(--sans);color:var(--ink)}
+html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-webkit-font-smoothing:antialiased}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 .deckWrap{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
 /* 16:9 letterbox — width 100% capped by a vh-derived max-width so the
    slide always keeps the PPT widescreen ratio no matter the window shape,
    instead of stretching to whatever the browser window happens to be. */
-.slide{width:100%;max-width:177.78vh;aspect-ratio:16/9;max-height:100vh;margin:0 auto;background:#fff;display:flex;scroll-snap-align:start;position:relative;box-shadow:0 0 24px rgba(0,0,0,.35)}
-.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#ccc;z-index:5;font-family:var(--sans)}
+.slide{position:relative;width:100%;max-width:177.78vh;aspect-ratio:16/9;max-height:100vh;margin:0 auto;background:var(--mb-cream);display:flex;scroll-snap-align:start;box-shadow:0 2px 20px rgba(0,0,0,.28);overflow:hidden}
+.slide.mbOdd{background:var(--mb-cream2)}
+.slide::before{content:'';position:absolute;left:0;top:0;bottom:0;width:.6%;background:linear-gradient(180deg,var(--mb-teal),var(--mb-navy))}
+.slide.mbOdd::before{left:auto;right:0;background:linear-gradient(180deg,var(--mb-navy),var(--mb-teal))}
+.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#7a7264;z-index:5;font-family:var(--sans)}
 @media print{
   .deckWrap{height:auto;overflow:visible}
   .slide{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
   .navHint{display:none}
   @page{size:landscape;margin:0}
 }
-.slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4%}
-.slideTitle h1{font-family:var(--kserif);font-weight:900;font-size:2.6rem;color:var(--navy);margin:0 0 .6em}
-.slideTitle .sub{font-size:1.1rem;color:rgba(26,26,26,.6)}
-.slidePane{flex:1 1 0;min-width:0;padding:2.2% 2.4%;overflow-y:auto;border-right:1px solid var(--line);display:flex;flex-direction:column}
-.slidePane:last-child{border-right:none}
+.slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%}
+.slideTitle h1{font-family:var(--kserif);font-weight:900;font-size:3.4rem;color:var(--mb-navy);margin:0 0 .5em}
+.slideTitle .sub{font-size:1.3rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
+.slidePane{flex:1 1 0;min-width:0;padding:2.6% 3%;overflow-y:auto;display:flex;flex-direction:column}
+.slidePane:first-child{border-right:1px solid var(--mb-line)}
 .slidePane.single{flex:1 1 100%}
-.paneNum{font-family:var(--kserif);font-weight:900;font-size:1.3rem;color:var(--navy);margin-bottom:.5em;flex:0 0 auto}
-.paneCite{font-size:.72rem;color:rgba(26,26,26,.5);margin-bottom:.6em;flex:0 0 auto}
-.paneBody{font-size:.92rem;line-height:1.6;flex:1 1 auto;min-height:0}
+.paneHead{display:flex;align-items:baseline;gap:.6em;margin-bottom:.6em;flex:0 0 auto}
+.paneCite{background:var(--mb-citebar);color:var(--mb-navy);font-weight:700;font-size:1rem;padding:.35em .9em;border-radius:1em;font-family:var(--kserif)}
+.paneNum{font-family:var(--kserif);font-weight:900;font-size:1.7rem;color:var(--mb-navy)}
+.paneBody{font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0}
 .paneBody p{margin:0 0 .5em}
-.paneBody img{max-width:100%;height:auto;display:block;margin:.6em auto;border:1px solid var(--line);border-radius:4px}
+.paneBody img{max-width:100%;height:auto;display:block;margin:.5em auto;border:1px solid var(--mb-line);border-radius:6px;box-shadow:0 1px 8px rgba(26,26,26,.1)}
 .paneBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
-.paneBody td{border:1px solid var(--line);padding:.15em .4em;font-size:.82em;white-space:nowrap}
-.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.7em;margin:.4em 0}
+.paneBody td{border:1px solid var(--mb-line);padding:.2em .5em;font-size:.75em;white-space:nowrap}
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.8em;margin:.4em 0}
 .choiceItem{font-size:.92em;min-width:0;overflow-wrap:break-word}
-.hwpBogi,.hwpCondBox{border:1.3px solid var(--ink);border-radius:2px;padding:.7em .9em;margin:.5em 0}
+.hwpBogi,.hwpCondBox{border:1.6px solid var(--mb-ink);border-radius:3px;padding:.6em .9em;margin:.5em 0}
 .hwpBogi p,.hwpCondBox p{margin:0 0 .3em}
-.hwpBlankBox{display:inline-block;border:1.3px solid var(--ink);vertical-align:middle;margin:0 .2em}
-.hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--line);padding:.4em .6em;margin:.4em 0}
-.eqFallback{font-family:monospace;font-size:.85em;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
+.hwpBlankBox{display:inline-block;border:1.6px solid var(--mb-ink);vertical-align:middle;margin:0 .2em}
+.hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--mb-line);padding:.4em .6em;margin:.4em 0}
+.eqFallback{font-family:monospace;font-size:.8em;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
 </style>
 </head>
 <body>
@@ -970,6 +986,21 @@ window.addEventListener('DOMContentLoaded', function () {
     } else { setTimeout(tryRender, 100); }
   }
   tryRender();
+
+  // 실제 슬라이드 폭(px)을 "디자인 기준 폭" 1280px과 비교해 문서 루트
+  // font-size를 다시 계산 — rem으로 지정한 문제 본문 글자 크기가 창/
+  // 프로젝터 해상도와 무관하게 항상 슬라이드에 비례한 크기로 보이게 함.
+  var DESIGN_WIDTH = 1280, BASE_ROOT_PX = 16;
+  function rescale() {
+    var slide = document.querySelector('.slide');
+    if (!slide) return;
+    var w = slide.getBoundingClientRect().width;
+    if (!w) return;
+    document.documentElement.style.fontSize = (BASE_ROOT_PX * (w / DESIGN_WIDTH)) + 'px';
+  }
+  rescale();
+  window.addEventListener('resize', rescale);
+
   var slides = [...document.querySelectorAll('.slide')];
   document.addEventListener('keydown', function (e) {
     if (!['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].includes(e.key)) return;
@@ -1014,7 +1045,7 @@ classHtmlBtn.addEventListener('click', async () => {
       const cite = loadedFiles.length > 1
         ? `${escapeHtml(entry.filename.replace(/\.hwpx$/i, ''))} · ${num}번`
         : `${num}번`;
-      paneHtmls.push(`<div class="slidePane"><div class="paneNum">${qOrder}</div><div class="paneCite">${cite}</div><div class="paneBody">${bodyHtml}</div></div>`);
+      paneHtmls.push(`<div class="slidePane"><div class="paneHead"><span class="paneNum">${qOrder}</span><span class="paneCite">${cite}</span></div><div class="paneBody">${bodyHtml}</div></div>`);
       qOrder++;
     }
     if (!paneHtmls.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
@@ -1024,10 +1055,13 @@ classHtmlBtn.addEventListener('click', async () => {
     const today = new Date().toISOString().slice(0, 10);
     const slides = [];
     slides.push(`<div class="slide"><div class="slideTitle"><h1>${escapeHtml(titleText)}</h1><div class="sub">${today}</div></div></div>`);
+    let slideIdx = 0;
     for (let i = 0; i < paneHtmls.length; i += 2) {
       const pair = paneHtmls.slice(i, i + 2);
       if (pair.length === 1) pair[0] = pair[0].replace('class="slidePane"', 'class="slidePane single"');
-      slides.push(`<div class="slide">${pair.join('')}</div>`);
+      const oddCls = (slideIdx % 2 === 1) ? ' mbOdd' : '';
+      slides.push(`<div class="slide${oddCls}">${pair.join('')}</div>`);
+      slideIdx++;
     }
 
     const html = buildClassHtmlDocument({ titleText, slidesHtml: slides });
