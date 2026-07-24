@@ -138,14 +138,18 @@ table.rankTbl tr:hover td { background: var(--gold-soft); }
 
 <script>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// "2026 여름 SUMMER" 스프레드시트의 "9모대비" 탭을 읽는 전용 Apps Script
-// Web App (9moresult_gas_code.gs 참고) — 그 시트에 배포한 뒤 나온 실제
-// URL로 아래 값을 바꿔야 함. s+.html/s.html/motest.html이 읽는
-// "MATHY YURI System — 모의고사 성적 기록부"와는 다른, 별도의 시트/스크립트.
-const GAS_API = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+// studentnote.html/problembank.html/오답노트생성기가 이미 쓰고 있는 바로 그
+// 메인 대시보드 Apps Script(apps-script/dashboard-Code.gs, "2026 여름
+// SUMMER"에 배포됨)를 그대로 읽는다 — 새 스크립트를 따로 배포하지 않음.
+// action=public: 닉네임 기준 전체 현황(로그인 불필요), action=login: 이름+ID
+// 로 본인 상세 기록. 둘 다 GET을 JSONP로 보낸다(Apps Script 웹앱 응답은
+// 일반 fetch()로 안정적으로 못 읽는 경우가 있어 studentnote.html과 동일한
+// 방식을 씀).
+const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const COHORT = '2';       // 대치수학 2기
+const CATEGORY = '9모대비'; // dashboard-Code.gs의 CATEGORIES 중 하나
 // S+BLACK.html의 "구글시트 붙여넣기용 데이터" 섹션의 "미션명/시험명" 입력값과
-// 반드시 일치해야 이 페이지가 해당 시험 행들을 찾아낸다 — 값을 바꿔서
-// 붙여넣었다면 아래 값도 같이 바꿀 것.
+// 반드시 일치해야 이 페이지가 해당 시험 행들을 찾아낸다.
 const EXAM_NAME = '9월 모의고사 대비 실전 모의고사 1회';
 
 // S+BLACK.html의 examData와 완전히 동일 — 단원별 분석을 위해 문항-단원
@@ -166,49 +170,61 @@ const examData = [
 const PERCENTILE_BY_GRADE = { 1: '상위 4%', 2: '상위 11%', 3: '상위 23%', 4: '상위 40%', 5: '상위 60%', 6: '상위 77%', 7: '상위 89%', 8: '상위 96%', 9: '상위 96% 초과' };
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-let students = []; // { name, nick, className, pw, score, grade, correct, items:[1|2 x30], analysis }
+let jsonpCounter = 0;
+function callGetJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
+    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (15초)')); }, 15000);
+    const script = document.createElement('script');
+    function cleanup() { clearTimeout(timer); delete window[cbName]; script.remove(); }
+    window[cbName] = (data) => {
+      cleanup();
+      if (!data.ok) reject(new Error(data.error || '서버 오류'));
+      else resolve(data);
+    };
+    script.src = DASHBOARD_URL + '?' + new URLSearchParams({ ...params, callback: cbName }).toString();
+    script.onerror = () => { cleanup(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(script);
+  });
+}
 
 function gradeNumFrom(text) {
   const m = String(text || '').match(/\d+/);
   return m ? Number(m[0]) : 9;
 }
 
+// action=public 응답의 문항 배열은 뒤쪽 빈칸이 trim되어 30개보다 짧을 수
+// 있음(dashboard-Code.gs의 readSheetRows) — 정확히 30개로 맞추고, 빠진
+// 자리는 "아직 없음"으로 취급해 오답으로 잘못 카운트하지 않는다.
+function normalizeItems(items) {
+  const out = [];
+  for (let i = 0; i < 30; i++) out.push(items && items[i] != null ? items[i] : null);
+  return out;
+}
+
+let students = []; // 공개(닉네임) 데이터: { nick, className, score, gradeNum, items:[1|2|3|null x30] }
+
 async function loadData() {
-  if (GAS_API.includes('PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE')) {
-    document.getElementById('loading').innerHTML =
-      '<div style="color:var(--pink-deep)">설정이 안 끝났습니다 — "2026 여름 SUMMER" 시트에 9moresult_gas_code.gs를 배포한 뒤, 그 URL을 이 파일 상단 GAS_API 값에 붙여넣어야 합니다.</div>';
-    return;
-  }
   try {
-    const res = await fetch(GAS_API);
-    if (!res.ok) throw new Error('API 연결 오류');
-    const raw = await res.json();
-    students = raw
-      .filter(r => String(r['미션명'] || '').trim() === EXAM_NAME)
-      .map(r => {
-        const items = [];
-        for (let i = 1; i <= 30; i++) items.push(parseInt(r[i]) || 2);
-        return {
-          name: String(r['이름'] || '').trim(),
-          nick: String(r['닉네임'] || '').trim() || String(r['이름'] || '').trim(),
-          className: String(r['반'] || '').trim(),
-          pw: String(r['비밀번호'] || '').trim(),
-          score: parseInt(r['원점수']) || 0,
-          grade: gradeNumFrom(r['등급']),
-          correct: parseInt(r['맞은개수']) || items.filter(v => v === 1).length,
-          items,
-          analysis: String(r['분석'] || ''),
-        };
-      })
-      .filter(s => s.name);
+    const res = await callGetJsonp({ action: 'public' });
+    const rows = (res.data && res.data[COHORT] && res.data[COHORT][CATEGORY]) || [];
+    students = rows
+      .filter(r => String(r.mission || '').trim() === EXAM_NAME && r.score != null)
+      .map(r => ({
+        nick: String(r.nickname || '').trim() || `학생${r.sid}`,
+        className: String(r.class || '').trim(),
+        score: Number(r.score) || 0,
+        gradeNum: gradeNumFrom(r.grade),
+        items: normalizeItems(r.items),
+      }));
   } catch (e) {
     document.getElementById('loading').innerHTML =
-      '<div style="color:var(--pink-deep)">데이터를 불러올 수 없습니다. 아직 구글시트에 붙여넣은 데이터가 없거나 네트워크 문제일 수 있어요.</div>';
+      `<div style="color:var(--pink-deep)">데이터를 불러올 수 없습니다: ${escapeHtml(e.message)}</div>`;
     return;
   }
   if (!students.length) {
     document.getElementById('loading').innerHTML =
-      `<div>"${EXAM_NAME}" 시험 데이터가 아직 시트에 없습니다 — S+BLACK.html에서 붙여넣기용 데이터를 만들어 구글시트에 추가해주세요.</div>`;
+      `<div>"${escapeHtml(EXAM_NAME)}" 시험 데이터가 아직 시트에 없습니다 — S+BLACK.html에서 붙여넣기용 데이터를 만들어 "9모대비" 시트에 추가해주세요.</div>`;
     return;
   }
   render();
@@ -221,11 +237,13 @@ function stats(arr) {
   return { avg: Math.round(avg * 10) / 10, max: Math.max(...arr), sd: Math.round(sd * 10) / 10 };
 }
 
-// 학생 목록(전체 또는 한 명)의 1..30 O/X를 단원별로 묶어 정답률(%)을 계산.
+// 학생 목록(전체 또는 한 명)의 1..30 정오를 단원별로 묶어 정답률(%)을 계산.
+// null(아직 채점 안 된 자리)은 분모에서도 빼서 정답률을 왜곡하지 않는다.
 function unitAccuracy(studentList) {
   const byUnit = {};
   for (const s of studentList) {
     s.items.forEach((v, i) => {
+      if (v == null) return;
       const unit = examData[i].unit;
       if (!byUnit[unit]) byUnit[unit] = { total: 0, correct: 0 };
       byUnit[unit].total++;
@@ -260,11 +278,11 @@ function render() {
   // 감싼다(하나가 깨져도 나머지는 정상 동작).
   const ranked = [...students].sort((a, b) => b.score - a.score);
   document.getElementById('rankBody').innerHTML = ranked.map((s, i) => `
-    <tr><td>${i + 1}</td><td>${escapeHtml(s.nick)}</td><td>${escapeHtml(s.className)}</td><td><b>${s.score}점</b></td><td>${s.grade}등급</td></tr>
+    <tr><td>${i + 1}</td><td>${escapeHtml(s.nick)}</td><td>${escapeHtml(s.className)}</td><td><b>${s.score}점</b></td><td>${s.gradeNum}등급</td></tr>
   `).join('');
 
   const gradeCnt = Array(9).fill(0);
-  students.forEach(s => { gradeCnt[Math.min(s.grade, 9) - 1]++; });
+  students.forEach(s => { gradeCnt[Math.min(s.gradeNum, 9) - 1]++; });
   safeChart(() => new Chart(document.getElementById('chartGrade'), {
     type: 'doughnut',
     data: {
@@ -307,53 +325,90 @@ function safeChart(fn) {
   try { return fn(); } catch (e) { console.error('차트 렌더 실패(무시하고 계속):', e); return null; }
 }
 
+// 서버가 이미 "같은 반" 기준으로 집계해서 주는 문항별 정답률(%) 배열을
+// 단원별로 다시 묶는다 — buildStudentPayload의 __itemAcc를 그대로 재사용
+// (다른 학생들의 원본 정오 데이터를 다시 긁어올 필요 없음).
+function unitAccuracyFromRates(itemAcc) {
+  const byUnit = {};
+  examData.forEach((q, i) => {
+    const acc = itemAcc[i];
+    if (acc == null) return;
+    if (!byUnit[q.unit]) byUnit[q.unit] = { sum: 0, n: 0 };
+    byUnit[q.unit].sum += acc;
+    byUnit[q.unit].n++;
+  });
+  const units = [...new Set(examData.map(q => q.unit))];
+  return units.map(u => ({
+    unit: u,
+    rate: byUnit[u] && byUnit[u].n ? Math.round(byUnit[u].sum / byUnit[u].n) : 0,
+  }));
+}
+
 let personalUnitChart = null;
-function searchPersonal() {
+async function searchPersonal() {
   const name = document.getElementById('qName').value.trim();
   const pw = document.getElementById('qPw').value.trim();
-  const student = students.find(s => s.name === name && s.pw === pw);
   const errEl = document.getElementById('searchErr');
-  if (!student) {
-    errEl.style.display = 'block';
-    document.getElementById('personalReport').style.display = 'none';
-    return;
-  }
+  const btn = document.querySelector('.searchRow button');
   errEl.style.display = 'none';
+  document.getElementById('personalReport').style.display = 'none';
+  if (!name || !pw) { errEl.textContent = '이름과 ID를 입력하세요.'; errEl.style.display = 'block'; return; }
 
-  const st = stats(students.map(s => s.score));
-  const gradeInfo = { grade: student.grade, percentile: PERCENTILE_BY_GRADE[student.grade] || PERCENTILE_BY_GRADE[9] };
-  const diff = student.score - st.avg;
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = '조회 중...';
+  try {
+    const data = await callGetJsonp({ action: 'login', name, pw });
+    const records = (data.records && data.records[CATEGORY]) || [];
+    const rec = records.find(r => String(r.mission || '').trim() === EXAM_NAME);
+    if (!rec) throw new Error(`"${EXAM_NAME}" 시험 기록이 없습니다.`);
 
-  document.getElementById('pName').textContent = `${student.name} 학생 · 상세 분석`;
-  document.getElementById('pScore').textContent = `${student.score}점`;
-  document.getElementById('pGrade').textContent = `${gradeInfo.grade}등급`;
-  document.getElementById('pPercentile').textContent = gradeInfo.percentile;
-  document.getElementById('pDiff').textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + '점';
+    const items = normalizeItems(rec.items);
+    const score = Number(rec.score) || 0;
+    const gradeNum = gradeNumFrom(rec.grade);
+    const classAvgObj = (data.classAvg && data.classAvg[CATEGORY]) || {};
+    const classAvgScore = classAvgObj[EXAM_NAME];
+    const itemAcc = (classAvgObj.__itemAcc && classAvgObj.__itemAcc[EXAM_NAME]) || [];
+    const diff = classAvgScore != null ? score - classAvgScore : null;
 
-  document.getElementById('pOxWrap').innerHTML = student.items.map((v, i) =>
-    `<div class="oxBead ox-${v}" title="${i + 1}번">${i + 1}</div>`
-  ).join('');
+    document.getElementById('pName').textContent = `${escapeHtml(data.student.name)} 학생 · 상세 분석`;
+    document.getElementById('pScore').textContent = `${score}점`;
+    document.getElementById('pGrade').textContent = `${gradeNum}등급`;
+    document.getElementById('pPercentile').textContent = PERCENTILE_BY_GRADE[gradeNum] || PERCENTILE_BY_GRADE[9];
+    document.getElementById('pDiff').textContent = diff == null ? '같은 반 데이터 없음' : (diff >= 0 ? '+' : '') + diff.toFixed(1) + '점 (같은 반 평균 대비)';
 
-  const myUnitAcc = unitAccuracy([student]);
-  const classUnitAcc = unitAccuracy(students);
-  safeChart(() => {
-    if (personalUnitChart) personalUnitChart.destroy();
-    personalUnitChart = new Chart(document.getElementById('chartPersonalUnit'), {
-      type: 'bar',
-      data: {
-        labels: myUnitAcc.map(u => u.unit),
-        datasets: [
-          { label: '내 정답률(%)', data: myUnitAcc.map(u => u.rate), backgroundColor: 'rgba(168,133,63,.8)' },
-          { label: '반 평균(%)', data: classUnitAcc.map(u => u.rate), backgroundColor: 'rgba(198,216,208,.9)' },
-        ],
-      },
-      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 100 } } },
+    document.getElementById('pOxWrap').innerHTML = items.map((v, i) =>
+      v == null
+        ? `<div class="oxBead" title="${i + 1}번(미채점)">${i + 1}</div>`
+        : `<div class="oxBead ox-${v}" title="${i + 1}번">${i + 1}</div>`
+    ).join('');
+
+    const myUnitAcc = unitAccuracy([{ items }]);
+    const classUnitAcc = itemAcc.length ? unitAccuracyFromRates(itemAcc) : unitAccuracy(students);
+    safeChart(() => {
+      if (personalUnitChart) personalUnitChart.destroy();
+      personalUnitChart = new Chart(document.getElementById('chartPersonalUnit'), {
+        type: 'bar',
+        data: {
+          labels: myUnitAcc.map(u => u.unit),
+          datasets: [
+            { label: '내 정답률(%)', data: myUnitAcc.map(u => u.rate), backgroundColor: 'rgba(168,133,63,.8)' },
+            { label: '반 평균(%)', data: classUnitAcc.map(u => u.rate), backgroundColor: 'rgba(198,216,208,.9)' },
+          ],
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 100 } } },
+      });
     });
-  });
 
-  document.getElementById('pAnalysis').textContent = student.analysis || '';
-
-  document.getElementById('personalReport').style.display = 'block';
+    document.getElementById('pAnalysis').textContent = rec.comment || '';
+    document.getElementById('personalReport').style.display = 'block';
+  } catch (e) {
+    errEl.textContent = e.message || '조회 중 오류가 발생했습니다.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 loadData();
