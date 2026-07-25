@@ -64,7 +64,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .qGrid label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
 .status2 { color: var(--pink-deep); }
 .status3 { color: var(--gold); }
-.roundBadge { font-size: 11px; color: rgba(26,26,26,.45); margin-left: 4px; }
+.roundBadge { font-size: 11px; margin-left: 4px; }
+.roundBadge .histO { color: var(--mint-deep); font-weight: 700; }
+.roundBadge .histX { color: var(--pink-deep); font-weight: 700; }
+.roundBadge .histQ { color: rgba(26,26,26,.4); font-weight: 700; }
+.roundBadge .histRound { color: rgba(26,26,26,.4); }
 .gradeToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
 .gradeToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .gradingRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 6px 0; border-bottom: 1px solid var(--gold-line); font-size: 13px; }
@@ -2387,6 +2391,19 @@ function historyString(mission, num) {
   if (!rounds.length) return '';
   return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?') + '(' + h.round + ')').join(' ');
 }
+// historyString과 같은 내용을 O(정답)/X(오답)/?(채점 전)별로 색을 다르게
+// 입힌 HTML로 만든다 — 문제를 고를 때 회차별 결과가 한눈에 구별되도록.
+function historyBadgeHtml(mission, num) {
+  const rounds = noteHistory
+    .filter(h => h.mission === mission && h.num === Number(num))
+    .sort((a, b) => a.round - b.round);
+  if (!rounds.length) return '';
+  return rounds.map(h => {
+    const mark = h.result === 1 ? 'O' : h.result ? 'X' : '?';
+    const cls = h.result === 1 ? 'histO' : h.result ? 'histX' : 'histQ';
+    return `<span class="${cls}">${mark}</span><span class="histRound">(${h.round})</span>`;
+  }).join(' ');
+}
 
 // "OOX" — the same past-round results as historyString, but as a plain
 // concatenated string with no round numbers (round order is already
@@ -2428,11 +2445,11 @@ function renderMissionBlocks() {
       <div class="qGrid">
         ${group.items.map(it => {
           const r = roundFor(group.mission, it.num);
-          const hist = historyString(group.mission, it.num);
+          const histHtml = historyBadgeHtml(group.mission, it.num);
           const wasChecked = prevChecked.has(`${group.mission}||${it.num}`);
           return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
             `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
-            (hist ? `<span class="roundBadge">${hist}</span>` : '') +
+            (histHtml ? `<span class="roundBadge">${histHtml}</span>` : '') +
             `</label>`;
         }).join('')}
       </div>
