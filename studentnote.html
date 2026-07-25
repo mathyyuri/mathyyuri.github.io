@@ -2577,20 +2577,20 @@ async function generateHwpxNote(historicalBatch) {
     const studentInfo = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound, oldName };
     const strippedSections = {};
     const questionsStripped = stripSectionToSkeletonKeepCtrls(regions.questions.sectionXml);
-    // 임시 진단 로그 — 서식 파일의 샘플 각주(해설)가 다듬기 후에도 남아있는지
-    // 화면에 바로 보이게 표시 (문제 원인 추적용, 확인되면 지울 것).
-    log(`[진단] questions 원본에 endNote 포함: ${regions.questions.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${questionsStripped.includes('<hp:endNote')}`);
+    // 임시 진단 로그 — <hp:endNote 는 <hp:endNotePr>(구조적 설정, 항상 있음)도
+    // 같이 잡혀서 오판단이었음 — [정답] 텍스트로 정확히 확인 + 길이 비교.
+    log(`[진단] questions 길이: 원본 ${regions.questions.sectionXml.length} -> 다듬은 후 ${questionsStripped.length}, [정답] 텍스트 남음: ${questionsStripped.includes('[정답]')}`);
     strippedSections[regions.questions.sectionPath] =
       personalizeOddHeaderText(questionsStripped, studentInfo);
     if (regions.cover) {
       const coverStripped = stripSectionToSkeletonKeepCtrls(regions.cover.sectionXml);
-      log(`[진단] cover 원본에 endNote 포함: ${regions.cover.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${coverStripped.includes('<hp:endNote')}`);
+      log(`[진단] cover 길이: 원본 ${regions.cover.sectionXml.length} -> 다듬은 후 ${coverStripped.length}, [정답] 텍스트 남음: ${coverStripped.includes('[정답]')}`);
       strippedSections[regions.cover.sectionPath] =
         personalizeOddHeaderText(coverStripped, studentInfo);
     }
     if (regions.answers) {
       const answersStripped = stripSectionToSkeletonKeepCtrls(regions.answers.sectionXml);
-      log(`[진단] answers 원본에 endNote 포함: ${regions.answers.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${answersStripped.includes('<hp:endNote')}`);
+      log(`[진단] answers 길이: 원본 ${regions.answers.sectionXml.length} -> 다듬은 후 ${answersStripped.length}, [정답] 텍스트 남음: ${answersStripped.includes('[정답]')}`);
       strippedSections[regions.answers.sectionPath] =
         personalizeOddHeaderText(answersStripped, studentInfo);
     }
