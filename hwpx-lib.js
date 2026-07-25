@@ -359,6 +359,11 @@ const HWP_EQ_SYMBOLS = {
   // 나오므로("Pprime" = P′), 다른 붙어있는 키워드와 같은 방식으로 그
   // 자리에서 바로 치환하면 위치가 맞는다.
   prime: "'",
+  // 실제 파일 재확인 결과 "rarrow"가 아니라 접두사 없는 그냥 "arrow"였음
+  // ("(x,y)arrow(x-4,y+6)") — 기본값은 오른쪽 화살표로 처리. 길이순
+  // 정렬(긴 것부터 매칭)이라 rarrow/larrow 등 다른 키워드보다 먼저
+  // 걸릴 걱정은 없음(그것들이 더 길어서 항상 먼저 검사됨).
+  arrow: '\\rightarrow',
   rarrow: '\\rightarrow', larrow: '\\leftarrow', lrarrow: '\\leftrightarrow',
   rrarrow: '\\Rightarrow', llarrow: '\\Leftarrow', lrrarrow: '\\Leftrightarrow',
 };
