@@ -466,24 +466,50 @@ function guessUnitFromText(text, knownUnits) {
   }
   return '';
 }
+// 파일 하나에도 여러 단원이 섞여 있을 수 있으므로(예: 종합 TEST지),
+// 파일명 하나로 전체를 퉁치지 않고 "문제 하나하나의 실제 지문 내용"을
+// 보고 개별 판단한다 — 공통수학2 기준 각 단원의 핵심 용어를 모아둠.
+// 나중에 다른 단원이 필요하면 이 표에 추가하면 됨.
+const UNIT_KEYWORD_HINTS = {
+  '평면좌표': ['중점', '내분점', '외분점', '무게중심', '두 점 사이의 거리', '좌표평면 위의'],
+  '직선의 방정식': ['기울기', '수직인 직선', '평행한 직선', '점과 직선', '두 직선', '직선의 방정식'],
+  '원의 방정식': ['원의 방정식', '원과 직선', '접선', '중심과 반지름', '원의 중심', '두 원'],
+  '도형의 이동': ['평행이동', '대칭이동', '회전이동', '원점에 대하여 대칭', 'x축에 대하여 대칭', 'y축에 대하여 대칭'],
+  '집합과 명제': ['집합', '부분집합', '명제', '필요조건', '충분조건', '여집합', '교집합', '합집합'],
+  '함수': ['정의역', '치역', '합성함수', '역함수', '일대일함수', '항등함수'],
+  '경우의 수': ['경우의 수', '순열', '조합', '중복순열', '중복조합'],
+};
+function guessUnitFromQuestionText(text) {
+  if (!text) return '';
+  for (const [unit, keywords] of Object.entries(UNIT_KEYWORD_HINTS)) {
+    for (const kw of keywords) {
+      if (text.includes(kw)) return unit;
+    }
+  }
+  return '';
+}
 
 // 문제 번호별로 "단원/유형" 입력칸을 나란히 보여주는 목록. questionData의
 // 각 항목(qd)을 입력 즉시 직접 수정하므로, 호출한 쪽은 questionData 배열을
 // 그대로 저장(업로드 또는 updatetags)하면 됨.
-// guessedUnit이 있으면(파일명에서 자동 추정된 단원) 아직 단원이 비어있는
-// 문제에만 1차로 채워 넣는다 — 이미 손으로 입력해둔 값은 덮어쓰지 않음.
+// 문제 하나하나의 실제 지문(rawTextByNum)을 먼저 보고 개별 판단하고,
+// 지문에서 못 알아낸 것만 파일명 기반 guessedUnit으로 채운다 — 이미
+// 손으로 입력해둔 값은 절대 덮어쓰지 않음. 몇 개나 자동으로 판단됐는지
+// 세어서 안내 문구에 보여준다.
 function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit) {
-  if (guessedUnit) {
-    for (const qd of questionData) {
-      if (!qd.unit) qd.unit = guessedUnit;
-    }
+  let guessedCount = 0;
+  for (const qd of questionData) {
+    if (qd.unit) continue;
+    const fromContent = guessUnitFromQuestionText(rawTextByNum[qd.num] || '');
+    const guess = fromContent || guessedUnit;
+    if (guess) { qd.unit = guess; guessedCount++; }
   }
   const qdByNum = new Map(questionData.map(q => [String(q.num), q]));
   const wrap = document.createElement('div');
   wrap.className = 'tagListBox';
   wrap.innerHTML = `
     <h4>문제별 단원 · 유형</h4>
-    ${guessedUnit ? `<p class="hint">파일명으로 "${escapeHtml(guessedUnit)}"을(를) 1차로 채워뒀어요 — 틀린 문제만 아래에서 고쳐주세요.</p>` : ''}
+    ${guessedCount ? `<p class="hint">문제 내용을 보고 ${guessedCount}개 문제의 단원을 1차로 채워뒀어요 — 틀린 문제만 아래에서 고쳐주세요.</p>` : ''}
     <div class="unitTabBar"></div>
     <div class="tagBulkRow">
       <label style="display:inline;margin:0">전체 단원 일괄 입력:</label>
