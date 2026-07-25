@@ -2163,7 +2163,11 @@ function makeLabelBoxBuilder() {
   return function labelBoxXml(pid, text, ids, style) {
     const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const width = style.width;
-    const rowHeight = 460;
+    // 긴 출처 텍스트(미션명이 길면)는 이 폭에서 한 줄에 안 들어가 두 줄로
+    // 줄바꿈될 수 있다 — 기본 460(한 줄 높이)로 고정해두면 그 두 번째
+    // 줄이 박스 밖으로 삐져나와 겹쳐 보인다(실제 확인됨). 호출하는 쪽에서
+    // rowHeight를 넉넉하게 주면 그만큼 높이를 확보한다.
+    const rowHeight = style.rowHeight || 460;
     const tblId = String(3300000000 + (counter++));
     const cellParaPrId = style.cellParaPrId || ids.paraPrIDRef;
     const tcXml = `<hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${style.borderFillId}">` +
@@ -2638,7 +2642,7 @@ async function generateHwpxNote(historicalBatch) {
     // 한글에서 배경이 아예 안 보였음(원인 불명, 데이터는 정상이었음) —
     // 이미 잘 보이는 걸로 확인된 표 헤더행과 같은 방식(진짜 표 1칸)으로
     // 바꿔서 확실하게 만든다.
-    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 900, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
+    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 700, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
     carrierHeaderXml = styleRes.headerXml;
     const citationCharPrId = styleRes.id;
     styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_CITEBAR));
@@ -2760,7 +2764,7 @@ async function generateHwpxNote(historicalBatch) {
       // section, that's just a columnBreak per question (the section's
       // own native colPr already applies). In a single merged region, the
       // FIRST question also has to switch the section into 2단 mode itself.
-      const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1, width: citationBoxWidth, borderFillId: citeBoxFillId, charPrId: citationCharPrId, cellParaPrId: centerParaPrId };
+      const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1, width: citationBoxWidth, borderFillId: citeBoxFillId, charPrId: citationCharPrId, cellParaPrId: centerParaPrId, rowHeight: 900 };
       if (singleRegion && isFirstQuestion) opts.prefixCtrlXml = colPr2RunXml;
       questionsDemo += labelBoxXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, citationIds, opts);
       qBodyOrderNum++;
