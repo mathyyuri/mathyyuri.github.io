@@ -1702,7 +1702,11 @@ function keepCtrlsBlankVisibleText(paraText) {
     });
     const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
     const charPr = charPrM ? charPrM[1] : '0';
-    if (keepableCtrls.length && keepableCtrls.length === topCtrls.length) {
+    // 이전엔 run 안의 컨트롤이 "전부" 구조적이어야만 보존했는데, 만약
+    // 진짜 머리말/꼬리말 컨트롤이 다른(구조적이지 않은) 컨트롤과 같은
+    // run에 섞여 있으면 그 머리말까지 통째로 사라지는 위험이 있었다 —
+    // 이제는 구조적인 것만 골라서 항상 남기고, 나머지만 버린다.
+    if (keepableCtrls.length) {
       out += `<hp:run charPrIDRef="${charPr}">${keepableCtrls.map(c => c.text).join('')}</hp:run>`;
     } else {
       out += `<hp:run charPrIDRef="${charPr}"><hp:t/></hp:run>`;
