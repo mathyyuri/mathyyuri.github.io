@@ -2576,15 +2576,23 @@ async function generateHwpxNote(historicalBatch) {
       (regions.answers && detectOldHeaderName(regions.answers.sectionXml)) || null;
     const studentInfo = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound, oldName };
     const strippedSections = {};
+    const questionsStripped = stripSectionToSkeletonKeepCtrls(regions.questions.sectionXml);
+    // 임시 진단 로그 — 서식 파일의 샘플 각주(해설)가 다듬기 후에도 남아있는지
+    // 화면에 바로 보이게 표시 (문제 원인 추적용, 확인되면 지울 것).
+    log(`[진단] questions 원본에 endNote 포함: ${regions.questions.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${questionsStripped.includes('<hp:endNote')}`);
     strippedSections[regions.questions.sectionPath] =
-      personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.questions.sectionXml), studentInfo);
+      personalizeOddHeaderText(questionsStripped, studentInfo);
     if (regions.cover) {
+      const coverStripped = stripSectionToSkeletonKeepCtrls(regions.cover.sectionXml);
+      log(`[진단] cover 원본에 endNote 포함: ${regions.cover.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${coverStripped.includes('<hp:endNote')}`);
       strippedSections[regions.cover.sectionPath] =
-        personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.cover.sectionXml), studentInfo);
+        personalizeOddHeaderText(coverStripped, studentInfo);
     }
     if (regions.answers) {
+      const answersStripped = stripSectionToSkeletonKeepCtrls(regions.answers.sectionXml);
+      log(`[진단] answers 원본에 endNote 포함: ${regions.answers.sectionXml.includes('<hp:endNote')}, 다듬은 후에도 남음: ${answersStripped.includes('<hp:endNote')}`);
       strippedSections[regions.answers.sectionPath] =
-        personalizeOddHeaderText(stripSectionToSkeletonKeepCtrls(regions.answers.sectionXml), studentInfo);
+        personalizeOddHeaderText(answersStripped, studentInfo);
     }
 
     const coverPath = regions.cover ? regions.cover.sectionPath : regions.questions.sectionPath;
