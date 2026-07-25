@@ -2642,7 +2642,7 @@ async function generateHwpxNote(historicalBatch) {
     // 한글에서 배경이 아예 안 보였음(원인 불명, 데이터는 정상이었음) —
     // 이미 잘 보이는 걸로 확인된 표 헤더행과 같은 방식(진짜 표 1칸)으로
     // 바꿔서 확실하게 만든다.
-    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 700, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
+    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 550, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
     carrierHeaderXml = styleRes.headerXml;
     const citationCharPrId = styleRes.id;
     styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_CITEBAR));
