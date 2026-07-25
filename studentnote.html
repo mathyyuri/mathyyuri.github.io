@@ -1712,7 +1712,16 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
 // 살아남으므로, 찾은 구조적 컨트롤 "그 자체"만 남기고 나머지(도형,
 // 텍스트 등)는 버려서 새로 조립한다.
 const KEEPABLE_CTRL_TYPES = new Set(['header', 'footer', 'pageNum', 'colPr']);
-function keepCtrlsBlankVisibleText(paraText) {
+// colPr는 secPr가 있는 문단(그 구역의 진짜 다단 전환 지점)에서만 구조적인
+// 것으로 인정한다 — 실제 서식 파일에서, 샘플 도형(hp:rect 등) 안에 그
+// 도형 자기만의(내부 텍스트 상자용) colPr가 따로 있는 경우가 있었다.
+// 그 도형 자체는 샘플이라 지워지는 게 맞지만, colPr는 무조건 구조적이라고
+// 봐서 도형과 상관없이 개별 보존했더니, 진짜 2단 설정(secPr 문단에 있는
+// 것) 뒤에 이 엉뚱한 colPr가 이어져서 그 뒤로 나오는 모든 문제가 다시
+// 1단으로 리셋되는 부작용이 생겼다(실제 생성 파일로 확인). secPr가 없는
+// 문단에서 발견되는 colPr는 이런 샘플 잔재일 가능성이 높으므로 구조적
+// 취급을 하지 않는다.
+function keepCtrlsBlankVisibleText(paraText, isSecPrPara) {
   const runs = findTopLevelBlocks(paraText, 'hp:run');
   if (!runs.length) return paraText;
   let out = '';
@@ -1722,7 +1731,9 @@ function keepCtrlsBlankVisibleText(paraText) {
     const topCtrls = findTopLevelBlocks(r.text, 'hp:ctrl');
     const keepableCtrls = topCtrls.filter(c => {
       const m = c.text.match(/^<hp:ctrl>\s*<hp:(\w+)\b/);
-      return m && KEEPABLE_CTRL_TYPES.has(m[1]);
+      if (!m) return false;
+      if (m[1] === 'colPr') return !!isSecPrPara;
+      return KEEPABLE_CTRL_TYPES.has(m[1]);
     });
     const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
     const charPr = charPrM ? charPrM[1] : '0';
@@ -1755,7 +1766,7 @@ function stripSectionToSkeletonKeepCtrls(xml) {
   for (const p of paras) {
     out += xml.slice(pos, p.start);
     if (p.text.includes('<hp:ctrl')) {
-      out += keepCtrlsBlankVisibleText(p.text);
+      out += keepCtrlsBlankVisibleText(p.text, p.text.includes('<hp:secPr'));
     } else {
       const innerText = stripTags(p.text).trim();
       if (!innerText) out += p.text; // blank / picture-only paragraph, keep
