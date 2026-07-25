@@ -1166,6 +1166,20 @@ function maxHeaderId(headerXml, tag) {
   const ids = [...headerXml.matchAll(new RegExp(`<hh:${tag}\\b[^>]*\\bid="(\\d+)"`, 'g'))].map(m => Number(m[1]));
   return ids.length ? Math.max(...ids) : -1;
 }
+// Same single-id import as importForeignStyleIds's inner loop, but for a
+// specific known id rather than "whatever ids are used in this fragment" —
+// used to import a paragraph/run's OWN style ids (see extractAnchorParaMeta)
+// that never appear as attrs inside the ported ctrl fragment itself.
+function importSingleStyleId(carrierHeaderXml, foreignHeaderXml, tag, wrapper, oldId) {
+  if (!oldId) return { headerXml: carrierHeaderXml, newId: null };
+  const def = extractHeaderDef(foreignHeaderXml, tag, oldId);
+  if (!def) return { headerXml: carrierHeaderXml, newId: null };
+  const nextId = maxHeaderId(carrierHeaderXml, tag) + 1;
+  const newDef = def.replace(/^(<hh:\w+\s+id=")\d+(")/, `$1${nextId}$2`);
+  const closeTag = `</${wrapper}>`;
+  if (!carrierHeaderXml.includes(closeTag)) return { headerXml: carrierHeaderXml, newId: null };
+  return { headerXml: carrierHeaderXml.replace(closeTag, newDef + closeTag), newId: String(nextId) };
+}
 function importForeignStyleIds(carrierHeaderXml, foreignHeaderXml, fragmentXml) {
   let patchedHeader = carrierHeaderXml;
   let patchedFragment = fragmentXml;
@@ -1356,6 +1370,49 @@ function portPageSetup(carrierSectionXml, formatSectionXml) {
   if (!m) return carrierSectionXml;
   return carrierSectionXml.replace(/<hp:pagePr\b[\s\S]*?<\/hp:pagePr>/, m[0]);
 }
+// A header/footer box is commonly positioned with vertRelTo="PARA"/
+// horzRelTo="PARA" (an offset from its OWN carrying paragraph's line box)
+// rather than from the page — that's how 한글 places a fixed-looking
+// banner using an otherwise-invisible secPr paragraph as the anchor.
+// insertHeaderFooterRun always drops the ported ctrls into the CARRIER
+// note's own first (secPr) paragraph, but that paragraph's paraPrIDRef
+// (line height/indent) and its own trailing run's charPr (font size,
+// which also affects line height) come from the CARRIER document, not
+// the 서식 file the box's offset was actually designed against — so the
+// same offset lands the box somewhere else. This grabs the 서식 file's
+// own first-paragraph metrics so they can be re-applied.
+function extractAnchorParaMeta(formatSectionXml) {
+  const paras = findTopLevelBlocks(formatSectionXml, 'hp:p');
+  if (!paras.length) return null;
+  const p0 = paras[0].text;
+  const pAttrs = p0.match(/<hp:p\b[^>]*\bparaPrIDRef="(\d+)"/);
+  const runs = findTopLevelBlocks(p0, 'hp:run');
+  if (!runs.length) return null;
+  const lastRun = runs[runs.length - 1].text;
+  const charPrM = lastRun.match(/^<hp:run charPrIDRef="(\d+)"/);
+  return { paraPrIDRef: pAttrs ? pAttrs[1] : null, trailingCharPrIDRef: charPrM ? charPrM[1] : null };
+}
+// Rewrites the CARRIER section's own first paragraph's paraPrIDRef and its
+// LAST run's charPrIDRef (the trailing placeholder run right after where
+// the ported ctrls get inserted) to the given (already-imported) ids.
+function applyAnchorParaMeta(sectionXml, meta) {
+  if (!meta) return sectionXml;
+  const paras = findTopLevelBlocks(sectionXml, 'hp:p');
+  if (!paras.length) return sectionXml;
+  let p0 = paras[0].text;
+  if (meta.paraPrIDRef) {
+    p0 = p0.replace(/(<hp:p\b[^>]*\bparaPrIDRef=")\d+(")/, `$1${meta.paraPrIDRef}$2`);
+  }
+  if (meta.trailingCharPrIDRef) {
+    const runs = findTopLevelBlocks(p0, 'hp:run');
+    if (runs.length) {
+      const last = runs[runs.length - 1];
+      const newLast = last.text.replace(/^(<hp:run charPrIDRef=")\d+(")/, `$1${meta.trailingCharPrIDRef}$2`);
+      p0 = p0.slice(0, last.start) + newLast + p0.slice(last.end);
+    }
+  }
+  return sectionXml.slice(0, paras[0].start) + p0 + sectionXml.slice(paras[0].end);
+}
 // A "다단" (multi-column, e.g. 2-column newspaper-style) layout is a
 // <hp:ctrl><hp:colPr>...</hp:colPr></hp:ctrl> control — structurally just
 // like header/footer/pageNum. It's commonly delegated to the section's
@@ -1520,6 +1577,19 @@ async function buildHeaderFooterResult(carrierHeaderXml, targetSectionXml, forma
   patchedFragment = rewriteImageRefs(patchedFragment, idMap);
   let newSectionXml = insertHeaderFooterRun(targetSectionXml, patchedFragment);
   newSectionXml = portPageSetup(newSectionXml, formatSectionXml);
+
+  // 서식 파일의 "기준 문단" 속성을 이식 — PARA 기준으로 위치가 정해진
+  // 박스(예: 민트색 라벨)가 시험지 파일의 문단 속성 때문에 엉뚱한 자리로
+  // 밀려나는 것을 막는다.
+  const anchorMeta = extractAnchorParaMeta(formatSectionXml);
+  if (anchorMeta) {
+    const paraImport = importSingleStyleId(patchedHeader, formatHeaderXml, 'paraPr', 'hh:paraProperties', anchorMeta.paraPrIDRef);
+    patchedHeader = paraImport.headerXml;
+    const charImport = importSingleStyleId(patchedHeader, formatHeaderXml, 'charPr', 'hh:charProperties', anchorMeta.trailingCharPrIDRef);
+    patchedHeader = charImport.headerXml;
+    newSectionXml = applyAnchorParaMeta(newSectionXml, { paraPrIDRef: paraImport.newId, trailingCharPrIDRef: charImport.newId });
+  }
+
   return { headerXml: patchedHeader, sectionXml: newSectionXml, images };
 }
 // Deliberately narrow to files literally named with "서식" — a real exam
