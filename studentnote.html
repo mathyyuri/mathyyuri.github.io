@@ -1276,6 +1276,30 @@ function appendCharPrDef(headerXml, defWithPlaceholder) {
   const patched = headerXml.replace('</hh:charProperties>', newDef + '</hh:charProperties>');
   return { headerXml: patched, id: newId };
 }
+// 기존 paraPr 하나를 베이스로, 배경 채움 있는 borderFill을 문단 테두리에
+// 걸어서 "색 있는 박스" 문단을 만든다 — HTML(MAN BOOK) 견본의 문제출처
+// 색상 박스(.mbCite)를 한글 문서에서 흉내내는 용도.
+function deriveBoxedParaPr(headerXml, baseId, borderFillId, pad) {
+  const baseDef = extractHeaderDef(headerXml, 'paraPr', baseId);
+  if (!baseDef) return null;
+  const p = pad || {};
+  const left = p.left ?? 140, right = p.right ?? 140, top = p.top ?? 60, bottom = p.bottom ?? 60;
+  let def = baseDef.replace(/^(<hh:paraPr\s+id=")\d+(")/, '$1__NEW__$2');
+  const borderTag = `<hh:border borderFillIDRef="${borderFillId}" offsetLeft="${left}" offsetRight="${right}" offsetTop="${top}" offsetBottom="${bottom}" connect="0" ignoreMargin="0"/>`;
+  if (/<hh:border\b[^>]*\/>/.test(def)) {
+    def = def.replace(/<hh:border\b[^>]*\/>/, borderTag);
+  } else {
+    def = def.replace('</hh:paraPr>', borderTag + '</hh:paraPr>');
+  }
+  return def;
+}
+function appendParaPrDef(headerXml, defWithPlaceholder) {
+  if (!defWithPlaceholder) return { headerXml, id: '0' };
+  const newId = String(maxHeaderId(headerXml, 'paraPr') + 1);
+  const newDef = defWithPlaceholder.replace('id="__NEW__"', `id="${newId}"`);
+  const patched = headerXml.replace('</hh:paraProperties>', newDef + '</hh:paraProperties>');
+  return { headerXml: patched, id: newId };
+}
 function appendBorderFillDef(headerXml, defWithPlaceholder) {
   if (!defWithPlaceholder) return { headerXml, id: '0' };
   const newId = String(maxHeaderId(headerXml, 'borderFill') + 1);
@@ -2065,7 +2089,10 @@ function makeSummaryTableBuilder() {
     for (let r = 0; r < rowCnt; r++) {
       let tcXml = '';
       const isHeader = r === 0;
-      const borderFillId = isHeader ? style.headerBorderFillId : style.bodyBorderFillId;
+      // 짝수 본문 행은 옅게 색을 넣어(있으면) HTML 견본의 줄무늬 표와
+      // 맞춘다 — bodyBorderFillIdAlt가 없으면(구버전 호출) 그냥 기존대로.
+      const isAltRow = !isHeader && style.bodyBorderFillIdAlt && (r % 2 === 0);
+      const borderFillId = isHeader ? style.headerBorderFillId : (isAltRow ? style.bodyBorderFillIdAlt : style.bodyBorderFillId);
       const charPrId = isHeader ? style.headerCharPrId : style.bodyCharPrId;
       for (let c = 0; c < colCnt; c++) {
         const text = String(rows[r][c] ?? '');
@@ -2570,25 +2597,34 @@ async function generateHwpxNote(historicalBatch) {
     const centerParaPrId = pickParaPrId(paraPrDefs, { align: 'CENTER', noHeading: true }) || plainParaPrId;
     const textIds = { ...carrierIds, paraPrIDRef: plainParaPrId };
 
-    // 문제 출처 줄(예: "[ 1차시도 ] 평면좌표 · [S+반] 1. 평면좌표 진도미션
-    // 16번") 전용 스타일 — 나눔명조 9pt 볼드, 가운데 정렬, 박스 없이 텍스트 그대로.
-    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 900, bold: true, textColor: '#000000', fontFace: '나눔명조' }));
-    carrierHeaderXml = styleRes.headerXml;
-    const citationIds = { ...carrierIds, paraPrIDRef: centerParaPrId, charPrIDRef: styleRes.id };
-
-    // [오답 현황 요약] 표 스타일 (강조색 헤더행 + 흰 볼드, 본문은 가운데 정렬).
-    // 강조색은 서식의 다단 구분선 색을 그대로 따라갑니다.
-    const accentColorMatch = regions.questions.colCtrl &&
-      regions.questions.colCtrl.ctrlXml.match(/<hp:colLine[^>]*\bcolor="(#[0-9A-Fa-f]{6})"/);
-    const accentColor = accentColorMatch ? accentColorMatch[1] : '#068273';
+    // HTML(MAN BOOK) 견본과 같은 배색 — 남색/민트 계열로 고정 (서식
+    // 파일의 다단 구분선 색을 따라가던 예전 방식 대신 견본 색을 그대로 씀).
+    const MB_NAVY = '#0F325D', MB_CITEBAR = '#CFE3E0', MB_ALTROW = '#EAF3F0';
     const solidBorderBaseId = pickSolidBorderFillId(carrierHeaderXml);
-    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, accentColor));
+
+    // 문제 출처 줄(예: "[ 1차시도 ] 평면좌표 · [S+반] 1. 평면좌표 진도미션
+    // 16번") — HTML 견본의 .mbCite처럼 옅은 민트 배경 박스 + 남색 볼드 글씨.
+    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 900, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
+    carrierHeaderXml = styleRes.headerXml;
+    const citationCharPrId = styleRes.id;
+    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_CITEBAR));
+    carrierHeaderXml = styleRes.headerXml;
+    const citeBoxFillId = styleRes.id;
+    styleRes = appendParaPrDef(carrierHeaderXml, deriveBoxedParaPr(carrierHeaderXml, centerParaPrId, citeBoxFillId));
+    carrierHeaderXml = styleRes.headerXml;
+    const citationIds = { ...carrierIds, paraPrIDRef: styleRes.id, charPrIDRef: citationCharPrId };
+
+    // [오답 현황 요약] 표 스타일 (남색 헤더행 + 흰 볼드, 짝수 본문행은
+    // 옅은 민트 줄무늬, 본문은 가운데 정렬).
+    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_NAVY));
     carrierHeaderXml = styleRes.headerXml; const summaryHeaderBorderFillId = styleRes.id;
     styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 850, bold: true, textColor: '#FFFFFF' }));
     carrierHeaderXml = styleRes.headerXml; const summaryHeaderCharPrId = styleRes.id;
     styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 850, bold: false, textColor: '#000000' }));
     carrierHeaderXml = styleRes.headerXml; const summaryBodyCharPrId = styleRes.id;
     const summaryBodyBorderFillId = solidBorderBaseId;
+    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_ALTROW));
+    carrierHeaderXml = styleRes.headerXml; const summaryBodyBorderFillIdAlt = styleRes.id;
 
     // 표지/문제/해설 구역이 따로 없는(단일 구역짜리) 서식일 때만 쓰는
     // 다단 전환용 ctrl — 그 경우 한 구역 안에서 제목·요약표는 1단,
@@ -2616,20 +2652,15 @@ async function generateHwpxNote(historicalBatch) {
     const studentInfo = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound, oldName };
     const strippedSections = {};
     const questionsStripped = stripSectionToSkeletonKeepCtrls(regions.questions.sectionXml);
-    // 임시 진단 로그 — <hp:endNote 는 <hp:endNotePr>(구조적 설정, 항상 있음)도
-    // 같이 잡혀서 오판단이었음 — [정답] 텍스트로 정확히 확인 + 길이 비교.
-    log(`[진단] questions 길이: 원본 ${regions.questions.sectionXml.length} -> 다듬은 후 ${questionsStripped.length}, [정답] 텍스트 남음: ${questionsStripped.includes('[정답]')}`);
     strippedSections[regions.questions.sectionPath] =
       personalizeOddHeaderText(questionsStripped, studentInfo);
     if (regions.cover) {
       const coverStripped = stripSectionToSkeletonKeepCtrls(regions.cover.sectionXml);
-      log(`[진단] cover 길이: 원본 ${regions.cover.sectionXml.length} -> 다듬은 후 ${coverStripped.length}, [정답] 텍스트 남음: ${coverStripped.includes('[정답]')}`);
       strippedSections[regions.cover.sectionPath] =
         personalizeOddHeaderText(coverStripped, studentInfo);
     }
     if (regions.answers) {
       const answersStripped = stripSectionToSkeletonKeepCtrls(regions.answers.sectionXml);
-      log(`[진단] answers 길이: 원본 ${regions.answers.sectionXml.length} -> 다듬은 후 ${answersStripped.length}, [정답] 텍스트 남음: ${answersStripped.includes('[정답]')}`);
       strippedSections[regions.answers.sectionPath] =
         personalizeOddHeaderText(answersStripped, studentInfo);
     }
@@ -2669,6 +2700,7 @@ async function generateHwpxNote(historicalBatch) {
       coverDemo += summaryTableXml(summaryId, summaryRows, textIds, {
         headerBorderFillId: summaryHeaderBorderFillId,
         bodyBorderFillId: summaryBodyBorderFillId,
+        bodyBorderFillIdAlt: summaryBodyBorderFillIdAlt,
         headerCharPrId: summaryHeaderCharPrId,
         bodyCharPrId: summaryBodyCharPrId,
         cellParaPrId: centerParaPrId,
