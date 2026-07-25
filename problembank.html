@@ -44,6 +44,8 @@ button:hover:not(:disabled) { background: var(--mint-deep); border-color: var(--
 button:disabled { opacity: 0.4; cursor: default; }
 .delBtn { background: #fff; color: var(--pink-deep); border-color: var(--pink-deep); padding: 5px 10px; font-size: 12px; }
 .delBtn:hover { background: var(--pink-soft); }
+.tagEditBtn { background: #fff; color: var(--mint-deep); border: 1px solid var(--mint-deep); border-radius: 3px; padding: 5px 10px; font-size: 12px; font-family: var(--sans); font-weight: 700; letter-spacing: .06em; cursor: pointer; }
+.tagEditBtn:hover { background: var(--mint-soft); }
 #log { white-space: pre-wrap; background: #fff; border: 1px solid var(--gold-line); padding: 12px; margin-top: 12px; font-size: 13px; border-radius: 4px; min-height: 20px; }
 .ok { color: var(--mint-deep); font-weight: 700; }
 .err { color: var(--pink-deep); font-weight: 700; }
@@ -120,6 +122,19 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
 .uploadGate { font-size: 13px; margin-top: 10px; padding: 8px 10px; background: var(--pink-soft); border-radius: 4px; }
 .uploadGate label { display: inline; font-weight: 400; color: var(--ink); margin: 0; }
+
+/* ---- 단원/유형 태그 편집 ---- */
+.tagListBox { border-top: 1px dashed var(--gold-line); margin-top: 14px; padding-top: 10px; }
+.tagListBox h4 { font-family: var(--kserif); font-size: 13px; margin: 0 0 8px; color: var(--gold); }
+.tagBulkRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.tagBulkRow input[type=text] { width: 160px; }
+.tagRows { display: flex; flex-direction: column; gap: 6px; }
+.tagRow { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gold-line); flex-wrap: wrap; }
+.tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; width: 34px; }
+.tagRowPreview { flex: 1 1 260px; min-width: 120px; color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagUnitInput, .tagTypeInput { width: 120px; flex: 0 0 auto; }
+.tagEditBox { border: 2px solid var(--gold); }
+.tagEditFooter { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -138,14 +153,19 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 
 <div class="box">
   <p><b>업로드된 파일 목록</b></p>
-  <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다.</p>
+  <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다. 각 파일의 "태그 편집" 버튼으로 문제마다 단원·유형을 입력할 수 있습니다.</p>
   <div id="fileGroups"><p class="hint">불러오는 중...</p></div>
   <div class="toolbar">
     <button id="genBtn" disabled>선택한 파일로 오답노트 만들기</button>
   </div>
 </div>
 
+<div id="tagEditArea"></div>
+
 <div id="log"></div>
+
+<datalist id="unitSuggestList"></datalist>
+<datalist id="typeSuggestList"></datalist>
 
 <script>
 // 대시보드 Apps Script(단일 통합 스크립트) URL — 교재/시험지 저장소 기능도 여기 포함되어 있습니다.
@@ -322,8 +342,10 @@ function renderGroups(files) {
           <span class="fName">${f.filename}</span>
           <span class="fMemo">${f.memo || ''}</span>
           <span class="fMeta">${uploadedAt}</span>
+          <button class="tagEditBtn" data-id="${f.id}">태그 편집</button>
           <button class="delBtn" data-id="${f.id}">삭제</button>
         `;
+        row.querySelector('.tagEditBtn').addEventListener('click', () => openTagEditor(f));
         attachDragHandlers(row, groupKey, orderMap);
         typeDiv.appendChild(row);
       }
@@ -376,8 +398,138 @@ async function refreshList() {
   try {
     const { files } = await callGet({ action: 'list' });
     renderGroups(files);
+    updateTagSuggestLists(files);
   } catch (e) {
     groupsEl.innerHTML = `<p class="hint err">목록을 불러오지 못했습니다: ${e.message}</p>`;
+  }
+}
+
+// ---------- 단원/유형 자동완성 목록 ----------
+// 지금까지 어떤 파일에서든 한 번이라도 입력된 단원/유형 값을 모아 <datalist>로
+// 제공 — 같은 단원인데 "수열"/"수열 "처럼 표기가 갈리는 걸 줄여준다.
+function collectTagSuggestions(files) {
+  const units = new Set(), types = new Set();
+  for (const f of files) {
+    let qd;
+    try { qd = JSON.parse(f.questionData || '[]'); } catch (e) { continue; }
+    for (const q of qd) {
+      if (q.unit) units.add(q.unit);
+      if (q.type) types.add(q.type);
+    }
+  }
+  return { units: [...units].sort((a, b) => a.localeCompare(b, 'ko')), types: [...types].sort((a, b) => a.localeCompare(b, 'ko')) };
+}
+function updateTagSuggestLists(files) {
+  const { units, types } = collectTagSuggestions(files);
+  document.getElementById('unitSuggestList').innerHTML = units.map(u => `<option value="${escapeHtml(u)}">`).join('');
+  document.getElementById('typeSuggestList').innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
+// 문제 번호별로 "단원/유형" 입력칸을 나란히 보여주는 목록. questionData의
+// 각 항목(qd)을 입력 즉시 직접 수정하므로, 호출한 쪽은 questionData 배열을
+// 그대로 저장(업로드 또는 updatetags)하면 됨.
+function renderTagList(container, nums, questionData, rawTextByNum) {
+  const qdByNum = new Map(questionData.map(q => [String(q.num), q]));
+  const wrap = document.createElement('div');
+  wrap.className = 'tagListBox';
+  wrap.innerHTML = `
+    <h4>문제별 단원 · 유형</h4>
+    <div class="tagBulkRow">
+      <label style="display:inline;margin:0">전체 단원 일괄 입력:</label>
+      <input type="text" class="bulkUnitInput" list="unitSuggestList" placeholder="예: 수열">
+      <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
+    </div>
+  `;
+  const bulkInput = wrap.querySelector('.bulkUnitInput');
+  const rows = document.createElement('div');
+  rows.className = 'tagRows';
+  for (const num of nums) {
+    const qd = qdByNum.get(String(num));
+    if (!qd) continue;
+    const preview = (rawTextByNum[num] || '').replace(/\s+/g, ' ').trim().slice(0, 70);
+    const row = document.createElement('div');
+    row.className = 'tagRow';
+    row.innerHTML = `
+      <span class="tagRowNum">${num}번</span>
+      <span class="tagRowPreview" title="${escapeHtml(rawTextByNum[num] || '')}">${escapeHtml(preview)}</span>
+      <input type="text" class="tagUnitInput" list="unitSuggestList" placeholder="단원" value="${escapeHtml(qd.unit || '')}">
+      <input type="text" class="tagTypeInput" list="typeSuggestList" placeholder="유형" value="${escapeHtml(qd.type || '')}">
+    `;
+    row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); });
+    row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); });
+    rows.appendChild(row);
+  }
+  wrap.appendChild(rows);
+  wrap.querySelector('.bulkApplyBtn').addEventListener('click', () => {
+    const val = bulkInput.value.trim();
+    if (!val) return;
+    rows.querySelectorAll('.tagUnitInput').forEach(inp => { inp.value = val; inp.dispatchEvent(new Event('input')); });
+  });
+  container.appendChild(wrap);
+}
+
+// ---------- 이미 업로드된 파일의 태그 편집 (재업로드 없이 문제데이터만 갱신) ----------
+const tagEditAreaEl = document.getElementById('tagEditArea');
+async function openTagEditor(f) {
+  tagEditAreaEl.innerHTML = '';
+  const box = document.createElement('div');
+  box.className = 'validateFile tagEditBox';
+  box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint">불러오는 중...</p>`;
+  tagEditAreaEl.appendChild(box);
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (!HWPX_LIB_OK) {
+    box.innerHTML += '<p class="hint err">hwpx-lib.js를 불러오지 못해 태그 편집을 열 수 없습니다.</p>';
+    return;
+  }
+  try {
+    const json = await callGet({ action: 'download', id: f.id });
+    const zip = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
+    const entry = await parseHwpx(zip);
+    const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
+    if (!nums.length) {
+      box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint err">문제를 하나도 찾지 못했습니다.</p>`;
+      return;
+    }
+    let existingQD = [];
+    try { existingQD = JSON.parse(f.questionData || '[]'); } catch (e) {}
+    const existingByNum = new Map(existingQD.map(q => [String(q.num), q]));
+    const questionData = nums.map(num => {
+      const ex = existingByNum.get(String(num)) || {};
+      return {
+        num, choiceCount: ex.choiceCount ?? null, hasBogi: ex.hasBogi ?? null,
+        hasCondition: ex.hasCondition ?? null, warnings: ex.warnings || [],
+        unit: ex.unit || '', type: ex.type || '',
+      };
+    });
+    const rawTextByNum = {};
+    for (const num of nums) rawTextByNum[num] = decodeXmlEntities(stripTags(entry.markers.get(num).blockXml));
+
+    box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint">총 ${nums.length}문제. 저장하면 시험지 파일은 그대로 두고 단원/유형 정보만 갱신됩니다.</p>`;
+    renderTagList(box, nums, questionData, rawTextByNum);
+    const footer = document.createElement('div');
+    footer.className = 'tagEditFooter';
+    footer.innerHTML = `<button type="button" class="saveTagBtn">저장</button><button type="button" class="delBtn cancelTagBtn">닫기</button><span class="tagSaveMsg hint"></span>`;
+    box.appendChild(footer);
+    footer.querySelector('.cancelTagBtn').addEventListener('click', () => { tagEditAreaEl.innerHTML = ''; });
+    footer.querySelector('.saveTagBtn').addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      const msgEl = footer.querySelector('.tagSaveMsg');
+      msgEl.textContent = '저장 중...';
+      msgEl.className = 'tagSaveMsg hint';
+      try {
+        await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(questionData) });
+        msgEl.textContent = '저장되었습니다.';
+        msgEl.className = 'tagSaveMsg ok';
+        await refreshList();
+      } catch (e) {
+        msgEl.textContent = '저장 실패: ' + e.message;
+        msgEl.className = 'tagSaveMsg err';
+      } finally {
+        ev.target.disabled = false;
+      }
+    });
+  } catch (e) {
+    box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint err">불러오기 실패: ${escapeHtml(e.message)}</p>`;
   }
 }
 
@@ -577,6 +729,7 @@ async function validateOneFile(file, box) {
 
   const questionData = [];
   const previewHtmlByNum = {};
+  const rawTextByNum = {};
   for (const num of nums) {
     const marker = entry.markers.get(num);
     const blockXml = marker.blockXml;
@@ -611,9 +764,11 @@ async function validateOneFile(file, box) {
     if (!extractEndnoteFullBodyXml(blockXml)) issues.push('해설을 인식하지 못함');
 
     previewHtmlByNum[num] = html;
+    rawTextByNum[num] = rawText;
     questionData.push({
       num, choiceCount, hasBogi: html.includes('hwpBogi'), hasCondition: html.includes('hwpCondBox'),
       warnings: issues, // overflow(다단 초과)는 렌더 후 아래에서 채워짐
+      unit: '', type: '',
     });
   }
 
@@ -682,6 +837,8 @@ async function validateOneFile(file, box) {
   const title = document.createElement('h3');
   title.textContent = file.name;
   box.insertBefore(title, summary);
+
+  renderTagList(box, nums, questionData, rawTextByNum);
 
   return { ok: warnCount === 0, hasCritical: false, questionData };
 }
