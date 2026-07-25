@@ -354,6 +354,13 @@ const HWP_EQ_SYMBOLS = {
   // short-form inequality keywords ("-3lele1/2" = -3 \leq l \leq 1/2, i.e.
   // "le"/"ge" used in place of LEQ/GEQ) — confirmed from real broken output.
   le: '\\leq', ge: '\\geq',
+  // 화살표/프라임 — 실제 파일에서 "rarrow"가 그대로 글자로 남는 것 확인
+  // ("(x,y)rarrow(x-4,y+6)"). prime은 접미사라 글자 바로 뒤에 붙여서
+  // 나오므로("Pprime" = P′), 다른 붙어있는 키워드와 같은 방식으로 그
+  // 자리에서 바로 치환하면 위치가 맞는다.
+  prime: "'",
+  rarrow: '\\rightarrow', larrow: '\\leftarrow', lrarrow: '\\leftrightarrow',
+  rrarrow: '\\Rightarrow', llarrow: '\\Leftarrow', lrrarrow: '\\Leftrightarrow',
 };
 
 // Case-insensitive, longest-match-first keyword table — HWP's equation
