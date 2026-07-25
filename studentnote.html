@@ -2637,24 +2637,11 @@ async function generateHwpxNote(historicalBatch) {
     const solidBorderBaseId = pickSolidBorderFillId(carrierHeaderXml);
 
     // 문제 출처 줄(예: "[ 1차시도 ] 평면좌표 · [S+반] 1. 평면좌표 진도미션
-    // 16번") — HTML 견본의 .mbCite처럼 옅은 민트 배경 박스 + 남색 볼드 글씨.
-    // 문단 테두리(hh:border)에 채움색을 넣는 방식은 실제로 생성해보니
-    // 한글에서 배경이 아예 안 보였음(원인 불명, 데이터는 정상이었음) —
-    // 이미 잘 보이는 걸로 확인된 표 헤더행과 같은 방식(진짜 표 1칸)으로
-    // 바꿔서 확실하게 만든다.
-    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 550, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
+    // 16번") — 박스로 만들었더니 줄바꿈/배경 렌더링 문제가 계속 생겨서
+    // (요청에 따라) 박스 없이 원래처럼 일반 텍스트로, 색만 남색으로.
+    let styleRes = appendCharPrDef(carrierHeaderXml, deriveStyledCharPr(carrierHeaderXml, carrierIds.charPrIDRef, { height: 900, bold: true, textColor: MB_NAVY, fontFace: '나눔명조' }));
     carrierHeaderXml = styleRes.headerXml;
-    const citationCharPrId = styleRes.id;
-    styleRes = appendBorderFillDef(carrierHeaderXml, deriveFilledBorderFill(carrierHeaderXml, solidBorderBaseId, MB_CITEBAR));
-    carrierHeaderXml = styleRes.headerXml;
-    const citeBoxFillId = styleRes.id;
-    const citationIds = { ...carrierIds, paraPrIDRef: centerParaPrId };
-    // 실제 서식 파일의 다단 폭(colSz)을 그대로 사용 — 대략 15800 정도로
-    // 확인됨(다단 하나당 폭). 정확한 값을 못 찾는 서식이면 이 값으로도
-    // 크게 어긋나지 않는다.
-    const citationBoxWidth = (regions.questions.colCtrl &&
-      regions.questions.colCtrl.ctrlXml.match(/<hp:colSz\b[^>]*\bwidth="(\d+)"/) || [, '15800'])[1];
-    const labelBoxXml = makeLabelBoxBuilder();
+    const citationIds = { ...carrierIds, paraPrIDRef: centerParaPrId, charPrIDRef: styleRes.id };
 
     // [오답 현황 요약] 표 스타일 (남색 헤더행 + 흰 볼드, 짝수 본문행은
     // 옅은 민트 줄무늬, 본문은 가운데 정렬).
@@ -2772,9 +2759,9 @@ async function generateHwpxNote(historicalBatch) {
       // section, that's just a columnBreak per question (the section's
       // own native colPr already applies). In a single merged region, the
       // FIRST question also has to switch the section into 2단 mode itself.
-      const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1, width: citationBoxWidth, borderFillId: citeBoxFillId, charPrId: citationCharPrId, cellParaPrId: centerParaPrId, rowHeight: 900 };
+      const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1 };
       if (singleRegion && isFirstQuestion) opts.prefixCtrlXml = colPr2RunXml;
-      questionsDemo += labelBoxXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, citationIds, opts);
+      questionsDemo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, citationIds, opts);
       qBodyOrderNum++;
 
       if (entry === carrierEntry) {
