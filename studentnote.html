@@ -1673,6 +1673,21 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
 // question content, pushing everything else down/out of place. Only
 // structural ctrl types get kept verbatim; a run whose only ctrl is an
 // endNote/footNote is treated like plain sample text and blanked instead.
+// 구조적 컨트롤 판정은 이 run의 "자기 자신의" 최상위 컨트롤만 봐야 한다 —
+// 도형/텍스트박스(hp:rect 등, 서식 파일의 샘플 장식 요소) 안에 그 도형
+// 자기만의 colPr 컨트롤이 파묻혀 있는 경우가 실제로 있었다. 예전처럼
+// run 전체 텍스트에서 정규식으로 "어딘가에 <hp:ctrl><hp:colPr가
+// 있는지"만 봤더니, 도형 속 깊숙이 파묻힌 그 colPr 때문에 도형 전체
+// (샘플 텍스트 포함)가 "구조적이라 보존" 판정을 받아버렸다 — 파묻힌
+// 컨트롤이 아니라 run의 최상위 컨트롤만 findTopLevelBlocks로 골라서
+// 그 타입만 확인해야 정확하다.
+// 더 나아가: 진짜 구조적인 colPr 컨트롤과 서식의 샘플 도형/텍스트가
+// "같은 run" 안에 나란히(중첩이 아니라) 붙어있는 경우도 실제로 있었다
+// (colPr가 self-closing으로 바로 끝나고, 그 뒤에 샘플 도형+텍스트가
+// 이어지는 구조). run 전체를 통째로 보존하면 그 샘플까지 같이
+// 살아남으므로, 찾은 구조적 컨트롤 "그 자체"만 남기고 나머지(도형,
+// 텍스트 등)는 버려서 새로 조립한다.
+const KEEPABLE_CTRL_TYPES = new Set(['header', 'footer', 'pageNum', 'colPr']);
 function keepCtrlsBlankVisibleText(paraText) {
   const runs = findTopLevelBlocks(paraText, 'hp:run');
   if (!runs.length) return paraText;
@@ -1680,13 +1695,16 @@ function keepCtrlsBlankVisibleText(paraText) {
   let pos = 0;
   for (const r of runs) {
     out += paraText.slice(pos, r.start);
-    const hasContentCtrl = /<hp:ctrl>\s*<hp:(endNote|footNote)\b/.test(r.text);
-    const hasStructuralCtrl = /<hp:ctrl>\s*<hp:(header|footer|pageNum|colPr)\b/.test(r.text);
-    if (hasStructuralCtrl && !hasContentCtrl) {
-      out += r.text;
+    const topCtrls = findTopLevelBlocks(r.text, 'hp:ctrl');
+    const keepableCtrls = topCtrls.filter(c => {
+      const m = c.text.match(/^<hp:ctrl>\s*<hp:(\w+)\b/);
+      return m && KEEPABLE_CTRL_TYPES.has(m[1]);
+    });
+    const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
+    const charPr = charPrM ? charPrM[1] : '0';
+    if (keepableCtrls.length && keepableCtrls.length === topCtrls.length) {
+      out += `<hp:run charPrIDRef="${charPr}">${keepableCtrls.map(c => c.text).join('')}</hp:run>`;
     } else {
-      const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
-      const charPr = charPrM ? charPrM[1] : '0';
       out += `<hp:run charPrIDRef="${charPr}"><hp:t/></hp:run>`;
     }
     pos = r.end;
