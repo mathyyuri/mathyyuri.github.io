@@ -1658,6 +1658,17 @@ async function applyFormatTemplateHeaderFooter(carrierHeaderXml, targetSectionXm
 // project). When reusing a FORMAT file's own section as the output
 // skeleton directly, every run in a ctrl-carrying paragraph has to
 // survive; only the run(s) with actual visible text get blanked out.
+//
+// BUT hp:endNote/hp:footNote are NOT "structural" like header/footer/
+// pageNum/colPr — they carry a full nested subList of REAL paragraph text
+// (the 서식 file's own sample question's worked-out 해설, kept around for
+// design purposes). Blindly preserving "any run with a ctrl" kept that
+// whole sample explanation intact while only its visible STEM got blanked
+// — confirmed against a real generated file: several paragraphs of a
+// sample 해설 (starting "[정답] ① ...") showed up before any real
+// question content, pushing everything else down/out of place. Only
+// structural ctrl types get kept verbatim; a run whose only ctrl is an
+// endNote/footNote is treated like plain sample text and blanked instead.
 function keepCtrlsBlankVisibleText(paraText) {
   const runs = findTopLevelBlocks(paraText, 'hp:run');
   if (!runs.length) return paraText;
@@ -1665,7 +1676,9 @@ function keepCtrlsBlankVisibleText(paraText) {
   let pos = 0;
   for (const r of runs) {
     out += paraText.slice(pos, r.start);
-    if (/<hp:ctrl\b/.test(r.text)) {
+    const hasContentCtrl = /<hp:ctrl>\s*<hp:(endNote|footNote)\b/.test(r.text);
+    const hasStructuralCtrl = /<hp:ctrl>\s*<hp:(header|footer|pageNum|colPr)\b/.test(r.text);
+    if (hasStructuralCtrl && !hasContentCtrl) {
       out += r.text;
     } else {
       const charPrM = r.text.match(/^<hp:run charPrIDRef="(\d+)"/);
