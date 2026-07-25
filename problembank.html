@@ -128,6 +128,9 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagListBox h4 { font-family: var(--kserif); font-size: 13px; margin: 0 0 8px; color: var(--gold); }
 .tagBulkRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .tagBulkRow input[type=text] { width: 160px; }
+.unitTabBar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.unitTabBtn { font-family: var(--kserif); font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); cursor: pointer; }
+.unitTabBtn:hover { background: var(--mint-deep); color: #fff; }
 .tagRows { display: flex; flex-direction: column; gap: 6px; }
 .tagRow { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gold-line); flex-wrap: wrap; }
 .tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; width: 34px; }
@@ -432,22 +435,81 @@ function updateTagSuggestLists(files) {
   document.getElementById('typeSuggestList').innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
 }
 
+// ---------- 단원 탭 (빠른 선택용, 나중에 추가/변경 가능) ----------
+// localStorage에 저장 — 처음엔 공통수학2 기준 기본값으로 시작하고,
+// "+ 탭 추가"로 원장님이 직접 늘릴 수 있음.
+const UNIT_TABS_KEY = 'problembank_unit_tabs_v1';
+const DEFAULT_UNIT_TABS = ['평면좌표', '직선의 방정식', '원의 방정식', '도형의 이동', '집합과 명제', '함수', '경우의 수'];
+function loadUnitTabs() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(UNIT_TABS_KEY)); } catch (e) {}
+  return Array.isArray(saved) && saved.length ? saved : DEFAULT_UNIT_TABS.slice();
+}
+function saveUnitTabs(tabs) {
+  localStorage.setItem(UNIT_TABS_KEY, JSON.stringify(tabs));
+}
+function addUnitTab(name) {
+  name = name.trim();
+  if (!name) return;
+  const tabs = loadUnitTabs();
+  if (!tabs.includes(name)) { tabs.push(name); saveUnitTabs(tabs); }
+}
+// 파일명/메모 등 텍스트 안에 이미 알려진 단원 이름이 그대로 들어있는
+// 경우가 많음(예: "[S+반] 2. 직선의 방정식 진도미션") — 가장 긴 이름부터
+// 대조해서("직선의 방정식"이 "평면좌표"보다 먼저 걸리는 일 없이) 첫 매칭을
+// 1차 추정값으로 쓴다. 못 찾으면 빈 문자열(직접 입력해야 함).
+function guessUnitFromText(text, knownUnits) {
+  if (!text) return '';
+  const sorted = [...knownUnits].sort((a, b) => b.length - a.length);
+  for (const u of sorted) {
+    if (text.includes(u)) return u;
+  }
+  return '';
+}
+
 // 문제 번호별로 "단원/유형" 입력칸을 나란히 보여주는 목록. questionData의
 // 각 항목(qd)을 입력 즉시 직접 수정하므로, 호출한 쪽은 questionData 배열을
 // 그대로 저장(업로드 또는 updatetags)하면 됨.
-function renderTagList(container, nums, questionData, rawTextByNum) {
+// guessedUnit이 있으면(파일명에서 자동 추정된 단원) 아직 단원이 비어있는
+// 문제에만 1차로 채워 넣는다 — 이미 손으로 입력해둔 값은 덮어쓰지 않음.
+function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit) {
+  if (guessedUnit) {
+    for (const qd of questionData) {
+      if (!qd.unit) qd.unit = guessedUnit;
+    }
+  }
   const qdByNum = new Map(questionData.map(q => [String(q.num), q]));
   const wrap = document.createElement('div');
   wrap.className = 'tagListBox';
   wrap.innerHTML = `
     <h4>문제별 단원 · 유형</h4>
+    ${guessedUnit ? `<p class="hint">파일명으로 "${escapeHtml(guessedUnit)}"을(를) 1차로 채워뒀어요 — 틀린 문제만 아래에서 고쳐주세요.</p>` : ''}
+    <div class="unitTabBar"></div>
     <div class="tagBulkRow">
       <label style="display:inline;margin:0">전체 단원 일괄 입력:</label>
       <input type="text" class="bulkUnitInput" list="unitSuggestList" placeholder="예: 수열">
       <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
+      <button type="button" class="selectAllBtn addUnitTabBtn">+ 탭 추가</button>
     </div>
   `;
   const bulkInput = wrap.querySelector('.bulkUnitInput');
+  const tabBar = wrap.querySelector('.unitTabBar');
+  function renderUnitTabs() {
+    tabBar.innerHTML = loadUnitTabs().map(u => `<button type="button" class="unitTabBtn" data-unit="${escapeHtml(u)}">${escapeHtml(u)}</button>`).join('');
+    tabBar.querySelectorAll('.unitTabBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.unit;
+        bulkInput.value = val;
+        rows.querySelectorAll('.tagUnitInput').forEach(inp => { inp.value = val; inp.dispatchEvent(new Event('input')); });
+      });
+    });
+  }
+  wrap.querySelector('.addUnitTabBtn').addEventListener('click', () => {
+    const name = (bulkInput.value || prompt('추가할 단원 이름을 입력하세요') || '').trim();
+    if (!name) return;
+    addUnitTab(name);
+    renderUnitTabs();
+  });
   const rows = document.createElement('div');
   rows.className = 'tagRows';
   for (const num of nums) {
@@ -472,6 +534,8 @@ function renderTagList(container, nums, questionData, rawTextByNum) {
     if (!val) return;
     rows.querySelectorAll('.tagUnitInput').forEach(inp => { inp.value = val; inp.dispatchEvent(new Event('input')); });
   });
+  renderUnitTabs();
+  if (guessedUnit) bulkInput.value = guessedUnit;
   container.appendChild(wrap);
 }
 
@@ -512,7 +576,9 @@ async function openTagEditor(f) {
     for (const num of nums) rawTextByNum[num] = decodeXmlEntities(stripTags(entry.markers.get(num).blockXml));
 
     box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint">총 ${nums.length}문제. 저장하면 시험지 파일은 그대로 두고 단원/유형 정보만 갱신됩니다.</p>`;
-    renderTagList(box, nums, questionData, rawTextByNum);
+    const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
+    const guessedUnit = guessUnitFromText(f.filename, knownUnits);
+    renderTagList(box, nums, questionData, rawTextByNum, guessedUnit);
     const footer = document.createElement('div');
     footer.className = 'tagEditFooter';
     footer.innerHTML = `<button type="button" class="saveTagBtn">저장</button><button type="button" class="delBtn cancelTagBtn">닫기</button><span class="tagSaveMsg hint"></span>`;
@@ -845,7 +911,9 @@ async function validateOneFile(file, box) {
   title.textContent = file.name;
   box.insertBefore(title, summary);
 
-  renderTagList(box, nums, questionData, rawTextByNum);
+  const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
+  const guessedUnit = guessUnitFromText(file.name, knownUnits);
+  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit);
 
   return { ok: warnCount === 0, hasCritical: false, questionData };
 }
