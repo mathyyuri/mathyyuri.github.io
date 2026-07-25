@@ -2109,6 +2109,14 @@ let missionMap = { byClass: {}, global: {} }; // from 미션매핑 sheet: "반||
 let currentStudent = null;
 let missionGroups = [];
 let noteHistory = [];      // [{name,mission,num,round,at}]
+// 방금 만든 오답노트를 다른 형식(한글 → HTML 등)으로 바로 이어서 또
+// 만들 때, 완전히 똑같은 문제 구성이면 새 회차로 또 기록하지 않고 같은
+// 회차로 취급 — 그래야 "한글로 받고 이어서 HTML로도 받기"가 서버에는
+// 두 개의 별도 회차로 중복 기록되지 않는다.
+let lastLoggedBatch = null; // { key, noteRound }
+function batchKeyFor(checked) {
+  return [...checked].map(c => `${c.mission}||${c.num}`).sort().join(',');
+}
 let loadedFileCache = new Map();
 
 // ---------- init: roster + mission map + bank list ----------
@@ -2367,6 +2375,13 @@ function compactHistoryString(mission, num) {
 }
 
 function renderMissionBlocks() {
+  // 오답노트를 하나 만들고 나면(예: 한글로 생성) 이 목록이 다시 그려지는데,
+  // 그때 체크 표시가 전부 풀려버리면 곧바로 다른 형식(HTML)으로도 받으려
+  // 할 때 "체크한 문제가 없습니다" 오류가 남 — 다시 그리기 전 체크 상태를
+  // 기억해뒀다가 그대로 복원한다.
+  const prevChecked = new Set(
+    [...document.querySelectorAll('.qChk:checked')].map(chk => `${chk.dataset.mission}||${chk.dataset.num}`)
+  );
   missionBlocksEl.innerHTML = '';
   for (const group of missionGroups) {
     const guess = resolveFileForMission(group.mission, group.category);
@@ -2390,8 +2405,9 @@ function renderMissionBlocks() {
         ${group.items.map(it => {
           const r = roundFor(group.mission, it.num);
           const hist = historyString(group.mission, it.num);
+          const wasChecked = prevChecked.has(`${group.mission}||${it.num}`);
           return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
-            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-num="${it.num}" data-round="${r}"> ${it.num}${it.status === 3 ? '△' : ''}` +
+            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
             (hist ? `<span class="roundBadge">${hist}</span>` : '') +
             `</label>`;
         }).join('')}
@@ -2507,8 +2523,12 @@ genBtn.addEventListener('click', async () => {
     const colPr1RunXml = `<hp:run charPrIDRef="${textIds.charPrIDRef}"><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl></hp:run>`;
 
     log('시험지 안의 내용을 정리하는 중...');
+    const batchKey = batchKeyFor(checked);
+    const reuseRound = lastLoggedBatch && lastLoggedBatch.key === batchKey;
     // "이 학생의 몇 번째 오답노트인지" — 같은 생성 시각(batch)을 하나로 묶어서 셉니다.
-    const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
+    // 방금(또는 이미) 기록한 것과 문제 구성이 완전히 같으면(형식만 바꿔
+    // 다시 받는 경우) 새 회차로 세지 않고 같은 회차 번호를 그대로 씁니다.
+    const noteRound = reuseRound ? lastLoggedBatch.noteRound : new Set(noteHistory.map(h => h.at)).size + 1;
     // "대치수학 N기 X 이름" 패턴은 보통 문제 구역의 머리말에만 있고, 이름만
     // 단독으로 반복되는 표지 배지 같은 건 다른 구역에 있을 수 있어서, 이전
     // 학생 이름은 구역 하나가 아니라 서식 전체에서 한 번만 찾아둡니다.
@@ -2699,19 +2719,22 @@ genBtn.addEventListener('click', async () => {
     a.remove();
     URL.revokeObjectURL(url);
 
-    log('생성 이력 기록 중...');
-    await callPostNoCors(DASHBOARD_URL, {
-      action: 'lognote', key: TEACHER_KEY, name: studentName,
-      items: checked.map(c => ({ mission: c.mission, num: c.num })),
-    });
-    // refresh history/grading so round badges + the new ungraded round show up right away
-    try {
-      const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name: studentName, key: TEACHER_KEY });
-      noteHistory = historyData.history;
-      renderMissionBlocks();
-      updateCounter();
-      await refreshGrading(studentName);
-    } catch (e) { /* non-fatal */ }
+    if (!reuseRound) {
+      log('생성 이력 기록 중...');
+      await callPostNoCors(DASHBOARD_URL, {
+        action: 'lognote', key: TEACHER_KEY, name: studentName,
+        items: checked.map(c => ({ mission: c.mission, num: c.num })),
+      });
+      // refresh history/grading so round badges + the new ungraded round show up right away
+      try {
+        const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name: studentName, key: TEACHER_KEY });
+        noteHistory = historyData.history;
+        renderMissionBlocks();
+        updateCounter();
+        await refreshGrading(studentName);
+      } catch (e) { /* non-fatal */ }
+    }
+    lastLoggedBatch = { key: batchKey, noteRound };
 
     log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
   } catch (e) {
@@ -3123,7 +3146,11 @@ genHtmlBtn.addEventListener('click', async () => {
       await getParsedFile(fid, f.filename);
     }
 
-    const noteRound = new Set(noteHistory.map(h => h.at)).size + 1;
+    // 같은 문제 구성으로 방금(또는 이미) 한글 파일을 만들었다면, 그때와
+    // 같은 회차 번호를 그대로 써서 두 형식이 같은 회차를 가리키게 한다.
+    const batchKey = batchKeyFor(checked);
+    const reuseRound = lastLoggedBatch && lastLoggedBatch.key === batchKey;
+    const noteRound = reuseRound ? lastLoggedBatch.noteRound : new Set(noteHistory.map(h => h.at)).size + 1;
     const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
     const info = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound };
 
