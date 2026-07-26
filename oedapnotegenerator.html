@@ -12,7 +12,7 @@
      in front of GitHub Pages) — a plain hard-refresh doesn't reliably clear
      an edge cache, but a changed URL always fetches fresh. Bump this any
      time hwpx-lib.js changes. -->
-<script src="hwpx-lib.js?v=20260723-5"></script>
+<script src="hwpx-lib.js?v=20260726-1"></script>
 <style>
   body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
   h1 { font-size: 22px; }
@@ -1169,6 +1169,48 @@ window.addEventListener('DOMContentLoaded', function () {
 </html>`;
 }
 
+// A slide normally holds 2 side-by-side "slidePane" halves (one question
+// each). A long question crammed into a HALF-width pane can overflow that
+// pane's height — the pane itself just silently scrolls (`overflow-y:auto`
+// in buildClassHtmlDocument's CSS), so nothing looks broken while viewing
+// interactively, but the "이미지로 저장"/PDF export only captures whatever's
+// on-screen, silently cutting off everything below the scrolled fold.
+// Rather than guess from character count (unreliable — a short line of text
+// and a tall stacked fraction take wildly different vertical space for the
+// same string length), render each candidate pane into a hidden REAL DOM
+// element sized like a real half-pane and measure its actual overflow,
+// the same measure-the-real-render approach problembank.html's own A4
+// overflow check already uses. 1280×720 is an arbitrary but reasonable
+// stand-in for "a normal-sized window" — the interactive slide itself has
+// no fixed pixel size (it's vh/vw-relative to whatever window it's opened
+// in), so this can never be exact for every viewer, only a good default.
+const SLIDE_MEASURE_W = 1280, SLIDE_MEASURE_H = 720;
+function getSlideMeasureHost() {
+  let host = document.getElementById('__slideMeasureHost');
+  if (host) return host;
+  host = document.createElement('div');
+  host.id = '__slideMeasureHost';
+  host.style.cssText = `position:fixed;left:-99999px;top:0;width:${SLIDE_MEASURE_W}px;height:${SLIDE_MEASURE_H}px;overflow:hidden;font-family:'Noto Sans KR',sans-serif;`;
+  document.body.appendChild(host);
+  return host;
+}
+async function paneOverflowsHalfSlide(bodyHtml) {
+  const host = getSlideMeasureHost();
+  host.innerHTML = `<div style="width:${SLIDE_MEASURE_W / 2}px;height:${SLIDE_MEASURE_H}px;box-sizing:border-box;padding:2.6% 3%;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:baseline;gap:.6em;margin-bottom:.6em;flex:0 0 auto;font-family:'Noto Serif KR',serif;">
+      <span style="font-weight:900;font-size:1.7rem;">0</span><span style="font-weight:700;font-size:1rem;padding:.35em .9em;">더미</span>
+    </div>
+    <div class="__mPaneBody" style="font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0;overflow:visible;">${bodyHtml}</div>
+  </div>`;
+  if (window.renderMathInElement) {
+    renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+  }
+  await new Promise(r => setTimeout(r, 0));
+  const bodyEl = host.querySelector('.__mPaneBody');
+  const available = SLIDE_MEASURE_H - SLIDE_MEASURE_H * 0.052 - bodyEl.previousElementSibling.getBoundingClientRect().height;
+  return bodyEl.scrollHeight > available + 1;
+}
+
 classHtmlBtn.addEventListener('click', async () => {
   logEl.innerHTML = '';
   classHtmlBtn.disabled = true;
@@ -1184,7 +1226,7 @@ classHtmlBtn.addEventListener('click', async () => {
     for (const f of loadedFiles) byFile.set(f.uid, f);
 
     log('문제 내용을 변환하는 중 (수식 포함)...');
-    const paneHtmls = [];
+    const panes = [];
     let qOrder = 1;
     for (const { uid, num } of checked) {
       const entry = byFile.get(uid);
@@ -1194,24 +1236,41 @@ classHtmlBtn.addEventListener('click', async () => {
       const cite = loadedFiles.length > 1
         ? `${escapeHtml(entry.filename.replace(/\.hwpx$/i, ''))} · ${num}번`
         : `${num}번`;
-      paneHtmls.push(`<div class="slidePane"><div class="paneHead"><span class="paneNum">${qOrder}</span><span class="paneCite">${cite}</span></div><div class="paneBody">${bodyHtml}</div></div>`);
+      const fullHtml = `<div class="slidePane"><div class="paneHead"><span class="paneNum">${qOrder}</span><span class="paneCite">${cite}</span></div><div class="paneBody">${bodyHtml}</div></div>`;
+      panes.push({ fullHtml, bodyHtml });
       qOrder++;
     }
-    if (!paneHtmls.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
+    if (!panes.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
 
-    log('화면(슬라이드)을 배치하는 중 (한 화면에 2문제씩)...');
+    log('긴 문제를 확인하는 중 (넘치면 화면을 혼자 쓰도록 배치)...');
+    for (const pane of panes) pane.solo = await paneOverflowsHalfSlide(pane.bodyHtml);
+    document.getElementById('__slideMeasureHost')?.remove();
+
+    log('화면(슬라이드)을 배치하는 중...');
     const titleText = examName || '수업용 문제모음';
     const today = new Date().toISOString().slice(0, 10);
     const slides = [];
     slides.push(`<div class="slide"><div class="slideTitle"><h1>${escapeHtml(titleText)}</h1><div class="sub">${today}</div></div></div>`);
     let slideIdx = 0;
-    for (let i = 0; i < paneHtmls.length; i += 2) {
-      const pair = paneHtmls.slice(i, i + 2);
-      if (pair.length === 1) pair[0] = pair[0].replace('class="slidePane"', 'class="slidePane single"');
+    const pushSlide = (innerHtml) => {
       const oddCls = (slideIdx % 2 === 1) ? ' mbOdd' : '';
-      slides.push(`<div class="slide${oddCls}">${pair.join('')}</div>`);
+      slides.push(`<div class="slide${oddCls}">${innerHtml}</div>`);
       slideIdx++;
+    };
+    const soloHtml = (pane) => pane.fullHtml.replace('class="slidePane"', 'class="slidePane single"');
+    let pending = null;
+    for (const pane of panes) {
+      if (pane.solo) {
+        if (pending) { pushSlide(soloHtml(pending)); pending = null; }
+        pushSlide(soloHtml(pane));
+      } else if (pending) {
+        pushSlide(pending.fullHtml + pane.fullHtml);
+        pending = null;
+      } else {
+        pending = pane;
+      }
     }
+    if (pending) pushSlide(soloHtml(pending));
 
     const html = buildClassHtmlDocument({ titleText, slidesHtml: slides });
     const blob = new Blob([html], { type: 'text/html' });

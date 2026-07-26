@@ -622,7 +622,13 @@ function convertHwpEquationToLatex(script) {
   // draws a bordered box AROUND its argument, so the label ends up
   // written inside the box rather than as plain text floating next to
   // an empty square. Case-insensitive: both "box" and "BOX" show up.
-  s = applyUnary(s, 'box', '\\boxed', true);
+  // loose(=no \b boundary) too — "box" itself can be glued directly onto
+  // a PRECEDING keyword with no space ("2 cdotbox(나)" = cdot + box, both
+  // letters on both sides of the join), same glued-keyword problem sqrt/
+  // root/bar already guard against; \b can't fire between two letters, so
+  // without loose this glued "box" was silently left as literal text
+  // (confirmed against a real file: TAT3회 20번's "y= {2 cdotbox{(가)}...").
+  s = applyUnary(s, 'box', '\\boxed', true, true);
   // "over" (fractions) runs AFTER the unary conversions above, not
   // before — a numerator/denominator like "box (나)" needs "box" already
   // turned into the clean, self-contained "\boxed{(나)}" token BEFORE the
@@ -816,6 +822,27 @@ function stripRectBlocksForRaw(xml) {
   out += xml.slice(pos);
   return out;
 }
+
+// A fill-in-the-blank walkthrough ("①~⑤에 들어갈 알맞은 식은?") types the
+// blank labels ①②③④⑤ AS LITERAL CHARACTERS INSIDE an equation's own
+// <hp:script> (e.g. "{BOX{~~①~~}}"), not as separate visible text next to
+// real choice content — confirmed against a real file. Without this
+// exclusion, `.raw`'s choice-marker detection (which only checks for the
+// BARE ①-⑤ characters anywhere in the paragraph) mistook that for an
+// actual multiple-choice answer list and ran formatChoiceRow's HTML split
+// right through the middle of the equation's own already-rendered "\(...\)"
+// KaTeX span (split boundaries come from `.raw` character positions but are
+// applied to `.inner`'s HTML string) — cutting one equation into two
+// fragments and leaving the delimiter unmatched, so KaTeX gave up and the
+// raw "\boxed{" source text showed through literally instead of rendering.
+function stripEquationBlocksForRaw(xml) {
+  const blocks = findTopLevelBlocks(xml, 'hp:equation');
+  let out = '';
+  let pos = 0;
+  for (const b of blocks) { out += xml.slice(pos, b.start); pos = b.end; }
+  out += xml.slice(pos);
+  return out;
+}
 // hp:tab/hp:lineBreak/hp:fwSpace are inline formatting controls that can
 // sit NESTED INSIDE <hp:t>...</hp:t> itself (verified against real files —
 // not just as sibling elements), so they have to be swapped for their
@@ -971,7 +998,10 @@ async function hwpBodyXmlToHtml(xml, entry) {
     // and then silently dropping it (its clean `.inner` has no markers of
     // its own to find). (2) an <hp:rect> shape's nested content, already
     // independently rendered as its own box — see stripRectBlocksForRaw.
-    items.push({ raw: decodeXmlEntities(stripTags(stripRectBlocksForRaw(stripCtrlBlocks(p.text)))).trim(), inner });
+    // (3) an <hp:equation>'s own script text can itself contain a bare
+    // ①-⑤ as a decorative fill-in-blank label ("box{~~①~~}") — see
+    // stripEquationBlocksForRaw.
+    items.push({ raw: decodeXmlEntities(stripTags(stripEquationBlocksForRaw(stripRectBlocksForRaw(stripCtrlBlocks(p.text))))).trim(), inner });
   }
 
   // A "①...⑤" choice list is normally one paragraph with tab characters
