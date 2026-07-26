@@ -2634,22 +2634,22 @@ function resolveUnitForMissionNum(mission, num, studentClass) {
   return (entry && entry.unit) || '';
 }
 
-// 오답노트 현황 페이지의 "회차별 정오표" — 지금까지 담겼던 모든 문제(행)
-// x 지금까지의 모든 회차(열) 매트릭스. 한 문제가 여러 회차에 걸쳐 반복
-// 출제됐을 수 있으므로(예: 1회차에 틀려서 3회차에 다시 나옴) 문제별로
-// 한 행에 모아 회차별 결과를 나란히 보여준다.
-function buildRoundMatrix(history) {
-  const byKey = new Map();
-  const roundSet = new Set();
+// 통계 페이지의 "회차별 정답률" — 회차별로 그 회차에 채점된 문항 전체의
+// 정답 비율을 집계(문제별 상세 O/X는 페이지 2의 "정오기록" 칸에 이미
+// 나오므로 여기서는 한눈에 보는 추이 그래프에 집중). 아직 채점 전인
+// 문항은 집계에서 제외.
+function buildRoundAccuracy(history) {
+  const byRound = new Map();
   for (const h of history) {
-    roundSet.add(h.round);
-    const key = `${h.mission}||${h.num}`;
-    if (!byKey.has(key)) byKey.set(key, { mission: h.mission, num: h.num, byRound: new Map() });
-    byKey.get(key).byRound.set(h.round, h.result);
+    if (h.result == null) continue;
+    if (!byRound.has(h.round)) byRound.set(h.round, { round: h.round, correct: 0, total: 0 });
+    const b = byRound.get(h.round);
+    b.total++;
+    if (h.result === 1) b.correct++;
   }
-  const rows = [...byKey.values()].sort((a, b) => a.mission.localeCompare(b.mission) || a.num - b.num);
-  const rounds = [...roundSet].sort((a, b) => a - b);
-  return { rows, rounds };
+  return [...byRound.values()]
+    .sort((a, b) => a.round - b.round)
+    .map(b => ({ ...b, pct: Math.round((b.correct / b.total) * 100) }));
 }
 
 // 오답노트 현황 페이지의 "단원별 정답률" — 지금까지 채점된(result 있는)
@@ -3155,9 +3155,9 @@ function mbHeadFootHtml(pageNum, info) {
   return { head, foot, isOdd };
 }
 
-function mbSheetOpen(pageNum) {
+function mbSheetOpen(pageNum, fixedHeight) {
   const isOdd = pageNum % 2 === 1;
-  return `<section class="mbSheet ${isOdd ? 'mbOdd' : 'mbEven'}">`;
+  return `<section class="mbSheet ${isOdd ? 'mbOdd' : 'mbEven'}${fixedHeight ? ' mbFixedH' : ''}">`;
 }
 
 // ---- 페이지 1: 표지 ----
@@ -3216,74 +3216,13 @@ const MB_RULES10 = [
   ['오답은 시험 전날 가장 먼저 본다.', '약점은 직전에 보완해야 점수로 연결된다.'],
   ['오답노트는 나의 성장 기록이다.', '오늘의 오답이, 내일의 나를 만든다.'],
 ];
-function buildMenCodePageHtml() {
-  const stepsHtml = MB_STEPS5.map((s, i) => `
-    <div class="mcStep"><div class="mcStepNum">${s[0]}</div><div class="mcStepText">${s[1] ? s[1] + '<br>' : ''}${s[2]}</div></div>
-  `).join('');
-  const rulesHtml = MB_RULES10.map((r, i) => `
-    <div class="mcRule"><div class="mcRuleNum">${String(i + 1).padStart(2, '0')}</div>
-      <div><div class="mcRuleTitle">${escapeHtml(r[0])}</div><div class="mcRuleSub">${escapeHtml(r[1])}</div></div>
-    </div>
-  `).join('');
-  return `${mbSheetOpen(2)}
-    <div class="mcWrap">
-      <div class="mcHead"><span class="men">MEN</span> <span class="book">CODE</span></div>
-      <div class="mcSub">Math Error Notebook Code</div>
-      <div class="mcStepsGrid">${stepsHtml}</div>
-      <div class="mcQuoteSm">&ldquo;Mistakes Become Mastery.&rdquo;</div>
-      <hr class="mcRule2">
-      <div class="mcRulesHead">MEN BOOK RULES</div>
-      <div class="mcRulesSub">오답노트 10계명</div>
-      <div class="mcRulesGrid">${rulesHtml}</div>
-      <div class="mcQuoteBig">&ldquo;실수는 끝이 아니라, 나를 완성하는 과정이다.&rdquo;</div>
-      <div class="mcFoot"><span>MATHY YURI&nbsp;&nbsp;DAECHI S+ ACADEMY</span><span>Learn. Correct. Conquer. +</span></div>
-    </div>
-  </section>`;
-}
-
-// ---- 페이지 3: 오답현황 데이터 ----
-function buildSummaryPageHtml(summaryRows, info, roundMatrix, unitAccuracy) {
+// ---- 페이지 2: 오답현황 데이터 ----
+function buildSummaryPageHtml(summaryRows, info) {
   const rowsHtml = summaryRows.map(r =>
     `<tr><td>${r.n}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.mission)}</td>` +
     `<td>${r.num}번</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
   ).join('');
-
-  // 회차별 정오표 — 문제(행) x 회차(열) 매트릭스. O=정답, X=오답, ?=채점 전,
-  // 그 회차에 출제되지 않은 칸은 빈 칸(dash)으로 둔다.
-  let roundMatrixHtml = '';
-  if (roundMatrix && roundMatrix.rows.length && roundMatrix.rounds.length) {
-    const headCols = roundMatrix.rounds.map(r => `<th>${r}회차</th>`).join('');
-    const bodyRows = roundMatrix.rows.map(row => {
-      const cells = roundMatrix.rounds.map(r => {
-        const result = row.byRound.get(r);
-        if (result === undefined) return '<td class="rmEmpty">-</td>';
-        const mark = result === 1 ? 'O' : result ? 'X' : '?';
-        const cls = result === 1 ? 'rmO' : result ? 'rmX' : 'rmQ';
-        return `<td class="${cls}">${mark}</td>`;
-      }).join('');
-      return `<tr><td class="rmLabel">${escapeHtml(row.mission)} · ${row.num}번</td>${cells}</tr>`;
-    }).join('');
-    roundMatrixHtml = `
-      <h2 class="sumSubTitle">회차별 정오표</h2>
-      <table class="sumTbl roundMatrixTbl"><thead><tr><th>문제</th>${headCols}</tr></thead>
-        <tbody>${bodyRows}</tbody></table>`;
-  }
-
-  // 단원별 정답률 — 지금까지 채점된 문제 전체를 단원별로 집계, 취약한
-  // (정답률 낮은) 단원이 위로 오도록 정렬.
-  let unitAccHtml = '';
-  if (unitAccuracy && unitAccuracy.length) {
-    const bodyRows = unitAccuracy.map(u =>
-      `<tr><td class="uaUnit">${escapeHtml(u.unit)}</td><td>${u.correct}</td><td>${u.wrong}</td>` +
-      `<td class="uaPct"><div class="uaBarWrap"><div class="uaBar" style="width:${u.pct}%"></div><span>${u.pct}%</span></div></td></tr>`
-    ).join('');
-    unitAccHtml = `
-      <h2 class="sumSubTitle">단원별 누적 정답률</h2>
-      <table class="sumTbl unitAccTbl"><thead><tr><th>단원</th><th>맞음</th><th>틀림</th><th>정답률</th></tr></thead>
-        <tbody>${bodyRows}</tbody></table>`;
-  }
-
-  return `${mbSheetOpen(3)}
+  return `${mbSheetOpen(2, true)}
     <div class="sumWrap">
       <div class="sumBanner">
         <div class="sumBannerIcon">◎</div>
@@ -3295,8 +3234,50 @@ function buildSummaryPageHtml(summaryRows, info, roundMatrix, unitAccuracy) {
       <h1 class="sumTitle">${escapeHtml(info.studentName)}의 ${info.noteRound}번째 오답노트 현황</h1>
       <table class="sumTbl"><thead><tr><th>순번</th><th>종류</th><th>미션</th><th>문제번호</th><th>차시도</th><th>정오기록</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table>
-      ${unitAccHtml}
-      ${roundMatrixHtml}
+    </div>
+  </section>`;
+}
+
+// ---- 페이지 3: 그동안의 통계 (회차별 정답률 + 단원별 정답률/오답분포) ----
+// A4 한 장에 무조건 들어가야 하므로(사용자 요청), 회차가 아주 많이 쌓인
+// 경우에도 안전하게 최근 N개로만 표시 — 표 형태의 세밀한 회차별 정오
+// 기록은 페이지 2의 "정오기록" 칸에 이미 나오므로, 여기는 한눈에 보는
+// 그래프(막대) 요약에 집중한다.
+const STATS_MAX_ROUNDS = 14;
+const STATS_MAX_UNITS = 14;
+function buildStatsPageHtml(roundAccuracy, unitAccuracy, info) {
+  const roundsShown = roundAccuracy.slice(-STATS_MAX_ROUNDS);
+  const roundsClipped = roundAccuracy.length > roundsShown.length;
+  const roundRowsHtml = roundsShown.map(r => `
+    <div class="statBarRow">
+      <span class="statBarLabel">${r.round}회차</span>
+      <div class="statBarWrap"><div class="statBar" style="width:${r.pct}%"></div></div>
+      <span class="statBarPct">${r.pct}% <small>(${r.correct}/${r.total})</small></span>
+    </div>`).join('');
+
+  const unitsShown = unitAccuracy.slice(0, STATS_MAX_UNITS);
+  const unitsClipped = unitAccuracy.length > unitsShown.length;
+  const unitRowsHtml = unitsShown.map(u => `
+    <div class="statBarRow">
+      <span class="statBarLabel statUnitLabel">${escapeHtml(u.unit)}</span>
+      <div class="statBarWrap"><div class="statBar statBarUnit" style="width:${u.pct}%"></div></div>
+      <span class="statBarPct">${u.pct}% <small>(맞음${u.correct}/틀림${u.wrong})</small></span>
+    </div>`).join('');
+
+  return `${mbSheetOpen(3, true)}
+    <div class="sumWrap">
+      <div class="sumBanner">
+        <div class="sumBannerIcon">◎</div>
+        <div class="sumBannerMid"><div class="sumBannerTitle"><span class="men">MAN</span> <span class="book">BOOK</span></div><div class="sumBannerSub">Math Error Note Book</div></div>
+        <div class="sumBannerYear">${new Date().getFullYear()}</div>
+      </div>
+      <div class="sumVol">VOL. ${escapeHtml(info.studentName)}</div>
+      <div class="sumCredit">MATHY YURI &nbsp;|&nbsp; DAECHI S+ ACADEMY</div>
+      <h1 class="sumTitle">${escapeHtml(info.studentName)}의 그동안의 학습 통계</h1>
+      <h2 class="sumSubTitle">회차별 정답률${roundsClipped ? ` <small>(최근 ${STATS_MAX_ROUNDS}회차)</small>` : ''}</h2>
+      <div class="statChart">${roundRowsHtml || '<div class="statEmpty">아직 채점된 기록이 없습니다.</div>'}</div>
+      <h2 class="sumSubTitle">단원별 정답률 · 오답분포${unitsClipped ? ` <small>(취약 상위 ${STATS_MAX_UNITS}개)</small>` : ''}</h2>
+      <div class="statChart">${unitRowsHtml || '<div class="statEmpty">단원 태그가 붙은 채점 기록이 없습니다.</div>'}</div>
     </div>
   </section>`;
 }
@@ -3392,6 +3373,10 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .exportBar button:disabled{opacity:.6;cursor:default}
 @media print{.exportBar{display:none}}
 .mbSheet{position:relative;width:${MB_PAGE_W_MM}mm;min-height:${MB_PAGE_H_MM}mm;margin:0 auto 10mm;background:var(--mb-cream);box-shadow:0 2px 14px rgba(0,0,0,.18)}
+/* 오답현황/통계 페이지는 데이터가 아무리 늘어나도 절대 A4를 넘지 않아야
+   한다는 명시적 요청 — min-height(다른 페이지들처럼 내용에 맞춰 자라는
+   방식) 대신 height 고정 + overflow:hidden으로 강제 상한을 둔다. */
+.mbSheet.mbFixedH{height:${MB_PAGE_H_MM}mm;min-height:0;overflow:hidden}
 .mbSheet.mbEven{background:var(--mb-cream)}
 .mbSheet.mbOdd{background:var(--mb-cream2)}
 .mbSheet.mbEven::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3mm;background:linear-gradient(180deg,var(--mb-teal),var(--mb-navy))}
@@ -3489,18 +3474,18 @@ table.sumTbl{width:100%;border-collapse:collapse;font-size:9px}
 table.sumTbl th{background:var(--mb-navy);color:#fff;font-weight:700;padding:1.3mm;text-align:center}
 table.sumTbl td{padding:0.9mm;text-align:center;border-bottom:1px solid var(--mb-line)}
 table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
-.sumSubTitle{font-family:var(--kserif);font-weight:900;font-size:12px;color:var(--mb-navy);margin:6mm 0 2mm}
-.roundMatrixTbl th, .roundMatrixTbl td{font-size:8px;padding:0.7mm}
-.roundMatrixTbl .rmLabel{text-align:left;padding-left:1.5mm;white-space:nowrap}
-.roundMatrixTbl .rmO{color:var(--mb-teal-deep);font-weight:800}
-.roundMatrixTbl .rmX{color:#B23A3A;font-weight:800}
-.roundMatrixTbl .rmQ{color:rgba(26,26,26,.4)}
-.roundMatrixTbl .rmEmpty{color:rgba(26,26,26,.2)}
-.unitAccTbl .uaUnit{text-align:left;padding-left:1.5mm}
-.unitAccTbl .uaPct{min-width:24mm}
-.uaBarWrap{position:relative;background:rgba(26,26,26,.08);border-radius:2px;height:3.2mm;overflow:hidden}
-.uaBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep)}
-.uaBarWrap span{position:relative;font-size:8px;font-weight:700;color:var(--mb-ink);line-height:3.2mm;padding-left:1mm}
+.sumSubTitle{font-family:var(--kserif);font-weight:900;font-size:11px;color:var(--mb-navy);margin:5mm 0 2mm}
+.sumSubTitle small{font-family:var(--sans);font-weight:500;font-size:8px;color:rgba(26,26,26,.5)}
+.statChart{display:flex;flex-direction:column;gap:1.3mm}
+.statBarRow{display:flex;align-items:center;gap:2mm}
+.statBarLabel{flex:0 0 20mm;font-size:8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.statUnitLabel{flex-basis:26mm;text-align:left}
+.statBarWrap{flex:1 1 auto;position:relative;background:rgba(26,26,26,.08);border-radius:2px;height:3.4mm}
+.statBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep);border-radius:2px}
+.statBarUnit{background:var(--mb-orange)}
+.statBarPct{flex:0 0 26mm;font-size:8px;font-weight:700}
+.statBarPct small{font-weight:500;color:rgba(26,26,26,.55)}
+.statEmpty{font-size:9px;color:rgba(26,26,26,.5)}
 
 /* ---- 뒤표지 ---- */
 .mbBackcoverImg{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
@@ -3751,14 +3736,14 @@ async function generateHtmlNote(historicalBatch) {
       qNum++;
     }
 
-    const roundMatrix = buildRoundMatrix(noteHistory);
+    const roundAccuracy = buildRoundAccuracy(noteHistory);
     const unitAccuracy = buildUnitAccuracy(noteHistory, currentStudent.class);
 
     log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
     const pagesHtml = [];
     pagesHtml.push(buildCoverPageHtml(info));
-    pagesHtml.push(buildMenCodePageHtml());
-    pagesHtml.push(buildSummaryPageHtml(summaryRows, info, roundMatrix, unitAccuracy));
+    pagesHtml.push(buildSummaryPageHtml(summaryRows, info));
+    pagesHtml.push(buildStatsPageHtml(roundAccuracy, unitAccuracy, info));
 
     let pageNum = 4;
     const questionPages = chunkOnePerColumn(questionBlocks, 2);
