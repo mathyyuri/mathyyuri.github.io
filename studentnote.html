@@ -2475,7 +2475,7 @@ function renderGradingRounds(rounds) {
           <span class="gradeItem">
             <span class="gradeSeq">${seq++}</span>
             <button type="button" class="gradeToggle O" data-value="1"
-              data-mission="${r.mission}" data-round="${r.round}" data-num="${it.num}">O</button>
+              data-mission="${r.mission}" data-category="${r.category || ''}" data-round="${r.round}" data-num="${it.num}">O</button>
             <span class="gradeNum">${it.num}번</span>
           </span>`).join('')}
       </div>
@@ -2504,7 +2504,7 @@ function renderGradingRounds(rounds) {
   footer.querySelector('#saveAllGradesBtn').addEventListener('click', async (ev) => {
     const buttons = gradingRoundsEl.querySelectorAll('.gradeToggle');
     const updates = [...buttons].map(b => ({
-      mission: b.dataset.mission, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
+      mission: b.dataset.mission, category: b.dataset.category, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
     }));
     if (!updates.length) return;
     ev.target.disabled = true;
@@ -2609,26 +2609,36 @@ function lookupMissionFileId(missionFileIdMap, mission, category) {
   return undefined;
 }
 
-function roundFor(mission, num) {
-  const priorCount = noteHistory.filter(h => h.mission === mission && h.num === Number(num)).length;
+// 오답노트이력에 category가 있는 행(2026-07-27 이후로 새로 기록된 것)은
+// 반드시 카테고리까지 같아야 매치 — 없으면(그 이전에 기록된 옛 행이라
+// 카테고리 컬럼이 비어있는 경우) 미션명만으로 대조하는 예전 방식으로
+// 물러선다. category 인자 자체를 안 넘기는 호출부도 마찬가지로 예전
+// 동작 그대로 유지.
+function historyMatches(h, mission, category) {
+  if (h.mission !== mission) return false;
+  if (category == null || h.category == null) return true;
+  return h.category === category;
+}
+function roundFor(mission, num, category) {
+  const priorCount = noteHistory.filter(h => historyMatches(h, mission, category) && h.num === Number(num)).length;
   return priorCount + 1;
 }
 
 // "X(1) X(2) O(4)" — one entry per past round this question was included in,
 // in round order, showing what actually happened that round (O=정답,
 // X=오답, ?=아직 채점 안 됨).
-function historyString(mission, num) {
+function historyString(mission, num, category) {
   const rounds = noteHistory
-    .filter(h => h.mission === mission && h.num === Number(num))
+    .filter(h => historyMatches(h, mission, category) && h.num === Number(num))
     .sort((a, b) => a.round - b.round);
   if (!rounds.length) return '';
   return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?') + '(' + h.round + ')').join(' ');
 }
 // historyString과 같은 내용을 O(정답)/X(오답)/?(채점 전)별로 색을 다르게
 // 입힌 HTML로 만든다 — 문제를 고를 때 회차별 결과가 한눈에 구별되도록.
-function historyBadgeHtml(mission, num) {
+function historyBadgeHtml(mission, num, category) {
   const rounds = noteHistory
-    .filter(h => h.mission === mission && h.num === Number(num))
+    .filter(h => historyMatches(h, mission, category) && h.num === Number(num))
     .sort((a, b) => a.round - b.round);
   if (!rounds.length) return '';
   return rounds.map(h => {
@@ -2641,9 +2651,9 @@ function historyBadgeHtml(mission, num) {
 // "OOX" — the same past-round results as historyString, but as a plain
 // concatenated string with no round numbers (round order is already
 // implicit left-to-right) for the printed [오답 현황 요약] summary line.
-function compactHistoryString(mission, num) {
+function compactHistoryString(mission, num, category) {
   const rounds = noteHistory
-    .filter(h => h.mission === mission && h.num === Number(num))
+    .filter(h => historyMatches(h, mission, category) && h.num === Number(num))
     .sort((a, b) => a.round - b.round);
   return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?')).join('');
 }
@@ -2729,8 +2739,8 @@ function renderMissionBlocks() {
       </div>
       <div class="qGrid">
         ${group.items.map(it => {
-          const r = roundFor(group.mission, it.num);
-          const histHtml = historyBadgeHtml(group.mission, it.num);
+          const r = roundFor(group.mission, it.num, group.category);
+          const histHtml = historyBadgeHtml(group.mission, it.num, group.category);
           const wasChecked = prevChecked.has(`${missionKey(group.mission, group.category)}||${it.num}`);
           return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
             `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
@@ -2934,7 +2944,7 @@ async function generateHwpxNote(historicalBatch) {
       // 체크 항목까지 여기 다시 세어져 문제 수가 실제보다 많이 나온다.
       const inGroup = checked.filter(c => c.mission === g.mission && (c.category == null || c.category === g.category));
       for (const c of inGroup) {
-        const hist = compactHistoryString(g.mission, c.num) || '기록없음';
+        const hist = compactHistoryString(g.mission, c.num, g.category) || '기록없음';
         summaryRows.push([`${qOrderNum}`, g.category, g.mission, `${c.num}번`, `${c.round}차시도`, hist]);
         qOrderNum++;
       }
@@ -3085,7 +3095,7 @@ async function generateHwpxNote(historicalBatch) {
       log('생성 이력 기록 중...');
       await callPostNoCors(DASHBOARD_URL, {
         action: 'lognote', key: TEACHER_KEY, name: studentName,
-        items: checked.map(c => ({ mission: c.mission, num: c.num })),
+        items: checked.map(c => ({ mission: c.mission, category: c.category, num: c.num })),
       });
       // refresh history/grading so round badges + the new ungraded round show up right away
       try {
@@ -3759,7 +3769,7 @@ async function generateHtmlNote(historicalBatch) {
       // 체크 항목까지 여기 다시 세어져 문제 수가 실제보다 많이 나온다.
       const inGroup = checked.filter(c => c.mission === g.mission && (c.category == null || c.category === g.category));
       for (const c of inGroup) {
-        const hist = compactHistoryString(g.mission, c.num) || '기록없음';
+        const hist = compactHistoryString(g.mission, c.num, g.category) || '기록없음';
         summaryRows.push({ n: qOrderNum, category: g.category, mission: g.mission, num: c.num, round: c.round, hist });
         qOrderNum++;
       }
