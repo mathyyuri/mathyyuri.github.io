@@ -657,10 +657,20 @@ function convertHwpEquationToLatex(script) {
   // resulting lone \left/\right, fall back to plain (unsized) brackets —
   // always valid on their own, and the adjacent \(...\) spans still read
   // correctly once placed next to each other in the page.
-  const leftCount = (s.match(/\\left/g) || []).length;
-  const rightCount = (s.match(/\\right/g) || []).length;
+  // \b after left/right is essential — "\rightarrow" and "\leftrightarrow"
+  // (both produced by the arrow keyword table above) contain "\right"/
+  // "\left" as their own PREFIX substring, so a bare (non-\b) count/strip
+  // here mistook every arrow symbol for a stray unmatched delimiter and
+  // silently chopped it back down to "arrow"/"rightarrow" (confirmed via a
+  // real file — this is the actual root cause of "arrow" never converting
+  // despite the keyword mapping itself being correct the whole time). \b
+  // still correctly fires for genuine "\left(" / "\right)" etc. (the next
+  // character there is a bracket, not a letter) so real cross-equation-
+  // object mismatches are still caught exactly as before.
+  const leftCount = (s.match(/\\left\b/g) || []).length;
+  const rightCount = (s.match(/\\right\b/g) || []).length;
   if (leftCount !== rightCount) {
-    s = s.replace(/\\left/g, '').replace(/\\right/g, '');
+    s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
   }
   // Same cross-equation-object splitting can leave a { with no matching }
   // at all (confirmed against a real file: a fill-in-the-box step's script
@@ -964,6 +974,14 @@ const CONDITION_MARKERS = ['(가)', '(나)', '(다)', '(라)', '(마)'];
 function formatConditionBox(inner, rawText) {
   const foundCount = CONDITION_MARKERS.filter(mk => rawText.includes(mk)).length;
   if (foundCount < 2) return null;
+  // "(가)~(라)에 알맞은 것을 써넣으시오" — a RANGE reference ("from (가)
+  // through (라)"), not a real list of separate conditions. Confirmed
+  // against a real file: this sentence has 2+ markers and enough
+  // substantive text around them to slip past the enumeration check below
+  // (the closing "(라)에 알맞은 것을 써넣으시오." clause reads as
+  // "substantive"), wrongly wrapping the question's own instruction
+  // sentence in a condition box instead of leaving it as plain text.
+  if (/\([가나다라마]\)\s*~/.test(rawText)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
@@ -1060,6 +1078,27 @@ async function hwpBodyXmlToHtml(xml, entry) {
     if (bogiBox) { resolved.push({ raw: '', html: bogiBox }); i++; continue; }
     resolved.push({ raw: items[i].raw, html: resolveSingle(items[i]) });
     i++;
+  }
+
+  // A <보기> list can ALSO be split across separate paragraphs where each
+  // half, on its OWN, already has 2+ markers ("ㄱ./ㄴ." in one paragraph,
+  // "ㄷ./ㄹ." in the next) — confirmed against a real file. formatBogiBox
+  // above already boxes EACH of those paragraphs individually (its own
+  // count check only sees one paragraph at a time), producing two separate
+  // side-by-side hwpBogi boxes instead of the one unified box the source
+  // document actually shows. The cross-paragraph merge further below can't
+  // catch this either — it keys off `.raw`, which formatBogiBox already
+  // blanked out (`raw: ''`) once it successfully boxed a paragraph. Glue
+  // any run of ADJACENT already-boxed hwpBogi divs back into one here,
+  // before that raw-text-based pass runs.
+  for (let m = 0; m < resolved.length; m++) {
+    if (!/^<div class="hwpBogi">/.test(resolved[m].html)) continue;
+    let n = m + 1;
+    while (n < resolved.length && /^<div class="hwpBogi">/.test(resolved[n].html)) n++;
+    if (n - m > 1) {
+      const inner = resolved.slice(m, n).map(it => it.html.replace(/^<div class="hwpBogi">|<\/div>$/g, '')).join('');
+      resolved.splice(m, n - m, { raw: '', html: `<div class="hwpBogi">${inner}</div>` });
+    }
   }
 
   // "<보기>" reference-statement lists (ㄱ./ㄴ./ㄷ./ㄹ...) are normally
