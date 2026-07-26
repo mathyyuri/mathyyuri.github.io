@@ -54,6 +54,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .delBtn:hover { background: var(--pink-soft); }
 .tagEditBtn { background: #fff; color: var(--mint-deep); border: 1px solid var(--mint-deep); border-radius: 3px; padding: 5px 10px; font-size: 12px; font-family: var(--sans); font-weight: 700; letter-spacing: .06em; cursor: pointer; }
 .tagEditBtn:hover { background: var(--mint-soft); }
+/* 모든 문제에 단원 태그가 이미 채워진 파일은 채워진 스타일(mint 배경)로
+   눈에 띄게 구분 — "이 파일은 더 손댈 필요 없음"을 목록만 봐도 알 수
+   있게 함. */
+.tagEditBtn.tagDone { background: var(--mint-deep); color: #fff; }
+.tagEditBtn.tagDone:hover { background: var(--mint); }
 #log { white-space: pre-wrap; background: #fff; border: 1px solid var(--gold-line); padding: 12px; margin-top: 12px; font-size: 13px; border-radius: 4px; min-height: 20px; }
 .ok { color: var(--mint-deep); font-weight: 700; }
 .err { color: var(--pink-deep); font-weight: 700; }
@@ -267,6 +272,17 @@ function typeOf(filename) {
   return '기타';
 }
 
+// 이 파일의 문제 전부에 단원 태그가 이미 채워져 있는지 — "태그 편집" 버튼을
+// 다르게 표시해서(색 채움 + "태그완료" 표기) 목록만 보고도 더 손댈 필요가
+// 없는 파일을 바로 알 수 있게 함.
+function tagsComplete(f) {
+  if (!f.questionData) return false;
+  let qd;
+  try { qd = JSON.parse(f.questionData); } catch (e) { return false; }
+  if (!Array.isArray(qd) || !qd.length) return false;
+  return qd.every(q => q && q.unit && String(q.unit).trim());
+}
+
 // Default ordering inside a type uses the first number in the filename
 // (e.g. "1. 평면좌표" / "2회차 과제미션") so files line up 1,2,3... without
 // any manual work; a teacher can still drag to override, and that
@@ -360,7 +376,7 @@ function renderGroups(files) {
           <span class="fName">${f.filename}</span>
           <span class="fMemo">${f.memo || ''}</span>
           <span class="fMeta">${uploadedAt}</span>
-          <button class="tagEditBtn" data-id="${f.id}">태그 편집</button>
+          <button class="tagEditBtn${tagsComplete(f) ? ' tagDone' : ''}" data-id="${f.id}">${tagsComplete(f) ? '✓ 태그완료' : '태그 편집'}</button>
           <button class="delBtn" data-id="${f.id}">삭제</button>
         `;
         row.querySelector('.tagEditBtn').addEventListener('click', () => openTagEditor(f));

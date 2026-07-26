@@ -2335,7 +2335,7 @@ let noteHistory = [];      // [{name,mission,num,round,at}]
 // 두 개의 별도 회차로 중복 기록되지 않는다.
 let lastLoggedBatch = null; // { key, noteRound }
 function batchKeyFor(checked) {
-  return [...checked].map(c => `${c.mission}||${c.num}`).sort().join(',');
+  return [...checked].map(c => `${c.mission}||${c.category || ''}||${c.num}`).sort().join(',');
 }
 let loadedFileCache = new Map();
 
@@ -2585,6 +2585,30 @@ function resolveFileForMission(missionName, category) {
   return { file: candidates[0], how: '자동 매칭' };
 }
 
+// 서로 다른 카테고리(개념미션/진도미션 등)가 같은 미션명을 그대로 재사용하는
+// 경우가 흔해서(예: 둘 다 "2. 직선의 방정식"), 미션명만으로는 두 그룹을
+// 구분할 수 없다 — missionGroups는 이미 미션명+카테고리로 따로 나뉘어
+// 있으므로(byMission 수정 참고), 그 아래에서 체크박스/파일선택/요약표를
+// 다시 미션명과 이어붙이는 모든 곳도 카테고리까지 같이 써야 한 그룹의
+// 항목이 다른 그룹으로 잘못 흘러들어가지 않는다.
+function missionKey(mission, category) { return `${mission}||${category || ''}`; }
+// 지난 회차를 다시 받을 때(historicalBatch)는 오답노트이력 시트 자체에
+// 카테고리 정보가 없어(백엔드 스키마 한계, 별도로 기록해 둠) category가
+// 없는 채로 들어올 수 있다 — 그럴 땐 어쩔 수 없이 미션명만으로 첫 번째
+// 일치를 찾는 이전 동작으로 되돌아간다(신규 체크 흐름에서는 항상
+// category가 있으므로 이 폴백은 타지 않는다).
+function lookupMissionFileId(missionFileIdMap, mission, category) {
+  if (category != null) {
+    const hit = missionFileIdMap.get(missionKey(mission, category));
+    if (hit) return hit;
+  }
+  const prefix = mission + '||';
+  for (const [k, v] of missionFileIdMap) {
+    if (k.startsWith(prefix) && v) return v;
+  }
+  return undefined;
+}
+
 function roundFor(mission, num) {
   const priorCount = noteHistory.filter(h => h.mission === mission && h.num === Number(num)).length;
   return priorCount + 1;
@@ -2682,7 +2706,7 @@ function renderMissionBlocks() {
   // 할 때 "체크한 문제가 없습니다" 오류가 남 — 다시 그리기 전 체크 상태를
   // 기억해뒀다가 그대로 복원한다.
   const prevChecked = new Set(
-    [...document.querySelectorAll('.qChk:checked')].map(chk => `${chk.dataset.mission}||${chk.dataset.num}`)
+    [...document.querySelectorAll('.qChk:checked')].map(chk => `${missionKey(chk.dataset.mission, chk.dataset.category)}||${chk.dataset.num}`)
   );
   missionBlocksEl.innerHTML = '';
   for (const group of missionGroups) {
@@ -2707,9 +2731,9 @@ function renderMissionBlocks() {
         ${group.items.map(it => {
           const r = roundFor(group.mission, it.num);
           const histHtml = historyBadgeHtml(group.mission, it.num);
-          const wasChecked = prevChecked.has(`${group.mission}||${it.num}`);
+          const wasChecked = prevChecked.has(`${missionKey(group.mission, group.category)}||${it.num}`);
           return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
-            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
+            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
             (histHtml ? `<span class="roundBadge">${histHtml}</span>` : '') +
             `</label>`;
         }).join('')}
@@ -2761,27 +2785,27 @@ async function generateHwpxNote(historicalBatch) {
   genBtn.disabled = true;
   try {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
-      mission: chk.dataset.mission, num: chk.dataset.num, round: chk.dataset.round,
+      mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
     }));
     if (!checked.length) throw new Error('체크한 문제가 없습니다.');
 
     const studentName = currentStudent.name;
     const examName = document.getElementById('examName').value.trim();
 
-    const missionFileId = new Map(missionGroups.map(g => [g.mission, g.selectedFileId]));
+    const missionFileId = new Map(missionGroups.map(g => [missionKey(g.mission, g.category), g.selectedFileId]));
     // 지난 회차의 미션이 지금은 "오답" 목록(missionGroups)에 없을 수 있음
     // (이미 채점돼서 빠졌거나 등) — 그런 경우 매핑표/파일명으로 다시 찾는다.
     for (const c of checked) {
-      if (!missionFileId.get(c.mission)) {
-        const guess = resolveFileForMission(c.mission, null);
-        if (guess) missionFileId.set(c.mission, guess.file.id);
+      if (!lookupMissionFileId(missionFileId, c.mission, c.category)) {
+        const guess = resolveFileForMission(c.mission, c.category);
+        if (guess) missionFileId.set(missionKey(c.mission, c.category), guess.file.id);
       }
     }
-    const missing = checked.filter(c => !missionFileId.get(c.mission));
+    const missing = checked.filter(c => !lookupMissionFileId(missionFileId, c.mission, c.category));
     if (missing.length) throw new Error('시험지 파일이 선택 안 된 미션이 있습니다: ' + [...new Set(missing.map(m => m.mission))].join(', '));
 
     log('시험지 파일들을 불러오는 중...');
-    const neededFileIds = [...new Set(checked.map(c => missionFileId.get(c.mission)))];
+    const neededFileIds = [...new Set(checked.map(c => lookupMissionFileId(missionFileId, c.mission, c.category)))];
     for (const fid of neededFileIds) {
       const f = bankFiles.find(b => b.id === fid);
       await getParsedFile(fid, f.filename);
@@ -2792,7 +2816,7 @@ async function generateHwpxNote(historicalBatch) {
     // (표지 · 2단 문제 · 해설, 최대 3개 구역) 최종 산출물의 뼈대로 그대로
     // 씁니다 — 서식이 하나도 없으면(설정 오류) 실제 시험지 파일을 대신
     // 뼈대로 써서라도 결과물은 만들어냅니다.
-    const contentCarrierFileId = missionFileId.get(checked[0].mission);
+    const contentCarrierFileId = lookupMissionFileId(missionFileId, checked[0].mission, checked[0].category);
     const contentCarrierEntry = loadedFileCache.get(contentCarrierFileId);
     const regions = (await findFormatRegions()) || {
       formatEntry: contentCarrierEntry,
@@ -2903,7 +2927,12 @@ async function generateHwpxNote(historicalBatch) {
     let qOrderNum = 1;
     const summaryRows = [['순번', '종류', '미션', '문제번호', '차시도', '정오기록']];
     for (const g of missionGroups) {
-      const inGroup = checked.filter(c => c.mission === g.mission);
+      // c.category가 없으면(지난 회차 다시받기 — 오답노트이력에 카테고리가
+      // 없는 구조적 한계) 미션명만으로 대조하는 예전 방식으로 물러선다.
+      // 있으면 반드시 카테고리까지 같아야 이 그룹 것으로 친다 — 그렇지
+      // 않으면 같은 미션명을 쓰는 다른 카테고리(개념미션/진도미션)의
+      // 체크 항목까지 여기 다시 세어져 문제 수가 실제보다 많이 나온다.
+      const inGroup = checked.filter(c => c.mission === g.mission && (c.category == null || c.category === g.category));
       for (const c of inGroup) {
         const hist = compactHistoryString(g.mission, c.num) || '기록없음';
         summaryRows.push([`${qOrderNum}`, g.category, g.mission, `${c.num}번`, `${c.round}차시도`, hist]);
@@ -2925,8 +2954,8 @@ async function generateHwpxNote(historicalBatch) {
     let qCounter = summaryId + 100;
     let qBodyOrderNum = 1;
     let questionsDemo = '';
-    for (const { mission, num, round } of checked) {
-      const fileId = missionFileId.get(mission);
+    for (const { mission, category, num, round } of checked) {
+      const fileId = lookupMissionFileId(missionFileId, mission, category);
       const entry = loadedFileCache.get(fileId);
       const marker = entry.markers.get(num);
       if (!marker) continue;
@@ -2975,8 +3004,8 @@ async function generateHwpxNote(historicalBatch) {
       answersShareSection ? { pageBreak: true, prefixCtrlXml: singleRegion ? colPr1RunXml : undefined } : { pageBreak: false });
     let quickOrderNum = 1;
     const renumberEquationIds = makeEquationIdRenumberer();
-    for (const { mission, num } of checked) {
-      const fileId = missionFileId.get(mission);
+    for (const { mission, category, num } of checked) {
+      const fileId = lookupMissionFileId(missionFileId, mission, category);
       const entry = loadedFileCache.get(fileId);
       const marker = entry && entry.markers.get(num);
       let answerXml = marker ? stripEmbeddedColPr(extractQuickAnswerXml(marker.blockXml)) : '';
@@ -3672,24 +3701,24 @@ async function generateHtmlNote(historicalBatch) {
   genHtmlBtn.disabled = true;
   try {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
-      mission: chk.dataset.mission, num: chk.dataset.num, round: chk.dataset.round,
+      mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
     }));
     if (!checked.length) throw new Error('체크한 문제가 없습니다.');
 
     const studentName = currentStudent.name;
 
-    const missionFileId = new Map(missionGroups.map(g => [g.mission, g.selectedFileId]));
+    const missionFileId = new Map(missionGroups.map(g => [missionKey(g.mission, g.category), g.selectedFileId]));
     for (const c of checked) {
-      if (!missionFileId.get(c.mission)) {
-        const guess = resolveFileForMission(c.mission, null);
-        if (guess) missionFileId.set(c.mission, guess.file.id);
+      if (!lookupMissionFileId(missionFileId, c.mission, c.category)) {
+        const guess = resolveFileForMission(c.mission, c.category);
+        if (guess) missionFileId.set(missionKey(c.mission, c.category), guess.file.id);
       }
     }
-    const missing = checked.filter(c => !missionFileId.get(c.mission));
+    const missing = checked.filter(c => !lookupMissionFileId(missionFileId, c.mission, c.category));
     if (missing.length) throw new Error('시험지 파일이 선택 안 된 미션이 있습니다: ' + [...new Set(missing.map(m => m.mission))].join(', '));
 
     log('시험지 파일들을 불러오는 중...');
-    const neededFileIds = [...new Set(checked.map(c => missionFileId.get(c.mission)))];
+    const neededFileIds = [...new Set(checked.map(c => lookupMissionFileId(missionFileId, c.mission, c.category)))];
     for (const fid of neededFileIds) {
       const f = bankFiles.find(b => b.id === fid);
       await getParsedFile(fid, f.filename);
@@ -3709,7 +3738,11 @@ async function generateHtmlNote(historicalBatch) {
     let qOrderNum = 1;
     const summaryRows = [];
     for (const g of missionGroups) {
-      const inGroup = checked.filter(c => c.mission === g.mission);
+      // c.category가 없으면(지난 회차 다시받기) 미션명만으로 대조하는
+      // 예전 방식으로 물러선다. 있으면 반드시 카테고리까지 같아야 이
+      // 그룹 것으로 친다 — 안 그러면 같은 미션명을 쓰는 다른 카테고리의
+      // 체크 항목까지 여기 다시 세어져 문제 수가 실제보다 많이 나온다.
+      const inGroup = checked.filter(c => c.mission === g.mission && (c.category == null || c.category === g.category));
       for (const c of inGroup) {
         const hist = compactHistoryString(g.mission, c.num) || '기록없음';
         summaryRows.push({ n: qOrderNum, category: g.category, mission: g.mission, num: c.num, round: c.round, hist });
@@ -3722,8 +3755,8 @@ async function generateHtmlNote(historicalBatch) {
     const answerBlocks = [];
     const explanationBlocks = [];
     let qNum = 1;
-    for (const { mission, num, round } of checked) {
-      const fileId = missionFileId.get(mission);
+    for (const { mission, category, num, round } of checked) {
+      const fileId = lookupMissionFileId(missionFileId, mission, category);
       const entry = loadedFileCache.get(fileId);
       const marker = entry.markers.get(num);
       if (!marker) continue;
