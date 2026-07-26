@@ -601,6 +601,31 @@ function convertHwpEquationToLatex(script) {
   // file). Convert it here, before anything else gets a chance to touch
   // the "!" or "=" characters individually.
   s = s.replace(/!=/g, '\\neq ');
+  // A single equation script can be missing a { with no matching } at all,
+  // or have a stray EXTRA } with no { of its own — both confirmed against
+  // real files, both traced to the same root cause (HWP splitting one
+  // equation across separate <hp:equation> objects, so a brace pair's two
+  // halves can end up in different sibling scripts and only one half ever
+  // reaches this particular script). Cleaning this up FIRST, before
+  // resolveCases/resolveOverFractions/applyUnary ever see the string, is
+  // essential — those functions' own brace scanners assume well-formed
+  // input, and a stray brace reaching them gets baked into whatever
+  // structure they build (confirmed: a stray "}" survived resolveOverFractions
+  // and ended up INSIDE a freshly-built "\dfrac{...}" wrapper as an extra
+  // "}}", which is a KaTeX hard error no end-of-string padding could ever
+  // fix after the fact — it has to be cleaned before that wrapping happens).
+  // Escaped \{ / \} are literal LaTeX brace characters, not grouping
+  // delimiters, and must not affect depth — but nothing has introduced any
+  // yet this early (LEFT{/RIGHT} conversion runs after this), so this scan
+  // doesn't need to special-case them.
+  let depth0 = 0, balanced0 = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '{') { depth0++; balanced0 += c; }
+    else if (c === '}') { if (depth0 === 0) continue; depth0--; balanced0 += c; }
+    else balanced0 += c;
+  }
+  s = balanced0 + '}'.repeat(depth0);
   s = resolveCases(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
@@ -680,21 +705,6 @@ function convertHwpEquationToLatex(script) {
   const rightCount = (s.match(/\\right\b/g) || []).length;
   if (leftCount !== rightCount) {
     s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
-  }
-  // Same cross-equation-object splitting can leave a { with no matching }
-  // at all (confirmed against a real file: a fill-in-the-box step's script
-  // was literally "x' = box{~㈑~" — no closing brace anywhere, the rest
-  // presumably living in a sibling equation object that never made it into
-  // THIS one's script). applyUnary's brace scanner then has nowhere to
-  // stop and swallows the rest of the string, producing a doubled-looking
-  // but actually still-unbalanced "\boxed{{...}" that KaTeX refuses to
-  // parse at all. A stray trailing "}" is always valid on its own, so
-  // just pad out however many are missing — the box renders (with
-  // whatever text survived) instead of the whole line silently failing.
-  const openBraces = (s.match(/(?<!\\)\{/g) || []).length;
-  const closeBraces = (s.match(/(?<!\\)\}/g) || []).length;
-  if (openBraces > closeBraces) {
-    s += '}'.repeat(openBraces - closeBraces);
   }
   return s.trim();
 }
@@ -3221,6 +3231,11 @@ function buildPlainPageHtml(pageNum, sectionLabel, colsBlocks, info) {
 }
 
 function buildHtmlDocument({ titleText, pagesHtml }) {
+  // 표지(맨 첫 페이지)만 혼자, 그 다음부터는 책처럼 2페이지씩 펼쳐서 보임.
+  const spreads = [];
+  if (pagesHtml.length) spreads.push([pagesHtml[0]]);
+  for (let i = 1; i < pagesHtml.length; i += 2) spreads.push(pagesHtml.slice(i, i + 2));
+  const spreadsHtml = spreads.map(g => `<div class="mbSpread">${g.join('')}</div>`).join('\n');
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -3258,8 +3273,18 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
    slide is currently in view, so image/PDF export is unaffected. */
 @media screen {
   .mbBook{display:flex;align-items:flex-start;height:100vh;overflow-x:auto;overflow-y:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:14mm;gap:14mm;box-sizing:border-box}
-  .mbSheet{margin:0!important;flex:0 0 auto;scroll-snap-align:center}
+  /* 표지 혼자, 그 다음부터는 책처럼 2페이지가 나란히 — 스냅은 "스프레드"
+     단위(혼자 1장 또는 나란히 2장)로 걸리게 하고, 실제 이동은 스크롤이
+     아니라 아래 navBtn 버튼(또는 ←/→ 키)으로만 하도록 함. */
+  .mbSpread{display:flex;gap:14mm;flex:0 0 auto;scroll-snap-align:center}
+  .mbSheet{margin:0!important;flex:0 0 auto}
 }
+.navBtn{position:fixed;top:50%;transform:translateY(-50%);z-index:998;width:44px;height:44px;border-radius:50%;border:none;background:rgba(15,50,93,.85);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.navBtn:hover:not(:disabled){background:var(--mb-teal-deep)}
+.navBtn:disabled{opacity:.35;cursor:default}
+.navPrev{left:16px}
+.navNext{right:16px}
+@media print{.navBtn{display:none}}
 .navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#7a7264;z-index:5}
 @media print{.navHint{display:none}}
 .exportBar{position:fixed;top:16px;right:16px;z-index:999;display:flex;gap:8px}
@@ -3386,9 +3411,11 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
   <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
 </div>
 <div class="mbBook">
-${pagesHtml.join('\n')}
+${spreadsHtml}
 </div>
-<div class="navHint">← → 로 페이지 넘기기</div>
+<button type="button" class="navBtn navPrev" id="navPrevBtn" aria-label="이전 페이지">‹</button>
+<button type="button" class="navBtn navNext" id="navNextBtn" aria-label="다음 페이지">›</button>
+<div class="navHint">◀ ▶ 버튼 또는 ←/→ 키로 페이지 넘기기</div>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
   function tryRender() {
@@ -3400,28 +3427,62 @@ window.addEventListener('DOMContentLoaded', function () {
   }
   tryRender();
 
-  // ---- 페이지 옆으로 슬라이드 넘기기 ----
+  // ---- 페이지 옆으로 슬라이드 넘기기 (버튼/키보드로만 — 스크롤 손맛에
+  // 맡기지 않고 항상 "스프레드"(표지는 혼자, 그 다음부턴 2페이지) 단위로
+  // 딱 맞춰 이동) ----
   var mbBook = document.querySelector('.mbBook');
   var mbPages = [...document.querySelectorAll('.mbSheet')];
-  function currentSheet() {
-    if (!mbBook) return mbPages[0];
+  var mbSpreads = [...document.querySelectorAll('.mbSpread')];
+  function closestByCenter(list) {
+    if (!mbBook || !list.length) return list[0];
     const bookRect = mbBook.getBoundingClientRect();
     const bookCenter = bookRect.left + bookRect.width / 2;
-    let best = mbPages[0], bestDist = Infinity;
-    for (const p of mbPages) {
-      const r = p.getBoundingClientRect();
+    let best = list[0], bestDist = Infinity;
+    for (const el of list) {
+      const r = el.getBoundingClientRect();
       const dist = Math.abs((r.left + r.width / 2) - bookCenter);
-      if (dist < bestDist) { bestDist = dist; best = p; }
+      if (dist < bestDist) { bestDist = dist; best = el; }
     }
     return best;
   }
+  function currentSheet() { return closestByCenter(mbPages); }
+  function currentSpreadIdx() { return mbSpreads.indexOf(closestByCenter(mbSpreads)); }
+  function updateNavBtns() {
+    var idx = currentSpreadIdx();
+    if (navPrevBtn) navPrevBtn.disabled = idx <= 0;
+    if (navNextBtn) navNextBtn.disabled = idx >= mbSpreads.length - 1;
+  }
+  function goToSpread(idx) {
+    var clamped = Math.max(0, Math.min(mbSpreads.length - 1, idx));
+    var target = mbSpreads[clamped];
+    if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    // Update button state from the intended target index right away — don't
+    // wait for the 'scroll' event, which a smooth-scroll animation can fire
+    // many times (or, in some embedding contexts, not reliably at all)
+    // before settling, leaving the buttons showing stale enabled/disabled
+    // state for however long the animation takes (confirmed via a real
+    // click-through test: scroll position advanced correctly but the
+    // buttons never updated at all without this).
+    if (navPrevBtn) navPrevBtn.disabled = clamped <= 0;
+    if (navNextBtn) navNextBtn.disabled = clamped >= mbSpreads.length - 1;
+  }
+  var navPrevBtn = document.getElementById('navPrevBtn');
+  var navNextBtn = document.getElementById('navNextBtn');
+  if (navPrevBtn) navPrevBtn.addEventListener('click', function () { goToSpread(currentSpreadIdx() - 1); });
+  if (navNextBtn) navNextBtn.addEventListener('click', function () { goToSpread(currentSpreadIdx() + 1); });
   document.addEventListener('keydown', function (e) {
     if (!['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
     e.preventDefault();
-    var idx = mbPages.indexOf(currentSheet());
-    var target = mbPages[Math.max(0, Math.min(mbPages.length - 1, idx + (e.key === 'ArrowRight' ? 1 : -1)))];
-    if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    goToSpread(currentSpreadIdx() + (e.key === 'ArrowRight' ? 1 : -1));
   });
+  // Still listen for scroll (trackpad/manual drag inside .mbBook) so the
+  // buttons stay in sync if the user moves pages some way other than the
+  // buttons/keys themselves.
+  if (mbBook) mbBook.addEventListener('scroll', function () {
+    clearTimeout(mbBook._navT);
+    mbBook._navT = setTimeout(updateNavBtns, 80);
+  });
+  updateNavBtns();
 
   // ---- 이미지/PDF 저장 ----
   // 브라우저 인쇄(Ctrl+P)는 "배경 그래픽"을 켜지 않으면 색이 다 날아가는

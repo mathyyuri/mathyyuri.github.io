@@ -437,6 +437,31 @@ function convertHwpEquationToLatex(script) {
   // file). Convert it here, before anything else gets a chance to touch
   // the "!" or "=" characters individually.
   s = s.replace(/!=/g, '\\neq ');
+  // A single equation script can be missing a { with no matching } at all,
+  // or have a stray EXTRA } with no { of its own — both confirmed against
+  // real files, both traced to the same root cause (HWP splitting one
+  // equation across separate <hp:equation> objects, so a brace pair's two
+  // halves can end up in different sibling scripts and only one half ever
+  // reaches this particular script). Cleaning this up FIRST, before
+  // resolveCases/resolveOverFractions/applyUnary ever see the string, is
+  // essential — those functions' own brace scanners assume well-formed
+  // input, and a stray brace reaching them gets baked into whatever
+  // structure they build (confirmed: a stray "}" survived resolveOverFractions
+  // and ended up INSIDE a freshly-built "\dfrac{...}" wrapper as an extra
+  // "}}", which is a KaTeX hard error no end-of-string padding could ever
+  // fix after the fact — it has to be cleaned before that wrapping happens).
+  // Escaped \{ / \} are literal LaTeX brace characters, not grouping
+  // delimiters, and must not affect depth — but nothing has introduced any
+  // yet this early (LEFT{/RIGHT} conversion runs after this), so this scan
+  // doesn't need to special-case them.
+  let depth0 = 0, balanced0 = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '{') { depth0++; balanced0 += c; }
+    else if (c === '}') { if (depth0 === 0) continue; depth0--; balanced0 += c; }
+    else balanced0 += c;
+  }
+  s = balanced0 + '}'.repeat(depth0);
   s = resolveCases(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
@@ -516,21 +541,6 @@ function convertHwpEquationToLatex(script) {
   const rightCount = (s.match(/\\right\b/g) || []).length;
   if (leftCount !== rightCount) {
     s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
-  }
-  // Same cross-equation-object splitting can leave a { with no matching }
-  // at all (confirmed against a real file: a fill-in-the-box step's script
-  // was literally "x' = box{~㈑~" — no closing brace anywhere, the rest
-  // presumably living in a sibling equation object that never made it into
-  // THIS one's script). applyUnary's brace scanner then has nowhere to
-  // stop and swallows the rest of the string, producing a doubled-looking
-  // but actually still-unbalanced "\boxed{{...}" that KaTeX refuses to
-  // parse at all. A stray trailing "}" is always valid on its own, so
-  // just pad out however many are missing — the box renders (with
-  // whatever text survived) instead of the whole line silently failing.
-  const openBraces = (s.match(/(?<!\\)\{/g) || []).length;
-  const closeBraces = (s.match(/(?<!\\)\}/g) || []).length;
-  if (openBraces > closeBraces) {
-    s += '}'.repeat(openBraces - closeBraces);
   }
   return s.trim();
 }
