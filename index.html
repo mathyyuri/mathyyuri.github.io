@@ -268,6 +268,13 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .chip-q.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
 .ia-comment{width:100%;font-family:var(--kserif);font-size:12.5px;line-height:1.65;color:rgba(26,26,26,.78)}
 .ia-comment b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
+.hw-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.hw-btn{background:#fff;border:1px solid var(--gold-line);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--ink);border-radius:3px;cursor:pointer;white-space:nowrap}
+.hw-btn:hover{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+.hw-btn:disabled{opacity:.5;cursor:default}
+.hw-status{font-size:10px;color:rgba(26,26,26,.55);white-space:nowrap}
+.hw-status.ok{color:var(--mint-deep);font-weight:700}
+.hw-status.err{color:var(--pink-deep);font-weight:700}
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
@@ -1397,8 +1404,28 @@ function renderPersonal(){
         +'</div>';
     }
 
+    // 이 학생이 아직 한 번도 기록이 없는 미션도(반 전체 기준 avgMap 키)
+    // "숙제 제출" 대상이어야 한다 — 개념/진도미션을 하나도 시작 못 했어도
+    // 사진으로 확인받을 수 있어야 하므로, list가 비어있어서 이 블록 전체를
+    // 일찍 끝내는 경우에도 미제출 목록만은 반드시 그려야 한다.
+    function missingMissionsHtml(withTitle){
+      const doneMissions=new Set(list.map(r=>r.mission));
+      const missing=Object.keys(avgMap[k]||{}).filter(m=>!m.startsWith('__')&&!doneMissions.has(m));
+      if(!missing.length)return'';
+      let h=withTitle?'<div class="ia-title">미제출 숙제</div>':'';
+      h+='<div class="ia-paper">';
+      missing.forEach(m=>{
+        h+='<div class="ia-row hw-row">'
+          +'<span class="ia-name">'+esc(m)+' <small>(제출 기록 없음)</small></span>'
+          +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(k)+'" data-mission="'+esc(m)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
+          +'</div>';
+      });
+      return h+'</div>';
+    }
+
     if(!list.length){
-      html+='<div class="empty">아직 기록이 없습니다.</div>';
+      const missingHtml=missingMissionsHtml(true);
+      html+=missingHtml||'<div class="empty">아직 기록이 없습니다.</div>';
       blk.innerHTML=html;
       wrap.appendChild(blk);
       return;
@@ -1431,11 +1458,17 @@ function renderPersonal(){
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
         +(comp!=null&&comp>=100?'<span class="stamp '+clsKey(s.class)+'">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
+        +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(k)+'" data-mission="'+esc(r.mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
         +'</div>';
     });
     html+='</div>';
+    // 아직 이 학생 기록이 없는 미션(반 전체 기준 avgMap 키)도 "미제출 숙제"로
+    // 노출 — 개념/진도미션을 다 못 끝냈어도 사진으로 확인받을 수 있어야
+    // 하므로, 이 학생의 기존 기록(list) 유무와 무관하게 반에서 이미 쓰인
+    // 미션명이면 전부 제출 대상이 된다.
+    html+=missingMissionsHtml(true);
 
     blk.innerHTML=html;
     wrap.appendChild(blk);
@@ -1443,6 +1476,56 @@ function renderPersonal(){
     drawBars(cid,list.map(r=>r.mission),list.map(r=>r.score),clsData);
   });
 }
+
+/* ---------- 숙제 사진 제출 ---------- */
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(file);
+  });
+}
+// POST 응답은 problembank.html의 업로드와 마찬가지로 mode:'no-cors'라 성공
+// 여부를 응답으로는 확인할 수 없음 — fetch 자체가 실패(네트워크 오류)하지
+// 않으면 서버에 도착한 것으로 보고 낙관적으로 완료 표시한다.
+async function postNoCors(body){
+  await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+}
+async function submitHomeworkPhoto(btn,category,mission){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='image/*';
+  input.capture='environment';
+  input.multiple=true;
+  input.onchange=async()=>{
+    const files=[...input.files];
+    if(!files.length)return;
+    const statusEl=btn.nextElementSibling;
+    btn.disabled=true;
+    statusEl.textContent='업로드 중...';
+    statusEl.className='hw-status';
+    try{
+      const images=await Promise.all(files.map(async f=>({data:await fileToBase64(f),mime:f.type||'image/jpeg'})));
+      await postNoCors({action:'submithw',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,images});
+      statusEl.textContent='제출완료 ✓ 선생님 확인 대기중';
+      statusEl.className='hw-status ok';
+      btn.textContent='📷 다시 제출';
+      btn.disabled=false;
+    }catch(e){
+      statusEl.textContent='제출 실패: '+e.message;
+      statusEl.className='hw-status err';
+      btn.disabled=false;
+    }
+  };
+  input.click();
+}
+document.getElementById('me-blocks').addEventListener('click',e=>{
+  const btn=e.target.closest('.hw-btn');
+  if(!btn)return;
+  submitHomeworkPhoto(btn,btn.dataset.category,btn.dataset.mission);
+});
+
 function drawBars(canvasId,labels,mine,cls,unit){
   if(charts[canvasId])charts[canvasId].destroy();
   const u=unit||'';

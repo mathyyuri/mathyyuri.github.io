@@ -81,6 +81,14 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradeAllBtn { border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); font-weight: 700; font-size: 11px; border-radius: 5px; padding: 3px 8px; cursor: pointer; flex: 0 0 auto; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
+.hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
+.hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.hwPhotoRow { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.hwPhotoRow a img { width: 90px; height: 90px; object-fit: cover; border: 1px solid var(--gold-line); border-radius: 4px; display: block; }
+.hwScoreForm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.hwScoreForm input[type=number] { width: 70px; }
+.hwScoreForm input[type=text] { flex: 1 1 200px; min-width: 140px; }
+.hwGradedTag { font-size: 11px; font-weight: 700; color: var(--mint-deep); }
 .btnRow { display: flex; gap: 8px; flex-wrap: wrap; }
 .btnRow button { padding: 6px 14px; font-size: 12px; }
 #counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
@@ -97,6 +105,14 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 <div id="main">
   <h1>학생별 오답노트</h1>
+
+  <div class="box" id="hwGradingBox">
+    <p><b>숙제 채점 대기함</b></p>
+    <p class="hint">학생이 올린 숙제 사진입니다. 사진을 확인하고 채점한 뒤 저장하세요 — 저장하면 해당 미션 시트에도 자동으로 점수가 기록됩니다.</p>
+    <div class="btnRow"><button type="button" id="hwRefreshBtn" class="selectAllBtn">새로고침</button></div>
+    <div id="hwGradingList"><p class="hint">불러오는 중...</p></div>
+  </div>
+
   <p id="emptyHint" class="hint">왼쪽에서 학생을 선택하세요.</p>
 
   <div id="studentArea" style="display:none">
@@ -2383,6 +2399,7 @@ async function init() {
     document.getElementById('rosterStatus').textContent = '명단을 불러오지 못했습니다: ' + e.message;
     document.getElementById('rosterStatus').className = 'hint err';
   }
+  refreshHwGrading();
 }
 
 function renderRoster(students) {
@@ -2569,8 +2586,8 @@ function typeOfFilename(filename) {
 // 개념미션" 미션에 "평면좌표 진도미션" 파일이 그대로 자동 매칭되는 게 실제
 // 화면에서 확인됨. 카테고리 문자열을 파일명 규칙으로 먼저 정규화한 뒤 비교한다.
 const CATEGORY_TO_FILENAME_TYPE = { '개념미션': '개념', '진도미션': '진도미션', '과제미션': '과제미션' };
-function resolveFileForMission(missionName, category) {
-  const cls = currentStudent ? currentStudent.class : '';
+function resolveFileForMission(missionName, category, clsOverride) {
+  const cls = clsOverride != null ? clsOverride : (currentStudent ? currentStudent.class : '');
   const byClassHit = missionMap.byClass[cls + '||' + missionName];
   if (byClassHit) {
     const exact = bankFiles.find(f => f.filename === byClassHit);
@@ -3923,6 +3940,120 @@ function renderPastBatches() {
     row.querySelector('.pastHtmlBtn').addEventListener('click', () => generateHtmlNote(b));
     pastBatchesEl.appendChild(row);
   }
+}
+
+// ---------- 숙제 채점 ----------
+// 학생이 index.html에서 올린 숙제 사진을 반 전체 기준으로 최신순 나열 —
+// 기존 오답노트 채점(gradingRounds)과 달리 특정 학생을 먼저 고를 필요가
+// 없다(숙제는 아무 학생이나 아무 때나 낼 수 있으므로).
+const hwGradingListEl = document.getElementById('hwGradingList');
+document.getElementById('hwRefreshBtn').addEventListener('click', () => refreshHwGrading());
+
+async function refreshHwGrading() {
+  hwGradingListEl.innerHTML = '<p class="hint">불러오는 중...</p>';
+  try {
+    const data = await callGetJsonp(DASHBOARD_URL, { action: 'hwsubmissions', key: TEACHER_KEY });
+    renderHwGrading(data.submissions || []);
+  } catch (e) {
+    hwGradingListEl.innerHTML = `<p class="hint err">불러오지 못했습니다: ${e.message}</p>`;
+  }
+}
+
+function renderHwGrading(submissions) {
+  if (!submissions.length) { hwGradingListEl.innerHTML = '<p class="hint">채점 대기 중인 숙제가 없습니다.</p>'; return; }
+  hwGradingListEl.innerHTML = '';
+  submissions.forEach(sub => {
+    // 문제지가 problembank에 태그돼 있으면(resolveFileForMission이 이미
+    // 오답노트 화면에서 쓰는 매칭/자동매칭을 그대로 재사용) 문항 수를 알 수
+    // 있으므로 기존 O/X 그리드(.gradeToggle)를 그대로 재사용 — 못 찾으면
+    // 점수/맞은개수를 직접 입력하는 폼으로 대체한다.
+    const guess = resolveFileForMission(sub.mission, sub.category, sub.class);
+    const file = guess && guess.file;
+    let qd = [];
+    if (file && file.questionData) {
+      try { qd = JSON.parse(file.questionData); } catch (e) {}
+    }
+    const nQ = Array.isArray(qd) && qd.length ? Math.max(...qd.map(q => Number(q.num) || 0)) : 0;
+
+    const div = document.createElement('div');
+    div.className = 'hwItem';
+    const at = sub.at ? new Date(sub.at).toLocaleString('ko-KR') : '';
+    div.innerHTML = `
+      <div class="hwMeta">${escapeHtml(sub.name)} · ${escapeHtml(sub.class)} · ${escapeHtml(sub.category)} · ${escapeHtml(sub.mission)} <span class="hint">(${at})</span></div>
+      <div class="hwPhotoRow">
+        ${sub.urls.map(u => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`).join('')}
+      </div>
+      ${nQ ? `
+        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수는 자동 계산됩니다.</p>
+        <div class="gradingRowToggles">
+          ${Array.from({ length: nQ }, (_, i) => i + 1).map(n => `
+            <span class="gradeItem">
+              <button type="button" class="gradeToggle" data-value="2" data-num="${n}">X</button>
+              <span class="gradeNum">${n}번</span>
+            </span>`).join('')}
+        </div>
+        <div class="btnRow" style="margin-top:6px">
+          <button type="button" class="selectAllBtn hwAllOBtn">전체 O</button>
+          <button type="button" class="selectAllBtn hwAllXBtn">전체 X</button>
+        </div>
+      ` : `<p class="hint">문제지를 자동으로 찾지 못해 문항별 채점 대신 점수/맞은개수를 직접 입력합니다.</p>`}
+      <div class="hwScoreForm">
+        <span class="hint">점수</span><input type="number" class="hwScoreInput" style="width:70px">
+        <span class="hint">맞은개수</span><input type="number" class="hwCorrectInput" style="width:70px" ${nQ ? 'readonly' : ''}>
+        <input type="text" class="hwCommentInput" placeholder="코멘트 (선택)">
+        <button type="button" class="hwSaveBtn">저장</button>
+        <span class="hwStatus hint"></span>
+      </div>
+    `;
+
+    function syncHwCorrect() {
+      if (!nQ) return;
+      const correct = [...div.querySelectorAll('.gradeToggle')].filter(b => b.dataset.value === '1').length;
+      div.querySelector('.hwCorrectInput').value = correct;
+    }
+    div.querySelectorAll('.gradeToggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isO = btn.dataset.value === '1';
+        btn.dataset.value = isO ? '2' : '1';
+        btn.textContent = isO ? 'X' : 'O';
+        btn.classList.toggle('O', !isO);
+        syncHwCorrect();
+      });
+    });
+    div.querySelector('.hwAllOBtn')?.addEventListener('click', () => {
+      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '1'; btn.textContent = 'O'; btn.classList.add('O'); });
+      syncHwCorrect();
+    });
+    div.querySelector('.hwAllXBtn')?.addEventListener('click', () => {
+      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '2'; btn.textContent = 'X'; btn.classList.remove('O'); });
+      syncHwCorrect();
+    });
+    div.querySelector('.hwSaveBtn').addEventListener('click', async () => {
+      const statusEl = div.querySelector('.hwStatus');
+      const scoreVal = div.querySelector('.hwScoreInput').value;
+      const correctVal = div.querySelector('.hwCorrectInput').value;
+      const comment = div.querySelector('.hwCommentInput').value;
+      const items = nQ ? [...div.querySelectorAll('.gradeToggle')].map(b => Number(b.dataset.value)) : [];
+      statusEl.textContent = '저장 중...';
+      statusEl.className = 'hint';
+      try {
+        await callPostNoCors(DASHBOARD_URL, {
+          action: 'gradehw', key: TEACHER_KEY, id: sub.id,
+          score: scoreVal === '' ? '' : Number(scoreVal),
+          correct: correctVal === '' ? '' : Number(correctVal),
+          items, comment,
+        });
+        statusEl.textContent = '저장됨 ✓';
+        statusEl.className = 'hint ok';
+        setTimeout(() => refreshHwGrading(), 800);
+      } catch (e) {
+        statusEl.textContent = '저장 실패: ' + e.message;
+        statusEl.className = 'hint err';
+      }
+    });
+
+    hwGradingListEl.appendChild(div);
+  });
 }
 
 init();
