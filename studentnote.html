@@ -3153,6 +3153,8 @@ function buildHtmlDocument({ titleText, pagesHtml }) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
 <style>
 :root{
   --mb-cream:#FBF3E7; --mb-cream2:#F4ECDD; --mb-navy:#0F325D; --mb-teal:#5FB5A3; --mb-teal-deep:#3E8F79;
@@ -3168,9 +3170,11 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .men{color:var(--mb-teal);font-weight:900}
 .book{color:var(--mb-navy);font-weight:900}
 .mbBook{padding:14mm 0}
-.pdfDownloadBtn{position:fixed;top:16px;right:16px;z-index:999;background:var(--mb-navy);color:#fff;border:none;padding:11px 20px;border-radius:6px;font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.28);letter-spacing:.02em}
-.pdfDownloadBtn:hover{background:var(--mb-teal-deep)}
-@media print{.pdfDownloadBtn{display:none}}
+.exportBar{position:fixed;top:16px;right:16px;z-index:999;display:flex;gap:8px}
+.exportBar button{background:var(--mb-navy);color:#fff;border:none;padding:11px 20px;border-radius:6px;font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.28);letter-spacing:.02em}
+.exportBar button:hover:not(:disabled){background:var(--mb-teal-deep)}
+.exportBar button:disabled{opacity:.6;cursor:default}
+@media print{.exportBar{display:none}}
 .mbSheet{position:relative;width:${MB_PAGE_W_MM}mm;min-height:${MB_PAGE_H_MM}mm;margin:0 auto 10mm;background:var(--mb-cream);box-shadow:0 2px 14px rgba(0,0,0,.18)}
 .mbSheet.mbEven{background:var(--mb-cream)}
 .mbSheet.mbOdd{background:var(--mb-cream2)}
@@ -3285,7 +3289,10 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 </style>
 </head>
 <body>
-<button class="pdfDownloadBtn" onclick="window.print()" title="인쇄 대화상자 &gt; 대상: PDF로 저장 / 자세히(더보기) &gt; '배경 그래픽' 체크 — 켜야 색이 그대로 저장됩니다">⬇ PDF로 저장</button>
+<div class="exportBar">
+  <button type="button" id="saveImgBtn">이미지로 저장 (1페이지)</button>
+  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+</div>
 <div class="mbBook">
 ${pagesHtml.join('\n')}
 </div>
@@ -3299,6 +3306,67 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   }
   tryRender();
+
+  // ---- 이미지/PDF 저장 ----
+  // 브라우저 인쇄(Ctrl+P)는 "배경 그래픽"을 켜지 않으면 색이 다 날아가는
+  // 문제가 있어서, html2canvas로 각 페이지를 실제 픽셀 이미지로 찍은 뒤
+  // 그 이미지를 그대로 PDF에 붙이는 방식으로 바꿈 — 인쇄 대화상자를
+  // 거치지 않으니 배경색이 항상 그대로 남는다.
+  var mbPages = [...document.querySelectorAll('.mbSheet')];
+  async function captureSheet(el) {
+    return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+  }
+  var exportFileBase = ${JSON.stringify(titleText.replace(/[\\\/:*?"<>|]/g, '_'))};
+  var saveImgBtn = document.getElementById('saveImgBtn');
+  var savePdfBtn = document.getElementById('savePdfBtn');
+  if (saveImgBtn) saveImgBtn.addEventListener('click', async function () {
+    saveImgBtn.disabled = true;
+    var orig = saveImgBtn.textContent;
+    saveImgBtn.textContent = '캡처 중...';
+    try {
+      var canvas = await captureSheet(mbPages[0]);
+      var a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = exportFileBase + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      alert('이미지 저장 실패: ' + e.message);
+    } finally {
+      saveImgBtn.disabled = false;
+      saveImgBtn.textContent = orig;
+    }
+  });
+  if (savePdfBtn) savePdfBtn.addEventListener('click', async function () {
+    savePdfBtn.disabled = true;
+    var orig = savePdfBtn.textContent;
+    try {
+      var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
+      if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
+      // A4(210mm x 297mm) — 이미지를 페이지에 꽉 채워서 붙이므로 여백이
+      // 전혀 남지 않는다.
+      var pageW = 210, pageH = 297;
+      var pdf = null;
+      for (var i = 0; i < mbPages.length; i++) {
+        savePdfBtn.textContent = '캡처 중... (' + (i + 1) + '/' + mbPages.length + ')';
+        var canvas = await captureSheet(mbPages[i]);
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (!pdf) {
+          pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: [pageW, pageH] });
+        } else {
+          pdf.addPage([pageW, pageH], 'portrait');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      }
+      pdf.save(exportFileBase + '.pdf');
+    } catch (e) {
+      alert('PDF 저장 실패: ' + e.message);
+    } finally {
+      savePdfBtn.disabled = false;
+      savePdfBtn.textContent = orig;
+    }
+  });
 });
 <\/script>
 </body>
