@@ -2608,6 +2608,58 @@ function compactHistoryString(mission, num) {
   return rounds.map(h => (h.result === 1 ? 'O' : h.result ? 'X' : '?')).join('');
 }
 
+// 미션명(+반)으로 교재목록의 실제 파일을 찾아 그 파일에 태그된 문제별
+// 단원(unit)을 조회 — 미션매핑(반+미션명 → 파일명)과 교재목록(파일명 →
+// 문제데이터 JSON, problembank.html에서 입력한 단원/유형 태그)을 이어붙임.
+// 오답노트 생성 시 이미 불러와 둔 missionMap/bankFiles를 그대로 재사용하므로
+// 이 기능을 위해 백엔드를 새로 호출하거나 고칠 필요가 없다.
+function resolveUnitForMissionNum(mission, num, studentClass) {
+  const filename = missionMap.byClass[`${studentClass}||${mission}`] || missionMap.global[mission] || '';
+  if (!filename) return '';
+  const file = bankFiles.find(f => f.filename === filename);
+  if (!file || !file.questionData) return '';
+  let qd;
+  try { qd = JSON.parse(file.questionData); } catch (e) { return ''; }
+  if (!Array.isArray(qd)) return '';
+  const entry = qd.find(q => String(q.num) === String(num));
+  return (entry && entry.unit) || '';
+}
+
+// 오답노트 현황 페이지의 "회차별 정오표" — 지금까지 담겼던 모든 문제(행)
+// x 지금까지의 모든 회차(열) 매트릭스. 한 문제가 여러 회차에 걸쳐 반복
+// 출제됐을 수 있으므로(예: 1회차에 틀려서 3회차에 다시 나옴) 문제별로
+// 한 행에 모아 회차별 결과를 나란히 보여준다.
+function buildRoundMatrix(history) {
+  const byKey = new Map();
+  const roundSet = new Set();
+  for (const h of history) {
+    roundSet.add(h.round);
+    const key = `${h.mission}||${h.num}`;
+    if (!byKey.has(key)) byKey.set(key, { mission: h.mission, num: h.num, byRound: new Map() });
+    byKey.get(key).byRound.set(h.round, h.result);
+  }
+  const rows = [...byKey.values()].sort((a, b) => a.mission.localeCompare(b.mission) || a.num - b.num);
+  const rounds = [...roundSet].sort((a, b) => a - b);
+  return { rows, rounds };
+}
+
+// 오답노트 현황 페이지의 "단원별 정답률" — 지금까지 채점된(result 있는)
+// 문제 전체를 단원별로 묶어 정답률을 집계, 정답률이 낮은(취약한) 단원이
+// 위로 오도록 정렬. 아직 채점 전(result 없음)인 문항은 집계에서 제외.
+function buildUnitAccuracy(history, studentClass) {
+  const byUnit = new Map();
+  for (const h of history) {
+    if (h.result == null) continue;
+    const unit = resolveUnitForMissionNum(h.mission, h.num, studentClass) || '(단원 미지정)';
+    if (!byUnit.has(unit)) byUnit.set(unit, { unit, correct: 0, wrong: 0 });
+    const bucket = byUnit.get(unit);
+    if (h.result === 1) bucket.correct++; else bucket.wrong++;
+  }
+  return [...byUnit.values()]
+    .map(b => ({ ...b, total: b.correct + b.wrong, pct: Math.round((b.correct / (b.correct + b.wrong)) * 100) }))
+    .sort((a, b) => a.pct - b.pct);
+}
+
 function renderMissionBlocks() {
   // 오답노트를 하나 만들고 나면(예: 한글로 생성) 이 목록이 다시 그려지는데,
   // 그때 체크 표시가 전부 풀려버리면 곧바로 다른 형식(HTML)으로도 받으려
@@ -3181,11 +3233,47 @@ function buildMenCodePageHtml() {
 }
 
 // ---- 페이지 3: 오답현황 데이터 ----
-function buildSummaryPageHtml(summaryRows, info) {
+function buildSummaryPageHtml(summaryRows, info, roundMatrix, unitAccuracy) {
   const rowsHtml = summaryRows.map(r =>
     `<tr><td>${r.n}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.mission)}</td>` +
     `<td>${r.num}번</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
   ).join('');
+
+  // 회차별 정오표 — 문제(행) x 회차(열) 매트릭스. O=정답, X=오답, ?=채점 전,
+  // 그 회차에 출제되지 않은 칸은 빈 칸(dash)으로 둔다.
+  let roundMatrixHtml = '';
+  if (roundMatrix && roundMatrix.rows.length && roundMatrix.rounds.length) {
+    const headCols = roundMatrix.rounds.map(r => `<th>${r}회차</th>`).join('');
+    const bodyRows = roundMatrix.rows.map(row => {
+      const cells = roundMatrix.rounds.map(r => {
+        const result = row.byRound.get(r);
+        if (result === undefined) return '<td class="rmEmpty">-</td>';
+        const mark = result === 1 ? 'O' : result ? 'X' : '?';
+        const cls = result === 1 ? 'rmO' : result ? 'rmX' : 'rmQ';
+        return `<td class="${cls}">${mark}</td>`;
+      }).join('');
+      return `<tr><td class="rmLabel">${escapeHtml(row.mission)} · ${row.num}번</td>${cells}</tr>`;
+    }).join('');
+    roundMatrixHtml = `
+      <h2 class="sumSubTitle">회차별 정오표</h2>
+      <table class="sumTbl roundMatrixTbl"><thead><tr><th>문제</th>${headCols}</tr></thead>
+        <tbody>${bodyRows}</tbody></table>`;
+  }
+
+  // 단원별 정답률 — 지금까지 채점된 문제 전체를 단원별로 집계, 취약한
+  // (정답률 낮은) 단원이 위로 오도록 정렬.
+  let unitAccHtml = '';
+  if (unitAccuracy && unitAccuracy.length) {
+    const bodyRows = unitAccuracy.map(u =>
+      `<tr><td class="uaUnit">${escapeHtml(u.unit)}</td><td>${u.correct}</td><td>${u.wrong}</td>` +
+      `<td class="uaPct"><div class="uaBarWrap"><div class="uaBar" style="width:${u.pct}%"></div><span>${u.pct}%</span></div></td></tr>`
+    ).join('');
+    unitAccHtml = `
+      <h2 class="sumSubTitle">단원별 누적 정답률</h2>
+      <table class="sumTbl unitAccTbl"><thead><tr><th>단원</th><th>맞음</th><th>틀림</th><th>정답률</th></tr></thead>
+        <tbody>${bodyRows}</tbody></table>`;
+  }
+
   return `${mbSheetOpen(3)}
     <div class="sumWrap">
       <div class="sumBanner">
@@ -3198,6 +3286,8 @@ function buildSummaryPageHtml(summaryRows, info) {
       <h1 class="sumTitle">${escapeHtml(info.studentName)}의 ${info.noteRound}번째 오답노트 현황</h1>
       <table class="sumTbl"><thead><tr><th>순번</th><th>종류</th><th>미션</th><th>문제번호</th><th>차시도</th><th>정오기록</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table>
+      ${unitAccHtml}
+      ${roundMatrixHtml}
     </div>
   </section>`;
 }
@@ -3390,6 +3480,18 @@ table.sumTbl{width:100%;border-collapse:collapse;font-size:9px}
 table.sumTbl th{background:var(--mb-navy);color:#fff;font-weight:700;padding:1.3mm;text-align:center}
 table.sumTbl td{padding:0.9mm;text-align:center;border-bottom:1px solid var(--mb-line)}
 table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
+.sumSubTitle{font-family:var(--kserif);font-weight:900;font-size:12px;color:var(--mb-navy);margin:6mm 0 2mm}
+.roundMatrixTbl th, .roundMatrixTbl td{font-size:8px;padding:0.7mm}
+.roundMatrixTbl .rmLabel{text-align:left;padding-left:1.5mm;white-space:nowrap}
+.roundMatrixTbl .rmO{color:var(--mb-teal-deep);font-weight:800}
+.roundMatrixTbl .rmX{color:#B23A3A;font-weight:800}
+.roundMatrixTbl .rmQ{color:rgba(26,26,26,.4)}
+.roundMatrixTbl .rmEmpty{color:rgba(26,26,26,.2)}
+.unitAccTbl .uaUnit{text-align:left;padding-left:1.5mm}
+.unitAccTbl .uaPct{min-width:24mm}
+.uaBarWrap{position:relative;background:rgba(26,26,26,.08);border-radius:2px;height:3.2mm;overflow:hidden}
+.uaBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep)}
+.uaBarWrap span{position:relative;font-size:8px;font-weight:700;color:var(--mb-ink);line-height:3.2mm;padding-left:1mm}
 
 /* ---- 뒤표지 ---- */
 .mbBackcoverImg{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
@@ -3640,11 +3742,14 @@ async function generateHtmlNote(historicalBatch) {
       qNum++;
     }
 
+    const roundMatrix = buildRoundMatrix(noteHistory);
+    const unitAccuracy = buildUnitAccuracy(noteHistory, currentStudent.class);
+
     log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
     const pagesHtml = [];
     pagesHtml.push(buildCoverPageHtml(info));
     pagesHtml.push(buildMenCodePageHtml());
-    pagesHtml.push(buildSummaryPageHtml(summaryRows, info));
+    pagesHtml.push(buildSummaryPageHtml(summaryRows, info, roundMatrix, unitAccuracy));
 
     let pageNum = 4;
     const questionPages = chunkOnePerColumn(questionBlocks, 2);
