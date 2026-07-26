@@ -2663,10 +2663,15 @@ function compactHistoryString(mission, num, category) {
 // 문제데이터 JSON, problembank.html에서 입력한 단원/유형 태그)을 이어붙임.
 // 오답노트 생성 시 이미 불러와 둔 missionMap/bankFiles를 그대로 재사용하므로
 // 이 기능을 위해 백엔드를 새로 호출하거나 고칠 필요가 없다.
-function resolveUnitForMissionNum(mission, num, studentClass) {
-  const filename = missionMap.byClass[`${studentClass}||${mission}`] || missionMap.global[mission] || '';
-  if (!filename) return '';
-  const file = bankFiles.find(f => f.filename === filename);
+function resolveUnitForMissionNum(mission, num, category) {
+  // 미션매핑 시트에 이 미션이 명시적으로 등록돼 있지 않으면(체크박스
+  // 화면에서 실제로 많이 쓰이는 경우 — 파일 목록에 "✓ 자동 매칭"으로
+  // 표시되는 것들) 예전엔 여기서 그냥 포기하고 ''를 돌려줘서 전부
+  // "(단원 미지정)"으로 뭉쳐 나왔음. resolveFileForMission이 이미
+  // 미션매핑 → 자동 매칭 순서로(currentStudent.class 기준) 파일을
+  // 찾아주므로 그걸 그대로 재사용.
+  const guess = resolveFileForMission(mission, category);
+  const file = guess && guess.file;
   if (!file || !file.questionData) return '';
   let qd;
   try { qd = JSON.parse(file.questionData); } catch (e) { return ''; }
@@ -2696,11 +2701,11 @@ function buildRoundAccuracy(history) {
 // 오답노트 현황 페이지의 "단원별 정답률" — 지금까지 채점된(result 있는)
 // 문제 전체를 단원별로 묶어 정답률을 집계, 정답률이 낮은(취약한) 단원이
 // 위로 오도록 정렬. 아직 채점 전(result 없음)인 문항은 집계에서 제외.
-function buildUnitAccuracy(history, studentClass) {
+function buildUnitAccuracy(history) {
   const byUnit = new Map();
   for (const h of history) {
     if (h.result == null) continue;
-    const unit = resolveUnitForMissionNum(h.mission, h.num, studentClass) || '(단원 미지정)';
+    const unit = resolveUnitForMissionNum(h.mission, h.num, h.category) || '(단원 미지정)';
     if (!byUnit.has(unit)) byUnit.set(unit, { unit, correct: 0, wrong: 0 });
     const bucket = byUnit.get(unit);
     if (h.result === 1) bucket.correct++; else bucket.wrong++;
@@ -3802,7 +3807,7 @@ async function generateHtmlNote(historicalBatch) {
     }
 
     const roundAccuracy = buildRoundAccuracy(noteHistory);
-    const unitAccuracy = buildUnitAccuracy(noteHistory, currentStudent.class);
+    const unitAccuracy = buildUnitAccuracy(noteHistory);
 
     log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
     const pagesHtml = [];
