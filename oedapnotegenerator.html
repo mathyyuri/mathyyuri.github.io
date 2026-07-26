@@ -1031,17 +1031,22 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%}
 .slideTitle h1{font-family:var(--kserif);font-weight:900;font-size:3.4rem;color:var(--mb-navy);margin:0 0 .5em}
 .slideTitle .sub{font-size:1.3rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
-.slidePane{flex:1 1 0;min-width:0;padding:2.6% 3%;overflow-y:auto;display:flex;flex-direction:column}
-.slidePane:first-child{border-right:1px solid var(--mb-line)}
-.slidePane.single{flex:1 1 100%}
-.paneHead{display:flex;align-items:baseline;gap:.6em;margin-bottom:.6em;flex:0 0 auto}
-.paneCite{background:var(--mb-citebar);color:var(--mb-navy);font-weight:700;font-size:1rem;padding:.35em .9em;border-radius:1em;font-family:var(--kserif)}
-.paneNum{font-family:var(--kserif);font-weight:900;font-size:1.7rem;color:var(--mb-navy)}
-.paneBody{font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0}
-.paneBody p{margin:0 0 .5em}
-.paneBody img{max-width:100%;height:auto;display:block;margin:.5em auto;border:1px solid var(--mb-line);border-radius:6px;box-shadow:0 1px 8px rgba(26,26,26,.1)}
-.paneBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
-.paneBody td{border:1px solid var(--mb-line);padding:.2em .5em;font-size:.75em;white-space:nowrap}
+/* 실제 인쇄 시험지의 "다단"(2단 신문식 흐름)과 같은 방식 — 문제들을 하나의
+   흐름으로 이어붙여 2개 칼럼에 자동으로 채워 넣는다. 짧은 문제는 칼럼
+   안에서 자연스럽게 다음 문제로 이어지고, 긴 문제는 억지로 한 칼럼 안에
+   구겨넣지 않고 옆 칼럼으로 이어서 흐른다(break-inside를 일부러 avoid로
+   막지 않음). column-fill:auto가 핵심 — 기본값(balance)은 두 칼럼의
+   높이를 억지로 맞추려 미리 잘라버려서, 종이 신문처럼 "1칼럼을 끝까지
+   채우고 나서 2칼럼으로 이어지는" 느낌이 아니라 어중간하게 반씩 나뉜다. */
+.slideBody{flex:1 1 auto;min-width:0;columns:2;column-gap:4%;column-fill:auto;column-rule:1px solid var(--mb-line);padding:2.6% 3%;overflow:hidden;font-size:1.5rem;line-height:1.6}
+.qBlock{margin-bottom:1.1em}
+.qHead{display:flex;align-items:baseline;gap:.6em;margin-bottom:.4em;break-after:avoid-column}
+.qCite{background:var(--mb-citebar);color:var(--mb-navy);font-weight:700;font-size:.68em;padding:.35em .9em;border-radius:1em;font-family:var(--kserif)}
+.qNum{font-family:var(--kserif);font-weight:900;font-size:1.15em;color:var(--mb-navy)}
+.qBody p{margin:0 0 .5em}
+.qBody img{max-width:100%;height:auto;display:block;margin:.5em auto;border:1px solid var(--mb-line);border-radius:6px;box-shadow:0 1px 8px rgba(26,26,26,.1)}
+.qBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
+.qBody td{border:1px solid var(--mb-line);padding:.2em .5em;font-size:.75em;white-space:nowrap}
 .choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.8em;margin:.4em 0}
 .choiceItem{font-size:.92em;min-width:0;overflow-wrap:break-word}
 .hwpBogi,.hwpCondBox{border:1.6px solid var(--mb-ink);border-radius:3px;padding:.6em .9em;margin:.5em 0}
@@ -1169,46 +1174,45 @@ window.addEventListener('DOMContentLoaded', function () {
 </html>`;
 }
 
-// A slide normally holds 2 side-by-side "slidePane" halves (one question
-// each). A long question crammed into a HALF-width pane can overflow that
-// pane's height — the pane itself just silently scrolls (`overflow-y:auto`
-// in buildClassHtmlDocument's CSS), so nothing looks broken while viewing
-// interactively, but the "이미지로 저장"/PDF export only captures whatever's
-// on-screen, silently cutting off everything below the scrolled fold.
-// Rather than guess from character count (unreliable — a short line of text
-// and a tall stacked fraction take wildly different vertical space for the
-// same string length), render each candidate pane into a hidden REAL DOM
-// element sized like a real half-pane and measure its actual overflow,
-// the same measure-the-real-render approach problembank.html's own A4
-// overflow check already uses. 1280×720 is an arbitrary but reasonable
-// stand-in for "a normal-sized window" — the interactive slide itself has
-// no fixed pixel size (it's vh/vw-relative to whatever window it's opened
-// in), so this can never be exact for every viewer, only a good default.
+// A slide's body is one real 2-column newspaper-style text flow
+// (`.slideBody{columns:2}` in buildClassHtmlDocument's CSS) — a question
+// too long for column 1 just continues flowing into column 2, exactly like
+// a printed 2단 exam paper, rather than each question being force-fit into
+// its own fixed half. What still needs deciding here is how many questions'
+// worth of content fit in ONE slide's two columns before the next question
+// has to start on a FRESH slide — answered by actually rendering the
+// growing list of candidates into a hidden DOM element sized like a real
+// slide body and checking whether a 3rd (overflow) column appears, rather
+// than guessing from character count (a short line of text and a tall
+// stacked fraction take wildly different vertical space for the same
+// string length). scrollWidth > clientWidth is the standard way to detect
+// CSS multi-column overflow (confirmed directly against html2canvas output
+// too, since that's what actually captures the exported "이미지로 저장"/PDF —
+// column-fill:auto plus a fixed width/height and overflow:hidden here still
+// leaves scrollWidth reporting the full width including any hidden extra
+// column). 1280×720 is an arbitrary but reasonable stand-in for "a normal-
+// sized window" — the interactive slide itself has no fixed pixel size
+// (it's vh/vw-relative to whatever window it's opened in), so this can
+// never be exact for every viewer, only a good default.
 const SLIDE_MEASURE_W = 1280, SLIDE_MEASURE_H = 720;
 function getSlideMeasureHost() {
   let host = document.getElementById('__slideMeasureHost');
   if (host) return host;
   host = document.createElement('div');
   host.id = '__slideMeasureHost';
-  host.style.cssText = `position:fixed;left:-99999px;top:0;width:${SLIDE_MEASURE_W}px;height:${SLIDE_MEASURE_H}px;overflow:hidden;font-family:'Noto Sans KR',sans-serif;`;
+  host.style.cssText = `position:fixed;left:-99999px;top:0;width:${SLIDE_MEASURE_W}px;overflow:visible;font-family:'Noto Sans KR',sans-serif;`;
   document.body.appendChild(host);
   return host;
 }
-async function paneOverflowsHalfSlide(bodyHtml) {
+async function qBlocksFitOneSlide(qBlockHtmls) {
   const host = getSlideMeasureHost();
-  host.innerHTML = `<div style="width:${SLIDE_MEASURE_W / 2}px;height:${SLIDE_MEASURE_H}px;box-sizing:border-box;padding:2.6% 3%;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:baseline;gap:.6em;margin-bottom:.6em;flex:0 0 auto;font-family:'Noto Serif KR',serif;">
-      <span style="font-weight:900;font-size:1.7rem;">0</span><span style="font-weight:700;font-size:1rem;padding:.35em .9em;">더미</span>
-    </div>
-    <div class="__mPaneBody" style="font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0;overflow:visible;">${bodyHtml}</div>
-  </div>`;
+  host.innerHTML = `<div style="width:${SLIDE_MEASURE_W}px;height:${SLIDE_MEASURE_H}px;box-sizing:border-box;columns:2;column-gap:4%;column-fill:auto;padding:2.6% 3%;overflow:hidden;font-size:1.5rem;line-height:1.6;">${qBlockHtmls.join('')}</div>`;
   if (window.renderMathInElement) {
     renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
   }
   await new Promise(r => setTimeout(r, 0));
-  const bodyEl = host.querySelector('.__mPaneBody');
-  const available = SLIDE_MEASURE_H - SLIDE_MEASURE_H * 0.052 - bodyEl.previousElementSibling.getBoundingClientRect().height;
-  return bodyEl.scrollHeight > available + 1;
+  const el = host.firstElementChild;
+  return el.scrollWidth <= el.clientWidth + 1;
 }
 
 classHtmlBtn.addEventListener('click', async () => {
@@ -1226,7 +1230,7 @@ classHtmlBtn.addEventListener('click', async () => {
     for (const f of loadedFiles) byFile.set(f.uid, f);
 
     log('문제 내용을 변환하는 중 (수식 포함)...');
-    const panes = [];
+    const qBlocks = [];
     let qOrder = 1;
     for (const { uid, num } of checked) {
       const entry = byFile.get(uid);
@@ -1236,41 +1240,34 @@ classHtmlBtn.addEventListener('click', async () => {
       const cite = loadedFiles.length > 1
         ? `${escapeHtml(entry.filename.replace(/\.hwpx$/i, ''))} · ${num}번`
         : `${num}번`;
-      const fullHtml = `<div class="slidePane"><div class="paneHead"><span class="paneNum">${qOrder}</span><span class="paneCite">${cite}</span></div><div class="paneBody">${bodyHtml}</div></div>`;
-      panes.push({ fullHtml, bodyHtml });
+      qBlocks.push(`<div class="qBlock"><div class="qHead"><span class="qNum">${qOrder}</span><span class="qCite">${cite}</span></div><div class="qBody">${bodyHtml}</div></div>`);
       qOrder++;
     }
-    if (!panes.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
+    if (!qBlocks.length) throw new Error('선택한 문제를 하나도 변환하지 못했습니다.');
 
-    log('긴 문제를 확인하는 중 (넘치면 화면을 혼자 쓰도록 배치)...');
-    for (const pane of panes) pane.solo = await paneOverflowsHalfSlide(pane.bodyHtml);
+    log('화면(슬라이드) 분량을 계산하는 중 (2단으로 흐르게 배치)...');
+    const slideGroups = [];
+    let current = [];
+    for (const qBlock of qBlocks) {
+      const trial = [...current, qBlock];
+      if (current.length === 0 || await qBlocksFitOneSlide(trial)) {
+        current = trial;
+      } else {
+        slideGroups.push(current);
+        current = [qBlock];
+      }
+    }
+    if (current.length) slideGroups.push(current);
     document.getElementById('__slideMeasureHost')?.remove();
 
-    log('화면(슬라이드)을 배치하는 중...');
     const titleText = examName || '수업용 문제모음';
     const today = new Date().toISOString().slice(0, 10);
     const slides = [];
     slides.push(`<div class="slide"><div class="slideTitle"><h1>${escapeHtml(titleText)}</h1><div class="sub">${today}</div></div></div>`);
-    let slideIdx = 0;
-    const pushSlide = (innerHtml) => {
-      const oddCls = (slideIdx % 2 === 1) ? ' mbOdd' : '';
-      slides.push(`<div class="slide${oddCls}">${innerHtml}</div>`);
-      slideIdx++;
-    };
-    const soloHtml = (pane) => pane.fullHtml.replace('class="slidePane"', 'class="slidePane single"');
-    let pending = null;
-    for (const pane of panes) {
-      if (pane.solo) {
-        if (pending) { pushSlide(soloHtml(pending)); pending = null; }
-        pushSlide(soloHtml(pane));
-      } else if (pending) {
-        pushSlide(pending.fullHtml + pane.fullHtml);
-        pending = null;
-      } else {
-        pending = pane;
-      }
-    }
-    if (pending) pushSlide(soloHtml(pending));
+    slideGroups.forEach((group, i) => {
+      const oddCls = (i % 2 === 1) ? ' mbOdd' : '';
+      slides.push(`<div class="slide${oddCls}"><div class="slideBody">${group.join('')}</div></div>`);
+    });
 
     const html = buildClassHtmlDocument({ titleText, slidesHtml: slides });
     const blob = new Blob([html], { type: 'text/html' });
