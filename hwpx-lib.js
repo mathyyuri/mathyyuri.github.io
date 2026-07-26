@@ -428,6 +428,15 @@ function convertHwpEquationToLatex(script) {
   // Quoted labels ("⑦", "또는", ...) are literal text, not math — \text{}
   // keeps them upright instead of math-italicizing each character.
   s = s.replace(/"([^"]*)"/g, '\\text{$1}');
+  // HWP's own "NEQ" keyword (letters, caught by the symbol table further
+  // below) isn't the only way "≠" shows up in real scripts — "!=" (bare
+  // punctuation, e.g. "a != 0") is common too. Left as literal characters
+  // it's invisible to the letter-only keyword scanner ([A-Za-z]+ doesn't
+  // match "!"/"="), so it rendered as a factorial mark "!" sitting next to
+  // a plain "=" instead of one proper "≠" symbol (confirmed against a real
+  // file). Convert it here, before anything else gets a chance to touch
+  // the "!" or "=" characters individually.
+  s = s.replace(/!=/g, '\\neq ');
   s = resolveCases(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
