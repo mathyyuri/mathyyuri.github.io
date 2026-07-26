@@ -997,6 +997,8 @@ function buildClassHtmlDocument({ titleText, slidesHtml }) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
 <style>
 :root{
   --mb-cream:#FBF3E7; --mb-cream2:#F4ECDD; --mb-navy:#0F325D; --mb-teal:#5FB5A3; --mb-teal-deep:#3E8F79;
@@ -1015,10 +1017,15 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .slide::before{content:'';position:absolute;left:0;top:0;bottom:0;width:.6%;background:linear-gradient(180deg,var(--mb-teal),var(--mb-navy))}
 .slide.mbOdd::before{left:auto;right:0;background:linear-gradient(180deg,var(--mb-navy),var(--mb-teal))}
 .navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#7a7264;z-index:5;font-family:var(--sans)}
+.exportBar{position:fixed;top:10px;right:14px;z-index:6;display:flex;gap:8px;font-family:var(--sans)}
+.exportBar button{font-family:var(--sans);font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;border:none;background:var(--mb-navy);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.exportBar button:hover:not(:disabled){background:var(--mb-teal-deep)}
+.exportBar button:disabled{opacity:.6;cursor:default}
 @media print{
   .deckWrap{height:auto;overflow:visible}
   .slide{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
   .navHint{display:none}
+  .exportBar{display:none}
   @page{size:landscape;margin:0}
 }
 .slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%}
@@ -1049,6 +1056,10 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 ${slidesHtml.join('\n')}
 </div>
 <div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space로 화면 전환</div>
+<div class="exportBar">
+  <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+</div>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
   function tryRender() {
@@ -1084,6 +1095,73 @@ window.addEventListener('DOMContentLoaded', function () {
     var forward = e.key === 'PageDown' || e.key === 'ArrowRight' || e.key === ' ';
     var target = slides[Math.max(0, Math.min(slides.length - 1, idx + (forward ? 1 : -1)))];
     target.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // ---- 이미지/PDF 저장 ----
+  // 배경색·강조색이 브라우저 인쇄(Ctrl+P)에서는 잘 날아가서, html2canvas로
+  // 화면을 실제 픽셀 이미지로 한 번 찍은 뒤 그 이미지를 그대로 PDF에
+  // 붙이는 방식을 씀 — 인쇄 대화상자를 거치지 않으니 배경색이 항상
+  // 그대로 남는다.
+  function currentSlide() {
+    return slides.find(function (s) {
+      var r = s.getBoundingClientRect();
+      return r.top > -10 && r.top < window.innerHeight / 2;
+    }) || slides[0];
+  }
+  async function captureSlide(slideEl) {
+    return await html2canvas(slideEl, { scale: 2, backgroundColor: null, useCORS: true });
+  }
+  var saveImgBtn = document.getElementById('saveImgBtn');
+  var savePdfBtn = document.getElementById('savePdfBtn');
+  var exportFileBase = ${JSON.stringify(titleText.replace(/[\\\/:*?"<>|]/g, '_'))};
+  if (saveImgBtn) saveImgBtn.addEventListener('click', async function () {
+    saveImgBtn.disabled = true;
+    var orig = saveImgBtn.textContent;
+    saveImgBtn.textContent = '캡처 중...';
+    try {
+      var canvas = await captureSlide(currentSlide());
+      var a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = exportFileBase + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      alert('이미지 저장 실패: ' + e.message);
+    } finally {
+      saveImgBtn.disabled = false;
+      saveImgBtn.textContent = orig;
+    }
+  });
+  if (savePdfBtn) savePdfBtn.addEventListener('click', async function () {
+    savePdfBtn.disabled = true;
+    var orig = savePdfBtn.textContent;
+    try {
+      var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
+      if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
+      // 16:9 화면비를 그대로 유지하는 PDF 페이지 크기(파워포인트 와이드
+      // 스크린과 동일한 33.867cm x 19.05cm) — 이미지를 페이지에 꽉 채워서
+      // 붙이므로 여백이 전혀 남지 않는다.
+      var pageW = 338.67, pageH = 190.5;
+      var pdf = null;
+      for (var i = 0; i < slides.length; i++) {
+        savePdfBtn.textContent = '캡처 중... (' + (i + 1) + '/' + slides.length + ')';
+        var canvas = await captureSlide(slides[i]);
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (!pdf) {
+          pdf = new jsPDFCtor({ orientation: 'landscape', unit: 'mm', format: [pageW, pageH] });
+        } else {
+          pdf.addPage([pageW, pageH], 'landscape');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      }
+      pdf.save(exportFileBase + '.pdf');
+    } catch (e) {
+      alert('PDF 저장 실패: ' + e.message);
+    } finally {
+      savePdfBtn.disabled = false;
+      savePdfBtn.textContent = orig;
+    }
   });
 });
 <\/script>
