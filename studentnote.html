@@ -2527,6 +2527,14 @@ function typeOfFilename(filename) {
   if (filename.includes('과제미션')) return '과제미션';
   return '기타';
 }
+// 미션 시트의 카테고리 문자열(dashboardCode.gs의 CATEGORIES 배열 — "개념미션",
+// "진도미션", "과제미션" 등)과 실제 시험지 파일명에 쓰이는 짧은 단어(problembank.html
+// 파일명은 "개념"이라고만 쓰지 "개념미션"이라고 쓰지 않음)가 서로 다른 규칙이라,
+// "개념미션" 카테고리는 아래 매핑을 거치지 않으면 typeOfFilename()이 절대
+// 돌려주지 않는 값이라서 이름 매칭이 통째로 무력화됐었음 — 그 결과 "평면좌표
+// 개념미션" 미션에 "평면좌표 진도미션" 파일이 그대로 자동 매칭되는 게 실제
+// 화면에서 확인됨. 카테고리 문자열을 파일명 규칙으로 먼저 정규화한 뒤 비교한다.
+const CATEGORY_TO_FILENAME_TYPE = { '개념미션': '개념', '진도미션': '진도미션', '과제미션': '과제미션' };
 function resolveFileForMission(missionName, category) {
   const cls = currentStudent ? currentStudent.class : '';
   const byClassHit = missionMap.byClass[cls + '||' + missionName];
@@ -2548,8 +2556,9 @@ function resolveFileForMission(missionName, category) {
   // 과제미션. Only apply the narrowing when it actually leaves something
   // (an unrecognized/mismatched category string shouldn't zero out all
   // candidates).
-  if (category && ['개념', '진도미션', '과제미션'].includes(category)) {
-    const typeMatched = candidates.filter(f => typeOfFilename(f.filename) === category);
+  const filenameType = CATEGORY_TO_FILENAME_TYPE[category];
+  if (filenameType) {
+    const typeMatched = candidates.filter(f => typeOfFilename(f.filename) === filenameType);
     if (typeMatched.length) candidates = typeMatched;
   }
   // Same mission name can have a different file per class (e.g. "1차시
