@@ -656,6 +656,21 @@ function convertHwpEquationToLatex(script) {
   if (leftCount !== rightCount) {
     s = s.replace(/\\left/g, '').replace(/\\right/g, '');
   }
+  // Same cross-equation-object splitting can leave a { with no matching }
+  // at all (confirmed against a real file: a fill-in-the-box step's script
+  // was literally "x' = box{~㈑~" — no closing brace anywhere, the rest
+  // presumably living in a sibling equation object that never made it into
+  // THIS one's script). applyUnary's brace scanner then has nowhere to
+  // stop and swallows the rest of the string, producing a doubled-looking
+  // but actually still-unbalanced "\boxed{{...}" that KaTeX refuses to
+  // parse at all. A stray trailing "}" is always valid on its own, so
+  // just pad out however many are missing — the box renders (with
+  // whatever text survived) instead of the whole line silently failing.
+  const openBraces = (s.match(/(?<!\\)\{/g) || []).length;
+  const closeBraces = (s.match(/(?<!\\)\}/g) || []).length;
+  if (openBraces > closeBraces) {
+    s += '}'.repeat(openBraces - closeBraces);
+  }
   return s.trim();
 }
 function decodeXmlEntities(s) {
