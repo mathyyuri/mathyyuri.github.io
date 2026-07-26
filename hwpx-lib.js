@@ -437,31 +437,6 @@ function convertHwpEquationToLatex(script) {
   // file). Convert it here, before anything else gets a chance to touch
   // the "!" or "=" characters individually.
   s = s.replace(/!=/g, '\\neq ');
-  // A single equation script can be missing a { with no matching } at all,
-  // or have a stray EXTRA } with no { of its own — both confirmed against
-  // real files, both traced to the same root cause (HWP splitting one
-  // equation across separate <hp:equation> objects, so a brace pair's two
-  // halves can end up in different sibling scripts and only one half ever
-  // reaches this particular script). Cleaning this up FIRST, before
-  // resolveCases/resolveOverFractions/applyUnary ever see the string, is
-  // essential — those functions' own brace scanners assume well-formed
-  // input, and a stray brace reaching them gets baked into whatever
-  // structure they build (confirmed: a stray "}" survived resolveOverFractions
-  // and ended up INSIDE a freshly-built "\dfrac{...}" wrapper as an extra
-  // "}}", which is a KaTeX hard error no end-of-string padding could ever
-  // fix after the fact — it has to be cleaned before that wrapping happens).
-  // Escaped \{ / \} are literal LaTeX brace characters, not grouping
-  // delimiters, and must not affect depth — but nothing has introduced any
-  // yet this early (LEFT{/RIGHT} conversion runs after this), so this scan
-  // doesn't need to special-case them.
-  let depth0 = 0, balanced0 = '';
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c === '{') { depth0++; balanced0 += c; }
-    else if (c === '}') { if (depth0 === 0) continue; depth0--; balanced0 += c; }
-    else balanced0 += c;
-  }
-  s = balanced0 + '}'.repeat(depth0);
   s = resolveCases(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
@@ -475,6 +450,38 @@ function convertHwpEquationToLatex(script) {
   s = s.replace(/RIGHT\s*\}/gi, '\\right\\}');
   s = s.replace(/LEFT\s*\|/gi, '\\left|');
   s = s.replace(/RIGHT\s*\|/gi, '\\right|');
+  // A single equation script can be missing a { with no matching } at all,
+  // or have a stray EXTRA } with no { of its own — both confirmed against
+  // real files, both traced to the same root cause (HWP splitting one
+  // equation across separate <hp:equation> objects, so a brace pair's two
+  // halves can end up in different sibling scripts and only one half ever
+  // reaches this particular script). Cleaning this up before
+  // resolveOverFractions/applyUnary ever see the string is essential —
+  // those functions' own brace scanners assume well-formed input, and a
+  // stray brace reaching them gets baked into whatever structure they
+  // build (confirmed: a stray "}" survived resolveOverFractions and ended
+  // up INSIDE a freshly-built "\dfrac{...}" wrapper as an extra "}}",
+  // which is a KaTeX hard error no end-of-string padding could ever fix
+  // after the fact — it has to be cleaned before that wrapping happens).
+  // This MUST run after the LEFT/RIGHT conversions above, not before: an
+  // equation fragment like "it right}" — the tail half of a set-builder
+  // notation split across sibling <hp:equation> objects — has its raw "}"
+  // turned into the escaped, non-grouping "\right\}" token by those
+  // conversions. Running this scan earlier (confirmed against a real
+  // file) sees that same "}" while it's still a bare, unmatched character,
+  // decides it's a stray extra close, and deletes it — which then makes
+  // "RIGHT\s*\}" stop matching entirely, leaving literal unconverted
+  // "right" text behind. So \{ / \} (now escaped, literal brace glyphs,
+  // not grouping delimiters) must be skipped here rather than counted.
+  let depth0 = 0, balanced0 = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    const escaped = s[i - 1] === '\\';
+    if (c === '{' && !escaped) { depth0++; balanced0 += c; }
+    else if (c === '}' && !escaped) { if (depth0 === 0) continue; depth0--; balanced0 += c; }
+    else balanced0 += c;
+  }
+  s = balanced0 + '}'.repeat(depth0);
   s = applyUnary(s, 'sqrt', '\\sqrt', false, true);
   // "root" is an alternate keyword HWP uses for square roots too (e.g.
   // "7root3" = 7√3), separate from "sqrt" — both need to be recognized.
@@ -499,6 +506,15 @@ function convertHwpEquationToLatex(script) {
   // without loose this glued "box" was silently left as literal text
   // (confirmed against a real file: TAT3회 20번's "y= {2 cdotbox{(가)}...").
   s = applyUnary(s, 'box', '\\boxed', true, true);
+  // Empty/placeholder \boxed{} content (bare "~", "~~", or whitespace
+  // only — HWP's own filler for "leave this blank, draw your own mark
+  // here", e.g. "IN/notin" fill-in boxes) renders too cramped for a
+  // student to actually write a symbol into by hand — \boxed sizes
+  // itself tightly to its content, and "~" is just a thin space. Swap
+  // the filler for a couple of \phantom{X}'s instead: same invisible-
+  // content trick, but each one reserves a full character's worth of
+  // width/height, giving a legibly sized blank box to write into.
+  s = s.replace(/\\boxed\{[~\s]*\}/g, '\\boxed{\\phantom{X}\\phantom{X}}');
   // "over" (fractions) runs AFTER the unary conversions above, not
   // before — a numerator/denominator like "box (나)" needs "box" already
   // turned into the clean, self-contained "\boxed{(나)}" token BEFORE the
@@ -1090,10 +1106,21 @@ function looksLikeNextQuestionMarker(p) {
 // paragraph (confirmed in a real file: image, blank, then the ㄱ/ㄴ/ㄷ
 // list, then another blank, then the ①-⑤ choices referencing it) never
 // got absorbed at all — it silently fell outside every question's block.
+//
+// A sub-part label like "(1) 원소나열법"/"(2) 조건제시법"/"(3) 벤다이어그램"
+// — parenthesized Arabic numeral, HWP's other common numbering style for
+// multi-part stems alongside ①②③/ㄱㄴㄷ — is just as unambiguous a marker
+// as those (confirmed against a real file: "(1)" absorbed fine as the
+// initial non-blank run right after the endnote, but "(2)"/"(3)" each sat
+// past their OWN blank gap and were silently dropped entirely, since
+// nothing recognized them as belonging to this question). "(숫자)" doesn't
+// collide with the watermark/citation text this function is deliberately
+// narrow to avoid — that repeating notice never starts with a parenthesized
+// number.
 function looksLikeOrphanedFragment(p) {
   if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
-  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t);
+  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t);
 }
 
 function detectEndnoteMarkers(xml) {
