@@ -1475,6 +1475,35 @@ function renderPersonal(){
     const clsData=list.map(r=>avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null);
     drawBars(cid,list.map(r=>r.mission),list.map(r=>r.score),clsData);
   });
+
+  /* ---- 대수연마 1000제 (특강 — 반 구분 없이 특강 수강생 전체가 한 그룹이라
+     종합 통계(catsFor)에서는 제외돼 있지만, 개인 기록에는 별도 블록으로 노출) ---- */
+  const algList=rec[ALG_TAB]||[];
+  if(sheetsFor(s.cohort).indexOf(ALG_TAB)!==-1 && algList.length){
+    const algAvg=avgMap[ALG_TAB]||{};
+    const blk=document.createElement('div');
+    blk.className='block';
+    let html='<div class="block-head"><h2>'+ALG_TAB+'</h2><span class="en">'+SHEET_EN[ALG_TAB]+'</span></div>'
+      +'<p class="hint" style="margin-bottom:10px">특강 전용이라 위 종합 통계(Overview)에는 포함되지 않습니다.</p>'
+      +'<div class="chart-box"><h3>MY SCORE vs 대수연마 AVG</h3>'
+      +'<div class="cap">회차별 내 점수(민트) vs 특강 평균(핑크)</div>'
+      +'<div class="wrap"><canvas id="chart-alg"></canvas></div></div>'
+      +'<div class="ia-title">ITEM ANALYSIS · 회차별 기록</div><div class="ia-paper">';
+    algList.forEach(r=>{
+      const clsAvg=algAvg[r.mission]!=null?algAvg[r.mission]:null;
+      html+='<div class="ia-row">'
+        +'<span class="ia-name">'+esc(r.mission)+'</span>'
+        +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
+        +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(ALG_TAB)+'" data-mission="'+esc(r.mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
+        +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+    blk.innerHTML=html;
+    wrap.appendChild(blk);
+    const algClsData=algList.map(r=>algAvg[r.mission]!=null?algAvg[r.mission]:null);
+    drawBars('chart-alg',algList.map(r=>r.mission),algList.map(r=>r.score),algClsData);
+  }
 }
 
 /* ---------- 숙제 사진 제출 ---------- */
