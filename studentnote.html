@@ -2411,10 +2411,17 @@ async function selectStudent(btn) {
     document.getElementById('studentInfo').innerHTML =
       `<b>${currentStudent.name}</b> (${currentStudent.class}반) — 오답 ${wrongData.wrong.length}문항`;
 
+    // 미션명 하나만으로 묶으면, 서로 다른 카테고리(개념미션/진도미션 등)가
+    // 우연히 같은 미션명을 쓸 때(같은 단원명을 개념/진도에 그대로 재사용하는
+    // 경우가 흔함) 두 카테고리의 오답 항목이 한 그룹으로 합쳐져 버림 — 실제
+    // 화면에서 확인된 증상: "개념미션" 문제가 18개뿐인 미션에 "진도미션"
+    // 쪽 문항까지 섞여 30개 넘게 나옴. 미션명+카테고리를 묶어서 키로 써야
+    // 서로 다른 카테고리는 항상 별도 그룹으로 남는다.
     const byMission = new Map();
     for (const w of wrongData.wrong) {
-      if (!byMission.has(w.mission)) byMission.set(w.mission, { mission: w.mission, category: w.category, items: [] });
-      byMission.get(w.mission).items.push(w);
+      const key = `${w.mission}||${w.category}`;
+      if (!byMission.has(key)) byMission.set(key, { mission: w.mission, category: w.category, items: [] });
+      byMission.get(key).items.push(w);
     }
     missionGroups = [...byMission.values()];
     renderMissionBlocks();
