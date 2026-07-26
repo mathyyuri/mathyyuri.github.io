@@ -8,11 +8,19 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<!-- ?v=... busts CDN/browser caching on a custom domain (mathyyuri.com sits
-     in front of GitHub Pages) — a plain hard-refresh doesn't reliably clear
-     an edge cache, but a changed URL always fetches fresh. Bump this any
-     time hwpx-lib.js changes. -->
-<script src="hwpx-lib.js?v=20260726-1"></script>
+<!-- Manually bumping ?v=... every time hwpx-lib.js changes turned out to be
+     too easy to forget (confirmed against a real download: a fix landed in
+     hwpx-lib.js but the exported HTML still had the OLD broken output,
+     because the CACHED COPY of THIS PAGE ITSELF — not just hwpx-lib.js —
+     still carried the old version string, so it never even asked for the
+     new one). Date.now() makes the query string different on literally
+     every page load, so hwpx-lib.js can never go stale again even if this
+     page's own HTML is served from a cache — no more manual bumping, no
+     more relying on the user to hard-refresh. document.write (not
+     defer/async) keeps this synchronous so hwpx-lib.js's functions are
+     ready before the rest of the page's own inline scripts run, same as a
+     plain <script src> tag would be. -->
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
 <style>
   body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
   h1 { font-size: 22px; }
@@ -1033,7 +1041,17 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .slideTitle .sub{font-size:1.3rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
 .slidePane{flex:1 1 0;min-width:0;padding:2.6% 3%;overflow-y:auto;display:flex;flex-direction:column}
 .slidePane:first-child{border-right:1px solid var(--mb-line)}
-.slidePane.single{flex:1 1 100%}
+.slidePane.single{flex:1 1 100%;overflow-x:auto}
+/* A "single" pane means one long question gets the whole slide to itself —
+   but giving it just one extra-wide column still leaves it as tall (and
+   just as likely to overflow the fixed 16:9 slide height) as before, only
+   wider. The actual point of handing it both columns is for its OWN
+   content to flow newspaper-style THROUGH both of them (column 1 fills,
+   then continues into column 2), the same "다단" a real 2-column exam
+   paper uses — so it needs real CSS columns here, not just extra width.
+   column-fill:auto (not the balance default) fills column 1 completely
+   before spilling into column 2, matching that paper-like behavior. */
+.slidePane.single .paneBody{columns:2;column-gap:4%;column-fill:auto;column-rule:1px solid var(--mb-line)}
 .paneHead{display:flex;align-items:baseline;gap:.6em;margin-bottom:.6em;flex:0 0 auto}
 .paneCite{background:var(--mb-citebar);color:var(--mb-navy);font-weight:700;font-size:1rem;padding:.35em .9em;border-radius:1em;font-family:var(--kserif)}
 .paneNum{font-family:var(--kserif);font-weight:900;font-size:1.7rem;color:var(--mb-navy)}

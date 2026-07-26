@@ -9,11 +9,19 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<!-- ?v=... busts CDN/browser caching on a custom domain (mathyyuri.com sits
-     in front of GitHub Pages) — a plain hard-refresh doesn't reliably clear
-     an edge cache, but a changed URL always fetches fresh. Bump this any
-     time hwpx-lib.js changes. -->
-<script src="hwpx-lib.js?v=20260726-1"></script>
+<!-- Manually bumping ?v=... every time hwpx-lib.js changes turned out to be
+     too easy to forget (confirmed against a real download: a fix landed in
+     hwpx-lib.js but the exported HTML still had the OLD broken output,
+     because the CACHED COPY of THIS PAGE ITSELF — not just hwpx-lib.js —
+     still carried the old version string, so it never even asked for the
+     new one). Date.now() makes the query string different on literally
+     every page load, so hwpx-lib.js can never go stale again even if this
+     page's own HTML is served from a cache — no more manual bumping, no
+     more relying on the user to hard-refresh. document.write (not
+     defer/async) keeps this synchronous so hwpx-lib.js's functions are
+     ready before the rest of the page's own inline scripts run, same as a
+     plain <script src> tag would be. -->
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
 <style>
 :root{
   --cream:#FBF8F1;
