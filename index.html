@@ -1380,16 +1380,44 @@ function renderPersonal(){
   });
   const clsTotalAcc=clsTot?Math.round(clsOk/clsTot*100):null;
 
-  const myRetryAcc=myAcc(rec['오답미션']||[]);
-  const rMap=avgMap['오답미션']||{};
-  const clsRetryAcc=rMap.__classTot?Math.round((rMap.__classOk||0)/rMap.__classTot*100):null;
+  // 대치수학 3기처럼 오답미션 시트가 따로 없는 기수는 그 자리에 "오답미션
+  // 정답률"을 보여줄 수가 없다(데이터가 아예 없어서 늘 빈 막대) — 대신
+  // 지금까지 쌓인 전체 오답 개수 대비 오답완료(다시 풀어서 맞음) 비율을
+  // 보여준다. 반평균도 같은 방식으로 비교.
+  const hasRetryMission=sheetsFor(s.cohort).indexOf('오답미션')!==-1;
+  let bar2Label,myBar2,clsBar2,capExtra;
+  document.getElementById('acc-sub')?.remove();
+  if(hasRetryMission){
+    const myRetryAcc=myAcc(rec['오답미션']||[]);
+    const rMap=avgMap['오답미션']||{};
+    const clsRetryAcc=rMap.__classTot?Math.round((rMap.__classOk||0)/rMap.__classTot*100):null;
+    bar2Label='오답미션 정답률'; myBar2=myRetryAcc; clsBar2=clsRetryAcc; capExtra='오답미션';
+  }else{
+    let myWrong=0,myFixed=0,clsWrong=0,clsFixed=0;
+    mySheets.forEach(k=>{
+      (rec[k]||[]).forEach(r=>r.items.forEach(v=>{if(v===2||v===3){myWrong++;if(v===3)myFixed++;}}));
+      if(avgMap[k]){
+        clsWrong+=(avgMap[k].__classTot||0)-(avgMap[k].__classOk||0);
+        clsFixed+=avgMap[k].__classFixed||0;
+      }
+    });
+    const myFixRate=myWrong?Math.round(myFixed/myWrong*100):null;
+    const clsFixRate=clsWrong?Math.round(clsFixed/clsWrong*100):null;
+    bar2Label='오답완료율'; myBar2=myFixRate; clsBar2=clsFixRate; capExtra='오답완료율';
+    const sub=document.createElement('div');
+    sub.id='acc-sub';
+    sub.className='hint';
+    sub.style.marginTop='4px';
+    sub.textContent='누적 오답 '+myWrong+'개 · 오답완료 '+myFixed+'개'+(clsWrong?' (반 전체 오답 '+clsWrong+'개 중 '+clsFixed+'개 완료)':'');
+    document.getElementById('acc-cap').insertAdjacentElement('afterend',sub);
+  }
 
-  drawBars('chart-acc',['전체 정답률','오답미션 정답률'],[myTotalAcc,myRetryAcc],[clsTotalAcc,clsRetryAcc],'%');
+  drawBars('chart-acc',['전체 정답률',bar2Label],[myTotalAcc,myBar2],[clsTotalAcc,clsBar2],'%');
   const d1=(myTotalAcc!=null&&clsTotalAcc!=null)?myTotalAcc-clsTotalAcc:null;
-  const d2=(myRetryAcc!=null&&clsRetryAcc!=null)?myRetryAcc-clsRetryAcc:null;
+  const d2=(myBar2!=null&&clsBar2!=null)?myBar2-clsBar2:null;
   document.getElementById('acc-cap').innerHTML='반평균 대비 — 전체 '
     +(d1==null?'—':'<b class="'+(d1>=0?'up':'down')+'">'+(d1>=0?'+':'')+d1+'%p</b>')
-    +' · 오답미션 '
+    +' · '+capExtra+' '
     +(d2==null?'—':'<b class="'+(d2>=0?'up':'down')+'">'+(d2>=0?'+':'')+d2+'%p</b>');
 
   /* ---- Overview 레이더 (종목별 누적 · S+ BLACK 제외) ---- */
