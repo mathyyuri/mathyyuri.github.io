@@ -76,8 +76,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingRowLabel { font-weight: 700; font-family: var(--kserif); flex: 0 0 auto; min-width: 140px; }
 .gradingRowToggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
 .gradeItem { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.gradeSeq { font-size: 12px; font-weight: 700; color: var(--ink); }
-.gradeNum { font-size: 10px; color: rgba(26,26,26,.5); }
+/* gradeNum(실제 시험지 문제 번호)이 채점 기준이라 크고 굵게, gradeSeq(오답
+   노트 요약표 안에서의 순서일 뿐 시험지 번호가 아님)는 작고 흐리게 —
+   반대로 돼 있으면 교사가 굵은 쪽을 문제 번호로 착각해 엉뚱한 문제를
+   채점하게 된다(실제로 보고된 문제). */
+.gradeSeq { font-size: 10px; color: rgba(26,26,26,.4); }
+.gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
 .gradeAllBtn { border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); font-weight: 700; font-size: 11px; border-radius: 5px; padding: 3px 8px; cursor: pointer; flex: 0 0 auto; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
@@ -123,7 +127,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div class="box" id="gradingBox" style="display:none">
       <p><b>지난 오답노트 채점</b></p>
-      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾼 뒤 저장하세요.</p>
+      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾼 뒤 저장하세요. <b>굵은 번호가 실제 시험지의 문제 번호</b>이니 그 번호로 채점하세요 — 아래 작은 "요약 N"은 시험지 번호가 아니라 오답노트 요약표에서 몇 번째 항목인지일 뿐입니다.</p>
       <div id="gradingRounds"></div>
     </div>
 
@@ -2520,10 +2524,10 @@ function renderGradingRounds(rounds) {
       <div class="gradingRowToggles">
         ${r.items.map(it => `
           <span class="gradeItem">
-            <span class="gradeSeq">${seq++}</span>
+            <span class="gradeNum">${it.num}번</span>
             <button type="button" class="gradeToggle O" data-value="1"
               data-mission="${r.mission}" data-category="${r.category || ''}" data-round="${r.round}" data-num="${it.num}">O</button>
-            <span class="gradeNum">${it.num}번</span>
+            <span class="gradeSeq">요약 ${seq++}</span>
           </span>`).join('')}
       </div>
       <button type="button" class="gradeAllBtn">전체 O</button>
