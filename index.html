@@ -1533,6 +1533,33 @@ function fileToBase64(file){
     reader.readAsDataURL(file);
   });
 }
+// 휴대폰 세로 사진은 EXIF 회전 정보만 "이렇게 돌려서 보여줘"라고 적혀
+// 있을 뿐 실제 픽셀은 눕혀진 채로 저장되는 경우가 흔함 — 그 EXIF 값을
+// 무시하고 그대로 보여주는 화면(구버전 브라우저 등)에서는 사진이
+// 옆으로/거꾸로 나온다. createImageBitmap({imageOrientation:'from-image'})
+// 로 EXIF를 반영해서 "보이는 그대로"인 픽셀로 다시 그린 뒤 재인코딩하면,
+// 어디서 열어도 항상 정방향으로 보인다. 겸사겸사 원본(수 MB짜리 카메라
+// 사진)을 적당한 크기로 줄여서 여러 장을 올려도 빠르게 전송되게 한다.
+async function normalizedPhotoBase64(file){
+  try{
+    const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const maxDim=1600;
+    let w=bitmap.width,h=bitmap.height;
+    if(w>maxDim||h>maxDim){
+      const scale=Math.min(maxDim/w,maxDim/h);
+      w=Math.round(w*scale);h=Math.round(h*scale);
+    }
+    const canvas=document.createElement('canvas');
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(bitmap,0,0,w,h);
+    const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+    return {data:dataUrl.split(',')[1]||'',mime:'image/jpeg'};
+  }catch(e){
+    // 아주 오래된 브라우저 등 createImageBitmap을 못 쓰는 경우에만 원본
+    // 그대로 폴백 — 이 경우엔 방향 보정/용량 축소가 안 될 수 있다.
+    return {data:await fileToBase64(file),mime:file.type||'image/jpeg'};
+  }
+}
 // POST 응답은 problembank.html의 업로드와 마찬가지로 mode:'no-cors'라 성공
 // 여부를 응답으로는 확인할 수 없음 — fetch 자체가 실패(네트워크 오류)하지
 // 않으면 서버에 도착한 것으로 보고 낙관적으로 완료 표시한다.
@@ -1566,7 +1593,7 @@ async function submitHomeworkPhoto(btn,category,mission){
     statusEl.textContent='업로드 중... ('+files.length+'장)';
     statusEl.className='hw-status';
     try{
-      const images=await Promise.all(files.map(async f=>({data:await fileToBase64(f),mime:f.type||'image/jpeg'})));
+      const images=await Promise.all(files.map(f=>normalizedPhotoBase64(f)));
       await postNoCors({action:'submithw',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,images});
       await refreshMyPendingHw();
       renderPersonal();

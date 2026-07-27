@@ -83,8 +83,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
 .hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
 .hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
-.hwPhotoRow { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-.hwPhotoRow a img { width: 90px; height: 90px; object-fit: cover; border: 1px solid var(--gold-line); border-radius: 4px; display: block; }
+.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+/* 클릭하지 않고도 바로 채점할 수 있도록 충분히 크게 — object-fit:contain으로
+   잘리는 부분 없이 전체가 다 보이게 한다(사진마다 가로/세로 비율이 달라도). */
+.hwPhotoRow a img { max-width: 420px; max-height: 560px; width: auto; height: auto; object-fit: contain; border: 1px solid var(--gold-line); border-radius: 4px; display: block; background: #fff; }
+.hwPhotoRow .hwPhotoLoading { width: 200px; height: 120px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--gold-line); border-radius: 4px; color: rgba(26,26,26,.4); font-size: 12px; }
 .hwScoreForm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
 .hwScoreForm input[type=number] { width: 70px; }
 .hwScoreForm input[type=text] { flex: 1 1 200px; min-width: 140px; }
@@ -3983,7 +3986,12 @@ function renderHwGrading(submissions) {
         <button type="button" class="hwCancelBtn" style="float:right;background:#fff;color:var(--pink-deep);border:1px solid var(--pink-deep);padding:3px 10px;font-size:11px;border-radius:4px">삭제</button>
       </div>
       <div class="hwPhotoRow">
-        ${sub.urls.map(u => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`).join('')}
+        ${sub.urls.map(u => {
+          const fid = driveIdFromUrl(u);
+          return fid
+            ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
+            : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
+        }).join('')}
       </div>
       ${nQ ? `
         <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수·점수는 자동 계산됩니다.</p>
@@ -4070,6 +4078,35 @@ function renderHwGrading(submissions) {
     });
 
     hwGradingListEl.appendChild(div);
+    loadHwPhotos(div);
+  });
+}
+
+function driveIdFromUrl(u) {
+  const m = String(u).match(/[?&]id=([^&]+)/);
+  return m ? m[1] : null;
+}
+// 사진 URL(uc?export=view&id=...)을 <img src>로 바로 걸면, 학원 구글
+// 계정이 "링크가 있는 모든 사용자" 공유를 도메인 정책으로 막아둔 경우
+// 안 뜬다(실제로 이 문제로 사진이 하나도 안 보인 적이 있음) — 항상
+// 되는 hwphoto 액션(스크립트 실행 계정 권한으로 대신 읽어 base64로
+// 내려줌)으로 가져와서 data URI로 바꿔 끼운다. "새 탭에서 열기" 링크도
+// 로드가 끝나면 같은 data URI로 바꿔서 원본 링크가 막혀 있어도 열리게 함.
+function loadHwPhotos(div) {
+  div.querySelectorAll('.hwPhotoLoading').forEach(async placeholder => {
+    const fid = placeholder.dataset.fid;
+    try {
+      const resp = await callGetJsonp(DASHBOARD_URL, { action: 'hwphoto', id: fid });
+      const dataUrl = `data:${resp.photo.mime};base64,${resp.photo.data}`;
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.loading = 'lazy';
+      const link = placeholder.closest('a');
+      if (link) link.href = dataUrl;
+      placeholder.replaceWith(img);
+    } catch (e) {
+      placeholder.textContent = '사진을 불러오지 못했습니다';
+    }
   });
 }
 
