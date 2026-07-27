@@ -3979,12 +3979,14 @@ function renderHwGrading(submissions) {
     div.className = 'hwItem';
     const at = sub.at ? new Date(sub.at).toLocaleString('ko-KR') : '';
     div.innerHTML = `
-      <div class="hwMeta">${escapeHtml(sub.name)} · ${escapeHtml(sub.class)} · ${escapeHtml(sub.category)} · ${escapeHtml(sub.mission)} <span class="hint">(${at})</span></div>
+      <div class="hwMeta">${escapeHtml(sub.name)} · ${escapeHtml(sub.class)} · ${escapeHtml(sub.category)} · ${escapeHtml(sub.mission)} <span class="hint">(${at})</span>
+        <button type="button" class="hwCancelBtn" style="float:right;background:#fff;color:var(--pink-deep);border:1px solid var(--pink-deep);padding:3px 10px;font-size:11px;border-radius:4px">삭제</button>
+      </div>
       <div class="hwPhotoRow">
         ${sub.urls.map(u => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`).join('')}
       </div>
       ${nQ ? `
-        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수는 자동 계산됩니다.</p>
+        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수·점수는 자동 계산됩니다.</p>
         <div class="gradingRowToggles">
           ${Array.from({ length: nQ }, (_, i) => i + 1).map(n => `
             <span class="gradeItem">
@@ -3998,7 +4000,7 @@ function renderHwGrading(submissions) {
         </div>
       ` : `<p class="hint">문제지를 자동으로 찾지 못해 문항별 채점 대신 점수/맞은개수를 직접 입력합니다.</p>`}
       <div class="hwScoreForm">
-        <span class="hint">점수</span><input type="number" class="hwScoreInput" style="width:70px">
+        <span class="hint">점수</span><input type="number" class="hwScoreInput" style="width:70px" ${nQ ? 'readonly' : ''}>
         <span class="hint">맞은개수</span><input type="number" class="hwCorrectInput" style="width:70px" ${nQ ? 'readonly' : ''}>
         <input type="text" class="hwCommentInput" placeholder="코멘트 (선택)">
         <button type="button" class="hwSaveBtn">저장</button>
@@ -4006,11 +4008,15 @@ function renderHwGrading(submissions) {
       </div>
     `;
 
+    // 문항별 O/X로 채점하는 경우 맞은개수뿐 아니라 점수도 (맞은개수/전체)*100으로
+    // 자동 계산 — 문항 채점을 이미 했는데 점수를 따로 또 입력할 필요가 없게.
     function syncHwCorrect() {
       if (!nQ) return;
       const correct = [...div.querySelectorAll('.gradeToggle')].filter(b => b.dataset.value === '1').length;
       div.querySelector('.hwCorrectInput').value = correct;
+      div.querySelector('.hwScoreInput').value = Math.round(correct / nQ * 100);
     }
+    syncHwCorrect();
     div.querySelectorAll('.gradeToggle').forEach(btn => {
       btn.addEventListener('click', () => {
         const isO = btn.dataset.value === '1';
@@ -4027,6 +4033,17 @@ function renderHwGrading(submissions) {
     div.querySelector('.hwAllXBtn')?.addEventListener('click', () => {
       div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '2'; btn.textContent = 'X'; btn.classList.remove('O'); });
       syncHwCorrect();
+    });
+    div.querySelector('.hwCancelBtn').addEventListener('click', async () => {
+      if (!confirm(`${sub.name}의 "${sub.mission}" 제출을 삭제할까요? 사진도 함께 삭제됩니다.`)) return;
+      div.querySelector('.hwCancelBtn').disabled = true;
+      try {
+        await callPostNoCors(DASHBOARD_URL, { action: 'cancelhw', key: TEACHER_KEY, id: sub.id });
+        div.remove();
+      } catch (e) {
+        alert('삭제하지 못했습니다: ' + e.message);
+        div.querySelector('.hwCancelBtn').disabled = false;
+      }
     });
     div.querySelector('.hwSaveBtn').addEventListener('click', async () => {
       const statusEl = div.querySelector('.hwStatus');

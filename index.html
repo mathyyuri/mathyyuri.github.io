@@ -275,6 +275,10 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .hw-status{font-size:10px;color:rgba(26,26,26,.55);white-space:nowrap}
 .hw-status.ok{color:var(--mint-deep);font-weight:700}
 .hw-status.err{color:var(--pink-deep);font-weight:700}
+.hw-pending{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
+.hw-cancel-btn{background:#fff;border:1px solid var(--pink-deep);color:var(--pink-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
+.hw-cancel-btn:hover{background:var(--pink-deep);color:#fff}
+.hw-cancel-btn:disabled{opacity:.5;cursor:default}
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
@@ -710,6 +714,19 @@ function r1(v){return Math.round(v*10)/10;}
 function mean(arr){return arr.length?r1(arr.reduce((a,b)=>a+b,0)/arr.length):null;}
 function cssColor(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
+// 이 학생의 '대기' 상태 숙제 제출 목록 — 로그인 시(그리고 제출/취소 후)
+// 새로고침해서, 미션마다 "제출" 버튼 대신 "대기중 · 취소"를 보여줄지
+// 판단하는 데 쓴다.
+let myPendingHw=[];
+function hwActionsHtml(category,mission){
+  const pending=myPendingHw.find(p=>p.category===category&&p.mission===mission);
+  if(pending){
+    return '<span class="hw-actions"><span class="hw-pending">대기중 · 사진 '+pending.urls.length+'장</span>'
+      +'<button type="button" class="hw-cancel-btn" data-id="'+esc(pending.id)+'">취소</button></span>';
+  }
+  return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>';
+}
+
 /* ---------- 로그인 ---------- */
 function goLogin(){ if(me){show('view-personal');} else {show('view-login');} }
 async function login(){
@@ -724,6 +741,7 @@ async function login(){
     const json = await res.json();
     if(!json.ok){msg.textContent=json.error||'로그인에 실패했습니다.';loading(false);return;}
     me = json;
+    await refreshMyPendingHw();
     renderPersonal();
     show('view-personal');
   }catch(e){
@@ -1417,7 +1435,7 @@ function renderPersonal(){
       missing.forEach(m=>{
         h+='<div class="ia-row hw-row">'
           +'<span class="ia-name">'+esc(m)+' <small>(제출 기록 없음)</small></span>'
-          +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(k)+'" data-mission="'+esc(m)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
+          +hwActionsHtml(k,m)
           +'</div>';
       });
       return h+'</div>';
@@ -1458,7 +1476,7 @@ function renderPersonal(){
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
         +(comp!=null&&comp>=100?'<span class="stamp '+clsKey(s.class)+'">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
-        +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(k)+'" data-mission="'+esc(r.mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
+        +hwActionsHtml(k,r.mission)
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
         +'</div>';
@@ -1494,7 +1512,7 @@ function renderPersonal(){
       html+='<div class="ia-row">'
         +'<span class="ia-name">'+esc(r.mission)+'</span>'
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
-        +'<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(ALG_TAB)+'" data-mission="'+esc(r.mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>'
+        +hwActionsHtml(ALG_TAB,r.mission)
         +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
         +'</div>';
     });
@@ -1521,26 +1539,37 @@ function fileToBase64(file){
 async function postNoCors(body){
   await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
 }
+async function refreshMyPendingHw(){
+  if(!me)return;
+  try{
+    const params=new URLSearchParams({action:'myhwsubmissions',name:me.student.name,status:'대기'});
+    const res=await fetch(GAS_URL+'?'+params.toString());
+    const json=await res.json();
+    myPendingHw=json.ok?json.submissions:[];
+  }catch(e){
+    myPendingHw=[];
+  }
+}
 async function submitHomeworkPhoto(btn,category,mission){
   const input=document.createElement('input');
   input.type='file';
   input.accept='image/*';
-  input.capture='environment';
+  // capture='environment'를 주면 일부 모바일 브라우저가 카메라를 바로
+  // 열어버려서 한 장만 찍고 끝나버림(multiple이 있어도 무시됨) — 카메라나
+  // 앨범 중에서 고르게 두면 앨범에서는 여러 장을 한 번에 선택할 수 있다.
   input.multiple=true;
   input.onchange=async()=>{
     const files=[...input.files];
     if(!files.length)return;
     const statusEl=btn.nextElementSibling;
     btn.disabled=true;
-    statusEl.textContent='업로드 중...';
+    statusEl.textContent='업로드 중... ('+files.length+'장)';
     statusEl.className='hw-status';
     try{
       const images=await Promise.all(files.map(async f=>({data:await fileToBase64(f),mime:f.type||'image/jpeg'})));
       await postNoCors({action:'submithw',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,images});
-      statusEl.textContent='제출완료 ✓ 선생님 확인 대기중';
-      statusEl.className='hw-status ok';
-      btn.textContent='📷 다시 제출';
-      btn.disabled=false;
+      await refreshMyPendingHw();
+      renderPersonal();
     }catch(e){
       statusEl.textContent='제출 실패: '+e.message;
       statusEl.className='hw-status err';
@@ -1549,10 +1578,24 @@ async function submitHomeworkPhoto(btn,category,mission){
   };
   input.click();
 }
+async function cancelHomeworkSubmission(btn,id){
+  btn.disabled=true;
+  btn.textContent='취소 중...';
+  try{
+    await postNoCors({action:'cancelhw',id,name:me.student.name});
+    await refreshMyPendingHw();
+    renderPersonal();
+  }catch(e){
+    btn.disabled=false;
+    btn.textContent='취소';
+    alert('취소하지 못했습니다: '+e.message);
+  }
+}
 document.getElementById('me-blocks').addEventListener('click',e=>{
-  const btn=e.target.closest('.hw-btn');
-  if(!btn)return;
-  submitHomeworkPhoto(btn,btn.dataset.category,btn.dataset.mission);
+  const submitBtn=e.target.closest('.hw-btn');
+  if(submitBtn){ submitHomeworkPhoto(submitBtn,submitBtn.dataset.category,submitBtn.dataset.mission); return; }
+  const cancelBtn=e.target.closest('.hw-cancel-btn');
+  if(cancelBtn){ cancelHomeworkSubmission(cancelBtn,cancelBtn.dataset.id); return; }
 });
 
 function drawBars(canvasId,labels,mine,cls,unit){
