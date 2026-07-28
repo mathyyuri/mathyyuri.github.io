@@ -1334,18 +1334,30 @@ ${pagesHtml.join('\n')}
 <script>
 var rawAnswers = ${JSON.stringify(items.map(it => it.answer))};
 window.addEventListener('DOMContentLoaded', function () {
-  // 정답은 자유 텍스트라 항상 올바른 LaTeX가 아니다 — 한글이 섞여있으면
-  // ("몫: 5x-3, 나머지: x+4") KaTeX가 한글을 수식 기호로 이해 못해 깨지므로
-  // 텍스트 그대로 보여주고, 순수 수식만 렌더링을 시도한다(실패해도
-  // throwOnError:false라 페이지가 죽지 않음). studentnote.html의 정답 표시
-  // 로직과 동일한 판단 기준.
+  // 정답은 자유 텍스트라 항상 올바른 LaTeX가 아니다. "\angle B = 90^\circ
+  // 인 직각삼각형"처럼 실제 수식 명령어(\, ^, _)와 한글 설명이 섞인 답은
+  // 한글이 있다고 통째로 포기하면 백슬래시가 그대로 노출되니, 한글 구간만
+  // \text{}로 감싸 KaTeX에 함께 넘긴다 — 수식은 수식대로, 한글은 텍스트로
+  // 한 번에 렌더링됨. 수식 명령어가 전혀 없는 순한글 답("몫: 5x-3, 나머지:
+  // x+4")은 그냥 텍스트로 둔다(굳이 KaTeX를 태울 이유가 없고, 실패해도
+  // throwOnError:false라 페이지는 안 죽음). studentnote.html과 같은 기준.
+  function wrapKoreanForKatex(s) {
+    // 수식 모드는 텍스트 블록 "바깥"의 빈 칸을 무시해서 한글 단어와 앞뒤
+    // 수식이 붙어버리므로, 칸을 \text{} 안쪽에 넣어야 실제로 띄어져 보인다.
+    return s.replace(/[가-힣][가-힣 ,.:%·()~-]*/g, function (seg) {
+      return ' \\\\text{ ' + seg.replace(/ +$/, '') + ' } ';
+    });
+  }
   function renderAnswers() {
     if (!window.katex) { setTimeout(renderAnswers, 100); return; }
     document.querySelectorAll('.ansValue').forEach(function (el) {
       var a = rawAnswers[Number(el.dataset.idx)];
       if (!a) { el.innerHTML = '<span class="ansMissing">(정답 미입력)</span>'; return; }
-      if (/[가-힣]/.test(a)) { el.textContent = a; return; }
-      try { katex.render(a, el, { throwOnError: false, displayMode: false }); }
+      var hasKorean = /[가-힣]/.test(a);
+      var hasMathCmd = /\\[a-zA-Z]+|\^|_/.test(a);
+      if (hasKorean && !hasMathCmd) { el.textContent = a; return; }
+      var toRender = hasKorean ? wrapKoreanForKatex(a) : a;
+      try { katex.render(toRender, el, { throwOnError: false, displayMode: false }); }
       catch (e) { el.textContent = a; }
     });
   }
