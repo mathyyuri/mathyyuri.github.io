@@ -1615,6 +1615,22 @@ quickAnswerBtn.addEventListener('click', async () => {
       }
     }));
 
+    // problembank.html에 정답을 따로 저장해두지 않은 파일이 대부분이라,
+    // 서버 저장 정답이 없으면 문제은행의 "정답 자동 채우기"와 똑같은
+    // 방식으로 파일 안에 이미 들어있는 [정답]~[풀이] 표시를 직접 뽑아
+    // 그걸로 대신한다(자체 제작 문제집은 거의 다 이 표시가 있음).
+    async function extractEmbeddedAnswer(entry, num) {
+      try {
+        const marker = entry.markers.get(num);
+        const fullBodyXml = extractEndnoteFullBodyXml(marker.blockXml);
+        if (!fullBodyXml) return '';
+        const html = await hwpBodyXmlToHtml(fullBodyXml, entry);
+        const plain = html.replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim();
+        const m = plain.match(/\[정답\]\s*(.*?)\s*\[풀이\]/);
+        return (m && m[1].trim()) || '';
+      } catch (e) { return ''; }
+    }
+
     const items = [];
     let qOrder = 1;
     for (const { uid, num } of checked) {
@@ -1624,7 +1640,9 @@ quickAnswerBtn.addEventListener('click', async () => {
         ? `${entry.filename.replace(/\.hwpx$/i, '')} · ${num}번`
         : `${num}번`;
       const ansMap = entry.bankId ? (answersByBankId.get(entry.bankId) || {}) : {};
-      items.push({ order: qOrder, cite, answer: ansMap[String(num)] || '' });
+      let answer = ansMap[String(num)] || '';
+      if (!answer) answer = await extractEmbeddedAnswer(entry, num);
+      items.push({ order: qOrder, cite, answer });
       qOrder++;
     }
     if (!items.length) throw new Error('선택한 문제를 하나도 처리하지 못했습니다.');
