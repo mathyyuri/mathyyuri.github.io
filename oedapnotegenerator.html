@@ -1242,7 +1242,7 @@ window.addEventListener('DOMContentLoaded', function () {
 // 용도라 문제 본문 렌더링·오버플로우 측정(paneOverflowsHalfSlide) 없이
 // 훨씬 단순하다. items: [{order, cite, answer}] (answer는 빈 문자열일 수 있음).
 function buildQuickAnswerHtmlDocument({ titleText, items }) {
-  const ITEMS_PER_PAGE = 25;
+  const ITEMS_PER_PAGE = 60;
   const pages = [];
   for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) pages.push(items.slice(i, i + ITEMS_PER_PAGE));
 
@@ -1306,14 +1306,14 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
   .slideNav{display:none}
   @page{size:portrait;margin:0}
 }
-.a4Title{text-align:center;margin-bottom:1em;flex:0 0 auto}
-.a4Title h1{font-family:var(--kserif);font-weight:900;font-size:1.9rem;color:var(--mb-navy);margin:0 0 .3em}
-.a4Title .sub{font-size:.85rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
-.ansList{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:.55em;overflow:hidden}
-.ansRow{display:flex;align-items:baseline;gap:.7em;border-bottom:1px solid var(--mb-line);padding-bottom:.4em;flex:0 0 auto}
-.ansNum{font-family:var(--kserif);font-weight:900;font-size:1.15rem;color:var(--mb-navy);min-width:2.2em}
-.ansCite{font-size:.78rem;color:rgba(26,26,26,.5);min-width:5.5em;font-family:var(--kserif)}
-.ansValue{flex:1 1 auto;font-size:1.05rem;font-weight:700;color:var(--mb-teal-deep);word-break:break-word}
+.a4Title{text-align:center;margin-bottom:.6em;flex:0 0 auto}
+.a4Title h1{font-family:var(--kserif);font-weight:900;font-size:1.5rem;color:var(--mb-navy);margin:0 0 .2em}
+.a4Title .sub{font-size:.7rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
+.ansList{flex:1 1 auto;min-height:0;overflow:hidden;column-count:2;column-gap:1.4em}
+.ansRow{display:flex;align-items:baseline;gap:.5em;border-bottom:1px solid var(--mb-line);padding:.16em 0;margin-bottom:.28em;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}
+.ansNum{font-family:var(--kserif);font-weight:900;font-size:.85rem;color:var(--mb-navy);min-width:1.8em}
+.ansCite{font-size:.62rem;color:rgba(26,26,26,.5);min-width:4.6em;font-family:var(--kserif)}
+.ansValue{flex:1 1 auto;font-size:.8rem;font-weight:700;color:var(--mb-teal-deep);word-break:break-word}
 .ansMissing{font-weight:400;color:rgba(26,26,26,.4);font-style:italic}
 </style>
 </head>
