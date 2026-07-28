@@ -1615,6 +1615,11 @@ async function refreshMyPendingHw(){
   }
 }
 async function submitHomeworkPhoto(btn,category,mission){
+  // 사진이 옆으로/거꾸로 찍혀 있으면 채점 AI가 글씨를 잘 못 읽는다 — 매번
+  // 사진을 고르기 직전에 안내를 띄워서 촬영 습관을 바로잡는다. 갤러리
+  // 선택 화면에서 "카메라"를 눌러 바로 찍어서 올리는 것도 그대로 된다
+  // (input에 capture 속성을 안 줘서 카메라/갤러리 둘 다 선택 가능).
+  alert('📸 사진 제출 안내\n\n1) 책과 휴대폰 방향을 맞춰서 똑바로 찍어주세요 (돌려서 찍으면 채점이 어려워요)\n2) 최종 답은 크고 진하게 동그라미/네모로 표시해주세요\n3) 문제가 여러 장이면 한 번에 여러 장을 선택해서 올려도 됩니다');
   const input=document.createElement('input');
   input.type='file';
   input.accept='image/*';
