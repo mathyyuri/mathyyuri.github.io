@@ -86,10 +86,11 @@
 
 <div class="box modeBox">
   <p><b>4. 수업용 자료 (개별 학생 이름 없이, 전체 학생 공용)</b></p>
-  <p class="hint">선택한 문제를 학생 이름 없이 한글 파일 또는 HTML로 만듭니다. HTML은 PPT 화면 비율(16:9)로 한 화면에 2문제씩 배치되어 수업 중 화면 공유·프로젝터용으로 바로 쓸 수 있습니다.</p>
+  <p class="hint">선택한 문제를 학생 이름 없이 한글 파일 또는 HTML로 만듭니다. HTML은 PPT 화면 비율(16:9)로 한 화면에 2문제씩 배치되어 수업 중 화면 공유·프로젝터용으로 바로 쓸 수 있습니다. 빠른정답 HTML은 A4 세로 비율로 정답만 모아 보여줍니다(문제은행에 정답이 입력된 문제만 표시됨).</p>
   <div class="btnRow">
     <button id="classHwpxBtn" disabled>수업용 문제모음 생성 (한글)</button>
     <button id="classHtmlBtn" disabled>수업용 HTML 만들기 (화면당 2문제)</button>
+    <button id="quickAnswerBtn" disabled>빠른정답 만들기 (A4)</button>
   </div>
 </div>
 
@@ -100,6 +101,7 @@ const logEl = document.getElementById('log');
 const genBtn = document.getElementById('genBtn');
 const classHwpxBtn = document.getElementById('classHwpxBtn');
 const classHtmlBtn = document.getElementById('classHtmlBtn');
+const quickAnswerBtn = document.getElementById('quickAnswerBtn');
 const counterBadge = document.getElementById('counterBadge');
 const srcFileInput = document.getElementById('srcFile');
 const bankListEl = document.getElementById('bankList');
@@ -623,6 +625,11 @@ function mixedAnswerParaXml(pid, labelText, contentXml, ids) {
 // ---------- Apps Script access (JSONP — see problembank.html for why) ----------
 // 대시보드 Apps Script(단일 통합 스크립트) URL — 교재/시험지 저장소 기능도 여기 포함되어 있습니다.
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+// 이 페이지의 다른 액션(list/download)은 키가 필요 없지만, 빠른정답
+// 생성용 정답 조회(fileanswers)만은 studentnote.html/problembank.html과
+// 동일하게 TEACHER_KEY가 필요하다 — 정답은 공개 API로 새어나가면 안 되는
+// 유일한 데이터라 이것만 더 엄격하게 지킨다.
+const TEACHER_KEY = 'mathyyuri2026';
 
 function base64ToArrayBuffer(base64) {
   const binary = atob(base64);
@@ -710,10 +717,14 @@ function fillRowWithQuestions(row, entry) {
   }
 }
 
-async function loadFileIntoRow(row, filename, buf) {
+// bankId: 문제은행 서버의 파일 ID (교재목록 시트의 ID열) — 빠른정답 생성 시
+// 그 파일에 저장된 정답을 조회하려면 필요하다. 로컬 파일 업로드로 불러온
+// 경우엔 서버에 등록된 적이 없어 undefined로 남고, 그 파일의 문제는
+// 정답 조회가 안 되니 "(정답 미입력)"으로 표시된다.
+async function loadFileIntoRow(row, filename, buf, bankId) {
   const zipData = await JSZip.loadAsync(buf);
   const parsed = await parseHwpx(zipData);
-  const entry = { uid: fileUidCounter++, filename, ...parsed };
+  const entry = { uid: fileUidCounter++, filename, bankId, ...parsed };
   loadedFiles.push(entry);
   fillRowWithQuestions(row, entry);
   updateGenBtn();
@@ -725,6 +736,7 @@ function updateGenBtn() {
   genBtn.disabled = n === 0;
   classHwpxBtn.disabled = n === 0;
   classHtmlBtn.disabled = n === 0;
+  quickAnswerBtn.disabled = n === 0;
 }
 
 srcFileInput.addEventListener('change', async () => {
@@ -759,7 +771,7 @@ async function refreshBankList() {
         ev.target.textContent = '불러오는 중...';
         try {
           const json = await callGetJsonp({ action: 'download', id: f.id });
-          await loadFileIntoRow(row, f.filename, base64ToArrayBuffer(json.file.data));
+          await loadFileIntoRow(row, f.filename, base64ToArrayBuffer(json.file.data), f.id);
         } catch (e) {
           ev.target.disabled = false;
           ev.target.textContent = '불러오기';
@@ -1029,11 +1041,17 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .exportBar button{font-family:var(--sans);font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;border:none;background:var(--mb-navy);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .exportBar button:hover:not(:disabled){background:var(--mb-teal-deep)}
 .exportBar button:disabled{opacity:.6;cursor:default}
+.slideNav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
+.navBtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--mb-navy);color:#fff;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.navBtn:hover:not(:disabled){background:var(--mb-teal-deep)}
+.navBtn:disabled{opacity:.35;cursor:default}
+.navCounter{background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:10px;white-space:nowrap}
 @media print{
   .deckWrap{height:auto;overflow:visible}
   .slide{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
   .navHint{display:none}
   .exportBar{display:none}
+  .slideNav{display:none}
   @page{size:landscape;margin:0}
 }
 .slideTitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%}
@@ -1078,6 +1096,11 @@ ${slidesHtml.join('\n')}
   <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
   <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
 </div>
+<div class="slideNav">
+  <button type="button" id="navPrevBtn" class="navBtn">‹</button>
+  <span id="navCounter" class="navCounter"></span>
+  <button type="button" id="navNextBtn" class="navBtn">›</button>
+</div>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
   function tryRender() {
@@ -1102,18 +1125,45 @@ window.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('resize', rescale);
 
   var slides = [...document.querySelectorAll('.slide')];
-  document.addEventListener('keydown', function (e) {
-    if (!['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].includes(e.key)) return;
-    e.preventDefault();
+  function currentSlideIdx() {
     var idx = slides.findIndex(function (s) {
       var r = s.getBoundingClientRect();
       return r.top > -10 && r.top < window.innerHeight / 2;
     });
-    if (idx === -1) idx = 0;
+    return idx === -1 ? 0 : idx;
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].includes(e.key)) return;
+    e.preventDefault();
     var forward = e.key === 'PageDown' || e.key === 'ArrowRight' || e.key === ' ';
-    var target = slides[Math.max(0, Math.min(slides.length - 1, idx + (forward ? 1 : -1)))];
-    target.scrollIntoView({ behavior: 'smooth' });
+    goToSlide(currentSlideIdx() + (forward ? 1 : -1));
   });
+
+  // 버튼으로도 페이지를 넘길 수 있게 — 스크롤/키보드만 있던 걸 studentnote.html의
+  // 사진 슬라이드 버튼(‹/›)과 같은 방식으로 추가.
+  var navPrevBtn = document.getElementById('navPrevBtn');
+  var navNextBtn = document.getElementById('navNextBtn');
+  var navCounter = document.getElementById('navCounter');
+  function updateNavUI() {
+    var idx = currentSlideIdx();
+    if (navPrevBtn) navPrevBtn.disabled = idx <= 0;
+    if (navNextBtn) navNextBtn.disabled = idx >= slides.length - 1;
+    if (navCounter) navCounter.textContent = (idx + 1) + ' / ' + slides.length;
+  }
+  function goToSlide(idx) {
+    var clamped = Math.max(0, Math.min(slides.length - 1, idx));
+    slides[clamped].scrollIntoView({ behavior: 'smooth' });
+    setTimeout(updateNavUI, 60);
+  }
+  if (navPrevBtn) navPrevBtn.addEventListener('click', function () { goToSlide(currentSlideIdx() - 1); });
+  if (navNextBtn) navNextBtn.addEventListener('click', function () { goToSlide(currentSlideIdx() + 1); });
+  var deckWrapEl = document.querySelector('.deckWrap');
+  var scrollTimer;
+  if (deckWrapEl) deckWrapEl.addEventListener('scroll', function () {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(updateNavUI, 100);
+  });
+  updateNavUI();
 
   // ---- 이미지/PDF 저장 ----
   // 배경색·강조색이 브라우저 인쇄(Ctrl+P)에서는 잘 날아가서, html2canvas로
@@ -1170,6 +1220,231 @@ window.addEventListener('DOMContentLoaded', function () {
           pdf = new jsPDFCtor({ orientation: 'landscape', unit: 'mm', format: [pageW, pageH] });
         } else {
           pdf.addPage([pageW, pageH], 'landscape');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      }
+      pdf.save(exportFileBase + '.pdf');
+    } catch (e) {
+      alert('PDF 저장 실패: ' + e.message);
+    } finally {
+      savePdfBtn.disabled = false;
+      savePdfBtn.textContent = orig;
+    }
+  });
+});
+<\/script>
+</body>
+</html>`;
+}
+
+// buildClassHtmlDocument와 거의 같은 구조(슬라이드 대신 A4 세로 페이지,
+// 버튼 내비게이션, 이미지/PDF 저장)를 그대로 재사용 — 정답만 모아 보여주는
+// 용도라 문제 본문 렌더링·오버플로우 측정(paneOverflowsHalfSlide) 없이
+// 훨씬 단순하다. items: [{order, cite, answer}] (answer는 빈 문자열일 수 있음).
+function buildQuickAnswerHtmlDocument({ titleText, items }) {
+  const ITEMS_PER_PAGE = 25;
+  const pages = [];
+  for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) pages.push(items.slice(i, i + ITEMS_PER_PAGE));
+
+  const pagesHtml = pages.map((pageItems, pIdx) => {
+    const rows = pageItems.map(it => `
+      <div class="ansRow">
+        <span class="ansNum">${it.order}</span>
+        <span class="ansCite">${escapeHtml(it.cite)}</span>
+        <span class="ansValue" data-idx="${it.order - 1}"></span>
+      </div>`).join('');
+    const oddCls = pIdx % 2 === 1 ? ' mbOdd' : '';
+    return `<div class="a4Page${oddCls}">
+      ${pIdx === 0 ? `<div class="a4Title"><h1>${escapeHtml(titleText)}</h1><div class="sub">${new Date().toISOString().slice(0, 10)}</div></div>` : ''}
+      <div class="ansList">${rows}</div>
+    </div>`;
+  });
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(titleText)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
+<style>
+:root{
+  --mb-cream:#FBF3E7; --mb-cream2:#F4ECDD; --mb-navy:#0F325D; --mb-teal:#5FB5A3; --mb-teal-deep:#3E8F79;
+  --mb-line:#E3D9C8;
+  --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:#1A1A1A;-webkit-font-smoothing:antialiased}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+.deckWrap{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+/* A4 세로 비율 고정 — 화면 크기와 무관하게 항상 210:297 비율을 유지해서,
+   캡처한 이미지를 그 비율 그대로인 PDF 페이지에 꽉 채우면 여백이 안 생긴다
+   (buildClassHtmlDocument의 16:9 슬라이드와 같은 방식). */
+.a4Page{position:relative;width:100%;max-width:70.7vh;aspect-ratio:210/297;max-height:100vh;margin:0 auto;background:var(--mb-cream);scroll-snap-align:start;box-shadow:0 2px 20px rgba(0,0,0,.28);overflow:hidden;padding:5% 6%;display:flex;flex-direction:column}
+.a4Page.mbOdd{background:var(--mb-cream2)}
+.a4Page::before{content:'';position:absolute;left:0;top:0;bottom:0;width:.6%;background:linear-gradient(180deg,var(--mb-teal),var(--mb-navy))}
+.a4Page.mbOdd::before{left:auto;right:0;background:linear-gradient(180deg,var(--mb-navy),var(--mb-teal))}
+.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#7a7264;z-index:5;font-family:var(--sans)}
+.exportBar{position:fixed;top:10px;right:14px;z-index:6;display:flex;gap:8px;font-family:var(--sans)}
+.exportBar button{font-family:var(--sans);font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;border:none;background:var(--mb-navy);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.exportBar button:hover:not(:disabled){background:var(--mb-teal-deep)}
+.exportBar button:disabled{opacity:.6;cursor:default}
+.slideNav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
+.navBtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--mb-navy);color:#fff;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.navBtn:hover:not(:disabled){background:var(--mb-teal-deep)}
+.navBtn:disabled{opacity:.35;cursor:default}
+.navCounter{background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:10px;white-space:nowrap}
+@media print{
+  .deckWrap{height:auto;overflow:visible}
+  .a4Page{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
+  .navHint{display:none}
+  .exportBar{display:none}
+  .slideNav{display:none}
+  @page{size:portrait;margin:0}
+}
+.a4Title{text-align:center;margin-bottom:1em;flex:0 0 auto}
+.a4Title h1{font-family:var(--kserif);font-weight:900;font-size:1.9rem;color:var(--mb-navy);margin:0 0 .3em}
+.a4Title .sub{font-size:.85rem;color:rgba(26,26,26,.55);font-family:var(--kserif)}
+.ansList{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:.55em;overflow:hidden}
+.ansRow{display:flex;align-items:baseline;gap:.7em;border-bottom:1px solid var(--mb-line);padding-bottom:.4em;flex:0 0 auto}
+.ansNum{font-family:var(--kserif);font-weight:900;font-size:1.15rem;color:var(--mb-navy);min-width:2.2em}
+.ansCite{font-size:.78rem;color:rgba(26,26,26,.5);min-width:5.5em;font-family:var(--kserif)}
+.ansValue{flex:1 1 auto;font-size:1.05rem;font-weight:700;color:var(--mb-teal-deep);word-break:break-word}
+.ansMissing{font-weight:400;color:rgba(26,26,26,.4);font-style:italic}
+</style>
+</head>
+<body>
+<div class="deckWrap">
+${pagesHtml.join('\n')}
+</div>
+<div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space로 화면 전환</div>
+<div class="exportBar">
+  <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+</div>
+<div class="slideNav">
+  <button type="button" id="navPrevBtn" class="navBtn">‹</button>
+  <span id="navCounter" class="navCounter"></span>
+  <button type="button" id="navNextBtn" class="navBtn">›</button>
+</div>
+<script>
+var rawAnswers = ${JSON.stringify(items.map(it => it.answer))};
+window.addEventListener('DOMContentLoaded', function () {
+  // 정답은 자유 텍스트라 항상 올바른 LaTeX가 아니다 — 한글이 섞여있으면
+  // ("몫: 5x-3, 나머지: x+4") KaTeX가 한글을 수식 기호로 이해 못해 깨지므로
+  // 텍스트 그대로 보여주고, 순수 수식만 렌더링을 시도한다(실패해도
+  // throwOnError:false라 페이지가 죽지 않음). studentnote.html의 정답 표시
+  // 로직과 동일한 판단 기준.
+  function renderAnswers() {
+    if (!window.katex) { setTimeout(renderAnswers, 100); return; }
+    document.querySelectorAll('.ansValue').forEach(function (el) {
+      var a = rawAnswers[Number(el.dataset.idx)];
+      if (!a) { el.innerHTML = '<span class="ansMissing">(정답 미입력)</span>'; return; }
+      if (/[가-힣]/.test(a)) { el.textContent = a; return; }
+      try { katex.render(a, el, { throwOnError: false, displayMode: false }); }
+      catch (e) { el.textContent = a; }
+    });
+  }
+  renderAnswers();
+
+  var DESIGN_WIDTH = 900, BASE_ROOT_PX = 16;
+  function rescale() {
+    var page = document.querySelector('.a4Page');
+    if (!page) return;
+    var w = page.getBoundingClientRect().width;
+    if (!w) return;
+    document.documentElement.style.fontSize = (BASE_ROOT_PX * (w / DESIGN_WIDTH)) + 'px';
+  }
+  rescale();
+  window.addEventListener('resize', rescale);
+
+  var pages = [...document.querySelectorAll('.a4Page')];
+  function currentPageIdx() {
+    var idx = pages.findIndex(function (s) {
+      var r = s.getBoundingClientRect();
+      return r.top > -10 && r.top < window.innerHeight / 2;
+    });
+    return idx === -1 ? 0 : idx;
+  }
+  var navPrevBtn = document.getElementById('navPrevBtn');
+  var navNextBtn = document.getElementById('navNextBtn');
+  var navCounter = document.getElementById('navCounter');
+  function updateNavUI() {
+    var idx = currentPageIdx();
+    if (navPrevBtn) navPrevBtn.disabled = idx <= 0;
+    if (navNextBtn) navNextBtn.disabled = idx >= pages.length - 1;
+    if (navCounter) navCounter.textContent = (idx + 1) + ' / ' + pages.length;
+  }
+  function goToPage(idx) {
+    var clamped = Math.max(0, Math.min(pages.length - 1, idx));
+    pages[clamped].scrollIntoView({ behavior: 'smooth' });
+    setTimeout(updateNavUI, 60);
+  }
+  if (navPrevBtn) navPrevBtn.addEventListener('click', function () { goToPage(currentPageIdx() - 1); });
+  if (navNextBtn) navNextBtn.addEventListener('click', function () { goToPage(currentPageIdx() + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (!['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].includes(e.key)) return;
+    e.preventDefault();
+    var forward = e.key === 'PageDown' || e.key === 'ArrowRight' || e.key === ' ';
+    goToPage(currentPageIdx() + (forward ? 1 : -1));
+  });
+  var deckWrapEl = document.querySelector('.deckWrap');
+  var scrollTimer;
+  if (deckWrapEl) deckWrapEl.addEventListener('scroll', function () {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(updateNavUI, 100);
+  });
+  updateNavUI();
+
+  async function captureSlide(el) {
+    return await html2canvas(el, { scale: 2, backgroundColor: null, useCORS: true });
+  }
+  function currentPage() { return pages[currentPageIdx()]; }
+  var saveImgBtn = document.getElementById('saveImgBtn');
+  var savePdfBtn = document.getElementById('savePdfBtn');
+  var exportFileBase = ${JSON.stringify(titleText.replace(/[\\\/:*?"<>|]/g, '_'))};
+  if (saveImgBtn) saveImgBtn.addEventListener('click', async function () {
+    saveImgBtn.disabled = true;
+    var orig = saveImgBtn.textContent;
+    saveImgBtn.textContent = '캡처 중...';
+    try {
+      var canvas = await captureSlide(currentPage());
+      var a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = exportFileBase + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      alert('이미지 저장 실패: ' + e.message);
+    } finally {
+      saveImgBtn.disabled = false;
+      saveImgBtn.textContent = orig;
+    }
+  });
+  if (savePdfBtn) savePdfBtn.addEventListener('click', async function () {
+    savePdfBtn.disabled = true;
+    var orig = savePdfBtn.textContent;
+    try {
+      var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
+      if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
+      // A4 세로 크기(210x297mm) — 페이지 자체가 CSS로 이 비율에 고정돼
+      // 있어 캡처된 이미지도 항상 같은 비율이라, 페이지에 꽉 채워도
+      // 여백이 남지 않는다.
+      var pageW = 210, pageH = 297;
+      var pdf = null;
+      for (var i = 0; i < pages.length; i++) {
+        savePdfBtn.textContent = '캡처 중... (' + (i + 1) + '/' + pages.length + ')';
+        var canvas = await captureSlide(pages[i]);
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (!pdf) {
+          pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: [pageW, pageH] });
+        } else {
+          pdf.addPage([pageW, pageH], 'portrait');
         }
         pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
       }
@@ -1302,6 +1577,71 @@ classHtmlBtn.addEventListener('click', async () => {
     URL.revokeObjectURL(url);
 
     log('완료! 다운로드된 HTML을 열어 확인해주세요 — 브라우저 전체화면(F11)으로 프로젝터에 띄우면 됩니다.', 'ok');
+  } catch (e) {
+    console.error(e);
+    log('오류: ' + e.message, 'err');
+  } finally {
+    updateGenBtn();
+  }
+});
+
+quickAnswerBtn.addEventListener('click', async () => {
+  logEl.innerHTML = '';
+  quickAnswerBtn.disabled = true;
+  try {
+    const examName = document.getElementById('examName').value.trim();
+    const checked = [...document.querySelectorAll('.qChk:checked')].map(chk => ({
+      uid: Number(chk.dataset.uid),
+      num: chk.dataset.num,
+    }));
+    if (!checked.length) throw new Error('체크한 문제가 없습니다.');
+
+    const byFile = new Map();
+    for (const f of loadedFiles) byFile.set(f.uid, f);
+
+    // 정답은 문제은행 서버의 파일 ID(bankId)로 조회한다 — 로컬 업로드
+    // 파일은 bankId가 없어 애초에 조회 대상에서 빠진다(그 문제들은
+    // "(정답 미입력)"으로 표시됨). 같은 파일이 여러 문제에 겹치면 한 번만
+    // 조회하도록 파일별로 캐싱.
+    log('저장된 정답을 불러오는 중...');
+    const uniqueBankIds = [...new Set(checked.map(c => byFile.get(c.uid)?.bankId).filter(Boolean))];
+    const answersByBankId = new Map();
+    await Promise.all(uniqueBankIds.map(async (bankId) => {
+      try {
+        const resp = await callGetJsonp({ action: 'fileanswers', key: TEACHER_KEY, id: bankId });
+        answersByBankId.set(bankId, resp.answers || {});
+      } catch (e) {
+        answersByBankId.set(bankId, {});
+      }
+    }));
+
+    const items = [];
+    let qOrder = 1;
+    for (const { uid, num } of checked) {
+      const entry = byFile.get(uid);
+      if (!entry || !entry.markers.get(num)) continue;
+      const cite = loadedFiles.length > 1
+        ? `${entry.filename.replace(/\.hwpx$/i, '')} · ${num}번`
+        : `${num}번`;
+      const ansMap = entry.bankId ? (answersByBankId.get(entry.bankId) || {}) : {};
+      items.push({ order: qOrder, cite, answer: ansMap[String(num)] || '' });
+      qOrder++;
+    }
+    if (!items.length) throw new Error('선택한 문제를 하나도 처리하지 못했습니다.');
+
+    const titleText = (examName || '수업용 문제모음') + ' 빠른정답';
+    const html = buildQuickAnswerHtmlDocument({ titleText, items });
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${titleText}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    log('완료! 다운로드된 HTML을 열어 확인해주세요.', 'ok');
   } catch (e) {
     console.error(e);
     log('오류: ' + e.message, 'err');
