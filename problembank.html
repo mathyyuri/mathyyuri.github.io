@@ -186,6 +186,11 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 <script>
 // 대시보드 Apps Script(단일 통합 스크립트) URL — 교재/시험지 저장소 기능도 여기 포함되어 있습니다.
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+// 이 페이지의 다른 액션(list/download/upload/updatetags)은 전부 키 없이
+// 열려 있지만, 정답만은 studentnote.html의 강사 전용 액션들과 동일하게
+// TEACHER_KEY를 요구한다 — AI 채점용 정답이 학생/공개 API로 새어나가면
+// 안 되기 때문에, 이 한 가지 데이터만 별도로 더 엄격하게 지킨다.
+const TEACHER_KEY = 'mathyyuri2026';
 
 const logEl = document.getElementById('log');
 const groupsEl = document.getElementById('fileGroups');
@@ -520,7 +525,10 @@ function guessUnitFromQuestionText(text) {
 // 지문에서 못 알아낸 것만 파일명 기반 guessedUnit으로 채운다 — 이미
 // 손으로 입력해둔 값은 절대 덮어쓰지 않음. 몇 개나 자동으로 판단됐는지
 // 세어서 안내 문구에 보여준다.
-function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit) {
+// showAnswerInput: 업로드 전 미리보기(validateOneFile)에서는 아직 파일
+// ID가 없어 정답을 저장할 곳이 없으므로 정답 칸을 숨긴다 — 업로드가 끝나
+// 파일이 실제로 만들어진 뒤 "태그 편집"에서 입력해야 한다.
+function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit, showAnswerInput = true) {
   let guessedCount = 0;
   for (const qd of questionData) {
     if (qd.unit) continue;
@@ -541,6 +549,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit)
       <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
       <button type="button" class="selectAllBtn addUnitTabBtn">+ 탭 추가</button>
     </div>
+    ${showAnswerInput ? '<p class="hint">정답을 입력해두면 AI 채점(숙제 사진 자동 확인)에 쓰입니다 — 정답은 학생 화면이나 공개 API로 절대 노출되지 않습니다.</p>' : '<p class="hint">업로드가 끝난 뒤 "태그 편집"에서 정답(AI 채점용)을 입력할 수 있습니다.</p>'}
   `;
   const bulkInput = wrap.querySelector('.bulkUnitInput');
   const tabBar = wrap.querySelector('.unitTabBar');
@@ -573,9 +582,11 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit)
       <span class="tagRowPreview" title="${escapeHtml(rawTextByNum[num] || '')}">${escapeHtml(preview)}</span>
       <input type="text" class="tagUnitInput" list="unitSuggestList" placeholder="단원" value="${escapeHtml(qd.unit || '')}">
       <input type="text" class="tagTypeInput" list="typeSuggestList" placeholder="유형" value="${escapeHtml(qd.type || '')}">
+      ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용)" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)">` : ''}
     `;
     row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); });
     row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); });
+    row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); });
     rows.appendChild(row);
   }
   wrap.appendChild(rows);
@@ -603,7 +614,14 @@ async function openTagEditor(f) {
     return;
   }
   try {
-    const json = await callGet({ action: 'download', id: f.id });
+    const [json, answersResp] = await Promise.all([
+      callGet({ action: 'download', id: f.id }),
+      // 정답은 questionData/list와 완전히 분리된 강사 전용 조회 — 실패해도
+      // (예: 이 파일에 아직 정답을 한 번도 안 넣은 경우) 태그 편집 자체는
+      // 계속 진행되게 조용히 빈 값으로 대체한다.
+      callGet({ action: 'fileanswers', id: f.id, key: TEACHER_KEY }).catch(() => ({ answers: {} })),
+    ]);
+    const existingAnswers = answersResp.answers || {};
     const zip = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
     const entry = await parseHwpx(zip);
     const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
@@ -619,7 +637,7 @@ async function openTagEditor(f) {
       return {
         num, choiceCount: ex.choiceCount ?? null, hasBogi: ex.hasBogi ?? null,
         hasCondition: ex.hasCondition ?? null, warnings: ex.warnings || [],
-        unit: ex.unit || '', type: ex.type || '',
+        unit: ex.unit || '', type: ex.type || '', answer: existingAnswers[String(num)] || '',
       };
     });
     const rawTextByNum = {};
@@ -640,7 +658,15 @@ async function openTagEditor(f) {
       msgEl.textContent = '저장 중...';
       msgEl.className = 'tagSaveMsg hint';
       try {
-        await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(questionData) });
+        // 정답(answer)은 questionData와 분리해서 별도 액션으로 보낸다 —
+        // updatetags/list는 인증 없이 열려 있어서, 여기 answer를 같이
+        // 넣으면 그대로 공개 API를 통해 새어나가게 된다.
+        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type }) =>
+          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type }));
+        const answers = {};
+        questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
+        await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(publicTags) });
+        await callPost({ action: 'updateanswers', key: TEACHER_KEY, id: f.id, answers: JSON.stringify(answers) });
         msgEl.textContent = '저장되었습니다.';
         msgEl.className = 'tagSaveMsg ok';
         await refreshList();
@@ -963,7 +989,7 @@ async function validateOneFile(file, box) {
 
   const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
   const guessedUnit = guessUnitFromText(file.name, knownUnits);
-  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit);
+  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, false);
 
   return { ok: warnCount === 0, hasCritical: false, questionData };
 }
