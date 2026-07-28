@@ -577,6 +577,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     const preview = (rawTextByNum[num] || '').replace(/\s+/g, ' ').trim().slice(0, 70);
     const row = document.createElement('div');
     row.className = 'tagRow';
+    row.dataset.num = num;
     row.innerHTML = `
       <span class="tagRowNum">${num}번</span>
       <span class="tagRowPreview" title="${escapeHtml(rawTextByNum[num] || '')}">${escapeHtml(preview)}</span>
@@ -647,6 +648,45 @@ async function openTagEditor(f) {
     const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
     const guessedUnit = guessUnitFromText(f.filename, knownUnits);
     renderTagList(box, nums, questionData, rawTextByNum, guessedUnit);
+
+    // "[정답] ... [풀이] ..." 형식으로 문제 파일 자체에 해설이 포함돼 있는
+    // 경우(이 학원 자료에서 흔한 형식) 정답을 자동으로 뽑아서 채워준다 —
+    // hwpBodyXmlToHtml은 평소엔 이 부분을 일부러 걸러내고 문제만 보여주므로
+    // (학생용 시험지에 정답이 노출되면 안 되니까), 여기서는
+    // extractEndnoteFullBodyXml로 해설 전체를 따로 뽑아 렌더링한 뒤 그 안의
+    // [정답]~[풀이] 구간만 잘라낸다. 이 마커가 없는 파일은 그냥 못 찾을
+    // 뿐이라 "실험적" 기능으로 안내한다.
+    const autoFillRow = document.createElement('div');
+    autoFillRow.className = 'tagBulkRow';
+    autoFillRow.innerHTML = `<button type="button" class="selectAllBtn autoFillAnswerBtn">🔍 정답 자동 채우기 (실험적 — [정답]/[풀이] 표시가 있는 파일만 인식)</button><span class="hint autoFillMsg"></span>`;
+    box.querySelector('.tagListBox').appendChild(autoFillRow);
+    autoFillRow.querySelector('.autoFillAnswerBtn').addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      const msgEl = autoFillRow.querySelector('.autoFillMsg');
+      msgEl.textContent = '찾는 중...';
+      let filled = 0;
+      for (const num of nums) {
+        try {
+          const fullBodyXml = extractEndnoteFullBodyXml(entry.markers.get(num).blockXml);
+          if (!fullBodyXml) continue;
+          const html = await hwpBodyXmlToHtml(fullBodyXml, entry);
+          const plain = html.replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim();
+          const m = plain.match(/\[정답\]\s*(.*?)\s*\[풀이\]/);
+          if (!m || !m[1].trim()) continue;
+          const answer = m[1].trim();
+          const qd = questionData.find(q => String(q.num) === String(num));
+          if (qd) qd.answer = answer;
+          const input = box.querySelector(`.tagRow[data-num="${num}"] .tagAnswerInput`);
+          if (input) input.value = answer;
+          filled++;
+        } catch (e) {}
+      }
+      msgEl.textContent = filled
+        ? `${filled}개 문제에서 정답을 찾아 채웠습니다 — 내용을 확인하고 저장하세요.`
+        : '이 파일에서는 [정답]/[풀이] 표시를 찾지 못했습니다. 직접 입력해주세요.';
+      ev.target.disabled = false;
+    });
+
     const footer = document.createElement('div');
     footer.className = 'tagEditFooter';
     footer.innerHTML = `<button type="button" class="saveTagBtn">저장</button><button type="button" class="delBtn cancelTagBtn">닫기</button><span class="tagSaveMsg hint"></span>`;
