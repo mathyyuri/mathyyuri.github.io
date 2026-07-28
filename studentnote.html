@@ -92,14 +92,16 @@ button:disabled { opacity: 0.4; cursor: default; }
 .hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
 .hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
 /* 사진과 채점 체크리스트를 나란히 — 사진 보면서 바로 옆에서 O/X와 정답을
-   확인/채점할 수 있게 (예전엔 사진 아래에 가로로 쭉 늘어놓아서 스크롤이
-   많이 필요했음). 화면이 좁으면(모바일 등) 그냥 위아래로 쌓인다. */
-.hwGradeLayout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin: 8px 0; }
-.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 200px; flex: 0 0 auto; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
+   확인/채점할 수 있게. flex-wrap을 주면 화면(창) 폭이 좁을 때 체크리스트가
+   사진 "아래"로 떨어져 버려서(실제로 확인된 문제 — 그러면 사진을 보려면
+   위로 스크롤해야 해서 오히려 더 불편해짐) nowrap으로 항상 나란히 고정하고,
+   폭이 부족하면 이 줄만 가로 스크롤되게 한다(페이지 전체가 깨지지 않음). */
+.hwGradeLayout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: nowrap; overflow-x: auto; margin: 8px 0; padding-bottom: 4px; }
+.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 200px; flex: 0 0 220px; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
 .hwGradeRow { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f2ede0; }
 .hwGradeRow:last-child { border-bottom: none; }
 .hwGradeRow .gradeNum { min-width: 34px; }
-.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; flex: 0 0 auto; }
 .hwPhotoItem { position: relative; display: inline-block; }
 .hwRotateBtn { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gold-line); background: rgba(255,255,255,.9); color: var(--ink); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
 .hwRotateBtn:hover { background: #fff; border-color: var(--gold); }
@@ -4064,6 +4066,13 @@ function renderHwGrading(submissions) {
         const rot = (Number(btn.dataset.rot) + 90) % 360;
         btn.dataset.rot = rot;
         img.style.transform = `rotate(${rot}deg)`;
+        // transform:rotate()는 그림만 돌리고 그 그림이 차지하는 박스
+        // 크기는 그대로라, 세로 사진을 90도 돌리면 가로로 누운 그림이
+        // 원래의 좁고 긴 박스 안에서 잘려 보인다 — 90/270도일 땐 최대
+        // 가로/세로 폭을 서로 바꿔서 돌아간 모양에 맞는 박스가 되게 한다.
+        const swapped = (rot === 90 || rot === 270);
+        img.style.maxWidth = swapped ? '560px' : '420px';
+        img.style.maxHeight = swapped ? '420px' : '560px';
       });
     });
 
