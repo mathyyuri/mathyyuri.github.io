@@ -2608,8 +2608,18 @@ function resolveFileForMission(missionName, category, clsOverride) {
     if (exact) return { file: exact, how: '공통 매핑표' };
   }
   const norm = (s) => s.replace(/[\s.\[\]()]/g, '');
+  // 미션명 전체가 파일명 안에 "통째로, 끊기지 않고" 들어있어야만 매칭되던
+  // 방식은 "PRISM 과제 8회"(미션명) vs "[PRISM] 1-1 과제미션 8회"(파일명)
+  // 처럼 파일명에 회차 표시("1-1")나 접미사("미션")가 중간에 끼어들면
+  // 실패한다(실제로 확인된 사례 — 반 전체가 매칭 안 돼서 "문제지를 찾지
+  // 못함"으로 떨어짐). 미션명을 단어 단위로 쪼개서 각 단어가 파일명 어딘가에
+  // (순서·인접 여부 상관없이) 전부 들어있는지로 바꾸면, 기존처럼 단어가
+  // 하나뿐인 미션명(대다수)은 완전히 똑같이 동작하면서 이런 경우까지 잡는다.
+  const tokens = missionName.split(/\s+/).map(norm).filter(Boolean);
   const target = norm(missionName);
-  let candidates = bankFiles.filter(f => norm(f.filename).includes(target));
+  let candidates = tokens.length
+    ? bankFiles.filter(f => { const nf = norm(f.filename); return tokens.every(t => nf.includes(t)); })
+    : bankFiles.filter(f => norm(f.filename).includes(target));
   if (!candidates.length) return null;
   // Narrow to files whose TYPE matches this mission's own category first —
   // several files can share the same topic name across 개념/진도미션/
