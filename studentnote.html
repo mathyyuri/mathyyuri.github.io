@@ -84,13 +84,22 @@ button:disabled { opacity: 0.4; cursor: default; }
    채점하게 된다(실제로 보고된 문제). */
 .gradeSeq { font-size: 10px; color: rgba(26,26,26,.4); }
 .gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
-.gradeQuickAnswer { font-size: 10px; color: var(--mint-deep); font-weight: 700; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gradeQuickAnswer { font-size: 12px; color: var(--mint-deep); font-weight: 700; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gradeQuickAnswer .katex { font-size: 1em; }
 .gradeAllBtn { border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); font-weight: 700; font-size: 11px; border-radius: 5px; padding: 3px 8px; cursor: pointer; flex: 0 0 auto; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
 .hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
 .hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
-.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+/* 사진과 채점 체크리스트를 나란히 — 사진 보면서 바로 옆에서 O/X와 정답을
+   확인/채점할 수 있게 (예전엔 사진 아래에 가로로 쭉 늘어놓아서 스크롤이
+   많이 필요했음). 화면이 좁으면(모바일 등) 그냥 위아래로 쌓인다. */
+.hwGradeLayout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin: 8px 0; }
+.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 200px; flex: 0 0 auto; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
+.hwGradeRow { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f2ede0; }
+.hwGradeRow:last-child { border-bottom: none; }
+.hwGradeRow .gradeNum { min-width: 34px; }
+.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
 .hwPhotoItem { position: relative; display: inline-block; }
 .hwRotateBtn { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gold-line); background: rgba(255,255,255,.9); color: var(--ink); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
 .hwRotateBtn:hover { background: #fff; border-color: var(--gold); }
@@ -4005,25 +4014,29 @@ function renderHwGrading(submissions) {
       <div class="hwMeta">${escapeHtml(sub.name)} · ${escapeHtml(sub.class)} · ${escapeHtml(sub.category)} · ${escapeHtml(sub.mission)} <span class="hint">(${at})</span>
         <button type="button" class="hwCancelBtn" style="float:right;background:#fff;color:var(--pink-deep);border:1px solid var(--pink-deep);padding:3px 10px;font-size:11px;border-radius:4px">삭제</button>
       </div>
-      <div class="hwPhotoRow">
-        ${sub.urls.map(u => {
-          const fid = driveIdFromUrl(u);
-          const inner = fid
-            ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
-            : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
-          return `<div class="hwPhotoItem">${inner}<button type="button" class="hwRotateBtn" data-rot="0" title="사진 회전">⟳</button></div>`;
-        }).join('')}
+      <div class="hwGradeLayout">
+        <div class="hwPhotoRow">
+          ${sub.urls.map(u => {
+            const fid = driveIdFromUrl(u);
+            const inner = fid
+              ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
+              : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
+            return `<div class="hwPhotoItem">${inner}<button type="button" class="hwRotateBtn" data-rot="0" title="사진 회전">⟳</button></div>`;
+          }).join('')}
+        </div>
+        ${nQ ? `
+          <div class="hwGradeChecklist">
+            ${Array.from({ length: nQ }, (_, i) => i + 1).map(n => `
+              <div class="hwGradeRow">
+                <span class="gradeNum">${n}번</span>
+                <span class="gradeQuickAnswer" data-num="${n}"></span>
+                <button type="button" class="gradeToggle" data-value="2" data-num="${n}">X</button>
+              </div>`).join('')}
+          </div>
+        ` : ''}
       </div>
       ${nQ ? `
-        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수·점수는 자동 계산됩니다.</p>
-        <div class="gradingRowToggles">
-          ${Array.from({ length: nQ }, (_, i) => i + 1).map(n => `
-            <span class="gradeItem">
-              <button type="button" class="gradeToggle" data-value="2" data-num="${n}">X</button>
-              <span class="gradeNum">${n}번</span>
-              <span class="gradeQuickAnswer" data-num="${n}"></span>
-            </span>`).join('')}
-        </div>
+        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수·점수는 자동 계산됩니다. 번호 옆 초록 글씨는 저장된 정답입니다.</p>
         <div class="btnRow" style="margin-top:6px">
           <button type="button" class="selectAllBtn hwAllOBtn">전체 O</button>
           <button type="button" class="selectAllBtn hwAllXBtn">전체 X</button>
@@ -4162,7 +4175,20 @@ async function loadQuickAnswers(div, file) {
     const answers = resp.answers || {};
     div.querySelectorAll('.gradeQuickAnswer').forEach(el => {
       const a = answers[el.dataset.num];
-      if (a) { el.textContent = a; el.title = '정답: ' + a; }
+      if (!a) return;
+      el.title = '정답: ' + a;
+      // 정답은 자유 텍스트라 항상 올바른 LaTeX인 건 아니다 — 한글이 섞인
+      // 경우("몫: 5x-3, 나머지: x+4"처럼 직접 채워 넣거나 자동 추출된
+      // 것)는 KaTeX가 한글 글자를 수식 기호로 이해 못해 깨져 보이므로
+      // 그냥 텍스트로 보여주고, 순수 수식(백슬래시 명령/숫자/문자만)만
+      // 렌더링을 시도한다. throwOnError:false라 실패해도 페이지가 죽지
+      // 않고 에러 표시만 나오지만, 애초에 한글 섞인 건 시도조차 안 한다.
+      if (/[가-힣]/.test(a)) {
+        el.textContent = a;
+      } else {
+        try { katex.render(a, el, { throwOnError: false, displayMode: false }); }
+        catch (e) { el.textContent = a; }
+      }
     });
   } catch (e) {}
 }
