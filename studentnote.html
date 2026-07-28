@@ -84,12 +84,16 @@ button:disabled { opacity: 0.4; cursor: default; }
    채점하게 된다(실제로 보고된 문제). */
 .gradeSeq { font-size: 10px; color: rgba(26,26,26,.4); }
 .gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
+.gradeQuickAnswer { font-size: 10px; color: var(--mint-deep); font-weight: 700; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gradeAllBtn { border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); font-weight: 700; font-size: 11px; border-radius: 5px; padding: 3px 8px; cursor: pointer; flex: 0 0 auto; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
 .hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
 .hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
 .hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.hwPhotoItem { position: relative; display: inline-block; }
+.hwRotateBtn { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gold-line); background: rgba(255,255,255,.9); color: var(--ink); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
+.hwRotateBtn:hover { background: #fff; border-color: var(--gold); }
 /* 클릭하지 않고도 바로 채점할 수 있도록 충분히 크게 — object-fit:contain으로
    잘리는 부분 없이 전체가 다 보이게 한다(사진마다 가로/세로 비율이 달라도). */
 .hwPhotoRow a img { max-width: 420px; max-height: 560px; width: auto; height: auto; object-fit: contain; border: 1px solid var(--gold-line); border-radius: 4px; display: block; background: #fff; }
@@ -4004,9 +4008,10 @@ function renderHwGrading(submissions) {
       <div class="hwPhotoRow">
         ${sub.urls.map(u => {
           const fid = driveIdFromUrl(u);
-          return fid
+          const inner = fid
             ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
             : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
+          return `<div class="hwPhotoItem">${inner}<button type="button" class="hwRotateBtn" data-rot="0" title="사진 회전">⟳</button></div>`;
         }).join('')}
       </div>
       ${nQ ? `
@@ -4016,6 +4021,7 @@ function renderHwGrading(submissions) {
             <span class="gradeItem">
               <button type="button" class="gradeToggle" data-value="2" data-num="${n}">X</button>
               <span class="gradeNum">${n}번</span>
+              <span class="gradeQuickAnswer" data-num="${n}"></span>
             </span>`).join('')}
         </div>
         <div class="btnRow" style="margin-top:6px">
@@ -4033,6 +4039,20 @@ function renderHwGrading(submissions) {
         <span class="hwStatus hint"></span>
       </div>
     `;
+
+    // 사진이 옆으로/거꾸로 찍혀 있으면(학생이 책을 돌려서 찍은 경우 — 이건
+    // 업로드 시 EXIF 보정으로도 못 잡음, 책 자체가 돌아간 거라) 선생님이
+    // 눈으로 보고 직접 돌려볼 수 있게 — 90도씩 돌아가며 화면에서만 돌려
+    // 보여준다(원본 사진/AI가 보는 사진은 그대로).
+    div.querySelectorAll('.hwRotateBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const img = btn.previousElementSibling?.querySelector('img') || btn.parentElement.querySelector('img');
+        if (!img) return;
+        const rot = (Number(btn.dataset.rot) + 90) % 360;
+        btn.dataset.rot = rot;
+        img.style.transform = `rotate(${rot}deg)`;
+      });
+    });
 
     // 문항별 O/X로 채점하는 경우 맞은개수뿐 아니라 점수도 (맞은개수/전체)*100으로
     // 자동 계산 — 문항 채점을 이미 했는데 점수를 따로 또 입력할 필요가 없게.
@@ -4129,7 +4149,22 @@ function renderHwGrading(submissions) {
 
     hwGradingListEl.appendChild(div);
     loadHwPhotos(div);
+    if (nQ && file) loadQuickAnswers(div, file);
   });
+}
+
+// 문항 번호 아래에 정답을 바로 보여준다 — 사진과 대조하며 채점할 때 매번
+// AI 채점을 돌리거나 problembank를 따로 열어볼 필요 없이 바로 확인 가능.
+// 정답은 이미 TEACHER_KEY로 게이트된 fileanswers 액션으로만 가져온다.
+async function loadQuickAnswers(div, file) {
+  try {
+    const resp = await callGetJsonp(DASHBOARD_URL, { action: 'fileanswers', key: TEACHER_KEY, id: file.id });
+    const answers = resp.answers || {};
+    div.querySelectorAll('.gradeQuickAnswer').forEach(el => {
+      const a = answers[el.dataset.num];
+      if (a) { el.textContent = a; el.title = '정답: ' + a; }
+    });
+  } catch (e) {}
 }
 
 function driveIdFromUrl(u) {
