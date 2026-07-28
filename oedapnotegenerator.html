@@ -1241,10 +1241,94 @@ window.addEventListener('DOMContentLoaded', function () {
 // 버튼 내비게이션, 이미지/PDF 저장)를 그대로 재사용 — 정답만 모아 보여주는
 // 용도라 문제 본문 렌더링·오버플로우 측정(paneOverflowsHalfSlide) 없이
 // 훨씬 단순하다. items: [{order, cite, answer}] (answer는 빈 문자열일 수 있음).
-function buildQuickAnswerHtmlDocument({ titleText, items }) {
-  const ITEMS_PER_PAGE = 60;
+// 정답마다 실제로 차지하는 높이가 크게 다르다(숫자 하나 vs 분수처럼
+// 위아래로 긴 수식) — 고정 개수로만 나누면 긴 수식이 몰린 페이지에서
+// 넘쳐서 뒷 문제 몇 개가 화면 밖으로 잘려나간다(178/180 버그의 원인).
+// 그래서 buildClassHtmlDocument의 paneOverflowsHalfSlide와 같은 방식으로,
+// 실제 페이지와 똑같은 CSS를 가진 숨겨진 요소에 후보 문제들을 진짜
+// 렌더링해보고 넘치는지 측정해서 페이지를 나눈다.
+function wrapKoreanForKatex(s) {
+  return s.replace(/[가-힣][가-힣 ,.:%·()~-]*/g, function (seg) {
+    return ' \\text{ ' + seg.replace(/ +$/, '') + ' } ';
+  });
+}
+const ANS_MEASURE_W = 900, ANS_MEASURE_H = ANS_MEASURE_W * 297 / 210;
+const ANS_PAGE_CSS = `
+#__ansMeasureHost .a4Page{width:${ANS_MEASURE_W}px;height:${ANS_MEASURE_H}px;padding:5% 6%;box-sizing:border-box;display:flex;flex-direction:column;font-family:'Noto Sans KR',sans-serif;color:#1A1A1A}
+#__ansMeasureHost .a4Title{text-align:center;margin-bottom:.6em;flex:0 0 auto}
+#__ansMeasureHost .a4Title h1{font-family:'Noto Serif KR',serif;font-weight:900;font-size:1.5rem;color:#0F325D;margin:0 0 .2em}
+#__ansMeasureHost .a4Title .sub{font-size:.7rem;color:rgba(26,26,26,.55);font-family:'Noto Serif KR',serif}
+#__ansMeasureHost .ansList{flex:1 1 auto;min-height:0;overflow:hidden;column-count:2;column-gap:1.4em}
+#__ansMeasureHost .ansRow{display:flex;align-items:baseline;gap:.5em;border-bottom:1px solid #E3D9C8;padding:.16em 0;margin-bottom:.28em;break-inside:avoid}
+#__ansMeasureHost .ansNum{font-family:'Noto Serif KR',serif;font-weight:900;font-size:.85rem;color:#0F325D;min-width:1.8em}
+#__ansMeasureHost .ansCite{font-size:.62rem;color:rgba(26,26,26,.5);min-width:4.6em;font-family:'Noto Serif KR',serif}
+#__ansMeasureHost .ansValue{flex:1 1 auto;font-size:.8rem;font-weight:700;color:#3E8F79;word-break:break-word}
+#__ansMeasureHost .ansMissing{font-weight:400;color:rgba(26,26,26,.4);font-style:italic}
+`;
+let __ansMeasureHost = null;
+function getAnsMeasureHost() {
+  if (__ansMeasureHost) return __ansMeasureHost;
+  const style = document.createElement('style');
+  style.textContent = ANS_PAGE_CSS;
+  document.head.appendChild(style);
+  const host = document.createElement('div');
+  host.id = '__ansMeasureHost';
+  host.style.cssText = 'position:fixed;left:-99999px;top:0;';
+  document.body.appendChild(host);
+  __ansMeasureHost = host;
+  return host;
+}
+function renderAnsValueForMeasure(el, answer) {
+  if (!answer) { el.innerHTML = '<span class="ansMissing">(정답 미입력)</span>'; return; }
+  const hasKorean = /[가-힣]/.test(answer);
+  const hasMathCmd = /\\[a-zA-Z]+|\^|_/.test(answer);
+  if (hasKorean && !hasMathCmd) { el.textContent = answer; return; }
+  const toRender = hasKorean ? wrapKoreanForKatex(answer) : answer;
+  try { katex.render(toRender, el, { throwOnError: false, displayMode: false }); }
+  catch (e) { el.textContent = answer; }
+}
+function ansRowsFit(rowItems, withTitle, titleText) {
+  const host = getAnsMeasureHost();
+  const rowsHtml = rowItems.map(it => `
+    <div class="ansRow">
+      <span class="ansNum">${it.order}</span>
+      <span class="ansCite">${escapeHtml(it.cite)}</span>
+      <span class="ansValue"></span>
+    </div>`).join('');
+  host.innerHTML = `<div class="a4Page">
+    ${withTitle ? `<div class="a4Title"><h1>${escapeHtml(titleText)}</h1><div class="sub">${new Date().toISOString().slice(0, 10)}</div></div>` : ''}
+    <div class="ansList">${rowsHtml}</div>
+  </div>`;
+  const valueEls = [...host.querySelectorAll('.ansValue')];
+  rowItems.forEach((it, i) => renderAnsValueForMeasure(valueEls[i], it.answer));
+  const listEl = host.querySelector('.ansList');
+  return listEl.scrollHeight <= listEl.clientHeight + 1;
+}
+function paginateAnswerItems(items, titleText) {
+  const HARD_MAX = 60;
   const pages = [];
-  for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) pages.push(items.slice(i, i + ITEMS_PER_PAGE));
+  let idx = 0;
+  while (idx < items.length) {
+    const withTitle = pages.length === 0;
+    const cap = Math.min(idx + HARD_MAX, items.length);
+    if (ansRowsFit(items.slice(idx, cap), withTitle, titleText)) {
+      pages.push(items.slice(idx, cap));
+      idx = cap;
+      continue;
+    }
+    let lo = idx + 1, hi = cap;
+    while (hi - lo > 1) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (ansRowsFit(items.slice(idx, mid), withTitle, titleText)) lo = mid; else hi = mid;
+    }
+    pages.push(items.slice(idx, lo));
+    idx = lo;
+  }
+  return pages;
+}
+
+function buildQuickAnswerHtmlDocument({ titleText, items }) {
+  const pages = paginateAnswerItems(items, titleText);
 
   const pagesHtml = pages.map((pageItems, pIdx) => {
     const rows = pageItems.map(it => `
