@@ -101,7 +101,15 @@ button:disabled { opacity: 0.4; cursor: default; }
 .hwGradeRow { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f2ede0; }
 .hwGradeRow:last-child { border-bottom: none; }
 .hwGradeRow .gradeNum { min-width: 34px; }
-.hwPhotoRow { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; flex: 0 0 auto; }
+/* 사진 여러 장을 한 줄로 늘어놓으면(특히 여러 장일 때) 체크리스트가 화면
+   오른쪽 밖으로 밀려나서 스크롤해야만 보였다(실제로 확인된 문제) — 한
+   번에 한 장만 보여주고 화살표로 앞뒤 넘기는 슬라이드 방식으로 바꿔서,
+   사진이 몇 장이든 항상 같은 폭만 차지하고 체크리스트는 늘 오른쪽에 그대로 있다. */
+.hwPhotoSlider { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.hwSlideBtn { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; padding: 0; }
+.hwSlideBtn:hover { background: var(--gold-soft); border-color: var(--gold); }
+.hwSlideCounter { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.55); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; pointer-events: none; }
+.hwPhotoRow { position: relative; display: flex; margin: 0; flex: 0 0 auto; }
 .hwPhotoItem { position: relative; display: inline-block; }
 .hwRotateBtn { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gold-line); background: rgba(255,255,255,.9); color: var(--ink); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
 .hwRotateBtn:hover { background: #fff; border-color: var(--gold); }
@@ -4017,14 +4025,19 @@ function renderHwGrading(submissions) {
         <button type="button" class="hwCancelBtn" style="float:right;background:#fff;color:var(--pink-deep);border:1px solid var(--pink-deep);padding:3px 10px;font-size:11px;border-radius:4px">삭제</button>
       </div>
       <div class="hwGradeLayout">
-        <div class="hwPhotoRow">
-          ${sub.urls.map(u => {
-            const fid = driveIdFromUrl(u);
-            const inner = fid
-              ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
-              : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
-            return `<div class="hwPhotoItem">${inner}<button type="button" class="hwRotateBtn" data-rot="0" title="사진 회전">⟳</button></div>`;
-          }).join('')}
+        <div class="hwPhotoSlider">
+          ${sub.urls.length > 1 ? `<button type="button" class="hwSlideBtn hwSlidePrev">‹</button>` : ''}
+          <div class="hwPhotoRow">
+            ${sub.urls.map((u, i) => {
+              const fid = driveIdFromUrl(u);
+              const inner = fid
+                ? `<a href="${u}" class="hwPhotoLink" target="_blank" rel="noopener"><span class="hwPhotoLoading" data-fid="${fid}">불러오는 중...</span></a>`
+                : `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy"></a>`;
+              return `<div class="hwPhotoItem" data-slide-idx="${i}" style="${i === 0 ? '' : 'display:none'}">${inner}<button type="button" class="hwRotateBtn" data-rot="0" title="사진 회전">⟳</button></div>`;
+            }).join('')}
+            ${sub.urls.length > 1 ? `<div class="hwSlideCounter">1 / ${sub.urls.length}</div>` : ''}
+          </div>
+          ${sub.urls.length > 1 ? `<button type="button" class="hwSlideBtn hwSlideNext">›</button>` : ''}
         </div>
         ${nQ ? `
           <div class="hwGradeChecklist">
@@ -4075,6 +4088,22 @@ function renderHwGrading(submissions) {
         img.style.maxHeight = swapped ? '420px' : '560px';
       });
     });
+
+    // 사진 여러 장 슬라이드 넘기기 — 한 번에 한 장만 보이게 하고 화살표로
+    // 전환한다(전부 DOM엔 있고 숨김/표시만 바꾸므로 회전 상태 등은 각자
+    // 유지된다). 사진이 한 장뿐이면 이 버튼들 자체가 안 만들어져 있다.
+    const slideItems = [...div.querySelectorAll('.hwPhotoItem')];
+    if (slideItems.length > 1) {
+      let slideIdx = 0;
+      const counterEl = div.querySelector('.hwSlideCounter');
+      function showSlide(idx) {
+        slideIdx = (idx + slideItems.length) % slideItems.length;
+        slideItems.forEach((it, i) => { it.style.display = i === slideIdx ? '' : 'none'; });
+        if (counterEl) counterEl.textContent = (slideIdx + 1) + ' / ' + slideItems.length;
+      }
+      div.querySelector('.hwSlidePrev')?.addEventListener('click', () => showSlide(slideIdx - 1));
+      div.querySelector('.hwSlideNext')?.addEventListener('click', () => showSlide(slideIdx + 1));
+    }
 
     // 문항별 O/X로 채점하는 경우 맞은개수뿐 아니라 점수도 (맞은개수/전체)*100으로
     // 자동 계산 — 문항 채점을 이미 했는데 점수를 따로 또 입력할 필요가 없게.
