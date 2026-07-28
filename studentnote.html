@@ -84,7 +84,7 @@ button:disabled { opacity: 0.4; cursor: default; }
    채점하게 된다(실제로 보고된 문제). */
 .gradeSeq { font-size: 10px; color: rgba(26,26,26,.4); }
 .gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
-.gradeQuickAnswer { font-size: 12px; color: var(--mint-deep); font-weight: 700; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gradeQuickAnswer { font-size: 12px; color: var(--mint-deep); font-weight: 700; flex: 1 1 auto; white-space: normal; word-break: break-word; line-height: 1.35; }
 .gradeQuickAnswer .katex { font-size: 1em; }
 .gradeAllBtn { border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); font-weight: 700; font-size: 11px; border-radius: 5px; padding: 3px 8px; cursor: pointer; flex: 0 0 auto; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
@@ -97,10 +97,14 @@ button:disabled { opacity: 0.4; cursor: default; }
    위로 스크롤해야 해서 오히려 더 불편해짐) nowrap으로 항상 나란히 고정하고,
    폭이 부족하면 이 줄만 가로 스크롤되게 한다(페이지 전체가 깨지지 않음). */
 .hwGradeLayout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: nowrap; overflow-x: auto; margin: 8px 0; padding-bottom: 4px; }
-.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 200px; flex: 0 0 220px; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
-.hwGradeRow { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f2ede0; }
+.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 260px; flex: 0 0 300px; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
+/* 정답이 길면(예: "3x^3-x^2+4x+3=(x^2+2)(3x-1)-2x+5") 잘리지 않고 줄바꿈
+   되도록 — align-items를 center가 아니라 flex-start로 둬서 여러 줄이 돼도
+   번호/버튼이 첫 줄에 맞춰 보이게 한다. */
+.hwGradeRow { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f2ede0; }
 .hwGradeRow:last-child { border-bottom: none; }
-.hwGradeRow .gradeNum { min-width: 34px; }
+.hwGradeRow .gradeNum { min-width: 34px; padding-top: 1px; }
+.hwGradeRow .gradeToggle { flex: 0 0 auto; }
 /* 사진 여러 장을 한 줄로 늘어놓으면(특히 여러 장일 때) 체크리스트가 화면
    오른쪽 밖으로 밀려나서 스크롤해야만 보였다(실제로 확인된 문제) — 한
    번에 한 장만 보여주고 화살표로 앞뒤 넘기는 슬라이드 방식으로 바꿔서,
@@ -205,10 +209,10 @@ function log(msg, cls) {
 
 // ---------- JSONP ----------
 let jsonpCounter = 0;
-function callGetJsonp(url, params) {
+function callGetJsonp(url, params, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
-    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (30초)')); }, 30000);
+    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (' + Math.round(timeoutMs / 1000) + '초)')); }, timeoutMs);
     const script = document.createElement('script');
     function cleanup() { clearTimeout(timer); delete window[cbName]; script.remove(); }
     window[cbName] = (data) => {
@@ -4135,10 +4139,13 @@ function renderHwGrading(submissions) {
       const aiStatusEl = div.querySelector('.hwAiStatus');
       const aiBtn = div.querySelector('.hwAiGradeBtn');
       aiBtn.disabled = true;
-      aiStatusEl.textContent = 'AI가 사진을 읽는 중... (몇 초 걸릴 수 있어요)';
+      aiStatusEl.textContent = 'AI가 사진을 읽는 중... (문항이 많으면 1분 가까이 걸릴 수 있어요)';
       aiStatusEl.className = 'hint';
       try {
-        const resp = await callGetJsonp(DASHBOARD_URL, { action: 'gradehwai', key: TEACHER_KEY, id: sub.id, fileId: file.id });
+        // 기본 30초 제한으로는 부족했다(실제로 확인됨 — 사진이 여러 장·
+        // 문항이 많으면 AI가 다 읽고 답하는 데 30초 넘게 걸림) — 이 호출만
+        // 넉넉하게 90초로 늘린다.
+        const resp = await callGetJsonp(DASHBOARD_URL, { action: 'gradehwai', key: TEACHER_KEY, id: sub.id, fileId: file.id }, 90000);
         let lowConfCount = 0;
         div.querySelectorAll('.gradeToggle').forEach(btn => { btn.classList.remove('aiLowConf'); });
         (resp.results || []).forEach(r => {
