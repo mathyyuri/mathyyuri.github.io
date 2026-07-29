@@ -1743,7 +1743,16 @@ quickAnswerBtn.addEventListener('click', async () => {
     }
     if (!items.length) throw new Error('선택한 문제를 하나도 처리하지 못했습니다.');
 
-    const titleText = (examName || '수업용 문제모음') + ' 빠른정답';
+    // 제목만 보고 어떤 시험지의 정답인지 알 수 있도록 원본 파일명을 함께 적는다
+    // (examName을 안 적으면 파일명이 제목 역할, 적으면 괄호로 덧붙인다).
+    const usedFilenames = [...new Set(checked.map(c => byFile.get(c.uid)?.filename).filter(Boolean))]
+      .map(fn => fn.replace(/\.hwpx$/i, ''));
+    const fileLabel = usedFilenames.length <= 2
+      ? usedFilenames.join(', ')
+      : `${usedFilenames.slice(0, 2).join(', ')} 외 ${usedFilenames.length - 2}개`;
+    const titleText = examName
+      ? `${examName} 빠른정답 (${fileLabel || '파일명 미상'})`
+      : `${fileLabel || '수업용 문제모음'} 빠른정답`;
     const html = buildQuickAnswerHtmlDocument({ titleText, items });
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
