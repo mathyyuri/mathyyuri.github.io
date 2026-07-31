@@ -268,17 +268,6 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .chip-q.no{background:var(--pink-soft);border-color:var(--pink-deep);color:var(--pink-deep)}
 .ia-comment{width:100%;font-family:var(--kserif);font-size:12.5px;line-height:1.65;color:rgba(26,26,26,.78)}
 .ia-comment b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
-.hw-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
-.hw-btn{background:#fff;border:1px solid var(--gold-line);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--ink);border-radius:3px;cursor:pointer;white-space:nowrap}
-.hw-btn:hover{background:var(--ink);border-color:var(--ink);color:var(--cream)}
-.hw-btn:disabled{opacity:.5;cursor:default}
-.hw-status{font-size:10px;color:rgba(26,26,26,.55);white-space:nowrap}
-.hw-status.ok{color:var(--mint-deep);font-weight:700}
-.hw-status.err{color:var(--pink-deep);font-weight:700}
-.hw-pending{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
-.hw-cancel-btn{background:#fff;border:1px solid var(--pink-deep);color:var(--pink-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
-.hw-cancel-btn:hover{background:var(--pink-deep);color:#fff}
-.hw-cancel-btn:disabled{opacity:.5;cursor:default}
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
 /* ===== 웹(데스크톱) 가독성 보정 · 900px 이상에서만 적용 ===== */
@@ -452,7 +441,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   </div>
 
   <!-- ① OVERVIEW: 정답률 세로막대 + 종목별 오각형 -->
-  <div class="block" id="overview-block">
+  <div class="block">
     <div class="block-head"><h2>Overview</h2><span class="en">MY DATA vs CLASS AVG</span></div>
 
     <div class="chart-grid2">
@@ -533,51 +522,84 @@ function cutStrip(cuts, compact){
 }
 
 /* ---- S+ BLACK 전용: 영역별 · 점수대별 분석 ----
-   문항-단원 매핑은 이 특정 시험("9월 모의고사 대비 실전 모의고사 1회")
-   채점 시 쓴 것과 동일 — 다음 회차부터 시험이 바뀌면 이 맵도 갱신 필요. */
-const SPBLACK_EXAM = '9월 모의고사 대비 실전 모의고사 1회';
-const SPBLACK_ITEMS = {
-  1:{unit:'다항식',topic:'다항식의 연산',score:2},
-  2:{unit:'복소수',topic:'복소수의 상등',score:2},
-  3:{unit:'다항식',topic:'곱셈공식의 변형',score:2},
-  4:{unit:'다항식',topic:'나머지정리',score:3},
-  5:{unit:'다항식',topic:'다항식의 항등식',score:3},
-  6:{unit:'행렬',topic:'행렬의 성분과 연산',score:3},
-  7:{unit:'부등식',topic:'연립이차부등식',score:3},
-  8:{unit:'다항식',topic:'인수분해 공식',score:3},
-  9:{unit:'방정식과 부등식',topic:'이차함수와 이차방정식',score:3},
-  10:{unit:'부등식',topic:'부등식 영역과 경우의 수',score:3},
-  11:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
-  12:{unit:'다항식',topic:'나머지정리 응용',score:3},
-  13:{unit:'방정식과 부등식',topic:'이차함수의 최댓값·최솟값',score:3},
-  14:{unit:'경우의 수',topic:'순열과 조합 (최댓값 추론)',score:4},
-  15:{unit:'다항식',topic:'삼차다항식의 인수정리',score:4},
-  16:{unit:'방정식과 부등식',topic:'이차부등식의 성립 조건',score:4},
-  17:{unit:'행렬',topic:'행렬의 거듭제곱 규칙성',score:4},
-  18:{unit:'방정식과 부등식',topic:'이차함수의 그래프 성질',score:4},
-  19:{unit:'도형의 방정식',topic:'도형의 이동 및 접힘',score:4},
-  20:{unit:'경우의 수',topic:'조건부 경우의 수',score:4},
-  21:{unit:'방정식과 부등식',topic:'허근(오메가)과 함수 그래프',score:4},
-  22:{unit:'다항식',topic:'인수정리 (단답형)',score:3},
-  23:{unit:'다항식',topic:'항등식 계수비교 (단답형)',score:3},
-  24:{unit:'방정식과 부등식',topic:'절댓값 부등식 (단답형)',score:3},
-  25:{unit:'경우의 수',topic:'이차방정식 실근 조건 (단답형)',score:3},
-  26:{unit:'방정식과 부등식',topic:'사차방정식의 실근 개수',score:4},
-  27:{unit:'도형의 방정식',topic:'삼각형의 인수분해 및 넓이',score:4},
-  28:{unit:'행렬',topic:'행렬과 삼각형의 넓이 공식',score:4},
-  29:{unit:'방정식과 부등식',topic:'이차함수의 최솟값 자취 (킬러)',score:4},
-  30:{unit:'방정식과 부등식',topic:'부등식 정수해 함수 (킬러)',score:4}
+   문항-단원 매핑은 회차(미션명)별로 채점 시 쓴 것과 동일 — 새 회차가
+   추가되면 SPBLACK_EXAMS에 그 미션명을 키로 한 items를 추가하면 된다. */
+const SPBLACK_EXAMS = {
+  '9월 모의고사 대비 실전 모의고사 1회': { items: {
+    1:{unit:'다항식',topic:'다항식의 연산',score:2},
+    2:{unit:'복소수',topic:'복소수의 상등',score:2},
+    3:{unit:'다항식',topic:'곱셈공식의 변형',score:2},
+    4:{unit:'다항식',topic:'나머지정리',score:3},
+    5:{unit:'다항식',topic:'다항식의 항등식',score:3},
+    6:{unit:'행렬',topic:'행렬의 성분과 연산',score:3},
+    7:{unit:'부등식',topic:'연립이차부등식',score:3},
+    8:{unit:'다항식',topic:'인수분해 공식',score:3},
+    9:{unit:'방정식과 부등식',topic:'이차함수와 이차방정식',score:3},
+    10:{unit:'부등식',topic:'부등식 영역과 경우의 수',score:3},
+    11:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
+    12:{unit:'다항식',topic:'나머지정리 응용',score:3},
+    13:{unit:'방정식과 부등식',topic:'이차함수의 최댓값·최솟값',score:3},
+    14:{unit:'경우의 수',topic:'순열과 조합 (최댓값 추론)',score:4},
+    15:{unit:'다항식',topic:'삼차다항식의 인수정리',score:4},
+    16:{unit:'방정식과 부등식',topic:'이차부등식의 성립 조건',score:4},
+    17:{unit:'행렬',topic:'행렬의 거듭제곱 규칙성',score:4},
+    18:{unit:'방정식과 부등식',topic:'이차함수의 그래프 성질',score:4},
+    19:{unit:'도형의 방정식',topic:'도형의 이동 및 접힘',score:4},
+    20:{unit:'경우의 수',topic:'조건부 경우의 수',score:4},
+    21:{unit:'방정식과 부등식',topic:'허근(오메가)과 함수 그래프',score:4},
+    22:{unit:'다항식',topic:'인수정리 (단답형)',score:3},
+    23:{unit:'다항식',topic:'항등식 계수비교 (단답형)',score:3},
+    24:{unit:'방정식과 부등식',topic:'절댓값 부등식 (단답형)',score:3},
+    25:{unit:'경우의 수',topic:'이차방정식 실근 조건 (단답형)',score:3},
+    26:{unit:'방정식과 부등식',topic:'사차방정식의 실근 개수',score:4},
+    27:{unit:'도형의 방정식',topic:'삼각형의 인수분해 및 넓이',score:4},
+    28:{unit:'행렬',topic:'행렬과 삼각형의 넓이 공식',score:4},
+    29:{unit:'방정식과 부등식',topic:'이차함수의 최솟값 자취 (킬러)',score:4},
+    30:{unit:'방정식과 부등식',topic:'부등식 정수해 함수 (킬러)',score:4}
+  }},
+  '9월 모의고사 대비 실전 모의고사 2회': { items: {
+    1:{unit:'다항식',topic:'다항식의 연산',score:2},
+    2:{unit:'다항식',topic:'항등식(미정계수 결정)',score:2},
+    3:{unit:'복소수',topic:'켤레복소수와 사칙연산',score:2},
+    4:{unit:'다항식',topic:'이차식의 항등식(계수비교)',score:3},
+    5:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
+    6:{unit:'부등식',topic:'이차부등식의 해',score:3},
+    7:{unit:'경우의 수',topic:'부등식을 만족하는 순서쌍의 개수',score:3},
+    8:{unit:'행렬',topic:'행렬의 거듭제곱과 성분의 합',score:3},
+    9:{unit:'다항식',topic:'치환을 이용한 인수분해',score:3},
+    10:{unit:'방정식과 부등식',topic:'연립이차방정식',score:3},
+    11:{unit:'방정식과 부등식',topic:'판별식과 정수 조건',score:3},
+    12:{unit:'행렬',topic:'행렬의 곱과 실생활 응용',score:3},
+    13:{unit:'행렬',topic:'역행렬과 행렬방정식',score:3},
+    14:{unit:'부등식',topic:'절댓값부등식과 이차부등식의 연립',score:4},
+    15:{unit:'다항식',topic:'인수정리와 나머지정리',score:4},
+    16:{unit:'방정식과 부등식',topic:'이차방정식의 근과 계수의 관계',score:4},
+    17:{unit:'방정식과 부등식',topic:'이차식의 연산과 판별식',score:4},
+    18:{unit:'방정식과 부등식',topic:'삼차식의 인수분해와 근의 관계',score:4},
+    19:{unit:'방정식과 부등식',topic:'이차함수 그래프의 개형',score:4},
+    20:{unit:'방정식과 부등식',topic:'이차함수 그래프의 해석',score:4},
+    21:{unit:'경우의 수',topic:'조건을 만족하는 경우의 수',score:4},
+    22:{unit:'경우의 수',topic:'순열과 조합 (단답형)',score:3},
+    23:{unit:'부등식',topic:'연립일차부등식 (단답형)',score:3},
+    24:{unit:'행렬',topic:'행렬의 연산 (단답형)',score:3},
+    25:{unit:'다항식',topic:'나머지정리 (단답형)',score:3},
+    26:{unit:'경우의 수',topic:'자연수의 개수 세기(자릿수 조건)',score:4},
+    27:{unit:'다항식',topic:'나머지정리 응용 (단답형 심화)',score:4},
+    28:{unit:'도형의 방정식',topic:'직선과 도형의 넓이',score:4},
+    29:{unit:'경우의 수',topic:'정수 조건 순서쌍의 개수 (킬러)',score:4},
+    30:{unit:'방정식과 부등식',topic:'그래프와 도형의 넓이 (킬러)',score:4}
+  }}
 };
-const SPBLACK_UNIT_ORDER = (function(){
+function spblackUnitOrder(items){
   const seen={},order=[];
-  for(let n=1;n<=30;n++){const u=SPBLACK_ITEMS[n].unit;if(!seen[u]){seen[u]=1;order.push(u);}}
+  for(let n=1;n<=30;n++){if(!items[n])continue;const u=items[n].unit;if(!seen[u]){seen[u]=1;order.push(u);}}
   return order;
-})();
-function spblackUnitStats(rows){
-  const stats={};SPBLACK_UNIT_ORDER.forEach(u=>stats[u]={earned:0,total:0});
+}
+function spblackUnitStats(rows,items,unitOrder){
+  const stats={};unitOrder.forEach(u=>stats[u]={earned:0,total:0});
   rows.forEach(r=>{
     (r.items||[]).forEach((v,i)=>{
-      const it=SPBLACK_ITEMS[i+1];
+      const it=items[i+1];
       if(!it||(v!==1&&v!==2&&v!==3))return;
       stats[it.unit].total+=it.score;
       if(v===1)stats[it.unit].earned+=it.score;
@@ -585,10 +607,11 @@ function spblackUnitStats(rows){
   });
   return stats;
 }
-function spblackQuestionStats(rows){
+function spblackQuestionStats(rows,items){
   const out=[];
   for(let n=1;n<=30;n++){
-    const it=SPBLACK_ITEMS[n];
+    const it=items[n];
+    if(!it)continue;
     let ok=0,tot=0;
     rows.forEach(r=>{const v=(r.items||[])[n-1];if(v===1||v===2||v===3){tot++;if(v===1)ok++;}});
     out.push({no:n,unit:it.unit,topic:it.topic,rate:tot?Math.round(ok/tot*100):null,tot});
@@ -600,11 +623,11 @@ function spblackTiers(rows){
   const n=sorted.length,g=Math.ceil(n/3);
   return {상위권:sorted.slice(0,g),중위권:sorted.slice(g,g*2),하위권:sorted.slice(g*2)};
 }
-function drawSpblackUnitChart(stats){
+function drawSpblackUnitChart(stats,unitOrder){
   const id='sp-unit-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const canvas=document.getElementById(id);if(!canvas)return;
-  const labels=SPBLACK_UNIT_ORDER;
+  const labels=unitOrder;
   const data=labels.map(u=>stats[u].total?Math.round(stats[u].earned/stats[u].total*100):null);
   charts[id]=new Chart(canvas,{
     type:'bar',plugins:[valueLabel],
@@ -619,14 +642,14 @@ function drawSpblackUnitChart(stats){
         x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
   });
 }
-function drawSpblackTierChart(tiers){
+function drawSpblackTierChart(tiers,unitOrder){
   const id='sp-tier-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const canvas=document.getElementById(id);if(!canvas)return;
-  const labels=SPBLACK_UNIT_ORDER;
+  const labels=unitOrder;
   const colors={상위권:cssColor('--gold'),중위권:cssColor('--mint-deep'),하위권:cssColor('--pink-deep')};
   const datasets=Object.keys(tiers).map(t=>{
-    const st=spblackUnitStats(tiers[t]);
+    const st=spblackUnitStats(tiers[t],SPBLACK_EXAMS[pubMission].items,unitOrder);
     return {label:t+'('+tiers[t].length+'명)',data:labels.map(u=>st[u].total?Math.round(st[u].earned/st[u].total*100):null),
       backgroundColor:colors[t],borderRadius:4,maxBarThickness:20};
   });
@@ -642,13 +665,17 @@ function drawSpblackTierChart(tiers){
 function renderSpblackAnalysis(){
   const body=document.getElementById('sp-body');
   const note=document.getElementById('sp-note');
-  const rows=filteredRows().filter(r=>r.mission===SPBLACK_EXAM&&r.score!=null&&(r.items||[]).length);
+  const exam=SPBLACK_EXAMS[pubMission];
+  if(!exam){body.innerHTML='';note.textContent='';return;}
+  const items=exam.items;
+  const unitOrder=spblackUnitOrder(items);
+  const rows=filteredRows().filter(r=>r.mission===pubMission&&r.score!=null&&(r.items||[]).length);
   if(!rows.length){
-    note.textContent='"'+SPBLACK_EXAM+'" 데이터가 없습니다.';
+    note.textContent='"'+pubMission+'" 데이터가 없습니다.';
     body.innerHTML='<div class="empty">아직 분석할 데이터가 없습니다.</div>';
     return;
   }
-  note.textContent='"'+SPBLACK_EXAM+'" · 응시 '+rows.length+'명 기준 · 단원은 채점 시 입력한 문항-단원 매핑 기준';
+  note.textContent='"'+pubMission+'" · 응시 '+rows.length+'명 기준 · 단원은 채점 시 입력한 문항-단원 매핑 기준';
   body.innerHTML =
     '<div class="chart-box"><h3>단원별 반 평균 정답률</h3>'
     +'<div class="cap">문항 배점 가중 평균 · 빨강 50%↓ · 금색 50~75% · 민트 75%↑</div>'
@@ -657,7 +684,7 @@ function renderSpblackAnalysis(){
     +'<div class="cap">점수 상/중/하위 3그룹으로 나눠 같은 단원에서도 어느 그룹이 약한지 비교</div>'
     +'<div class="wrap" style="height:260px"><canvas id="sp-tier-chart"></canvas></div></div>';
 
-  const qStats=spblackQuestionStats(rows).filter(q=>q.rate!=null).sort((a,b)=>a.rate-b.rate).slice(0,6);
+  const qStats=spblackQuestionStats(rows,items).filter(q=>q.rate!=null).sort((a,b)=>a.rate-b.rate).slice(0,6);
   let weakHtml='<div class="chart-box" style="margin-top:18px"><h3>취약 문항 TOP '+qStats.length+'</h3>'
     +'<div class="cap">반 전체 정답률이 가장 낮은 문항</div><div class="ia-paper">';
   qStats.forEach(q=>{
@@ -667,8 +694,8 @@ function renderSpblackAnalysis(){
   weakHtml+='</div></div>';
   body.innerHTML += weakHtml;
 
-  drawSpblackUnitChart(spblackUnitStats(rows));
-  drawSpblackTierChart(spblackTiers(rows));
+  drawSpblackUnitChart(spblackUnitStats(rows,items,unitOrder),unitOrder);
+  drawSpblackTierChart(spblackTiers(rows),unitOrder);
 }
 
 let publicData = null;
@@ -714,19 +741,6 @@ function r1(v){return Math.round(v*10)/10;}
 function mean(arr){return arr.length?r1(arr.reduce((a,b)=>a+b,0)/arr.length):null;}
 function cssColor(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
-// 이 학생의 '대기' 상태 숙제 제출 목록 — 로그인 시(그리고 제출/취소 후)
-// 새로고침해서, 미션마다 "제출" 버튼 대신 "대기중 · 취소"를 보여줄지
-// 판단하는 데 쓴다.
-let myPendingHw=[];
-function hwActionsHtml(category,mission){
-  const pending=myPendingHw.find(p=>p.category===category&&p.mission===mission);
-  if(pending){
-    return '<span class="hw-actions"><span class="hw-pending">대기중 · 사진 '+pending.urls.length+'장</span>'
-      +'<button type="button" class="hw-cancel-btn" data-id="'+esc(pending.id)+'">취소</button></span>';
-  }
-  return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>';
-}
-
 /* ---------- 로그인 ---------- */
 function goLogin(){ if(me){show('view-personal');} else {show('view-login');} }
 async function login(){
@@ -741,7 +755,6 @@ async function login(){
     const json = await res.json();
     if(!json.ok){msg.textContent=json.error||'로그인에 실패했습니다.';loading(false);return;}
     me = json;
-    await refreshMyPendingHw();
     renderPersonal();
     show('view-personal');
   }catch(e){
@@ -911,7 +924,7 @@ function renderPublic(scrollTop){
   }else{
     cumView.classList.add('hidden');misView.classList.remove('hidden');
     renderMissionDetail();
-    const showSp=(pubTab==='S+ BLACK'&&pubMission===SPBLACK_EXAM);
+    const showSp=(pubTab==='S+ BLACK'&&!!SPBLACK_EXAMS[pubMission]);
     spView.classList.toggle('hidden',!showSp);
     if(showSp)renderSpblackAnalysis();
   }
@@ -1370,18 +1383,8 @@ function renderPersonal(){
     +(coh?' · '+esc(coh.name):'')+' · SUMMER 2026';
   document.getElementById('ov-class').textContent=s.class;
 
-  // 대수연마 1000제만 듣는 학생(정규반 S/S+/PRISM에 등록된 줄이 아예 없어
-  // student.class가 findStudentByName/handleLogin의 "정규반 우선" 로직을
-  // 거치고도 여전히 '대수연마'로 남는 경우)은 진도미션/개념미션 같은
-  // 일반 미션 자체가 없으니, Overview(정답률 비교/레이더)와 일반 종목
-  // 블록들을 아예 건너뛰고 대수연마 블록만 보여준다.
-  const algOnly=s.class==='대수연마';
-  document.getElementById('overview-block').classList.toggle('hidden',algOnly);
-  const wrap=document.getElementById('me-blocks');
-  wrap.innerHTML='';
-  const mySheets=catsFor(s.cohort);
-  if(!algOnly){
   /* ---- 정답률 비교 (세로 막대) · 전체 통계는 S+ BLACK 제외 ---- */
+  const mySheets=catsFor(s.cohort);
   const allRecs=mySheets.flatMap(k=>rec[k]||[]);
   const myTotalAcc=myAcc(allRecs);
   let clsOk=0,clsTot=0;
@@ -1390,44 +1393,16 @@ function renderPersonal(){
   });
   const clsTotalAcc=clsTot?Math.round(clsOk/clsTot*100):null;
 
-  // 대치수학 3기처럼 오답미션 시트가 따로 없는 기수는 그 자리에 "오답미션
-  // 정답률"을 보여줄 수가 없다(데이터가 아예 없어서 늘 빈 막대) — 대신
-  // 지금까지 쌓인 전체 오답 개수 대비 오답완료(다시 풀어서 맞음) 비율을
-  // 보여준다. 반평균도 같은 방식으로 비교.
-  const hasRetryMission=sheetsFor(s.cohort).indexOf('오답미션')!==-1;
-  let bar2Label,myBar2,clsBar2,capExtra;
-  document.getElementById('acc-sub')?.remove();
-  if(hasRetryMission){
-    const myRetryAcc=myAcc(rec['오답미션']||[]);
-    const rMap=avgMap['오답미션']||{};
-    const clsRetryAcc=rMap.__classTot?Math.round((rMap.__classOk||0)/rMap.__classTot*100):null;
-    bar2Label='오답미션 정답률'; myBar2=myRetryAcc; clsBar2=clsRetryAcc; capExtra='오답미션';
-  }else{
-    let myWrong=0,myFixed=0,clsWrong=0,clsFixed=0;
-    mySheets.forEach(k=>{
-      (rec[k]||[]).forEach(r=>r.items.forEach(v=>{if(v===2||v===3){myWrong++;if(v===3)myFixed++;}}));
-      if(avgMap[k]){
-        clsWrong+=(avgMap[k].__classTot||0)-(avgMap[k].__classOk||0);
-        clsFixed+=avgMap[k].__classFixed||0;
-      }
-    });
-    const myFixRate=myWrong?Math.round(myFixed/myWrong*100):null;
-    const clsFixRate=clsWrong?Math.round(clsFixed/clsWrong*100):null;
-    bar2Label='오답완료율'; myBar2=myFixRate; clsBar2=clsFixRate; capExtra='오답완료율';
-    const sub=document.createElement('div');
-    sub.id='acc-sub';
-    sub.className='hint';
-    sub.style.marginTop='4px';
-    sub.textContent='누적 오답 '+myWrong+'개 · 오답완료 '+myFixed+'개'+(clsWrong?' (반 전체 오답 '+clsWrong+'개 중 '+clsFixed+'개 완료)':'');
-    document.getElementById('acc-cap').insertAdjacentElement('afterend',sub);
-  }
+  const myRetryAcc=myAcc(rec['오답미션']||[]);
+  const rMap=avgMap['오답미션']||{};
+  const clsRetryAcc=rMap.__classTot?Math.round((rMap.__classOk||0)/rMap.__classTot*100):null;
 
-  drawBars('chart-acc',['전체 정답률',bar2Label],[myTotalAcc,myBar2],[clsTotalAcc,clsBar2],'%');
+  drawBars('chart-acc',['전체 정답률','오답미션 정답률'],[myTotalAcc,myRetryAcc],[clsTotalAcc,clsRetryAcc],'%');
   const d1=(myTotalAcc!=null&&clsTotalAcc!=null)?myTotalAcc-clsTotalAcc:null;
-  const d2=(myBar2!=null&&clsBar2!=null)?myBar2-clsBar2:null;
+  const d2=(myRetryAcc!=null&&clsRetryAcc!=null)?myRetryAcc-clsRetryAcc:null;
   document.getElementById('acc-cap').innerHTML='반평균 대비 — 전체 '
     +(d1==null?'—':'<b class="'+(d1>=0?'up':'down')+'">'+(d1>=0?'+':'')+d1+'%p</b>')
-    +' · '+capExtra+' '
+    +' · 오답미션 '
     +(d2==null?'—':'<b class="'+(d2>=0?'up':'down')+'">'+(d2>=0?'+':'')+d2+'%p</b>');
 
   /* ---- Overview 레이더 (종목별 누적 · S+ BLACK 제외) ---- */
@@ -1440,6 +1415,8 @@ function renderPersonal(){
   drawRadar('chart-overview',mySheets,catMine,catCls);
 
   /* ---- 종목별 세부 블록 (S+ BLACK은 수강 기록이 있는 학생에게만) ---- */
+  const wrap=document.getElementById('me-blocks');
+  wrap.innerHTML='';
   const blockSheets=mySheets.slice();
   if(sheetsFor(s.cohort).indexOf('S+ BLACK')!==-1 && (rec['S+ BLACK']||[]).length){
     blockSheets.push('S+ BLACK');
@@ -1458,28 +1435,8 @@ function renderPersonal(){
         +'</div>';
     }
 
-    // 이 학생이 아직 한 번도 기록이 없는 미션도(반 전체 기준 avgMap 키)
-    // "숙제 제출" 대상이어야 한다 — 개념/진도미션을 하나도 시작 못 했어도
-    // 사진으로 확인받을 수 있어야 하므로, list가 비어있어서 이 블록 전체를
-    // 일찍 끝내는 경우에도 미제출 목록만은 반드시 그려야 한다.
-    function missingMissionsHtml(withTitle){
-      const doneMissions=new Set(list.map(r=>r.mission));
-      const missing=Object.keys(avgMap[k]||{}).filter(m=>!m.startsWith('__')&&!doneMissions.has(m));
-      if(!missing.length)return'';
-      let h=withTitle?'<div class="ia-title">미제출 숙제</div>':'';
-      h+='<div class="ia-paper">';
-      missing.forEach(m=>{
-        h+='<div class="ia-row hw-row">'
-          +'<span class="ia-name">'+esc(m)+' <small>(제출 기록 없음)</small></span>'
-          +hwActionsHtml(k,m)
-          +'</div>';
-      });
-      return h+'</div>';
-    }
-
     if(!list.length){
-      const missingHtml=missingMissionsHtml(true);
-      html+=missingHtml||'<div class="empty">아직 기록이 없습니다.</div>';
+      html+='<div class="empty">아직 기록이 없습니다.</div>';
       blk.innerHTML=html;
       wrap.appendChild(blk);
       return;
@@ -1512,161 +1469,18 @@ function renderPersonal(){
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
         +(comp!=null&&comp>=100?'<span class="stamp '+clsKey(s.class)+'">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
-        +hwActionsHtml(k,r.mission)
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
         +'</div>';
     });
     html+='</div>';
-    // 아직 이 학생 기록이 없는 미션(반 전체 기준 avgMap 키)도 "미제출 숙제"로
-    // 노출 — 개념/진도미션을 다 못 끝냈어도 사진으로 확인받을 수 있어야
-    // 하므로, 이 학생의 기존 기록(list) 유무와 무관하게 반에서 이미 쓰인
-    // 미션명이면 전부 제출 대상이 된다.
-    html+=missingMissionsHtml(true);
 
     blk.innerHTML=html;
     wrap.appendChild(blk);
     const clsData=list.map(r=>avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null);
     drawBars(cid,list.map(r=>r.mission),list.map(r=>r.score),clsData);
   });
-  } // !algOnly
-
-  /* ---- 대수연마 1000제 (특강 — 반 구분 없이 특강 수강생 전체가 한 그룹이라
-     종합 통계(catsFor)에서는 제외돼 있지만, 개인 기록에는 별도 블록으로 노출) ---- */
-  const algList=rec[ALG_TAB]||[];
-  if(sheetsFor(s.cohort).indexOf(ALG_TAB)!==-1 && algList.length){
-    const algAvg=avgMap[ALG_TAB]||{};
-    const blk=document.createElement('div');
-    blk.className='block';
-    let html='<div class="block-head"><h2>'+ALG_TAB+'</h2><span class="en">'+SHEET_EN[ALG_TAB]+'</span></div>'
-      +'<p class="hint" style="margin-bottom:10px">특강 전용이라 위 종합 통계(Overview)에는 포함되지 않습니다.</p>'
-      +'<div class="chart-box"><h3>MY SCORE vs 대수연마 AVG</h3>'
-      +'<div class="cap">회차별 내 점수(민트) vs 특강 평균(핑크)</div>'
-      +'<div class="wrap"><canvas id="chart-alg"></canvas></div></div>'
-      +'<div class="ia-title">ITEM ANALYSIS · 회차별 기록</div><div class="ia-paper">';
-    algList.forEach(r=>{
-      const clsAvg=algAvg[r.mission]!=null?algAvg[r.mission]:null;
-      html+='<div class="ia-row">'
-        +'<span class="ia-name">'+esc(r.mission)+'</span>'
-        +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
-        +hwActionsHtml(ALG_TAB,r.mission)
-        +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
-        +'</div>';
-    });
-    html+='</div>';
-    blk.innerHTML=html;
-    wrap.appendChild(blk);
-    const algClsData=algList.map(r=>algAvg[r.mission]!=null?algAvg[r.mission]:null);
-    drawBars('chart-alg',algList.map(r=>r.mission),algList.map(r=>r.score),algClsData);
-  }
 }
-
-/* ---------- 숙제 사진 제출 ---------- */
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
-    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
-    reader.readAsDataURL(file);
-  });
-}
-// 휴대폰 세로 사진은 EXIF 회전 정보만 "이렇게 돌려서 보여줘"라고 적혀
-// 있을 뿐 실제 픽셀은 눕혀진 채로 저장되는 경우가 흔함 — 그 EXIF 값을
-// 무시하고 그대로 보여주는 화면(구버전 브라우저 등)에서는 사진이
-// 옆으로/거꾸로 나온다. createImageBitmap({imageOrientation:'from-image'})
-// 로 EXIF를 반영해서 "보이는 그대로"인 픽셀로 다시 그린 뒤 재인코딩하면,
-// 어디서 열어도 항상 정방향으로 보인다. 겸사겸사 원본(수 MB짜리 카메라
-// 사진)을 적당한 크기로 줄여서 여러 장을 올려도 빠르게 전송되게 한다.
-async function normalizedPhotoBase64(file){
-  try{
-    const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
-    const maxDim=1600;
-    let w=bitmap.width,h=bitmap.height;
-    if(w>maxDim||h>maxDim){
-      const scale=Math.min(maxDim/w,maxDim/h);
-      w=Math.round(w*scale);h=Math.round(h*scale);
-    }
-    const canvas=document.createElement('canvas');
-    canvas.width=w;canvas.height=h;
-    canvas.getContext('2d').drawImage(bitmap,0,0,w,h);
-    const dataUrl=canvas.toDataURL('image/jpeg',0.85);
-    return {data:dataUrl.split(',')[1]||'',mime:'image/jpeg'};
-  }catch(e){
-    // 아주 오래된 브라우저 등 createImageBitmap을 못 쓰는 경우에만 원본
-    // 그대로 폴백 — 이 경우엔 방향 보정/용량 축소가 안 될 수 있다.
-    return {data:await fileToBase64(file),mime:file.type||'image/jpeg'};
-  }
-}
-// POST 응답은 problembank.html의 업로드와 마찬가지로 mode:'no-cors'라 성공
-// 여부를 응답으로는 확인할 수 없음 — fetch 자체가 실패(네트워크 오류)하지
-// 않으면 서버에 도착한 것으로 보고 낙관적으로 완료 표시한다.
-async function postNoCors(body){
-  await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
-}
-async function refreshMyPendingHw(){
-  if(!me)return;
-  try{
-    const params=new URLSearchParams({action:'myhwsubmissions',name:me.student.name,status:'대기'});
-    const res=await fetch(GAS_URL+'?'+params.toString());
-    const json=await res.json();
-    myPendingHw=json.ok?json.submissions:[];
-  }catch(e){
-    myPendingHw=[];
-  }
-}
-async function submitHomeworkPhoto(btn,category,mission){
-  // 사진이 옆으로/거꾸로 찍혀 있으면 채점 AI가 글씨를 잘 못 읽는다 — 매번
-  // 사진을 고르기 직전에 안내를 띄워서 촬영 습관을 바로잡는다. 갤러리
-  // 선택 화면에서 "카메라"를 눌러 바로 찍어서 올리는 것도 그대로 된다
-  // (input에 capture 속성을 안 줘서 카메라/갤러리 둘 다 선택 가능).
-  alert('📸 사진 제출 안내\n\n1) 책과 휴대폰 방향을 맞춰서 똑바로 찍어주세요 (돌려서 찍으면 채점이 어려워요)\n2) 최종 답은 크고 진하게 동그라미/네모로 표시해주세요\n3) 문제가 여러 장이면 한 번에 여러 장을 선택해서 올려도 됩니다');
-  const input=document.createElement('input');
-  input.type='file';
-  input.accept='image/*';
-  // capture='environment'를 주면 일부 모바일 브라우저가 카메라를 바로
-  // 열어버려서 한 장만 찍고 끝나버림(multiple이 있어도 무시됨) — 카메라나
-  // 앨범 중에서 고르게 두면 앨범에서는 여러 장을 한 번에 선택할 수 있다.
-  input.multiple=true;
-  input.onchange=async()=>{
-    const files=[...input.files];
-    if(!files.length)return;
-    const statusEl=btn.nextElementSibling;
-    btn.disabled=true;
-    statusEl.textContent='업로드 중... ('+files.length+'장)';
-    statusEl.className='hw-status';
-    try{
-      const images=await Promise.all(files.map(f=>normalizedPhotoBase64(f)));
-      await postNoCors({action:'submithw',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,images});
-      await refreshMyPendingHw();
-      renderPersonal();
-    }catch(e){
-      statusEl.textContent='제출 실패: '+e.message;
-      statusEl.className='hw-status err';
-      btn.disabled=false;
-    }
-  };
-  input.click();
-}
-async function cancelHomeworkSubmission(btn,id){
-  btn.disabled=true;
-  btn.textContent='취소 중...';
-  try{
-    await postNoCors({action:'cancelhw',id,name:me.student.name});
-    await refreshMyPendingHw();
-    renderPersonal();
-  }catch(e){
-    btn.disabled=false;
-    btn.textContent='취소';
-    alert('취소하지 못했습니다: '+e.message);
-  }
-}
-document.getElementById('me-blocks').addEventListener('click',e=>{
-  const submitBtn=e.target.closest('.hw-btn');
-  if(submitBtn){ submitHomeworkPhoto(submitBtn,submitBtn.dataset.category,submitBtn.dataset.mission); return; }
-  const cancelBtn=e.target.closest('.hw-cancel-btn');
-  if(cancelBtn){ cancelHomeworkSubmission(cancelBtn,cancelBtn.dataset.id); return; }
-});
-
 function drawBars(canvasId,labels,mine,cls,unit){
   if(charts[canvasId])charts[canvasId].destroy();
   const u=unit||'';
