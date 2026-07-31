@@ -1154,15 +1154,20 @@ function renderCumulative(){
 function shortName(m){return m.length>10?m.slice(0,10)+'…':m;}
 
 /* ---- 대수연마 1000제: 정오표 없이 회차별 총점만 기록 · 누적 총점 순위 + 전체 목표 게이지 ---- */
+/* 대수연마 클리어 기준: 그 미션(회차)의 총문제수 == 맞은개수 + 고친개수 */
+function algCleared(r){
+  return r.totalQ!=null && r.ok!=null && r.fixed!=null && r.totalQ===(r.ok+r.fixed);
+}
 function algAggregate(rows){
   const missions=missionOrder(rows);
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},wrongLeft:0};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},cleared:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname;
     stu[key].class=r.class;
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
+    if(algCleared(r))stu[key].cleared[r.mission]=true;
     stu[key].wrongLeft+=(r.wrong||0);
   });
   const students=order.map(id=>{
@@ -1186,7 +1191,10 @@ function algTableHTML(missions,students){
       +'<td class="avg">'+s.total+'</td>'
       +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
+      const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
+      html+='<td>'+(s.cleared[m]
+        ?'<span class="score-stamp-wrap">'+scoreTxt+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
+        :scoreTxt)+'</td>';
     });
     html+='</tr>';
   });
@@ -1265,7 +1273,36 @@ function renderAlgebra1000(){
     +algTableHTML(missions,students);
   if(students.length)drawAlgChart(students);
 }
-/* 회차별(단원별) 상세 — 정오표 대신 그 회차 점수 막대그래프 */
+/* 클리어(총문제수==맞은개수+고친개수)한 학생의 막대 위에 원형 CLEAR 도장을 그리는 플러그인 */
+const clearStampPlugin = {
+  id:'clearStampPlugin',
+  afterDatasetsDraw(chart){
+    const ds=chart.data.datasets[0];
+    if(!ds||!ds.clearFlags)return;
+    const meta=chart.getDatasetMeta(0);
+    const ctx=chart.ctx;
+    meta.data.forEach((bar,i)=>{
+      if(!ds.clearFlags[i])return;
+      ctx.save();
+      ctx.translate(bar.x,bar.y-26);
+      ctx.rotate(-13*Math.PI/180);
+      ctx.beginPath();
+      ctx.arc(0,0,15,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.95)';
+      ctx.fill();
+      ctx.lineWidth=2.4;
+      ctx.strokeStyle=cssColor('--mint-deep');
+      ctx.stroke();
+      ctx.fillStyle=cssColor('--mint-deep');
+      ctx.font="900 7px 'Noto Sans KR'";
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('CLEAR',0,0);
+      ctx.restore();
+    });
+  }
+};
+/* 회차별(단원별) 상세 — 정오표 대신 그 회차 점수 막대그래프, 클리어한 학생은 막대 위에 도장 표시 */
 function drawAlgRoundChart(rows){
   const id='alg-round-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
@@ -1273,18 +1310,19 @@ function drawAlgRoundChart(rows){
   if(!canvas)return;
   charts[id]=new Chart(canvas,{
     type:'bar',
-    plugins:[valueLabel],
+    plugins:[valueLabel,clearStampPlugin],
     data:{labels:rows.map(r=>r.nickname),datasets:[{
       label:'점수',
       data:rows.map(r=>r.score),
       backgroundColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint')),
       borderColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint-deep')),
       borderWidth:1.5,maxBarThickness:46,
-      labelColor:cssColor('--mint-deep')
+      labelColor:cssColor('--mint-deep'),
+      clearFlags:rows.map(algCleared)
     }]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      layout:{padding:{top:20}},
+      layout:{padding:{top:46}},
       plugins:{legend:{display:false}},
       scales:{
         y:{beginAtZero:true,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
