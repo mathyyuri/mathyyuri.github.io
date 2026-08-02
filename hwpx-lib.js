@@ -775,7 +775,20 @@ async function hwpRunInnerToHtml(runXml, entry) {
       let latex = '';
       try { latex = rawScript ? convertHwpEquationToLatex(rawScript) : ''; } catch (e) { latex = ''; }
       if (latex) {
-        out += ` <span class="eq">\\(${latex}\\)</span> `;
+        // escapeHtml is essential here, not cosmetic — an unescaped bare "<"
+        // immediately followed by a letter (e.g. "-6<k<2", very common in
+        // inequality choices) gets tag-sniffed by the browser's own HTML
+        // parser when this string is later assigned via innerHTML: it reads
+        // "<k" as the start of an unknown tag and swallows everything up to
+        // the next literal ">" it can find ANYWHERE later in the page as
+        // that tag's content, silently eating other choices/questions along
+        // the way (confirmed against a real file — "-6<k<2"/"-4<k<4"/
+        // "-2<k<6" each vanished this way while "k<-2"/"k>6", whose "<"/">"
+        // aren't followed by a letter, survived untouched). KaTeX's own
+        // auto-render delimiter scan reads back the DECODED text content
+        // (real "<"/">" chars), so escaping here doesn't change what KaTeX
+        // sees at all — it only stops the HTML parser from misreading it.
+        out += ` <span class="eq">\\(${escapeHtml(latex)}\\)</span> `;
       } else if (rawScript) {
         // Conversion failed outright — show the script text instead of
         // silently dropping the equation (a visible, ugly fallback beats a
@@ -872,6 +885,21 @@ function formatConditionBox(inner, rawText) {
   // "substantive"), wrongly wrapping the question's own instruction
   // sentence in a condition box instead of leaving it as plain text.
   if (/\([가나다라마]\)\s*~/.test(rawText)) return null;
+  // "위의 과정에서 (가), (마)에 알맞은 것을 잘못 짝지은 것은?" / "위의
+  // 과정에서 (가),(나)에 알맞은 식을 f(m), g(m)이라 할 때 ...의 값은?" —
+  // both are QUESTIONS that refer back to blank labels from a derivation
+  // written just above (always in its own hwpRectBox), not a real multi-
+  // clause condition list — the "clauses" here are just a trailing marker
+  // + comma, e.g. "(가),", with no substantive content of their own. Both
+  // slipped past the substantive-count check below because the
+  // surrounding sentence fragments are long enough to count as
+  // substantive on their own. Confirmed against a real file: this
+  // produced an orphaned second box directly under the derivation's own
+  // hwpRectBox, reading as "box under box". "위의 과정에서" (or "다음
+  // 과정에서") leading the sentence is the reliable, common signal for
+  // this whole family — excluded the same way as the range reference
+  // above, rather than boxed.
+  if (/^(위의|위|다음)\s*과정에서/.test(rawText.trim()) || /짝지은\s*것/.test(rawText)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
