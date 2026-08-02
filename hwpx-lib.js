@@ -470,6 +470,17 @@ function convertHwpEquationToLatex(script) {
   // 같은 이유로 나올 수 있음).
   s = s.replace(/LEFT\s*\./gi, '\\left.');
   s = s.replace(/RIGHT\s*\./gi, '\\right.');
+  // 수식이 여러 <hp:equation> 조각으로 쪼개지면, 여는/닫는 괄호 문자
+  // 자체가 이 조각이 아닌 "다른" 조각에 있어서 LEFT/RIGHT 뒤에 짝지을
+  // 괄호 문자가 이 조각 안엔 아예 없는 경우도 있다(실제 파일 확인:
+  // "A={x|x는...} , B={x|x는 6의 양의 배수 " 뒤에 이어지는 조각이
+  // 괄호 하나 없이 그냥 "right"만 담고 있었음 — 위의 5가지 괄호별
+  // 규칙이 전부 괄호 문자를 요구해서 이 경우를 못 잡았음). 위에서 이미
+  // 처리된 것들은 전부 "\left"/"\right"로 백슬래시가 붙어 있어 이
+  // 마지막 처리 대상에서 제외되므로, 끝까지 안 걸리고 남은 LEFT/RIGHT는
+  // 안 보이는 닫음 표시로 처리한다.
+  s = s.replace(/(?<!\\)\bLEFT\b/gi, '\\left.');
+  s = s.replace(/(?<!\\)\bRIGHT\b/gi, '\\right.');
   // A single equation script can be missing a { with no matching } at all,
   // or have a stray EXTRA } with no { of its own — both confirmed against
   // real files, both traced to the same root cause (HWP splitting one
@@ -605,6 +616,13 @@ function convertHwpEquationToLatex(script) {
     out += s.slice(last);
     s = out;
   }
+  // 이 조각 전체가 "안 보이는 닫음 표시(RIGHT ., 위 참고)" 하나뿐이었고
+  // 그 짝(LEFT)이 다른 조각에 있어서 여기서 \right만 벗겨져 마침표
+  // 하나만 남는 경우가 있다(실제 파일 확인) — 그렇다고 빈 문자열을
+  // 돌려주면 안 된다: 호출하는 쪽(hwpBodyXmlToHtml)이 "빈 결과=변환
+  // 실패"로 보고 원본 글자를 그대로 노출하는 폴백으로 넘어가 버려서,
+  // 오히려 더 나쁜 "RIGHT" 글자 노출로 되돌아간다(실제로 겪은 회귀).
+  // 마침표 하나 정도의 자국은 남기고 마는 게 안전하다.
   return s.trim();
 }
 
