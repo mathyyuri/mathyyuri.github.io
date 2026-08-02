@@ -341,6 +341,10 @@ function resolveCases(script) {
 const HWP_EQ_SYMBOLS = {
   LEQ: '\\leq', GEQ: '\\geq', NEQ: '\\neq', THEREFORE: '\\therefore',
   ANGLE: '\\angle', CDOTS: '\\cdots', TRIANGLE: '\\triangle',
+  // 수직 기호(⊥) — HWP 수식편집기의 "bot" 키워드. 지금까지 이 표에 없어서
+  // "AC bot BD"(AC⊥BD) 같은 식이 그냥 글자 "bot"으로 남아 보이던 문제
+  // (실제 파일에서 확인됨: [S+반] 2회차 과제미션 n.hwpx 30번).
+  bot: '\\bot',
   PLUSMINUS: '\\pm', TIMES: '\\times', DIV: '\\div', DEG: '^\\circ',
   cdot: '\\cdot', INFTY: '\\infty', infty: '\\infty',
   alpha: '\\alpha', beta: '\\beta', gamma: '\\gamma', delta: '\\delta',
