@@ -109,6 +109,11 @@ table.matrix td.wrong-left{font-family:var(--serif);font-weight:900;font-size:14
 table.matrix td.wrong-left.wl-zero{background:var(--mint-soft);color:var(--mint-deep)}
 table.matrix td.wrong-left.wl-mid{background:var(--gold-soft);color:var(--gold)}
 table.matrix td.wrong-left.wl-high{background:var(--pink-soft);color:var(--pink-deep)}
+/* 미션별 셀 — 점수 아래 완성도%·남은오답을 함께 표시, 배경은 오답 심각도로 은은하게 강조 */
+table.matrix td.mcell.wl-zero{background:rgba(127,200,180,.1)}
+table.matrix td.mcell.wl-mid{background:rgba(168,133,63,.09)}
+table.matrix td.mcell.wl-high{background:rgba(229,139,164,.12)}
+.mcell-meta{font-family:var(--sans);font-size:9.5px;font-weight:700;color:rgba(26,26,26,.5);margin-top:3px;white-space:nowrap}
 .empty{padding:50px 0;text-align:center;font-family:var(--kserif);color:rgba(26,26,26,.45)}
 
 table.omr{border-collapse:collapse;font-size:11px}
@@ -914,12 +919,14 @@ function aggregate(rows){
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongLeft:0};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongByMission:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname; // 가장 최근 닉네임
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
     const cp=compValOf(r);
     if(cp!=null)stu[key].comps[r.mission]=cp;
-    (r.items||[]).forEach(v=>{if(v===2)stu[key].wrongLeft++;});
+    let wm=0;
+    (r.items||[]).forEach(v=>{if(v===2){wm++;stu[key].wrongLeft++;}});
+    stu[key].wrongByMission[r.mission]=(stu[key].wrongByMission[r.mission]||0)+wm;
   });
   const students=order.map(id=>{
     const s=stu[id];
@@ -930,11 +937,23 @@ function aggregate(rows){
   }).sort((a,b)=>(b.avg??-1)-(a.avg??-1));
   return {missions,students};
 }
-/* 남은 오답개수 셀: 0=민트(안심) · 1~5=골드(보통) · 6+=핑크(집중필요) */
+/* 남은 오답 심각도 등급: 0=민트(안심) · 1~5=골드(보통) · 6+=핑크(집중필요) */
+function wlClass(n){ return n==null?'':n===0?'wl-zero':n<=5?'wl-mid':'wl-high'; }
 function wrongLeftHTML(n){
   if(n==null)return '<td>–</td>';
-  const cls=n===0?'wl-zero':n<=5?'wl-mid':'wl-high';
-  return '<td class="wrong-left '+cls+'">'+n+'</td>';
+  return '<td class="wrong-left '+wlClass(n)+'">'+n+'</td>';
+}
+/* 미션별 셀: 점수(+클리어 도장) 아래에 완성도%·남은 오답개수를 작게 함께 표시 · 오답 심각도로 셀 배경 강조 */
+function missionCellHTML(scoreTxt,cp,wm,clsK){
+  const meta=[];
+  if(cp!=null)meta.push(cp+'%');
+  if(wm!=null)meta.push('오답 '+wm);
+  return '<td class="mcell '+wlClass(wm)+'">'
+    +(cp!=null&&cp>=100
+      ?'<span class="score-stamp-wrap">'+scoreTxt+'<span class="clear-stamp '+clsK+'">CLEAR</span></span>'
+      :scoreTxt)
+    +(meta.length?'<div class="mcell-meta">'+meta.join(' · ')+'</div>':'')
+    +'</td>';
 }
 function selectMission(name){
   pubMission=name;
@@ -1140,12 +1159,8 @@ function renderCumulative(){
       +'<td class="avg">'+(s.avg??'—')+'</td>'
       +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      const cp=s.comps[m];
       const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
-      html+='<td>'+(cp!=null&&cp>=100
-        ?'<span class="score-stamp-wrap">'+scoreTxt+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
-        :scoreTxt)
-        +'</td>';
+      html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
   });
@@ -1163,11 +1178,15 @@ function algAggregate(rows){
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},cleared:{},wrongLeft:0};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongByMission:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname;
     stu[key].class=r.class;
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
-    if(algCleared(r))stu[key].cleared[r.mission]=true;
+    // 완성도 = (맞은개수+고친개수) / 총문제수 · 남은 오답 = 아직 못 고친 오답 개수
+    if(r.totalQ){
+      stu[key].comps[r.mission]=Math.round(((r.ok||0)+(r.fixed||0))/r.totalQ*100);
+      stu[key].wrongByMission[r.mission]=Math.max(0,r.totalQ-(r.ok||0)-(r.fixed||0));
+    }
     stu[key].wrongLeft+=(r.wrong||0);
   });
   const students=order.map(id=>{
@@ -1192,9 +1211,7 @@ function algTableHTML(missions,students){
       +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
       const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
-      html+='<td>'+(s.cleared[m]
-        ?'<span class="score-stamp-wrap">'+scoreTxt+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
-        :scoreTxt)+'</td>';
+      html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
   });
