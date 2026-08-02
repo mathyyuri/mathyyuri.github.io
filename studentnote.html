@@ -1119,11 +1119,13 @@ function formatConditionBox(inner, rawText) {
   // "substantive"), wrongly wrapping the question's own instruction
   // sentence in a condition box instead of leaving it as plain text.
   if (/\([가나다라마]\)\s*~/.test(rawText)) return null;
-  // "위의 과정에서 (가),(마)에 알맞은 것을 잘못 짝지은 것은?" 처럼,
-  // 유도과정(hwpRectBox) 뒤에 나오는 "빈칸 이름만 잠깐 언급하는 질문
-  // 문장"도 같은 이유로 조건 목록이 아니다 — 유도과정 박스 바로 아래에
-  // 또 박스가 생기는 원인이었다.
-  if (/^(위의|위|다음)\s*과정에서/.test(rawText.trim()) || /짝지은\s*것/.test(rawText)) return null;
+  // "위의 과정에서 (가),(마)에..." / "다음은 ... 간단히 하는 과정이다.
+  // (가),(나)에 사용된 집합의 연산 법칙을 구하시오." 처럼, 유도과정
+  // (hwpRectBox/표)을 소개하거나 다시 가리키는 질문 문장도 같은 이유로
+  // 조건 목록이 아니다 — 유도과정 박스/표 바로 옆에 또 박스가 생기는
+  // 원인이었다. "과정이다"/"과정에서"가 문장 어디에 있든 이 패턴의
+  // 신뢰할 수 있는 신호다.
+  if (/과정이다|과정에서|짝지은\s*것/.test(rawText)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
