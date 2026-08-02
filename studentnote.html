@@ -4211,13 +4211,51 @@ function renderHwGrading(submissions) {
   });
 }
 
+// 문항별로 [정답]~[풀이] 표시가 파일 안에 이미 있는데도 problembank에
+// 따로 저장해둔 적이 없으면 fileanswers가 빈 값을 돌려준다(자체 제작
+// 문제집은 대부분 이 경우) — 개별 오답노트의 "빠른정답"은 애초에 그
+// 표시를 파일에서 직접 뽑아 쓰므로 항상 되는데, 여기는 저장된 값만
+// 봐서 안 뜬다는 문제 제기로 추가한 폴백. problembank.html의
+// "정답 자동 채우기" 버튼과 완전히 같은 추출 로직.
+async function extractEmbeddedAnswer(entry, num) {
+  try {
+    const marker = entry.markers.get(num);
+    if (!marker) return '';
+    const fullBodyXml = extractEndnoteFullBodyXml(marker.blockXml);
+    if (!fullBodyXml) return '';
+    const html = await hwpBodyXmlToHtml(fullBodyXml, entry);
+    const plain = html.replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim();
+    const m = plain.match(/\[정답\]\s*(.*?)\s*\[풀이\]/);
+    return (m && m[1].trim()) || '';
+  } catch (e) { return ''; }
+}
+
 // 문항 번호 아래에 정답을 바로 보여준다 — 사진과 대조하며 채점할 때 매번
 // AI 채점을 돌리거나 problembank를 따로 열어볼 필요 없이 바로 확인 가능.
-// 정답은 이미 TEACHER_KEY로 게이트된 fileanswers 액션으로만 가져온다.
 async function loadQuickAnswers(div, file) {
   try {
     const resp = await callGetJsonp(DASHBOARD_URL, { action: 'fileanswers', key: TEACHER_KEY, id: file.id });
-    const answers = resp.answers || {};
+    const answers = Object.assign({}, resp.answers || {});
+
+    const missingNums = [...div.querySelectorAll('.gradeQuickAnswer')]
+      .map(el => el.dataset.num)
+      .filter(num => !answers[num]);
+    if (missingNums.length) {
+      try {
+        const entry = await getParsedFile(file.id, file.filename);
+        let filled = 0;
+        for (const num of missingNums) {
+          const a = await extractEmbeddedAnswer(entry, num);
+          if (a) { answers[num] = a; filled++; }
+        }
+        // 새로 뽑아낸 게 있으면 problembank에도 저장해서, 다음부터는 굳이
+        // 다시 뽑을 필요 없이 바로 뜨게 하고 problembank.html 태그 편집
+        // 화면의 빈 칸도 같이 채워지게 한다(저장 실패해도 화면 표시엔
+        // 이미 반영됐으니 조용히 무시).
+        if (filled) callPostNoCors(DASHBOARD_URL, { action: 'updateanswers', key: TEACHER_KEY, id: file.id, answers: JSON.stringify(answers) }).catch(() => {});
+      } catch (e) {}
+    }
+
     div.querySelectorAll('.gradeQuickAnswer').forEach(el => {
       const a = answers[el.dataset.num];
       if (!a) return;
