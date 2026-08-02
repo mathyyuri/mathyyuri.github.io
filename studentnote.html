@@ -566,6 +566,9 @@ function resolveCases(script) {
 const HWP_EQ_SYMBOLS = {
   LEQ: '\\leq', GEQ: '\\geq', NEQ: '\\neq', THEREFORE: '\\therefore',
   ANGLE: '\\angle', CDOTS: '\\cdots', TRIANGLE: '\\triangle',
+  bot: '\\bot',
+  cup: '\\cup', cap: '\\cap', smallinter: '\\cap', subset: '\\subset',
+  emptyset: '\\emptyset',
   PLUSMINUS: '\\pm', TIMES: '\\times', DIV: '\\div', DEG: '^\\circ',
   cdot: '\\cdot', INFTY: '\\infty', infty: '\\infty',
   alpha: '\\alpha', beta: '\\beta', gamma: '\\gamma', delta: '\\delta',
@@ -666,6 +669,19 @@ function convertHwpEquationToLatex(script) {
   s = s.replace(/RIGHT\s*\}/gi, '\\right\\}');
   s = s.replace(/LEFT\s*\|/gi, '\\left|');
   s = s.replace(/RIGHT\s*\|/gi, '\\right|');
+  // 집합 조건제시법("{x|x는...}")에서 오른쪽에 보이는 짝이 없는 여는
+  // 괄호("LEFT{", "LEFT|")를 크기만 맞추고 닫는 표시는 안 보이게 하려고
+  // HWP가 쓰는 투명 닫음 표시.
+  s = s.replace(/LEFT\s*\./gi, '\\left.');
+  s = s.replace(/RIGHT\s*\./gi, '\\right.');
+  // 수식이 여러 <hp:equation> 조각으로 쪼개지면, 여는/닫는 괄호 문자
+  // 자체가 이 조각이 아닌 "다른" 조각에 있어서 LEFT/RIGHT 뒤에 짝지을
+  // 괄호 문자가 이 조각 안엔 아예 없는 경우도 있다. 위에서 이미 처리된
+  // 것들은 전부 "\left"/"\right"로 백슬래시가 붙어 있어 이 마지막 처리
+  // 대상에서 제외되므로, 끝까지 안 걸리고 남은 LEFT/RIGHT는 안 보이는
+  // 닫음 표시로 처리한다.
+  s = s.replace(/(?<!\\)\bLEFT\b/gi, '\\left.');
+  s = s.replace(/(?<!\\)\bRIGHT\b/gi, '\\right.');
   // A single equation script can be missing a { with no matching } at all,
   // or have a stray EXTRA } with no { of its own — both confirmed against
   // real files, both traced to the same root cause (HWP splitting one
@@ -769,11 +785,38 @@ function convertHwpEquationToLatex(script) {
   // still correctly fires for genuine "\left(" / "\right)" etc. (the next
   // character there is a bracket, not a letter) so real cross-equation-
   // object mismatches are still caught exactly as before.
-  const leftCount = (s.match(/\\left\b/g) || []).length;
-  const rightCount = (s.match(/\\right\b/g) || []).length;
-  if (leftCount !== rightCount) {
-    s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
+  // 개수만 비교해서 안 맞으면 \left/\right를 전부 지우던 예전 방식은,
+  // 한 조각 안에 이미 제대로 짝지어진 쌍이 진짜 orphan과 같이 섞여 있는
+  // 경우에 그 정상 쌍까지 같이 지워서 엉뚱한 문자만 남기는 문제가
+  // 있었다. 순서대로 스택으로 짝을 맞춰서, 진짜 상대가 없는 것들만
+  // 지운다.
+  const tokenRe = /\\(left|right)\b/g;
+  const tokens = [];
+  let tm;
+  while ((tm = tokenRe.exec(s))) tokens.push({ kind: tm[1], index: tm.index });
+  const removeIdx = new Set();
+  const stack = [];
+  for (const t of tokens) {
+    if (t.kind === 'left') stack.push(t.index);
+    else if (stack.length) stack.pop();
+    else removeIdx.add(t.index);
   }
+  for (const idx of stack) removeIdx.add(idx);
+  if (removeIdx.size) {
+    let out = '', last = 0;
+    for (const t of tokens) {
+      if (!removeIdx.has(t.index)) continue;
+      out += s.slice(last, t.index);
+      last = t.index + 1 /* '\\' */ + t.kind.length;
+    }
+    out += s.slice(last);
+    s = out;
+  }
+  // 이 조각 전체가 "안 보이는 닫음 표시" 하나뿐이었고 그 짝(LEFT)이
+  // 다른 조각에 있어서 여기서 \right만 벗겨져 마침표 하나만 남는
+  // 경우가 있다 — 빈 문자열을 돌려주면 호출하는 쪽이 "변환 실패"로
+  // 보고 원본 글자를 그대로 노출하는 폴백으로 넘어가 버리므로, 마침표
+  // 자국은 남기고 만다.
   return s.trim();
 }
 function decodeXmlEntities(s) {
@@ -976,7 +1019,14 @@ async function hwpRunInnerToHtml(runXml, entry) {
       let latex = '';
       try { latex = rawScript ? convertHwpEquationToLatex(rawScript) : ''; } catch (e) { latex = ''; }
       if (latex) {
-        out += ` <span class="eq">\\(${latex}\\)</span> `;
+        // escapeHtml은 장식이 아니라 필수다 — 이스케이프 안 된 "<"가
+        // 글자 바로 앞에 오면(예: "-6<k<2", 부등식 선택지에 흔함) 이
+        // 문자열이 나중에 innerHTML로 들어갈 때 브라우저 자체 HTML
+        // 파서가 "<k"를 태그 시작으로 오인해서, 다음에 나오는 진짜
+        // ">"를 만날 때까지 뒤 내용을 통째로 삼켜버린다. KaTeX의 수식
+        // 스캔은 어차피 디코딩된 텍스트를 읽으므로 여기서 이스케이프해도
+        // 실제 렌더링되는 수식은 그대로다 — HTML 파서만 오작동을 멈춘다.
+        out += ` <span class="eq">\\(${escapeHtml(latex)}\\)</span> `;
       } else if (rawScript) {
         // Conversion failed outright — show the script text instead of
         // silently dropping the equation (a visible, ugly fallback beats a
@@ -1069,6 +1119,11 @@ function formatConditionBox(inner, rawText) {
   // "substantive"), wrongly wrapping the question's own instruction
   // sentence in a condition box instead of leaving it as plain text.
   if (/\([가나다라마]\)\s*~/.test(rawText)) return null;
+  // "위의 과정에서 (가),(마)에 알맞은 것을 잘못 짝지은 것은?" 처럼,
+  // 유도과정(hwpRectBox) 뒤에 나오는 "빈칸 이름만 잠깐 언급하는 질문
+  // 문장"도 같은 이유로 조건 목록이 아니다 — 유도과정 박스 바로 아래에
+  // 또 박스가 생기는 원인이었다.
+  if (/^(위의|위|다음)\s*과정에서/.test(rawText.trim()) || /짝지은\s*것/.test(rawText)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
@@ -1140,12 +1195,13 @@ async function hwpBodyXmlToHtml(xml, entry) {
     const condBox = formatConditionBox(it.inner, it.raw);
     if (condBox) return condBox;
     // it.inner can itself contain block-level content (a hwpRectBox <div>,
-    // from an <hp:rect> that held real paragraphs) — a <p> cannot legally
-    // contain a <div>, and wrapping it in one anyway just repeats the same
-    // "browser silently un-nests it" bug one level up. Use a <div> wrapper
-    // instead whenever that's the case; plain <p> still handles everything
-    // else exactly as before.
-    return /<div\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
+    // from an <hp:rect> that held real paragraphs, OR a <table> from an
+    // <hp:tbl>) — a <p> cannot legally contain a <div> or a <table>, and
+    // wrapping either in one anyway just repeats the same "browser
+    // silently un-nests it" bug one level up. Use a <div> wrapper instead
+    // whenever that's the case; plain <p> still handles everything else
+    // exactly as before.
+    return /<div\b|<table\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
   }
   const resolved = [];
   let i = 0;
