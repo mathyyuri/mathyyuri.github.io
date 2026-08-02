@@ -345,6 +345,15 @@ const HWP_EQ_SYMBOLS = {
   // "AC bot BD"(AC⊥BD) 같은 식이 그냥 글자 "bot"으로 남아 보이던 문제
   // (실제 파일에서 확인됨: [S+반] 2회차 과제미션 n.hwpx 30번).
   bot: '\\bot',
+  // 집합 연산 기호 — 지금까지 이 표에 하나도 없어서 "A CUP B"(합집합),
+  // "A CAP B"/"A SMALLINTER B"(교집합, HWP가 둘 다 씀), "A SUBSET B"
+  // (부분집합), "EMPTYSET"(공집합)이 전부 글자 그대로 남아있던 문제
+  // (실제 파일에서 확인됨: TAT6회 대치수학 2기 — 집합 단원 111개 수식
+  // 중 49개가 이 문제였음). "smallinter"는 10글자로 "int"(적분,3글자)
+  // 보다 길어서 먼저 매칭되므로, 이미 있던 "int" 키워드와 부분 겹침으로
+  // "SMALL∫ER"(적분 기호가 중간에 끼어드는)처럼 깨지던 것도 같이 해결됨.
+  cup: '\\cup', cap: '\\cap', smallinter: '\\cap', subset: '\\subset',
+  emptyset: '\\emptyset',
   PLUSMINUS: '\\pm', TIMES: '\\times', DIV: '\\div', DEG: '^\\circ',
   cdot: '\\cdot', INFTY: '\\infty', infty: '\\infty',
   alpha: '\\alpha', beta: '\\beta', gamma: '\\gamma', delta: '\\delta',
@@ -454,6 +463,13 @@ function convertHwpEquationToLatex(script) {
   s = s.replace(/RIGHT\s*\}/gi, '\\right\\}');
   s = s.replace(/LEFT\s*\|/gi, '\\left|');
   s = s.replace(/RIGHT\s*\|/gi, '\\right|');
+  // 집합 조건제시법("{x|x는...}")에서 오른쪽에 보이는 짝이 없는 여는
+  // 괄호("LEFT{", "LEFT|")를 크기만 맞추고 닫는 표시는 안 보이게 하려고
+  // HWP가 쓰는 투명 닫음 표시 — 실제 파일에서 "RIGHT ."이 그대로 글자로
+  // 남는 것 확인됨. LEFT도 대칭으로 같이 처리(아직 실제로는 못 봤지만
+  // 같은 이유로 나올 수 있음).
+  s = s.replace(/LEFT\s*\./gi, '\\left.');
+  s = s.replace(/RIGHT\s*\./gi, '\\right.');
   // A single equation script can be missing a { with no matching } at all,
   // or have a stray EXTRA } with no { of its own — both confirmed against
   // real files, both traced to the same root cause (HWP splitting one
@@ -557,10 +573,37 @@ function convertHwpEquationToLatex(script) {
   // still correctly fires for genuine "\left(" / "\right)" etc. (the next
   // character there is a bracket, not a letter) so real cross-equation-
   // object mismatches are still caught exactly as before.
-  const leftCount = (s.match(/\\left\b/g) || []).length;
-  const rightCount = (s.match(/\\right\b/g) || []).length;
-  if (leftCount !== rightCount) {
-    s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
+  // 개수만 비교해서 안 맞으면 \left/\right를 전부 지우던 예전 방식은,
+  // 한 조각 안에 이미 제대로 짝지어진 쌍이 진짜 orphan과 같이 섞여 있는
+  // 경우(예: "\left\{ x \left| x \right." — 바깥 \left\{ 는 다른
+  // 조각에 있는 "}"가 짝이지만, \left| ...\right.는 이 조각 안에서
+  // 이미 완결된 정상 쌍)에 그 정상 쌍까지 같이 지워서 엉뚱한 "."만
+  // 남기는 문제가 있었다(실제 파일 확인: 집합 조건제시법
+  // "{x|x는...}"에서 발생). 순서대로 스택으로 짝을 맞춰서, 진짜 상대가
+  // 없는 것들만 지운다 — \left는 나오는 순서대로 쌓아두고 \right를
+  // 만나면 하나 꺼내 짝짓는(둘 다 유지) 식으로, 끝까지 스택에 남은
+  // \left와 애초에 짝지을 상대가 없던 \right만 제거 대상.
+  const tokenRe = /\\(left|right)\b/g;
+  const tokens = [];
+  let tm;
+  while ((tm = tokenRe.exec(s))) tokens.push({ kind: tm[1], index: tm.index });
+  const removeIdx = new Set();
+  const stack = [];
+  for (const t of tokens) {
+    if (t.kind === 'left') stack.push(t.index);
+    else if (stack.length) stack.pop();
+    else removeIdx.add(t.index);
+  }
+  for (const idx of stack) removeIdx.add(idx);
+  if (removeIdx.size) {
+    let out = '', last = 0;
+    for (const t of tokens) {
+      if (!removeIdx.has(t.index)) continue;
+      out += s.slice(last, t.index);
+      last = t.index + 1 /* '\\' */ + t.kind.length;
+    }
+    out += s.slice(last);
+    s = out;
   }
   return s.trim();
 }
