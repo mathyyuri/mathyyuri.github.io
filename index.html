@@ -91,6 +91,11 @@ input{font-family:inherit}
 .big-label{font-family:var(--serif);font-weight:900;font-size:clamp(18px,3.6vw,28px);margin-bottom:3px}
 .small-note{font-size:10px;letter-spacing:.12em;color:var(--gold);margin-bottom:12px}
 .grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* 가로 스크롤이 뚜렷이 보이도록(과제미션처럼 회차가 많아 20열 가까이 되는 표 대비) 항상 얇은 스크롤바 표시 */
+.grid-scroll::-webkit-scrollbar{height:9px}
+.grid-scroll::-webkit-scrollbar-track{background:var(--gold-soft);border-radius:5px}
+.grid-scroll::-webkit-scrollbar-thumb{background:var(--gold);border-radius:5px}
+.grid-scroll{scrollbar-width:thin;scrollbar-color:var(--gold) var(--gold-soft)}
 table.matrix{border-collapse:collapse;font-size:13px;min-width:100%}
 table.matrix th{font-family:var(--serif);font-size:10px;letter-spacing:.16em;font-weight:700;padding:9px 8px;border-bottom:1.5px solid var(--gold);background:#fff;white-space:nowrap;text-align:center;color:var(--gold)}
 table.matrix td{padding:9px 8px;border-bottom:1px solid var(--gold-line);text-align:center;white-space:nowrap;font-family:var(--kserif)}
@@ -99,6 +104,16 @@ th.nick{z-index:2}
 table.matrix td.rank{font-family:var(--serif);font-weight:600;font-size:12px;opacity:.55}
 table.matrix td.avg{font-family:var(--serif);font-weight:900;font-size:15px;background:var(--mint-soft);color:var(--mint-deep)}
 table.matrix tr.top3 .nick{color:var(--gold)}
+/* 남은 오답개수 열 — 누적점수 바로 옆, 값에 따라 색으로 강조 */
+table.matrix td.wrong-left{font-family:var(--serif);font-weight:900;font-size:14px}
+table.matrix td.wrong-left.wl-zero{background:var(--mint-soft);color:var(--mint-deep)}
+table.matrix td.wrong-left.wl-mid{background:var(--gold-soft);color:var(--gold)}
+table.matrix td.wrong-left.wl-high{background:var(--pink-soft);color:var(--pink-deep)}
+/* 미션별 셀 — 점수 아래 완성도%·남은오답을 함께 표시, 배경은 오답 심각도로 은은하게 강조 */
+table.matrix td.mcell.wl-zero{background:rgba(127,200,180,.1)}
+table.matrix td.mcell.wl-mid{background:rgba(168,133,63,.09)}
+table.matrix td.mcell.wl-high{background:rgba(229,139,164,.12)}
+.mcell-meta{font-family:var(--sans);font-size:9.5px;font-weight:700;color:rgba(26,26,26,.5);margin-top:3px;white-space:nowrap}
 .empty{padding:50px 0;text-align:center;font-family:var(--kserif);color:rgba(26,26,26,.45)}
 
 table.omr{border-collapse:collapse;font-size:11px}
@@ -116,7 +131,6 @@ table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color
 .legend-row .fix i{background:var(--gold)}
 .cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0;background:var(--gold-line)}
 .done-cell{font-family:var(--serif);font-weight:700;font-size:12px;color:var(--gold);white-space:nowrap}
-.clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-weight:700;font-size:9px;letter-spacing:.18em;padding:3px 8px;border-radius:3px}
 .legend-row{display:flex;gap:14px;font-size:11px;font-weight:700;letter-spacing:.06em;margin-top:14px}
 .legend-row i{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border-radius:2px}
 .legend-row .ok i{background:var(--mint)}
@@ -130,20 +144,17 @@ table.omr td.score{font-family:var(--serif);font-weight:700;font-size:13px;color
 .ctag.cs{background:var(--mint-deep)}
 .ctag.cprism{background:var(--pink-deep)}
 .ctag.calg{background:var(--mint-deep)}
-/* 완성도 · CLEAR 배지 (반별 색상) */
+/* 완성도 · CLEAR 배지 (반별 색상) — 완성도 열처럼 겹칠 숫자가 없는 자리는 큼직한 알약 배지 */
 table.omr td.comp{font-family:var(--serif);font-weight:900;font-size:12px;padding:4px 8px;color:var(--gold)}
-.clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-size:9px;letter-spacing:.18em;font-weight:900;padding:3px 8px;border-radius:999px}
-.clear-badge.csp{background:var(--gold)}
-.clear-badge.cs{background:var(--mint-deep)}
-.clear-badge.cprism{background:var(--pink-deep)}
-/* CLEAR 도장 스탬프 (개인 대시보드) */
-.stamp{position:absolute;right:8px;top:6px;transform:rotate(-11deg);font-family:var(--serif);font-weight:900;font-size:14px;letter-spacing:.24em;color:var(--mint-deep);border:3px double var(--mint-deep);border-radius:7px;padding:3px 9px 3px 11px;opacity:.82;pointer-events:none;background:rgba(255,255,255,.55)}
-.stamp.csp{color:var(--gold);border-color:var(--gold)}
-.stamp.cprism{color:var(--pink-deep);border-color:var(--pink-deep)}
-/* 누적표 셀 안 미니 CLEAR */
-.mini-clear{display:inline-block;font-family:var(--serif);font-size:7.5px;font-weight:900;letter-spacing:.16em;color:var(--mint-deep);border:1px solid var(--mint-deep);border-radius:999px;padding:1px 6px;margin-top:3px;line-height:1.3}
-.mini-clear.csp{color:var(--gold);border-color:var(--gold)}
-.mini-clear.cprism{color:var(--pink-deep);border-color:var(--pink-deep)}
+.clear-badge{display:inline-block;background:var(--mint-deep);color:#fff;font-family:var(--serif);font-size:11px;letter-spacing:.16em;font-weight:900;padding:5px 12px;border-radius:999px;border:2px solid var(--mint-deep);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.clear-badge.csp{background:var(--gold);border-color:var(--gold)}
+.clear-badge.cs{background:var(--mint-deep);border-color:var(--mint-deep)}
+.clear-badge.cprism{background:var(--pink-deep);border-color:var(--pink-deep)}
+/* CLEAR 원형 도장 — 점수 위에 겹쳐서 확실히 보이도록 (개인 대시보드 + 누적표 공용) */
+.score-stamp-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:1em}
+.clear-stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-13deg);width:46px;height:46px;border-radius:50%;border:3px solid var(--mint-deep);background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:10px;letter-spacing:.03em;color:var(--mint-deep);box-shadow:0 2px 6px rgba(0,0,0,.2);pointer-events:none;z-index:2}
+.clear-stamp.csp{color:var(--gold);border-color:var(--gold)}
+.clear-stamp.cprism{color:var(--pink-deep);border-color:var(--pink-deep)}
 /* 종합 시상대 (칭호 카드) */
 .podium{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
 .p-card{flex:1;min-width:150px;border:1px solid var(--gold-line);border-radius:4px;background:#fff;text-align:center;padding:14px 10px 12px}
@@ -533,51 +544,84 @@ function cutStrip(cuts, compact){
 }
 
 /* ---- S+ BLACK 전용: 영역별 · 점수대별 분석 ----
-   문항-단원 매핑은 이 특정 시험("9월 모의고사 대비 실전 모의고사 1회")
-   채점 시 쓴 것과 동일 — 다음 회차부터 시험이 바뀌면 이 맵도 갱신 필요. */
-const SPBLACK_EXAM = '9월 모의고사 대비 실전 모의고사 1회';
-const SPBLACK_ITEMS = {
-  1:{unit:'다항식',topic:'다항식의 연산',score:2},
-  2:{unit:'복소수',topic:'복소수의 상등',score:2},
-  3:{unit:'다항식',topic:'곱셈공식의 변형',score:2},
-  4:{unit:'다항식',topic:'나머지정리',score:3},
-  5:{unit:'다항식',topic:'다항식의 항등식',score:3},
-  6:{unit:'행렬',topic:'행렬의 성분과 연산',score:3},
-  7:{unit:'부등식',topic:'연립이차부등식',score:3},
-  8:{unit:'다항식',topic:'인수분해 공식',score:3},
-  9:{unit:'방정식과 부등식',topic:'이차함수와 이차방정식',score:3},
-  10:{unit:'부등식',topic:'부등식 영역과 경우의 수',score:3},
-  11:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
-  12:{unit:'다항식',topic:'나머지정리 응용',score:3},
-  13:{unit:'방정식과 부등식',topic:'이차함수의 최댓값·최솟값',score:3},
-  14:{unit:'경우의 수',topic:'순열과 조합 (최댓값 추론)',score:4},
-  15:{unit:'다항식',topic:'삼차다항식의 인수정리',score:4},
-  16:{unit:'방정식과 부등식',topic:'이차부등식의 성립 조건',score:4},
-  17:{unit:'행렬',topic:'행렬의 거듭제곱 규칙성',score:4},
-  18:{unit:'방정식과 부등식',topic:'이차함수의 그래프 성질',score:4},
-  19:{unit:'도형의 방정식',topic:'도형의 이동 및 접힘',score:4},
-  20:{unit:'경우의 수',topic:'조건부 경우의 수',score:4},
-  21:{unit:'방정식과 부등식',topic:'허근(오메가)과 함수 그래프',score:4},
-  22:{unit:'다항식',topic:'인수정리 (단답형)',score:3},
-  23:{unit:'다항식',topic:'항등식 계수비교 (단답형)',score:3},
-  24:{unit:'방정식과 부등식',topic:'절댓값 부등식 (단답형)',score:3},
-  25:{unit:'경우의 수',topic:'이차방정식 실근 조건 (단답형)',score:3},
-  26:{unit:'방정식과 부등식',topic:'사차방정식의 실근 개수',score:4},
-  27:{unit:'도형의 방정식',topic:'삼각형의 인수분해 및 넓이',score:4},
-  28:{unit:'행렬',topic:'행렬과 삼각형의 넓이 공식',score:4},
-  29:{unit:'방정식과 부등식',topic:'이차함수의 최솟값 자취 (킬러)',score:4},
-  30:{unit:'방정식과 부등식',topic:'부등식 정수해 함수 (킬러)',score:4}
+   문항-단원 매핑은 회차(미션명)별로 채점 시 쓴 것과 동일 — 새 회차가
+   추가되면 SPBLACK_EXAMS에 그 미션명을 키로 한 items를 추가하면 된다. */
+const SPBLACK_EXAMS = {
+  '9월 모의고사 대비 실전 모의고사 1회': { items: {
+    1:{unit:'다항식',topic:'다항식의 연산',score:2},
+    2:{unit:'복소수',topic:'복소수의 상등',score:2},
+    3:{unit:'다항식',topic:'곱셈공식의 변형',score:2},
+    4:{unit:'다항식',topic:'나머지정리',score:3},
+    5:{unit:'다항식',topic:'다항식의 항등식',score:3},
+    6:{unit:'행렬',topic:'행렬의 성분과 연산',score:3},
+    7:{unit:'부등식',topic:'연립이차부등식',score:3},
+    8:{unit:'다항식',topic:'인수분해 공식',score:3},
+    9:{unit:'방정식과 부등식',topic:'이차함수와 이차방정식',score:3},
+    10:{unit:'부등식',topic:'부등식 영역과 경우의 수',score:3},
+    11:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
+    12:{unit:'다항식',topic:'나머지정리 응용',score:3},
+    13:{unit:'방정식과 부등식',topic:'이차함수의 최댓값·최솟값',score:3},
+    14:{unit:'경우의 수',topic:'순열과 조합 (최댓값 추론)',score:4},
+    15:{unit:'다항식',topic:'삼차다항식의 인수정리',score:4},
+    16:{unit:'방정식과 부등식',topic:'이차부등식의 성립 조건',score:4},
+    17:{unit:'행렬',topic:'행렬의 거듭제곱 규칙성',score:4},
+    18:{unit:'방정식과 부등식',topic:'이차함수의 그래프 성질',score:4},
+    19:{unit:'도형의 방정식',topic:'도형의 이동 및 접힘',score:4},
+    20:{unit:'경우의 수',topic:'조건부 경우의 수',score:4},
+    21:{unit:'방정식과 부등식',topic:'허근(오메가)과 함수 그래프',score:4},
+    22:{unit:'다항식',topic:'인수정리 (단답형)',score:3},
+    23:{unit:'다항식',topic:'항등식 계수비교 (단답형)',score:3},
+    24:{unit:'방정식과 부등식',topic:'절댓값 부등식 (단답형)',score:3},
+    25:{unit:'경우의 수',topic:'이차방정식 실근 조건 (단답형)',score:3},
+    26:{unit:'방정식과 부등식',topic:'사차방정식의 실근 개수',score:4},
+    27:{unit:'도형의 방정식',topic:'삼각형의 인수분해 및 넓이',score:4},
+    28:{unit:'행렬',topic:'행렬과 삼각형의 넓이 공식',score:4},
+    29:{unit:'방정식과 부등식',topic:'이차함수의 최솟값 자취 (킬러)',score:4},
+    30:{unit:'방정식과 부등식',topic:'부등식 정수해 함수 (킬러)',score:4}
+  }},
+  '9월 모의고사 대비 실전 모의고사 2회': { items: {
+    1:{unit:'다항식',topic:'다항식의 연산',score:2},
+    2:{unit:'다항식',topic:'항등식(미정계수 결정)',score:2},
+    3:{unit:'복소수',topic:'켤레복소수와 사칙연산',score:2},
+    4:{unit:'다항식',topic:'이차식의 항등식(계수비교)',score:3},
+    5:{unit:'방정식과 부등식',topic:'판별식과 중근 조건',score:3},
+    6:{unit:'부등식',topic:'이차부등식의 해',score:3},
+    7:{unit:'경우의 수',topic:'부등식을 만족하는 순서쌍의 개수',score:3},
+    8:{unit:'행렬',topic:'행렬의 거듭제곱과 성분의 합',score:3},
+    9:{unit:'다항식',topic:'치환을 이용한 인수분해',score:3},
+    10:{unit:'방정식과 부등식',topic:'연립이차방정식',score:3},
+    11:{unit:'방정식과 부등식',topic:'판별식과 정수 조건',score:3},
+    12:{unit:'행렬',topic:'행렬의 곱과 실생활 응용',score:3},
+    13:{unit:'행렬',topic:'역행렬과 행렬방정식',score:3},
+    14:{unit:'부등식',topic:'절댓값부등식과 이차부등식의 연립',score:4},
+    15:{unit:'다항식',topic:'인수정리와 나머지정리',score:4},
+    16:{unit:'방정식과 부등식',topic:'이차방정식의 근과 계수의 관계',score:4},
+    17:{unit:'방정식과 부등식',topic:'이차식의 연산과 판별식',score:4},
+    18:{unit:'방정식과 부등식',topic:'삼차식의 인수분해와 근의 관계',score:4},
+    19:{unit:'방정식과 부등식',topic:'이차함수 그래프의 개형',score:4},
+    20:{unit:'방정식과 부등식',topic:'이차함수 그래프의 해석',score:4},
+    21:{unit:'경우의 수',topic:'조건을 만족하는 경우의 수',score:4},
+    22:{unit:'경우의 수',topic:'순열과 조합 (단답형)',score:3},
+    23:{unit:'부등식',topic:'연립일차부등식 (단답형)',score:3},
+    24:{unit:'행렬',topic:'행렬의 연산 (단답형)',score:3},
+    25:{unit:'다항식',topic:'나머지정리 (단답형)',score:3},
+    26:{unit:'경우의 수',topic:'자연수의 개수 세기(자릿수 조건)',score:4},
+    27:{unit:'다항식',topic:'나머지정리 응용 (단답형 심화)',score:4},
+    28:{unit:'도형의 방정식',topic:'직선과 도형의 넓이',score:4},
+    29:{unit:'경우의 수',topic:'정수 조건 순서쌍의 개수 (킬러)',score:4},
+    30:{unit:'방정식과 부등식',topic:'그래프와 도형의 넓이 (킬러)',score:4}
+  }}
 };
-const SPBLACK_UNIT_ORDER = (function(){
+function spblackUnitOrder(items){
   const seen={},order=[];
-  for(let n=1;n<=30;n++){const u=SPBLACK_ITEMS[n].unit;if(!seen[u]){seen[u]=1;order.push(u);}}
+  for(let n=1;n<=30;n++){if(!items[n])continue;const u=items[n].unit;if(!seen[u]){seen[u]=1;order.push(u);}}
   return order;
-})();
-function spblackUnitStats(rows){
-  const stats={};SPBLACK_UNIT_ORDER.forEach(u=>stats[u]={earned:0,total:0});
+}
+function spblackUnitStats(rows,items,unitOrder){
+  const stats={};unitOrder.forEach(u=>stats[u]={earned:0,total:0});
   rows.forEach(r=>{
     (r.items||[]).forEach((v,i)=>{
-      const it=SPBLACK_ITEMS[i+1];
+      const it=items[i+1];
       if(!it||(v!==1&&v!==2&&v!==3))return;
       stats[it.unit].total+=it.score;
       if(v===1)stats[it.unit].earned+=it.score;
@@ -585,10 +629,11 @@ function spblackUnitStats(rows){
   });
   return stats;
 }
-function spblackQuestionStats(rows){
+function spblackQuestionStats(rows,items){
   const out=[];
   for(let n=1;n<=30;n++){
-    const it=SPBLACK_ITEMS[n];
+    const it=items[n];
+    if(!it)continue;
     let ok=0,tot=0;
     rows.forEach(r=>{const v=(r.items||[])[n-1];if(v===1||v===2||v===3){tot++;if(v===1)ok++;}});
     out.push({no:n,unit:it.unit,topic:it.topic,rate:tot?Math.round(ok/tot*100):null,tot});
@@ -600,11 +645,11 @@ function spblackTiers(rows){
   const n=sorted.length,g=Math.ceil(n/3);
   return {상위권:sorted.slice(0,g),중위권:sorted.slice(g,g*2),하위권:sorted.slice(g*2)};
 }
-function drawSpblackUnitChart(stats){
+function drawSpblackUnitChart(stats,unitOrder){
   const id='sp-unit-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const canvas=document.getElementById(id);if(!canvas)return;
-  const labels=SPBLACK_UNIT_ORDER;
+  const labels=unitOrder;
   const data=labels.map(u=>stats[u].total?Math.round(stats[u].earned/stats[u].total*100):null);
   charts[id]=new Chart(canvas,{
     type:'bar',plugins:[valueLabel],
@@ -619,14 +664,14 @@ function drawSpblackUnitChart(stats){
         x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
   });
 }
-function drawSpblackTierChart(tiers){
+function drawSpblackTierChart(tiers,unitOrder){
   const id='sp-tier-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const canvas=document.getElementById(id);if(!canvas)return;
-  const labels=SPBLACK_UNIT_ORDER;
+  const labels=unitOrder;
   const colors={상위권:cssColor('--gold'),중위권:cssColor('--mint-deep'),하위권:cssColor('--pink-deep')};
   const datasets=Object.keys(tiers).map(t=>{
-    const st=spblackUnitStats(tiers[t]);
+    const st=spblackUnitStats(tiers[t],SPBLACK_EXAMS[pubMission].items,unitOrder);
     return {label:t+'('+tiers[t].length+'명)',data:labels.map(u=>st[u].total?Math.round(st[u].earned/st[u].total*100):null),
       backgroundColor:colors[t],borderRadius:4,maxBarThickness:20};
   });
@@ -642,13 +687,17 @@ function drawSpblackTierChart(tiers){
 function renderSpblackAnalysis(){
   const body=document.getElementById('sp-body');
   const note=document.getElementById('sp-note');
-  const rows=filteredRows().filter(r=>r.mission===SPBLACK_EXAM&&r.score!=null&&(r.items||[]).length);
+  const exam=SPBLACK_EXAMS[pubMission];
+  if(!exam){body.innerHTML='';note.textContent='';return;}
+  const items=exam.items;
+  const unitOrder=spblackUnitOrder(items);
+  const rows=filteredRows().filter(r=>r.mission===pubMission&&r.score!=null&&(r.items||[]).length);
   if(!rows.length){
-    note.textContent='"'+SPBLACK_EXAM+'" 데이터가 없습니다.';
+    note.textContent='"'+pubMission+'" 데이터가 없습니다.';
     body.innerHTML='<div class="empty">아직 분석할 데이터가 없습니다.</div>';
     return;
   }
-  note.textContent='"'+SPBLACK_EXAM+'" · 응시 '+rows.length+'명 기준 · 단원은 채점 시 입력한 문항-단원 매핑 기준';
+  note.textContent='"'+pubMission+'" · 응시 '+rows.length+'명 기준 · 단원은 채점 시 입력한 문항-단원 매핑 기준';
   body.innerHTML =
     '<div class="chart-box"><h3>단원별 반 평균 정답률</h3>'
     +'<div class="cap">문항 배점 가중 평균 · 빨강 50%↓ · 금색 50~75% · 민트 75%↑</div>'
@@ -657,7 +706,7 @@ function renderSpblackAnalysis(){
     +'<div class="cap">점수 상/중/하위 3그룹으로 나눠 같은 단원에서도 어느 그룹이 약한지 비교</div>'
     +'<div class="wrap" style="height:260px"><canvas id="sp-tier-chart"></canvas></div></div>';
 
-  const qStats=spblackQuestionStats(rows).filter(q=>q.rate!=null).sort((a,b)=>a.rate-b.rate).slice(0,6);
+  const qStats=spblackQuestionStats(rows,items).filter(q=>q.rate!=null).sort((a,b)=>a.rate-b.rate).slice(0,6);
   let weakHtml='<div class="chart-box" style="margin-top:18px"><h3>취약 문항 TOP '+qStats.length+'</h3>'
     +'<div class="cap">반 전체 정답률이 가장 낮은 문항</div><div class="ia-paper">';
   qStats.forEach(q=>{
@@ -667,8 +716,8 @@ function renderSpblackAnalysis(){
   weakHtml+='</div></div>';
   body.innerHTML += weakHtml;
 
-  drawSpblackUnitChart(spblackUnitStats(rows));
-  drawSpblackTierChart(spblackTiers(rows));
+  drawSpblackUnitChart(spblackUnitStats(rows,items,unitOrder),unitOrder);
+  drawSpblackTierChart(spblackTiers(rows),unitOrder);
 }
 
 let publicData = null;
@@ -870,11 +919,14 @@ function aggregate(rows){
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{}};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongByMission:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname; // 가장 최근 닉네임
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
     const cp=compValOf(r);
     if(cp!=null)stu[key].comps[r.mission]=cp;
+    let wm=0;
+    (r.items||[]).forEach(v=>{if(v===2){wm++;stu[key].wrongLeft++;}});
+    stu[key].wrongByMission[r.mission]=(stu[key].wrongByMission[r.mission]||0)+wm;
   });
   const students=order.map(id=>{
     const s=stu[id];
@@ -884,6 +936,24 @@ function aggregate(rows){
     return s;
   }).sort((a,b)=>(b.avg??-1)-(a.avg??-1));
   return {missions,students};
+}
+/* 남은 오답 심각도 등급: 0=민트(안심) · 1~5=골드(보통) · 6+=핑크(집중필요) */
+function wlClass(n){ return n==null?'':n===0?'wl-zero':n<=5?'wl-mid':'wl-high'; }
+function wrongLeftHTML(n){
+  if(n==null)return '<td>–</td>';
+  return '<td class="wrong-left '+wlClass(n)+'">'+n+'</td>';
+}
+/* 미션별 셀: 점수(+클리어 도장) 아래에 완성도%·남은 오답개수를 작게 함께 표시 · 오답 심각도로 셀 배경 강조 */
+function missionCellHTML(scoreTxt,cp,wm,clsK){
+  const meta=[];
+  if(cp!=null)meta.push(cp+'%');
+  if(wm!=null)meta.push('오답 '+wm);
+  return '<td class="mcell '+wlClass(wm)+'">'
+    +(cp!=null&&cp>=100
+      ?'<span class="score-stamp-wrap">'+scoreTxt+'<span class="clear-stamp '+clsK+'">CLEAR</span></span>'
+      :scoreTxt)
+    +(meta.length?'<div class="mcell-meta">'+meta.join(' · ')+'</div>':'')
+    +'</td>';
 }
 function selectMission(name){
   pubMission=name;
@@ -911,7 +981,7 @@ function renderPublic(scrollTop){
   }else{
     cumView.classList.add('hidden');misView.classList.remove('hidden');
     renderMissionDetail();
-    const showSp=(pubTab==='S+ BLACK'&&pubMission===SPBLACK_EXAM);
+    const showSp=(pubTab==='S+ BLACK'&&!!SPBLACK_EXAMS[pubMission]);
     spView.classList.toggle('hidden',!showSp);
     if(showSp)renderSpblackAnalysis();
   }
@@ -970,13 +1040,14 @@ function aggregateSummary(){
   cats.forEach(cat=>{
     (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(r=>{
       const key=studentKey(r);
-      if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,cats:{}};order.push(key);}
+      if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,cats:{},wrongLeft:0};order.push(key);}
       stu[key].nickname=r.nickname; // 가장 최근 닉네임
       stu[key].class=r.class;
       if(r.score!=null){
         if(!stu[key].cats[cat])stu[key].cats[cat]=[];
         stu[key].cats[cat].push(r.score);
       }
+      (r.items||[]).forEach(v=>{if(v===2)stu[key].wrongLeft++;});
     });
   });
   const students=order.map(id=>{
@@ -1045,14 +1116,15 @@ function renderSummary(){
   if(!students.length){matBox.innerHTML='<div class="empty">아직 등록된 기록이 없습니다.</div>';return;}
 
   let html='<table class="matrix"><tr>'
-    +'<th>RANK</th><th class="nick">NICKNAME</th><th>종합 평균</th>';
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>종합 평균</th><th>남은 오답</th>';
   sumCats.forEach(cat=>{html+='<th>'+esc(cat)+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
       +'<td class="rank">'+(i+1)+'</td>'
       +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
-      +'<td class="avg">'+(s.overall??'—')+'</td>';
+      +'<td class="avg">'+(s.overall??'—')+'</td>'
+      +wrongLeftHTML(s.wrongLeft);
     sumCats.forEach(cat=>{
       html+='<td>'+(s.catAvg[cat]!=null?s.catAvg[cat]:'–')+'</td>';
     });
@@ -1077,19 +1149,18 @@ function renderCumulative(){
   const {missions,students}=aggregate(rows);
 
   let html='<table class="matrix"><tr>'
-    +'<th>RANK</th><th class="nick">NICKNAME</th><th>누적 평균</th>';
+    +'<th>RANK</th><th class="nick">NICKNAME</th><th>누적 평균</th><th>남은 오답</th>';
   missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
       +'<td class="rank">'+(i+1)+'</td>'
       +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
-      +'<td class="avg">'+(s.avg??'—')+'</td>';
+      +'<td class="avg">'+(s.avg??'—')+'</td>'
+      +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      const cp=s.comps[m];
-      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')
-        +(cp!=null&&cp>=100?'<div><span class="mini-clear '+clsKey(s.class)+'">CLEAR</span></div>':'')
-        +'</td>';
+      const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
+      html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
   });
@@ -1098,15 +1169,25 @@ function renderCumulative(){
 function shortName(m){return m.length>10?m.slice(0,10)+'…':m;}
 
 /* ---- 대수연마 1000제: 정오표 없이 회차별 총점만 기록 · 누적 총점 순위 + 전체 목표 게이지 ---- */
+/* 대수연마 클리어 기준: 그 미션(회차)의 총문제수 == 맞은개수 + 고친개수 */
+function algCleared(r){
+  return r.totalQ!=null && r.ok!=null && r.fixed!=null && r.totalQ===(r.ok+r.fixed);
+}
 function algAggregate(rows){
   const missions=missionOrder(rows);
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{}};order.push(key);}
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongByMission:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname;
     stu[key].class=r.class;
     if(r.score!=null)stu[key].scores[r.mission]=r.score;
+    // 완성도 = (맞은개수+고친개수) / 총문제수 · 남은 오답 = 아직 못 고친 오답 개수
+    if(r.totalQ){
+      stu[key].comps[r.mission]=Math.round(((r.ok||0)+(r.fixed||0))/r.totalQ*100);
+      stu[key].wrongByMission[r.mission]=Math.max(0,r.totalQ-(r.ok||0)-(r.fixed||0));
+    }
+    stu[key].wrongLeft+=(r.wrong||0);
   });
   const students=order.map(id=>{
     const s=stu[id];
@@ -1119,16 +1200,18 @@ function algAggregate(rows){
 }
 function algTableHTML(missions,students){
   if(!students.length) return '<div class="empty">아직 등록된 기록이 없습니다.</div>';
-  let html='<table class="matrix"><tr><th>RANK</th><th class="nick">NICKNAME</th><th>누적 총점</th>';
+  let html='<table class="matrix"><tr><th>RANK</th><th class="nick">NICKNAME</th><th>누적 총점</th><th>누적 틀린개수</th>';
   missions.forEach(m=>{html+='<th>'+esc(shortName(m))+'</th>';});
   html+='</tr>';
   students.forEach((s,i)=>{
     html+='<tr class="'+(i<3?'top3':'')+'">'
       +'<td class="rank">'+(i+1)+'</td>'
       +'<td class="nick">'+classDot(s.class)+esc(s.nickname)+'</td>'
-      +'<td class="avg">'+s.total+'</td>';
+      +'<td class="avg">'+s.total+'</td>'
+      +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      html+='<td>'+(s.scores[m]!=null?s.scores[m]:'–')+'</td>';
+      const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
+      html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
   });
@@ -1207,7 +1290,36 @@ function renderAlgebra1000(){
     +algTableHTML(missions,students);
   if(students.length)drawAlgChart(students);
 }
-/* 회차별(단원별) 상세 — 정오표 대신 그 회차 점수 막대그래프 */
+/* 클리어(총문제수==맞은개수+고친개수)한 학생의 막대 위에 원형 CLEAR 도장을 그리는 플러그인 */
+const clearStampPlugin = {
+  id:'clearStampPlugin',
+  afterDatasetsDraw(chart){
+    const ds=chart.data.datasets[0];
+    if(!ds||!ds.clearFlags)return;
+    const meta=chart.getDatasetMeta(0);
+    const ctx=chart.ctx;
+    meta.data.forEach((bar,i)=>{
+      if(!ds.clearFlags[i])return;
+      ctx.save();
+      ctx.translate(bar.x,bar.y-26);
+      ctx.rotate(-13*Math.PI/180);
+      ctx.beginPath();
+      ctx.arc(0,0,15,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.95)';
+      ctx.fill();
+      ctx.lineWidth=2.4;
+      ctx.strokeStyle=cssColor('--mint-deep');
+      ctx.stroke();
+      ctx.fillStyle=cssColor('--mint-deep');
+      ctx.font="900 7px 'Noto Sans KR'";
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('CLEAR',0,0);
+      ctx.restore();
+    });
+  }
+};
+/* 회차별(단원별) 상세 — 정오표 대신 그 회차 점수 막대그래프, 클리어한 학생은 막대 위에 도장 표시 */
 function drawAlgRoundChart(rows){
   const id='alg-round-chart';
   if(charts[id]){charts[id].destroy();delete charts[id];}
@@ -1215,18 +1327,19 @@ function drawAlgRoundChart(rows){
   if(!canvas)return;
   charts[id]=new Chart(canvas,{
     type:'bar',
-    plugins:[valueLabel],
+    plugins:[valueLabel,clearStampPlugin],
     data:{labels:rows.map(r=>r.nickname),datasets:[{
       label:'점수',
       data:rows.map(r=>r.score),
       backgroundColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint')),
       borderColor:rows.map((r,i)=>i<3?cssColor('--gold'):cssColor('--mint-deep')),
       borderWidth:1.5,maxBarThickness:46,
-      labelColor:cssColor('--mint-deep')
+      labelColor:cssColor('--mint-deep'),
+      clearFlags:rows.map(algCleared)
     }]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      layout:{padding:{top:20}},
+      layout:{padding:{top:46}},
       plugins:{legend:{display:false}},
       scales:{
         y:{beginAtZero:true,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
@@ -1505,12 +1618,14 @@ function renderPersonal(){
         chips+='<span class="chip-q '+(v===1?'ok':v===2?'no':'tri')+'"><b>'+(i+1)+'</b>'
           +(rate!=null?'<small>'+rate+'%</small>':'')+'</span>';
       });
+      const scoreDisp=(comp!=null&&comp>=100)
+        ?'<span class="score-stamp-wrap">'+(r.score??'—')+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
+        :(r.score??'—');
       html+='<div class="ia-row">'
         +'<span class="ia-name">'+esc(r.mission)+' <small>('+nQ+'문항'+(r.nickname?' · '+esc(r.nickname):'')+')</small></span>'
-        +'<span class="ia-score">'+(r.score??'—')+'<small> 점'
+        +'<span class="ia-score">'+scoreDisp+'<small> 점'
         +(clsAvg!=null?' · 반평균 '+clsAvg+(diff!=null?(diff>=0?' (+':' (')+diff+')':''):'')
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
-        +(comp!=null&&comp>=100?'<span class="stamp '+clsKey(s.class)+'">CLEAR</span>':'')
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
         +hwActionsHtml(k,r.mission)
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
