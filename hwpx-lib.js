@@ -1015,12 +1015,19 @@ async function hwpBodyXmlToHtml(xml, entry) {
     const condBox = formatConditionBox(it.inner, it.raw);
     if (condBox) return condBox;
     // it.inner can itself contain block-level content (a hwpRectBox <div>,
-    // from an <hp:rect> that held real paragraphs) — a <p> cannot legally
-    // contain a <div>, and wrapping it in one anyway just repeats the same
-    // "browser silently un-nests it" bug one level up. Use a <div> wrapper
-    // instead whenever that's the case; plain <p> still handles everything
-    // else exactly as before.
-    return /<div\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
+    // from an <hp:rect> that held real paragraphs, OR a <table> from an
+    // <hp:tbl>) — a <p> cannot legally contain a <div> or a <table>, and
+    // wrapping either in one anyway just repeats the same "browser
+    // silently un-nests it" bug one level up: the browser auto-closes the
+    // <p> right before the block element starts, so the block ends up as
+    // a sibling instead of a child, and the source's own closing </p>
+    // becomes an orphaned tag the browser just drops — the resulting box/
+    // table position on screen no longer matches what the HTML source
+    // actually says (confirmed against a real file: 15번's derivation
+    // table ended up in the wrong spot for exactly this reason). Use a
+    // <div> wrapper instead whenever that's the case; plain <p> still
+    // handles everything else exactly as before.
+    return /<div\b|<table\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
   }
   const resolved = [];
   let i = 0;
