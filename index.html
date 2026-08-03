@@ -497,14 +497,14 @@ const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비'
    2기: 진도·과제·오답·TEST·9모대비·S+ BLACK·대수연마 / 3기: 개념·진도·과제·TEST (오답미션 없음)
    반 칩: 2기 = S+, S / 3기 = PRISM (명단에 다른 반명이 있으면 자동 추가) */
 const COHORT_SHEETS = {
-  '2': ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK','대수연마 1000제'],
+  '2': ['진도미션','과제미션','오답미션','TEST','기출','9모대비','S+ BLACK','대수연마 1000제'],
   '3': ['개념미션','진도미션','과제미션','TEST']
 };
 const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
 function sheetsFor(c){ return COHORT_SHEETS[c] || SHEETS; }
 function catsFor(c){ return sheetsFor(c).filter(k=>k!=='S+ BLACK'&&k!=='대수연마 1000제'); } /* 전체 통계에서 S+ BLACK·대수연마 1000제 제외 (점수 체계가 달라 평균에 섞을 수 없음) */
 function tabListFor(c){ return ['종합'].concat(sheetsFor(c)); }
-const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
+const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','기출':'PAST EXAM','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
 const ALG_TAB = '대수연마 1000제';
 const ALG_THRESHOLDS = [10000,20000,30000];
 const ALG_REWARDS = [{emoji:'🍦',name:'아이스크림'},{emoji:'🍔',name:'햄버거 세트'},{emoji:'🍕',name:'피자'}];
