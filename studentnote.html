@@ -2586,23 +2586,26 @@ function renderGradingRounds(rounds) {
   if (!rounds.length) { gradingBox.style.display = 'none'; gradingRoundsEl.innerHTML = ''; return; }
   gradingBox.style.display = '';
   gradingRoundsEl.innerHTML = '';
-  // Grade in the same order the note itself lists questions (missionGroups
-  // order — the same order 오답 현황 요약's "1번, 2번, ..." uses) so grading
-  // doesn't jump around relative to what's printed on the page.
-  const missionOrder = new Map(missionGroups.map((g, i) => [g.mission, i]));
-  const sortedRounds = [...rounds].sort((a, b) => {
-    const ia = missionOrder.has(a.mission) ? missionOrder.get(a.mission) : Infinity;
-    const ib = missionOrder.has(b.mission) ? missionOrder.get(b.mission) : Infinity;
-    if (ia !== ib) return ia - ib;
-    if (a.mission !== b.mission) return a.mission.localeCompare(b.mission, 'ko');
-    return a.round - b.round;
-  });
+  // Grade in the same order the note itself listed questions. This USED to
+  // be re-sorted here by the student's CURRENT missionGroups order (built
+  // fresh from whatever's still unfixed right now), on the assumption that
+  // it'd match the historical note's layout — but that drifts the moment
+  // any wrong item gets added or fixed after the note was generated (a
+  // mission that's since been fully fixed disappears from missionGroups
+  // entirely and sorts to the very end, even though the note had it in the
+  // middle) — confirmed as the actual cause of grading order not matching
+  // the printed note. handleLogNote already appends history rows in
+  // exactly the order the note's own checkboxes were in AT GENERATION TIME
+  // (same `checked` array builds both the note and the log), and
+  // handleUngraded returns rounds in that same natural row order without
+  // resorting — so just using the server's order directly is the version
+  // that's actually faithful to what was printed.
   // "순서번호" — this item's position across the WHOLE 오답노트 (every
   // round, in the same order the note itself lists them), not just
   // within this one round's row — so it matches the numbers printed in
   // the note's own 오답 현황 요약 table (1번, 2번, ... N번).
   let seq = 1;
-  for (const r of sortedRounds) {
+  for (const r of rounds) {
     const at = r.at ? new Date(r.at).toLocaleDateString('ko-KR') : '';
     const div = document.createElement('div');
     div.className = 'gradingRow';
