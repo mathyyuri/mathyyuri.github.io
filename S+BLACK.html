@@ -104,7 +104,7 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <body>
 
 <h1>대치 S+ BLACK 성적 정밀 분석 리포트</h1>
-<div class="subtitle">9월 모의고사 대비 실전 모의고사 [1회] 다차원 진단 시스템 · 대치수학 2기 전원(15명)</div>
+<div class="subtitle">9월 모의고사 대비 실전 모의고사 [3회] 다차원 진단 시스템 · 대치수학 2기 전원(15명)</div>
 
 <!-- 입력 섹션 -->
 <div class="box" id="inputBox">
@@ -120,7 +120,7 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
       객관식은 <code>1~5</code>(또는 ①~⑤), 단답형은 실제 값(예: <code>48</code>)을 문제 순서대로 쉼표/공백으로 구분해서 입력하세요.
       아직 입력 안 된 문항은 채점에서 자동으로 제외됩니다(모두 정답 처리 아님 — 판정을 유보).
     </div>
-    <input type="text" id="answerKeyInput" placeholder="예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:13px;">
+    <input type="text" id="answerKeyInput" value="2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34" placeholder="예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:13px;">
     <div class="hint" id="answerKeyStatus" style="margin-top:6px"></div>
   </div>
 
@@ -167,7 +167,7 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
     같은 값이라 무해함), 새 시험이면 맨 아래 새 블록으로 붙여넣어도 됩니다.
   </div>
   <label>미션명/시험명</label>
-  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 1회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
+  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 3회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
   <div class="btnRow">
     <button class="smallBtn" onclick="buildSheetExport()">붙여넣기용 데이터 만들기</button>
     <button class="smallBtn ghostBtn" id="copySheetExportBtn" onclick="copySheetExport()" disabled>클립보드에 복사</button>
@@ -180,7 +180,7 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <div class="box" id="reportContainer">
   <div class="report-header no-print">
     <div>
-      <h2 style="margin:0; font-family:var(--serif);">대치 S+ BLACK 실전 모의고사 1회 · 전체 분석서</h2>
+      <h2 style="margin:0; font-family:var(--serif);">대치 S+ BLACK 실전 모의고사 3회 · 전체 분석서</h2>
       <p style="margin:5px 0 0 0; color:#555;" id="reportMetaInfo"></p>
     </div>
     <div>
@@ -208,40 +208,41 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 
 <script>
 const STUDENT_COUNT = 15;
-const STORAGE_KEY = 'sblack_sept1_grades_v1';
+const STORAGE_KEY = 'sblack_sept3_grades_v1';
 
-// 1회 시험 문항 데이터 정의 (1~30번)
+// 3회 시험 문항 데이터 정의 (1~30번) — 실제 "2026 S+ BLACK 9월 대비
+// 모의고사 3회" 문제지/해설지를 직접 읽고 문항별 배점·단원·주제를 정리함.
 const examData = [
-  { no: 1, score: 2, unit: "다항식", topic: "다항식의 연산" },
-  { no: 2, score: 2, unit: "복소수", topic: "복소수의 상등" },
-  { no: 3, score: 2, unit: "다항식", topic: "곱셈공식의 변형" },
-  { no: 4, score: 3, unit: "다항식", topic: "나머지정리" },
-  { no: 5, score: 3, unit: "다항식", topic: "다항식의 항등식" },
-  { no: 6, score: 3, unit: "행렬", topic: "행렬의 성분과 연산" },
-  { no: 7, score: 3, unit: "부등식", topic: "연립이차부등식" },
-  { no: 8, score: 3, unit: "다항식", topic: "인수분해 공식" },
-  { no: 9, score: 3, unit: "방정식과 부등식", topic: "이차함수와 이차방정식" },
-  { no: 10, score: 3, unit: "부등식", topic: "부등식 영역과 경우의 수" },
-  { no: 11, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
-  { no: 12, score: 3, unit: "다항식", topic: "나머지정리 응용" },
-  { no: 13, score: 3, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
-  { no: 14, score: 4, unit: "경우의 수", topic: "순열과 조합 (최댓값 추론)" },
-  { no: 15, score: 4, unit: "다항식", topic: "삼차다항식의 인수정리" },
-  { no: 16, score: 4, unit: "방정식과 부등식", topic: "이차부등식의 성립 조건" },
-  { no: 17, score: 4, unit: "행렬", topic: "행렬의 거듭제곱 규칙성" },
-  { no: 18, score: 4, unit: "방정식과 부등식", topic: "이차함수의 그래프 성질" },
-  { no: 19, score: 4, unit: "도형의 방정식", topic: "도형의 이동 및 접힘" },
-  { no: 20, score: 4, unit: "경우의 수", topic: "조건부 경우의 수" },
-  { no: 21, score: 4, unit: "방정식과 부등식", topic: "허근(오메가)과 함수 그래프" },
-  { no: 22, score: 3, unit: "다항식", topic: "인수정리 (단답형)" },
-  { no: 23, score: 3, unit: "다항식", topic: "항등식 계수비교 (단답형)" },
-  { no: 24, score: 3, unit: "방정식과 부등식", topic: "절댓값 부등식 (단답형)" },
-  { no: 25, score: 3, unit: "경우의 수", topic: "이차방정식 실근 조건 (단답형)" },
-  { no: 26, score: 4, unit: "방정식과 부등식", topic: "사차방정식의 실근 개수" },
-  { no: 27, score: 4, unit: "도형의 방정식", topic: "삼각형의 인수분해 및 넓이" },
-  { no: 28, score: 4, unit: "행렬", topic: "행렬과 삼각형의 넓이 공식" },
-  { no: 29, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최솟값 자취 (킬러)" },
-  { no: 30, score: 4, unit: "방정식과 부등식", topic: "부등식 정수해 함수 (킬러)" }
+  { no: 1, score: 2, unit: "다항식", topic: "다항식의 뺄셈" },
+  { no: 2, score: 2, unit: "행렬", topic: "행렬의 성분과 연산" },
+  { no: 3, score: 2, unit: "복소수", topic: "켤레복소수" },
+  { no: 4, score: 3, unit: "다항식", topic: "항등식과 나머지정리" },
+  { no: 5, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
+  { no: 6, score: 3, unit: "방정식과 부등식", topic: "이차부등식의 해" },
+  { no: 7, score: 3, unit: "경우의 수", topic: "약수·배수를 만족하는 자연수의 개수" },
+  { no: 8, score: 3, unit: "행렬", topic: "행렬의 거듭제곱" },
+  { no: 9, score: 3, unit: "다항식", topic: "곱셈공식의 변형" },
+  { no: 10, score: 3, unit: "방정식과 부등식", topic: "연립방정식" },
+  { no: 11, score: 3, unit: "방정식과 부등식", topic: "이차부등식이 해를 갖지 않을 조건" },
+  { no: 12, score: 3, unit: "행렬", topic: "행렬의 곱셈 활용 (추이행렬)" },
+  { no: 13, score: 3, unit: "행렬", topic: "행렬의 연산과 항등식" },
+  { no: 14, score: 4, unit: "방정식과 부등식", topic: "연립부등식의 정수해 개수" },
+  { no: 15, score: 4, unit: "다항식", topic: "나머지정리 응용" },
+  { no: 16, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선, 삼각형의 넓이" },
+  { no: 17, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선의 교점, 수선의 발" },
+  { no: 18, score: 4, unit: "방정식과 부등식", topic: "사차방정식 (치환)" },
+  { no: 19, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
+  { no: 20, score: 4, unit: "방정식과 부등식", topic: "이차함수의 성질 (준킬러)" },
+  { no: 21, score: 4, unit: "경우의 수", topic: "같은 것이 있는 조합" },
+  { no: 22, score: 3, unit: "경우의 수", topic: "순열과 조합 계산 (단답형)" },
+  { no: 23, score: 3, unit: "방정식과 부등식", topic: "연립일차부등식의 정수해 (단답형)" },
+  { no: 24, score: 3, unit: "행렬", topic: "행렬의 항등원과 행렬방정식 (단답형)" },
+  { no: 25, score: 3, unit: "다항식", topic: "나머지정리 (단답형)" },
+  { no: 26, score: 4, unit: "경우의 수", topic: "경우를 나누는 조합 (준킬러)" },
+  { no: 27, score: 4, unit: "다항식", topic: "나머지정리 (고난도)" },
+  { no: 28, score: 4, unit: "방정식과 부등식", topic: "절댓값 함수의 최댓값·최솟값 (킬러)" },
+  { no: 29, score: 4, unit: "경우의 수", topic: "중복순열" },
+  { no: 30, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값 (킬러)" }
 ];
 const TOTAL_POSSIBLE = examData.reduce((s, q) => s + q.score, 0); // 100
 
@@ -400,12 +401,14 @@ function saveMeta() {
     answerKeyStr: document.getElementById('answerKeyInput').value,
   }));
 }
+// 3회 정답(해설지 기준): 2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34
+const DEFAULT_ANSWER_KEY_STR = '2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34';
 function loadSavedMeta() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta'));
     if (saved && typeof saved === 'object') return saved;
   } catch (e) {}
-  return { mode: 'wrong', answerKeyStr: '' };
+  return { mode: 'wrong', answerKeyStr: DEFAULT_ANSWER_KEY_STR };
 }
 
 // ---------- 명단 입력 UI ----------
@@ -542,7 +545,7 @@ function buildStudentReportHtml(student, rank, totalCount, classAvg, cuts) {
   <div class="studentReport" id="student_${rank}">
     <div class="report-header">
       <div>
-        <h2 style="margin:0; font-family:var(--serif);">${escapeHtml(name)} 학생 · 실전 모의고사 1회 분석서</h2>
+        <h2 style="margin:0; font-family:var(--serif);">${escapeHtml(name)} 학생 · 실전 모의고사 3회 분석서</h2>
         <p style="margin:5px 0 0 0; color:#555;">대치수학 2기 · 반 내 등수 ${rank}/${totalCount}위 · 대치 S+ BLACK</p>
       </div>
     </div>
@@ -613,7 +616,7 @@ function escapeHtml(s) {
 // 줄 위에 그대로 덮어써도 되고(이름 등은 똑같은 값이라 무해함), 새 시험을
 // 새로 시작할 때는 그 아래 새 블록으로 붙여넣어도 된다.
 function buildSheetExport() {
-  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 1회';
+  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 3회';
   const cuts = getGradeCuts();
   const rows = [...document.querySelectorAll('#rosterBody tr')];
   const lines = [];
