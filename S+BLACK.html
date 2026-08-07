@@ -104,11 +104,14 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <body>
 
 <h1>대치 S+ BLACK 성적 정밀 분석 리포트</h1>
-<div class="subtitle">9월 모의고사 대비 실전 모의고사 [3회] 다차원 진단 시스템 · 대치수학 2기 전원(15명)</div>
+<div class="subtitle" id="examSubtitle">9월 모의고사 대비 실전 모의고사 다차원 진단 시스템 · 대치수학 2기 전원(15명)</div>
 
 <!-- 입력 섹션 -->
 <div class="box" id="inputBox">
-  <p><b>[입력 방식 선택]</b></p>
+  <p><b>[시험 회차 선택]</b></p>
+  <div class="modeToggle" id="examToggle"></div>
+
+  <p style="margin-top:18px"><b>[입력 방식 선택]</b></p>
   <div class="modeToggle">
     <label class="modeOpt"><input type="radio" name="inputMode" value="wrong" checked> ① 틀린 문항 번호만 직접 입력 (이미 채점된 경우 — 빠름)</label>
     <label class="modeOpt"><input type="radio" name="inputMode" value="answer"> ② 정답을 입력해두면 학생 답안을 넣었을 때 자동 채점</label>
@@ -120,7 +123,7 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
       객관식은 <code>1~5</code>(또는 ①~⑤), 단답형은 실제 값(예: <code>48</code>)을 문제 순서대로 쉼표/공백으로 구분해서 입력하세요.
       아직 입력 안 된 문항은 채점에서 자동으로 제외됩니다(모두 정답 처리 아님 — 판정을 유보).
     </div>
-    <input type="text" id="answerKeyInput" value="2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34" placeholder="예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:13px;">
+    <input type="text" id="answerKeyInput" placeholder="예: 1 3 4 4 3 5 4 5 3 5 5 1 4 3 1 4 4 3 2 3 5 3 8 5 6 5 48 6 30" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-family:monospace; font-size:13px;">
     <div class="hint" id="answerKeyStatus" style="margin-top:6px"></div>
   </div>
 
@@ -161,13 +164,15 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <div class="box modeBox" id="sheetExportBox">
   <p><b>[mathyyuri.com 연동 — 구글시트 붙여넣기용 데이터]</b></p>
   <div class="hint">
-    <b>"2026 여름 SUMMER"</b> 스프레드시트의 <b>"9모대비"</b> 탭에 붙여넣을 데이터를
+    <b>"2026 여름 SUMMER"</b> 스프레드시트의 <b>"S+ BLACK"</b> 탭에 붙여넣을 데이터를
     만듭니다(이름/닉네임/반/비밀번호/미션명/원점수/등급/맞은개수/1~30번 정오 전체 줄).
-    그 탭에 이미 만들어둔 빈 줄이 있으면 A열부터 그대로 덮어써도 되고(이름 등은
-    같은 값이라 무해함), 새 시험이면 맨 아래 새 블록으로 붙여넣어도 됩니다.
+    mathyyuri.com의 <b>S+ BLACK 탭</b>(진도미션과 같은 방식)이 이 탭을 그대로 읽어오므로,
+    여기 붙여넣으면 자동으로 사이트에 반영됩니다. 그 탭에 이미 만들어둔 빈 줄이 있으면
+    A열부터 그대로 덮어써도 되고(이름 등은 같은 값이라 무해함), 새 시험이면 맨 아래
+    새 블록으로 붙여넣어도 됩니다.
   </div>
   <label>미션명/시험명</label>
-  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 3회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
+  <input type="text" id="sheetExamName" value="9월 모의고사 대비 실전 모의고사 1회" style="width:100%; padding:10px; border:1px solid var(--gold-line); border-radius:4px; font-size:13px; margin-bottom:10px;">
   <div class="btnRow">
     <button class="smallBtn" onclick="buildSheetExport()">붙여넣기용 데이터 만들기</button>
     <button class="smallBtn ghostBtn" id="copySheetExportBtn" onclick="copySheetExport()" disabled>클립보드에 복사</button>
@@ -180,11 +185,11 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
 <div class="box" id="reportContainer">
   <div class="report-header no-print">
     <div>
-      <h2 style="margin:0; font-family:var(--serif);">대치 S+ BLACK 실전 모의고사 3회 · 전체 분석서</h2>
+      <h2 style="margin:0; font-family:var(--serif);" id="reportTitle">대치 S+ BLACK · 전체 분석서</h2>
       <p style="margin:5px 0 0 0; color:#555;" id="reportMetaInfo"></p>
     </div>
     <div>
-      <button class="smallBtn ghostBtn" onclick="document.getElementById('inputBox').scrollIntoView({behavior:'smooth'})">입력으로 돌아가기</button>
+      <button class="smallBtn ghostBtn" onclick="backToInput()">입력으로 돌아가기</button>
       <button class="smallBtn" style="background:var(--mint-deep); border-color:var(--mint-deep);" onclick="window.print()">전체 인쇄 / PDF 저장</button>
     </div>
   </div>
@@ -202,56 +207,146 @@ table.analysis-table th { background: var(--ink); color: var(--cream); font-weig
   <div id="studentReportsWrap"></div>
 
   <div style="margin-top:30px; text-align:center;" class="no-print">
-    <button class="ghostBtn" onclick="document.getElementById('inputBox').scrollIntoView({behavior:'smooth'})" style="display:inline-block; width:auto;">입력 화면으로 돌아가서 수정하기</button>
+    <button class="ghostBtn" onclick="backToInput()" style="display:inline-block; width:auto;">입력 화면으로 돌아가서 수정하기</button>
   </div>
 </div>
 
 <script>
 const STUDENT_COUNT = 15;
-const STORAGE_KEY = 'sblack_sept3_grades_v1';
 
-// 3회 시험 문항 데이터 정의 (1~30번) — 실제 "2026 S+ BLACK 9월 대비
-// 모의고사 3회" 문제지/해설지를 직접 읽고 문항별 배점·단원·주제를 정리함.
-const examData = [
-  { no: 1, score: 2, unit: "다항식", topic: "다항식의 뺄셈" },
-  { no: 2, score: 2, unit: "행렬", topic: "행렬의 성분과 연산" },
-  { no: 3, score: 2, unit: "복소수", topic: "켤레복소수" },
-  { no: 4, score: 3, unit: "다항식", topic: "항등식과 나머지정리" },
-  { no: 5, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
-  { no: 6, score: 3, unit: "방정식과 부등식", topic: "이차부등식의 해" },
-  { no: 7, score: 3, unit: "경우의 수", topic: "약수·배수를 만족하는 자연수의 개수" },
-  { no: 8, score: 3, unit: "행렬", topic: "행렬의 거듭제곱" },
-  { no: 9, score: 3, unit: "다항식", topic: "곱셈공식의 변형" },
-  { no: 10, score: 3, unit: "방정식과 부등식", topic: "연립방정식" },
-  { no: 11, score: 3, unit: "방정식과 부등식", topic: "이차부등식이 해를 갖지 않을 조건" },
-  { no: 12, score: 3, unit: "행렬", topic: "행렬의 곱셈 활용 (추이행렬)" },
-  { no: 13, score: 3, unit: "행렬", topic: "행렬의 연산과 항등식" },
-  { no: 14, score: 4, unit: "방정식과 부등식", topic: "연립부등식의 정수해 개수" },
-  { no: 15, score: 4, unit: "다항식", topic: "나머지정리 응용" },
-  { no: 16, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선, 삼각형의 넓이" },
-  { no: 17, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선의 교점, 수선의 발" },
-  { no: 18, score: 4, unit: "방정식과 부등식", topic: "사차방정식 (치환)" },
-  { no: 19, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
-  { no: 20, score: 4, unit: "방정식과 부등식", topic: "이차함수의 성질 (준킬러)" },
-  { no: 21, score: 4, unit: "경우의 수", topic: "같은 것이 있는 조합" },
-  { no: 22, score: 3, unit: "경우의 수", topic: "순열과 조합 계산 (단답형)" },
-  { no: 23, score: 3, unit: "방정식과 부등식", topic: "연립일차부등식의 정수해 (단답형)" },
-  { no: 24, score: 3, unit: "행렬", topic: "행렬의 항등원과 행렬방정식 (단답형)" },
-  { no: 25, score: 3, unit: "다항식", topic: "나머지정리 (단답형)" },
-  { no: 26, score: 4, unit: "경우의 수", topic: "경우를 나누는 조합 (준킬러)" },
-  { no: 27, score: 4, unit: "다항식", topic: "나머지정리 (고난도)" },
-  { no: 28, score: 4, unit: "방정식과 부등식", topic: "절댓값 함수의 최댓값·최솟값 (킬러)" },
-  { no: 29, score: 4, unit: "경우의 수", topic: "중복순열" },
-  { no: 30, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값 (킬러)" }
-];
-const TOTAL_POSSIBLE = examData.reduce((s, q) => s + q.score, 0); // 100
+// 회차별(1회/2회) 시험 데이터 — 각자 독립된 문항 배점표 + localStorage 저장소를
+// 가져서, 회차를 바꿔도 서로의 입력 데이터/등급컷을 덮어쓰지 않는다.
+const EXAM_DEFS = {
+  '1': {
+    label: '1회',
+    examName: '9월 모의고사 대비 실전 모의고사 1회',
+    storageKey: 'sblack_sept1_grades_v1',
+    // 1회 등급컷: 선생님이 직접 조정해서 확정한 실측값 (2026-07-31 기준)
+    defaultCuts: { 1: 77, 2: 65, 3: 52, 4: 40, 5: 29, 6: 21, 7: 15, 8: 11 },
+    items: [
+      { no: 1, score: 2, unit: "다항식", topic: "다항식의 연산" },
+      { no: 2, score: 2, unit: "복소수", topic: "복소수의 상등" },
+      { no: 3, score: 2, unit: "다항식", topic: "곱셈공식의 변형" },
+      { no: 4, score: 3, unit: "다항식", topic: "나머지정리" },
+      { no: 5, score: 3, unit: "다항식", topic: "다항식의 항등식" },
+      { no: 6, score: 3, unit: "행렬", topic: "행렬의 성분과 연산" },
+      { no: 7, score: 3, unit: "부등식", topic: "연립이차부등식" },
+      { no: 8, score: 3, unit: "다항식", topic: "인수분해 공식" },
+      { no: 9, score: 3, unit: "방정식과 부등식", topic: "이차함수와 이차방정식" },
+      { no: 10, score: 3, unit: "부등식", topic: "부등식 영역과 경우의 수" },
+      { no: 11, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
+      { no: 12, score: 3, unit: "다항식", topic: "나머지정리 응용" },
+      { no: 13, score: 3, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
+      { no: 14, score: 4, unit: "경우의 수", topic: "순열과 조합 (최댓값 추론)" },
+      { no: 15, score: 4, unit: "다항식", topic: "삼차다항식의 인수정리" },
+      { no: 16, score: 4, unit: "방정식과 부등식", topic: "이차부등식의 성립 조건" },
+      { no: 17, score: 4, unit: "행렬", topic: "행렬의 거듭제곱 규칙성" },
+      { no: 18, score: 4, unit: "방정식과 부등식", topic: "이차함수의 그래프 성질" },
+      { no: 19, score: 4, unit: "도형의 방정식", topic: "도형의 이동 및 접힘" },
+      { no: 20, score: 4, unit: "경우의 수", topic: "조건부 경우의 수" },
+      { no: 21, score: 4, unit: "방정식과 부등식", topic: "허근(오메가)과 함수 그래프" },
+      { no: 22, score: 3, unit: "다항식", topic: "인수정리 (단답형)" },
+      { no: 23, score: 3, unit: "다항식", topic: "항등식 계수비교 (단답형)" },
+      { no: 24, score: 3, unit: "방정식과 부등식", topic: "절댓값 부등식 (단답형)" },
+      { no: 25, score: 3, unit: "경우의 수", topic: "이차방정식 실근 조건 (단답형)" },
+      { no: 26, score: 4, unit: "방정식과 부등식", topic: "사차방정식의 실근 개수" },
+      { no: 27, score: 4, unit: "도형의 방정식", topic: "삼각형의 인수분해 및 넓이" },
+      { no: 28, score: 4, unit: "행렬", topic: "행렬과 삼각형의 넓이 공식" },
+      { no: 29, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최솟값 자취 (킬러)" },
+      { no: 30, score: 4, unit: "방정식과 부등식", topic: "부등식 정수해 함수 (킬러)" }
+    ]
+  },
+  '2': {
+    label: '2회',
+    examName: '9월 모의고사 대비 실전 모의고사 2회',
+    storageKey: 'sblack_sept2_grades_v1',
+    // 2회는 아직 채점 데이터가 없어 1회 확정 컷을 초기값으로 사용 — 실제
+    // 2회 데이터가 쌓이면 아래 [등급컷 설정]에서 직접 조정하세요.
+    defaultCuts: { 1: 77, 2: 65, 3: 52, 4: 40, 5: 29, 6: 21, 7: 15, 8: 11 },
+    // 단원/주제는 해설(정답+풀이)만 보고 문제 자체는 못 봤으므로 추정입니다 —
+    // 실제 문제지를 보내주시면 더 정확하게 다시 맞출 수 있어요.
+    items: [
+      { no: 1, score: 2, unit: "다항식", topic: "다항식의 연산" },
+      { no: 2, score: 2, unit: "다항식", topic: "항등식(미정계수 결정)" },
+      { no: 3, score: 2, unit: "복소수", topic: "켤레복소수와 사칙연산" },
+      { no: 4, score: 3, unit: "다항식", topic: "이차식의 항등식(계수비교)" },
+      { no: 5, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
+      { no: 6, score: 3, unit: "부등식", topic: "이차부등식의 해" },
+      { no: 7, score: 3, unit: "경우의 수", topic: "부등식을 만족하는 순서쌍의 개수" },
+      { no: 8, score: 3, unit: "행렬", topic: "행렬의 거듭제곱과 성분의 합" },
+      { no: 9, score: 3, unit: "다항식", topic: "치환을 이용한 인수분해" },
+      { no: 10, score: 3, unit: "방정식과 부등식", topic: "연립이차방정식" },
+      { no: 11, score: 3, unit: "방정식과 부등식", topic: "판별식과 정수 조건" },
+      { no: 12, score: 3, unit: "행렬", topic: "행렬의 곱과 실생활 응용" },
+      { no: 13, score: 3, unit: "행렬", topic: "역행렬과 행렬방정식" },
+      { no: 14, score: 4, unit: "부등식", topic: "절댓값부등식과 이차부등식의 연립" },
+      { no: 15, score: 4, unit: "다항식", topic: "인수정리와 나머지정리" },
+      { no: 16, score: 4, unit: "방정식과 부등식", topic: "이차방정식의 근과 계수의 관계" },
+      { no: 17, score: 4, unit: "방정식과 부등식", topic: "이차식의 연산과 판별식" },
+      { no: 18, score: 4, unit: "방정식과 부등식", topic: "삼차식의 인수분해와 근의 관계" },
+      { no: 19, score: 4, unit: "방정식과 부등식", topic: "이차함수 그래프의 개형" },
+      { no: 20, score: 4, unit: "방정식과 부등식", topic: "이차함수 그래프의 해석" },
+      { no: 21, score: 4, unit: "경우의 수", topic: "조건을 만족하는 경우의 수" },
+      { no: 22, score: 3, unit: "경우의 수", topic: "순열과 조합 (단답형)" },
+      { no: 23, score: 3, unit: "부등식", topic: "연립일차부등식 (단답형)" },
+      { no: 24, score: 3, unit: "행렬", topic: "행렬의 연산 (단답형)" },
+      { no: 25, score: 3, unit: "다항식", topic: "나머지정리 (단답형)" },
+      { no: 26, score: 4, unit: "경우의 수", topic: "자연수의 개수 세기(자릿수 조건)" },
+      { no: 27, score: 4, unit: "다항식", topic: "나머지정리 응용 (단답형 심화)" },
+      { no: 28, score: 4, unit: "도형의 방정식", topic: "직선과 도형의 넓이" },
+      { no: 29, score: 4, unit: "경우의 수", topic: "정수 조건 순서쌍의 개수 (킬러)" },
+      { no: 30, score: 4, unit: "방정식과 부등식", topic: "그래프와 도형의 넓이 (킬러)" }
+    ]
+  },
+  '3': {
+    label: '3회',
+    examName: '9월 모의고사 대비 실전 모의고사 3회',
+    storageKey: 'sblack_sept3_grades_v1',
+    // 3회는 아직 채점 데이터가 없어 1회 확정 컷을 초기값으로 사용 — 실제
+    // 3회 데이터가 쌓이면 아래 [등급컷 설정]에서 직접 조정하세요.
+    defaultCuts: { 1: 77, 2: 65, 3: 52, 4: 40, 5: 29, 6: 21, 7: 15, 8: 11 },
+    // 실제 3회 문제지·해설지를 직접 읽고 단원/주제/배점을 정리함.
+    items: [
+      { no: 1, score: 2, unit: "다항식", topic: "다항식의 뺄셈" },
+      { no: 2, score: 2, unit: "행렬", topic: "행렬의 성분과 연산" },
+      { no: 3, score: 2, unit: "복소수", topic: "켤레복소수" },
+      { no: 4, score: 3, unit: "다항식", topic: "항등식과 나머지정리" },
+      { no: 5, score: 3, unit: "방정식과 부등식", topic: "판별식과 중근 조건" },
+      { no: 6, score: 3, unit: "방정식과 부등식", topic: "이차부등식의 해" },
+      { no: 7, score: 3, unit: "경우의 수", topic: "약수·배수를 만족하는 자연수의 개수" },
+      { no: 8, score: 3, unit: "행렬", topic: "행렬의 거듭제곱" },
+      { no: 9, score: 3, unit: "다항식", topic: "곱셈공식의 변형" },
+      { no: 10, score: 3, unit: "방정식과 부등식", topic: "연립방정식" },
+      { no: 11, score: 3, unit: "방정식과 부등식", topic: "이차부등식이 해를 갖지 않을 조건" },
+      { no: 12, score: 3, unit: "행렬", topic: "행렬의 곱셈 활용 (추이행렬)" },
+      { no: 13, score: 3, unit: "행렬", topic: "행렬의 연산과 항등식" },
+      { no: 14, score: 4, unit: "방정식과 부등식", topic: "연립부등식의 정수해 개수" },
+      { no: 15, score: 4, unit: "다항식", topic: "나머지정리 응용" },
+      { no: 16, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선, 삼각형의 넓이" },
+      { no: 17, score: 4, unit: "도형의 방정식", topic: "이차함수와 직선의 교점, 수선의 발" },
+      { no: 18, score: 4, unit: "방정식과 부등식", topic: "사차방정식 (치환)" },
+      { no: 19, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값" },
+      { no: 20, score: 4, unit: "방정식과 부등식", topic: "이차함수의 성질 (준킬러)" },
+      { no: 21, score: 4, unit: "경우의 수", topic: "같은 것이 있는 조합" },
+      { no: 22, score: 3, unit: "경우의 수", topic: "순열과 조합 계산 (단답형)" },
+      { no: 23, score: 3, unit: "방정식과 부등식", topic: "연립일차부등식의 정수해 (단답형)" },
+      { no: 24, score: 3, unit: "행렬", topic: "행렬의 항등원과 행렬방정식 (단답형)" },
+      { no: 25, score: 3, unit: "다항식", topic: "나머지정리 (단답형)" },
+      { no: 26, score: 4, unit: "경우의 수", topic: "경우를 나누는 조합 (준킬러)" },
+      { no: 27, score: 4, unit: "다항식", topic: "나머지정리 (고난도)" },
+      { no: 28, score: 4, unit: "방정식과 부등식", topic: "절댓값 함수의 최댓값·최솟값 (킬러)" },
+      { no: 29, score: 4, unit: "경우의 수", topic: "중복순열" },
+      { no: 30, score: 4, unit: "방정식과 부등식", topic: "이차함수의 최댓값·최솟값 (킬러)" }
+    ]
+  }
+};
+let currentExamKey = localStorage.getItem('sblack_current_exam') || '1';
+if (!EXAM_DEFS[currentExamKey]) currentExamKey = '1';
+function currentExam() { return EXAM_DEFS[currentExamKey]; }
+function examItems() { return currentExam().items; }
+function totalPossible() { return examItems().reduce((s, q) => s + q.score, 0); }
+function storageKey() { return currentExam().storageKey; }
 
-// 9등급 등급 컷 기준 — 실제 9모대비 데이터가 없어 정확한 컷은 알 수 없으므로
-// "1컷 82점 정도"라는 기준만 반영해 나머지는 전형적인 등급별 누적 비율
-// (1등급 4%, 2등급 11%, 3등급 23%, 4등급 40%, 5등급 60%, 6등급 77%, 7등급
-// 89%, 8등급 96%)에 맞춰 추정한 값 — 아래 [등급컷 설정]에서 실제 데이터에
-// 맞게 직접 조정 가능, 조정한 값은 자동 저장됨.
-const DEFAULT_GRADE_CUTS = { 1: 82, 2: 74, 3: 65, 4: 54, 5: 42, 6: 30, 7: 20, 8: 12 };
 const PERCENTILE_BY_GRADE = { 1: '상위 4%', 2: '상위 11%', 3: '상위 23%', 4: '상위 40%', 5: '상위 60%', 6: '상위 77%', 7: '상위 89%', 8: '상위 96%', 9: '상위 96% 초과' };
 
 function getEstimatedGrade(score, cuts) {
@@ -316,7 +411,7 @@ function scoreStudent(wrongNums) {
   const unitStats = {};
   const perQuestion = [];
 
-  examData.forEach(item => {
+  examItems().forEach(item => {
     const isWrong = wrongSet.has(item.no);
     const earned = isWrong ? 0 : item.score;
     totalScore += earned;
@@ -338,16 +433,16 @@ function scoreStudent(wrongNums) {
 // ---------- 등급컷 설정 UI ----------
 function loadSavedCuts() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY + '_cuts'));
-    if (saved && typeof saved === 'object') return { ...DEFAULT_GRADE_CUTS, ...saved };
+    const saved = JSON.parse(localStorage.getItem(storageKey() + '_cuts'));
+    if (saved && typeof saved === 'object') return { ...currentExam().defaultCuts, ...saved };
   } catch (e) {}
-  return { ...DEFAULT_GRADE_CUTS };
+  return { ...currentExam().defaultCuts };
 }
 function getGradeCuts() {
   const cuts = {};
   for (let g = 1; g <= 8; g++) {
     const inp = document.getElementById('cut_' + g);
-    cuts[g] = inp ? Number(inp.value) || 0 : DEFAULT_GRADE_CUTS[g];
+    cuts[g] = inp ? Number(inp.value) || 0 : currentExam().defaultCuts[g];
   }
   return cuts;
 }
@@ -359,11 +454,10 @@ function renderCutGrid() {
   `).join('');
   grid.querySelectorAll('input').forEach(inp => {
     inp.addEventListener('input', () => {
-      localStorage.setItem(STORAGE_KEY + '_cuts', JSON.stringify(getGradeCuts()));
+      localStorage.setItem(storageKey() + '_cuts', JSON.stringify(getGradeCuts()));
     });
   });
 }
-renderCutGrid();
 
 // ---------- 입력 방식(모드) 전환 ----------
 function updateModeUi() {
@@ -396,19 +490,17 @@ document.querySelectorAll('input[name="inputMode"]').forEach(r => r.addEventList
 document.getElementById('answerKeyInput').addEventListener('input', () => { updateAnswerKeyStatus(); renderRosterTable(); saveMeta(); });
 
 function saveMeta() {
-  localStorage.setItem(STORAGE_KEY + '_meta', JSON.stringify({
+  localStorage.setItem(storageKey() + '_meta', JSON.stringify({
     mode: getInputMode(),
     answerKeyStr: document.getElementById('answerKeyInput').value,
   }));
 }
-// 3회 정답(해설지 기준): 2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34
-const DEFAULT_ANSWER_KEY_STR = '2 4 5 1 3 1 2 2 2 1 4 1 5 2 2 4 2 5 1 5 1 30 4 1 106 108 45 74 33 34';
 function loadSavedMeta() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta'));
+    const saved = JSON.parse(localStorage.getItem(storageKey() + '_meta'));
     if (saved && typeof saved === 'object') return saved;
   } catch (e) {}
-  return { mode: 'wrong', answerKeyStr: DEFAULT_ANSWER_KEY_STR };
+  return { mode: 'wrong', answerKeyStr: '' };
 }
 
 // ---------- 명단 입력 UI ----------
@@ -416,7 +508,7 @@ function loadSavedMeta() {
 // 값을 모두 저장해둬서, 모드를 오갈 때 어느 쪽도 지워지지 않게 한다.
 function loadSavedRoster() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(storageKey()));
     if (Array.isArray(saved) && saved.length) return saved;
   } catch (e) {}
   return Array.from({ length: STUDENT_COUNT }, () => ({ name: '', nick: '', className: '', pw: '', wrongStr: '', answerStr: '' }));
@@ -436,7 +528,7 @@ function saveRoster() {
       answerStr: mode === 'answer' ? valueInput : (prev[i] ? prev[i].answerStr : ''),
     };
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(storageKey(), JSON.stringify(data));
   const hint = document.getElementById('saveHint');
   if (hint) hint.textContent = '✓ 저장됨 (' + new Date().toLocaleTimeString('ko-KR') + ')';
 }
@@ -491,13 +583,38 @@ function renderRosterTable() {
   });
 }
 
-// 초기화: 저장된 모드/정답 키를 먼저 복원한 뒤 명단을 렌더링.
-(function initFromSaved() {
+// ---------- 시험 회차 전환 ----------
+function renderExamToggle() {
+  const box = document.getElementById('examToggle');
+  box.innerHTML = Object.keys(EXAM_DEFS).map(key => {
+    const def = EXAM_DEFS[key];
+    return `<label class="modeOpt"><input type="radio" name="examRound" value="${key}" ${key === currentExamKey ? 'checked' : ''}> ${def.label} (${escapeHtml(def.examName)})</label>`;
+  }).join('');
+  box.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      currentExamKey = document.querySelector('input[name="examRound"]:checked').value;
+      localStorage.setItem('sblack_current_exam', currentExamKey);
+      onExamSwitch();
+    });
+  });
+}
+function onExamSwitch() {
+  document.getElementById('examSubtitle').textContent =
+    `${currentExam().examName} 다차원 진단 시스템 · 대치수학 2기 전원(15명)`;
+  document.getElementById('sheetExamName').value = currentExam().examName;
+  document.getElementById('reportTitle').textContent = `대치 S+ BLACK ${currentExam().label} · 전체 분석서`;
+  document.getElementById('reportContainer').style.display = 'none';
+  document.getElementById('inputBox').style.display = 'block';
   const meta = loadSavedMeta();
   document.querySelector(`input[name="inputMode"][value="${meta.mode}"]`).checked = true;
   document.getElementById('answerKeyInput').value = meta.answerKeyStr || '';
+  renderCutGrid();
   updateModeUi();
-})();
+}
+
+// 초기화: 회차 선택 UI를 만들고, 저장된 모드/정답 키를 복원한 뒤 명단을 렌더링.
+renderExamToggle();
+onExamSwitch();
 
 // ---------- 전체 리포트 생성 ----------
 // 단원별 강/약점 요약 — 학생 리포트 카드와 구글시트 붙여넣기용 "분석" 컬럼이
@@ -545,7 +662,7 @@ function buildStudentReportHtml(student, rank, totalCount, classAvg, cuts) {
   <div class="studentReport" id="student_${rank}">
     <div class="report-header">
       <div>
-        <h2 style="margin:0; font-family:var(--serif);">${escapeHtml(name)} 학생 · 실전 모의고사 3회 분석서</h2>
+        <h2 style="margin:0; font-family:var(--serif);">${escapeHtml(name)} 학생 · 실전 모의고사 ${currentExam().label} 분석서</h2>
         <p style="margin:5px 0 0 0; color:#555;">대치수학 2기 · 반 내 등수 ${rank}/${totalCount}위 · 대치 S+ BLACK</p>
       </div>
     </div>
@@ -553,7 +670,7 @@ function buildStudentReportHtml(student, rank, totalCount, classAvg, cuts) {
       <div class="summary-card">
         <div style="font-size:12px; font-weight:bold;">획득 총점</div>
         <h3>${s.totalScore}점</h3>
-        <div style="font-size:11px; color:#555;">원점수 / ${TOTAL_POSSIBLE}점 만점</div>
+        <div style="font-size:11px; color:#555;">원점수 / ${totalPossible()}점 만점</div>
       </div>
       <div class="summary-card">
         <div style="font-size:12px; font-weight:bold;">예상 9모 등급</div>
@@ -596,27 +713,26 @@ function buildStudentReportHtml(student, rank, totalCount, classAvg, cuts) {
   </div>`;
 }
 
+function backToInput() {
+  document.getElementById('reportContainer').style.display = 'none';
+  document.getElementById('inputBox').style.display = 'block';
+  document.getElementById('inputBox').scrollIntoView({ behavior: 'smooth' });
+}
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ---------- mathyyuri.com 연동: 구글시트 붙여넣기용 TSV ----------
-// "MATHY YURI System — 모의고사 성적 기록부" 시트(9moresult.html이 읽는 시트)의
-// 컬럼 순서와 정확히 맞춘다: 이름,닉네임,반,비밀번호,시험명,원점수,등급,맞은개수,
-// 1..30,분석 — 문항 값은 그 시트의 기존 관례(s+.html의 ans-1/ans-2)를 따라
-// 1=정답, 2=오답으로 인코딩한다. 실제 자동 저장 API가 없으므로(이 시트에 쓰는
-// Apps Script write 엔드포인트가 저장소에 없음) 선생님이 직접 시트에 붙여넣는
-// 방식으로 연동한다.
-// 구글시트 "9모대비" 탭에는 이미 이름/닉네임/반/비밀번호/미션명까지 채워진
-// 15명분 빈 줄이 미리 만들어져 있음(선생님이 미리 세팅해둔 템플릿) — 그
-// 줄들을 새로 추가/중복시키지 않도록, 여기서는 점수 칸(원점수부터 30번
-// 문항까지)만 만든다. 대상 줄의 F열(원점수)에 붙여넣으면 된다.
-// "2026 여름 SUMMER" 스프레드시트의 "9모대비" 탭 구조(이름,닉네임,반,비밀번호,
-// 미션명,원점수,등급,맞은개수,1..30)에 맞춘 전체 줄 — 이미 만들어둔 빈 템플릿
-// 줄 위에 그대로 덮어써도 되고(이름 등은 똑같은 값이라 무해함), 새 시험을
-// 새로 시작할 때는 그 아래 새 블록으로 붙여넣어도 된다.
+// "2026 여름 SUMMER" 스프레드시트의 "S+ BLACK" 탭(dashboard-Code.gs가 다른 모든
+// 미션 탭과 동일한 방식으로 읽는 시트)에 맞춘 줄을 만든다: 이름,닉네임,반,
+// 비밀번호(ID),미션명,원점수,등급,맞은개수,1..30 — 문항 값은 1=정답, 2=오답.
+// mathyyuri.com의 "S+ BLACK" 탭은 index.html에서 "진도미션"과 완전히 같은
+// 코드 경로(renderCumulative/aggregate)로 이 시트를 그대로 읽어 보여주므로,
+// 여기 만든 줄을 "S+ BLACK" 탭에 붙여넣기만 하면 별도 배포 없이 사이트에 반영된다.
+// 실제 자동 저장 API는 없으므로(쓰기 엔드포인트가 저장소에 없음) 선생님이
+// 직접 시트에 붙여넣는 방식으로 연동한다.
 function buildSheetExport() {
-  const examName = document.getElementById('sheetExamName').value.trim() || '9월 모의고사 대비 실전 모의고사 3회';
+  const examName = document.getElementById('sheetExamName').value.trim() || currentExam().examName;
   const cuts = getGradeCuts();
   const rows = [...document.querySelectorAll('#rosterBody tr')];
   const lines = [];
@@ -647,7 +763,7 @@ function buildSheetExport() {
     copyBtn.disabled = true;
     return;
   }
-  status.textContent = `✓ ${lines.length}명분 생성됨` + (skipped ? ` (닉네임/반/비밀번호 누락 ${skipped}명은 제외됨)` : '') + ' — "2026 여름 SUMMER" 시트의 "9모대비" 탭에 붙여넣으세요.';
+  status.textContent = `✓ ${lines.length}명분 생성됨` + (skipped ? ` (닉네임/반/비밀번호 누락 ${skipped}명은 제외됨)` : '') + ' — "2026 여름 SUMMER" 시트의 "S+ BLACK" 탭에 붙여넣으세요.';
   status.style.color = 'var(--mint-deep)';
   copyBtn.disabled = false;
 }
