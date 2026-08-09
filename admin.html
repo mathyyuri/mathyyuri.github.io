@@ -59,7 +59,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreToggle.N { background: #f0eee9; color: rgba(26,26,26,.4); border-color: var(--gold-line); }
 .selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 6px 12px; font-size: 12px; }
 .selectAllBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); }
-.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: center; }
+/* 위쪽의 공통 input[type=number] 규칙(padding:8px)이 클래스 선택자보다
+   우선순위(specificity)가 높아서 여기 padding:1px가 씹혔다 — 배점 칸이
+   글자 하나 들어갈 자리도 없이 눌려서 클릭도 입력도 안 되던 진짜 원인.
+   선택자를 더 구체적으로 만들어서 확실히 이겨야 한다. */
+input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: center; }
 .scoreTable input[type=text] { width: 100%; min-width: 90px; font-size: 12px; padding: 4px; }
 </style>
 </head>
