@@ -1859,9 +1859,27 @@ function drawRadar(canvasId,labels,mine,cls){
   });
 }
 
+/* ---------- 카테고리(시험 종류) 목록 — 관리자 모드(admin.html)에서 새로
+   만들면 코드 수정 없이 여기 반영되도록, 하드코딩된 COHORT_SHEETS를 서버
+   응답으로 덮어쓴다. 실패하거나(배포 전/네트워크 문제) 응답이 비어있으면
+   기존 하드코딩 값을 그대로 쓰니 이 페이지의 핵심 기능은 절대 깨지지 않는다. */
+async function loadCategories(){
+  try{
+    const res = await fetch(GAS_URL+'?action=categories');
+    const json = await res.json();
+    if(!json.ok || !json.byCohort) return;
+    Object.keys(json.byCohort).forEach(c=>{
+      if(json.byCohort[c] && json.byCohort[c].length) COHORT_SHEETS[c]=json.byCohort[c];
+    });
+    if(json.enLabels) Object.assign(SHEET_EN, json.enLabels);
+    buildPubTabs();
+  }catch(e){}
+}
+
 /* ---------- 시작: 랜딩이 메인, 데이터는 백그라운드 로드 ---------- */
 buildPubTabs();
 const dataPromise = loadPublic();
+loadCategories();
 </script>
 </body>
 </html>

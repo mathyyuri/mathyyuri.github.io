@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 모드 (MATHY YURI)</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FBF8F1;
+  --ink:#1A1A1A;
+  --gold:#A8853F;
+  --gold-soft:rgba(168,133,63,.12);
+  --gold-line:#E6DCC6;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --mint-soft:rgba(127,200,180,.14);
+  --pink:#E58BA4;
+  --pink-deep:#C64E71;
+  --pink-soft:rgba(229,139,164,.14);
+  --serif:'Playfair Display','Noto Serif KR',serif;
+  --kserif:'Noto Serif KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--sans); margin: 0; min-height: 100vh; background: var(--cream); color: var(--ink); -webkit-font-smoothing: antialiased; }
+#main { max-width: 900px; margin: 0 auto; padding: 28px 4vw 60px; }
+h1 { font-family: var(--serif); font-weight: 900; font-size: 24px; letter-spacing: .01em; margin: 0 0 4px; }
+.roleTag { font-family: var(--kserif); font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+.roleTag.admin { color: var(--mint-deep); background: var(--mint-soft); }
+.roleTag.staff { color: var(--gold); background: var(--gold-soft); }
+.box { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; padding: 16px; margin: 12px 0; }
+label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(--kserif); font-size: 13px; letter-spacing: .04em; color: var(--gold); }
+input[type=text], input[type=password], input[type=number], select { padding: 8px; font-size: 14px; font-family: var(--sans); border: 1px solid var(--gold-line); border-radius: 3px; background: #fff; color: var(--ink); }
+input:focus, select:focus { outline: none; border-color: var(--gold); }
+button { font-family: var(--sans); font-size: 13px; letter-spacing: .05em; font-weight: 700; padding: 10px 20px; cursor: pointer; background: var(--ink); color: var(--cream); border: 1px solid var(--ink); border-radius: 3px; transition: .2s; }
+button:hover:not(:disabled) { background: var(--mint-deep); border-color: var(--mint-deep); }
+button:disabled { opacity: 0.4; cursor: default; }
+.hint { color: rgba(26,26,26,.55); font-size: 13px; font-family: var(--kserif); }
+.ok { color: var(--mint-deep); font-weight: 700; }
+.err { color: var(--pink-deep); font-weight: 700; }
+.btnRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fieldRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+.fieldRow > div { display: flex; flex-direction: column; }
+.catChip { display: inline-block; border: 1px solid var(--gold-line); border-radius: 20px; padding: 4px 12px; margin: 3px; font-size: 12px; font-family: var(--kserif); background: #fafafa; }
+.scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
+.scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 4px 6px; text-align: center; }
+.scoreTable th { background: #fafafa; font-family: var(--kserif); }
+.scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; }
+.scoreToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
+.scoreToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
+.scoreToggle.Y { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.scoreTable input[type=text] { width: 100%; min-width: 90px; font-size: 12px; padding: 4px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="box" style="max-width:360px;margin:80px auto;">
+    <h1>관리자 모드</h1>
+    <p class="hint">관리자 또는 조교 비밀번호를 입력하세요.</p>
+    <div class="fieldRow">
+      <div style="flex:1"><input type="password" id="pwInput" placeholder="비밀번호" style="width:100%" autocomplete="off"></div>
+      <button id="loginBtn">입장</button>
+    </div>
+    <p id="loginMsg" class="hint"></p>
+  </div>
+</div>
+
+<div id="appScreen" style="display:none">
+  <div id="main">
+    <h1>관리자 모드 <span id="roleTag" class="roleTag"></span></h1>
+    <p class="hint"><a href="#" id="logoutLink">다른 계정으로</a></p>
+
+    <div class="box" id="categoryBox" style="display:none">
+      <p><b>시험 종류(카테고리) 관리</b></p>
+      <p class="hint">여기서 만든 카테고리는 mathyyuri.com 학생 화면에 새 탭으로, 아래 "성적 입력"에도 바로 나타납니다. 정오표(문항별 O/X) 방식의 일반 시험만 만들 수 있습니다 — 대수연마 1000제나 9모대비처럼 특수한 시험은 여기서 만들 수 없습니다.</p>
+      <div id="categoryList"></div>
+      <div class="fieldRow" style="margin-top:10px">
+        <div><label>기수</label><select id="newCatCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
+        <div><label>카테고리 이름</label><input type="text" id="newCatName" placeholder="예: 기출"></div>
+        <div><label>영문 라벨 (선택)</label><input type="text" id="newCatEnLabel" placeholder="예: PAST EXAM"></div>
+        <button id="addCatBtn">추가</button>
+      </div>
+      <p id="addCatMsg" class="hint"></p>
+    </div>
+
+    <div class="box">
+      <p><b>성적 입력</b></p>
+      <p class="hint">기수·카테고리·반·시험명을 정하고 "불러오기"를 누르면 그 반 학생 명단이 뜹니다 — 이미 입력된 점수가 있으면 같이 불러와집니다. 기본은 X(오답)이고, 클릭할 때마다 X → O → 오답완료 → X 순으로 바뀝니다.</p>
+      <div class="fieldRow">
+        <div><label>기수</label><select id="scCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
+        <div><label>카테고리</label><select id="scCategory"></select></div>
+        <div><label>반</label><select id="scClass"></select></div>
+        <div><label>시험명 (기존 이름을 그대로 입력하면 이어서 수정)</label><input type="text" id="scMission" placeholder="예: 5회차 진도미션" style="width:220px"></div>
+        <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="50" style="width:70px"></div>
+        <button id="scLoadBtn">불러오기</button>
+      </div>
+      <div id="scTableWrap"></div>
+      <div class="btnRow" style="margin-top:10px">
+        <button id="scSaveBtn" disabled>저장</button>
+        <span id="scMsg" class="hint"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+
+// ---------- JSONP (studentnote.html과 동일한 재시도 포함 버전) ----------
+let jsonpCounter = 0;
+function callGetJsonpOnce(params, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
+    const timer = setTimeout(() => { cleanup(); reject(new Error('요청 시간 초과 (' + Math.round(timeoutMs / 1000) + '초)')); }, timeoutMs);
+    const script = document.createElement('script');
+    function cleanup() { clearTimeout(timer); delete window[cbName]; script.remove(); }
+    window[cbName] = (data) => {
+      cleanup();
+      if (!data.ok) reject(new Error(data.error || '서버 오류'));
+      else resolve(data);
+    };
+    script.src = DASHBOARD_URL + '?' + new URLSearchParams({ ...params, callback: cbName }).toString();
+    script.onerror = () => { cleanup(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(script);
+  });
+}
+async function callGetJsonp(params, timeoutMs = 30000) {
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await callGetJsonpOnce(params, timeoutMs);
+    } catch (e) {
+      lastErr = e;
+      const retryable = e.message === '스크립트 로드 실패' || e.message.indexOf('요청 시간 초과') === 0;
+      if (!retryable || attempt === 2) throw e;
+      await new Promise(r => setTimeout(r, 700));
+    }
+  }
+  throw lastErr;
+}
+// 이 사이트의 POST는 전부 no-cors라 응답을 읽을 방법이 없다(구글시트에는
+// 실제로 반영됨) — 그래서 studentnote.html/problembank.html과 같은 방식으로
+// "쏘고 나서 GET으로 다시 불러와 확인" 패턴을 그대로 쓴다.
+async function callPostNoCors(body) {
+  await fetch(DASHBOARD_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+}
+
+// ---------- 로그인 ----------
+let myKey = '';
+let myRole = '';
+let categoriesData = { byCohort: {}, enLabels: {} };
+let rosterData = [];
+
+async function tryLogin(key) {
+  const resp = await callGetJsonp({ action: 'whoami', key: key });
+  myKey = key;
+  myRole = resp.role;
+  sessionStorage.setItem('adminKey', key);
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = '';
+  const tag = document.getElementById('roleTag');
+  tag.textContent = myRole === 'admin' ? '관리자' : '조교';
+  tag.className = 'roleTag ' + myRole;
+  document.getElementById('categoryBox').style.display = myRole === 'admin' ? '' : 'none';
+  await loadCategoriesAndRoster();
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const pw = document.getElementById('pwInput').value.trim();
+  const msg = document.getElementById('loginMsg');
+  if (!pw) return;
+  msg.textContent = '확인 중...';
+  msg.className = 'hint';
+  try {
+    await tryLogin(pw);
+  } catch (e) {
+    msg.textContent = '비밀번호가 올바르지 않습니다.';
+    msg.className = 'hint err';
+  }
+});
+document.getElementById('pwInput').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') document.getElementById('loginBtn').click();
+});
+document.getElementById('logoutLink').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  sessionStorage.removeItem('adminKey');
+  location.reload();
+});
+
+// 새로고침해도 다시 로그인 안 해도 되도록 세션 동안만 캐시.
+(async function initFromCache() {
+  const cached = sessionStorage.getItem('adminKey');
+  if (!cached) return;
+  try { await tryLogin(cached); } catch (e) { sessionStorage.removeItem('adminKey'); }
+})();
+
+// ---------- 카테고리 + 명단 로드 ----------
+async function loadCategoriesAndRoster() {
+  const [catResp, rosterResp] = await Promise.all([
+    callGetJsonp({ action: 'categories' }),
+    callGetJsonp({ action: 'roster', key: myKey }),
+  ]);
+  categoriesData = catResp;
+  rosterData = rosterResp.students;
+  renderCategoryList();
+  populateCohortDependents();
+}
+
+function renderCategoryList() {
+  const el = document.getElementById('categoryList');
+  const cohorts = Object.keys(categoriesData.byCohort).sort();
+  el.innerHTML = cohorts.map(c => {
+    const label = c === '2' ? '대치수학 2기' : c === '3' ? '대치수학 3기' : c + '기';
+    const chips = (categoriesData.byCohort[c] || []).map(n => `<span class="catChip">${escHtml(n)}</span>`).join('');
+    return `<p class="hint" style="margin:8px 0 2px"><b>${label}</b></p><div>${chips || '<span class="hint">없음</span>'}</div>`;
+  }).join('');
+}
+
+function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function classesForCohort(cohort) {
+  const set = new Set();
+  rosterData.forEach(s => { if (s.cohort === cohort) set.add(s.class); });
+  return [...set].sort();
+}
+
+function populateCohortDependents() {
+  const cohort = document.getElementById('scCohort').value;
+  const catSel = document.getElementById('scCategory');
+  const cats = (categoriesData.byCohort[cohort] || []);
+  catSel.innerHTML = cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+
+  const clsSel = document.getElementById('scClass');
+  const classes = classesForCohort(cohort);
+  clsSel.innerHTML = classes.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+}
+document.getElementById('scCohort').addEventListener('change', populateCohortDependents);
+
+// ---------- 새 카테고리 추가 ----------
+document.getElementById('addCatBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('newCatCohort').value;
+  const name = document.getElementById('newCatName').value.trim();
+  const enLabel = document.getElementById('newCatEnLabel').value.trim();
+  const msg = document.getElementById('addCatMsg');
+  if (!name) { msg.textContent = '카테고리 이름을 입력하세요.'; msg.className = 'hint err'; return; }
+  if ((categoriesData.byCohort[cohort] || []).includes(name)) {
+    msg.textContent = '이미 있는 카테고리입니다: ' + name;
+    msg.className = 'hint err';
+    return;
+  }
+  msg.textContent = '추가하는 중... (몇 초 걸릴 수 있어요)';
+  msg.className = 'hint';
+  document.getElementById('addCatBtn').disabled = true;
+  try {
+    await callPostNoCors({ action: 'addcategory', key: myKey, cohort, name, enLabel });
+    // no-cors라 성공 여부를 직접 못 읽으므로, 다시 목록을 불러와서 실제로
+    // 생겼는지 확인한다.
+    await new Promise(r => setTimeout(r, 1500));
+    const fresh = await callGetJsonp({ action: 'categories' });
+    categoriesData = fresh;
+    renderCategoryList();
+    populateCohortDependents();
+    if ((categoriesData.byCohort[cohort] || []).includes(name)) {
+      msg.textContent = `"${name}" 카테고리를 추가했습니다.`;
+      msg.className = 'hint ok';
+      document.getElementById('newCatName').value = '';
+      document.getElementById('newCatEnLabel').value = '';
+    } else {
+      msg.textContent = '추가 확인이 안 됩니다 — 잠시 후 다시 시도해주세요.';
+      msg.className = 'hint err';
+    }
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  } finally {
+    document.getElementById('addCatBtn').disabled = false;
+  }
+});
+
+// ---------- 성적 입력 ----------
+let scStudents = []; // [{name, items, comment}]
+let scQCount = 20;
+
+document.getElementById('scLoadBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('scCohort').value;
+  const category = document.getElementById('scCategory').value;
+  const cls = document.getElementById('scClass').value;
+  const mission = document.getElementById('scMission').value.trim();
+  scQCount = Math.max(1, Math.min(50, Number(document.getElementById('scQCount').value) || 20));
+  const msg = document.getElementById('scMsg');
+  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!mission) { msg.textContent = '시험명을 입력하세요.'; msg.className = 'hint err'; return; }
+  msg.textContent = '불러오는 중...';
+  msg.className = 'hint';
+  document.getElementById('scLoadBtn').disabled = true;
+  try {
+    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
+    scStudents = resp.students.map(s => ({
+      name: s.name,
+      items: Array.from({ length: scQCount }, (_, i) => (s.items && s.items[i] != null) ? s.items[i] : 2),
+      comment: s.comment || '',
+    }));
+    renderScoreTable();
+    document.getElementById('scSaveBtn').disabled = false;
+    msg.textContent = scStudents.length + '명 불러왔습니다.';
+    msg.className = 'hint ok';
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  } finally {
+    document.getElementById('scLoadBtn').disabled = false;
+  }
+});
+
+function renderScoreTable() {
+  const wrap = document.getElementById('scTableWrap');
+  if (!scStudents.length) { wrap.innerHTML = '<p class="hint">이 반에 등록된 학생이 없습니다.</p>'; return; }
+  let html = '<table class="scoreTable"><thead><tr><th>이름</th>';
+  for (let i = 1; i <= scQCount; i++) html += `<th>${i}</th>`;
+  html += '<th>코멘트</th></tr></thead><tbody>';
+  scStudents.forEach((s, si) => {
+    html += `<tr><td class="nameCell">${escHtml(s.name)}</td>`;
+    for (let i = 0; i < scQCount; i++) {
+      const v = s.items[i];
+      const cls = v === 1 ? 'O' : v === 3 ? 'Y' : '';
+      const label = v === 1 ? 'O' : v === 3 ? '△' : 'X';
+      html += `<td><button type="button" class="scoreToggle ${cls}" data-si="${si}" data-qi="${i}">${label}</button></td>`;
+    }
+    html += `<td><input type="text" data-si="${si}" class="commentInput" value="${escHtml(s.comment)}"></td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.scoreToggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const si = Number(btn.dataset.si), qi = Number(btn.dataset.qi);
+      const cur = scStudents[si].items[qi];
+      // X(2) -> O(1) -> 오답완료(3) -> X(2)
+      const next = cur === 2 ? 1 : cur === 1 ? 3 : 2;
+      scStudents[si].items[qi] = next;
+      btn.className = 'scoreToggle ' + (next === 1 ? 'O' : next === 3 ? 'Y' : '');
+      btn.textContent = next === 1 ? 'O' : next === 3 ? '△' : 'X';
+    });
+  });
+  wrap.querySelectorAll('.commentInput').forEach(inp => {
+    inp.addEventListener('input', () => { scStudents[Number(inp.dataset.si)].comment = inp.value; });
+  });
+}
+
+document.getElementById('scSaveBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('scCohort').value;
+  const category = document.getElementById('scCategory').value;
+  const cls = document.getElementById('scClass').value;
+  const mission = document.getElementById('scMission').value.trim();
+  const msg = document.getElementById('scMsg');
+  msg.textContent = '저장하는 중...';
+  msg.className = 'hint';
+  document.getElementById('scSaveBtn').disabled = true;
+  try {
+    const entries = scStudents.map(s => ({ name: s.name, items: s.items, comment: s.comment }));
+    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries });
+    await new Promise(r => setTimeout(r, 1200));
+    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
+    scStudents = resp.students.map(s => ({
+      name: s.name,
+      items: Array.from({ length: scQCount }, (_, i) => (s.items && s.items[i] != null) ? s.items[i] : 2),
+      comment: s.comment || '',
+    }));
+    renderScoreTable();
+    msg.textContent = '저장 완료 ✓';
+    msg.className = 'hint ok';
+  } catch (e) {
+    msg.textContent = '저장 실패: ' + e.message;
+    msg.className = 'hint err';
+  } finally {
+    document.getElementById('scSaveBtn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
