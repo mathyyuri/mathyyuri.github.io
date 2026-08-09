@@ -50,6 +50,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
 .scoreToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .scoreToggle.Y { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.scoreToggle.N { background: #f0eee9; color: rgba(26,26,26,.4); border-color: var(--gold-line); }
 .scoreTable input[type=text] { width: 100%; min-width: 90px; font-size: 12px; padding: 4px; }
 </style>
 </head>
@@ -87,7 +88,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div class="box">
       <p><b>성적 입력</b></p>
-      <p class="hint">기수·카테고리·반·시험명을 정하고 "불러오기"를 누르면 그 반 학생 명단이 뜹니다 — 이미 입력된 점수가 있으면 같이 불러와집니다. 기본은 X(오답)이고, 클릭할 때마다 X → O → 오답완료 → X 순으로 바뀝니다.</p>
+      <p class="hint">기수·카테고리·반·시험명을 정하고 "불러오기"를 누르면 그 반 학생 명단이 뜹니다 — 이미 입력된 점수가 있으면 같이 불러와집니다. 기본은 O(정답)이니 틀린 문항만 눌러서 바꾸면 됩니다 — 클릭할 때마다 O → X → 오답완료(△) → 아직 풀지 않음(−) → O 순으로 바뀝니다.</p>
       <div class="fieldRow">
         <div><label>기수</label><select id="scCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
         <div><label>카테고리</label><select id="scCategory"></select></div>
@@ -287,6 +288,15 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
 // ---------- 성적 입력 ----------
 let scStudents = []; // [{name, items, comment}]
 let scQCount = 20;
+// 문항 값: 1=O(정답) 2=X(오답) 3=오답완료(△) null=아직 풀지 않음.
+// 새로 불러온(저장된 값이 없는) 문항은 대부분 맞는 게 보통이라 기본을
+// O로 채워서, 실제로 틀린 문항만 클릭해서 바꾸면 되게 한다.
+const TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'Y', null: 'N' };
+const TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', null: '−' };
+function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null : 1; }
+function fillDefaultItems(items) {
+  return Array.from({ length: scQCount }, (_, i) => (items && items[i] != null) ? items[i] : 1);
+}
 
 document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
@@ -304,7 +314,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
       name: s.name,
-      items: Array.from({ length: scQCount }, (_, i) => (s.items && s.items[i] != null) ? s.items[i] : 2),
+      items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
     renderScoreTable();
@@ -329,9 +339,7 @@ function renderScoreTable() {
     html += `<tr><td class="nameCell">${escHtml(s.name)}</td>`;
     for (let i = 0; i < scQCount; i++) {
       const v = s.items[i];
-      const cls = v === 1 ? 'O' : v === 3 ? 'Y' : '';
-      const label = v === 1 ? 'O' : v === 3 ? '△' : 'X';
-      html += `<td><button type="button" class="scoreToggle ${cls}" data-si="${si}" data-qi="${i}">${label}</button></td>`;
+      html += `<td><button type="button" class="scoreToggle ${TOGGLE_CLASS[v]}" data-si="${si}" data-qi="${i}">${TOGGLE_LABEL[v]}</button></td>`;
     }
     html += `<td><input type="text" data-si="${si}" class="commentInput" value="${escHtml(s.comment)}"></td></tr>`;
   });
@@ -340,12 +348,10 @@ function renderScoreTable() {
   wrap.querySelectorAll('.scoreToggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const si = Number(btn.dataset.si), qi = Number(btn.dataset.qi);
-      const cur = scStudents[si].items[qi];
-      // X(2) -> O(1) -> 오답완료(3) -> X(2)
-      const next = cur === 2 ? 1 : cur === 1 ? 3 : 2;
+      const next = nextToggleValue(scStudents[si].items[qi]);
       scStudents[si].items[qi] = next;
-      btn.className = 'scoreToggle ' + (next === 1 ? 'O' : next === 3 ? 'Y' : '');
-      btn.textContent = next === 1 ? 'O' : next === 3 ? '△' : 'X';
+      btn.className = 'scoreToggle ' + TOGGLE_CLASS[next];
+      btn.textContent = TOGGLE_LABEL[next];
     });
   });
   wrap.querySelectorAll('.commentInput').forEach(inp => {
@@ -369,7 +375,7 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
       name: s.name,
-      items: Array.from({ length: scQCount }, (_, i) => (s.items && s.items[i] != null) ? s.items[i] : 2),
+      items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
     renderScoreTable();
