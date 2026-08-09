@@ -51,6 +51,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .scoreToggle.Y { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
 .scoreToggle.N { background: #f0eee9; color: rgba(26,26,26,.4); border-color: var(--gold-line); }
+.selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 6px 12px; font-size: 12px; }
+.selectAllBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); }
+.weightInput { width: 40px; padding: 2px; font-size: 11px; text-align: center; }
 .scoreTable input[type=text] { width: 100%; min-width: 90px; font-size: 12px; padding: 4px; }
 </style>
 </head>
@@ -96,6 +99,10 @@ button:disabled { opacity: 0.4; cursor: default; }
         <div><label>시험명 (기존 이름을 그대로 입력하면 이어서 수정)</label><input type="text" id="scMission" placeholder="예: 5회차 진도미션" style="width:220px"></div>
         <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="50" style="width:70px"></div>
         <button id="scLoadBtn">불러오기</button>
+      </div>
+      <div class="fieldRow" id="scWeightBar" style="display:none">
+        <span class="hint">문항별 배점 — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다).</span>
+        <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
       </div>
       <div id="scTableWrap"></div>
       <div class="btnRow" style="margin-top:10px">
@@ -298,6 +305,14 @@ function fillDefaultItems(items) {
   return Array.from({ length: scQCount }, (_, i) => (items && items[i] != null) ? items[i] : 1);
 }
 
+// 문항별 배점. 저장된 배점이 없거나(처음 만드는 시험) 문항 수가 바뀌었으면
+// 100점을 문항 수만큼 고르게 나눈다 — 나머지는 앞쪽 문항에 1점씩 더 준다
+// (예: 20문항이면 5점씩, 7문항이면 15,15,14,14,14,14,14).
+let scWeights = [];
+function equalWeights(n) {
+  const base = Math.floor(100 / n), extra = 100 - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < extra ? 1 : 0));
+}
 document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
@@ -317,6 +332,8 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
+    scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : equalWeights(scQCount);
+    document.getElementById('scWeightBar').style.display = '';
     renderScoreTable();
     document.getElementById('scSaveBtn').disabled = false;
     msg.textContent = scStudents.length + '명 불러왔습니다.';
@@ -334,7 +351,11 @@ function renderScoreTable() {
   if (!scStudents.length) { wrap.innerHTML = '<p class="hint">이 반에 등록된 학생이 없습니다.</p>'; return; }
   let html = '<table class="scoreTable"><thead><tr><th>이름</th>';
   for (let i = 1; i <= scQCount; i++) html += `<th>${i}</th>`;
-  html += '<th>코멘트</th></tr></thead><tbody>';
+  html += '<th>코멘트</th></tr><tr><th>배점</th>';
+  for (let i = 0; i < scQCount; i++) {
+    html += `<th><input type="number" class="weightInput" data-qi="${i}" value="${scWeights[i] != null ? scWeights[i] : ''}" min="0"></th>`;
+  }
+  html += '<th></th></tr></thead><tbody>';
   scStudents.forEach((s, si) => {
     html += `<tr><td class="nameCell">${escHtml(s.name)}</td>`;
     for (let i = 0; i < scQCount; i++) {
@@ -357,7 +378,14 @@ function renderScoreTable() {
   wrap.querySelectorAll('.commentInput').forEach(inp => {
     inp.addEventListener('input', () => { scStudents[Number(inp.dataset.si)].comment = inp.value; });
   });
+  wrap.querySelectorAll('.weightInput').forEach(inp => {
+    inp.addEventListener('input', () => { scWeights[Number(inp.dataset.qi)] = Number(inp.value) || 0; });
+  });
 }
+document.getElementById('scEqualWeightBtn').addEventListener('click', () => {
+  scWeights = equalWeights(scQCount);
+  renderScoreTable();
+});
 
 document.getElementById('scSaveBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
@@ -370,7 +398,7 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   document.getElementById('scSaveBtn').disabled = true;
   try {
     const entries = scStudents.map(s => ({ name: s.name, items: s.items, comment: s.comment }));
-    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries });
+    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: scWeights });
     await new Promise(r => setTimeout(r, 1200));
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
@@ -378,6 +406,7 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
+    scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : scWeights;
     renderScoreTable();
     msg.textContent = '저장 완료 ✓';
     msg.className = 'hint ok';
