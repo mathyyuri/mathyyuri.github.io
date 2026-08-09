@@ -48,7 +48,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 .btnRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .fieldRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
 .fieldRow > div { display: flex; flex-direction: column; }
-.catChip { display: inline-block; border: 1px solid var(--gold-line); border-radius: 20px; padding: 4px 12px; margin: 3px; font-size: 12px; font-family: var(--kserif); background: #fafafa; }
+.catChip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--gold-line); border-radius: 20px; padding: 4px 6px 4px 12px; margin: 3px; font-size: 12px; font-family: var(--kserif); background: #fafafa; }
+.catDeleteBtn { background: none; border: none; color: var(--pink-deep); font-size: 14px; font-weight: 900; line-height: 1; padding: 0 4px; cursor: pointer; }
+.catDeleteBtn:hover { color: var(--pink); }
 .scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12px; }
 .scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 1px 2px; text-align: center; }
 .scoreTable th { background: #fafafa; font-family: var(--kserif); }
@@ -236,9 +238,45 @@ function renderCategoryList() {
   const cohorts = Object.keys(categoriesData.byCohort).sort();
   el.innerHTML = cohorts.map(c => {
     const label = c === '2' ? '대치수학 2기' : c === '3' ? '대치수학 3기' : c + '기';
-    const chips = (categoriesData.byCohort[c] || []).map(n => `<span class="catChip">${escHtml(n)}</span>`).join('');
+    const chips = (categoriesData.byCohort[c] || []).map(n =>
+      `<span class="catChip">${escHtml(n)} <button type="button" class="catDeleteBtn" data-cohort="${c}" data-name="${escHtml(n)}" title="삭제">×</button></span>`
+    ).join('');
     return `<p class="hint" style="margin:8px 0 2px"><b>${label}</b></p><div>${chips || '<span class="hint">없음</span>'}</div>`;
   }).join('');
+  el.querySelectorAll('.catDeleteBtn').forEach(btn => {
+    btn.addEventListener('click', () => deleteCategory(btn.dataset.cohort, btn.dataset.name));
+  });
+}
+
+// 되돌릴 수 없는 작업(그 카테고리의 학생 성적 시트 자체가 통째로 삭제됨)
+// 이라, 실수로 누르는 걸 막으려고 이름을 직접 타이핑해서 확인받는다.
+async function deleteCategory(cohort, name) {
+  const typed = prompt(`"${name}" 카테고리를 삭제하면 그 안의 학생 성적 데이터도 전부 사라지고 되돌릴 수 없습니다.\n정말 삭제하려면 카테고리 이름을 그대로 입력하세요:`);
+  if (typed !== name) {
+    if (typed !== null) alert('입력한 이름이 정확히 일치하지 않아 삭제하지 않았습니다.');
+    return;
+  }
+  const msg = document.getElementById('addCatMsg');
+  msg.textContent = '삭제하는 중...';
+  msg.className = 'hint';
+  try {
+    await callPostNoCors({ action: 'deletecategory', key: myKey, cohort, name });
+    await new Promise(r => setTimeout(r, 1500));
+    const fresh = await callGetJsonp({ action: 'categories' });
+    categoriesData = fresh;
+    renderCategoryList();
+    populateCohortDependents();
+    if (!(categoriesData.byCohort[cohort] || []).includes(name)) {
+      msg.textContent = `"${name}" 카테고리를 삭제했습니다.`;
+      msg.className = 'hint ok';
+    } else {
+      msg.textContent = '삭제 확인이 안 됩니다 — 잠시 후 다시 시도해주세요.';
+      msg.className = 'hint err';
+    }
+  } catch (e) {
+    msg.textContent = '삭제 실패: ' + e.message;
+    msg.className = 'hint err';
+  }
 }
 
 function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
