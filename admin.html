@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 이 페이지는 자주 바뀌는데, 브라우저가 예전 버전을 캐시해서 새로고침해도
+     옛날 화면이 계속 보이는 문제가 실제로 있었다 — 아예 캐시하지 말라고
+     명시한다. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>관리자 모드 (MATHY YURI)</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -355,7 +361,7 @@ function renderScoreTable() {
   for (let i = 1; i <= scQCount; i++) html += `<th>${i}</th>`;
   html += '<th>코멘트</th></tr><tr><th>배점</th>';
   for (let i = 0; i < scQCount; i++) {
-    html += `<th><input type="number" class="weightInput" data-qi="${i}" value="${scWeights[i] != null ? scWeights[i] : ''}" min="0"></th>`;
+    html += `<th><input type="number" class="weightInput" data-qi="${i}" min="0"></th>`;
   }
   html += '<th></th></tr></thead><tbody>';
   scStudents.forEach((s, si) => {
@@ -380,7 +386,12 @@ function renderScoreTable() {
   wrap.querySelectorAll('.commentInput').forEach(inp => {
     inp.addEventListener('input', () => { scStudents[Number(inp.dataset.si)].comment = inp.value; });
   });
+  // value="..." 속성으로 innerHTML 문자열째 넣는 대신, DOM에 붙인 뒤 .value를
+  // 직접 지정한다 — 일부 환경에서 대량의 number input을 한꺼번에 innerHTML로
+  // 밀어넣을 때 값 속성이 안 먹는 경우가 실제로 보고돼서, 더 확실한 방식으로.
   wrap.querySelectorAll('.weightInput').forEach(inp => {
+    const qi = Number(inp.dataset.qi);
+    inp.value = scWeights[qi] != null ? scWeights[qi] : '';
     inp.addEventListener('input', () => { scWeights[Number(inp.dataset.qi)] = Number(inp.value) || 0; });
     // 문항이 많으면 배점을 옆칸으로 계속 옮겨 다니며 입력해야 해서, 화살표
     // 좌우로 바로 옆 칸으로 넘어갈 수 있게 한다(스프레드시트처럼).
