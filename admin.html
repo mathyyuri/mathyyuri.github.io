@@ -43,17 +43,17 @@ button:disabled { opacity: 0.4; cursor: default; }
 .fieldRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
 .fieldRow > div { display: flex; flex-direction: column; }
 .catChip { display: inline-block; border: 1px solid var(--gold-line); border-radius: 20px; padding: 4px 12px; margin: 3px; font-size: 12px; font-family: var(--kserif); background: #fafafa; }
-.scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
-.scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 4px 6px; text-align: center; }
+.scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12px; }
+.scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 1px 2px; text-align: center; }
 .scoreTable th { background: #fafafa; font-family: var(--kserif); }
-.scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; }
-.scoreToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
+.scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 6px; }
+.scoreToggle { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 10px; padding: 0; }
 .scoreToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .scoreToggle.Y { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
 .scoreToggle.N { background: #f0eee9; color: rgba(26,26,26,.4); border-color: var(--gold-line); }
 .selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 6px 12px; font-size: 12px; }
 .selectAllBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); }
-.weightInput { width: 40px; padding: 2px; font-size: 11px; text-align: center; }
+.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: center; }
 .scoreTable input[type=text] { width: 100%; min-width: 90px; font-size: 12px; padding: 4px; }
 </style>
 </head>
@@ -310,8 +310,10 @@ function fillDefaultItems(items) {
 // (예: 20문항이면 5점씩, 7문항이면 15,15,14,14,14,14,14).
 let scWeights = [];
 function equalWeights(n) {
+  // 100이 문항 수로 안 나눠떨어지면 남는 점수는 뒷번호에 몰아준다 —
+  // 보통 뒷번호가 더 어려운 문제라 앞번호보다 낮아지면 안 되므로.
   const base = Math.floor(100 / n), extra = 100 - base * n;
-  return Array.from({ length: n }, (_, i) => base + (i < extra ? 1 : 0));
+  return Array.from({ length: n }, (_, i) => base + (i >= n - extra ? 1 : 0));
 }
 document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
