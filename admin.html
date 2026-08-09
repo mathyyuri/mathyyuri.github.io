@@ -382,6 +382,18 @@ function renderScoreTable() {
   });
   wrap.querySelectorAll('.weightInput').forEach(inp => {
     inp.addEventListener('input', () => { scWeights[Number(inp.dataset.qi)] = Number(inp.value) || 0; });
+    // 문항이 많으면 배점을 옆칸으로 계속 옮겨 다니며 입력해야 해서, 화살표
+    // 좌우로 바로 옆 칸으로 넘어갈 수 있게 한다(스프레드시트처럼).
+    inp.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+      const qi = Number(inp.dataset.qi);
+      const nextQi = ev.key === 'ArrowRight' ? qi + 1 : qi - 1;
+      const nextInp = wrap.querySelector(`.weightInput[data-qi="${nextQi}"]`);
+      if (!nextInp) return;
+      ev.preventDefault();
+      nextInp.focus();
+      nextInp.select();
+    });
   });
 }
 document.getElementById('scEqualWeightBtn').addEventListener('click', () => {
