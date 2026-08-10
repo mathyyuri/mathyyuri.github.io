@@ -285,6 +285,13 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .hw-btn:disabled{opacity:.5;cursor:default}
 .hw-status{font-size:10px;color:rgba(26,26,26,.55);white-space:nowrap}
 .hw-status.ok{color:var(--mint-deep);font-weight:700}
+.alg-answer-panel{width:100%;margin-top:8px;padding:10px 12px;background:#fafafa;border:1px solid var(--gold-line);border-radius:4px;display:none;column-count:2;column-gap:16px}
+.alg-answer-panel.open{display:block;column-count:2}
+.alg-answer-row{display:flex;gap:6px;font-size:12px;padding:2px 0;break-inside:avoid}
+.alg-answer-row .num{font-weight:700;color:var(--gold);min-width:2.4em}
+.alg-answer-row .ans{color:var(--ink)}
+.alg-answer-row .ans .katex{font-size:1em}
+.alg-answer-msg{font-size:11px;color:rgba(26,26,26,.55);width:100%}
 .hw-status.err{color:var(--pink-deep);font-weight:700}
 .hw-pending{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
 .hw-cancel-btn{background:#fff;border:1px solid var(--pink-deep);color:var(--pink-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
@@ -806,6 +813,70 @@ function hwActionsHtml(category,mission){
       +'<button type="button" class="hw-cancel-btn" data-id="'+esc(pending.id)+'">취소</button></span>';
   }
   return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>';
+}
+
+/* ---- 대수연마 1000제: 주제별 빠른정답 ----
+   특강이 끝나면 학생이 스스로 채점해볼 수 있게, 문제은행에 미리 저장해둔
+   정답만 보여준다(무거운 hwpx 파일을 학생 화면에서 직접 파싱하지 않음 —
+   problembank.html "정답 자동 채우기"로 미리 저장해둬야 함). KaTeX는 이
+   버튼을 실제로 눌렀을 때만 불러와서, 대수연마를 안 듣는 학생 화면은
+   더 무거워지지 않게 한다. */
+let katexLoadPromise=null;
+function ensureKatexLoaded(){
+  if(katexLoadPromise) return katexLoadPromise;
+  katexLoadPromise=new Promise(resolve=>{
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+    document.head.appendChild(link);
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+    script.onload=resolve;
+    script.onerror=resolve; // 실패해도 텍스트로라도 보여주게 진행
+    document.head.appendChild(script);
+  });
+  return katexLoadPromise;
+}
+function renderAlgAnswerValue(el,a){
+  if(!a){ el.textContent='—'; return; }
+  if(/[가-힣]/.test(a) || !window.katex){ el.textContent=a; return; }
+  try{ katex.render(a, el, {throwOnError:false, displayMode:false}); }
+  catch(e){ el.textContent=a; }
+}
+async function toggleAlgAnswers(btn){
+  const row=btn.closest('.ia-row');
+  const panel=row.querySelector('.alg-answer-panel');
+  if(panel.classList.contains('open')){
+    panel.classList.remove('open');
+    btn.textContent='빠른정답 보기';
+    return;
+  }
+  const mission=btn.dataset.mission;
+  btn.disabled=true;
+  btn.textContent='불러오는 중...';
+  try{
+    await ensureKatexLoaded();
+    const res=await fetch(GAS_URL+'?action=algtopicanswers&mission='+encodeURIComponent(mission));
+    const json=await res.json();
+    const answers=json.ok?(json.answers||{}):{};
+    const nums=Object.keys(answers).map(Number).sort((a,b)=>a-b);
+    if(!nums.length){
+      panel.innerHTML='<span class="alg-answer-msg">아직 이 주제의 정답이 준비되지 않았습니다.</span>';
+    }else{
+      panel.innerHTML=nums.map(n=>'<div class="alg-answer-row"><span class="num">'+n+'번</span><span class="ans" data-num="'+n+'"></span></div>').join('');
+      nums.forEach(n=>{
+        renderAlgAnswerValue(panel.querySelector('.ans[data-num="'+n+'"]'), answers[String(n)]);
+      });
+    }
+    panel.classList.add('open');
+    btn.textContent='빠른정답 닫기';
+  }catch(e){
+    panel.innerHTML='<span class="alg-answer-msg">불러오지 못했습니다: '+esc(e.message)+'</span>';
+    panel.classList.add('open');
+    btn.textContent='빠른정답 보기';
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 /* ---------- 로그인 ---------- */
@@ -1697,11 +1768,14 @@ function renderPersonal(){
         +'<span class="ia-name">'+esc(r.mission)+'</span>'
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
         +hwActionsHtml(ALG_TAB,r.mission)
+        +'<button type="button" class="hw-btn alg-answer-btn" data-mission="'+esc(r.mission)+'">빠른정답 보기</button>'
         +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
+        +'<div class="alg-answer-panel"></div>'
         +'</div>';
     });
     html+='</div>';
     blk.innerHTML=html;
+    blk.querySelectorAll('.alg-answer-btn').forEach(btn=>btn.addEventListener('click',()=>toggleAlgAnswers(btn)));
     wrap.appendChild(blk);
     const algClsData=algList.map(r=>algAvg[r.mission]!=null?algAvg[r.mission]:null);
     drawBars('chart-alg',algList.map(r=>r.mission),algList.map(r=>r.score),algClsData);
