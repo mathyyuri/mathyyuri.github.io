@@ -519,21 +519,8 @@ const ALG_REWARDS = [{emoji:'🍦',name:'아이스크림'},{emoji:'🍔',name:'�
 const COHORT_LABELS = { '2':{name:'대치수학 2기',sub:'고1 · HIGH 1'}, '3':{name:'대치수학 3기',sub:'중3 · MIDDLE 3'} };
 
 /* ---- 등급 표시 설정 ----
-   등급 값은 시트(9모대비 G열)에서 내려오는 r.grade를 그대로 표시.
-   GRADE_CUTS는 표 위에 참고용 등급컷 띠를 띄우는 용도 (필요 없으면 비우면 됨).
-   25년 9월 고1 수학: 1등급 82(확정), 2~8등급은 EBSi 집계 기준 */
-const GRADE_CUTS = {
-  '25년 9월': [82, 75, 65, 54, 37, 25, 16, 13]
-};
-function cutsFor(mission){
-  const m = norm(mission);
-  if(!m) return null;
-  for(const k in GRADE_CUTS){
-    const nk = norm(k);
-    if(m.indexOf(nk)!==-1 || nk.indexOf(m)!==-1) return GRADE_CUTS[k];
-  }
-  return null;
-}
+   개인화면(ITEM ANALYSIS 옆 작은 배지)에서만 등급을 보여준다 — 공개
+   정오표(renderMissionDetail)에서는 등급/등급컷을 뺐음(요청에 따라). */
 function gradeCls(g){
   const n = parseInt(g,10);
   if(isNaN(n)) return '';
@@ -543,12 +530,6 @@ function gradeHTML(g){
   if(g==null||g==='') return '—';
   const s = String(g).replace(/등급$/,'').trim();
   return esc(s)+'<small>등급</small>';
-}
-function cutStrip(cuts, compact){
-  if(!cuts) return '';
-  let html='<div class="cut-strip'+(compact?' compact':'')+'"><b>등급컷</b>';
-  cuts.forEach((c,i)=>{ html+='<span><i>'+(i+1)+'등급</i>'+c+'</span>'; });
-  return html+'</div>';
 }
 
 /* ---- S+ BLACK 전용: 영역별 · 점수대별 분석 ----
@@ -1554,8 +1535,6 @@ function renderMissionDetail(){
 
   const box=document.getElementById('detail-table');
   if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
-  const cuts=cutsFor(pubMission);
-  const hasGrade=rows.some(r=>r.grade!=null&&r.grade!=='');
   const nQ=Math.max(...rows.map(r=>r.items.length),0);
 
   // 문항별 정답률 (표시 중인 학생들 기준)
@@ -1566,9 +1545,7 @@ function renderMissionDetail(){
     rates.push(tot?Math.round(ok/tot*100):null);
   }
 
-  let html=cutStrip(cuts)
-    +'<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th><th>완성도</th>'
-    +(hasGrade?'<th>등급</th>':'');
+  let html='<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th><th>완성도</th>';
   for(let q=1;q<=nQ;q++){
     html+='<th>'+q+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
   }
@@ -1576,8 +1553,7 @@ function renderMissionDetail(){
   rows.forEach(r=>{
     html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
       +'<td class="score">'+(r.score??'—')+'</td>'
-      +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>'
-      +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'');
+      +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>';
     for(let q=0;q<nQ;q++){
       const v=r.items[q];
       const cls=v===1?'ok':v===2?'no':v===3?'tri':'na';
