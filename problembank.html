@@ -689,7 +689,10 @@ async function openTagEditor(f) {
           const fullBodyXml = extractEndnoteFullBodyXml(entry.markers.get(num).blockXml);
           if (!fullBodyXml) continue;
           const html = await hwpBodyXmlToHtml(fullBodyXml, entry);
-          const plain = html.replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim();
+          // decodeXmlEntities 없이는 "<"/">" 가 들어간 답(예: "log_5 8 < 2log_5 3")이
+          // "&lt;" 글자 그대로 저장됐다(실제 파일에서 확인됨: [대수연마1000제]
+          // 04. 로그함수 83번 등 부등호 들어간 답 다수).
+          const plain = decodeXmlEntities(html.replace(/<[^>]+>/g, '')).replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim();
           const m = plain.match(/\[정답\]\s*(.*?)\s*\[풀이\]/);
           if (!m || !m[1].trim()) continue;
           const answer = m[1].trim();

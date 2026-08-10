@@ -354,6 +354,11 @@ const HWP_EQ_SYMBOLS = {
   // "SMALL∫ER"(적분 기호가 중간에 끼어드는)처럼 깨지던 것도 같이 해결됨.
   cup: '\\cup', cap: '\\cap', smallinter: '\\cap', subset: '\\subset',
   emptyset: '\\emptyset',
+  // 조건제시법 안의 "such that" 세로선("{x vert x<7}" = {x | x<7}) — HWP가
+  // 이 자리에서 LEFT|/RIGHT| 대신 그냥 "vert"라는 글자 키워드를 쓰는 경우가
+  // 있음 (실제 파일에서 확인됨: [대수연마1000제] 04. 로그함수 11~13번,
+  // "\left\{ x vert x<7 \right\}"처럼 글자 그대로 남아있었음).
+  vert: '\\vert',
   PLUSMINUS: '\\pm', TIMES: '\\times', DIV: '\\div', DEG: '^\\circ',
   cdot: '\\cdot', INFTY: '\\infty', infty: '\\infty',
   alpha: '\\alpha', beta: '\\beta', gamma: '\\gamma', delta: '\\delta',

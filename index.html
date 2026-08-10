@@ -292,6 +292,7 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .alg-answer-row .ans{color:var(--ink)}
 .alg-answer-row .ans .katex{font-size:1em}
 .alg-answer-msg{font-size:11px;color:rgba(26,26,26,.55);width:100%}
+.alg-answer-bar{margin-top:14px;text-align:center}
 .hw-status.err{color:var(--pink-deep);font-weight:700}
 .hw-pending{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
 .hw-cancel-btn{background:#fff;border:1px solid var(--pink-deep);color:var(--pink-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
@@ -815,12 +816,12 @@ function hwActionsHtml(category,mission){
   return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>';
 }
 
-/* ---- 대수연마 1000제: 주제별 빠른정답 ----
+/* ---- 대수연마 1000제: 주제별 빠른정답 (전체현황 · 로그인 불필요) ----
    특강이 끝나면 학생이 스스로 채점해볼 수 있게, 문제은행에 미리 저장해둔
    정답만 보여준다(무거운 hwpx 파일을 학생 화면에서 직접 파싱하지 않음 —
    problembank.html "정답 자동 채우기"로 미리 저장해둬야 함). KaTeX는 이
-   버튼을 실제로 눌렀을 때만 불러와서, 대수연마를 안 듣는 학생 화면은
-   더 무거워지지 않게 한다. */
+   버튼을 실제로 눌렀을 때만 불러와서, 대수연마를 안 보는 화면은 더
+   무거워지지 않게 한다. */
 let katexLoadPromise=null;
 function ensureKatexLoaded(){
   if(katexLoadPromise) return katexLoadPromise;
@@ -837,21 +838,31 @@ function ensureKatexLoaded(){
   });
   return katexLoadPromise;
 }
+// 정답은 자유 텍스트라 항상 올바른 LaTeX는 아니다 — "∠B=90° 인 직각삼각형"처럼
+// 수식과 한글 설명이 섞인 답을, 한글이 있다고 통째로 포기하고 글자 그대로
+// 보여주면 "\angle B..." 백슬래시가 그대로 노출된다(실제로 확인된 문제).
+// 한글 구간만 \text{}로 감싸서 KaTeX에 같이 넘기면 수식은 수식대로, 한글은
+// 텍스트로 한 번에 렌더링된다. 수식 명령어가 전혀 없는 순한글 답은 그냥
+// 텍스트로 둔다(oedapnotegenerator.html의 빠른정답과 같은 로직).
+function algWrapKoreanForKatex(s){
+  return s.replace(/[가-힣][가-힣 ,.:%·()~-]*/g, seg=>' \\text{ '+seg.replace(/ +$/,'')+' } ');
+}
 function renderAlgAnswerValue(el,a){
   if(!a){ el.textContent='—'; return; }
-  if(/[가-힣]/.test(a) || !window.katex){ el.textContent=a; return; }
-  try{ katex.render(a, el, {throwOnError:false, displayMode:false}); }
+  if(!window.katex){ el.textContent=a; return; }
+  const hasKorean=/[가-힣]/.test(a);
+  const hasMathCmd=/\\[a-zA-Z]+|\^|_/.test(a);
+  if(hasKorean && !hasMathCmd){ el.textContent=a; return; }
+  const toRender=hasKorean?algWrapKoreanForKatex(a):a;
+  try{ katex.render(toRender, el, {throwOnError:false, displayMode:false}); }
   catch(e){ el.textContent=a; }
 }
-async function toggleAlgAnswers(btn){
-  const row=btn.closest('.ia-row');
-  const panel=row.querySelector('.alg-answer-panel');
+async function toggleAlgAnswers(btn,panel,mission){
   if(panel.classList.contains('open')){
     panel.classList.remove('open');
     btn.textContent='빠른정답 보기';
     return;
   }
-  const mission=btn.dataset.mission;
   btn.disabled=true;
   btn.textContent='불러오는 중...';
   try{
@@ -1460,8 +1471,13 @@ function renderAlgebraMissionDetail(){
   document.getElementById('detail-sub').textContent='ROUND SCORE · '+rows.length+'명 · 점수 높은 순';
   const box=document.getElementById('detail-table');
   if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
-  box.innerHTML='<div class="alg-chart-wrap"><canvas id="alg-round-chart"></canvas></div>';
+  box.innerHTML='<div class="alg-chart-wrap"><canvas id="alg-round-chart"></canvas></div>'
+    +'<div class="alg-answer-bar"><button type="button" class="hw-btn alg-answer-btn" id="algAnswerBtn">빠른정답 보기</button></div>'
+    +'<div class="alg-answer-panel" id="algAnswerPanel"></div>';
   drawAlgRoundChart(rows);
+  const algBtn=document.getElementById('algAnswerBtn'), algPanel=document.getElementById('algAnswerPanel');
+  const mission=pubMission;
+  algBtn.addEventListener('click',()=>toggleAlgAnswers(algBtn,algPanel,mission));
 }
 
 /* ---- 9모대비 자료: 문제 이미지 + 해설 영상 ---- */
@@ -1768,14 +1784,11 @@ function renderPersonal(){
         +'<span class="ia-name">'+esc(r.mission)+'</span>'
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
         +hwActionsHtml(ALG_TAB,r.mission)
-        +'<button type="button" class="hw-btn alg-answer-btn" data-mission="'+esc(r.mission)+'">빠른정답 보기</button>'
         +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
-        +'<div class="alg-answer-panel"></div>'
         +'</div>';
     });
     html+='</div>';
     blk.innerHTML=html;
-    blk.querySelectorAll('.alg-answer-btn').forEach(btn=>btn.addEventListener('click',()=>toggleAlgAnswers(btn)));
     wrap.appendChild(blk);
     const algClsData=algList.map(r=>algAvg[r.mission]!=null?algAvg[r.mission]:null);
     drawBars('chart-alg',algList.map(r=>r.mission),algList.map(r=>r.score),algClsData);
