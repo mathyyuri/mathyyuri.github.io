@@ -366,6 +366,14 @@ const HWP_EQ_SYMBOLS = {
   arrow: '\\rightarrow',
   rarrow: '\\rightarrow', larrow: '\\leftarrow', lrarrow: '\\leftrightarrow',
   rrarrow: '\\Rightarrow', llarrow: '\\Leftarrow', lrrarrow: '\\Leftrightarrow',
+  // 집합 연산/관계 기호 — 실제 파일 확인 결과 교집합은 거의 항상 "SMALLINTER"
+  // 한 단어로 붙어 나오고("A SMALLINTER B"), "CAP"은 드물게 따로 쓰임; 둘 다
+  // ∩로 변환. 이 키워드들이 없으면 글자 그대로 남거나("SMALLINTER" 중
+  // "INT"만 걸려 "∫ER"처럼 반쪽만 깨져 나옴 — 실제 오답노트에서 확인),
+  // 합집합("CUP")도 그대로 남는다.
+  CAP: '\\cap', SMALLINTER: '\\cap', CUP: '\\cup', cup: '\\cup',
+  SUBSET: '\\subset', SUPSET: '\\supset',
+  EMPTYSET: '\\emptyset', emptyset: '\\emptyset',
 };
 
 // Case-insensitive, longest-match-first keyword table — HWP's equation
