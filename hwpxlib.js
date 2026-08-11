@@ -654,12 +654,18 @@ async function hwpPicToHtml(picXml, entry) {
     // <hp:curSz width="678" height="1514"/> — 2.4mm×5.3mm, HWPUNIT/7200in
     // like hp:rect — so with no size hint at all the browser fell back to
     // the PNG's raw pixel size and the tiny inline arrow rendered ~6x
-    // taller than the surrounding text). max-width (not a fixed width)
-    // only ever CAPS it at the document's own intended size — an image
-    // whose container is already narrower than that still shrinks exactly
-    // as before, so bigger diagrams/graphs aren't affected either way.
+    // taller than the surrounding text). Capping at the LITERAL mm size
+    // overcorrected, though: "mm" here means real paper-print scale, but
+    // this page isn't laid out at 1:1 print scale, so 2.4mm rendered as
+    // ~9px — too few pixels for the arrow's curved linework to stay
+    // recognizable, so it just reads as a small gray blob (confirmed
+    // against a real screenshot). CSS max() picks whichever is bigger: the
+    // print-accurate mm size (unchanged for normal-sized diagrams/graphs,
+    // which are already far above this floor) or a 1.8em floor that keeps
+    // small decorative icons legible relative to the surrounding text
+    // regardless of the page's own font-size.
     const sz = rectSizeMm(picXml);
-    const sizeAttr = sz ? ` style="max-width:${sz.w.toFixed(1)}mm;height:auto"` : '';
+    const sizeAttr = sz ? ` style="max-width:max(${sz.w.toFixed(1)}mm, 1.8em);height:auto"` : '';
     // data-bin-id ties the rendered <img> back to its manifest entry
     // (binaryItemIDRef) and zip path — needed by problembank.html's
     // pre-upload image editor to know which BinData/ file to overwrite
