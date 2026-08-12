@@ -366,6 +366,14 @@ const HWP_EQ_SYMBOLS = {
   arrow: '\\rightarrow',
   rarrow: '\\rightarrow', larrow: '\\leftarrow', lrarrow: '\\leftrightarrow',
   rrarrow: '\\Rightarrow', llarrow: '\\Leftarrow', lrrarrow: '\\Leftrightarrow',
+  // 집합 연산/관계 기호 — 실제 파일 확인 결과 교집합은 거의 항상 "SMALLINTER"
+  // 한 단어로 붙어 나오고("A SMALLINTER B"), "CAP"은 드물게 따로 쓰임; 둘 다
+  // ∩로 변환. 이 키워드들이 없으면 글자 그대로 남거나("SMALLINTER" 중
+  // "INT"만 걸려 "∫ER"처럼 반쪽만 깨져 나옴 — 실제 오답노트에서 확인),
+  // 합집합("CUP")도 그대로 남는다.
+  CAP: '\\cap', SMALLINTER: '\\cap', CUP: '\\cup', cup: '\\cup',
+  SUBSET: '\\subset', SUPSET: '\\supset',
+  EMPTYSET: '\\emptyset', emptyset: '\\emptyset',
 };
 
 // Case-insensitive, longest-match-first keyword table — HWP's equation
@@ -450,6 +458,25 @@ function convertHwpEquationToLatex(script) {
   s = s.replace(/RIGHT\s*\}/gi, '\\right\\}');
   s = s.replace(/LEFT\s*\|/gi, '\\left|');
   s = s.replace(/RIGHT\s*\|/gi, '\\right|');
+  // "RIGHT ."(마침표)는 HWP의 "보이지 않는 닫는 괄호" 표기 — 세트빌더 표기
+  // "A={x|x..." 처럼 왼쪽 LEFT{ / LEFT|가 두 개 열렸는데 그중 하나만 이
+  // 수식 안에서 닫고 싶을 때 씀. LaTeX도 동일하게 \left./\right.가 "투명한
+  // 닫는 괄호"라서 그대로 대응됨(실제 파일 40번 문제 A={x|x는 9 이하의
+  // 짝수인 자연수}에서 "LEFT | ... RIGHT ."로 확인).
+  s = s.replace(/LEFT\s*\./gi, '\\left.');
+  s = s.replace(/RIGHT\s*\./gi, '\\right.');
+  // 위의 구체적 괄호쌍 치환들을 다 거치고도 순수 텍스트로 남아있는 LEFT/RIGHT는
+  // 반드시 깨진 파일이다 — 정상 스크립트라면 LEFT/RIGHT 뒤에는 항상 괄호
+  // 문자가 온다. 실제 40번 문제에서 확인된 원인: 여러 <hp:equation>으로
+  // 쪼개진 세트빌더 표기의 마지막 "}"가 파일 자체에서 통째로 유실되어
+  // ("...자연수" 다음 조각의 스크립트가 그냥 "right"만 남고 "}"가 없음),
+  // 닫는 괄호 문자가 아예 없어서 위 정규식들이 하나도 못 걸고 "RIGHT"
+  // 글자 그대로 남았다("𝑟𝑖𝑔ℎ𝑡"처럼 깨져 보임). 실제 사례가 전부 "}"로
+  // 닫히는 집합/구간 표기였으므로, 유실된 괄호는 "}"였다고 가정하는 게
+  // 가장 안전한 기본값 — 방치하는 것보다 항상 나음(정상 문서에는 애초에
+  // 안 걸리는 규칙이라 부작용이 없음).
+  s = s.replace(/(?<!\\)\bLEFT\b/gi, '\\left\\{');
+  s = s.replace(/(?<!\\)\bRIGHT\b/gi, '\\right\\}');
   // "원소이다/아니다" 기호 — HWP 키워드 "NOTIN"/"IN" (∉/∈), 실제 파일에서
   // 변환 없이 그대로 "IN"/"notin" 글자로 남는 것 확인. \b 경계를 써서
   // sin/min/point처럼 "in"을 부분 문자열로 포함한 일반 단어를 잘못 건드리지
@@ -563,6 +590,13 @@ function convertHwpEquationToLatex(script) {
   const leftCount = (s.match(/\\left\b/g) || []).length;
   const rightCount = (s.match(/\\right\b/g) || []).length;
   if (leftCount !== rightCount) {
+    // \left./\right. (the "invisible" null-delimiter pair, see the
+    // LEFT/RIGHT "." handling above) must be dropped as a WHOLE unit here,
+    // not just the "\left"/"\right" command — unlike "\left(" -> "(" where
+    // leaving the bare bracket behind IS the intended plain-bracket
+    // fallback, a bare "." left behind after stripping "\right." would
+    // show up as a stray, visibly wrong period with nothing to pair it to.
+    s = s.replace(/\\left\./g, '').replace(/\\right\./g, '');
     s = s.replace(/\\left\b/g, '').replace(/\\right\b/g, '');
   }
   return s.trim();
@@ -613,12 +647,61 @@ async function hwpPicToHtml(picXml, entry) {
     const base64 = await file.async('base64');
     const ext = href.split('.').pop().toLowerCase();
     const mime = mediaTypeForExt(ext);
+    // The embedded PNG/JPG's own native pixel size is often a much bigger
+    // master asset than the document actually displays it at (confirmed
+    // against a real file: a small decorative flow-arrow icon between two
+    // (가)/(나) boxes had a 36×82px source image but was placed at
+    // <hp:curSz width="678" height="1514"/> — 2.4mm×5.3mm, HWPUNIT/7200in
+    // like hp:rect — so with no size hint at all the browser fell back to
+    // the PNG's raw pixel size and the tiny inline arrow rendered ~6x
+    // taller than the surrounding text). Capping at the LITERAL mm size
+    // overcorrected, though: "mm" here means real paper-print scale, but
+    // this page isn't laid out at 1:1 print scale, so 2.4mm rendered as
+    // ~9px — too few pixels for the arrow's curved linework to stay
+    // recognizable, so it just reads as a small gray blob (confirmed
+    // against a real screenshot). CSS max() picks whichever is bigger: the
+    // print-accurate mm size (unchanged for normal-sized diagrams/graphs,
+    // which are already far above this floor) or a 1.8em floor that keeps
+    // small decorative icons legible relative to the surrounding text
+    // regardless of the page's own font-size.
+    // curSz can legitimately be "0 0" — confirmed against a real content
+    // diagram (river-crossing distance problem) where that means "no
+    // explicit resize, use the image's own original size" rather than
+    // "shrunk to nothing". Reading that literal 0 as the target size sent
+    // it through the 1.8em floor above meant for tiny decorative icons,
+    // shrinking a real informative diagram down to an unreadable dot. Fall
+    // back to orgSz (the image's un-resized placement size) whenever curSz
+    // is missing or zero.
+    let sz = rectSizeMm(picXml);
+    if (!sz || (sz.w === 0 && sz.h === 0)) {
+      const orgM = picXml.match(/<hp:orgSz width="(\d+)" height="(\d+)"/);
+      sz = orgM ? { w: hwpUnitToMm(Number(orgM[1])), h: hwpUnitToMm(Number(orgM[2])) } : null;
+    }
+    const sizeAttr = sz ? ` style="max-width:max(${sz.w.toFixed(1)}mm, 1.8em);height:auto"` : '';
     // data-bin-id ties the rendered <img> back to its manifest entry
     // (binaryItemIDRef) and zip path — needed by problembank.html's
     // pre-upload image editor to know which BinData/ file to overwrite
     // when the user recolors an image's background.
-    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt="" data-bin-id="${escapeHtml(refM[1])}" data-bin-href="${escapeHtml(href)}">`;
+    return `<img class="hwpImg" src="data:${mime};base64,${base64}" alt=""${sizeAttr} data-bin-id="${escapeHtml(refM[1])}" data-bin-href="${escapeHtml(href)}">`;
   } catch (e) { return ''; }
+}
+
+// A HWP table's cells often aren't meant to draw a full grid — a table is
+// routinely used purely for LAYOUT/alignment (e.g. a "(가)/(나) 풀이 과정"
+// table where only the row-label column should show any line at all, every
+// content cell intentionally borderless) — confirmed against a real file
+// where every <hp:tc> pointed at borderFillIDRef="12" (all four sides
+// type="NONE" in that ID's <hh:borderFill> definition in header.xml)
+// except one lone spacer cell using id="10" (all SOLID). Our own
+// `.hwpTbl td{border:1px solid...}` CSS has no way to know that and boxes
+// every cell uniformly, which turns a mostly-invisible layout table into a
+// fully gridded one with one bare empty box sitting in a corner for no
+// visible reason — confirmed as the literal complaint from a real
+// screenshot. borderFillsAllNone(id) below answers "does this cell's
+// border-fill leave all four sides invisible", which is the one bit
+// hwpTblToHtml needs to turn that OFF per cell where the source intended it.
+function borderFillAllNone(entry, id) {
+  return !!(entry && entry.borderFills && entry.borderFills.get(id));
 }
 
 async function hwpTblToHtml(tblXml, entry) {
@@ -633,7 +716,11 @@ async function hwpTblToHtml(tblXml, entry) {
       const rowSpan = spanM ? spanM[2] : '1';
       const subList = findTopLevelBlocks(tc.text, 'hp:subList')[0];
       const cellInner = subList ? await hwpBodyXmlToHtml(subList.text, entry) : '';
-      rowHtml += `<td colspan="${colSpan}" rowspan="${rowSpan}">${cellInner}</td>`;
+      const fillM = tc.text.match(/<hp:tc\b[^>]*\bborderFillIDRef="(\d+)"/);
+      // Inline style beats the page's own .hwpTbl td{border:...} rule by
+      // CSS specificity without needing to touch any consuming page's CSS.
+      const noBorderAttr = fillM && borderFillAllNone(entry, fillM[1]) ? ' style="border:none"' : '';
+      rowHtml += `<td colspan="${colSpan}" rowspan="${rowSpan}"${noBorderAttr}>${cellInner}</td>`;
     }
     rowsHtml += `<tr>${rowHtml}</tr>`;
   }
@@ -778,7 +865,19 @@ async function hwpRunInnerToHtml(runXml, entry) {
       let latex = '';
       try { latex = rawScript ? convertHwpEquationToLatex(rawScript) : ''; } catch (e) { latex = ''; }
       if (latex) {
-        out += ` <span class="eq">\\(${latex}\\)</span> `;
+        // latex is spliced straight into an HTML string, not set via
+        // textContent — a script like "3<a<7" (bare comparison operators,
+        // not an HWP keyword, so nothing upstream ever touches them) passes
+        // straight through unescaped and its literal "<a" gets parsed as
+        // the START OF A REAL HTML TAG, corrupting everything after it
+        // (confirmed against a real file: the whole rest of the line
+        // vanished and a stray "\(" was left dangling as visible text).
+        // escapeHtml here is safe for genuine LaTeX too — auto-render reads
+        // the rendered DOM's text content, which the browser has already
+        // decoded back from "&lt;"/"&amp;" to "<"/"&" by then, so KaTeX
+        // still sees the exact same string (including "&" as a literal
+        // \begin{cases} column separator).
+        out += ` <span class="eq">\\(${escapeHtml(latex)}\\)</span> `;
       } else if (rawScript) {
         // Conversion failed outright — show the script text instead of
         // silently dropping the equation (a visible, ugly fallback beats a
@@ -1250,6 +1349,30 @@ function detectMarkers(sectionsXml) {
   return result;
 }
 
+// header.xml's <hh:borderFills> defines every borderFillIDRef a table cell
+// (or paragraph border) can point at — each one independently sets all
+// four sides' own type ("NONE" = invisible, anything else = drawn). We only
+// need the "all four sides are NONE" bit (see hwpTblToHtml), not the full
+// style/color/width per side — this document has no shared use for those
+// yet, so no reason to carry the rest.
+async function parseBorderFillMap(zipData) {
+  const map = new Map();
+  const file = zipData.file('Contents/header.xml');
+  if (!file) return map;
+  const xml = await file.async('string');
+  for (const b of findTopLevelBlocks(xml, 'hh:borderFill')) {
+    const idM = b.text.match(/<hh:borderFill\b[^>]*\bid="(\d+)"/);
+    if (!idM) continue;
+    const sides = ['leftBorder', 'rightBorder', 'topBorder', 'bottomBorder'];
+    const allNone = sides.every(side => {
+      const sideM = b.text.match(new RegExp(`<hh:${side}\\b[^>]*\\btype="([A-Z]+)"`));
+      return sideM && sideM[1] === 'NONE';
+    });
+    map.set(idM[1], allNone);
+  }
+  return map;
+}
+
 async function parseHwpx(zipData) {
   const hpf = await zipData.file('Contents/content.hpf').async('string');
   const spineMatches = [...hpf.matchAll(/<opf:itemref idref="([^"]+)"/g)].map(m => m[1]);
@@ -1259,5 +1382,6 @@ async function parseHwpx(zipData) {
   const sectionsXml = [];
   for (const path of sectionOrder) sectionsXml.push({ name: path, xml: await zipData.file(path).async('string') });
   const markers = detectMarkers(sectionsXml);
-  return { zipData, sectionOrder, manifestItems, markers };
+  const borderFills = await parseBorderFillMap(zipData);
+  return { zipData, sectionOrder, manifestItems, markers, borderFills };
 }
