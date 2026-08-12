@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>공동 필기 — MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+:root{
+  --cream:#FBF8F1;
+  --ink:#1A1A1A;
+  --gold:#A8853F;
+  --gold-line:#E6DCC6;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --pink:#E58BA4;
+  --pink-deep:#C64E71;
+  --serif:'Playfair Display','Noto Serif KR',serif;
+  --kserif:'Noto Serif KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin:0; font-family:var(--sans); background:var(--cream); color:var(--ink); -webkit-font-smoothing:antialiased; }
+header { padding:10px 16px; border-bottom:1px solid var(--gold-line); background:#fff; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0; }
+.roleBadge { font-family:var(--kserif); font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
+.roleBadge.student { background:rgba(43,108,176,.12); color:#2b6cb0; }
+.roleBadge.teacher { background:rgba(214,69,69,.12); color:#d64545; }
+.metaInfo { font-family:var(--kserif); font-size:12px; color:rgba(26,26,26,.6); }
+#connBadge { font-size:11px; font-family:var(--kserif); margin-left:auto; }
+#connBadge.on { color:var(--mint-deep); }
+#connBadge.off { color:var(--pink-deep); }
+#banner { background:var(--pink-soft,rgba(229,139,164,.14)); color:var(--pink-deep); padding:8px 16px; font-size:13px; font-family:var(--kserif); display:none; }
+#banner.show { display:block; }
+#toolbar { display:flex; align-items:center; gap:8px; padding:8px 16px; background:#fff; border-bottom:1px solid var(--gold-line); flex-wrap:wrap; }
+#toolbar button { font-family:var(--sans); font-size:12px; font-weight:700; padding:7px 12px; cursor:pointer; background:var(--ink); color:var(--cream); border:1px solid var(--ink); border-radius:4px; }
+#toolbar button:hover:not(:disabled){ background:var(--mint-deep); border-color:var(--mint-deep); }
+#toolbar button.active { background:var(--mint-deep); border-color:var(--mint-deep); }
+#toolbar button:disabled{ opacity:.4; cursor:default; }
+.swatch { width:24px; height:24px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--gold-line); cursor:pointer; padding:0; }
+.swatch.active { box-shadow:0 0 0 2px var(--ink); }
+.sep { width:1px; height:22px; background:var(--gold-line); margin:0 2px; }
+#pageNav { display:flex; align-items:center; gap:6px; font-family:var(--kserif); font-size:13px; }
+#stageWrap { display:flex; justify-content:center; padding:18px 10px 60px; }
+#stage { position:relative; box-shadow:0 2px 14px rgba(0,0,0,.12); background:#fff; }
+#stage canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+#docCanvas { pointer-events:none; }
+#inkCanvas { touch-action:none; cursor:crosshair; }
+#inkCanvas.eraser { cursor:cell; }
+#submitBar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--gold-line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
+#submitStatus { font-family:var(--kserif); font-size:13px; color:rgba(26,26,26,.6); }
+.hint { font-family:var(--kserif); font-size:12px; color:rgba(26,26,26,.5); }
+</style>
+</head>
+<body>
+<header>
+  <h1>✍️ 공동 필기</h1>
+  <span id="roleBadgeEl" class="roleBadge"></span>
+  <span id="metaEl" class="metaInfo"></span>
+  <span id="connBadge">●</span>
+</header>
+<div id="banner"></div>
+<div id="toolbar">
+  <button type="button" id="penBtn" class="active">펜</button>
+  <button type="button" id="eraserBtn">지우개</button>
+  <span class="sep"></span>
+  <button type="button" class="swatch" data-color="#2b6cb0" style="background:#2b6cb0"></button>
+  <button type="button" class="swatch" data-color="#d64545" style="background:#d64545"></button>
+  <button type="button" class="swatch" data-color="#1a1a1a" style="background:#1a1a1a"></button>
+  <button type="button" class="swatch" data-color="#3E8F79" style="background:#3E8F79"></button>
+  <span class="sep"></span>
+  <button type="button" class="widthBtn" data-width="2">얇게</button>
+  <button type="button" class="widthBtn active" data-width="4">보통</button>
+  <button type="button" class="widthBtn" data-width="8">굵게</button>
+  <span class="sep"></span>
+  <button type="button" id="undoBtn">되돌리기</button>
+  <button type="button" id="clearBtn" style="display:none">전체 지우기</button>
+  <span class="sep" id="pageNavSep" style="display:none"></span>
+  <div id="pageNav" style="display:none">
+    <button type="button" id="prevPageBtn">◀</button>
+    <span id="pageIndicator">1 / 1</span>
+    <button type="button" id="nextPageBtn">▶</button>
+  </div>
+</div>
+<div id="stageWrap">
+  <div id="stage"><canvas id="docCanvas"></canvas><canvas id="inkCanvas"></canvas></div>
+</div>
+<div id="submitBar" style="display:none">
+  <button type="button" id="submitBtn">제출</button>
+  <span id="submitStatus"></span>
+  <span class="hint" id="multiPageHint" style="display:none">여러 쪽 문서는 각 쪽마다 이 버튼을 따로 눌러 제출해주세요 (쪽마다 따로 제출됩니다).</span>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const qp = new URLSearchParams(location.search);
+const sessionId = (qp.get('session') || '').trim();
+const role = qp.get('role') === 'teacher' ? 'teacher' : 'student';
+const docId = (qp.get('docId') || '').trim();
+const studentName = qp.get('name') || '';
+const className = qp.get('class') || '';
+const cohort = qp.get('cohort') || '2';
+const category = qp.get('category') || '';
+const mission = qp.get('mission') || '';
+
+const docCanvas = document.getElementById('docCanvas');
+const inkCanvas = document.getElementById('inkCanvas');
+const stageWrap = document.getElementById('stageWrap');
+let docCtx, inkCtx;
+let stageCssW = 0, stageCssH = 0;
+let naturalW = 850, naturalH = 1202;
+
+let pdfDoc = null, currentPage = 1, totalPages = 1;
+let staticImg = null; // 이미지 문서인 경우
+
+let db = null, strokesRef = null;
+let strokesCache = {};
+let myStrokeIds = [];
+let currentTool = 'pen';
+let penColor = role === 'teacher' ? '#d64545' : '#2b6cb0';
+let penWidth = 4;
+let drawing = false, curStrokeId = null, curPoints = [], lastPushAt = 0;
+
+function showBanner(msg){
+  const b = document.getElementById('banner');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+
+function initHeader(){
+  const badge = document.getElementById('roleBadgeEl');
+  badge.textContent = role === 'teacher' ? '선생님 모드 (빨간펜)' : '학생 모드';
+  badge.className = 'roleBadge ' + role;
+  const bits = [];
+  if (studentName) bits.push(studentName);
+  if (category) bits.push(category);
+  if (mission) bits.push(mission);
+  document.getElementById('metaEl').textContent = bits.join(' · ');
+  document.getElementById('clearBtn').style.display = role === 'teacher' ? '' : 'none';
+  document.getElementById('submitBar').style.display = role === 'student' ? 'flex' : 'none';
+}
+
+function setupStage(w, h){
+  naturalW = w; naturalH = h;
+  const wrapW = Math.min(stageWrap.clientWidth - 20, 900);
+  stageCssW = wrapW;
+  stageCssH = wrapW * (h / w);
+  const dpr = window.devicePixelRatio || 1;
+  [docCanvas, inkCanvas].forEach(c => {
+    c.style.width = stageCssW + 'px';
+    c.style.height = stageCssH + 'px';
+    c.width = Math.round(stageCssW * dpr);
+    c.height = Math.round(stageCssH * dpr);
+  });
+  document.getElementById('stage').style.width = stageCssW + 'px';
+  document.getElementById('stage').style.height = stageCssH + 'px';
+  docCtx = docCanvas.getContext('2d');
+  inkCtx = inkCanvas.getContext('2d');
+  inkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  inkCtx.lineCap = 'round';
+  inkCtx.lineJoin = 'round';
+}
+
+function renderDocBlank(){
+  docCtx.fillStyle = '#fff';
+  docCtx.fillRect(0, 0, docCanvas.width, docCanvas.height);
+}
+
+function renderDocImage(){
+  docCtx.fillStyle = '#fff';
+  docCtx.fillRect(0, 0, docCanvas.width, docCanvas.height);
+  docCtx.drawImage(staticImg, 0, 0, docCanvas.width, docCanvas.height);
+}
+
+async function renderPdfPage(n){
+  const page = await pdfDoc.getPage(n);
+  const baseViewport = page.getViewport({ scale: 1 });
+  if (n === currentPage || stageCssW === 0) setupStage(baseViewport.width, baseViewport.height);
+  const renderViewport = page.getViewport({ scale: docCanvas.width / baseViewport.width });
+  docCtx.fillStyle = '#fff';
+  docCtx.fillRect(0, 0, docCanvas.width, docCanvas.height);
+  await page.render({ canvasContext: docCtx, viewport: renderViewport }).promise;
+}
+
+function base64ToUint8Array(b64){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+async function loadDoc(){
+  if (!docId) {
+    setupStage(naturalW, naturalH);
+    renderDocBlank();
+    attachPageListeners(1);
+    return;
+  }
+  const res = await fetch(GAS_URL + '?action=hwphoto&id=' + encodeURIComponent(docId));
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || '문서를 불러오지 못했습니다.');
+  const mime = json.photo.mime || '';
+  const data = json.photo.data;
+  if (mime === 'application/pdf') {
+    pdfDoc = await pdfjsLib.getDocument({ data: base64ToUint8Array(data) }).promise;
+    totalPages = pdfDoc.numPages;
+    currentPage = 1;
+    await renderPdfPage(1);
+    if (totalPages > 1) {
+      document.getElementById('pageNav').style.display = 'flex';
+      document.getElementById('pageNavSep').style.display = '';
+      document.getElementById('multiPageHint').style.display = '';
+      updatePageIndicator();
+    }
+  } else {
+    const dataUrl = 'data:' + mime + ';base64,' + data;
+    const img = new Image();
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = dataUrl; });
+    staticImg = img;
+    setupStage(img.naturalWidth, img.naturalHeight);
+    renderDocImage();
+  }
+  attachPageListeners(currentPage);
+}
+
+function updatePageIndicator(){
+  document.getElementById('pageIndicator').textContent = currentPage + ' / ' + totalPages;
+  document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+  document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+}
+
+async function goToPage(n){
+  if (n < 1 || n > totalPages || n === currentPage) return;
+  currentPage = n;
+  await renderPdfPage(n);
+  attachPageListeners(n);
+  updatePageIndicator();
+}
+
+function pagePath(n){ return 'sessions/' + sessionId + '/pages/' + n + '/strokes'; }
+
+function attachPageListeners(n){
+  if (strokesRef) strokesRef.off();
+  strokesCache = {};
+  myStrokeIds = [];
+  if (!db) { renderInkAll(); return; }
+  strokesRef = db.ref(pagePath(n));
+  strokesRef.on('child_added', snap => { strokesCache[snap.key] = snap.val(); scheduleRedraw(); });
+  strokesRef.on('child_changed', snap => { strokesCache[snap.key] = snap.val(); scheduleRedraw(); });
+  strokesRef.on('child_removed', snap => { delete strokesCache[snap.key]; scheduleRedraw(); });
+}
+
+let redrawScheduled = false;
+function scheduleRedraw(){
+  if (redrawScheduled) return;
+  redrawScheduled = true;
+  requestAnimationFrame(() => { redrawScheduled = false; renderInkAll(); });
+}
+
+function renderInkAll(){
+  if (!inkCtx) return;
+  inkCtx.clearRect(0, 0, stageCssW, stageCssH);
+  Object.values(strokesCache).forEach(drawStroke);
+}
+
+function drawStroke(s){
+  if (!s || !s.points || !s.points.length) return;
+  if (s.points.length === 1) {
+    const [x, y] = s.points[0];
+    inkCtx.beginPath();
+    inkCtx.fillStyle = s.color || '#000';
+    inkCtx.arc(x * stageCssW, y * stageCssH, (s.width || 4) / 2, 0, Math.PI * 2);
+    inkCtx.fill();
+    return;
+  }
+  inkCtx.beginPath();
+  inkCtx.strokeStyle = s.color || '#000';
+  inkCtx.lineWidth = s.width || 4;
+  s.points.forEach(([x, y], i) => {
+    const px = x * stageCssW, py = y * stageCssH;
+    if (i === 0) inkCtx.moveTo(px, py); else inkCtx.lineTo(px, py);
+  });
+  inkCtx.stroke();
+}
+
+function getNormPoint(e){
+  const rect = inkCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  return [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))];
+}
+
+function distToSeg(p, a, b){
+  const [px, py] = p, [ax, ay] = a, [bx, by] = b;
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function eraseAt(pt){
+  const threshold = 0.018;
+  Object.keys(strokesCache).forEach(id => {
+    const s = strokesCache[id];
+    if (!s || !s.points || !s.points.length) return;
+    let hit = false;
+    if (s.points.length === 1) {
+      hit = Math.hypot(pt[0] - s.points[0][0], pt[1] - s.points[0][1]) < threshold;
+    } else {
+      for (let i = 0; i < s.points.length - 1; i++) {
+        if (distToSeg(pt, s.points[i], s.points[i + 1]) < threshold) { hit = true; break; }
+      }
+    }
+    if (hit) {
+      delete strokesCache[id];
+      if (strokesRef) strokesRef.child(id).remove();
+      myStrokeIds = myStrokeIds.filter(x => x !== id);
+      scheduleRedraw();
+    }
+  });
+}
+
+inkCanvas.addEventListener('pointerdown', e => {
+  try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 일부 브라우저/입력장치에서 캡처가 안 될 수 있음 — 캔버스 안에서 그리는 데는 지장 없음 */ }
+  const pt = getNormPoint(e);
+  if (currentTool === 'eraser') { drawing = 'erasing'; eraseAt(pt); return; }
+  drawing = true;
+  curStrokeId = strokesRef ? strokesRef.push().key : ('local_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+  curPoints = [pt];
+  strokesCache[curStrokeId] = { by: role, color: penColor, width: penWidth, points: curPoints, t: Date.now() };
+  scheduleRedraw();
+});
+inkCanvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const pt = getNormPoint(e);
+  if (drawing === 'erasing') { eraseAt(pt); return; }
+  curPoints.push(pt);
+  strokesCache[curStrokeId].points = curPoints;
+  scheduleRedraw();
+  const now = Date.now();
+  if (strokesRef && now - lastPushAt >= 150) {
+    lastPushAt = now;
+    strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
+  }
+});
+function endStroke(){
+  if (drawing === true && curStrokeId) {
+    if (strokesRef) {
+      strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
+    }
+    myStrokeIds.push(curStrokeId);
+  }
+  drawing = false; curStrokeId = null; curPoints = [];
+}
+inkCanvas.addEventListener('pointerup', endStroke);
+inkCanvas.addEventListener('pointercancel', endStroke);
+
+function undoLast(){
+  const id = myStrokeIds.pop();
+  if (!id) return;
+  delete strokesCache[id];
+  if (strokesRef) strokesRef.child(id).remove();
+  scheduleRedraw();
+}
+
+function clearAllStrokes(){
+  if (!confirm('이 쪽의 필기를 모두 지울까요? (되돌릴 수 없습니다)')) return;
+  const ids = Object.keys(strokesCache);
+  strokesCache = {};
+  myStrokeIds = [];
+  if (strokesRef) ids.forEach(id => strokesRef.child(id).remove());
+  scheduleRedraw();
+}
+
+document.getElementById('penBtn').addEventListener('click', () => {
+  currentTool = 'pen';
+  document.getElementById('penBtn').classList.add('active');
+  document.getElementById('eraserBtn').classList.remove('active');
+  inkCanvas.classList.remove('eraser');
+});
+document.getElementById('eraserBtn').addEventListener('click', () => {
+  currentTool = 'eraser';
+  document.getElementById('eraserBtn').classList.add('active');
+  document.getElementById('penBtn').classList.remove('active');
+  inkCanvas.classList.add('eraser');
+});
+document.querySelectorAll('.swatch').forEach(sw => {
+  if (sw.dataset.color === penColor) sw.classList.add('active');
+  sw.addEventListener('click', () => {
+    penColor = sw.dataset.color;
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+    sw.classList.add('active');
+  });
+});
+document.querySelectorAll('.widthBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    penWidth = Number(btn.dataset.width);
+    document.querySelectorAll('.widthBtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+document.getElementById('undoBtn').addEventListener('click', undoLast);
+document.getElementById('clearBtn').addEventListener('click', clearAllStrokes);
+document.getElementById('prevPageBtn').addEventListener('click', () => goToPage(currentPage - 1));
+document.getElementById('nextPageBtn').addEventListener('click', () => goToPage(currentPage + 1));
+
+async function submitBoard(){
+  if (role !== 'student') return;
+  if (!studentName || !category || !mission) {
+    document.getElementById('submitStatus').textContent = '제출 정보가 부족합니다 — 숙제 제출 화면에서 다시 열어주세요.';
+    return;
+  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  document.getElementById('submitStatus').textContent = '제출 중...';
+  try {
+    const out = document.createElement('canvas');
+    out.width = docCanvas.width; out.height = docCanvas.height;
+    const octx = out.getContext('2d');
+    octx.fillStyle = '#fff';
+    octx.fillRect(0, 0, out.width, out.height);
+    octx.drawImage(docCanvas, 0, 0);
+    octx.drawImage(inkCanvas, 0, 0);
+    const base64 = out.toDataURL('image/jpeg', 0.9).split(',')[1];
+    await fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'submithw', name: studentName, class: className, cohort, category, mission,
+        images: [{ data: base64, mime: 'image/jpeg' }],
+        whiteboardSession: JSON.stringify({ session: sessionId, docId })
+      })
+    });
+    document.getElementById('submitStatus').textContent = '제출 완료 ✓ 이 창은 닫으셔도 됩니다.';
+  } catch (e) {
+    document.getElementById('submitStatus').textContent = '제출 실패: ' + e.message;
+    btn.disabled = false;
+  }
+}
+document.getElementById('submitBtn').addEventListener('click', submitBoard);
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(async () => {
+    if (!naturalW) return;
+    setupStage(naturalW, naturalH);
+    if (pdfDoc) await renderPdfPage(currentPage);
+    else if (staticImg) renderDocImage();
+    else renderDocBlank();
+    renderInkAll();
+  }, 200);
+});
+
+function initFirebase(){
+  const cfg = window.FIREBASE_CONFIG;
+  if (!cfg || !cfg.apiKey || !cfg.databaseURL) {
+    showBanner('⚠️ 아직 실시간 동기화 설정이 안 되어 있어요 — 혼자 필기하고 저장/제출은 되지만, 상대방과 실시간으로는 공유되지 않습니다.');
+    return;
+  }
+  try {
+    firebase.initializeApp(cfg);
+    db = firebase.database();
+    const connBadge = document.getElementById('connBadge');
+    db.ref('.info/connected').on('value', snap => {
+      const on = !!snap.val();
+      connBadge.textContent = on ? '● 실시간 연결됨' : '● 연결 중...';
+      connBadge.className = on ? 'on' : 'off';
+    });
+  } catch (e) {
+    showBanner('⚠️ 실시간 동기화 연결 실패: ' + e.message + ' (혼자 필기는 가능합니다)');
+  }
+}
+
+async function init(){
+  initHeader();
+  if (!sessionId) {
+    showBanner('세션 정보가 없습니다. 숙제 제출 화면에서 다시 열어주세요.');
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  initFirebase();
+  try {
+    await loadDoc();
+  } catch (e) {
+    showBanner('문서를 불러오지 못했습니다: ' + e.message);
+    setupStage(naturalW, naturalH);
+    renderDocBlank();
+    attachPageListeners(1);
+  }
+}
+init();
+</script>
+</body>
+</html>

@@ -283,6 +283,9 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .hw-btn{background:#fff;border:1px solid var(--gold-line);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--ink);border-radius:3px;cursor:pointer;white-space:nowrap}
 .hw-btn:hover{background:var(--ink);border-color:var(--ink);color:var(--cream)}
 .hw-btn:disabled{opacity:.5;cursor:default}
+.hw-wb-btn{background:#fff;border:1px solid var(--mint-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--mint-deep);border-radius:3px;cursor:pointer;white-space:nowrap}
+.hw-wb-btn:hover{background:var(--mint-deep);border-color:var(--mint-deep);color:#fff}
+.hw-wb-btn:disabled{opacity:.5;cursor:default}
 .hw-status{font-size:10px;color:rgba(26,26,26,.55);white-space:nowrap}
 .hw-status.ok{color:var(--mint-deep);font-weight:700}
 .alg-answer-panel{width:100%;margin-top:8px;padding:10px 12px;background:#fafafa;border:1px solid var(--gold-line);border-radius:4px;display:none;column-count:2;column-gap:16px}
@@ -794,7 +797,9 @@ function hwActionsHtml(category,mission){
     return '<span class="hw-actions"><span class="hw-pending">대기중 · 사진 '+pending.urls.length+'장</span>'
       +'<button type="button" class="hw-cancel-btn" data-id="'+esc(pending.id)+'">취소</button></span>';
   }
-  return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button><span class="hw-status"></span></span>';
+  return '<span class="hw-actions"><button type="button" class="hw-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">📷 숙제 제출</button>'
+    +'<button type="button" class="hw-wb-btn" data-category="'+esc(category)+'" data-mission="'+esc(mission)+'">✍️ 필기로 제출</button>'
+    +'<span class="hw-status"></span></span>';
 }
 
 /* ---- 대수연마 1000제: 주제별 빠른정답 (전체현황 · 로그인 불필요) ----
@@ -1857,6 +1862,56 @@ async function submitHomeworkPhoto(btn,category,mission){
   };
   input.click();
 }
+// 문서를 업로드하고 whiteboard.html용 드라이브 파일 ID를 받아온다 — 이
+// 액션은 (submithw/cancelhw와 달리) 응답을 바로 읽어야 해서 no-cors를
+// 쓰지 않는다: GAS가 text/plain POST엔 정상적으로 읽을 수 있는 응답을
+// 돌려준다는 걸 실측으로 확인했다.
+async function uploadWhiteboardDoc(file){
+  const base64=await fileToBase64(file);
+  const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'uploaddoc',data:base64,mime:file.type||'application/octet-stream',name:file.name})});
+  const json=await res.json();
+  if(!json.ok)throw new Error(json.error||'업로드 실패');
+  return json.result.id;
+}
+function openWhiteboard(docId,category,mission){
+  const sessionId=(crypto.randomUUID?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2)))+'-'+Math.random().toString(36).slice(2);
+  const p=new URLSearchParams({session:sessionId,role:'student',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission});
+  if(docId)p.set('docId',docId);
+  window.open('whiteboard.html?'+p.toString(),'_blank');
+}
+async function startWhiteboardSubmission(btn,category,mission){
+  const statusEl=btn.nextElementSibling && btn.nextElementSibling.classList.contains('hw-status')?btn.nextElementSibling:btn.parentElement.querySelector('.hw-status');
+  // 선생님이 이 미션에 미리 숙제 원본(PDF/이미지)을 연결해뒀으면, 학생이
+  // 따로 파일을 고를 필요 없이 바로 그 문서 위에 필기를 시작한다.
+  try{
+    const p=new URLSearchParams({action:'assigneddoc',cohort:me.student.cohort,category,mission,class:me.student.class});
+    const res=await fetch(GAS_URL+'?'+p.toString());
+    const json=await res.json();
+    if(json.ok && json.docId){ openWhiteboard(json.docId,category,mission); return; }
+  }catch(e){/* 조회 실패 시 아래 기존 흐름(직접 올리기/백지)으로 진행 */}
+  const wantsUpload=confirm('PDF나 이미지를 올려서 그 위에 필기할까요?\n\n"확인"을 누르면 파일을 선택하고, "취소"를 누르면 백지에서 바로 필기를 시작합니다.');
+  if(!wantsUpload){ openWhiteboard('',category,mission); return; }
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='application/pdf,image/*';
+  input.onchange=async()=>{
+    const file=input.files[0];
+    if(!file)return;
+    btn.disabled=true;
+    if(statusEl){statusEl.textContent='문서 업로드 중...';statusEl.className='hw-status';}
+    try{
+      const docId=await uploadWhiteboardDoc(file);
+      openWhiteboard(docId,category,mission);
+      if(statusEl)statusEl.textContent='';
+    }catch(e){
+      if(statusEl){statusEl.textContent='업로드 실패: '+e.message;statusEl.className='hw-status err';}
+    }finally{
+      btn.disabled=false;
+    }
+  };
+  input.click();
+}
 async function cancelHomeworkSubmission(btn,id){
   btn.disabled=true;
   btn.textContent='취소 중...';
@@ -1873,6 +1928,8 @@ async function cancelHomeworkSubmission(btn,id){
 document.getElementById('me-blocks').addEventListener('click',e=>{
   const submitBtn=e.target.closest('.hw-btn');
   if(submitBtn){ submitHomeworkPhoto(submitBtn,submitBtn.dataset.category,submitBtn.dataset.mission); return; }
+  const wbBtn=e.target.closest('.hw-wb-btn');
+  if(wbBtn){ startWhiteboardSubmission(wbBtn,wbBtn.dataset.category,wbBtn.dataset.mission); return; }
   const cancelBtn=e.target.closest('.hw-cancel-btn');
   if(cancelBtn){ cancelHomeworkSubmission(cancelBtn,cancelBtn.dataset.id); return; }
 });

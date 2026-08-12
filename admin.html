@@ -115,6 +115,15 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="50" style="width:70px"></div>
         <button id="scLoadBtn">불러오기</button>
       </div>
+      <div class="fieldRow" style="margin-top:8px">
+        <div><label>✍️ 필기용 숙제 원본 (PDF/이미지, 선택)</label>
+          <input type="file" id="wbDocFile" accept="application/pdf,image/*">
+        </div>
+        <div><label style="font-weight:normal"><input type="checkbox" id="wbAllClasses" style="width:auto"> 이 반뿐 아니라 모든 반 공통으로</label></div>
+        <button type="button" id="wbAssignBtn">위 미션에 연결</button>
+        <span id="wbAssignMsg" class="hint"></span>
+      </div>
+      <p class="hint">위에서 고른 기수·카테고리·반·시험명 기준으로 연결됩니다. 연결해두면 학생이 "✍️ 필기로 제출"을 눌렀을 때 파일을 새로 올릴 필요 없이 바로 이 원본 위에 필기합니다.</p>
       <div class="fieldRow" id="scWeightBar" style="display:none">
         <span class="hint">문항별 배점 — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다).</span>
         <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
@@ -416,6 +425,53 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     msg.className = 'hint err';
   } finally {
     document.getElementById('scLoadBtn').disabled = false;
+  }
+});
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(file);
+  });
+}
+document.getElementById('wbAssignBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('scCohort').value;
+  const category = document.getElementById('scCategory').value;
+  const cls = document.getElementById('wbAllClasses').checked ? '' : document.getElementById('scClass').value;
+  const mission = document.getElementById('scMission').value.trim();
+  const file = document.getElementById('wbDocFile').files[0];
+  const msg = document.getElementById('wbAssignMsg');
+  if (!category || !mission) { msg.textContent = '카테고리/시험명을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!file) { msg.textContent = '파일을 선택하세요.'; msg.className = 'hint err'; return; }
+  const btn = document.getElementById('wbAssignBtn');
+  btn.disabled = true;
+  msg.textContent = '업로드 중...';
+  msg.className = 'hint';
+  try {
+    const base64 = await fileToBase64(file);
+    const uploadRes = await fetch(DASHBOARD_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'uploaddoc', data: base64, mime: file.type || 'application/octet-stream', name: file.name }),
+    });
+    const uploadJson = await uploadRes.json();
+    if (!uploadJson.ok) throw new Error(uploadJson.error || '업로드 실패');
+    await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort, category, class: cls, mission, docId: uploadJson.result.id });
+    const check = await callGetJsonp({ action: 'assigneddoc', cohort, category, mission, class: cls });
+    if (check.docId === uploadJson.result.id) {
+      msg.textContent = '연결되었습니다' + (cls ? ` (${cls} 반)` : ' (모든 반 공통)') + '.';
+      msg.className = 'hint ok';
+      document.getElementById('wbDocFile').value = '';
+    } else {
+      msg.textContent = '저장 확인에 실패했습니다 — 다시 시도해주세요.';
+      msg.className = 'hint err';
+    }
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  } finally {
+    btn.disabled = false;
   }
 });
 
