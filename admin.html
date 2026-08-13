@@ -116,14 +116,14 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <button id="scLoadBtn">불러오기</button>
       </div>
       <div class="fieldRow" style="margin-top:8px">
-        <div><label>✍️ 필기용 숙제 원본 (PDF/이미지, 선택)</label>
-          <input type="file" id="wbDocFile" accept="application/pdf,image/*">
+        <div><label>✍️ 필기용 숙제 원본 (PDF·이미지·hwpx 문제집, 선택)</label>
+          <input type="file" id="wbDocFile" accept="application/pdf,image/*,.hwpx">
         </div>
         <div><label style="font-weight:normal"><input type="checkbox" id="wbAllClasses" style="width:auto"> 이 반뿐 아니라 모든 반 공통으로</label></div>
         <button type="button" id="wbAssignBtn">위 미션에 연결</button>
         <span id="wbAssignMsg" class="hint"></span>
       </div>
-      <p class="hint">위에서 고른 기수·카테고리·반·시험명 기준으로 연결됩니다. 연결해두면 학생이 "✍️ 필기로 제출"을 눌렀을 때 파일을 새로 올릴 필요 없이 바로 이 원본 위에 필기합니다.</p>
+      <p class="hint">위에서 고른 기수·카테고리·반·시험명 기준으로 연결됩니다. hwpx 문제집을 올리면 학생 화면에 오답노트처럼 예쁘게 렌더링되고, PDF/이미지는 그대로 보여집니다. 연결해두면 학생 개인화면의 미션 아래에 "📄 문제 보기"가 자동으로 뜨고, "✍️ 필기로 제출"을 눌렀을 때도 파일을 새로 올릴 필요 없이 바로 이 원본 위에 필기합니다.</p>
       <div class="fieldRow" id="scWeightBar" style="display:none">
         <span class="hint">문항별 배점 — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다).</span>
         <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
@@ -450,6 +450,7 @@ document.getElementById('wbAssignBtn').addEventListener('click', async () => {
   msg.textContent = '업로드 중...';
   msg.className = 'hint';
   try {
+    const docType = /\.hwpx$/i.test(file.name) ? 'hwpx' : (file.type === 'application/pdf' ? 'pdf' : 'image');
     const base64 = await fileToBase64(file);
     const uploadRes = await fetch(DASHBOARD_URL, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -457,7 +458,7 @@ document.getElementById('wbAssignBtn').addEventListener('click', async () => {
     });
     const uploadJson = await uploadRes.json();
     if (!uploadJson.ok) throw new Error(uploadJson.error || '업로드 실패');
-    await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort, category, class: cls, mission, docId: uploadJson.result.id });
+    await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort, category, class: cls, mission, docId: uploadJson.result.id, docType });
     const check = await callGetJsonp({ action: 'assigneddoc', cohort, category, mission, class: cls });
     if (check.docId === uploadJson.result.id) {
       msg.textContent = '연결되었습니다' + (cls ? ` (${cls} 반)` : ' (모든 반 공통)') + '.';

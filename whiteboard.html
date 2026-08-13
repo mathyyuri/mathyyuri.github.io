@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>공동 필기 — MATHY YURI</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="hwpx-lib.js?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -50,6 +55,14 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #stage canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
 #docCanvas { pointer-events:none; }
 #inkCanvas { touch-action:none; cursor:crosshair; }
+#docHtmlLayer { position:absolute; top:0; left:0; pointer-events:none; display:none; background:#fff; box-sizing:border-box; padding:20px 24px; font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--ink); overflow:visible; }
+#docHtmlLayer .hwpxQ { margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--gold-line); }
+#docHtmlLayer .hwpxQ:last-child { border-bottom:none; }
+#docHtmlLayer .qNumLabel { font-family:var(--serif); font-weight:900; color:var(--gold); margin-bottom:6px; font-size:13px; }
+#docHtmlLayer img { max-width:100%; height:auto; display:block; margin:6px auto; }
+#docHtmlLayer table { border-collapse:collapse; margin:6px 0; }
+#docHtmlLayer td { border:1px solid var(--gold-line); padding:2px 6px; font-size:12px; }
+#docHtmlLayer .eq .katex { font-size:1em; }
 #inkCanvas.eraser { cursor:cell; }
 #submitBar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--gold-line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
 #submitStatus { font-family:var(--kserif); font-size:13px; color:rgba(26,26,26,.6); }
@@ -87,7 +100,7 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
   </div>
 </div>
 <div id="stageWrap">
-  <div id="stage"><canvas id="docCanvas"></canvas><canvas id="inkCanvas"></canvas></div>
+  <div id="stage"><canvas id="docCanvas"></canvas><div id="docHtmlLayer"></div><canvas id="inkCanvas"></canvas></div>
 </div>
 <div id="submitBar" style="display:none">
   <button type="button" id="submitBtn">제출</button>
@@ -101,6 +114,8 @@ const qp = new URLSearchParams(location.search);
 const sessionId = (qp.get('session') || '').trim();
 const role = qp.get('role') === 'teacher' ? 'teacher' : 'student';
 const docId = (qp.get('docId') || '').trim();
+const docTypeParam = (qp.get('docType') || '').trim(); // 'pdf'|'image'|'hwpx' — 없으면 응답 mime으로 추론
+const submitMode = qp.get('submit') === '1'; // 명시적 "필기로 제출" 진입일 때만 제출 바 표시
 const studentName = qp.get('name') || '';
 const className = qp.get('class') || '';
 const cohort = qp.get('cohort') || '2';
@@ -109,10 +124,12 @@ const mission = qp.get('mission') || '';
 
 const docCanvas = document.getElementById('docCanvas');
 const inkCanvas = document.getElementById('inkCanvas');
+const docHtmlLayer = document.getElementById('docHtmlLayer');
 const stageWrap = document.getElementById('stageWrap');
 let docCtx, inkCtx;
 let stageCssW = 0, stageCssH = 0;
 let naturalW = 850, naturalH = 1202;
+let docKind = 'blank'; // 'blank'|'pdf'|'image'|'hwpx'
 
 let pdfDoc = null, currentPage = 1, totalPages = 1;
 let staticImg = null; // 이미지 문서인 경우
@@ -141,7 +158,16 @@ function initHeader(){
   if (mission) bits.push(mission);
   document.getElementById('metaEl').textContent = bits.join(' · ');
   document.getElementById('clearBtn').style.display = role === 'teacher' ? '' : 'none';
-  document.getElementById('submitBar').style.display = role === 'student' ? 'flex' : 'none';
+  updateSubmitBarVisibility();
+}
+// docKind는 loadDoc()이 끝나야 확정되므로(문서를 열어봐야 pdf/image/hwpx
+// 중 뭔지 안다) initHeader 시점(아직 'blank')과 loadDoc 완료 후, 두 번
+// 호출된다. hwpx(문제집 그대로 보기)는 스크롤이 아주 길어질 수 있어 한
+// 장으로 납작하게 찍어 제출하는 방식과 안 맞는다 — 그 경우와, 미션 아래
+// "문제 보기"처럼 제출이 목적이 아닌 진입(submit=1 없음)에서는 제출
+// 바 자체를 안 보여준다(순수 열람 + 개인 연습장 용도).
+function updateSubmitBarVisibility(){
+  document.getElementById('submitBar').style.display = (role === 'student' && submitMode && docKind !== 'hwpx') ? 'flex' : 'none';
 }
 
 function setupStage(w, h){
@@ -205,7 +231,12 @@ async function loadDoc(){
   if (!json.ok) throw new Error(json.error || '문서를 불러오지 못했습니다.');
   const mime = json.photo.mime || '';
   const data = json.photo.data;
-  if (mime === 'application/pdf') {
+  const isHwpx = docTypeParam === 'hwpx' || /hwpx|zip/i.test(mime);
+  if (isHwpx) {
+    docKind = 'hwpx';
+    await renderHwpxDoc(data);
+  } else if (docTypeParam === 'pdf' || mime === 'application/pdf') {
+    docKind = 'pdf';
     pdfDoc = await pdfjsLib.getDocument({ data: base64ToUint8Array(data) }).promise;
     totalPages = pdfDoc.numPages;
     currentPage = 1;
@@ -217,6 +248,7 @@ async function loadDoc(){
       updatePageIndicator();
     }
   } else {
+    docKind = 'image';
     const dataUrl = 'data:' + mime + ';base64,' + data;
     const img = new Image();
     await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = dataUrl; });
@@ -225,6 +257,40 @@ async function loadDoc(){
     renderDocImage();
   }
   attachPageListeners(currentPage);
+  updateSubmitBarVisibility();
+}
+
+// hwpx 문제집을 problembank.html/oedapnotegenerator.html과 같은 방식으로
+// (marker 기반, 문항 단위) 파싱해서 오답노트처럼 예쁘게 렌더한다 — 통짜
+// PDF/이미지가 아니라 실제 수식·표·이미지가 살아있는 HTML이라 확대해도
+// 깨지지 않고, 캔버스로 찍어 보여주는 것보다 훨씬 보기 좋다. 문항 수가
+// 많으면 세로로 아주 길어질 수 있어 페이지 개념이 없다 — 그냥 쭉 스크롤.
+async function renderHwpxDoc(data){
+  const zipData = await JSZip.loadAsync(base64ToUint8Array(data));
+  const entry = await parseHwpx(zipData);
+  const nums = [...entry.markers.keys()].sort((a, b) => a - b);
+  let html = '';
+  for (const num of nums) {
+    const marker = entry.markers.get(num);
+    let body = '';
+    try { body = await hwpBodyXmlToHtml(marker.blockXml, entry); } catch (e) {}
+    html += '<div class="hwpxQ"><div class="qNumLabel">' + num + '번</div>' + body + '</div>';
+  }
+  if (!nums.length) html = '<p class="hint">이 문서에서 문항을 찾지 못했습니다.</p>';
+
+  const targetW = Math.min(stageWrap.clientWidth - 20, 900);
+  docHtmlLayer.style.display = 'block';
+  docHtmlLayer.style.width = targetW + 'px';
+  docHtmlLayer.style.height = 'auto';
+  docHtmlLayer.innerHTML = html;
+  if (window.renderMathInElement) {
+    try { renderMathInElement(docHtmlLayer, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+  }
+  const measuredH = Math.max(docHtmlLayer.scrollHeight, 200);
+  setupStage(targetW, measuredH);
+  docCanvas.style.display = 'none';
+  docHtmlLayer.style.width = stageCssW + 'px';
+  docHtmlLayer.style.height = stageCssH + 'px';
 }
 
 function updatePageIndicator(){
@@ -447,6 +513,17 @@ let resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(async () => {
+    if (docKind === 'hwpx') {
+      const targetW = Math.min(stageWrap.clientWidth - 20, 900);
+      docHtmlLayer.style.width = targetW + 'px';
+      docHtmlLayer.style.height = 'auto';
+      const measuredH = Math.max(docHtmlLayer.scrollHeight, 200);
+      setupStage(targetW, measuredH);
+      docHtmlLayer.style.width = stageCssW + 'px';
+      docHtmlLayer.style.height = stageCssH + 'px';
+      renderInkAll();
+      return;
+    }
     if (!naturalW) return;
     setupStage(naturalW, naturalH);
     if (pdfDoc) await renderPdfPage(currentPage);

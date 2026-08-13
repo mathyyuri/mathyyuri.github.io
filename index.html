@@ -297,6 +297,15 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .alg-answer-msg{font-size:11px;color:rgba(26,26,26,.55);width:100%}
 .alg-answer-bar{margin-top:14px;text-align:center}
 .hw-status.err{color:var(--pink-deep);font-weight:700}
+.ia-doc-btn{background:#fff;border:1px solid var(--gold);color:var(--gold);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
+.ia-doc-btn:hover{background:var(--gold);color:#fff}
+.doc-modal{display:none;position:fixed;inset:0;background:rgba(26,26,26,.6);z-index:200;padding:16px}
+.doc-modal.open{display:flex;align-items:center;justify-content:center}
+.doc-modal-inner{background:#fff;width:100%;height:100%;max-width:1000px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.doc-modal-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--ink);color:var(--cream);font-family:var(--kserif);font-size:13px}
+.doc-modal-bar button{background:none;border:1px solid var(--cream);color:var(--cream);padding:5px 10px;font-size:11px;border-radius:3px;cursor:pointer}
+.doc-modal-bar button:hover{background:var(--pink-deep);border-color:var(--pink-deep)}
+#docModalFrame{flex:1;border:none;width:100%}
 .hw-pending{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
 .hw-cancel-btn{background:#fff;border:1px solid var(--pink-deep);color:var(--pink-deep);padding:5px 10px;font-size:10px;letter-spacing:.06em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
 .hw-cancel-btn:hover{background:var(--pink-deep);color:#fff}
@@ -495,6 +504,13 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   <div id="me-blocks"></div>
 
   <footer>MATHY YURI · DAECHI S+ ACADEMY</footer>
+</div>
+
+<div id="docModal" class="doc-modal">
+  <div class="doc-modal-inner">
+    <div class="doc-modal-bar"><span id="docModalTitle"></span><button type="button" id="docModalClose">✕ 닫기</button></div>
+    <iframe id="docModalFrame"></iframe>
+  </div>
 </div>
 
 <script>
@@ -1550,7 +1566,11 @@ function renderMissionDetail(){
     rates.push(tot?Math.round(ok/tot*100):null);
   }
 
-  let html='<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th><th>완성도</th>';
+  // 9모대비는 실제 모의고사라 등급이 진짜 의미 있는 지표라 완성도 옆에
+  // 같이 보여준다 — 그 외(진도미션 등) 오답노트 성격의 미션은 등급을
+  // 빼기로 한 결정 그대로 유지.
+  const hasGrade=pubTab==='9모대비';
+  let html='<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th>'+(hasGrade?'<th>등급</th>':'')+'<th>완성도</th>';
   for(let q=1;q<=nQ;q++){
     html+='<th>'+q+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
   }
@@ -1558,6 +1578,7 @@ function renderMissionDetail(){
   rows.forEach(r=>{
     html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
       +'<td class="score">'+(r.score??'—')+'</td>'
+      +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'')
       +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>';
     for(let q=0;q<nQ;q++){
       const v=r.items[q];
@@ -1728,6 +1749,7 @@ function renderPersonal(){
         +(comp!=null?' · 완성도 '+comp+'%':'')+'</small>'
         +(r.grade!=null&&r.grade!==''?' <span class="ia-grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</span>':'')+'</span>'
         +hwActionsHtml(k,r.mission)
+        +'<span class="ia-doc-slot" data-category="'+esc(k)+'" data-mission="'+esc(r.mission)+'"></span>'
         +(chips?'<span class="ia-chips">'+chips+'</span>':'')
         +(r.comment?'<div class="ia-comment"><b>TEACHER\'S NOTE</b>'+esc(r.comment)+'</div>':'')
         +'</div>';
@@ -1765,6 +1787,7 @@ function renderPersonal(){
         +'<span class="ia-name">'+esc(r.mission)+'</span>'
         +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
         +hwActionsHtml(ALG_TAB,r.mission)
+        +'<span class="ia-doc-slot" data-category="'+esc(ALG_TAB)+'" data-mission="'+esc(r.mission)+'"></span>'
         +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
         +'</div>';
     });
@@ -1774,7 +1797,67 @@ function renderPersonal(){
     const algClsData=algList.map(r=>algAvg[r.mission]!=null?algAvg[r.mission]:null);
     drawBars('chart-alg',algList.map(r=>r.mission),algList.map(r=>r.score),algClsData);
   }
+  loadMissionDocPreviews();
 }
+
+/* ---------- 미션별 문제 파일 미리보기 ("📄 문제 보기") ----------
+   선생님이 admin.html에서 미션에 연결해둔 원본(PDF/이미지/hwpx)이 있으면,
+   그 미션의 정오표 옆에 "문제 보기" 버튼을 붙인다 — 없는 미션은 조용히
+   그대로 둔다(매 요청마다 화면이 깜빡이지 않도록, 렌더 후 백그라운드로
+   하나씩 채워 넣는 방식). */
+async function loadMissionDocPreviews(){
+  const slots=[...document.querySelectorAll('.ia-doc-slot')];
+  if(!slots.length)return;
+  const seen=new Set();
+  await Promise.all(slots.map(async slot=>{
+    const category=slot.dataset.category, mission=slot.dataset.mission;
+    const key=category+'||'+mission;
+    if(seen.has(key)){
+      // 같은 (카테고리,미션) 슬롯이 여러 번 나올 수 있어(예: 지금은 없지만
+      // 구조상 가능) 중복 조회를 막을 뿐, 각 슬롯은 독립적으로 다시 채워야
+      // 하므로 아래 catch까지 그대로 진행한다.
+    }
+    seen.add(key);
+    try{
+      const p=new URLSearchParams({action:'assigneddoc',cohort:me.student.cohort,category,mission,class:me.student.class});
+      const res=await fetch(GAS_URL+'?'+p.toString());
+      const json=await res.json();
+      if(!json.ok||!json.docId)return;
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='ia-doc-btn';
+      btn.textContent='📄 문제 보기';
+      btn.addEventListener('click',()=>openDocModal(json.docId,json.docType,category,mission));
+      slot.appendChild(btn);
+    }catch(e){}
+  }));
+}
+// 학생+미션 조합마다 항상 같은 세션 ID가 나오게 만드는 간단한 해시 —
+// 같은 미션을 다시 열어도 이전에 써둔 필기가 그대로 이어진다. 암호학적
+// 강도는 필요 없고(Firebase 규칙은 길이만 검사), 학원 내부에서 같은
+// (이름,카테고리,미션) 조합끼리만 안 겹치면 충분하다.
+function deterministicSessionId(str){
+  let h1=0,h2=0;
+  for(let i=0;i<str.length;i++){
+    const c=str.charCodeAt(i);
+    h1=(h1*31+c)>>>0;
+    h2=(h2*131+c)>>>0;
+  }
+  return 'mission-view-'+h1.toString(36).padStart(7,'0')+h2.toString(36).padStart(7,'0');
+}
+function openDocModal(docId,docType,category,mission){
+  const sessionId=deterministicSessionId(me.student.name+'|'+category+'|'+mission);
+  const p=new URLSearchParams({session:sessionId,role:'student',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,docId,docType:docType||''});
+  document.getElementById('docModalFrame').src='whiteboard.html?'+p.toString();
+  document.getElementById('docModalTitle').textContent=category+' · '+mission;
+  document.getElementById('docModal').classList.add('open');
+}
+function closeDocModal(){
+  document.getElementById('docModal').classList.remove('open');
+  document.getElementById('docModalFrame').src='about:blank';
+}
+document.getElementById('docModalClose').addEventListener('click',closeDocModal);
+document.getElementById('docModal').addEventListener('click',e=>{ if(e.target.id==='docModal')closeDocModal(); });
 
 /* ---------- 숙제 사진 제출 ---------- */
 function fileToBase64(file){
@@ -1874,21 +1957,25 @@ async function uploadWhiteboardDoc(file){
   if(!json.ok)throw new Error(json.error||'업로드 실패');
   return json.result.id;
 }
-function openWhiteboard(docId,category,mission){
+function openWhiteboard(docId,category,mission,docType){
   const sessionId=(crypto.randomUUID?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2)))+'-'+Math.random().toString(36).slice(2);
-  const p=new URLSearchParams({session:sessionId,role:'student',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission});
+  const p=new URLSearchParams({session:sessionId,role:'student',name:me.student.name,class:me.student.class,cohort:me.student.cohort,category,mission,submit:'1'});
   if(docId)p.set('docId',docId);
+  if(docType)p.set('docType',docType);
   window.open('whiteboard.html?'+p.toString(),'_blank');
 }
 async function startWhiteboardSubmission(btn,category,mission){
   const statusEl=btn.nextElementSibling && btn.nextElementSibling.classList.contains('hw-status')?btn.nextElementSibling:btn.parentElement.querySelector('.hw-status');
   // 선생님이 이 미션에 미리 숙제 원본(PDF/이미지)을 연결해뒀으면, 학생이
-  // 따로 파일을 고를 필요 없이 바로 그 문서 위에 필기를 시작한다.
+  // 따로 파일을 고를 필요 없이 바로 그 문서 위에 필기를 시작한다. hwpx로
+  // 연결된 원본은 "문제 보기"용이지 제출용 캔버스로는 안 맞아서(스크롤이
+  // 길어 한 장으로 못 찍음, whiteboard.html도 그 경우 제출 바를 숨김) —
+  // 여기서는 그런 경우 못 찾은 것처럼 취급해 아래 직접 올리기/백지로 넘어간다.
   try{
     const p=new URLSearchParams({action:'assigneddoc',cohort:me.student.cohort,category,mission,class:me.student.class});
     const res=await fetch(GAS_URL+'?'+p.toString());
     const json=await res.json();
-    if(json.ok && json.docId){ openWhiteboard(json.docId,category,mission); return; }
+    if(json.ok && json.docId && json.docType!=='hwpx'){ openWhiteboard(json.docId,category,mission,json.docType); return; }
   }catch(e){/* 조회 실패 시 아래 기존 흐름(직접 올리기/백지)으로 진행 */}
   const wantsUpload=confirm('PDF나 이미지를 올려서 그 위에 필기할까요?\n\n"확인"을 누르면 파일을 선택하고, "취소"를 누르면 백지에서 바로 필기를 시작합니다.');
   if(!wantsUpload){ openWhiteboard('',category,mission); return; }
