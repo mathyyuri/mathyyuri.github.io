@@ -521,11 +521,11 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ
 
 const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비','S+ BLACK'];
 /* ---- 기수별 표시 구성 ----
-   2기: 진도·과제·오답·TEST·9모대비·S+ BLACK·대수연마 / 3기: 개념·진도·과제·TEST (오답미션 없음)
+   2기: 진도·과제·오답·TEST·9모대비·S+ BLACK·대수연마 / 3기: 개념·진도·과제·오답·TEST
    반 칩: 2기 = S+, S / 3기 = PRISM (명단에 다른 반명이 있으면 자동 추가) */
 const COHORT_SHEETS = {
   '2': ['진도미션','과제미션','오답미션','TEST','기출','9모대비','S+ BLACK','대수연마 1000제'],
-  '3': ['개념미션','진도미션','과제미션','TEST']
+  '3': ['개념미션','진도미션','과제미션','오답미션','TEST']
 };
 const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
 function sheetsFor(c){ return COHORT_SHEETS[c] || SHEETS; }
@@ -1021,7 +1021,13 @@ function compOf(items){
   (items||[]).forEach(function(v){if(v===1||v===2||v===3){tot++;if(v!==2)done++;}});
   return tot?Math.round(done/tot*100):null;
 }
-function compValOf(r){
+function compValOf(r,category){
+  // G열은 9모대비에서는 등급이라 완성도로 쓰면 안 됨 — 그 외 시험(TEST 등)에서
+  // 선생님이 "(맞은+오답완료)/전체문항수" 같은 수식을 G열에 직접 넣어두면
+  // (sheetComp) 그 값을 최우선으로 쓴다 — 안 한 문항까지 분모에 넣은 진짜
+  // 완성률이라, items 배열만으로 계산하는 값(답한 문항만 분모)보다 정확하다.
+  const cat=category===undefined?pubTab:category;
+  if(cat!=='9모대비'&&r.sheetComp!=null&&!isNaN(r.sheetComp)) return Math.round(r.sheetComp);
   const v=parseFloat(String(r.correct==null?'':r.correct).replace('%','').trim());
   if(!isNaN(v)) return Math.round(v);
   return compOf(r.items);
@@ -1190,7 +1196,7 @@ function clearMaster(){
   const map={},order=[];
   catsFor(pubCohort).forEach(function(cat){
     (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(function(r){
-      const cp=compValOf(r);
+      const cp=compValOf(r,cat);
       if(cp==null)return;
       const k=studentKey(r);
       if(!map[k]){map[k]={nickname:r.nickname,class:r.class,clears:0,sum:0};order.push(k);}
@@ -1279,7 +1285,7 @@ function renderCumulative(){
       +'<td class="avg">'+(s.avg??'—')+'</td>'
       +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
+      const scoreTxt=(s.scores[m]!=null?fmtScore(s.scores[m]):'–');
       html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
@@ -1330,7 +1336,7 @@ function algTableHTML(missions,students){
       +'<td class="avg">'+s.total+'</td>'
       +wrongLeftHTML(s.wrongLeft);
     missions.forEach(m=>{
-      const scoreTxt=(s.scores[m]!=null?s.scores[m]:'–');
+      const scoreTxt=(s.scores[m]!=null?fmtScore(s.scores[m]):'–');
       html+=missionCellHTML(scoreTxt,s.comps[m],s.wrongByMission[m],clsKey(s.class));
     });
     html+='</tr>';
@@ -1734,7 +1740,7 @@ function renderPersonal(){
       const nQ=r.items.filter(v=>v!=null).length;
       const clsAvg=avgMap[k]&&avgMap[k][r.mission]!=null?avgMap[k][r.mission]:null;
       const diff=(r.score!=null&&clsAvg!=null)?r1(r.score-clsAvg):null;
-      const comp=compValOf(r);
+      const comp=compValOf(r,k);
       const qRates=itemAccMap[r.mission]||[];
       let chips='';
       r.items.forEach((v,i)=>{
