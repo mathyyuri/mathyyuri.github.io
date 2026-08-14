@@ -1030,6 +1030,10 @@ function compHTML(c,cls){
   if(c==null)return '—';
   return c>=100?'<span class="clear-badge '+clsKey(cls)+'">CLEAR</span>':c+'%';
 }
+// 점수가 구글시트 수식(가중치 나눗셈 등)에서 그대로 온 경우
+// 93.32000000000006처럼 부동소수점 오차가 낀 채로 넘어올 수 있어 —
+// 기존 r1()로 소수 첫째자리까지 반올림해서 보여준다.
+function fmtScore(v){ return v!=null?r1(v):'—'; }
 function aggregate(rows){
   const missions=missionOrder(rows);
   const stu={},order=[];
@@ -1577,7 +1581,7 @@ function renderMissionDetail(){
   html+='</tr>';
   rows.forEach(r=>{
     html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
-      +'<td class="score">'+(r.score??'—')+'</td>'
+      +'<td class="score">'+fmtScore(r.score)+'</td>'
       +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'')
       +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>';
     for(let q=0;q<nQ;q++){
@@ -1740,8 +1744,8 @@ function renderPersonal(){
           +(rate!=null?'<small>'+rate+'%</small>':'')+'</span>';
       });
       const scoreDisp=(comp!=null&&comp>=100)
-        ?'<span class="score-stamp-wrap">'+(r.score??'—')+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
-        :(r.score??'—');
+        ?'<span class="score-stamp-wrap">'+fmtScore(r.score)+'<span class="clear-stamp '+clsKey(s.class)+'">CLEAR</span></span>'
+        :fmtScore(r.score);
       html+='<div class="ia-row">'
         +'<span class="ia-name">'+esc(r.mission)+' <small>('+nQ+'문항'+(r.nickname?' · '+esc(r.nickname):'')+')</small></span>'
         +'<span class="ia-score">'+scoreDisp+'<small> 점'
@@ -1785,7 +1789,7 @@ function renderPersonal(){
       const clsAvg=algAvg[r.mission]!=null?algAvg[r.mission]:null;
       html+='<div class="ia-row">'
         +'<span class="ia-name">'+esc(r.mission)+'</span>'
-        +'<span class="ia-score">'+(r.score??'—')+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
+        +'<span class="ia-score">'+fmtScore(r.score)+'<small> 점'+(clsAvg!=null?' · 특강평균 '+clsAvg:'')+'</small></span>'
         +hwActionsHtml(ALG_TAB,r.mission)
         +'<span class="ia-doc-slot" data-category="'+esc(ALG_TAB)+'" data-mission="'+esc(r.mission)+'"></span>'
         +'<div class="ia-comment" style="width:100%">맞은 '+(r.ok??'—')+' · 틀린 '+(r.wrong??'—')+' · 고친 '+(r.fixed??'—')+' · 총문제 '+(r.totalQ??'—')+'</div>'
