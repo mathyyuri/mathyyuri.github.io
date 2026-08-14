@@ -470,9 +470,10 @@ function collectTagSuggestions(files) {
   for (const f of files) {
     let qd;
     try { qd = JSON.parse(f.questionData || '[]'); } catch (e) { continue; }
+    if (!Array.isArray(qd)) continue;
     for (const q of qd) {
-      if (q.unit) units.add(q.unit);
-      if (q.type) types.add(q.type);
+      if (q && q.unit) units.add(q.unit);
+      if (q && q.type) types.add(q.type);
     }
   }
   return { units: [...units].sort((a, b) => a.localeCompare(b, 'ko')), types: [...types].sort((a, b) => a.localeCompare(b, 'ko')) };
