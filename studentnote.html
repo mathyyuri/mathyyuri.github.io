@@ -3578,10 +3578,56 @@ function buildQuestionPageHtml(pageNum, colsBlocks, info) {
   </section>`;
 }
 
-// ---- 고정 뒤표지 (항상 이미지 한 장) ----
-function buildBackcoverPageHtml(pageNum) {
+// ---- 고정 뒤표지 (항상 이미지 한 장, 반 테마 색으로 다시 칠해서 사용) ----
+// 뒤표지 원본 JPG는 2기 S반 디자인으로 고정 촬영된 것이라, CSS만으로는
+// (mix-blend-mode 등) 반마다 다른 색을 못 입힌다 — 실제로 시도해보니
+// 원본이 이미 거의 흰색에 가까운 크림톤이라 두 크림색을 곱하기 블렌드해도
+// 눈에 띄게 안 바뀌었다(측정: FBF3E7 근처 → 거의 그대로). 대신 "이 이미지의
+// 크림 배경색은 원래 S반 크림이었다"는 걸 기준점 삼아, 반 테마의 크림색으로
+// 정확히 맞바꾸는 비율(ratio = 목표색 / 기준색)을 픽셀마다 곱해서 다시
+// 그린다 — 배경(크림에 가까운 밝은 픽셀)은 목표색 그대로 맞춰지고, 짙은
+// 로고/글씨는 원래도 어두워서 비율을 곱해도 크게 안 바뀌어 그대로 잘 보인다.
+// html2canvas(저장 기능)는 CSS 블렌드모드를 제대로 못 그리지만, 이렇게
+// 미리 픽셀 자체를 구워두면 그냥 평범한 이미지라 저장 시에도 똑같이 나온다.
+const MB_BACKCOVER_REF_THEME = CLASS_THEMES['2||S']; // 원본 이미지가 촬영된 기준 테마
+const backcoverTintCache = new Map();
+function hexToRgb(hex) {
+  const m = hex.replace('#', '').match(/.{2}/g).map(h => parseInt(h, 16));
+  return { r: m[0], g: m[1], b: m[2] };
+}
+function tintBackcoverImage(theme) {
+  const cacheKey = theme.cream;
+  if (backcoverTintCache.has(cacheKey)) return backcoverTintCache.get(cacheKey);
+  const ref = hexToRgb(MB_BACKCOVER_REF_THEME.cream);
+  const target = hexToRgb(theme.cream);
+  const ratio = { r: target.r / ref.r, g: target.g / ref.g, b: target.b / ref.b };
+  const promise = new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = frame.data;
+      for (let i = 0; i < d.length; i += 4) {
+        d[i] = Math.min(255, d[i] * ratio.r);
+        d[i + 1] = Math.min(255, d[i + 1] * ratio.g);
+        d[i + 2] = Math.min(255, d[i + 2] * ratio.b);
+      }
+      ctx.putImageData(frame, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => resolve('data:image/jpeg;base64,' + MENBOOK_BACKCOVER_JPG_B64); // 실패 시 원본 그대로
+    img.src = 'data:image/jpeg;base64,' + MENBOOK_BACKCOVER_JPG_B64;
+  });
+  backcoverTintCache.set(cacheKey, promise);
+  return promise;
+}
+async function buildBackcoverPageHtml(pageNum, theme) {
+  const src = await tintBackcoverImage(theme);
   return `${mbSheetOpen(pageNum)}
-    <img class="mbBackcoverImg" src="data:image/jpeg;base64,${MENBOOK_BACKCOVER_JPG_B64}" alt="MEN BOOK">
+    <img class="mbBackcoverImg" src="${src}" alt="MEN BOOK">
   </section>`;
 }
 
@@ -4031,6 +4077,7 @@ async function generateHtmlNote(historicalBatch) {
     const unitAccuracy = buildUnitAccuracy(noteHistory);
 
     log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
+    const theme = themeFor(currentStudent.cohort, currentStudent.class);
     const pagesHtml = [];
     pagesHtml.push(buildCoverPageHtml(info));
     pagesHtml.push(buildSummaryPageHtml(summaryRows, info));
@@ -4043,7 +4090,7 @@ async function generateHtmlNote(historicalBatch) {
       pageNum++;
     }
 
-    pagesHtml.push(buildBackcoverPageHtml(pageNum));
+    pagesHtml.push(await buildBackcoverPageHtml(pageNum, theme));
     pageNum++;
 
     const answerPages = paginateBlocks(answerBlocks, 2);
@@ -4058,7 +4105,6 @@ async function generateHtmlNote(historicalBatch) {
       pageNum++;
     });
 
-    const theme = themeFor(currentStudent.cohort, currentStudent.class);
     const html = buildHtmlDocument({ titleText, pagesHtml, theme });
 
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
