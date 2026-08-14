@@ -79,11 +79,6 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingRowLabel { font-weight: 700; font-family: var(--kserif); flex: 0 0 auto; min-width: 140px; }
 .gradingRowToggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
 .gradeItem { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-/* gradeNum(실제 시험지 문제 번호)이 채점 기준이라 크고 굵게, gradeSeq(오답
-   노트 요약표 안에서의 순서일 뿐 시험지 번호가 아님)는 작고 흐리게 —
-   반대로 돼 있으면 교사가 굵은 쪽을 문제 번호로 착각해 엉뚱한 문제를
-   채점하게 된다(실제로 보고된 문제). */
-.gradeSeq { font-size: 10px; color: rgba(26,26,26,.4); }
 .gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
 .gradeQuickAnswer { font-size: 12px; color: var(--mint-deep); font-weight: 700; flex: 1 1 auto; white-space: normal; word-break: break-word; line-height: 1.35; }
 .gradeQuickAnswer .katex { font-size: 1em; }
@@ -157,7 +152,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div class="box" id="gradingBox" style="display:none">
       <p><b>지난 오답노트 채점</b></p>
-      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾼 뒤 저장하세요. <b>굵은 번호가 실제 시험지의 문제 번호</b>이니 그 번호로 채점하세요 — 아래 작은 "요약 N"은 시험지 번호가 아니라 오답노트 요약표에서 몇 번째 항목인지일 뿐입니다.</p>
+      <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾼 뒤 저장하세요. <b>굵은 번호가 실제 시험지의 문제 번호</b>이니 그 번호로 채점하세요.</p>
       <div id="gradingRounds"></div>
     </div>
 
@@ -2692,9 +2687,14 @@ function renderGradingRounds(rounds) {
     byMission.get(it.mission).items.push(it);
   }
 
-  // "순서번호" — 오답노트 전체(모든 회차 통틀어)에서 이 문항의 위치 —
-  // 노트 자체의 "오답 현황 요약" 표에 인쇄된 번호와 맞춘다.
-  let seq = 1;
+  // "요약 N"(오답노트 요약표 안에서의 순서)은 예전엔 여기서도 다시 매겨서
+  // 보여줬는데, 그 번호는 missionGroups(지금 이 순간의 살아있는 오답
+  // 목록 — 그새 새로 틀린 문제가 늘거나 이미 고쳐진 문제가 빠지면 순서가
+  // 바뀐다)를 기준으로 그때그때 새로 계산하는 값이라, 그 노트가 실제
+  // 인쇄됐던 시점의 요약표 번호와 항상 같다는 보장이 없다 — 실제로 두
+  // 번호가 어긋나서 채점이 헷갈린다는 신고를 받고 아예 없앴다. 문항
+  // 번호(굵게)+회차+미션만으로 채점 대상은 이미 정확히 특정되므로
+  // 없어도 채점에는 지장이 없다.
   for (const group of byMission.values()) {
     const div = document.createElement('div');
     div.className = 'gradingRow';
@@ -2706,7 +2706,6 @@ function renderGradingRounds(rounds) {
             <span class="gradeNum">${it.num}번<small>(${it.round}회차)</small></span>
             <button type="button" class="gradeToggle O" data-value="1"
               data-mission="${group.mission}" data-category="${group.category || ''}" data-round="${it.round}" data-num="${it.num}">O</button>
-            <span class="gradeSeq">요약 ${seq++}</span>
           </span>`).join('')}
       </div>
       <button type="button" class="gradeAllBtn">전체 O</button>
