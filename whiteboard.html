@@ -314,6 +314,14 @@ async function goToPage(n){
   await renderPdfPage(n);
   attachPageListeners(n);
   updatePageIndicator();
+  // 쪽마다 따로 제출하는 방식이라(각 쪽 = 별도 제출 건), 1쪽을 제출하고
+  // 2쪽으로 넘어오면 "제출 완료" 표시와 비활성화된 버튼이 그대로 남아있어
+  // 2쪽을 제출할 방법이 없던 문제 — 쪽을 옮기면 이 쪽 기준으로 다시
+  // 깨끗한 상태로 되돌린다.
+  const statusEl = document.getElementById('submitStatus');
+  if (statusEl) statusEl.textContent = '';
+  const submitBtnEl = document.getElementById('submitBtn');
+  if (submitBtnEl) submitBtnEl.disabled = false;
 }
 
 function pagePath(n){ return 'sessions/' + sessionId + '/pages/' + n + '/strokes'; }
@@ -560,6 +568,10 @@ async function submitBoard(){
       })
     });
     document.getElementById('submitStatus').textContent = '제출 완료 ✓ 이 창은 닫으셔도 됩니다.';
+    // 계속 비활성화 상태로 남아있으면(예전엔 그랬음) 다른 쪽으로 넘어가지
+    // 않고 같은 쪽을 다시 고쳐서 다시 제출하고 싶을 때도 방법이 없었다 —
+    // 중복 클릭 방지 목적만 채우면 되므로 잠깐 뒤에 다시 눌러쓸 수 있게 한다.
+    setTimeout(() => { btn.disabled = false; }, 1200);
   } catch (e) {
     document.getElementById('submitStatus').textContent = '제출 실패: ' + e.message;
     btn.disabled = false;

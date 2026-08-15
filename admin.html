@@ -108,8 +108,9 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <div><label>기수</label><select id="scCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
         <div><label>카테고리</label><select id="scCategory"></select></div>
         <div><label>반</label><select id="scClass"></select></div>
-        <div><label>시험명 (목록에서 골라 이어서 수정하거나, 새로 입력)</label>
-          <input type="text" id="scMission" list="scMissionList" placeholder="예: 5회차 진도미션" style="width:220px" autocomplete="off">
+        <div><label>시험명 (드롭다운에서 골라 이어서 수정하거나, 새로 입력)</label>
+          <select id="scMissionSelect" style="width:220px;margin-bottom:4px"><option value="">-- 기존 시험명에서 고르기 --</option></select>
+          <input type="text" id="scMission" list="scMissionList" placeholder="예: 5회차 진도미션 (또는 위에서 선택)" style="width:220px" autocomplete="off">
           <datalist id="scMissionList"></datalist>
         </div>
         <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="50" style="width:70px"></div>
@@ -322,14 +323,24 @@ async function refreshMissionList() {
   const category = document.getElementById('scCategory').value;
   const cls = document.getElementById('scClass').value;
   const dl = document.getElementById('scMissionList');
-  if (!category) { dl.innerHTML = ''; return; }
+  const sel = document.getElementById('scMissionSelect');
+  if (!category) { dl.innerHTML = ''; sel.innerHTML = '<option value="">-- 기존 시험명에서 고르기 --</option>'; return; }
   const reqId = ++missionListReqId;
   try {
     const resp = await callGetJsonp({ action: 'missionlist', key: myKey, cohort, category, class: cls });
     if (reqId !== missionListReqId) return; // 그 사이에 다른 카테고리/반으로 또 바뀐 경우 오래된 응답 무시
     dl.innerHTML = resp.missions.map(m => `<option value="${escHtml(m)}"></option>`).join('');
+    // 타이핑 없이도 클릭 한 번으로 전체 목록에서 바로 고를 수 있게 진짜
+    // 드롭다운(select)도 같이 둔다 — datalist는 브라우저에 따라 한 글자
+    // 이상 입력해야 목록이 뜨는 경우가 있어서 불편하다는 의견을 반영.
+    sel.innerHTML = '<option value="">-- 기존 시험명에서 고르기 --</option>'
+      + resp.missions.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
   } catch (e) { /* 자동완성일 뿐이라 실패해도 조용히 무시 */ }
 }
+document.getElementById('scMissionSelect').addEventListener('change', () => {
+  const sel = document.getElementById('scMissionSelect');
+  if (sel.value) document.getElementById('scMission').value = sel.value;
+});
 
 // ---------- 새 카테고리 추가 ----------
 document.getElementById('addCatBtn').addEventListener('click', async () => {
