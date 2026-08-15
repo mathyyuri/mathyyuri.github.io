@@ -30,7 +30,14 @@
   --sans:'Noto Sans KR',sans-serif;
 }
 * { box-sizing: border-box; }
+/* 필기 중에 손가락/마우스 드래그가 밑에 깔린 글자를 파랗게 블록 지정해버리는
+   문제 — hwpx 문서는 진짜 텍스트라(PDF/이미지는 캔버스라 원래 안 그랬음)
+   길게 누르거나 드래그하면 브라우저가 기본적으로 선택 동작을 시도한다.
+   이 페이지 전체가 "쓰는" 화면이지 텍스트를 골라 복사하는 화면이 아니므로
+   통째로 막는다(iOS의 길게 눌러 뜨는 메뉴도 같이 막아줌). */
+* { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 body { margin:0; font-family:var(--sans); background:var(--cream); color:var(--ink); -webkit-font-smoothing:antialiased; }
+#topBar { position:sticky; top:0; z-index:20; }
 header { padding:10px 16px; border-bottom:1px solid var(--gold-line); background:#fff; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0; }
 .roleBadge { font-family:var(--kserif); font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
@@ -71,6 +78,7 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 </style>
 </head>
 <body>
+<div id="topBar">
 <header>
   <h1>✍️ 공동 필기</h1>
   <span id="roleBadgeEl" class="roleBadge"></span>
@@ -99,6 +107,7 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
     <span id="pageIndicator">1 / 1</span>
     <button type="button" id="nextPageBtn">▶</button>
   </div>
+</div>
 </div>
 <div id="stageWrap">
   <div id="stage"><canvas id="docCanvas"></canvas><div id="docHtmlLayer"></div><canvas id="inkCanvas"></canvas></div>
