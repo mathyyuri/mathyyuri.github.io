@@ -399,6 +399,10 @@ function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null 
 function fillDefaultItems(items) {
   return Array.from({ length: scQCount }, (_, i) => (items && items[i] != null) ? items[i] : 1);
 }
+document.getElementById('scStartNum').addEventListener('input', () => {
+  scStartNum = Number(document.getElementById('scStartNum').value) || 1;
+  if (scStudents.length) renderScoreTable();
+});
 
 // 문항별 배점. 저장된 배점이 없거나(처음 만드는 시험) 문항 수가 바뀌었으면
 // 100점을 문항 수만큼 고르게 나눈다 — 나머지는 앞쪽 문항에 1점씩 더 준다
