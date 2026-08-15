@@ -2794,7 +2794,13 @@ function resolveFileForMission(missionName, category, clsOverride) {
     const exact = bankFiles.find(f => f.filename === globalHit);
     if (exact) return { file: exact, how: '공통 매핑표' };
   }
-  const norm = (s) => s.replace(/[\s.\[\]()]/g, '');
+  // ":" 도 지워야 한다 — "3주차 : 항등식과 나머지 정리"처럼 미션명에 콜론이
+  // 있으면 공백 기준 split에서 ":"만 딱 떨어져 별도 토큰이 되는데,
+  // 파일명(보통 "3주차 항등식과...")엔 콜론이 없어서 그 토큰 하나 때문에
+  // every()가 항상 실패해 자동 매칭이 통째로 안 되던 문제(실제 확인됨:
+  // "N주차 : 제목" 형식 미션 전부가 매칭 실패로 떨어짐) — 지우면 그 토큰이
+  // 빈 문자열이 되고 filter(Boolean)에서 걸러져 아예 비교 대상에서 빠진다.
+  const norm = (s) => s.replace(/[\s.:\[\]()]/g, '');
   // 미션명 전체가 파일명 안에 "통째로, 끊기지 않고" 들어있어야만 매칭되던
   // 방식은 "PRISM 과제 8회"(미션명) vs "[PRISM] 1-1 과제미션 8회"(파일명)
   // 처럼 파일명에 회차 표시("1-1")나 접미사("미션")가 중간에 끼어들면
