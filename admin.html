@@ -114,6 +114,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
           <datalist id="scMissionList"></datalist>
         </div>
         <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="50" style="width:70px"></div>
+        <div><label title="한 단원이 파일 여러 개로 나뉘어 있을 때(예: 복소수(1)=1~40번, 복소수(2)=41~70번), 두번째 파일의 시작 번호를 41로 넣으면 표/오답노트에 실제 시험지 번호 그대로 표시됩니다.">시작 번호 <small>(보통 1)</small></label><input type="number" id="scStartNum" value="1" min="1" style="width:70px"></div>
         <button id="scLoadBtn">불러오기</button>
       </div>
       <div class="fieldRow" style="margin-top:8px">
@@ -386,6 +387,9 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
 // ---------- 성적 입력 ----------
 let scStudents = []; // [{name, items, comment}]
 let scQCount = 20;
+// 이 미션의 1번째 칸이 실제 시험지에서 몇 번인지 — 기본 1, 복소수(2)처럼
+// 이어지는 파일이면 41 같은 값을 입력. 표 머리글·저장 둘 다 이 값을 쓴다.
+let scStartNum = 1;
 // 문항 값: 1=O(정답) 2=X(오답) 3=오답완료(△) null=아직 풀지 않음.
 // 새로 불러온(저장된 값이 없는) 문항은 대부분 맞는 게 보통이라 기본을
 // O로 채워서, 실제로 틀린 문항만 클릭해서 바꾸면 되게 한다.
@@ -426,6 +430,8 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       comment: s.comment || '',
     }));
     scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : equalWeights(scQCount);
+    scStartNum = resp.startNum || 1;
+    document.getElementById('scStartNum').value = scStartNum;
     document.getElementById('scWeightBar').style.display = '';
     renderScoreTable();
     document.getElementById('scSaveBtn').disabled = false;
@@ -491,7 +497,7 @@ function renderScoreTable() {
   const wrap = document.getElementById('scTableWrap');
   if (!scStudents.length) { wrap.innerHTML = '<p class="hint">이 반에 등록된 학생이 없습니다.</p>'; return; }
   let html = '<table class="scoreTable"><thead><tr><th>이름</th>';
-  for (let i = 1; i <= scQCount; i++) html += `<th>${i}</th>`;
+  for (let i = 0; i < scQCount; i++) html += `<th>${i + scStartNum}</th>`;
   html += '<th>코멘트</th></tr><tr><th>배점</th>';
   for (let i = 0; i < scQCount; i++) {
     html += `<th><input type="number" class="weightInput" data-qi="${i}" min="0"></th>`;
@@ -555,8 +561,9 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   msg.className = 'hint';
   document.getElementById('scSaveBtn').disabled = true;
   try {
+    scStartNum = Number(document.getElementById('scStartNum').value) || 1;
     const entries = scStudents.map(s => ({ name: s.name, items: s.items, comment: s.comment }));
-    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: scWeights });
+    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: scWeights, startNum: scStartNum });
     await new Promise(r => setTimeout(r, 1200));
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
@@ -565,6 +572,8 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
       comment: s.comment || '',
     }));
     scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : scWeights;
+    scStartNum = resp.startNum || scStartNum;
+    document.getElementById('scStartNum').value = scStartNum;
     renderScoreTable();
     msg.textContent = '저장 완료 ✓';
     msg.className = 'hint ok';

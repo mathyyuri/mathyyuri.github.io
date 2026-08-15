@@ -1608,6 +1608,7 @@ function renderMissionDetail(){
   const box=document.getElementById('detail-table');
   if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
   const nQ=Math.max(...rows.map(r=>r.items.length),0);
+  const numStart=rows[0]?.numStart||1;
 
   // 문항별 정답률 (표시 중인 학생들 기준)
   const rates=[];
@@ -1623,7 +1624,7 @@ function renderMissionDetail(){
   const hasGrade=pubTab==='9모대비';
   let html='<table class="omr"><tr><th style="text-align:left;padding-left:10px">닉네임</th><th>점수</th>'+(hasGrade?'<th>등급</th>':'')+'<th>완성도</th>';
   for(let q=1;q<=nQ;q++){
-    html+='<th>'+q+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
+    html+='<th>'+(q-1+numStart)+(rates[q-1]!=null?'<div class="th-rate">'+rates[q-1]+'%</div>':'')+'</th>';
   }
   html+='</tr>';
   rows.forEach(r=>{
@@ -1836,11 +1837,12 @@ function renderPersonal(){
       const diff=(r.score!=null&&clsAvg!=null)?r1(r.score-clsAvg):null;
       const comp=compValOf(r,k);
       const qRates=itemAccMap[r.mission]||[];
+      const rNumStart=r.numStart||1;
       let chips='';
       r.items.forEach((v,i)=>{
         if(v==null)return;
         const rate=qRates[i];
-        chips+='<span class="chip-q '+(v===1?'ok':v===2?'no':'tri')+'"><b>'+(i+1)+'</b>'
+        chips+='<span class="chip-q '+(v===1?'ok':v===2?'no':'tri')+'"><b>'+(i+rNumStart)+'</b>'
           +(rate!=null?'<small>'+rate+'%</small>':'')+'</span>';
       });
       const scoreDisp=(comp!=null&&comp>=100)
