@@ -1068,9 +1068,14 @@ function compValOf(r,category){
   // 완성률이라, items 배열만으로 계산하는 값(답한 문항만 분모)보다 정확하다.
   const cat=category===undefined?pubTab:category;
   if(cat!=='9모대비'&&r.sheetComp!=null&&!isNaN(r.sheetComp)) return Math.round(r.sheetComp);
+  // H열(r.correct)은 시스템상 "맞은개수"(정수)를 저장하는 칸이라 완성도(%)로
+  // 그대로 쓰면 틀린다 — 문항별 정오 기록에서 직접 계산한 값을 우선한다.
+  // items가 아예 없는 경우(문항별 채점 없이 점수만 입력한 숙제 등)에만
+  // 마지막 수단으로 H열 값을 쓴다.
+  const c=compOf(r.items);
+  if(c!=null) return c;
   const v=parseFloat(String(r.correct==null?'':r.correct).replace('%','').trim());
-  if(!isNaN(v)) return Math.round(v);
-  return compOf(r.items);
+  return isNaN(v)?null:Math.round(v);
 }
 function compHTML(c,cls){
   if(c==null)return '—';
