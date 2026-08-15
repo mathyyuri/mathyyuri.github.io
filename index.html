@@ -89,6 +89,11 @@ input{font-family:inherit}
 .section-pad{padding:12px 3vw 50px}
 .paper{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:clamp(12px,2.5vw,24px)}
 .big-label{font-family:var(--serif);font-weight:900;font-size:clamp(18px,3.6vw,28px);margin-bottom:3px}
+.detail-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.detail-title-row .big-label{margin-bottom:0}
+.detail-dl-btn{background:#fff;border:1px solid var(--mint-deep);color:var(--mint-deep);padding:6px 12px;font-size:11px;letter-spacing:.04em;font-weight:700;border-radius:3px;cursor:pointer;white-space:nowrap}
+.detail-dl-btn:hover{background:var(--mint-deep);color:#fff}
+.detail-dl-btn:disabled{opacity:.5;cursor:default}
 .small-note{font-size:10px;letter-spacing:.12em;color:var(--gold);margin-bottom:12px}
 .grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 /* 가로 스크롤이 뚜렷이 보이도록(과제미션처럼 회차가 많아 20열 가까이 되는 표 대비) 항상 얇은 스크롤바 표시 */
@@ -420,7 +425,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   <!-- 미션별 정오표 -->
   <div class="section-pad hidden" id="pub-mission" style="padding-top:12px">
     <div class="paper">
-      <div class="big-label" id="detail-title">—</div>
+      <div class="detail-title-row"><div class="big-label" id="detail-title">—</div><span id="detail-download-slot"></span></div>
       <div class="small-note" id="detail-sub">—</div>
       <div class="grid-scroll" id="detail-table"></div>
       <div class="legend-row" id="detail-legend"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span><span class="tri"><i></i>오답완료 △</span></div>
@@ -1560,6 +1565,7 @@ function renderMissionDetail(){
   document.getElementById('detail-title').textContent=pubMission;
   document.getElementById('detail-legend').classList.remove('hidden');
   renderDetailResources();
+  loadMissionDownloadBtn(pubTab,pubMission);
   let rows=filteredRows().filter(r=>r.mission===pubMission);
   rows=rows.slice().sort((a,b)=>(b.score??-1)-(a.score??-1));
   document.getElementById('detail-sub').textContent='ITEM ANALYSIS · '+rows.length+'명 · 점수 높은 순';
@@ -1598,6 +1604,58 @@ function renderMissionDetail(){
     html+='</tr>';
   });
   box.innerHTML=html+'</table>';
+}
+
+/* ---- 미션 상세 화면: 선생님이 admin.html에서 연결해둔 문제 원본(PDF/이미지)을
+   학생이 바로 내려받을 수 있는 버튼 — hwpx는 화면에서 보는 용도라 제외 ---- */
+let missionDlReqId=0;
+async function loadMissionDownloadBtn(category,mission){
+  const slot=document.getElementById('detail-download-slot');
+  slot.innerHTML='';
+  const myReq=++missionDlReqId;
+  try{
+    const cls=(typeof pubClass!=='undefined'&&pubClass!=='전체')?pubClass:'';
+    const p=new URLSearchParams({action:'assigneddoc',cohort:pubCohort,category,mission,class:cls});
+    const res=await fetch(GAS_URL+'?'+p.toString());
+    const json=await res.json();
+    if(myReq!==missionDlReqId)return; // 그 사이 다른 미션을 클릭한 경우 낡은 응답 무시
+    if(!json.ok||!json.docId||json.docType==='hwpx')return;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='detail-dl-btn';
+    btn.textContent='📥 문제 PDF 다운로드';
+    btn.addEventListener('click',()=>downloadMissionDoc(btn,json.docId,mission));
+    slot.appendChild(btn);
+  }catch(e){/* 조회 실패 시 버튼 없이 조용히 넘어감 */}
+}
+async function downloadMissionDoc(btn,docId,mission){
+  btn.disabled=true;
+  const origText=btn.textContent;
+  btn.textContent='불러오는 중...';
+  try{
+    const res=await fetch(GAS_URL+'?action=hwphoto&id='+encodeURIComponent(docId));
+    const json=await res.json();
+    if(!json.ok)throw new Error(json.error||'다운로드 실패');
+    const mime=json.photo.mime||'application/octet-stream';
+    const ext=mime==='application/pdf'?'.pdf':mime.startsWith('image/')?'.'+mime.split('/')[1]:'';
+    const bin=atob(json.photo.data);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const blob=new Blob([bytes],{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=mission.replace(/[\\/:*?"<>|]/g,'_')+ext;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }catch(e){
+    alert('다운로드하지 못했습니다: '+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=origText;
+  }
 }
 
 /* ================= 개인 대시보드 ================= */
