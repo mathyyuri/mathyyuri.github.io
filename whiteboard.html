@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="hwpx-lib.js?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -162,12 +163,11 @@ function initHeader(){
 }
 // docKind는 loadDoc()이 끝나야 확정되므로(문서를 열어봐야 pdf/image/hwpx
 // 중 뭔지 안다) initHeader 시점(아직 'blank')과 loadDoc 완료 후, 두 번
-// 호출된다. hwpx(문제집 그대로 보기)는 스크롤이 아주 길어질 수 있어 한
-// 장으로 납작하게 찍어 제출하는 방식과 안 맞는다 — 그 경우와, 미션 아래
-// "문제 보기"처럼 제출이 목적이 아닌 진입(submit=1 없음)에서는 제출
-// 바 자체를 안 보여준다(순수 열람 + 개인 연습장 용도).
+// 호출된다. "문제 보기"("풀고 제출" 탭으로 합치기 전엔 열람 전용이던 것)와
+// 지금은 하나로 합쳐서 항상 submit=1로 열리므로, 역할이 학생이면 그냥
+// 보여준다 — hwpx도 submitBoard()가 html2canvas로 찍어서 제출 가능.
 function updateSubmitBarVisibility(){
-  document.getElementById('submitBar').style.display = (role === 'student' && submitMode && docKind !== 'hwpx') ? 'flex' : 'none';
+  document.getElementById('submitBar').style.display = (role === 'student' && submitMode) ? 'flex' : 'none';
 }
 
 function setupStage(w, h){
@@ -391,8 +391,38 @@ function eraseAt(pt){
   });
 }
 
+// 손가락 1개=필기, 2개 이상=화면 이동 — inkCanvas는 touch-action:none이라
+// 브라우저가 손가락 개수와 상관없이 스크롤을 전혀 안 해줘서, 2개 이상
+// 닿으면 직접 scrollBy로 화면을 움직여준다. activePointers로 지금 몇 개가
+// 닿아있는지 추적하다가, 2개째가 닿는 순간 이미 그리고 있던 1번째 손가락의
+// 선(대부분 의도치 않은 낙서)은 지우고 팬 모드로 전환 — 손가락이 전부
+// 떨어질 때까지(0개) 팬 모드를 유지해서, 두 손가락 중 하나만 먼저 떼도
+// 다시 그리기로 안 돌아간다.
+const activePointers = new Map();
+let panMode = false, panLastY = null;
+function avgActiveY(){
+  if (!activePointers.size) return null;
+  let sum = 0;
+  activePointers.forEach(p => { sum += p.y; });
+  return sum / activePointers.size;
+}
+function cancelCurrentStroke(){
+  if (drawing === true && curStrokeId) {
+    delete strokesCache[curStrokeId];
+    if (strokesRef) strokesRef.child(curStrokeId).remove();
+    scheduleRedraw();
+  }
+  drawing = false; curStrokeId = null; curPoints = [];
+}
 inkCanvas.addEventListener('pointerdown', e => {
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 일부 브라우저/입력장치에서 캡처가 안 될 수 있음 — 캔버스 안에서 그리는 데는 지장 없음 */ }
+  if (activePointers.size >= 2 || panMode) {
+    cancelCurrentStroke();
+    panMode = true;
+    panLastY = avgActiveY();
+    return;
+  }
   const pt = getNormPoint(e);
   if (currentTool === 'eraser') { drawing = 'erasing'; eraseAt(pt); return; }
   drawing = true;
@@ -402,6 +432,13 @@ inkCanvas.addEventListener('pointerdown', e => {
   scheduleRedraw();
 });
 inkCanvas.addEventListener('pointermove', e => {
+  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (panMode) {
+    const y = avgActiveY();
+    if (panLastY != null && y != null) window.scrollBy(0, panLastY - y);
+    panLastY = y;
+    return;
+  }
   if (!drawing) return;
   const pt = getNormPoint(e);
   if (drawing === 'erasing') { eraseAt(pt); return; }
@@ -414,7 +451,10 @@ inkCanvas.addEventListener('pointermove', e => {
     strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
   }
 });
-function endStroke(){
+function endStroke(e){
+  if (e && activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
+  if (activePointers.size === 0) { panMode = false; panLastY = null; }
+  if (panMode) return;
   if (drawing === true && curStrokeId) {
     if (strokesRef) {
       strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
@@ -490,7 +530,16 @@ async function submitBoard(){
     const octx = out.getContext('2d');
     octx.fillStyle = '#fff';
     octx.fillRect(0, 0, out.width, out.height);
-    octx.drawImage(docCanvas, 0, 0);
+    if (docKind === 'hwpx') {
+      // hwpx는 docCanvas가 아니라 docHtmlLayer(진짜 HTML)에 내용이 있으니,
+      // 제출 직전에 html2canvas로 그 HTML을 통째로 이미지로 찍어서 합성한다
+      // (studentnote.html의 오답노트 PDF 저장 기능과 같은 방식) — 문항이
+      // 많아 세로로 길어도 캔버스 한 장으로 찍는 데는 문제없다.
+      const docShot = await html2canvas(docHtmlLayer, { scale: docCanvas.width / stageCssW, backgroundColor: '#ffffff' });
+      octx.drawImage(docShot, 0, 0, out.width, out.height);
+    } else {
+      octx.drawImage(docCanvas, 0, 0);
+    }
     octx.drawImage(inkCanvas, 0, 0);
     const base64 = out.toDataURL('image/jpeg', 0.9).split(',')[1];
     await fetch(GAS_URL, {
