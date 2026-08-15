@@ -897,36 +897,68 @@ async function toggleAlgAnswers(btn,panel,mission){
   }
 }
 
-/* ---------- 로그인 ---------- */
+/* ---------- 로그인 ----------
+   me는 그냥 메모리 변수라 새로고침하면 사라진다 — 로그인한 채로 "전체
+   현황"을 봤다가 휴대폰이 탭을 백그라운드에서 새로고침하거나 페이지를
+   다시 열면 아예 로그아웃된 것처럼 보여서(실제로 불편하다는 신고를
+   받음) admin.html이 이미 쓰던 것과 같은 방식으로 sessionStorage에
+   이름/비번을 캐싱해두고, 페이지를 열 때 있으면 조용히 다시 로그인한다. */
+const MY_LOGIN_KEY = 'myLoginCreds';
 function goLogin(){ if(me){show('view-personal');} else {show('view-login');} }
-async function login(){
-  const name = document.getElementById('in-name').value.trim();
-  const pw = document.getElementById('in-pw').value.trim();
+async function loginWithCreds(name,pw,silent){
   const msg = document.getElementById('login-msg');
-  msg.textContent='';
-  if(!name || !pw){msg.textContent='이름과 학부모 휴대폰 뒷 4자리를 입력해주세요.';return;}
-  loading(true);
+  if(!silent){msg.textContent='';loading(true);}
   try{
     const res = await fetch(GAS_URL+'?action=login&name='+encodeURIComponent(name)+'&pw='+encodeURIComponent(pw));
     const json = await res.json();
-    if(!json.ok){msg.textContent=json.error||'로그인에 실패했습니다.';loading(false);return;}
+    if(!json.ok){
+      if(silent)sessionStorage.removeItem(MY_LOGIN_KEY); // 캐시된 정보가 더 이상 안 맞으면 지움
+      else msg.textContent=json.error||'로그인에 실패했습니다.';
+      return false;
+    }
     me = json;
+    sessionStorage.setItem(MY_LOGIN_KEY,JSON.stringify({name,pw}));
     await refreshMyPendingHw();
     renderPersonal();
-    show('view-personal');
+    if(!silent)show('view-personal');
+    return true;
   }catch(e){
-    msg.textContent='서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    if(!silent)msg.textContent='서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    return false;
+  }finally{
+    if(!silent)loading(false);
   }
-  loading(false);
+}
+async function login(){
+  const name = document.getElementById('in-name').value.trim();
+  const pw = document.getElementById('in-pw').value.trim();
+  if(!name || !pw){document.getElementById('login-msg').textContent='이름과 학부모 휴대폰 뒷 4자리를 입력해주세요.';return;}
+  await loginWithCreds(name,pw,false);
 }
 document.getElementById('in-pw').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 function logout(){
   me=null;
+  sessionStorage.removeItem(MY_LOGIN_KEY);
   document.getElementById('in-name').value='';
   document.getElementById('in-pw').value='';
   document.getElementById('login-msg').textContent='';
   show('view-public');
 }
+// 페이지를 새로 열었을 때 캐시된 로그인 정보가 있으면 조용히 복원하고
+// 바로 개인화면으로 보내준다 — 처음 여는 화면(랜딩)이 잠깐 보였다 바뀌는
+// 정도라 어색하면, 랜딩에 아직 손 안 댔을 때만(페이지 켜자마자) 자동으로
+// 넘어가고, 이미 사용자가 다른 화면으로 옮겨갔으면(예: 전체현황 구경 중)
+// 억지로 화면을 바꾸지 않는다.
+(async function restoreMyLogin(){
+  let cached;
+  try{cached=JSON.parse(sessionStorage.getItem(MY_LOGIN_KEY)||'null');}catch(e){}
+  if(!cached||!cached.name||!cached.pw)return;
+  const stillOnLanding=!document.getElementById('view-landing').classList.contains('hidden');
+  const ok=await loginWithCreds(cached.name,cached.pw,true);
+  if(ok&&stillOnLanding&&!document.getElementById('view-landing').classList.contains('hidden')){
+    show('view-personal');
+  }
+})();
 
 /* ================= 전체 현황 ================= */
 async function loadPublic(){
@@ -1897,6 +1929,16 @@ async function loadMissionDocPreviews(){
       btn.textContent='📄 문제 보기';
       btn.addEventListener('click',()=>openDocModal(json.docId,json.docType,category,mission));
       slot.appendChild(btn);
+      // hwpx는 화면에서 보는 용도(오답노트처럼 렌더링)라 원본 파일 자체를
+      // 내려받게 하지 않는다 — PDF/이미지만 다운로드 버튼을 같이 보여준다.
+      if(json.docType!=='hwpx'){
+        const dlBtn=document.createElement('button');
+        dlBtn.type='button';
+        dlBtn.className='ia-doc-btn';
+        dlBtn.textContent='📥 다운로드';
+        dlBtn.addEventListener('click',()=>downloadMissionDoc(dlBtn,json.docId,mission));
+        slot.appendChild(dlBtn);
+      }
     }catch(e){}
   }));
 }
