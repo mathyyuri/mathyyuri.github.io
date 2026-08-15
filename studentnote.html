@@ -77,6 +77,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 6px 0; border-bottom: 1px solid var(--gold-line); font-size: 13px; }
 .gradingRow:last-child { border-bottom: none; }
 .gradingRowLabel { font-weight: 700; font-family: var(--kserif); flex: 0 0 auto; min-width: 140px; }
+.gradingRowCat { font-weight: 700; font-size: 11px; color: var(--mint-deep); background: var(--mint-soft); padding: 1px 6px; border-radius: 3px; }
 .gradingRowToggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
 .gradeItem { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .gradeNum { font-size: 13px; font-weight: 700; color: var(--ink); }
@@ -2669,22 +2670,32 @@ function renderGradingRounds(rounds) {
   // 순서, handleUngraded가 시트에 쌓인 순서 그대로 돌려줌)를 그대로
   // 쓴다 — 안정 정렬(stable sort)이라 같은 회차 안의 순서는 안 바뀌고,
   // 미션(과 회차, 먼저 만들어진 노트 순) 기준으로만 묶인다.
-  const missionOrder = new Map(missionGroups.map((g, i) => [g.mission, i]));
+  // 개념미션/진도미션처럼 서로 다른 카테고리가 같은 미션명(예: "3주차:
+  // 항등식과 나머지 정리")을 우연히 같이 쓰는 경우가 실제로 있다 —
+  // 미션명만으로 묶으면 두 카테고리의 문항이 한 줄에 섞이고, 그 줄의
+  // "카테고리"가 둘 중 하나로 고정돼버려 다른 쪽 문항이 엉뚱한 카테고리로
+  // 채점 저장되는 사고로 이어진다(missionGroups를 만들 때도 같은 이유로
+  // 미션명+카테고리를 묶어서 키로 쓴다 — 그 패턴 그대로). 반드시 미션명+
+  // 카테고리를 같이 묶어서 키로 쓴다.
+  const missionKeyOf = it => `${it.mission}||${it.category || ''}`;
+  const missionOrder = new Map(missionGroups.map((g, i) => [`${g.mission}||${g.category || ''}`, i]));
   const flatItems = [];
   for (const r of rounds) {
     for (const it of r.items) flatItems.push({ mission: r.mission, category: r.category, round: r.round, num: it.num });
   }
   flatItems.sort((a, b) => {
-    const ia = missionOrder.has(a.mission) ? missionOrder.get(a.mission) : Infinity;
-    const ib = missionOrder.has(b.mission) ? missionOrder.get(b.mission) : Infinity;
+    const ka = missionKeyOf(a), kb = missionKeyOf(b);
+    const ia = missionOrder.has(ka) ? missionOrder.get(ka) : Infinity;
+    const ib = missionOrder.has(kb) ? missionOrder.get(kb) : Infinity;
     if (ia !== ib) return ia - ib;
-    if (a.mission !== b.mission) return a.mission.localeCompare(b.mission, 'ko');
+    if (ka !== kb) return ka.localeCompare(kb, 'ko');
     return a.round - b.round;
   });
   const byMission = new Map();
   for (const it of flatItems) {
-    if (!byMission.has(it.mission)) byMission.set(it.mission, { mission: it.mission, category: it.category, items: [] });
-    byMission.get(it.mission).items.push(it);
+    const key = missionKeyOf(it);
+    if (!byMission.has(key)) byMission.set(key, { mission: it.mission, category: it.category, items: [] });
+    byMission.get(key).items.push(it);
   }
 
   // "요약 N"(오답노트 요약표 안에서의 순서)은 예전엔 여기서도 다시 매겨서
@@ -2699,13 +2710,13 @@ function renderGradingRounds(rounds) {
     const div = document.createElement('div');
     div.className = 'gradingRow';
     div.innerHTML = `
-      <div class="gradingRowLabel">${group.mission}</div>
+      <div class="gradingRowLabel">${group.mission}${group.category ? ` <span class="gradingRowCat">[${group.category}]</span>` : ''}</div>
       <div class="gradingRowToggles">
         ${group.items.map(it => `
           <span class="gradeItem">
             <span class="gradeNum">${it.num}번<small>(${it.round}회차)</small></span>
             <button type="button" class="gradeToggle O" data-value="1"
-              data-mission="${group.mission}" data-category="${group.category || ''}" data-round="${it.round}" data-num="${it.num}">O</button>
+              data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}">O</button>
           </span>`).join('')}
       </div>
       <button type="button" class="gradeAllBtn">전체 O</button>
