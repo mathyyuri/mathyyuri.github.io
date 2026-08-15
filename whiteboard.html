@@ -69,8 +69,13 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #docHtmlLayer .qNumLabel { font-family:var(--serif); font-weight:900; color:var(--gold); margin-bottom:6px; font-size:13px; }
 #docHtmlLayer img { max-width:100%; height:auto; display:block; margin:6px auto; }
 #docHtmlLayer table { border-collapse:collapse; margin:6px 0; }
-#docHtmlLayer td { border:1px solid var(--gold-line); padding:2px 6px; font-size:12px; }
+#docHtmlLayer td { border:1px solid var(--gold-line); padding:2px 6px; font-size:12px; text-align:center; vertical-align:middle; }
 #docHtmlLayer .eq .katex { font-size:1em; }
+/* hwpx-lib.js가 정답 쓰는 칸 같은 도형(hp:rect)을 이 클래스로만 표시해서
+   내주고, 실제 테두리/여백은 각 페이지가 알아서 입혀야 한다 — 다른
+   페이지(studentnote.html 등)와 같은 모양으로 맞추고, 안엔 글자/수식이
+   가운데로 오게 한다. */
+#docHtmlLayer .hwpRectBox { display:block; max-width:100%; box-sizing:border-box; border:1px solid var(--gold-line); padding:6px 10px; margin:6px 0; text-align:center; }
 #inkCanvas.eraser { cursor:cell; }
 #submitBar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--gold-line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
 #submitStatus { font-family:var(--kserif); font-size:13px; color:rgba(26,26,26,.6); }
