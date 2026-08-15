@@ -426,6 +426,11 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   msg.textContent = '불러오는 중...';
   msg.className = 'hint';
   document.getElementById('scLoadBtn').disabled = true;
+  // 불러오기 전에 이미 시작 번호를 직접 입력해뒀다면(예: 새 미션에
+  // 41을 미리 입력) 그 값을 우선한다 — 서버에 저장된 값이 없으면
+  // getMissionStartNum이 기본값 1을 돌려주는데, 그걸로 무조건 덮어쓰면
+  // 방금 입력한 41이 불러오기 누르자마자 1로 되돌아가 버리는 문제가 있었다.
+  const typedStartNum = Number(document.getElementById('scStartNum').value) || 1;
   try {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
@@ -434,7 +439,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       comment: s.comment || '',
     }));
     scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : equalWeights(scQCount);
-    scStartNum = resp.startNum || 1;
+    scStartNum = typedStartNum > 1 ? typedStartNum : (resp.startNum || 1);
     document.getElementById('scStartNum').value = scStartNum;
     document.getElementById('scWeightBar').style.display = '';
     renderScoreTable();
