@@ -426,8 +426,18 @@ let scStartNum = 1;
 const TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'Y', null: 'N' };
 const TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', null: '−' };
 function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null : 1; }
+// 이미 저장된 기록이 있는 학생만 "빈 칸은 O"로 채운다(대부분 맞는 게
+// 보통이라 틀린 문항만 클릭해서 고치면 되게 하려는 원래 의도) — 시트에
+// 이 미션 행 자체가 없는(한 번도 채점한 적 없는) 학생까지 O로 채우면
+// 실제로는 안 낸 학생이 전부 만점으로 보이게 된다(원장님 리포트).
+// items.length === 0 → 저장된 행이 아예 없다는 뜻(handleExamRoster가
+// 그렇게 반환함)이라, 이 경우엔 전부 빈 칸(null=아직 안 풀었음)으로 둔다.
 function fillDefaultItems(items) {
-  return Array.from({ length: scQCount }, (_, i) => (items && items[i] != null) ? items[i] : 1);
+  const hasExisting = items && items.length > 0;
+  return Array.from({ length: scQCount }, (_, i) => {
+    if (items && items[i] != null) return items[i];
+    return hasExisting ? 1 : null;
+  });
 }
 document.getElementById('scStartNum').addEventListener('input', () => {
   scStartNum = Number(document.getElementById('scStartNum').value) || 1;
