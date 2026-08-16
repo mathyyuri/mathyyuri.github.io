@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
 :root{
   --cream:#FBF8F1;
@@ -4497,12 +4498,32 @@ function driveIdFromUrl(u) {
 // 되는 hwphoto 액션(스크립트 실행 계정 권한으로 대신 읽어 base64로
 // 내려줌)으로 가져와서 data URI로 바꿔 끼운다. "새 탭에서 열기" 링크도
 // 로드가 끝나면 같은 data URI로 바꿔서 원본 링크가 막혀 있어도 열리게 함.
+// 아이폰이 기본으로 찍는 HEIC/HEIF는 이 화면(대부분 사파리가 아닌
+// 브라우저에서 채점)에서 <img>로 바로 못 띄운다 — 학생이 이미 제출한
+// 사진까지 안 보이면 다시 찍어달라고 부탁해야 하는데, 그러지 않아도
+// 되도록 여기서 heic2any로 JPEG로 바꿔서 보여준다(원본 파일 자체는
+// 안 건드림 — 화면에 보여줄 때만 즉석 변환).
+async function toDisplayableDataUrl(mime, base64) {
+  if (mime !== 'image/heic' && mime !== 'image/heif') return `data:${mime};base64,${base64}`;
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  const converted = await heic2any({ blob, toType: 'image/jpeg', quality: 0.9 });
+  const outBlob = Array.isArray(converted) ? converted[0] : converted;
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('변환된 이미지를 읽지 못했습니다.'));
+    reader.readAsDataURL(outBlob);
+  });
+}
 function loadHwPhotos(div) {
   div.querySelectorAll('.hwPhotoLoading').forEach(async placeholder => {
     const fid = placeholder.dataset.fid;
     try {
       const resp = await callGetJsonp(DASHBOARD_URL, { action: 'hwphoto', id: fid });
-      const dataUrl = `data:${resp.photo.mime};base64,${resp.photo.data}`;
+      const dataUrl = await toDisplayableDataUrl(resp.photo.mime, resp.photo.data);
       const img = document.createElement('img');
       img.src = dataUrl;
       img.loading = 'lazy';
