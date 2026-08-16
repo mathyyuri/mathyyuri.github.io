@@ -417,6 +417,23 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
 });
 
 // ---------- 성적 입력 ----------
+// autocomplete="off"를 줬는데도 크롬이 이 두 칸에 예전에 쳤던 값을
+// 페이지 열자마자 자기 마음대로 채워넣는 경우가 실제로 있었다(원장님
+// 리포트 — 40을 입력해도 계속 50으로 보임, 서버엔 아무 데이터도 없는
+// 걸 재차 확인함). autocomplete 속성만으로는 못 막아서, 스크립트가
+// 로드되는 시점에 강제로 기본값을 다시 써서 브라우저가 몰래 채워놓은
+// 값을 덮어쓴다.
+document.getElementById('scQCount').value = 20;
+document.getElementById('scStartNum').value = 1;
+// 브라우저에 따라 자동 채움이 스크립트 실행보다 더 늦게(페이지 로드가
+// 다 끝난 뒤) 끼어드는 경우도 있어서, 완전히 로드된 뒤에 한 번 더
+// 확인해서 덮어쓴다 — 이때는 사용자가 이미 뭔가 눌렀을 수도 있으니
+// "지금 값이 페이지가 처음 세팅한 값과 다르면(=브라우저가 방금 끼어든
+// 것) 되돌린다"가 아니라, 로드 시점 한 번만 강제로 맞추는 것으로 충분.
+window.addEventListener('load', () => {
+  document.getElementById('scQCount').value = 20;
+  document.getElementById('scStartNum').value = 1;
+});
 let scStudents = []; // [{name, items, comment}]
 let scQCount = 20;
 // 이 미션의 1번째 칸이 실제 시험지에서 몇 번인지 — 기본 1, 복소수(2)처럼
