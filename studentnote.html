@@ -4470,16 +4470,17 @@ async function loadQuickAnswers(div, file) {
       const a = answers[el.dataset.num];
       if (!a) return;
       el.title = '정답: ' + a;
-      // 정답은 자유 텍스트라 항상 올바른 LaTeX인 건 아니다 — 한글이 섞인
-      // 경우("몫: 5x-3, 나머지: x+4"처럼 직접 채워 넣거나 자동 추출된
-      // 것)는 KaTeX가 한글 글자를 수식 기호로 이해 못해 깨져 보이므로
-      // 그냥 텍스트로 보여주고, 순수 수식(백슬래시 명령/숫자/문자만)만
-      // 렌더링을 시도한다. throwOnError:false라 실패해도 페이지가 죽지
-      // 않고 에러 표시만 나오지만, 애초에 한글 섞인 건 시도조차 안 한다.
-      if (/[가-힣]/.test(a)) {
+      // 정답은 자유 텍스트라 항상 올바른 LaTeX인 건 아니다. 백슬래시
+      // 명령(\dfrac, \sqrt 등)이 아예 없으면 애초에 렌더링할 게 없으니
+      // 그냥 텍스트로 보여준다. 있으면 "몫: 5x-3" · "실수: {...}, 허수: {...}"
+      // 처럼 한글 라벨이 섞여 있어도, 한글 덩어리만 \text{}로 감싸서
+      // KaTeX에 넘기면 라벨은 글자로, 나머지는 수식으로 정상 렌더링된다.
+      // throwOnError:false라 실패해도 페이지는 안 죽고, 그때만 원본
+      // 텍스트로 되돌린다.
+      if (!/\\[a-zA-Z]/.test(a)) {
         el.textContent = a;
       } else {
-        try { katex.render(a, el, { throwOnError: false, displayMode: false }); }
+        try { katex.render(a.replace(/[가-힣]+/g, m => '\\text{' + m + '}'), el, { throwOnError: false, displayMode: false }); }
         catch (e) { el.textContent = a; }
       }
     });

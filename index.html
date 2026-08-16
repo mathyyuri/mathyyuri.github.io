@@ -6,6 +6,7 @@
 <title>MATHY YURI — Summer Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
 :root{
   --cream:#FBF8F1;
@@ -2002,7 +2003,26 @@ function fileToBase64(file){
 // 로 EXIF를 반영해서 "보이는 그대로"인 픽셀로 다시 그린 뒤 재인코딩하면,
 // 어디서 열어도 항상 정방향으로 보인다. 겸사겸사 원본(수 MB짜리 카메라
 // 사진)을 적당한 크기로 줄여서 여러 장을 올려도 빠르게 전송되게 한다.
+// 아이폰은 사진을 기본적으로 HEIC/HEIF로 저장하는데, 이 형식은 사파리
+// 밖에서는(안드로이드 크롬, 윈도우 크롬 등) 브라우저가 아예 못 읽는
+// 경우가 대부분이라 createImageBitmap이 조용히 실패하고, 그 폴백으로
+// 원본을 그대로 올리면 선생님 채점 화면에서 사진이 통째로 안 보인다
+// (실제로 이 문제로 학생 사진이 하나도 안 보인 적이 있음). 그래서
+// HEIC/HEIF로 보이면 heic2any(순수 JS 디코더, OS 코덱에 안 기댐)로 먼저
+// JPEG Blob으로 바꾼 뒤 평소처럼 처리한다.
+function looksLikeHeic(file){
+  const t=(file.type||'').toLowerCase();
+  if(t==='image/heic'||t==='image/heif')return true;
+  if(!t)return /\.(heic|heif)$/i.test(file.name||'');
+  return false;
+}
 async function normalizedPhotoBase64(file){
+  if(looksLikeHeic(file)){
+    try{
+      const converted=await heic2any({blob:file,toType:'image/jpeg',quality:0.9});
+      file=Array.isArray(converted)?converted[0]:converted;
+    }catch(e){/* 변환 실패하면 원본으로 아래 로직을 계속 시도 */}
+  }
   try{
     const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
     const maxDim=1600;
