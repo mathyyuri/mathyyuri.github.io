@@ -473,6 +473,14 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const typedStartNum = Number(document.getElementById('scStartNum').value) || 1;
   try {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
+    // 이 미션이 이전에 배점까지 저장된 적 있으면(=조교/원장님이 이미
+    // 문항 수를 확정해둔 미션) 그 배점 배열 길이가 곧 진짜 문항 수다 —
+    // 시작 번호처럼 이것도 자동으로 채워야 조교가 문항 수를 잘못 입력해서
+    // 뒤쪽 문항이 통째로 안 보이거나 빈 문항이 섞이는 실수를 막을 수 있다.
+    if (resp.weights && resp.weights.length) {
+      scQCount = resp.weights.length;
+      document.getElementById('scQCount').value = scQCount;
+    }
     scStudents = resp.students.map(s => ({
       name: s.name,
       items: fillDefaultItems(s.items),
