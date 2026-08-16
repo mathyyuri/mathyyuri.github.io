@@ -35,7 +35,7 @@ body { font-family: var(--sans); margin: 0; display: flex; min-height: 100vh; ba
 .studentBtn { display: block; width: 100%; text-align: left; padding: 7px 10px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; font-family: var(--kserif); color: var(--ink); }
 .studentBtn:hover { background: var(--gold-soft); }
 .studentBtn.active { background: var(--ink); color: var(--cream); font-weight: 700; }
-#main { flex: 1; padding: 28px 4vw; max-width: 860px; }
+#main { flex: 1; padding: 28px 4vw; max-width: 1500px; }
 h1 { font-family: var(--serif); font-weight: 900; font-size: 24px; letter-spacing: .01em; margin: 0 0 4px; }
 .box { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; padding: 16px; margin: 12px 0; }
 label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(--kserif); font-size: 13px; letter-spacing: .04em; color: var(--gold); }
@@ -95,7 +95,7 @@ button:disabled { opacity: 0.4; cursor: default; }
    위로 스크롤해야 해서 오히려 더 불편해짐) nowrap으로 항상 나란히 고정하고,
    폭이 부족하면 이 줄만 가로 스크롤되게 한다(페이지 전체가 깨지지 않음). */
 .hwGradeLayout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: nowrap; overflow-x: auto; margin: 8px 0; padding-bottom: 4px; }
-.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 560px; overflow-y: auto; min-width: 260px; flex: 0 0 300px; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
+.hwGradeChecklist { display: flex; flex-direction: column; gap: 3px; max-height: 700px; overflow-y: auto; min-width: 320px; flex: 1 1 420px; border: 1px solid var(--gold-line); border-radius: 4px; padding: 6px 10px; background: #fff; }
 /* 정답이 길면(예: "3x^3-x^2+4x+3=(x^2+2)(3x-1)-2x+5") 잘리지 않고 줄바꿈
    되도록 — align-items를 center가 아니라 flex-start로 둬서 여러 줄이 돼도
    번호/버튼이 첫 줄에 맞춰 보이게 한다. */
@@ -117,7 +117,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .hwRotateBtn:hover { background: #fff; border-color: var(--gold); }
 /* 클릭하지 않고도 바로 채점할 수 있도록 충분히 크게 — object-fit:contain으로
    잘리는 부분 없이 전체가 다 보이게 한다(사진마다 가로/세로 비율이 달라도). */
-.hwPhotoRow a img { max-width: 420px; max-height: 560px; width: auto; height: auto; object-fit: contain; border: 1px solid var(--gold-line); border-radius: 4px; display: block; background: #fff; }
+.hwPhotoRow a img { max-width: 560px; max-height: 700px; width: auto; height: auto; object-fit: contain; border: 1px solid var(--gold-line); border-radius: 4px; display: block; background: #fff; }
 .hwPhotoRow .hwPhotoLoading { width: 200px; height: 120px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--gold-line); border-radius: 4px; color: rgba(26,26,26,.4); font-size: 12px; }
 .hwScoreForm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
 .hwScoreForm input[type=number] { width: 70px; }
