@@ -478,6 +478,9 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const category = document.getElementById('scCategory').value;
   const cls = document.getElementById('scClass').value;
   const mission = document.getElementById('scMission').value.trim();
+  // [임시 디버그] 정확히 어느 시점에 값이 바뀌는지 확인하기 위한 알림 —
+  // 문제 원인 찾으면 지울 예정.
+  alert('[디버그] 불러오기 누른 순간 문항수 칸의 실제 값 = "' + document.getElementById('scQCount').value + '"');
   scQCount = Math.max(1, Math.min(50, Number(document.getElementById('scQCount').value) || 20));
   const msg = document.getElementById('scMsg');
   if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
