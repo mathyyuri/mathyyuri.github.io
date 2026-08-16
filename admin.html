@@ -136,6 +136,29 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <span id="scMsg" class="hint"></span>
       </div>
     </div>
+
+    <div class="box">
+      <p><b>미제출자 명단 (문자 발송용)</b></p>
+      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로, 명단엔 있지만 이 시험 기록이 아직 없는 학생을 찾습니다. 명단 시트 F열에 전화번호를 채워두셔야 번호가 나옵니다.</p>
+      <div class="btnRow">
+        <button type="button" id="msLoadBtn">미제출자 명단 불러오기</button>
+        <span id="msMsg" class="hint"></span>
+      </div>
+      <div id="msListWrap" style="display:none;margin-top:10px">
+        <div id="msCheckboxList"></div>
+        <div class="fieldRow" style="margin-top:8px">
+          <div style="flex:1 1 100%">
+            <label>문자 내용</label>
+            <textarea id="msMessage" rows="4" style="width:100%;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--gold-line);border-radius:3px;box-sizing:border-box" placeholder="보낼 문자 내용을 입력하세요"></textarea>
+          </div>
+        </div>
+        <div class="btnRow" style="margin-top:8px">
+          <button type="button" id="msCopyBtn">선택 번호 복사</button>
+          <button type="button" id="msDownloadBtn">번호 목록 다운로드 (.txt)</button>
+          <span id="msActionMsg" class="hint"></span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -592,6 +615,79 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   } finally {
     document.getElementById('scSaveBtn').disabled = false;
   }
+});
+
+// ---------- 미제출자 명단 (문자 발송용) ----------
+// 위 "성적 입력"에서 고른 기수·카테고리·반·시험명을 그대로 재사용한다
+// (선택 칸을 따로 안 두는 이유 — 이미 그 미션을 고른 김에 바로 미제출자도
+// 확인하는 흐름이 자연스럽고, 드롭다운 채우는 코드를 중복시킬 필요가 없다).
+document.getElementById('msLoadBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('scCohort').value;
+  const category = document.getElementById('scCategory').value;
+  const cls = document.getElementById('scClass').value;
+  const mission = document.getElementById('scMission').value.trim();
+  const msg = document.getElementById('msMsg');
+  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!mission) { msg.textContent = '위 "성적 입력"에서 시험명을 먼저 입력/선택하세요.'; msg.className = 'hint err'; return; }
+  msg.textContent = '불러오는 중...';
+  msg.className = 'hint';
+  try {
+    const resp = await callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission });
+    const list = resp.missing || [];
+    const wrap = document.getElementById('msCheckboxList');
+    if (!list.length) {
+      wrap.innerHTML = '<p class="hint">미제출자가 없습니다 🎉</p>';
+    } else {
+      wrap.innerHTML = list.map(s => `
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
+          <input type="checkbox" class="msChk" data-phone="${escHtml(s.phone)}" checked style="width:auto">
+          ${escHtml(s.name)} <span class="hint">${escHtml(s.phone || '전화번호 없음(명단 시트 F열 확인)')}</span>
+        </label>`).join('');
+    }
+    document.getElementById('msListWrap').style.display = '';
+    msg.textContent = list.length + '명 미제출';
+    msg.className = 'hint ok';
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  }
+});
+function checkedMsPhones() {
+  return [...document.querySelectorAll('.msChk:checked')].map(c => c.dataset.phone).filter(Boolean);
+}
+document.getElementById('msCopyBtn').addEventListener('click', async () => {
+  const phones = checkedMsPhones();
+  const actionMsg = document.getElementById('msActionMsg');
+  if (!phones.length) { actionMsg.textContent = '선택된 번호가 없습니다.'; actionMsg.className = 'hint err'; return; }
+  try {
+    await navigator.clipboard.writeText(phones.join(', '));
+    actionMsg.textContent = phones.length + '개 번호 복사됨 — Phone Link 받는사람 칸에 붙여넣으세요.';
+    actionMsg.className = 'hint ok';
+  } catch (e) {
+    actionMsg.textContent = '복사 실패: ' + e.message;
+    actionMsg.className = 'hint err';
+  }
+});
+document.getElementById('msDownloadBtn').addEventListener('click', () => {
+  const phones = checkedMsPhones();
+  const actionMsg = document.getElementById('msActionMsg');
+  if (!phones.length) { actionMsg.textContent = '선택된 번호가 없습니다.'; actionMsg.className = 'hint err'; return; }
+  const message = document.getElementById('msMessage').value.trim();
+  // 문자 내용은 여러 줄일 수 있어서, 뒤에 오는 전화번호 목록과 구분되도록
+  // 구분선을 따로 둔다 — 로컬 자동발송 스크립트가 이 구분선 기준으로
+  // "앞부분=문자 내용" / "뒷부분=번호 한 줄에 하나씩"으로 나눠 읽는다.
+  const content = message + '\n-----전화번호-----\n' + phones.join('\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '미제출자문자.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  actionMsg.textContent = '다운로드됨 — 문자자동화 스크립트가 읽는 파일입니다.';
+  actionMsg.className = 'hint ok';
 });
 </script>
 </body>
