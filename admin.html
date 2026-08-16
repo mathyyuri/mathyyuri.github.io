@@ -139,12 +139,19 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
 
     <div class="box">
       <p><b>미제출자 명단 (문자 발송용)</b></p>
-      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로, 명단엔 있지만 이 시험 기록이 아직 없는 학생을 찾습니다. 명단 시트 F열에 전화번호를 채워두셔야 번호가 나옵니다.</p>
+      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로, 명단엔 있지만 이 시험 기록이 아직 없는 학생을 찾습니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
       <div class="btnRow">
         <button type="button" id="msLoadBtn">미제출자 명단 불러오기</button>
         <span id="msMsg" class="hint"></span>
       </div>
       <div id="msListWrap" style="display:none;margin-top:10px">
+        <div class="fieldRow" style="margin-bottom:6px">
+          <div><label>받는 번호</label>
+            <label style="font-weight:normal"><input type="radio" name="msTarget" value="student" checked style="width:auto"> 학생</label>
+            <label style="font-weight:normal;margin-left:10px"><input type="radio" name="msTarget" value="parent" style="width:auto"> 학부모</label>
+            <label style="font-weight:normal;margin-left:10px"><input type="radio" name="msTarget" value="both" style="width:auto"> 둘 다</label>
+          </div>
+        </div>
         <div id="msCheckboxList"></div>
         <div class="fieldRow" style="margin-top:8px">
           <div style="flex:1 1 100%">
@@ -640,8 +647,8 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
     } else {
       wrap.innerHTML = list.map(s => `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
-          <input type="checkbox" class="msChk" data-phone="${escHtml(s.phone)}" checked style="width:auto">
-          ${escHtml(s.name)} <span class="hint">${escHtml(s.phone || '전화번호 없음(명단 시트 F열 확인)')}</span>
+          <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" checked style="width:auto">
+          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}</span>
         </label>`).join('');
     }
     document.getElementById('msListWrap').style.display = '';
@@ -652,8 +659,17 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
     msg.className = 'hint err';
   }
 });
+// "받는 번호" 라디오(학생/학부모/둘 다)로 이번 발송 대상 전체를 한 번에
+// 정한다 — 학생마다 다르게 고르는 경우는 드물고, 번호가 없는 쪽은
+// 자동으로 빠지니 그걸로 충분하다.
 function checkedMsPhones() {
-  return [...document.querySelectorAll('.msChk:checked')].map(c => c.dataset.phone).filter(Boolean);
+  const target = (document.querySelector('input[name="msTarget"]:checked') || {}).value || 'student';
+  const phones = [];
+  document.querySelectorAll('.msChk:checked').forEach(c => {
+    if ((target === 'student' || target === 'both') && c.dataset.studentPhone) phones.push(c.dataset.studentPhone);
+    if ((target === 'parent' || target === 'both') && c.dataset.parentPhone) phones.push(c.dataset.parentPhone);
+  });
+  return phones;
 }
 document.getElementById('msCopyBtn').addEventListener('click', async () => {
   const phones = checkedMsPhones();
