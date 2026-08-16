@@ -30,7 +30,7 @@
 }
 * { box-sizing: border-box; }
 body { font-family: var(--sans); margin: 0; min-height: 100vh; background: var(--cream); color: var(--ink); -webkit-font-smoothing: antialiased; }
-#main { max-width: 900px; margin: 0 auto; padding: 28px 4vw 60px; }
+#main { max-width: 1800px; margin: 0 auto; padding: 28px 2vw 60px; }
 h1 { font-family: var(--serif); font-weight: 900; font-size: 24px; letter-spacing: .01em; margin: 0 0 4px; }
 .roleTag { font-family: var(--kserif); font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
 .roleTag.admin { color: var(--mint-deep); background: var(--mint-soft); }
@@ -87,19 +87,6 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
   <div id="main">
     <h1>관리자 모드 <span id="roleTag" class="roleTag"></span></h1>
     <p class="hint"><a href="#" id="logoutLink">다른 계정으로</a></p>
-
-    <div class="box" id="categoryBox" style="display:none">
-      <p><b>시험 종류(카테고리) 관리</b></p>
-      <p class="hint">여기서 만든 카테고리는 mathyyuri.com 학생 화면에 새 탭으로, 아래 "성적 입력"에도 바로 나타납니다. 정오표(문항별 O/X) 방식의 일반 시험만 만들 수 있습니다 — 대수연마 1000제나 9모대비처럼 특수한 시험은 여기서 만들 수 없습니다.</p>
-      <div id="categoryList"></div>
-      <div class="fieldRow" style="margin-top:10px">
-        <div><label>기수</label><select id="newCatCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
-        <div><label>카테고리 이름</label><input type="text" id="newCatName" placeholder="예: 기출"></div>
-        <div><label>영문 라벨 (선택)</label><input type="text" id="newCatEnLabel" placeholder="예: PAST EXAM"></div>
-        <button id="addCatBtn">추가</button>
-      </div>
-      <p id="addCatMsg" class="hint"></p>
-    </div>
 
     <div class="box">
       <p><b>성적 입력</b></p>
@@ -165,6 +152,21 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
           <span id="msActionMsg" class="hint"></span>
         </div>
       </div>
+    </div>
+
+    <div class="box" id="categoryBox" style="display:none;padding:10px 16px">
+      <details>
+        <summary style="cursor:pointer;font-weight:700"><b>시험 종류(카테고리) 관리</b> <span class="hint" style="font-weight:normal">(가끔만 쓰는 기능 — 클릭해서 펼치기)</span></summary>
+        <p class="hint">여기서 만든 카테고리는 mathyyuri.com 학생 화면에 새 탭으로, 위 "성적 입력"에도 바로 나타납니다. 정오표(문항별 O/X) 방식의 일반 시험만 만들 수 있습니다 — 대수연마 1000제나 9모대비처럼 특수한 시험은 여기서 만들 수 없습니다.</p>
+        <div id="categoryList"></div>
+        <div class="fieldRow" style="margin-top:10px">
+          <div><label>기수</label><select id="newCatCohort"><option value="2">대치수학 2기</option><option value="3">대치수학 3기</option></select></div>
+          <div><label>카테고리 이름</label><input type="text" id="newCatName" placeholder="예: 기출"></div>
+          <div><label>영문 라벨 (선택)</label><input type="text" id="newCatEnLabel" placeholder="예: PAST EXAM"></div>
+          <button id="addCatBtn">추가</button>
+        </div>
+        <p id="addCatMsg" class="hint"></p>
+      </details>
     </div>
   </div>
 </div>
@@ -471,6 +473,12 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   // getMissionStartNum이 기본값 1을 돌려주는데, 그걸로 무조건 덮어쓰면
   // 방금 입력한 41이 불러오기 누르자마자 1로 되돌아가 버리는 문제가 있었다.
   const typedStartNum = Number(document.getElementById('scStartNum').value) || 1;
+  // scQCount는 위에서 이미 이 칸에 지금 입력된 값으로 채워져 있다(typedQCount) —
+  // 저장된 데이터가 없는 미션이면 이 값을 그대로 존중해야 한다. 이전엔
+  // 여기서 무조건 20으로 되돌려버려서, 방금 직접 입력한 40이 "불러오기"
+  // 누르자마자 다시 20(또는 이전 미션에서 남아있던 값)으로 바뀌는 문제가
+  // 있었다(원장님 리포트) — 시작 번호와 똑같은 실수를 문항 수에서도 했었다.
+  const typedQCount = scQCount;
   try {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     // 이 미션의 진짜 문항 수를 자동으로 채운다 — 배점이 저장돼 있으면
@@ -489,13 +497,8 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       scQCount = savedQCount;
       document.getElementById('scQCount').value = scQCount;
     } else {
-      // 저장된 게 하나도 없는(완전 새) 미션인데 문항 수 칸에 직전에
-      // 다루던 다른 미션의 숫자가 그대로 남아있으면, 그게 마치 이
-      // 미션의 저장된 값인 것처럼 보여서 혼란을 준다(원장님 리포트 —
-      // 50문항짜리 다른 미션을 보다가 40문항 미션으로 바꿨는데 50이
-      // 계속 떠서 실수로 저장한 줄 알았던 사례). 새 미션엔 명확한
-      // 기본값으로 리셋해서 "이건 직접 입력해야 하는 새 미션"임을 분명히 한다.
-      scQCount = 20;
+      // 저장된 게 없으면 지금 입력창에 있는 값(typedQCount)을 그대로 쓴다.
+      scQCount = typedQCount;
       document.getElementById('scQCount').value = scQCount;
     }
     scStudents = resp.students.map(s => ({
