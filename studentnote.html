@@ -73,6 +73,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradeToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
 .gradeToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .gradeToggle.tri { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.gradeToggle.none { background: #fff; color: rgba(26,26,26,.35); border-color: var(--gold-line); }
 /* AI 채점 결과 중 확신이 낮은 항목 — 교사가 사진을 직접 다시 봐야 함을 표시 */
 .gradeToggle.aiLowConf { box-shadow: 0 0 0 2px var(--gold); }
 .gradingRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 6px 0; border-bottom: 1px solid var(--gold-line); font-size: 13px; }
@@ -2655,9 +2656,14 @@ async function refreshGrading(name) {
 
 // O(정답)=1, X(오답)=2, △(오답완료 — 다시 풀어서 맞음)=3 — 다른 채점
 // 화면(admin.html 성적 입력 등)과 같은 숫자 규칙.
-const GRADE_TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△' };
-const GRADE_TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'tri' };
+const GRADE_TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', 0: '−' };
+const GRADE_TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'tri', 0: 'none' };
 function nextGradeValue(v) { return v === 1 ? 2 : v === 2 ? 3 : 1; }
+// 숙제 채점 체크리스트용 4단계 순환(X → 오답완료 △ → 채점 제외 − → O) —
+// 기존 오답노트 재채점(nextGradeValue)은 항상 확실한 결과만 있는 문항을
+// 다루므로 3단계로 충분하지만, 숙제는 "이 문항은 이번엔 채점 대상이
+// 아님/사진에서 확인 불가"처럼 아예 답이 없는 경우가 있어 −(없음)을 더 둔다.
+function nextHwGradeValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? 0 : 1; }
 
 function renderGradingRounds(rounds) {
   if (!rounds.length) { gradingBox.style.display = 'none'; gradingRoundsEl.innerHTML = ''; return; }
@@ -4257,7 +4263,7 @@ function renderHwGrading(submissions) {
         ` : ''}
       </div>
       ${nQ ? `
-        <p class="hint">기본은 X(오답)입니다 — 맞은 문제만 눌러서 O로 바꾸세요. 맞은개수·점수는 자동 계산됩니다. 번호 옆 초록 글씨는 저장된 정답입니다.</p>
+        <p class="hint">기본은 X(오답)입니다 — 클릭할 때마다 X → 오답완료(△) → 채점 제외(−) → O 순서로 바뀝니다. 맞은개수·점수는 자동 계산됩니다(− 표시 문항은 분모에서 빠짐). 번호 옆 초록 글씨는 저장된 정답입니다.</p>
         <div class="btnRow" style="margin-top:6px">
           <button type="button" class="selectAllBtn hwAllOBtn">전체 O</button>
           <button type="button" class="selectAllBtn hwAllXBtn">전체 X</button>
@@ -4315,26 +4321,28 @@ function renderHwGrading(submissions) {
     // 자동 계산 — 문항 채점을 이미 했는데 점수를 따로 또 입력할 필요가 없게.
     function syncHwCorrect() {
       if (!nQ) return;
-      const correct = [...div.querySelectorAll('.gradeToggle')].filter(b => b.dataset.value === '1').length;
+      const vals = [...div.querySelectorAll('.gradeToggle')].map(b => Number(b.dataset.value));
+      const answered = vals.filter(v => v === 1 || v === 2 || v === 3).length;
+      const correct = vals.filter(v => v === 1 || v === 3).length;
       div.querySelector('.hwCorrectInput').value = correct;
-      div.querySelector('.hwScoreInput').value = Math.round(correct / nQ * 100);
+      div.querySelector('.hwScoreInput').value = answered ? Math.round(correct / answered * 100) : 0;
     }
     syncHwCorrect();
     div.querySelectorAll('.gradeToggle').forEach(btn => {
       btn.addEventListener('click', () => {
-        const isO = btn.dataset.value === '1';
-        btn.dataset.value = isO ? '2' : '1';
-        btn.textContent = isO ? 'X' : 'O';
-        btn.classList.toggle('O', !isO);
+        const next = nextHwGradeValue(Number(btn.dataset.value));
+        btn.dataset.value = String(next);
+        btn.textContent = GRADE_TOGGLE_LABEL[next];
+        btn.className = 'gradeToggle ' + GRADE_TOGGLE_CLASS[next];
         syncHwCorrect();
       });
     });
     div.querySelector('.hwAllOBtn')?.addEventListener('click', () => {
-      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '1'; btn.textContent = 'O'; btn.classList.add('O'); });
+      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '1'; btn.textContent = 'O'; btn.className = 'gradeToggle O'; });
       syncHwCorrect();
     });
     div.querySelector('.hwAllXBtn')?.addEventListener('click', () => {
-      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '2'; btn.textContent = 'X'; btn.classList.remove('O'); });
+      div.querySelectorAll('.gradeToggle').forEach(btn => { btn.dataset.value = '2'; btn.textContent = 'X'; btn.className = 'gradeToggle'; });
       syncHwCorrect();
     });
     div.querySelector('.hwAiGradeBtn')?.addEventListener('click', async () => {
