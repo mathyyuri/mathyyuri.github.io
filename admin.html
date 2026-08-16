@@ -488,6 +488,15 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     if (savedQCount > 0) {
       scQCount = savedQCount;
       document.getElementById('scQCount').value = scQCount;
+    } else {
+      // 저장된 게 하나도 없는(완전 새) 미션인데 문항 수 칸에 직전에
+      // 다루던 다른 미션의 숫자가 그대로 남아있으면, 그게 마치 이
+      // 미션의 저장된 값인 것처럼 보여서 혼란을 준다(원장님 리포트 —
+      // 50문항짜리 다른 미션을 보다가 40문항 미션으로 바꿨는데 50이
+      // 계속 떠서 실수로 저장한 줄 알았던 사례). 새 미션엔 명확한
+      // 기본값으로 리셋해서 "이건 직접 입력해야 하는 새 미션"임을 분명히 한다.
+      scQCount = 20;
+      document.getElementById('scQCount').value = scQCount;
     }
     scStudents = resp.students.map(s => ({
       name: s.name,
