@@ -478,9 +478,6 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const category = document.getElementById('scCategory').value;
   const cls = document.getElementById('scClass').value;
   const mission = document.getElementById('scMission').value.trim();
-  // [임시 디버그] 정확히 어느 시점에 값이 바뀌는지 확인하기 위한 알림 —
-  // 문제 원인 찾으면 지울 예정.
-  alert('[디버그1] 미션명="' + mission + '" (길이:' + mission.length + ') / 문항수칸="' + document.getElementById('scQCount').value + '" / 코드=' + [...mission].map(function(c){return c.charCodeAt(0);}).join(','));
   scQCount = Math.max(1, Math.min(50, Number(document.getElementById('scQCount').value) || 20));
   const msg = document.getElementById('scMsg');
   if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
@@ -501,20 +498,16 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const typedQCount = scQCount;
   try {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
-    // 이 미션의 진짜 문항 수를 자동으로 채운다 — 배점이 저장돼 있으면
-    // 그 배열 길이가 가장 정확하지만, 배점을 한 번도 안 저장한 채(예:
-    // 예전 버전 admin.html로) 채점만 해둔 미션도 있어서, 그런 경우엔
-    // 실제로 저장된 학생별 문항 배열 중 가장 긴 것을 대신 쓴다. 이렇게
-    // 안 하면 문항 수 칸에 남아있는 기본값(20)보다 실제 문항이 많은
-    // 미션(예: 40문항)을 불러왔을 때 뒤쪽 문항이 화면에 아예 안 뜨고,
-    // 그 상태로 저장하면 이미 채점돼 있던 21~40번 데이터가 통째로
-    // 지워지는 심각한 문제(원장님 리포트로 발견)가 생긴다.
-    const savedQCount = Math.max(
-      resp.weights ? resp.weights.length : 0,
-      Math.max(0, ...resp.students.map(function (s) { return (s.items || []).length; }))
-    );
-    // [임시 디버그]
-    alert('[디버그2] resp.weights=' + JSON.stringify(resp.weights) + ' / savedQCount=' + savedQCount + ' / typedQCount=' + typedQCount + ' / 학생별items길이=' + JSON.stringify(resp.students.map(function(s){return (s.items||[]).length;})));
+    // 이 미션의 진짜 문항 수를 자동으로 채운다. 실제로 기록된 학생별
+    // 문항 배열이 있으면 그게 가장 확실한 진실이라 최우선으로 쓴다 —
+    // 배점(weights)은 예전에 다른 문항 수로 한 번 잘못 저장돼서 실제
+    // 문항 수와 안 맞는 채로 남아있을 수 있기 때문이다(실제로 40문항
+    // 미션인데 배점만 50개로 저장된 적이 있었고, 그것 때문에 계속 50로
+    // 잘못 뜨는 문제가 있었다 — 원장님 리포트로 근본 원인 확정, 구글
+    // 시트 원본을 직접 대조해서 확인함). 학생 데이터가 아예 없는(완전
+    // 새) 미션일 때만 배점 길이를 대신 쓴다.
+    const itemsMaxLen = Math.max(0, ...resp.students.map(function (s) { return (s.items || []).length; }));
+    const savedQCount = itemsMaxLen > 0 ? itemsMaxLen : (resp.weights ? resp.weights.length : 0);
     if (savedQCount > 0) {
       scQCount = savedQCount;
       document.getElementById('scQCount').value = scQCount;
