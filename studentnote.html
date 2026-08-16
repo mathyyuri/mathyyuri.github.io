@@ -4471,19 +4471,14 @@ async function loadQuickAnswers(div, file) {
       const a = answers[el.dataset.num];
       if (!a) return;
       el.title = '정답: ' + a;
-      // 정답은 자유 텍스트라 항상 올바른 LaTeX인 건 아니다. 백슬래시
-      // 명령(\dfrac, \sqrt 등)이 아예 없으면 애초에 렌더링할 게 없으니
-      // 그냥 텍스트로 보여준다. 있으면 "몫: 5x-3" · "실수: {...}, 허수: {...}"
-      // 처럼 한글 라벨이 섞여 있어도, 한글 덩어리만 \text{}로 감싸서
-      // KaTeX에 넘기면 라벨은 글자로, 나머지는 수식으로 정상 렌더링된다.
-      // throwOnError:false라 실패해도 페이지는 안 죽고, 그때만 원본
-      // 텍스트로 되돌린다.
-      if (!/\\[a-zA-Z]/.test(a)) {
-        el.textContent = a;
-      } else {
-        try { katex.render(a.replace(/[가-힣]+/g, m => '\\text{' + m + '}'), el, { throwOnError: false, displayMode: false }); }
-        catch (e) { el.textContent = a; }
-      }
+      // 모든 정답을 수식으로 보여준다 — "2√3i" · "±√11i" · "3i^{3}"처럼
+      // 백슬래시 명령 없이 유니코드 기호(√,±)나 순수 위첨자만 쓴 것도
+      // KaTeX가 그대로 잘 그려주고(실측 확인), "실수: {...}, 허수: {...}"
+      // 처럼 한글 라벨이 섞여 있어도 한글 덩어리만 \text{}로 감싸면 라벨은
+      // 글자로, 나머지는 정상적인 수식으로 렌더링된다. throwOnError:false라
+      // 실패해도 페이지는 안 죽고, 그때만 원본 텍스트로 되돌린다.
+      try { katex.render(a.replace(/[가-힣]+/g, m => '\\text{' + m + '}'), el, { throwOnError: false, displayMode: false }); }
+      catch (e) { el.textContent = a; }
     });
   } catch (e) {}
 }
