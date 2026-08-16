@@ -473,12 +473,20 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const typedStartNum = Number(document.getElementById('scStartNum').value) || 1;
   try {
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
-    // 이 미션이 이전에 배점까지 저장된 적 있으면(=조교/원장님이 이미
-    // 문항 수를 확정해둔 미션) 그 배점 배열 길이가 곧 진짜 문항 수다 —
-    // 시작 번호처럼 이것도 자동으로 채워야 조교가 문항 수를 잘못 입력해서
-    // 뒤쪽 문항이 통째로 안 보이거나 빈 문항이 섞이는 실수를 막을 수 있다.
-    if (resp.weights && resp.weights.length) {
-      scQCount = resp.weights.length;
+    // 이 미션의 진짜 문항 수를 자동으로 채운다 — 배점이 저장돼 있으면
+    // 그 배열 길이가 가장 정확하지만, 배점을 한 번도 안 저장한 채(예:
+    // 예전 버전 admin.html로) 채점만 해둔 미션도 있어서, 그런 경우엔
+    // 실제로 저장된 학생별 문항 배열 중 가장 긴 것을 대신 쓴다. 이렇게
+    // 안 하면 문항 수 칸에 남아있는 기본값(20)보다 실제 문항이 많은
+    // 미션(예: 40문항)을 불러왔을 때 뒤쪽 문항이 화면에 아예 안 뜨고,
+    // 그 상태로 저장하면 이미 채점돼 있던 21~40번 데이터가 통째로
+    // 지워지는 심각한 문제(원장님 리포트로 발견)가 생긴다.
+    const savedQCount = Math.max(
+      resp.weights ? resp.weights.length : 0,
+      Math.max(0, ...resp.students.map(function (s) { return (s.items || []).length; }))
+    );
+    if (savedQCount > 0) {
+      scQCount = savedQCount;
       document.getElementById('scQCount').value = scQCount;
     }
     scStudents = resp.students.map(s => ({
