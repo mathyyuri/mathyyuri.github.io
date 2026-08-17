@@ -61,7 +61,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 4px 10px; font-size: 11px; letter-spacing: .04em; }
 .selectAllBtn:hover { background: var(--gold-soft); border-color: var(--gold); }
 .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
-.qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid var(--gold-line); border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; font-family: var(--sans); background: #fff; }
+/* 배경은 CSS 변수(--histBg)로 받는다 — 문항마다 O/X 이력에 따라 JS가
+   인라인으로 값만 채워 넣고, 체크됐을 때 색(:has 규칙, 아래)이 이 값보다
+   우선하도록 일부러 인라인 style이 아니라 변수로만 넘긴다. */
+.qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid var(--gold-line); border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; font-family: var(--sans); background: var(--histBg, #fff); }
 .qGrid label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
 .status2 { color: var(--pink-deep); }
 .status3 { color: var(--gold); }
@@ -2884,6 +2887,24 @@ function historyString(mission, num, category) {
 }
 // historyString과 같은 내용을 O(정답)/X(오답)/?(채점 전)별로 색을 다르게
 // 입힌 HTML로 만든다 — 문제를 고를 때 회차별 결과가 한눈에 구별되도록.
+// 이 문항을 과거에 O로 맞춘 횟수·X로 틀린 횟수에 따라 체크박스 버튼
+// 배경을 초록/빨강으로 은은하게 물들인다 — 많이 맞혔을수록 초록이
+// 짙어지고, 많이 틀렸을수록 빨강이 짙어지게 해서 한눈에 "그동안 잘
+// 맞혀온 문항인지 계속 틀려온 문항인지" 구분되게 한다(원장님 요청).
+// O·X가 같은 횟수면(둘 다 있는데 동률) 아직 안심할 단계는 아니라고
+// 보고 빨강 쪽을 우선한다.
+function historyColorVar(mission, num, category) {
+  const rounds = noteHistory.filter(h => historyMatches(h, mission, category) && h.num === Number(num));
+  const oCount = rounds.filter(h => h.result === 1).length;
+  const xCount = rounds.filter(h => h.result && h.result !== 1).length;
+  if (!oCount && !xCount) return '';
+  const isGreen = oCount > xCount;
+  const count = isGreen ? oCount : xCount;
+  const alpha = Math.min(0.15 + count * 0.15, 0.85);
+  const rgb = isGreen ? '127,200,180' : '229,139,164';
+  return ` style="--histBg:rgba(${rgb},${alpha})"`;
+}
+
 function historyBadgeHtml(mission, num, category) {
   const rounds = noteHistory
     .filter(h => historyMatches(h, mission, category) && h.num === Number(num))
@@ -2995,7 +3016,8 @@ function renderMissionBlocks() {
           const r = roundFor(group.mission, it.num, group.category);
           const histHtml = historyBadgeHtml(group.mission, it.num, group.category);
           const wasChecked = prevChecked.has(`${missionKey(group.mission, group.category)}||${it.num}`);
-          return `<label class="status${it.status}" title="이번이 ${r}번째 오답노트 포함">` +
+          const colorVar = historyColorVar(group.mission, it.num, group.category);
+          return `<label class="status${it.status}"${colorVar} title="이번이 ${r}번째 오답노트 포함">` +
             `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
             (histHtml ? `<span class="roundBadge">${histHtml}</span>` : '') +
             `</label>`;
