@@ -705,14 +705,19 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
       // 완성도·원점수를 같이 보여줘서, 아예 안 낸 건지 거의 다 했는데
       // 몇 개만 남은 건지 문자 보내기 전에 바로 판단할 수 있게 한다
       // (원장님 요청).
+      // 구글시트에 저장된 값에 부동소수점 오차(예: 61.79000000000004)가
+      // 섞여 있을 수 있어서, 화면엔 소수점 1자리까지만 반올림해서 보여준다.
+      const r1 = n => (n == null || n === '') ? null : Math.round(n * 10) / 10;
       wrap.innerHTML = list.map(s => {
+        const scoreDisp = r1(s.score);
+        const compDisp = r1(s.comp);
         let statusHtml;
-        if (s.comp == null) {
+        if (compDisp == null) {
           statusHtml = '<b style="color:var(--pink-deep)">미제출</b>';
-        } else if (s.comp === 100) {
-          statusHtml = '<b style="color:var(--mint-deep)">완성도 100%</b> · 원점수 ' + (s.score ?? '-') + '점';
+        } else if (compDisp === 100) {
+          statusHtml = '<b style="color:var(--mint-deep)">완성도 100%</b> · 원점수 ' + (scoreDisp ?? '-') + '점';
         } else {
-          statusHtml = '완성도 <b style="color:var(--gold)">' + s.comp + '%</b>(' + s.correct + '/' + s.answered + '문항) · 원점수 ' + (s.score ?? '-') + '점';
+          statusHtml = '완성도 <b style="color:var(--gold)">' + compDisp + '%</b>(' + s.correct + '/' + s.answered + '문항) · 원점수 ' + (scoreDisp ?? '-') + '점';
         }
         return `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
