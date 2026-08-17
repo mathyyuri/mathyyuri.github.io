@@ -3894,6 +3894,7 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 <body>
 <div class="exportBar">
   <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="saveCurrentPdfBtn">현재까지 PDF로 저장</button>
   <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
 </div>
 <div class="mbBook">
@@ -3979,7 +3980,43 @@ window.addEventListener('DOMContentLoaded', function () {
     return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   }
   var exportFileBase = ${JSON.stringify(titleText.replace(/[\\\/:*?"<>|]/g, '_'))};
+  function pagesUpToSpread(idx) {
+    var result = [];
+    for (var s = 0; s <= idx && s < mbSpreads.length; s++) {
+      result.push.apply(result, mbSpreads[s].querySelectorAll('.mbSheet'));
+    }
+    return result;
+  }
+  async function buildAndSavePdf(pages, btn, fileSuffix) {
+    btn.disabled = true;
+    var orig = btn.textContent;
+    try {
+      var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
+      if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
+      var pageW = 210;
+      var pdf = null;
+      for (var i = 0; i < pages.length; i++) {
+        btn.textContent = '캡처 중... (' + (i + 1) + '/' + pages.length + ')';
+        var canvas = await captureSheet(pages[i]);
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        var pageH = pageW * (canvas.height / canvas.width);
+        if (!pdf) {
+          pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: [pageW, pageH] });
+        } else {
+          pdf.addPage([pageW, pageH], 'portrait');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      }
+      pdf.save(exportFileBase + fileSuffix + '.pdf');
+    } catch (e) {
+      alert('PDF 저장 실패: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  }
   var saveImgBtn = document.getElementById('saveImgBtn');
+  var saveCurrentPdfBtn = document.getElementById('saveCurrentPdfBtn');
   var savePdfBtn = document.getElementById('savePdfBtn');
   if (saveImgBtn) saveImgBtn.addEventListener('click', async function () {
     saveImgBtn.disabled = true;
@@ -4000,49 +4037,26 @@ window.addEventListener('DOMContentLoaded', function () {
       saveImgBtn.textContent = orig;
     }
   });
-  if (savePdfBtn) savePdfBtn.addEventListener('click', async function () {
-    savePdfBtn.disabled = true;
-    var orig = savePdfBtn.textContent;
-    try {
-      var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
-      if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
-      // .mbSheet's CSS height is min-height, not height (297mm min:297mm.CSS
-      // 참고) — a page whose content genuinely needs more room (e.g. a
-      // student with a long 오답 이력, the MAN BOOK 요약표 growing past
-      // one A4 sheet) simply grows taller in the live HTML, no error, no
-      // visible cutoff. Forcing that ALREADY-TALLER-THAN-297mm capture into
-      // a hardcoded 210×297 box via addImage's explicit w/h stretches the
-      // image to fill it anyway, distorting the true aspect ratio — content
-      // that looked fine on screen came out visibly warped/enlarged in the
-      // PDF (confirmed by reproducing a long summary table: a 60-row table
-      // makes the real captured aspect ratio ~0.53 vs the assumed A4 ratio
-      // ~0.71, a real mismatch). Deriving pageH from the ACTUAL captured
-      // canvas's own aspect ratio for EACH sheet — instead of assuming
-      // every sheet is exactly A4 — makes the PDF page exactly as tall as
-      // that sheet truly rendered, so nothing ever gets stretched: the PDF
-      // always matches the HTML pixel-for-pixel, even on an occasional
-      // page that ends up taller than standard A4.
-      var pageW = 210;
-      var pdf = null;
-      for (var i = 0; i < mbPages.length; i++) {
-        savePdfBtn.textContent = '캡처 중... (' + (i + 1) + '/' + mbPages.length + ')';
-        var canvas = await captureSheet(mbPages[i]);
-        var imgData = canvas.toDataURL('image/jpeg', 0.95);
-        var pageH = pageW * (canvas.height / canvas.width);
-        if (!pdf) {
-          pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: [pageW, pageH] });
-        } else {
-          pdf.addPage([pageW, pageH], 'portrait');
-        }
-        pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
-      }
-      pdf.save(exportFileBase + '.pdf');
-    } catch (e) {
-      alert('PDF 저장 실패: ' + e.message);
-    } finally {
-      savePdfBtn.disabled = false;
-      savePdfBtn.textContent = orig;
-    }
+  // .mbSheet's CSS height is min-height, not height (297mm min:297mm.CSS
+  // 참고) — a page whose content genuinely needs more room (e.g. a
+  // student with a long 오답 이력, the MAN BOOK 요약표 growing past
+  // one A4 sheet) simply grows taller in the live HTML, no error, no
+  // visible cutoff. Forcing that ALREADY-TALLER-THAN-297mm capture into
+  // a hardcoded 210×297 box via addImage's explicit w/h stretches the
+  // image to fill it anyway, distorting the true aspect ratio — content
+  // that looked fine on screen came out visibly warped/enlarged in the
+  // PDF (confirmed by reproducing a long summary table: a 60-row table
+  // makes the real captured aspect ratio ~0.53 vs the assumed A4 ratio
+  // ~0.71, a real mismatch). Deriving pageH from the ACTUAL captured
+  // canvas's own aspect ratio for EACH sheet (inside buildAndSavePdf) —
+  // instead of assuming every sheet is exactly A4 — makes the PDF page
+  // exactly as tall as that sheet truly rendered, so nothing ever gets
+  // stretched.
+  if (saveCurrentPdfBtn) saveCurrentPdfBtn.addEventListener('click', function () {
+    buildAndSavePdf(pagesUpToSpread(currentSpreadIdx()), saveCurrentPdfBtn, '_지금까지');
+  });
+  if (savePdfBtn) savePdfBtn.addEventListener('click', function () {
+    buildAndSavePdf(mbPages, savePdfBtn, '');
   });
 });
 <\/script>
