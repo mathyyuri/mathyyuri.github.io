@@ -969,6 +969,14 @@ function formatConditionBox(inner, rawText) {
   // excluded the same way as the range reference above, rather than
   // boxed.
   if (/과정이다|과정에서|짝지은\s*것/.test(rawText)) return null;
+  // The same "질문 문장" case above can ALSO show up as its OWN separate
+  // paragraph in the source — e.g. "26. 다음은 ~ 과정이다."가 한 문단,
+  // "(가),(나)에 사용된 집합의 연산 법칙을 구하시오."가 별도 문단인 실제
+  // 파일 확인됨. 이 문단만 놓고 보면 "과정이다"가 안 보여서 위 검사를
+  // 그냥 통과해버린다. 하지만 이런 문장은 항상 "구하시오/쓰시오/고르시오/
+  // 것은?/값은?"처럼 질문으로 끝난다 — 진짜 조건절(예: "(가) a≠0일 때 ~")은
+  // 그렇게 끝나지 않으므로, 문장 끝 패턴으로 앞 문단과 상관없이 잡아낸다.
+  if (/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(rawText.trim())) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
