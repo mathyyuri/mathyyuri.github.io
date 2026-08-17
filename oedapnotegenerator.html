@@ -1122,6 +1122,7 @@ ${slidesHtml.join('\n')}
 <div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space로 화면 전환</div>
 <div class="exportBar">
   <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="saveCurrentPdfBtn">현재까지 PDF로 저장</button>
   <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
 </div>
 <div class="slideNav">
@@ -1209,6 +1210,7 @@ window.addEventListener('DOMContentLoaded', function () {
   }
   var saveImgBtn = document.getElementById('saveImgBtn');
   var savePdfBtn = document.getElementById('savePdfBtn');
+  var saveCurrentPdfBtn = document.getElementById('saveCurrentPdfBtn');
   var exportFileBase = ${JSON.stringify(titleText.replace(/[\\\/:*?"<>|]/g, '_'))};
   if (saveImgBtn) saveImgBtn.addEventListener('click', async function () {
     saveImgBtn.disabled = true;
@@ -1229,9 +1231,13 @@ window.addEventListener('DOMContentLoaded', function () {
       saveImgBtn.textContent = orig;
     }
   });
-  if (savePdfBtn) savePdfBtn.addEventListener('click', async function () {
-    savePdfBtn.disabled = true;
-    var orig = savePdfBtn.textContent;
+  // 슬라이드 목록(전체 또는 "지금까지"로 잘라낸 일부)을 받아 PDF 한 개로
+  // 묶어 저장하는 공용 함수 — 수업 중에 지금까지 설명한 문항까지만 뽑아
+  // 학생들에게 나눠주고 싶다는 요청으로, "전체 저장"과 "현재까지 저장"이
+  // 버튼만 다르고 나머지 로직은 똑같아서 하나로 합쳤다.
+  async function buildAndSavePdf(slideList, btn, fileSuffix) {
+    btn.disabled = true;
+    var orig = btn.textContent;
     try {
       var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF);
       if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
@@ -1240,9 +1246,9 @@ window.addEventListener('DOMContentLoaded', function () {
       // 붙이므로 여백이 전혀 남지 않는다.
       var pageW = 338.67, pageH = 190.5;
       var pdf = null;
-      for (var i = 0; i < slides.length; i++) {
-        savePdfBtn.textContent = '캡처 중... (' + (i + 1) + '/' + slides.length + ')';
-        var canvas = await captureSlide(slides[i]);
+      for (var i = 0; i < slideList.length; i++) {
+        btn.textContent = '캡처 중... (' + (i + 1) + '/' + slideList.length + ')';
+        var canvas = await captureSlide(slideList[i]);
         var imgData = canvas.toDataURL('image/jpeg', 0.95);
         if (!pdf) {
           pdf = new jsPDFCtor({ orientation: 'landscape', unit: 'mm', format: [pageW, pageH] });
@@ -1251,13 +1257,21 @@ window.addEventListener('DOMContentLoaded', function () {
         }
         pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
       }
-      pdf.save(exportFileBase + '.pdf');
+      pdf.save(exportFileBase + fileSuffix + '.pdf');
     } catch (e) {
       alert('PDF 저장 실패: ' + e.message);
     } finally {
-      savePdfBtn.disabled = false;
-      savePdfBtn.textContent = orig;
+      btn.disabled = false;
+      btn.textContent = orig;
     }
+  }
+  if (savePdfBtn) savePdfBtn.addEventListener('click', function () {
+    buildAndSavePdf(slides, savePdfBtn, '');
+  });
+  if (saveCurrentPdfBtn) saveCurrentPdfBtn.addEventListener('click', function () {
+    // 슬라이드 0번부터 "지금 보고 있는 슬라이드"까지만 잘라서 저장 —
+    // 수업 중 여기까지 설명했다는 진행 상황 그대로 PDF로 남길 수 있다.
+    buildAndSavePdf(slides.slice(0, currentSlideIdx() + 1), saveCurrentPdfBtn, '_지금까지');
   });
 });
 <\/script>
