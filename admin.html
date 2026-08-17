@@ -702,11 +702,24 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
     if (!list.length) {
       wrap.innerHTML = '<p class="hint">명단에 학생이 없습니다.</p>';
     } else {
-      wrap.innerHTML = list.map(s => `
+      // 완성도·원점수를 같이 보여줘서, 아예 안 낸 건지 거의 다 했는데
+      // 몇 개만 남은 건지 문자 보내기 전에 바로 판단할 수 있게 한다
+      // (원장님 요청).
+      wrap.innerHTML = list.map(s => {
+        let statusHtml;
+        if (s.comp == null) {
+          statusHtml = '<b style="color:var(--pink-deep)">미제출</b>';
+        } else if (s.comp === 100) {
+          statusHtml = '<b style="color:var(--mint-deep)">완성도 100%</b> · 원점수 ' + (s.score ?? '-') + '점';
+        } else {
+          statusHtml = '완성도 <b style="color:var(--gold)">' + s.comp + '%</b>(' + s.correct + '/' + s.answered + '문항) · 원점수 ' + (s.score ?? '-') + '점';
+        }
+        return `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
           <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" ${s.submitted ? '' : 'checked'} style="width:auto">
-          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}${s.submitted ? ' · <b style="color:var(--mint-deep)">제출완료</b>' : ''}</span>
-        </label>`).join('');
+          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')} · ${statusHtml}</span>
+        </label>`;
+      }).join('');
     }
     document.getElementById('msListWrap').style.display = '';
     const missingCount = list.filter(s => !s.submitted).length;
