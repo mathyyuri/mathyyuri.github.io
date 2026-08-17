@@ -126,7 +126,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
 
     <div class="box">
       <p><b>미제출자 명단 (문자 발송용)</b></p>
-      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로, 명단엔 있지만 이 시험 기록이 아직 없는 학생을 찾습니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
+      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로 그 반 전체 명단을 불러옵니다 — 이 시험 기록이 없는 학생은 기본으로 체크돼 있고, 제출한 학생도 필요하면 직접 체크해서 추가할 수 있습니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
       <div class="btnRow">
         <button type="button" id="msLoadBtn">미제출자 명단 불러오기</button>
         <span id="msMsg" class="hint"></span>
@@ -693,19 +693,24 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
   msg.className = 'hint';
   try {
     const resp = await callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission });
-    const list = resp.missing || [];
+    // 자동 감지된 미제출자만 보여주면, 이미 제출했지만 다른 이유로 문자를
+    // 보내고 싶은 학생을 추가할 방법이 없었다(원장님 요청) — 반 전체
+    // 명단을 다 보여주고, 미제출자만 기본으로 체크해둔 뒤 나머지는
+    // 직접 체크해서 추가할 수 있게 한다.
+    const list = resp.students || [];
     const wrap = document.getElementById('msCheckboxList');
     if (!list.length) {
-      wrap.innerHTML = '<p class="hint">미제출자가 없습니다 🎉</p>';
+      wrap.innerHTML = '<p class="hint">명단에 학생이 없습니다.</p>';
     } else {
       wrap.innerHTML = list.map(s => `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
-          <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" checked style="width:auto">
-          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}</span>
+          <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" ${s.submitted ? '' : 'checked'} style="width:auto">
+          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}${s.submitted ? ' · <b style="color:var(--mint-deep)">제출완료</b>' : ''}</span>
         </label>`).join('');
     }
     document.getElementById('msListWrap').style.display = '';
-    msg.textContent = list.length + '명 미제출';
+    const missingCount = list.filter(s => !s.submitted).length;
+    msg.textContent = '전체 ' + list.length + '명 중 미제출 ' + missingCount + '명(기본 체크됨) — 필요하면 추가로 체크하세요';
     msg.className = 'hint ok';
   } catch (e) {
     msg.textContent = '오류: ' + e.message;
