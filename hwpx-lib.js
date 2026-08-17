@@ -1053,7 +1053,16 @@ async function hwpBodyXmlToHtml(xml, entry) {
     // table ended up in the wrong spot for exactly this reason). Use a
     // <div> wrapper instead whenever that's the case; plain <p> still
     // handles everything else exactly as before.
-    return /<div\b|<table\b/.test(it.inner) ? `<div>${it.inner}</div>` : `<p>${it.inner}</p>`;
+    if (/<div\b|<table\b/.test(it.inner)) return `<div>${it.inner}</div>`;
+    // 문항 중간에 수식만 단독으로 한 줄 차지하는 경우(예: "PA²-PB²=5")가
+    // 왼쪽 정렬로 남아 있으면 보기 안 좋다는 리포트 — 그 줄이 다른
+    // 한글/텍스트 없이 수식(.eq span)만으로 이루어졌는지 확인해서, 맞으면
+    // 가운데 정렬용 클래스를 붙인다. 일반 문장 속에 낀 인라인 수식은
+    // 그대로 좌측 정렬 문단 안에 남는다(이 조건에 안 걸림).
+    const trimmedInner = it.inner.trim();
+    const isEqOnlyLine = trimmedInner !== '' && /^(<span class="eq">[\s\S]*?<\/span>\s*)+$/.test(trimmedInner);
+    if (isEqOnlyLine) return `<p class="eqLine">${it.inner}</p>`;
+    return `<p>${it.inner}</p>`;
   }
   const resolved = [];
   let i = 0;

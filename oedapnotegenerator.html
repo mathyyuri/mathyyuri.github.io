@@ -1094,6 +1094,15 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .paneNum{font-family:var(--kserif);font-weight:900;font-size:1.7rem;color:var(--mb-navy)}
 .paneBody{font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0}
 .paneBody p{margin:0 0 .5em}
+/* 문항 중간에 수식만 단독으로 한 줄 차지하는 경우(hwpx-lib.js의
+   resolveSingle이 붙이는 클래스) — 가운데 정렬하고, 너무 넓은 수식은
+   .slide{overflow:hidden}에 잘리는 대신 줄바꿈되게 한다. KaTeX가 만드는
+   .katex 안쪽 요소들은 기본이 inline-block이라 그냥 두면 안 꺾이므로
+   컨테이너 자체를 flex로 감싸 줄바꿈 지점을 만들어준다. */
+.paneBody p.eqLine{text-align:center;overflow-wrap:break-word}
+.paneBody p.eqLine .katex-display{margin:0}
+.paneBody p.eqLine .katex{white-space:normal!important}
+.paneBody p.eqLine .katex .base{white-space:normal!important}
 .paneBody img{max-width:100%;height:auto;display:block;margin:.5em auto;border:1px solid var(--mb-line);border-radius:6px;box-shadow:0 1px 8px rgba(26,26,26,.1)}
 .paneBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
 .paneBody td{border:1px solid var(--mb-line);padding:.2em .5em;font-size:.75em;white-space:nowrap;text-align:center;vertical-align:middle}
