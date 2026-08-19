@@ -937,7 +937,20 @@ async function hwpTblToHtml(tblXml, entry) {
     }
     rowsHtml += `<tr>${rowHtml}</tr>`;
   }
-  return `<table class="hwpTbl">${rowsHtml}</table>`;
+  const tableEl = `<table class="hwpTbl">${rowsHtml}</table>`;
+  // The TABLE's OWN border-fill (on <hp:tbl> itself, separate from each
+  // cell's own checked above) is a different thing again — a table with
+  // every cell borderless but the table's own border-fill visible is the
+  // "outer box only, no inner grid" pattern (a derivation drawn inside one
+  // frame with no visible cell divisions inside). Reuse the existing
+  // .hwpCondBox box style rather than a new one — confirmed against a real
+  // file (TAT11회 37번): table borderFillIDRef 11 = solid all sides, every
+  // cell's own borderFillIDRef 12 = all none, which without this rendered
+  // with NO border anywhere even though the source clearly draws a frame
+  // around it.
+  const tblFillM = tblXml.match(/^<hp:tbl\b[^>]*\bborderFillIDRef="(\d+)"/);
+  if (tblFillM && !borderFillAllNone(entry, tblFillM[1])) return `<div class="hwpCondBox">${tableEl}</div>`;
+  return tableEl;
 }
 // A "다음은 ~ 과정이다. (가), (나)에 알맞은 것은?"-style proof-completion
 // question draws its blank(s) as an <hp:rect> SHAPE, not text — confirmed

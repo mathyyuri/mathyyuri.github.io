@@ -684,6 +684,32 @@ async function hwpPicToHtml(picXml, entry) {
   } catch (e) { return ''; }
 }
 
+// header.xml's <hh:borderFills> defines every borderFillIDRef a table cell
+// (or the table itself) can point at — each one independently sets all four
+// sides' own type ("NONE" = invisible, anything else = drawn). We only need
+// the "all four sides are NONE" bit (see hwpTblToHtml), not the full style/
+// color/width per side.
+async function parseBorderFillMap(zipData) {
+  const map = new Map();
+  const file = zipData.file('Contents/header.xml');
+  if (!file) return map;
+  const xml = await file.async('string');
+  for (const b of findTopLevelBlocks(xml, 'hh:borderFill')) {
+    const idM = b.text.match(/<hh:borderFill\b[^>]*\bid="(\d+)"/);
+    if (!idM) continue;
+    const sides = ['leftBorder', 'rightBorder', 'topBorder', 'bottomBorder'];
+    const allNone = sides.every(side => {
+      const sideM = b.text.match(new RegExp(`<hh:${side}\\b[^>]*\\btype="([A-Z]+)"`));
+      return sideM && sideM[1] === 'NONE';
+    });
+    map.set(idM[1], allNone);
+  }
+  return map;
+}
+function borderFillAllNone(entry, id) {
+  return !!(entry && entry.borderFills && entry.borderFills.get(id));
+}
+
 async function hwpTblToHtml(tblXml, entry) {
   const trs = findTopLevelBlocks(tblXml, 'hp:tr');
   let rowsHtml = '';
@@ -696,11 +722,32 @@ async function hwpTblToHtml(tblXml, entry) {
       const rowSpan = spanM ? spanM[2] : '1';
       const subList = findTopLevelBlocks(tc.text, 'hp:subList')[0];
       const cellInner = subList ? await hwpBodyXmlToHtml(subList.text, entry) : '';
-      rowHtml += `<td colspan="${colSpan}" rowspan="${rowSpan}">${cellInner}</td>`;
+      // A HWP table's cells often aren't meant to draw a full grid — a table
+      // is routinely used purely for LAYOUT/alignment (e.g. a "(가)/(나) 풀이
+      // 과정" table where every content cell is intentionally borderless).
+      // Our own `.hwpTbl td{border:1px solid...}` CSS has no way to know
+      // that and boxes every cell uniformly — turn it off per cell where the
+      // source's own border-fill says so.
+      const fillM = tc.text.match(/<hp:tc\b[^>]*\bborderFillIDRef="(\d+)"/);
+      const noBorderAttr = fillM && borderFillAllNone(entry, fillM[1]) ? ' style="border:none"' : '';
+      rowHtml += `<td colspan="${colSpan}" rowspan="${rowSpan}"${noBorderAttr}>${cellInner}</td>`;
     }
     rowsHtml += `<tr>${rowHtml}</tr>`;
   }
-  return `<table class="hwpTbl">${rowsHtml}</table>`;
+  const tableEl = `<table class="hwpTbl">${rowsHtml}</table>`;
+  // The TABLE's OWN border-fill (on <hp:tbl> itself, separate from each
+  // cell's) is a different thing again — a table with every cell borderless
+  // (above) but the table's own border-fill visible is the "outer box only,
+  // no inner grid" pattern (a derivation drawn inside one frame with no
+  // visible cell divisions inside). Reuse the existing .hwpCondBox box style
+  // (already defined in every page that renders this output) instead of
+  // introducing a new one — confirmed against a real file (TAT11회 37번):
+  // table borderFillIDRef 11 = solid all sides, every cell's own
+  // borderFillIDRef 12 = all none, which without this rendered with NO
+  // border anywhere even though the source clearly draws a frame around it.
+  const tblFillM = tblXml.match(/^<hp:tbl\b[^>]*\bborderFillIDRef="(\d+)"/);
+  if (tblFillM && !borderFillAllNone(entry, tblFillM[1])) return `<div class="hwpCondBox">${tableEl}</div>`;
+  return tableEl;
 }
 
 // A "다음은 ~ 과정이다. (가), (나)에 알맞은 것은?"-style proof-completion
@@ -1377,5 +1424,6 @@ async function parseHwpx(zipData) {
   const sectionsXml = [];
   for (const path of sectionOrder) sectionsXml.push({ name: path, xml: await zipData.file(path).async('string') });
   const markers = detectMarkers(sectionsXml);
-  return { zipData, sectionOrder, manifestItems, markers };
+  const borderFills = await parseBorderFillMap(zipData);
+  return { zipData, sectionOrder, manifestItems, markers, borderFills };
 }
