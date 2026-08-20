@@ -896,8 +896,17 @@ function extractOrderedChildren(xml, tagNames) {
   // and rendered as garbled extra text right next to it — confirmed against
   // a real file (25년 9월 기출.hwpx 1번: a base64-looking string appeared
   // right after a correctly-rendered "A = 2x²+xy+y²").
+  // NOTE: hp:equation is only added to the CONTAINERS list here (so ITS OWN
+  // nested caption content gets excluded below), not to the "always keep"
+  // clause the way hp:rect/hp:tbl are — a top-level equation doesn't need
+  // that (it never contains itself, so the containment check alone already
+  // keeps it), and adding it there by mistake once made an equation NESTED
+  // inside an hp:rect (e.g. a "(가)/(나)" box's own equations) get kept a
+  // SECOND time as a false top-level sibling too, duplicating the whole box
+  // right after itself — confirmed against a real file (25년 9월 기출.hwpx
+  // 11번).
   const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation');
-  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation' || !containers.some(c => b.start > c.start && b.start < c.end));
+  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || !containers.some(c => b.start > c.start && b.start < c.end));
   filtered.sort((a, b) => a.start - b.start);
   return filtered;
 }
@@ -3859,6 +3868,10 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .hwpCondBox{border:1.3px solid var(--mb-ink);border-radius:2px;padding:4mm 5mm;margin:3mm 0}
 .hwpCondBox p{margin:0 0 1.5mm}
 .hwpCondBox p:last-child{margin-bottom:0}
+/* 표(hp:tbl)를 hwpCondBox로 감싼 풀이 과정(예: 행렬 계산 단계)은 칸마다
+   가운데 정렬하는 일반 표(선택지 격자 등)와 달리 왼쪽 정렬로 읽혀야
+   자연스럽다는 요청 — .mbQBlock td의 기본 가운데 정렬을 여기서만 뒤집는다. */
+.hwpCondBox td{text-align:left}
 .hwpBlankBox{display:inline-block;border:1.3px solid var(--mb-ink);vertical-align:middle;margin:0 1mm}
 /* 박스 안 전체를 가운데로 몰지 않는다 — 조건 설명 같은 일반 문장까지
    가운데 정렬되면 보기 안 좋다는 요청(오답노트 생성기 화면에서 확인된

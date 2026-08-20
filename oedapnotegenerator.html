@@ -1109,6 +1109,10 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.8em;margin:.4em 0}
 .choiceItem{font-size:.92em;min-width:0;overflow-wrap:break-word}
 .hwpBogi,.hwpCondBox{border:1.6px solid var(--mb-ink);border-radius:3px;padding:.6em .9em;margin:.5em 0}
+/* 표(hp:tbl)를 hwpCondBox로 감싼 풀이 과정(예: 행렬 계산 단계)은 칸마다
+   가운데 정렬하는 일반 표(선택지 격자 등)와 달리 왼쪽 정렬로 읽혀야
+   자연스럽다는 요청 — .paneBody td의 기본 가운데 정렬을 여기서만 뒤집는다. */
+.hwpCondBox td{text-align:left}
 .hwpBogi p,.hwpCondBox p{margin:0 0 .3em}
 .hwpBlankBox{display:inline-block;border:1.6px solid var(--mb-ink);vertical-align:middle;margin:0 .2em}
 /* 박스 안 전체를 가운데로 몰지 않는다 — 조건 설명 같은 일반 문장까지

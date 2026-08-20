@@ -362,12 +362,15 @@ function splitTopLevelStr(s, sep) {
 // 이 함수 없이는 "pile"이 문자 단위 키워드 스캐너에 그대로 넘어가
 // "pi"(π) + "le"(≤)로 잘못 쪼개져 깨진 LaTeX가 나왔다(실제 파일 확인:
 // 25년 9월 기출.hwpx 2번 — "행렬 A = left( pile{...} right)"가 "\pi
-// \leq{...}"로 깨짐).
+// \leq{...}"로 깨짐). "rpile{...}"(둥근 괄호용 변형 — 같은 파일에서
+// "pile"보다 오히려 훨씬 더 자주 쓰임)도 같은 구문이라 같이 잡는다;
+// "r"과 "pile" 사이엔 공백이 없어 \b가 "pile" 앞에서 안 걸리므로 별도로
+// 필요했다.
 function resolvePile(script) {
   let s = script;
   let guard = 0;
   while (guard++ < 50) {
-    const m = s.match(/\bpile\s*\{/i);
+    const m = s.match(/\br?pile\s*\{/i);
     if (!m) break;
     const braceStart = s.indexOf('{', m.index);
     const [end, inner] = findAtomAfter(s, braceStart);
@@ -710,8 +713,17 @@ function extractOrderedChildren(xml, tagNames) {
   // and rendered as garbled extra text right next to it — confirmed against
   // a real file (25년 9월 기출.hwpx 1번: a base64-looking string appeared
   // right after a correctly-rendered "A = 2x²+xy+y²").
+  // NOTE: hp:equation is only added to the CONTAINERS list here (so ITS OWN
+  // nested caption content gets excluded below), not to the "always keep"
+  // clause the way hp:rect/hp:tbl are — a top-level equation doesn't need
+  // that (it never contains itself, so the containment check alone already
+  // keeps it), and adding it there by mistake once made an equation NESTED
+  // inside an hp:rect (e.g. a "(가)/(나)" box's own equations) get kept a
+  // SECOND time as a false top-level sibling too, duplicating the whole box
+  // right after itself — confirmed against a real file (25년 9월 기출.hwpx
+  // 11번).
   const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation');
-  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation' || !containers.some(c => b.start > c.start && b.start < c.end));
+  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || !containers.some(c => b.start > c.start && b.start < c.end));
   filtered.sort((a, b) => a.start - b.start);
   return filtered;
 }

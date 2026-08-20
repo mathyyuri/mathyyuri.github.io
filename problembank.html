@@ -130,6 +130,10 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .choiceItem { font-size: 12px; min-width: 0; overflow-wrap: break-word; }
 .hwpBogi, .hwpCondBox { border: 1.3px solid var(--ink); border-radius: 2px; padding: 4mm 5mm; margin: 3mm 0; }
 .hwpBogi p, .hwpCondBox p { margin: 0 0 1.5mm; }
+/* 표(hp:tbl)를 hwpCondBox로 감싼 풀이 과정(예: 행렬 계산 단계)은 칸마다
+   가운데 정렬하는 일반 표(선택지 격자 등)와 달리 왼쪽 정렬로 읽혀야
+   자연스럽다는 요청 — .previewCol td의 기본 가운데 정렬을 여기서만 뒤집는다. */
+.hwpCondBox td { text-align: left; }
 .hwpBlankBox { display: inline-block; border: 1.3px solid var(--ink); vertical-align: middle; margin: 0 1mm; }
 .hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; text-align: center; }
 .overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
