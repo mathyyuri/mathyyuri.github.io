@@ -565,6 +565,48 @@ function resolveCases(script) {
   }
   return s;
 }
+
+// Same brace-depth-aware split as splitTopLevel, but for a 2-character
+// separator ("&&") instead of one — pile{}'s own column separator (below).
+function splitTopLevelStr(s, sep) {
+  const parts = [];
+  let depth = 0, start = 0, i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '{') { depth++; i++; continue; }
+    if (c === '}') { depth--; i++; continue; }
+    if (depth === 0 && s.startsWith(sep, i)) { parts.push(s.slice(start, i)); i += sep.length; start = i; continue; }
+    i++;
+  }
+  parts.push(s.slice(start));
+  return parts;
+}
+
+// HWP's "pile{ row1 # row2 # ... }" (행렬 나열) — '#'이 행을 나누고, 그
+// 안에서 '&&'(두 글자)가 열을 나눈다 — cases{}가 홑 '&'를 쓰는 것과 다른
+// 구분자다(실제 파일 확인: "pile{ 6 && a+1 # 8 && 1 }" = 2×2 행렬).
+// 자체 괄호가 없는 순수 격자라 \begin{matrix}...\end{matrix}로만 감싸고,
+// 실제 괄호 모양은 같은 스크립트 안의 LEFT(/RIGHT) 키워드가 담당한다.
+// 이 함수 없이는 "pile"이 문자 단위 키워드 스캐너에 그대로 넘어가
+// "pi"(π) + "le"(≤)로 잘못 쪼개져 깨진 LaTeX가 나왔다(실제 파일 확인:
+// 25년 9월 기출.hwpx 2번 — "행렬 A = left( pile{...} right)"가 "\pi
+// \leq{...}"로 깨짐).
+function resolvePile(script) {
+  let s = script;
+  let guard = 0;
+  while (guard++ < 50) {
+    const m = s.match(/\bpile\s*\{/i);
+    if (!m) break;
+    const braceStart = s.indexOf('{', m.index);
+    const [end, inner] = findAtomAfter(s, braceStart);
+    const innerContent = stripOuterBraces(inner);
+    const rows = splitTopLevel(innerContent, '#').map(r => r.trim()).filter(Boolean);
+    const rowsLatex = rows.map(r => splitTopLevelStr(r, '&&').map(c => c.trim()).join(' & '));
+    const replacement = `\\begin{matrix}${rowsLatex.join(' \\\\ ')}\\end{matrix}`;
+    s = s.slice(0, m.index) + replacement + s.slice(end);
+  }
+  return s;
+}
 const HWP_EQ_SYMBOLS = {
   LEQ: '\\leq', GEQ: '\\geq', NEQ: '\\neq', THEREFORE: '\\therefore',
   ANGLE: '\\angle', CDOTS: '\\cdots', TRIANGLE: '\\triangle',
@@ -664,6 +706,7 @@ function convertHwpEquationToLatex(script) {
   // the "!" or "=" characters individually.
   s = s.replace(/!=/g, '\\neq ');
   s = resolveCases(s);
+  s = resolvePile(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
   // preceding variable ("Aleft(x1,y1right)") with no boundary for \b to
@@ -845,8 +888,16 @@ function extractOrderedChildren(xml, tagNames) {
   // against a real file where a table's per-cell "①" choice letters leaked
   // out and got double-processed by the OUTER choice-row detection too,
   // producing malformed mismatched HTML.
-  const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl');
-  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || !containers.some(c => b.start > c.start && b.start < c.end));
+  // An <hp:equation> is ALSO a container, not just hp:rect/hp:tbl — its own
+  // <hp:caption> can hold a full nested subList/paragraph/run/<hp:t> (HWP
+  // stores an internal reference blob there, unrelated to the visible
+  // equation itself). Without excluding it the same way, that caption's
+  // <hp:t> got picked up as if it were an ordinary sibling of the equation
+  // and rendered as garbled extra text right next to it — confirmed against
+  // a real file (25년 9월 기출.hwpx 1번: a base64-looking string appeared
+  // right after a correctly-rendered "A = 2x²+xy+y²").
+  const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation');
+  const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation' || !containers.some(c => b.start > c.start && b.start < c.end));
   filtered.sort((a, b) => a.start - b.start);
   return filtered;
 }
