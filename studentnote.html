@@ -905,7 +905,11 @@ function extractOrderedChildren(xml, tagNames) {
   // SECOND time as a false top-level sibling too, duplicating the whole box
   // right after itself — confirmed against a real file (25년 9월 기출.hwpx
   // 11번).
-  const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation');
+  // <hp:pic> has the exact same <hp:caption> reference-blob structure as
+  // <hp:equation> (same bug, different tag) — confirmed against a real file
+  // (25년 9월 기출.hwpx 29번: a picture's caption leaked as garbled text
+  // right after the picture itself).
+  const containers = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || b.tag === 'hp:equation' || b.tag === 'hp:pic');
   const filtered = all.filter(b => b.tag === 'hp:rect' || b.tag === 'hp:tbl' || !containers.some(c => b.start > c.start && b.start < c.end));
   filtered.sort((a, b) => a.start - b.start);
   return filtered;

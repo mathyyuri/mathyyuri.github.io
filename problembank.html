@@ -135,7 +135,14 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
    자연스럽다는 요청 — .previewCol td의 기본 가운데 정렬을 여기서만 뒤집는다. */
 .hwpCondBox td { text-align: left; }
 .hwpBlankBox { display: inline-block; border: 1.3px solid var(--ink); vertical-align: middle; margin: 0 1mm; }
-.hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; text-align: center; }
+/* 박스 안 전체를 가운데로 몰지 않는다 — 조건 설명 같은 일반 문장까지
+   가운데 정렬되는 게 보기 안 좋다는 요청(다른 두 도구에 이미 적용된 것과
+   동일). 박스 안에서도 수식만 단독으로 있는 줄은 .eqLine 규칙이 가운데
+   정렬해준다. */
+.hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; text-align: left; }
+.previewCol p.eqLine { text-align: center; overflow-wrap: break-word; }
+.previewCol p.eqLine .katex-display { margin: 0; }
+.previewCol p.eqLine .katex, .previewCol p.eqLine .katex .base { white-space: normal !important; }
 .overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
 .uploadGate { font-size: 13px; margin-top: 10px; padding: 8px 10px; background: var(--pink-soft); border-radius: 4px; }
 .uploadGate label { display: inline; font-weight: 400; color: var(--ink); margin: 0; }
