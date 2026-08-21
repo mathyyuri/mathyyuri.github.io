@@ -595,7 +595,9 @@ function resolvePile(script) {
   let s = script;
   let guard = 0;
   while (guard++ < 50) {
-    const m = s.match(/\bpile\s*\{/i);
+    // "rpile{...}"(둥근 괄호용 변형)도 같은 구문 — "r"과 "pile" 사이엔
+    // 공백이 없어 \b가 "pile" 앞에서 안 걸리므로 "r?"로 같이 잡는다.
+    const m = s.match(/\br?pile\s*\{/i);
     if (!m) break;
     const braceStart = s.indexOf('{', m.index);
     const [end, inner] = findAtomAfter(s, braceStart);
@@ -605,6 +607,41 @@ function resolvePile(script) {
     const replacement = `\\begin{matrix}${rowsLatex.join(' \\\\ ')}\\end{matrix}`;
     s = s.slice(0, m.index) + replacement + s.slice(end);
   }
+  return s;
+}
+
+// A THIRD, separate HWP matrix syntax family — "matrix{ row1 # row2 }" /
+// "pmatrix{...}" — confirmed used in a different real file than
+// pile{}/rpile{} (25년 9월 변형.hwpx), sometimes even in the SAME document
+// as pile{} elsewhere, so both families have to be supported side by side.
+// Same '#' row separator as pile{}, but a SINGLE '&' for columns (matching
+// cases{}'s convention), not pile{}'s doubled '&&'. "matrix{}" has no
+// parens of its own (the surrounding LEFT(/RIGHT) in the script draws
+// them, same as pile{}); "pmatrix{}" draws its own round parens, so it
+// maps to LaTeX's own \begin{pmatrix} rather than a bare \begin{matrix}.
+// Without this, "matrix{"/"pmatrix{" passed straight through to KaTeX
+// as literal text with a bare, unenclosed '&' in it, which KaTeX rejects
+// outright ("Expected '}', got '&'") — the whole equation failed to
+// render at all, worse than the pile{} mis-tokenization case.
+function resolveMatrixLike(script, keyword, env) {
+  let s = script;
+  let guard = 0;
+  const re = new RegExp('\\b' + keyword + '\\s*\\{', 'i');
+  while (guard++ < 50) {
+    const m = s.match(re);
+    if (!m) break;
+    const braceStart = s.indexOf('{', m.index);
+    const [end, inner] = findAtomAfter(s, braceStart);
+    const innerContent = stripOuterBraces(inner);
+    const rows = splitTopLevel(innerContent, '#').map(r => r.trim()).filter(Boolean);
+    const rowsLatex = rows.map(r => splitTopLevel(r, '&').map(c => c.trim()).join(' & '));
+    const replacement = `\\begin{${env}}${rowsLatex.join(' \\\\ ')}\\end{${env}}`;
+    s = s.slice(0, m.index) + replacement + s.slice(end);
+  }
+  return s;
+}
+function resolvePmatrix(script) { return resolveMatrixLike(script, 'pmatrix', 'pmatrix'); }
+function resolveMatrix(script) { return resolveMatrixLike(script, 'matrix', 'matrix'); }
   return s;
 }
 const HWP_EQ_SYMBOLS = {
@@ -707,6 +744,8 @@ function convertHwpEquationToLatex(script) {
   s = s.replace(/!=/g, '\\neq ');
   s = resolveCases(s);
   s = resolvePile(s);
+  s = resolvePmatrix(s);
+  s = resolveMatrix(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
   // preceding variable ("Aleft(x1,y1right)") with no boundary for \b to
