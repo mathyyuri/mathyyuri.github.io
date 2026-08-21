@@ -140,9 +140,15 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
    동일). 박스 안에서도 수식만 단독으로 있는 줄은 .eqLine 규칙이 가운데
    정렬해준다. */
 .hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; text-align: left; }
-.previewCol p.eqLine { text-align: center; overflow-wrap: break-word; }
-.previewCol p.eqLine .katex-display { margin: 0; }
-.previewCol p.eqLine .katex, .previewCol p.eqLine .katex .base { white-space: normal !important; }
+/* 수식 줄바꿈(overflow-wrap: break-word / white-space: normal) 강제 처리는
+   여기 없다 — 오답노트 수업용 슬라이드(오답노트 생성기)는 고정 크기
+   화면에 overflow:hidden이 있어서 넘치는 수식이 통째로 안 보이게 잘리는
+   문제가 있었지만, .previewCol은 그런 제약이 없어(clip 없음, 세로
+   스크롤 가능) 억지로 줄바꿈시키면 오히려 수식 기호들이 조각조각
+   흩어져서 훨씬 더 못 읽게 됨 — 실제 파일로 확인(25년 9월 기출.hwpx
+   4번: 한 줄이면 될 수식이 세로로 7줄 넘게 쪼개져 나옴). 그냥 KaTeX
+   기본값(줄바꿈 없음)대로 두고 가운데 정렬만 적용한다. */
+.previewCol p.eqLine { text-align: center; }
 .overflowNote { font-size: 11px; color: var(--pink-deep); margin-top: 4px; }
 .uploadGate { font-size: 13px; margin-top: 10px; padding: 8px 10px; background: var(--pink-soft); border-radius: 4px; }
 .uploadGate label { display: inline; font-weight: 400; color: var(--ink); margin: 0; }
