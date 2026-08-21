@@ -644,8 +644,22 @@ function convertHwpEquationToLatex(script) {
   // equation editor for an upright point label) rather than "rm A" — \b
   // on BOTH sides would miss that, since there's no boundary between "m"
   // and "A". Strip the glued form first, then any remaining spaced form.
-  s = s.replace(/\brm(?=[A-Za-z])/g, '').replace(/\brm\b/g, '');
-  s = s.replace(/\bit(?=[A-Za-z])/g, '').replace(/\bit\b/g, '');
+  // Also glued directly to a subscript ("it_{3}", HWP's 순열/조합 notation
+  // like "{}_{4}rm P it_{3}") — "_" is itself a \w character, so \b fails
+  // to fire between "it" and "_" the same way it fails between two
+  // letters, and "it_{3}" survived untouched, later getting torn apart by
+  // the character-scanning symbol substitution below ("it" + "_" each
+  // scanned separately, "it" itself matching nothing but leaving stray
+  // text — confirmed against a real file: "it_{4}Pit_{3}" rendered as
+  // literal "it₄Pit₃" instead of the intended "₄P₃"). The SAME file also
+  // glues "it" onto the PRECEDING letter with no space either ("Pit_{3}"),
+  // so \b can't fire on the LEFT side of "it" there either — but "_{"
+  // right after "it" is such an unambiguous landmark (only the subscript
+  // trigger puts a literal underscore there) that no left boundary check
+  // is needed for that specific case at all.
+  s = s.replace(/rm(?=_)/g, '').replace(/it(?=_)/g, '');
+  s = s.replace(/\brm(?=[A-Za-z_])/g, '').replace(/\brm\b/g, '');
+  s = s.replace(/\bit(?=[A-Za-z_])/g, '').replace(/\bit\b/g, '');
   // No \b here either — digits are \w characters too, so "3lemle1" has no
   // word boundary between "3" and "l" for \b to find, same root cause as
   // the LEFT/RIGHT and applyUnary fixes above. [A-Za-z]+ already delimits
