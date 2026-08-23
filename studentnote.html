@@ -132,7 +132,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .hwGradedTag { font-size: 11px; font-weight: 700; color: var(--mint-deep); }
 .btnRow { display: flex; gap: 8px; flex-wrap: wrap; }
 .btnRow button { padding: 6px 14px; font-size: 12px; }
-#counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+#counterBar { position: sticky; bottom: 0; background: var(--cream); border-top: 1px solid var(--gold-line); padding: 14px 0; margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* 문제를 체크할 때마다 단원별로 몇 개씩 쌓였는지 한눈에 보이게 —
+   "이 단원은 아직 부족하네" 판단을 도와달라는 요청. 카운터 바 자체가
+   sticky라 자리가 좁으므로 뱃지 목록은 줄바꿈되게(flex-wrap) 둔다. */
+.unitTallyChip { background: var(--gold-soft); color: var(--gold); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 #counterBadge { font-weight: 700; font-family: var(--serif); color: var(--gold); }
 </style>
 </head>
@@ -183,6 +187,7 @@ button:disabled { opacity: 0.4; cursor: default; }
       <span id="counterBadge">0문제 선택됨</span>
       <button id="genBtn" disabled>오답노트 생성 (한글)</button>
       <button id="genHtmlBtn" disabled>오답노트 생성 (HTML)</button>
+      <span id="unitTally" style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;"></span>
     </div>
     <div id="log"></div>
   </div>
@@ -3207,10 +3212,25 @@ function renderMissionBlocks() {
 }
 
 function updateCounter() {
-  const n = document.querySelectorAll('.qChk:checked').length;
+  const checked = [...document.querySelectorAll('.qChk:checked')];
+  const n = checked.length;
   counterBadge.textContent = `${n}문제 선택됨`;
   genBtn.disabled = n === 0;
   genHtmlBtn.disabled = n === 0;
+  // 여러 미션에 걸쳐 체크하는 동안 단원별로 몇 개씩 쌓였는지 바로바로
+  // 보여줘서 "이 단원은 아직 부족하다"를 판단하기 쉽게 — 원장님 요청.
+  const unitTallyEl = document.getElementById('unitTally');
+  if (unitTallyEl) {
+    const tally = new Map();
+    for (const chk of checked) {
+      const unit = chk.dataset.unit || '(단원 미지정)';
+      tally.set(unit, (tally.get(unit) || 0) + 1);
+    }
+    unitTallyEl.innerHTML = [...tally.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([unit, count]) => `<span class="unitTallyChip">${escapeHtml(unit)} ${count}</span>`)
+      .join('');
+  }
 }
 
 async function getParsedFile(fileId, filename) {
