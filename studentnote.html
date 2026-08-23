@@ -57,9 +57,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 .matchRow .matchTag { font-family: var(--serif); font-size: 11px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; flex: 0 0 auto; }
 .matchRow.matched .matchTag { color: var(--mint-deep); }
 .matchRow.unmatched .matchTag { color: var(--pink-deep); }
-.qGridHead { margin-bottom: 6px; }
+.qGridHead { margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
 .selectAllBtn { background: #fff; color: var(--ink); border: 1px solid var(--gold-line); padding: 4px 10px; font-size: 11px; letter-spacing: .04em; }
 .selectAllBtn:hover { background: var(--gold-soft); border-color: var(--gold); }
+.unitSelectBtn { background: #fff8ec; color: var(--gold); border-color: var(--gold-line); }
+.unitSelectBtn:hover { background: var(--gold-soft); border-color: var(--gold); }
+.qUnit { color: var(--gold); font-size: 11px; }
 .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
 /* 배경은 CSS 변수(--histBg)로 받는다 — 문항마다 O/X 이력에 따라 JS가
    인라인으로 값만 채워 넣고, 체크됐을 때 색(:has 규칙, 아래)이 이 값보다
@@ -3154,8 +3157,10 @@ function renderMissionBlocks() {
           const histHtml = historyBadgeHtml(group.mission, it.num, group.category);
           const wasChecked = prevChecked.has(`${missionKey(group.mission, group.category)}||${it.num}`);
           const colorVar = historyColorVar(group.mission, it.num, group.category);
+          const unit = resolveUnitForMissionNum(group.mission, it.num, group.category);
           return `<label class="status${it.status}"${colorVar} title="이번이 ${r}번째 오답노트 포함">` +
-            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
+            `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}" data-unit="${escapeHtml(unit)}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
+            (unit ? `<span class="qUnit">${escapeHtml(unit)}</span>` : '') +
             (histHtml ? `<span class="roundBadge">${histHtml}</span>` : '') +
             `</label>`;
         }).join('')}
@@ -3177,6 +3182,26 @@ function renderMissionBlocks() {
       ev.target.textContent = allChecked ? '전체 선택' : '전체 해제';
       updateCounter();
     });
+    // 이 미션 안에서 발견된 단원마다 "그 단원만 선택" 버튼을 하나씩 —
+    // 오답노트 생성기(oedapnotegenerator.html)의 같은 기능과 동일한
+    // 방식(원장님 요청: 두 도구를 항상 같이 수정). 단원 태그가 문제은행에
+    // 아직 안 채워진 미션은(resolveUnitForMissionNum이 빈 문자열) 버튼이
+    // 안 뜬다.
+    const qGridHead = div.querySelector('.qGridHead');
+    const unitsInGroup = [...new Set(group.items.map(it => resolveUnitForMissionNum(group.mission, it.num, group.category)).filter(Boolean))];
+    for (const unit of unitsInGroup) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'selectAllBtn unitSelectBtn';
+      btn.textContent = unit;
+      btn.addEventListener('click', () => {
+        const unitBoxes = [...div.querySelectorAll('.qChk')].filter(b => b.dataset.unit === unit);
+        const allChecked = unitBoxes.every(b => b.checked);
+        unitBoxes.forEach(b => { b.checked = !allChecked; });
+        updateCounter();
+      });
+      qGridHead.appendChild(btn);
+    }
     missionBlocksEl.appendChild(div);
   }
 }
