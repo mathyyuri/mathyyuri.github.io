@@ -535,14 +535,24 @@ function flattenEqalignRows(rowStr) {
   const innerContent = stripOuterBraces(inner);
   const subRows = splitTopLevel(innerContent, '#').map(s => s.trim()).filter(Boolean);
   const before = rowStr.slice(0, m.index);
-  const after = rowStr.slice(end);
-  if (subRows.length === 0) return [(before + after).trim()].filter(Boolean);
+  // A row can hold MORE THAN ONE eqalign{} block (confirmed against a real
+  // file: "eqalign{x-1 LEQ 2x#}&eqalign{#}" — two of them glued together
+  // with '&', the second one an empty leftover HWP editor artifact).
+  // Recursing into whatever follows this first eqalign{} — instead of
+  // treating it as plain trailing text — catches any FURTHER eqalign{}
+  // blocks in the same row too; without this, that second one's raw
+  // "eqalign{...}" text survived completely unconverted and broke the
+  // whole equation's LaTeX (KaTeX has no "eqalign" command).
+  const afterRows = flattenEqalignRows(rowStr.slice(end));
+  if (subRows.length === 0) {
+    return [before + (afterRows[0] || ''), ...afterRows.slice(1)].map(s => s.trim()).filter(Boolean);
+  }
   return subRows.map((r, i) => {
     let piece = r;
     if (i === 0) piece = before + piece;
-    if (i === subRows.length - 1) piece = piece + after;
+    if (i === subRows.length - 1) piece = piece + (afterRows[0] || '');
     return piece.trim();
-  });
+  }).concat(afterRows.slice(1)).filter(Boolean);
 }
 // HWP's "cases{ row1 # row2 # ... }" (연립방정식/구간별 정의 등) — '#'
 // separates rows, '&' separates columns within a row (both already match
