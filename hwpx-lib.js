@@ -1278,6 +1278,27 @@ async function hwpBodyXmlToHtml(xml, entry) {
     i++;
   }
 
+  // A paragraph whose ENTIRE content is just a condition marker + comma
+  // ("(가),") with nothing else is never a real standalone line — it's the
+  // source document's own line-wrap of ONE sentence that continues into the
+  // NEXT paragraph ("(가), (나)에 사용된 집합의 연산 법칙을 구하시오." split
+  // across 2 separate <hp:p>s). Left as its own <p>, it forces a hard line
+  // break that isn't in the actual sentence, even after formatConditionBox
+  // correctly decides NOT to box it — confirmed against a real file (TAT6회
+  // 15번): "(가),"와 "(나)에 사용된..."이 각자 줄을 차지해 어색하게
+  // 끊겨 보였음. Splice it into the following paragraph's own <p> instead
+  // of leaving it as a separate block (repeats for a chain of bare markers,
+  // e.g. "(가),"→"(나),"→real sentence).
+  for (let m = 0; m < resolved.length - 1; m++) {
+    if (!/^\([가나다라마]\),?$/.test(resolved[m].raw.trim())) continue;
+    const curMatch = resolved[m].html.match(/^<p>([\s\S]*)<\/p>$/);
+    const nextMatch = resolved[m + 1].html.match(/^<p>([\s\S]*)<\/p>$/);
+    if (!curMatch || !nextMatch) continue;
+    resolved[m + 1] = { raw: resolved[m].raw + resolved[m + 1].raw, html: `<p>${curMatch[1]} ${nextMatch[1]}</p>` };
+    resolved.splice(m, 1);
+    m--;
+  }
+
   // A <보기> list can ALSO be split across separate paragraphs where each
   // half, on its OWN, already has 2+ markers ("ㄱ./ㄴ." in one paragraph,
   // "ㄷ./ㄹ." in the next) — confirmed against a real file. formatBogiBox
