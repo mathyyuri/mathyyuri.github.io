@@ -40,9 +40,12 @@
   .qGrid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .qGrid label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
   .qGrid label:has(input:checked) { background: #e6f0ff; border-color: #6699ff; }
-  .qGridHead { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .qUnit { color: #a06a1f; font-size: 11px; }
+  .qGridHead { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin-top: 6px; }
   .selectAllBtn { background: #fff; color: #333; border: 1px solid #ccc; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; }
   .selectAllBtn:hover { background: #f0f0f0; }
+  .unitSelectBtn { background: #fff8ec; color: #a06a1f; border-color: #e8cfa0; }
+  .unitSelectBtn:hover { background: #fbeed4; }
   .counterBadge { font-size: 13px; font-weight: bold; color: #1a4a8f; margin: 10px 0; }
   .modeBox { border: 1px solid #cddcf0; background: #f4f8ff; }
   .btnRow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
@@ -711,6 +714,7 @@ function makeFileRow(filename, memo) {
 function fillRowWithQuestions(row, entry) {
   row.querySelector('.loadBtn')?.remove();
   const nums = [...entry.markers.keys()].sort((a, b) => Number(a) - Number(b));
+  const unitByNum = entry.unitByNum || new Map();
   const grid = row.querySelector('.qGrid');
   const status = document.createElement('p');
   status.className = 'hint';
@@ -718,10 +722,13 @@ function fillRowWithQuestions(row, entry) {
     ? `${[...new Set(nums.map(n => entry.markers.get(n).method))].join(', ')} · ${nums.length}문제`
     : '문제 번호를 찾지 못했습니다.';
   row.querySelector('.fileRowTop').after(status);
-  grid.innerHTML = nums.map(n =>
-    `<label title="${questionPreview(entry.markers.get(n).blockXml).replace(/"/g, '&quot;')}">` +
-    `<input type="checkbox" class="qChk" data-uid="${entry.uid}" data-num="${n}"> ${n}</label>`
-  ).join('');
+  grid.innerHTML = nums.map(n => {
+    const unit = unitByNum.get(n) || '';
+    return `<label title="${questionPreview(entry.markers.get(n).blockXml).replace(/"/g, '&quot;')}">` +
+      `<input type="checkbox" class="qChk" data-uid="${entry.uid}" data-num="${n}" data-unit="${escapeHtml(unit)}"> ${n}` +
+      (unit ? `<span class="qUnit">${escapeHtml(unit)}</span>` : '') +
+      `</label>`;
+  }).join('');
   grid.querySelectorAll('.qChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
   const head = row.querySelector('.qGridHead');
   if (nums.length) {
@@ -733,6 +740,24 @@ function fillRowWithQuestions(row, entry) {
       ev.target.textContent = allChecked ? '전체 선택' : '전체 해제';
       updateGenBtn();
     });
+    // 이 교재 안에서 발견된 단원마다 "그 단원만 선택" 버튼을 하나씩 —
+    // 처음 등장한 순서대로(문제 순서와 자연스럽게 맞음). 단원 태그를
+    // 아직 하나도 안 넣은 교재는(문제은행에서 "태그 편집"으로 채워야
+    // 나옴) 버튼이 아예 안 뜬다.
+    const units = [...new Set(nums.map(n => unitByNum.get(n)).filter(Boolean))];
+    for (const unit of units) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'selectAllBtn unitSelectBtn';
+      btn.textContent = unit;
+      btn.addEventListener('click', () => {
+        const unitBoxes = [...grid.querySelectorAll('.qChk')].filter(b => b.dataset.unit === unit);
+        const allChecked = unitBoxes.every(b => b.checked);
+        unitBoxes.forEach(b => { b.checked = !allChecked; });
+        updateGenBtn();
+      });
+      head.appendChild(btn);
+    }
   }
 }
 
@@ -740,10 +765,19 @@ function fillRowWithQuestions(row, entry) {
 // 그 파일에 저장된 정답을 조회하려면 필요하다. 로컬 파일 업로드로 불러온
 // 경우엔 서버에 등록된 적이 없어 undefined로 남고, 그 파일의 문제는
 // 정답 조회가 안 되니 "(정답 미입력)"으로 표시된다.
-async function loadFileIntoRow(row, filename, buf, bankId) {
+// questionDataJson: 문제은행(problembank.html)의 "태그 편집"에서 저장한
+// 문제별 단원 정보 — 교재목록에서 불러온 파일만 있고(로컬 업로드는
+// 서버에 등록된 적이 없어 undefined), 태그를 아직 한 번도 안 넣은
+// 파일은 빈 배열이라 단원 표시 없이 그냥 번호만 나온다.
+async function loadFileIntoRow(row, filename, buf, bankId, questionDataJson) {
   const zipData = await JSZip.loadAsync(buf);
   const parsed = await parseHwpx(zipData);
-  const entry = { uid: fileUidCounter++, filename, bankId, ...parsed };
+  let unitByNum = new Map();
+  try {
+    const qd = JSON.parse(questionDataJson || '[]');
+    unitByNum = new Map(qd.filter(q => q && q.unit).map(q => [String(q.num), q.unit]));
+  } catch (e) {}
+  const entry = { uid: fileUidCounter++, filename, bankId, unitByNum, ...parsed };
   loadedFiles.push(entry);
   fillRowWithQuestions(row, entry);
   updateGenBtn();
@@ -790,7 +824,7 @@ async function refreshBankList() {
         ev.target.textContent = '불러오는 중...';
         try {
           const json = await callGetJsonp({ action: 'download', id: f.id });
-          await loadFileIntoRow(row, f.filename, base64ToArrayBuffer(json.file.data), f.id);
+          await loadFileIntoRow(row, f.filename, base64ToArrayBuffer(json.file.data), f.id, f.questionData);
         } catch (e) {
           ev.target.disabled = false;
           ev.target.textContent = '불러오기';
