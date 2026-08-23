@@ -1071,6 +1071,19 @@ async function hwpFragmentRunsToHtml(xml, entry) {
 // 3-per-row), so each source paragraph becomes its own row with exactly
 // as many columns as it originally held, instead of every choice getting
 // reflowed into a fixed 3-column grid regardless of the source layout.
+// "위에서 ①~⑤에 들어갈 알맞은 식이 아닌 것은?" — a RANGE reference
+// ("from ① through ⑤"), the same idea as formatConditionBox's own
+// "(가)~(라)" guard, but for circled-number choice markers instead of
+// (가)(나)(다)(라) condition labels. Without this, a question's own
+// instruction sentence mentioning "①~⑤" got mistaken for 2 real choice
+// items ("①~" and "⑤에 들어갈...") and merged into the SAME grid as the
+// actual 5 choices right after it — confirmed against a real file
+// ([S+반] 2. 직선의 방정식 진도미션 30번): a clean 5-choice row came out
+// as a garbled 7-item grid with the question's own sentence fragments
+// mixed in as fake choices.
+function hasRealChoiceMarker(text) {
+  return /[①②③④⑤]/.test(text.replace(/[①②③④⑤]\s*~\s*[①②③④⑤]/g, ''));
+}
 function formatChoiceRow(paraInners) {
   const rows = [];
   let prefixHtml = '';
@@ -1248,9 +1261,9 @@ async function hwpBodyXmlToHtml(xml, entry) {
   const resolved = [];
   let i = 0;
   while (i < items.length) {
-    if (/[①②③④⑤]/.test(items[i].raw)) {
+    if (hasRealChoiceMarker(items[i].raw)) {
       const start = i;
-      while (i < items.length && /[①②③④⑤]/.test(items[i].raw)) i++;
+      while (i < items.length && hasRealChoiceMarker(items[i].raw)) i++;
       const run = items.slice(start, i);
       const combinedRaw = run.map(it => it.raw).join('');
       const markerCount = (combinedRaw.match(/[①②③④⑤]/g) || []).length;
