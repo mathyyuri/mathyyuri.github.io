@@ -2811,6 +2811,11 @@ async function selectStudent(btn) {
     // 서로 다른 카테고리는 항상 별도 그룹으로 남는다.
     const byMission = new Map();
     for (const w of wrongData.wrong) {
+      // "오답노트 N회차"(오답미션 카테고리)는 예전에 이미 만든 오답노트에서
+      // 나온 복습용 문항 — 새 오답노트를 만들 때 이걸 또 골라 넣으면
+      // 같은 문제가 계속 순환되므로(오답노트→오답노트→...) 선택 화면
+      // 자체에서 제외해달라는 요청.
+      if (w.category === '오답미션') continue;
       const key = `${w.mission}||${w.category}`;
       if (!byMission.has(key)) byMission.set(key, { mission: w.mission, category: w.category, items: [] });
       byMission.get(key).items.push(w);
