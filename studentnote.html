@@ -71,6 +71,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .qGrid label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
 .status2 { color: var(--pink-deep); }
 .status3 { color: var(--gold); }
+.accBadge { font-size: 11px; margin-left: 4px; color: rgba(26,26,26,.5); }
+.accBadge.accLow { color: var(--pink-deep); font-weight: 700; }
 .roundBadge { font-size: 11px; margin-left: 4px; }
 .roundBadge .histO { color: var(--mint-deep); font-weight: 700; }
 .roundBadge .histX { color: var(--pink-deep); font-weight: 700; }
@@ -3202,9 +3204,15 @@ function renderMissionBlocks() {
           const wasChecked = prevChecked.has(`${missionKey(group.mission, group.category)}||${it.num}`);
           const colorVar = historyColorVar(group.mission, it.num, group.category);
           const unit = resolveUnitForMissionNum(group.mission, it.num, group.category);
+          // 반 전체 기준 이 문제의 정답률 — "너무 어려운 문제는 오답노트에서
+          // 빼고 싶다"는 요청으로, 어떤 문제를 뺄지 판단하도록 표시.
+          // 40% 미만은 빨간색으로 눈에 띄게(정답률 데이터가 없는 문제는
+          // 표시 자체를 생략).
+          const accHtml = it.acc != null ? `<span class="accBadge${it.acc < 40 ? ' accLow' : ''}">${it.acc}%</span>` : '';
           return `<label class="status${it.status}"${colorVar} title="이번이 ${r}번째 오답노트 포함">` +
             `<input type="checkbox" class="qChk" data-mission="${group.mission}" data-category="${group.category}" data-num="${it.num}" data-round="${r}" data-unit="${escapeHtml(unit)}"${wasChecked ? ' checked' : ''}> ${it.num}${it.status === 3 ? '△' : ''}` +
             (unit ? `<span class="qUnit">${escapeHtml(unit)}</span>` : '') +
+            accHtml +
             (histHtml ? `<span class="roundBadge">${histHtml}</span>` : '') +
             `</label>`;
         }).join('')}
