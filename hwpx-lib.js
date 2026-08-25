@@ -1452,7 +1452,21 @@ function looksLikeNextQuestionMarker(p) {
 function looksLikeOrphanedFragment(p) {
   if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
-  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t);
+  if (/^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t)) return true;
+  // 소문항 번호 "(1)"/"(2)"/"(3)"를 문서 작성자가 글자가 아니라 수식
+  // 편집기로 그린 경우("LEFT ( 1 RIGHT )" 스크립트로 만든 괄호+숫자) —
+  // stripTags를 거치면 괄호 숫자 대신 그 수식의 원본 스크립트가 그대로
+  // 텍스트에 남아서 위 텍스트 기반 검사가 못 잡는다(실제 파일에서 확인:
+  // "2025 SK고 중간 기출" 23번처럼 소문항 번호를 수식으로 그린 문제에서
+  // (2)/(3)이 통째로 사라짐 — (1)만 첫 흡수 단계에서 우연히 잡히고 나머지는
+  // 전부 빠짐). 문단이 실질 글자 없이 시작하자마자 나오는 첫 수식이
+  // "LEFT ( N RIGHT )" 형태면 이것도 같은 소문항 번호로 본다.
+  const firstEq = p.text.match(/<hp:equation\b[\s\S]*?<hp:script>([\s\S]*?)<\/hp:script>[\s\S]*?<\/hp:equation>/);
+  if (firstEq && /^LEFT\s*\(\s*[1-9]\d?\s*RIGHT\s*\)$/.test(firstEq[1].trim())) {
+    const before = p.text.slice(0, firstEq.index);
+    if (!stripTags(before).trim()) return true;
+  }
+  return false;
 }
 
 function detectEndnoteMarkers(xml) {

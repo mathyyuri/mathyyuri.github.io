@@ -2405,7 +2405,21 @@ function looksLikeNextQuestionMarker(p) {
 function looksLikeOrphanedFragment(p) {
   if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
-  return /^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t);
+  if (/^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t)) return true;
+  // 소문항 번호 "(1)"/"(2)"/"(3)"를 문서 작성자가 글자가 아니라 수식
+  // 편집기로 그린 경우("LEFT ( 1 RIGHT )" 스크립트로 만든 괄호+숫자) —
+  // stripTags를 거치면 괄호 숫자 대신 그 수식의 원본 스크립트가 그대로
+  // 텍스트에 남아서 위 텍스트 기반 검사가 못 잡는다(실제 파일에서 확인:
+  // "2025 SK고 중간 기출" 23번처럼 소문항 번호를 수식으로 그린 문제에서
+  // (2)/(3)이 통째로 사라짐 — (1)만 첫 흡수 단계에서 우연히 잡히고 나머지는
+  // 전부 빠짐). 문단이 실질 글자 없이 시작하자마자 나오는 첫 수식이
+  // "LEFT ( N RIGHT )" 형태면 이것도 같은 소문항 번호로 본다.
+  const firstEq = p.text.match(/<hp:equation\b[\s\S]*?<hp:script>([\s\S]*?)<\/hp:script>[\s\S]*?<\/hp:equation>/);
+  if (firstEq && /^LEFT\s*\(\s*[1-9]\d?\s*RIGHT\s*\)$/.test(firstEq[1].trim())) {
+    const before = p.text.slice(0, firstEq.index);
+    if (!stripTags(before).trim()) return true;
+  }
+  return false;
 }
 
 function detectEndnoteMarkers(xml) {
@@ -2997,15 +3011,32 @@ function resolveFileForMission(missionName, category, clsOverride) {
   // 시 적어둔 메모(memo)에 미션명과 맞는 제목을 따로 적어두는 경우가
   // 많음 — 파일명만 보지 말고 메모도 같이 검색 대상에 포함한다.
   const searchText = (f) => norm(f.filename) + ' ' + norm(f.memo || '');
+  // 숫자로 시작하는 토큰("2회" 등)은 includes()만 쓰면 "12회"·"22회" 같은
+  // 다른 회차의 뒷부분과 우연히 겹쳐서 매칭돼버린다(실제로 확인됨 — "TAT
+  // 2회" 미션이 "TAT12회" 파일에, "TAT 3회"가 "TAT13회" 파일에 잘못
+  // 매칭됨). 숫자 토큰은 바로 앞에 또 다른 숫자가 붙어있으면(=더 큰 수의
+  // 일부) 매칭으로 안 치도록 왼쪽 경계를 검사한다.
+  const tokenMatches = (t, nf) => {
+    if (!/^[0-9]/.test(t)) return nf.includes(t);
+    const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(?<![0-9])' + escaped).test(nf);
+  };
   let candidates = tokens.length
-    ? bankFiles.filter(f => { const nf = searchText(f); return tokens.every(t => nf.includes(t)); })
+    ? bankFiles.filter(f => { const nf = searchText(f); return tokens.every(t => tokenMatches(t, nf)); })
     : bankFiles.filter(f => searchText(f).includes(target));
   // 같은 미션 이름을 정답해설.txt 같은 텍스트 파일 이름에도 그대로 써서
   // 올리는 경우가 있음(예: "2026. 8. 14. MATHY YURI'S CLINIC Vol.1" 미션에
   // "...Vol.1 - 정답해설.txt" 파일) — 이름만 보면 완벽히 일치해서 위 필터를
   // 통과하지만, 문제 내용을 꺼낼 수 있는 진짜 시험지가 아니므로(hwpx가
-  // 아니면 parseHwpx 자체가 실패) 자동 매칭 후보에서 아예 제외한다.
-  candidates = candidates.filter(f => /\.hwpx$/i.test(f.filename));
+  // 아니면 parseHwpx 자체가 실패) 자동 매칭 후보에서 아예 제외해야 한다.
+  // 예전엔 "파일명이 .hwpx로 끝나야 함"으로 걸렀는데, 실제 교재목록을
+  // 보니 오래전에 올린 진짜 시험지 파일 중에 파일명 필드 자체에 ".hwpx"
+  // 확장자가 안 붙어있는 것들이 많아서(등록 당시 관례가 달랐던 듯) 그
+  // 필터에 걸려 통째로 후보에서 빠져버렸다 — 그 결과 진짜 파일이 있는데도
+  // "매칭 실패"로 뜨거나, S반 파일이 빠지고 S+반 파일만 남아 반이 다른
+  // 파일이 자동 매칭되는 등 문제가 컸다(실제 확인됨). 반대로 ".txt"로
+  // 끝나는 파일(정답해설 등)만 확실히 제외하는 방식으로 바꾼다.
+  candidates = candidates.filter(f => !/\.txt$/i.test(f.filename));
   if (!candidates.length) return null;
   // Narrow to files whose TYPE matches this mission's own category —
   // several files can share the same topic name across 개념/진도미션/
