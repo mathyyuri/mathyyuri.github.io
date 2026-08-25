@@ -2994,6 +2994,12 @@ function resolveFileForMission(missionName, category, clsOverride) {
   let candidates = tokens.length
     ? bankFiles.filter(f => { const nf = norm(f.filename); return tokens.every(t => nf.includes(t)); })
     : bankFiles.filter(f => norm(f.filename).includes(target));
+  // 같은 미션 이름을 정답해설.txt 같은 텍스트 파일 이름에도 그대로 써서
+  // 올리는 경우가 있음(예: "2026. 8. 14. MATHY YURI'S CLINIC Vol.1" 미션에
+  // "...Vol.1 - 정답해설.txt" 파일) — 이름만 보면 완벽히 일치해서 위 필터를
+  // 통과하지만, 문제 내용을 꺼낼 수 있는 진짜 시험지가 아니므로(hwpx가
+  // 아니면 parseHwpx 자체가 실패) 자동 매칭 후보에서 아예 제외한다.
+  candidates = candidates.filter(f => /\.hwpx$/i.test(f.filename));
   if (!candidates.length) return null;
   // Narrow to files whose TYPE matches this mission's own category first —
   // several files can share the same topic name across 개념/진도미션/
