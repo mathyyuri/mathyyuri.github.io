@@ -2991,9 +2991,15 @@ function resolveFileForMission(missionName, category, clsOverride) {
   // 하나뿐인 미션명(대다수)은 완전히 똑같이 동작하면서 이런 경우까지 잡는다.
   const tokens = missionName.split(/\s+/).map(norm).filter(Boolean);
   const target = norm(missionName);
+  // 파일명 자체는 원본 시험지 제목 그대로라 미션명과 전혀 안 겹치는 경우가
+  // 있는데(예: 파일명 "클리닉 260814 공통수학1 모의고사 기출문제
+  // 3점모음.hwpx", 미션명 "2026. 8. 14. MATHY YURI'S CLINIC Vol.1"), 업로드
+  // 시 적어둔 메모(memo)에 미션명과 맞는 제목을 따로 적어두는 경우가
+  // 많음 — 파일명만 보지 말고 메모도 같이 검색 대상에 포함한다.
+  const searchText = (f) => norm(f.filename) + ' ' + norm(f.memo || '');
   let candidates = tokens.length
-    ? bankFiles.filter(f => { const nf = norm(f.filename); return tokens.every(t => nf.includes(t)); })
-    : bankFiles.filter(f => norm(f.filename).includes(target));
+    ? bankFiles.filter(f => { const nf = searchText(f); return tokens.every(t => nf.includes(t)); })
+    : bankFiles.filter(f => searchText(f).includes(target));
   // 같은 미션 이름을 정답해설.txt 같은 텍스트 파일 이름에도 그대로 써서
   // 올리는 경우가 있음(예: "2026. 8. 14. MATHY YURI'S CLINIC Vol.1" 미션에
   // "...Vol.1 - 정답해설.txt" 파일) — 이름만 보면 완벽히 일치해서 위 필터를
