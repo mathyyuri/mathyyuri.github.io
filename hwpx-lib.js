@@ -526,6 +526,51 @@ function substituteSymbolsInRun(run) {
 // render fine with the page's own Korean web font.
 const HWP_ENCLOSED_HANGUL = { '㈎': '(가)', '㈏': '(나)', '㈐': '(다)', '㈑': '(라)', '㈒': '(마)' };
 
+// A point-list like "A(√3,-1), B(0,-4), C(-√3,-1)" can get split across
+// <hp:equation> siblings so that the opening "(" characters live in plain
+// <hp:t> text runs, not in the equation script at all — the LEFT/RIGHT
+// conversion above matches purely on "does THIS script have a bracket char
+// right after the keyword", with no awareness of what's in neighboring
+// equations/text, so a single script like "-1 RIGHT ) , B LEFT ( 0, -4
+// RIGHT ) , C LEFT ( - sqrt{3}" converts its counts evenly (2 \left, 2
+// \right) but in the WRONG order — a lone \right) with nothing open before
+// it, then a \left( that's never closed within this same script. KaTeX's
+// \left/\right are a strict nesting stack, not just a count match, so this
+// renders as a hard parse error and the whole equation falls back to
+// showing its raw LaTeX source as plain text (confirmed against a real
+// file: "[S반] 1회차 과제미션" 21번, a three-point triangle-classification
+// problem). \left/\right pairing only matters for auto-sizing the bracket
+// to its contents anyway — a \left or \right with no partner AT ALL inside
+// this script has no content to size against here regardless, so the only
+// sound fix is to drop back to a plain, unsized bracket character (which
+// never needs a partner) for whichever ones don't actually nest within
+// this string.
+function balanceLeftRight(s) {
+  const re = /\\(left|right)(\\\{|\\\}|[()[\].|])/g;
+  const spans = [];
+  let m;
+  while ((m = re.exec(s)) !== null) spans.push({ start: m.index, end: m.index + m[0].length, kind: m[1], delim: m[2] });
+  if (!spans.length) return s;
+  const stack = [];
+  const unmatched = new Set();
+  for (const sp of spans) {
+    if (sp.kind === 'left') stack.push(sp);
+    else if (stack.length) stack.pop();
+    else unmatched.add(sp);
+  }
+  for (const sp of stack) unmatched.add(sp);
+  if (!unmatched.size) return s;
+  let out = '', last = 0;
+  for (const sp of spans) {
+    out += s.slice(last, sp.start);
+    // "\left."/"\right." are HWP's own invisible-partner marker (no glyph
+    // to fall back to) — dropping to bare just means dropping it entirely.
+    out += unmatched.has(sp) ? (sp.delim === '.' ? '' : sp.delim) : s.slice(sp.start, sp.end);
+    last = sp.end;
+  }
+  return out + s.slice(last);
+}
+
 function convertHwpEquationToLatex(script) {
   if (!script) return '';
   let s = script;
@@ -577,6 +622,7 @@ function convertHwpEquationToLatex(script) {
   // 안 보이는 닫음 표시로 처리한다.
   s = s.replace(/(?<!\\)\bLEFT\b/gi, '\\left.');
   s = s.replace(/(?<!\\)\bRIGHT\b/gi, '\\right.');
+  s = balanceLeftRight(s);
   // A single equation script can be missing a { with no matching } at all,
   // or have a stray EXTRA } with no { of its own — both confirmed against
   // real files, both traced to the same root cause (HWP splitting one
