@@ -3007,15 +3007,21 @@ function resolveFileForMission(missionName, category, clsOverride) {
   // 아니면 parseHwpx 자체가 실패) 자동 매칭 후보에서 아예 제외한다.
   candidates = candidates.filter(f => /\.hwpx$/i.test(f.filename));
   if (!candidates.length) return null;
-  // Narrow to files whose TYPE matches this mission's own category first —
+  // Narrow to files whose TYPE matches this mission's own category —
   // several files can share the same topic name across 개념/진도미션/
-  // 과제미션. Only apply the narrowing when it actually leaves something
-  // (an unrecognized/mismatched category string shouldn't zero out all
-  // candidates).
+  // 과제미션 (예: "직선의 방정식"이라는 이름의 개념미션 파일과 진도미션
+  // 파일이 둘 다 있음). 이전엔 타입이 맞는 후보가 하나도 없으면 그냥
+  // "있는 후보 아무거나"(타입이 다른 파일)로 조용히 넘어갔는데, 그 결과
+  // "직선의 방정식 (개념미션)"이 실제로는 "진도미션" 파일에 자동
+  // 매칭되는 등 완전히 다른 문제 세트가 잘못 연결됐음(실제 화면에서
+  // 확인 — 실제로는 없는 파일이면 매칭 실패로 남기고 직접 고르게 하는
+  // 게, 틀린 파일을 조용히 연결하는 것보다 낫다는 요청). 카테고리가
+  // 인식되는 타입이면 타입 일치를 필수 조건으로 바꾼다 — 못 찾으면
+  // "자동 매칭"이 아니라 "매칭 실패"로 남아 직접 선택하게 된다.
   const filenameType = CATEGORY_TO_FILENAME_TYPE[category];
   if (filenameType) {
-    const typeMatched = candidates.filter(f => typeOfFilename(f.filename) === filenameType);
-    if (typeMatched.length) candidates = typeMatched;
+    candidates = candidates.filter(f => typeOfFilename(f.filename) === filenameType);
+    if (!candidates.length) return null;
   }
   // Same mission name can have a different file per class (e.g. "1차시
   // 과제미션"의 S+반용/S반용 파일이 따로 있는 경우) — among filename
