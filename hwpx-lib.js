@@ -456,6 +456,12 @@ const HWP_EQ_SYMBOLS = {
   upsilon: '\\upsilon', phi: '\\phi', chi: '\\chi', psi: '\\psi', omega: '\\omega',
   SUM: '\\sum', sum: '\\sum', PROD: '\\prod', prod: '\\prod', INT: '\\int', int: '\\int',
   LIM: '\\lim', lim: '\\lim', LDOTS: '\\ldots', ldots: '\\ldots',
+  // 세로 줄임표(⋮) — 수열/수 나열을 아래로 죽 이어갈 때 씀(예: "3^3번째
+  // 수를 a1, ... , VDOTS, 9×3^3번째 수를 a9"). CDOTS/LDOTS(가로 줄임표)만
+  // 있고 이건 표에 없어서 "VDOTS" 글자 그대로 남던 문제(실제 파일: 2006년
+  // 4월 고3 이과 14번, 경우의 수 단원). 대각 줄임표(⋱, DDOTS)도 같은 계열이라
+  // 같이 등록 — 아직 실제로 못 봤지만 나올 수 있음.
+  VDOTS: '\\vdots', vdots: '\\vdots', DDOTS: '\\ddots', ddots: '\\ddots',
   amp: '&', QED: '\\blacksquare',
   // short-form inequality keywords ("-3lele1/2" = -3 \leq l \leq 1/2, i.e.
   // "le"/"ge" used in place of LEQ/GEQ) — confirmed from real broken output.
