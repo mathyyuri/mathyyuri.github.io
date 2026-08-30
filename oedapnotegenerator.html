@@ -1170,6 +1170,9 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
    가운데 정렬되는 게 보기 안 좋다는 요청. 박스 안에서도 수식만 단독으로
    있는 줄은 .eqLine 규칙(위)이 그대로 가운데 정렬해준다. */
 .hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--mb-line);padding:.4em .6em;margin:.4em 0;text-align:left}
+/* 문장 중간에 인라인으로 흐르는 작은 네모넣기용("(가)" 같은 빈칸 표시) —
+   위 .hwpRectBox의 block 표시를 덮어써서 앞뒤 글과 같은 줄에 놓이게 함. */
+.hwpRectBoxInline{display:inline-block;max-width:none;padding:0 .4em;margin:0 .2em;vertical-align:middle}
 .eqFallback{font-family:monospace;font-size:.8em;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
 </style>
 </head>

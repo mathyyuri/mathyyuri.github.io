@@ -447,6 +447,13 @@ const HWP_EQ_SYMBOLS = {
   // 있음 (실제 파일에서 확인됨: [대수연마1000제] 04. 로그함수 11~13번,
   // "\left\{ x vert x<7 \right\}"처럼 글자 그대로 남아있었음).
   vert: '\\vert',
+  // 각도 90도 표시를 "90^{CIRC}"처럼 위첨자 안에 CIRC 키워드만 넣어서
+  // 쓰는 경우가 있음(각도 기호 ° 자체를 위첨자로 직접 그린 것 — DEG는
+  // 이미 "^\circ"로 캐럿까지 포함해서 등록돼 있지만, 이 자리는 스크립트
+  // 구조 자체가 이미 위첨자(sup)라서 캐럿을 또 넣으면 이중으로 겹친다).
+  // 표에 CIRC가 따로 없어서 "90^{CIRC}"처럼 글자 그대로 남던 문제(실제
+  // 파일: MATHY YURI'S CLINIC Vol.2 38번, "∠B=90° 인 직각삼각형").
+  CIRC: '\\circ', circ: '\\circ',
   PLUSMINUS: '\\pm', TIMES: '\\times', DIV: '\\div', DEG: '^\\circ',
   cdot: '\\cdot', INFTY: '\\infty', infty: '\\infty',
   alpha: '\\alpha', beta: '\\beta', gamma: '\\gamma', delta: '\\delta',
@@ -985,6 +992,26 @@ async function hwpRectToHtml(rectXml, entry) {
   const isSingleStyledBox = innerTopBlocks.length === 1 && innerTopBlocks[0].start === 0 &&
     innerTopBlocks[0].end === trimmedInner.length && /^<div class="hwp(Bogi|CondBox)"/.test(trimmedInner);
   if (isSingleStyledBox) return trimmedInner;
+  // A small box whose ENTIRE content is just a bare condition-marker label
+  // ("(가)"/"(나)"/"(다)", nothing else) is a fill-in-the-blank spot, not a
+  // real multi-line condition — treatAsChar="1" on the source <hp:rect>
+  // means HWP itself draws it INLINE, flowing as part of the surrounding
+  // sentence ("...선택하는 경우의 수는 (가)"). A <div> is block-level and
+  // forces a line break before/after it regardless (confirmed against a
+  // real file: "위의...선택하는 경우의 수는 [box] 이때의 경우의 수는 3×
+  // [box]" — both bare-(가) boxes landed on their own separate lines,
+  // splitting what's really one running sentence). Render these small
+  // bare-marker boxes as an inline <span> instead so they sit in the text
+  // flow like the sentence intends — reusing the same small-box size
+  // threshold as the empty-box case above.
+  const subPCount = findTopLevelBlocks(sub ? sub.text : '', 'hp:p').length;
+  const innerRaw = stripTags(stripEquationBlocksForRaw(stripRectBlocksForRaw(stripCtrlBlocks(sub ? sub.text : '')))).trim();
+  const isBareMarkerBox = subPCount === 1 && /^\([가나다라마]\),?$/.test(innerRaw) &&
+    sz && sz.w <= 40 && sz.h <= 20;
+  if (isBareMarkerBox) {
+    const pMatch = trimmedInner.match(/^<p>([\s\S]*)<\/p>$/);
+    return `<span class="hwpRectBox hwpRectBoxInline">${pMatch ? pMatch[1] : trimmedInner}</span>`;
+  }
   return `<div class="hwpRectBox">${inner}</div>`;
 }
 
@@ -1034,9 +1061,23 @@ function stripEquationBlocksForRaw(xml) {
 // not just as sibling elements), so they have to be swapped for their
 // HTML equivalent BEFORE the surrounding text gets escaped, or they leak
 // through as literal "&lt;hp:tab .../&gt;" text.
+//
+// <hp:lineBreak/> (Shift+Enter — a soft newline WITHIN one paragraph, not
+// a new <hp:p>) used to become a hard <br>, but that's HWP's OWN page
+// re-wrapping the line to fit the ORIGINAL document's column width, not a
+// meaningful structural break — the same "different container, don't
+// preserve the original's exact wrap point" reasoning already applied to
+// a box's own width elsewhere in this file. A real structural break
+// (separate condition clauses etc.) is already a separate <hp:p>, handled
+// with its own <p> tag elsewhere — this is only ever the leftover
+// mid-sentence kind. Confirmed against a real file: a small inline
+// fill-in-the-blank box ("...선택하는 경우의 수는 (가)") had one of these
+// right after it, forcing "이때의 경우의 수는 3×(가)" onto an unwanted new
+// line even though it's the same running sentence. Treat it as a plain
+// space instead, and let the browser re-wrap naturally.
 function hwpInlineControlsToHtml(raw) {
   return raw
-    .replace(/<hp:lineBreak\b[^>]*\/>/g, '\n')
+    .replace(/<hp:lineBreak\b[^>]*\/>/g, ' ')
     .replace(/<hp:tab\b[^>]*\/>/g, '    ')
     .replace(/<hp:fwSpace\b[^>]*\/>/g, ' ')
     .replace(/<hp:[a-zA-Z]+\b[^>]*\/>/g, '')
@@ -1343,6 +1384,19 @@ async function hwpBodyXmlToHtml(xml, entry) {
   // e.g. "(가),"→"(나),"→real sentence).
   for (let m = 0; m < resolved.length - 1; m++) {
     if (!/^\([가나다라마]\),?$/.test(resolved[m].raw.trim())) continue;
+    // `.raw` deliberately has its <hp:equation> content stripped out (see
+    // the comment where `.raw` is built, a few lines above) — so a
+    // paragraph like "(가) g(3)=a" where "g(3)=a" is a real rendered
+    // equation looks JUST AS "bare" to `.raw` as a true marker-only line
+    // ("(가)," with nothing else at all). Splicing THAT into the next
+    // paragraph merges two separate boxed conditions onto one line even
+    // though the source really did line-break them (confirmed against a
+    // real file: "25년 9월 기출" 19번, "(가) g(3)=a"/"(나) g(2)+g(6)=32"
+    // each their own <hp:p> inside the same <hp:rect> box, collapsed into
+    // one line). `.html` still has the real equation (as a rendered KaTeX
+    // span) even when `.raw` doesn't — only splice when there's truly
+    // nothing else on the line.
+    if (/class="eq"/.test(resolved[m].html)) continue;
     const curMatch = resolved[m].html.match(/^<p>([\s\S]*)<\/p>$/);
     const nextMatch = resolved[m + 1].html.match(/^<p>([\s\S]*)<\/p>$/);
     if (!curMatch || !nextMatch) continue;
