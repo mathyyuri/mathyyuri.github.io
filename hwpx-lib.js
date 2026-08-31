@@ -1296,7 +1296,7 @@ function formatConditionBox(inner, rawText) {
   // 박스로 잘못 묶임. 검사 직전에 그 꼬리만 떼어내고 문장 자체의 끝을
   // 본다(원래 rawText는 그대로 둬서 다른 로직에 영향 없음).
   const forEndingCheck = rawText.trim()
-    .replace(/\[\s*\d+\s*점\s*\]\s*$/, '')
+    .replace(/\[\s*\d*\s*점\s*\]\s*$/, '')
     .replace(/\(\s*단\s*,[^)]*\)\s*$/, '')
     .trim();
   if (/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(forEndingCheck)) return null;
@@ -1455,6 +1455,42 @@ async function hwpBodyXmlToHtml(xml, entry) {
     resolved[m + 1] = { raw: resolved[m].raw + resolved[m + 1].raw, html: `<p>${curMatch[1]} ${nextMatch[1]}</p>` };
     resolved.splice(m, 1);
     m--;
+  }
+
+  // A "질문 문장"(과정이다/...값은? 류 — formatConditionBox가 위에서 이미
+  // "진짜 조건 목록이 아니다"로 판단해 박스로 안 묶은 것)이 원본에서 여러
+  // <hp:p>로 쪼개져 있는 경우 — 예: "위의" / "(가)에 알맞은 식을 f(n)이라
+  // 하고," / "(나), (다)에 알맞은 수를 각각 a,b라 할 때, f(b-a)의 값은?
+  // (단, a<b) [4점]" (위의 바로 앞 두 splice 패스를 거치고도 3문단 남음).
+  // 박스로 안 묶기로 한 이상 이것도 그냥 한 문장이니, 뚝뚝 끊어 보이지
+  // 않게 이어 붙여야 한다는 요청(실제 파일: 25년 9월 기출 37번). "구하
+  // 시오/쓰시오/...값은?[N점]"으로 끝나는 문단을 찾으면, 그 앞으로 아직
+  // 문장이 끝난 게 아닌(마침표/물음표로 안 끝나는) 연속된 일반 <p> 문단들을
+  // 거슬러 올라가며 전부 한 문단으로 합친다 — 박스/div나 이미 끝난
+  // 문장을 만나면 거기서 멈춘다.
+  for (let end = resolved.length - 1; end >= 0; end--) {
+    const endRaw = resolved[end].raw;
+    if (!endRaw) continue;
+    const endEndingCheck = endRaw.trim()
+      .replace(/\[\s*\d*\s*점\s*\]\s*$/, '')
+      .replace(/\(\s*단\s*,[^)]*\)\s*$/, '')
+      .trim();
+    if (!/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(endEndingCheck)) continue;
+    if (!/^<p>[\s\S]*<\/p>$/.test(resolved[end].html)) continue;
+    let start = end;
+    while (start > 0) {
+      const prevRaw = resolved[start - 1].raw;
+      if (!prevRaw || !/^<p>[\s\S]*<\/p>$/.test(resolved[start - 1].html)) break;
+      if (/[.?！？]\s*$/.test(prevRaw.trim())) break;
+      start--;
+    }
+    if (start === end) continue;
+    const mergedText = resolved.slice(start, end + 1)
+      .map(r => r.html.match(/^<p>([\s\S]*)<\/p>$/)[1])
+      .join(' ');
+    const mergedRaw = resolved.slice(start, end + 1).map(r => r.raw).join(' ');
+    resolved.splice(start, end - start + 1, { raw: mergedRaw, html: `<p>${mergedText}</p>` });
+    end = start;
   }
 
   // A <보기> list can ALSO be split across separate paragraphs where each
