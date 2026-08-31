@@ -1157,6 +1157,19 @@ html,body{margin:0;height:100%;background:#ddd6c8;font-family:var(--sans);color:
 .paneBody img{max-width:100%;height:auto;display:block;margin:.5em auto;border:1px solid var(--mb-line);border-radius:6px;box-shadow:0 1px 8px rgba(26,26,26,.1)}
 .paneBody table{border-collapse:collapse;margin:.4em 0;table-layout:auto}
 .paneBody td{border:1px solid var(--mb-line);padding:.2em .5em;font-size:.75em;white-space:nowrap;text-align:center;vertical-align:middle}
+/* hwpTblToHtml이 만드는 실제 격자 표(예: 설문 결과 3열 표) — 위
+   .paneBody td의 white-space:nowrap을 여기서 되돌린다. 그 규칙은
+   빠른정답처럼 짧은 한 줄짜리 표를 염두에 둔 것인데, 여러 줄로 줄바꿈
+   되는 긴 텍스트 칸이 있는 표에 그대로 적용되면 칸이 줄바꿈을 못 해서
+   표 폭 밖으로 넘쳐 잘려 보인다(실제 확인: "9월 모의고사 대비 실전
+   모의고사 3회" 12번, 3열 설문 결과 표의 3번째 열이 통째로 잘려나감).
+   원본 칸 너비 비율은 hwpTblToHtml이 넣어주는 colgroup으로 이미 잡혀
+   있으니, table-layout을 fixed로 바꿔 그 비율을 실제로 지키게 하고, 칸
+   안 글자는 폭에 맞춰 자연스럽게 줄바꿈되게 한다. 이 규칙이 위
+   .paneBody td보다 CSS 파일 순서상 나중에 오는 게 이겨야 하므로(선택자
+   구체성은 동일) 반드시 바로 다음 줄에 둔다. */
+.hwpTbl{table-layout:fixed;width:100%;max-width:100%}
+.hwpTbl td{white-space:normal;overflow-wrap:break-word;word-break:keep-all}
 .choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:.35em;column-gap:.8em;margin:.4em 0}
 .choiceItem{font-size:.92em;min-width:0;overflow-wrap:break-word}
 .hwpBogi,.hwpCondBox{border:1.6px solid var(--mb-ink);border-radius:3px;padding:.6em .9em;margin:.5em 0}

@@ -1114,6 +1114,32 @@ function borderFillAllNone(entry, id) {
 async function hwpTblToHtml(tblXml, entry) {
   const trs = findTopLevelBlocks(tblXml, 'hp:tr');
   let rowsHtml = '';
+  // A row's own <hp:cellSz width="N"> (N in 1/100mm, same convention as
+  // the table's own <hp:sz> above it) gives each column's real share of
+  // the table's width — without applying it, every <td> falls back to the
+  // browser's own auto-sizing (fit-to-content), which lets one cell with
+  // long unwrapped text (e.g. a 3-line table-header label) balloon that
+  // column out and push the whole table past its container, cutting off
+  // whatever column comes after it (confirmed against a real file: "9월
+  // 모의고사 대비 실전 모의고사 3회" 12번's 3-column survey-result table —
+  // the 3rd column vanished off the edge entirely). Read it off the FIRST
+  // row (headers, or the first data row if there's no header) — colSpan-
+  // free rows only, since a spanned cell's width covers multiple columns
+  // and would throw off a straight per-column reading.
+  let colWidthsMm = null;
+  for (let ri = 0; ri < trs.length && !colWidthsMm; ri++) {
+    const tcs = findTopLevelBlocks(trs[ri].text, 'hp:tc');
+    const widths = [];
+    let allSingleSpan = true;
+    for (const tc of tcs) {
+      const spanM = tc.text.match(/<hp:cellSpan\s+colSpan="(\d+)"/);
+      if (spanM && Number(spanM[1]) > 1) { allSingleSpan = false; break; }
+      const wM = tc.text.match(/<hp:cellSz\s+width="(\d+)"/);
+      if (!wM) { allSingleSpan = false; break; }
+      widths.push(Number(wM[1]));
+    }
+    if (allSingleSpan && widths.length) colWidthsMm = widths;
+  }
   for (const tr of trs) {
     const tcs = findTopLevelBlocks(tr.text, 'hp:tc');
     let rowHtml = '';
@@ -1131,7 +1157,16 @@ async function hwpTblToHtml(tblXml, entry) {
     }
     rowsHtml += `<tr>${rowHtml}</tr>`;
   }
-  const tableEl = `<table class="hwpTbl">${rowsHtml}</table>`;
+  // Percentages, not the original mm values — those were calibrated for
+  // THAT document's own page/column width, not whatever container this
+  // ends up rendered into here (same reasoning already applied to a rect
+  // box's own width elsewhere in this file). table-layout:fixed makes the
+  // browser actually honor these instead of re-measuring content, which is
+  // what makes text wrap WITHIN its own column instead of stretching it.
+  const colgroup = colWidthsMm
+    ? `<colgroup>${colWidthsMm.map(w => `<col style="width:${(w / colWidthsMm.reduce((a, b) => a + b, 0) * 100).toFixed(2)}%">`).join('')}</colgroup>`
+    : '';
+  const tableEl = `<table class="hwpTbl">${colgroup}${rowsHtml}</table>`;
   // The TABLE's OWN border-fill (on <hp:tbl> itself, separate from each
   // cell's own checked above) is a different thing again — a table with
   // every cell borderless but the table's own border-fill visible is the
@@ -4210,6 +4245,20 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .mbQBlock img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid var(--mb-line);border-radius:4px;box-shadow:0 1px 5px rgba(26,26,26,.08)}
 .mbQBlock table{border-collapse:collapse;margin:2mm 0;table-layout:auto}
 .mbQBlock td{border:1px solid var(--mb-line);padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap;text-align:center;vertical-align:middle}
+/* hwpTblToHtml이 만드는 실제 격자 표(예: 설문 결과 3열 표) — 위
+   .mbQBlock td의 white-space:nowrap을 여기서 되돌린다. 그 규칙은
+   빠른정답처럼 짧은 한 줄짜리 표를 염두에 둔 것인데, 여러 줄로 줄바꿈
+   되는 긴 텍스트 칸이 있는 표에 그대로 적용되면 칸이 줄바꿈을 못 해서
+   표 폭 밖으로 넘쳐 잘려 보인다(실제 확인: "9월 모의고사 대비 실전
+   모의고사 3회" 12번, 3열 설문 결과 표의 3번째 열이 통째로 잘려나감).
+   원본 칸 너비 비율은 hwpTblToHtml이 넣어주는 colgroup으로 이미 잡혀
+   있으니, table-layout을 fixed로 바꿔 그 비율을 실제로 지키게 하고, 칸
+   안 글자는 폭에 맞춰 자연스럽게 줄바꿈되게 한다. 이 규칙이 위
+   .mbQBlock td보다 CSS 파일 순서상 나중에 오는 게 이겨야 하므로(선택자
+   구체성은 동일) 반드시 바로 다음 줄에 둔다. */
+.hwpTbl{table-layout:fixed;width:100%;max-width:100%}
+.hwpTbl td{white-space:normal;overflow-wrap:break-word;word-break:keep-all}
+   구체성은 동일) 반드시 바로 다음 줄에 둔다.
 .ansBlock{font-size:12px;line-height:1.7}
 .explNum{font-weight:800;color:var(--mb-navy);font-size:12px;margin-bottom:1.5mm}
 .eqFallback{font-family:monospace;font-size:11px;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}

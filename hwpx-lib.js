@@ -898,6 +898,32 @@ function borderFillAllNone(entry, id) {
 async function hwpTblToHtml(tblXml, entry) {
   const trs = findTopLevelBlocks(tblXml, 'hp:tr');
   let rowsHtml = '';
+  // A row's own <hp:cellSz width="N"> (N in 1/100mm, same convention as
+  // the table's own <hp:sz> above it) gives each column's real share of
+  // the table's width — without applying it, every <td> falls back to the
+  // browser's own auto-sizing (fit-to-content), which lets one cell with
+  // long unwrapped text (e.g. a 3-line table-header label) balloon that
+  // column out and push the whole table past its container, cutting off
+  // whatever column comes after it (confirmed against a real file: "9월
+  // 모의고사 대비 실전 모의고사 3회" 12번's 3-column survey-result table —
+  // the 3rd column vanished off the edge entirely). Read it off the FIRST
+  // row (headers, or the first data row if there's no header) — colSpan-
+  // free rows only, since a spanned cell's width covers multiple columns
+  // and would throw off a straight per-column reading.
+  let colWidthsMm = null;
+  for (let ri = 0; ri < trs.length && !colWidthsMm; ri++) {
+    const tcs = findTopLevelBlocks(trs[ri].text, 'hp:tc');
+    const widths = [];
+    let allSingleSpan = true;
+    for (const tc of tcs) {
+      const spanM = tc.text.match(/<hp:cellSpan\s+colSpan="(\d+)"/);
+      if (spanM && Number(spanM[1]) > 1) { allSingleSpan = false; break; }
+      const wM = tc.text.match(/<hp:cellSz\s+width="(\d+)"/);
+      if (!wM) { allSingleSpan = false; break; }
+      widths.push(Number(wM[1]));
+    }
+    if (allSingleSpan && widths.length) colWidthsMm = widths;
+  }
   for (const tr of trs) {
     const tcs = findTopLevelBlocks(tr.text, 'hp:tc');
     let rowHtml = '';
@@ -919,7 +945,16 @@ async function hwpTblToHtml(tblXml, entry) {
     }
     rowsHtml += `<tr>${rowHtml}</tr>`;
   }
-  const tableEl = `<table class="hwpTbl">${rowsHtml}</table>`;
+  // Percentages, not the original mm values — those were calibrated for
+  // THAT document's own page/column width, not whatever container this
+  // ends up rendered into here (same reasoning already applied to a rect
+  // box's own width elsewhere in this file). table-layout:fixed makes the
+  // browser actually honor these instead of re-measuring content, which is
+  // what makes text wrap WITHIN its own column instead of stretching it.
+  const colgroup = colWidthsMm
+    ? `<colgroup>${colWidthsMm.map(w => `<col style="width:${(w / colWidthsMm.reduce((a, b) => a + b, 0) * 100).toFixed(2)}%">`).join('')}</colgroup>`
+    : '';
+  const tableEl = `<table class="hwpTbl">${colgroup}${rowsHtml}</table>`;
   // The TABLE's OWN border-fill (on <hp:tbl> itself, separate from each
   // cell's) is a different thing again — a table with every cell borderless
   // (above) but the table's own border-fill visible is the "outer box only,
