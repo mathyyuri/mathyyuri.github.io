@@ -1002,6 +1002,20 @@ function decodeXmlEntities(s) {
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+// 문제 위에 붙는 출처 줄("[ 1차시도 ] 미션명 · 파일명 N번")은 한 줄로만
+// 표시되는 좁은 자리라(.mbCite가 white-space:nowrap), 미션명과 파일명이
+// 같은 문자열이면(실제로 매우 흔함 — 시험지 파일을 그 미션 이름 그대로
+// 올려둔 경우) 같은 말이 두 번 찍혀 쓸데없이 길어지다가 "…"로 잘려
+// 보였다(실제 확인: "9월 모의고사 대비 실전 모의고사 3회 · 9월 모의고사
+// 대비 실전 모의고사 3회 3…"). 완전히 같을 때만 하나로 합친다 — 파일명이
+// 미션명에 반/회차 같은 실제로 도움되는 정보를 더 담고 있는 경우(예:
+// "[S반] 2. 직선의 방정식 진도미션")는 그대로 둘 다 보여줘야 하므로
+// 부분 일치까지는 건드리지 않는다.
+function buildCiteText(round, mission, sourceLabel, num) {
+  const same = String(sourceLabel || '').trim() === String(mission || '').trim();
+  const parts = same ? [mission] : [mission, sourceLabel];
+  return `[ ${round}차시도 ] ${parts.join(' · ')} ${num}번`;
+}
 // 문제은행에서 강사가 직접 고친 문제 본문(원본 hwpx 대신 쓰는 텍스트) —
 // 빈 줄로 문단을 나누고, "$...$"로 감싼 부분을 수식(LaTeX)으로 렌더링한다.
 // hwpBodyXmlToHtml의 출력과 같은 모양(<p> 문단, 수식은 <span class="eq">
@@ -3778,6 +3792,7 @@ async function generateHwpxNote(historicalBatch) {
       if (!marker) continue;
 
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
+      const citeText = buildCiteText(round, mission, sourceLabel, num);
       const isFirstQuestion = qBodyOrderNum === 1;
       // Each question gets its own column. In a real 2-column questions
       // section, that's just a columnBreak per question (the section's
@@ -3785,7 +3800,7 @@ async function generateHwpxNote(historicalBatch) {
       // FIRST question also has to switch the section into 2단 mode itself.
       const opts = { columnBreak: singleRegion ? !isFirstQuestion : qBodyOrderNum > 1 };
       if (singleRegion && isFirstQuestion) opts.prefixCtrlXml = colPr2RunXml;
-      questionsDemo += textParaXml(qCounter++, `[ ${round}차시도 ]  ${mission} · ${sourceLabel} ${num}번`, citationIds, opts);
+      questionsDemo += textParaXml(qCounter++, citeText, citationIds, opts);
       qBodyOrderNum++;
 
       if (entry === carrierEntry) {
@@ -4006,6 +4021,72 @@ function chunkOnePerColumn(blocksHtml, columns) {
   const pages = [];
   for (let i = 0; i < blocksHtml.length; i += columns) {
     const page = Array.from({ length: columns }, (_, c) => (blocksHtml[i + c] != null ? [blocksHtml[i + c]] : []));
+    pages.push(page);
+  }
+  return pages;
+}
+// html의 최상위 태그(<p>...</p> / <div>...</div>)들을 각각 완전한
+// 문자열로 잘라 배열로 돌려준다 — 문단 단위로 잘려도 KaTeX 렌더링이
+// 깨지지 않는 건 이 경계에서만 자르기 때문(정규식이 아니라 브라우저 자체
+// HTML 파서를 써서 중첩 구조를 안전하게 다룬다).
+function splitTopLevelBlocks(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return [...div.children].map(el => el.outerHTML);
+}
+// chunkOnePerColumn과 같은 "한 다단=문제 하나" 배치를 기본으로 하되,
+// 문제 하나가 다단 높이보다 길면(원래는 그냥 잘려서 안 보이던 부분)
+// 억지로 욱여넣거나 잘라내지 않고 문단 경계에서 나눠 다음 다단으로
+// 이어서 계속 보여준다 — "A4 한 페이지 넘으면 잘린다"는 요청에 대한
+// 수정(실제 확인된 사례: 표/수식이 많은 문제가 다단 아래로 넘쳐서
+// 안 보였음). 이어지는 다단은 "N. (계속)"으로 표시.
+function paginateQuestionsWithOverflow(questionParts, columns) {
+  if (!questionParts.length) return [];
+  const ratio = mmToPxRatio();
+  const colWidthMm = (MB_PAGE_W_MM - MB_CONTENT_SIDE_MM * 2 - MB_COL_GAP_MM) / (columns === 2 ? 2 : 1);
+  const colHeightMm = MB_PAGE_H_MM - MB_CONTENT_TOP_MM - MB_CONTENT_BOTTOM_MM;
+  const colWidthPx = colWidthMm * ratio;
+  const colHeightPx = colHeightMm * ratio;
+
+  const stage = document.createElement('div');
+  stage.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${colWidthPx}px;font-family:'Noto Sans KR',sans-serif;font-size:12px;line-height:1.65;`;
+  document.body.appendChild(stage);
+  const measure = (html) => {
+    stage.innerHTML = html;
+    if (window.renderMathInElement) {
+      try { renderMathInElement(stage, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+    }
+    return stage.getBoundingClientRect().height;
+  };
+
+  const columnsOut = [];
+  for (const { cite, body, qNum } of questionParts) {
+    const paras = splitTopLevelBlocks(body);
+    let idx = 0, first = true;
+    while (idx < paras.length) {
+      const localCite = first ? cite : `<div class="mbCite">${qNum}. (계속)</div>`;
+      let used = measure(localCite);
+      const chunkParas = [];
+      while (idx < paras.length) {
+        const h = measure(paras[idx]);
+        if (chunkParas.length > 0 && used + h > colHeightPx) break;
+        chunkParas.push(paras[idx]);
+        used += h;
+        idx++;
+      }
+      // 첫 문단 하나만으로도 안 들어가면(문제 하나가 다단을 통째로 넘는
+      // 극단적인 경우) 그래도 통째로 넣는다 — 잘라서 반쪽만 보여주는
+      // 것보단 다단을 넘치더라도 전체가 다 보이는 게 낫다.
+      if (chunkParas.length === 0 && idx < paras.length) { chunkParas.push(paras[idx]); idx++; }
+      columnsOut.push(`<div class="mbQBlock">${localCite}${chunkParas.join('')}</div>`);
+      first = false;
+    }
+  }
+  stage.remove();
+
+  const pages = [];
+  for (let i = 0; i < columnsOut.length; i += columns) {
+    const page = Array.from({ length: columns }, (_, c) => (columnsOut[i + c] != null ? [columnsOut[i + c]] : []));
     pages.push(page);
   }
   return pages;
@@ -4672,7 +4753,7 @@ async function generateHtmlNote(historicalBatch) {
     }
 
     log('문제 내용을 변환하는 중 (수식 포함)...');
-    const questionBlocks = [];
+    const questionParts = [];
     const answerBlocks = [];
     const explanationBlocks = [];
     let qNum = 1;
@@ -4684,9 +4765,11 @@ async function generateHtmlNote(historicalBatch) {
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
       const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
       const bodyHtml = editedRaw ? renderEditedText(editedRaw) : await hwpBodyXmlToHtml(marker.blockXml, entry);
-      questionBlocks.push(`<div class="mbQBlock">` +
-        `<div class="mbCite">[ ${round}차시도 ] ${escapeHtml(mission)} · ${escapeHtml(sourceLabel)} ${num}번</div>` +
-        bodyHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`) + `</div>`);
+      questionParts.push({
+        cite: `<div class="mbCite">${escapeHtml(buildCiteText(round, mission, sourceLabel, num))}</div>`,
+        body: bodyHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`),
+        qNum,
+      });
 
       const answerXml = extractQuickAnswerXml(marker.blockXml);
       const answerHtml = answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '(정답 인식 실패)';
@@ -4709,7 +4792,7 @@ async function generateHtmlNote(historicalBatch) {
     pagesHtml.push(buildStatsPageHtml(roundAccuracy, unitAccuracy, info));
 
     let pageNum = 4;
-    const questionPages = chunkOnePerColumn(questionBlocks, 2);
+    const questionPages = paginateQuestionsWithOverflow(questionParts, 2);
     for (const cols of questionPages) {
       pagesHtml.push(buildQuestionPageHtml(pageNum, cols, info));
       pageNum++;
