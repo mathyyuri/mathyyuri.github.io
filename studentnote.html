@@ -708,6 +708,10 @@ const HWP_EQ_SYMBOLS = {
   vert: '\\vert',
   // 수직 기호(⊥) — 같은 이유로 hwpx-lib.js에만 있고 여기 빠져 있었음.
   bot: '\\bot',
+  // 각도 90도 표시("90^{CIRC}") — 같은 이유로 hwpx-lib.js엔 있는데 여기
+  // 빠져서 "MATHY YURI'S CLINIC Vol.2" 문제에서 계속 글자 그대로
+  // 남았음(hwpx-lib.js 쪽만 고치고 이 사본에 옮기는 걸 빠뜨렸었음).
+  CIRC: '\\circ', circ: '\\circ',
 };
 // Case-insensitive, longest-match-first keyword table — HWP's equation
 // editor is inconsistent about keyword casing (LEFT vs left, rm vs RM),
