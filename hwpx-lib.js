@@ -1350,6 +1350,14 @@ async function hwpBodyXmlToHtml(xml, entry) {
     // <div> wrapper instead whenever that's the case; plain <p> still
     // handles everything else exactly as before.
     if (/<div\b|<table\b/.test(it.inner)) return `<div>${it.inner}</div>`;
+    // 문제 번호 바로 뒤에 원본 출처 표시("[2006년 11월 고1 16번]")가 오면
+    // 그 뒤로 본문이 같은 줄에 바로 이어져 읽기 불편하다는 요청 — 괄호
+    // 표시 바로 뒤에서 줄을 바꿔 본문이 다음 줄부터 시작하게 한다. 문단
+    // 전체가 대괄호 하나뿐인 경우(다음 문제의 제목 줄 등)는 이 정규식이
+    // 요구하는 "괄호 뒤에 실제 내용이 더 있음" 조건을 만족 못 해 여기
+    // 안 걸리고, looksLikeNextQuestionMarker 등 원래 경로로 그대로 처리됨.
+    const citeMatch = /^(\[[^\]]+\])(\s*)([\s\S]+)$/.exec(it.inner.replace(/^\s+/, ''));
+    if (citeMatch && citeMatch[3].trim()) return `<p>${citeMatch[1]}<br>${citeMatch[3]}</p>`;
     // 문항 중간에 수식만 단독으로 한 줄 차지하는 경우(예: "PA²-PB²=5")가
     // 왼쪽 정렬로 남아 있으면 보기 안 좋다는 리포트 — 그 줄이 다른
     // 한글/텍스트 없이 수식(.eq span)만으로 이루어졌는지 확인해서, 맞으면
