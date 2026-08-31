@@ -1002,6 +1002,25 @@ function decodeXmlEntities(s) {
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+// 문제은행에서 강사가 직접 고친 문제 본문(원본 hwpx 대신 쓰는 텍스트) —
+// 빈 줄로 문단을 나누고, "$...$"로 감싼 부분을 수식(LaTeX)으로 렌더링한다.
+// hwpBodyXmlToHtml의 출력과 같은 모양(<p> 문단, 수식은 <span class="eq">
+// \(...\)</span>)으로 만들어서, 이 함수를 거치든 원본을 파싱해서 거치든
+// 그 뒤에 오는 렌더링(katex auto-render, 페이지 배치 등)이 똑같이
+// 동작한다 — 소문항 번호나 선지 자동 정렬 같은 자동 서식은 이 경로에는
+// 적용되지 않는다(강사가 직접 줄바꿈/기호로 원하는 대로 배치).
+function renderEditedText(text) {
+  const paras = String(text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (!paras.length) return '';
+  return paras.map(para => {
+    const oneLine = para.replace(/\r?\n/g, ' ');
+    const parts = oneLine.split(/\$([^$]+)\$/);
+    const html = parts.map((chunk, i) =>
+      i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
+    ).join('');
+    return `<p>${html}</p>`;
+  }).join('');
+}
 // A run's children (text/equation/picture/table) are siblings, not nested
 // in each other — collect each recognized tag type separately then merge
 // back into document order by start offset, rather than assume any single
@@ -3559,6 +3578,17 @@ async function getParsedFile(fileId, filename) {
   const zipData = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
   const parsed = await parseHwpx(zipData);
   parsed.filename = filename;
+  // 문제은행(problembank.html)의 "문제 수정"에서 저장한 editedRaw가 있으면
+  // HTML 오답노트 생성 시 원본 hwpx 재파싱 대신 그 내용을 쓴다(generateHtmlNote
+  // 참고). "한글로 만들기"(generateHwpxNote)는 원본 hwpx 구조를 XML
+  // 단위로 그대로 복사하는 별도 방식이라 여기 적용 안 됨.
+  let editedRawByNum = new Map();
+  try {
+    const bankEntry = bankFiles.find(b => b.id === fileId);
+    const qd = JSON.parse((bankEntry && bankEntry.questionData) || '[]');
+    editedRawByNum = new Map(qd.filter(q => q && q.editedRaw).map(q => [String(q.num), q.editedRaw]));
+  } catch (e) {}
+  parsed.editedRawByNum = editedRawByNum;
   loadedFileCache.set(fileId, parsed);
   return parsed;
 }
@@ -4652,7 +4682,8 @@ async function generateHtmlNote(historicalBatch) {
       const marker = entry.markers.get(num);
       if (!marker) continue;
       const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
-      const bodyHtml = await hwpBodyXmlToHtml(marker.blockXml, entry);
+      const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
+      const bodyHtml = editedRaw ? renderEditedText(editedRaw) : await hwpBodyXmlToHtml(marker.blockXml, entry);
       questionBlocks.push(`<div class="mbQBlock">` +
         `<div class="mbCite">[ ${round}차시도 ] ${escapeHtml(mission)} · ${escapeHtml(sourceLabel)} ${num}번</div>` +
         bodyHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`) + `</div>`);

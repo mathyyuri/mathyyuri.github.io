@@ -167,7 +167,7 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
    예전엔 위쪽 가로 스크롤 미리보기 칸을 따로 봐야 해서 스크롤을 계속
    오가야 했다는 요청. 문제 내용은 왼쪽, 입력칸은 오른쪽에 sticky로
    고정해서 문제가 길어도 입력칸이 화면 밖으로 안 밀려나게 한다. */
-.tagRow { display: flex; align-items: flex-start; gap: 14px; font-size: 13px; padding: 10px 12px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; }
+.tagRow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; font-size: 13px; padding: 10px 12px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; }
 .tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; width: 30px; font-size: 15px; padding-top: 3px; }
 .tagRowPreview { flex: 1 1 260px; min-width: 120px; color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tagRowContent { flex: 1 1 auto; min-width: 0; font-size: 14px; line-height: 1.55; max-height: 280px; overflow-y: auto; padding-right: 6px; }
@@ -175,6 +175,11 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagRowInputs { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; width: 190px; position: sticky; top: 8px; }
 .tagUnitInput, .tagTypeInput, .tagAnswerInput { width: 100%; }
 .tagEditBox { border: 2px solid var(--gold); }
+.editQBtn { background: var(--gold-soft); }
+.editQBox { flex-basis: 100%; margin-top: 8px; padding: 10px; border: 1px dashed var(--gold); border-radius: 6px; background: #fffaf0; }
+.editQTextarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; padding: 8px; }
+.editQPreview { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; font-size: 14px; line-height: 1.55; min-height: 1.6em; }
+.editQPreview p { margin: 0 0 6px; }
 .tagEditFooter { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 </style>
 </head>
@@ -577,7 +582,21 @@ function guessUnitFromQuestionText(text) {
 // 잘린 텍스트 한 줄 대신 이걸 각 줄 안에 그대로 보여줘서, 위쪽 미리보기
 // 칸을 따로 보러 갈 필요 없이 바로 옆에서 단원/유형을 입력할 수 있게
 // 한다(원장님 요청 — 문제를 보면서 태그를 입력하기 힘들다고 하셔서).
-function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit, showAnswerInput = true, previewHtmlByNum = null) {
+// 원본 hwpx를 파싱한 미리보기 HTML(hwpBodyXmlToHtml 결과)을, 문제 수정
+// textarea에 처음 넣어줄 초안 텍스트로 되돌린다 — <p> 문단은 빈 줄로,
+// 수식 span은 "$...$"로. 완벽한 역변환은 아니다(표/그림 등은 그냥 글자만
+// 남음) — 강사가 고치기 시작할 출발점 정도로만 쓴다.
+function htmlPreviewToDraftText(html) {
+  return decodeXmlEntities(
+    String(html || '')
+      .replace(/<p[^>]*>/g, '\n\n')
+      .replace(/<\/p>/g, '')
+      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<span class="eq">\\\(([\s\S]*?)\\\)<\/span>/g, (m, latex) => '$' + latex + '$')
+      .replace(/<[^>]+>/g, '')
+  ).trim();
+}
+function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit, showAnswerInput = true, previewHtmlByNum = null, originalPreviewHtmlByNum = null) {
   let guessedCount = 0;
   for (const qd of questionData) {
     if (qd.unit) continue;
@@ -639,11 +658,68 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
         <input type="text" class="tagUnitInput" list="unitSuggestList" placeholder="단원" value="${escapeHtml(qd.unit || '')}">
         <input type="text" class="tagTypeInput" list="typeSuggestList" placeholder="유형" value="${escapeHtml(qd.type || '')}">
         ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용)" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)">` : ''}
+        ${originalPreviewHtmlByNum ? `<button type="button" class="selectAllBtn editQBtn">✏️ 문제 수정${qd.editedRaw ? ' (수정됨)' : ''}</button>` : ''}
       </div>
     `;
     row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); });
     row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); });
     row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); });
+    // "문제 수정" — 원본 hwpx를 다시 파싱하는 대신 강사가 직접 쓴 텍스트를
+    // 쓰도록 questionData에 editedRaw를 채워 넣는다("$...$"는 수식으로
+    // 렌더링됨). 저장하면(태그 저장과 같은 버튼) 오답노트 생성기의 "HTML로
+    // 만들기"·개인별 오답노트의 HTML 생성에도 이 내용이 그대로 쓰인다 —
+    // "한글로 만들기"(hwpx 그대로 다운로드)는 원본 hwpx 구조를 직접
+    // 복사하는 별도 방식이라 이 수정이 반영되지 않는다(따로 안내 필요).
+    const editBtn = row.querySelector('.editQBtn');
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        if (row.querySelector('.editQBox')) { row.querySelector('.editQBox').remove(); return; }
+        const box = document.createElement('div');
+        box.className = 'editQBox';
+        box.innerHTML = `
+          <p class="hint">문단 사이는 빈 줄로 띄우고, 수식은 "$...$"로 감싸 LaTeX으로 입력하세요(예: $x^2+3x-1=0$, 분수는 $\\dfrac{1}{2}$).</p>
+          <textarea class="editQTextarea" rows="6">${escapeHtml(qd.editedRaw || htmlPreviewToDraftText(originalPreviewHtmlByNum[num]))}</textarea>
+          <div class="editQPreview"></div>
+          <div class="tagBulkRow">
+            <button type="button" class="selectAllBtn editQApplyBtn">미리보기 적용</button>
+            <button type="button" class="selectAllBtn editQRevertBtn">원본으로 되돌리기</button>
+            <button type="button" class="selectAllBtn editQCloseBtn">닫기</button>
+          </div>
+        `;
+        row.appendChild(box);
+        const textarea = box.querySelector('.editQTextarea');
+        const previewEl = box.querySelector('.editQPreview');
+        const updatePreview = () => {
+          previewEl.innerHTML = renderEditedText(textarea.value);
+          if (window.renderMathInElement) {
+            try { renderMathInElement(previewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+          }
+        };
+        updatePreview();
+        textarea.addEventListener('input', updatePreview);
+        box.querySelector('.editQApplyBtn').addEventListener('click', () => {
+          qd.editedRaw = textarea.value.trim();
+          const content = row.querySelector('.tagRowContent');
+          if (content) {
+            content.innerHTML = renderEditedText(qd.editedRaw);
+            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+          }
+          editBtn.textContent = '✏️ 문제 수정 (수정됨)';
+        });
+        box.querySelector('.editQRevertBtn').addEventListener('click', () => {
+          qd.editedRaw = '';
+          textarea.value = htmlPreviewToDraftText(originalPreviewHtmlByNum[num]);
+          const content = row.querySelector('.tagRowContent');
+          if (content) {
+            content.innerHTML = originalPreviewHtmlByNum[num];
+            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+          }
+          editBtn.textContent = '✏️ 문제 수정';
+          updatePreview();
+        });
+        box.querySelector('.editQCloseBtn').addEventListener('click', () => box.remove());
+      });
+    }
     rows.appendChild(row);
   }
   wrap.appendChild(rows);
@@ -698,20 +774,29 @@ async function openTagEditor(f) {
         num, choiceCount: ex.choiceCount ?? null, hasBogi: ex.hasBogi ?? null,
         hasCondition: ex.hasCondition ?? null, warnings: ex.warnings || [],
         unit: ex.unit || '', type: ex.type || '', answer: existingAnswers[String(num)] || '',
+        editedRaw: ex.editedRaw || '',
       };
     });
     const rawTextByNum = {};
     const previewHtmlByNum = {};
+    // 강사가 "문제 수정"으로 직접 고친 내용이 있으면(questionData의
+    // editedRaw) 원본 hwpx를 다시 파싱한 결과 대신 그걸 보여준다 — 원본
+    // 파싱 결과(originalPreviewHtmlByNum)는 "원본으로 되돌리기"용으로
+    // 따로 남겨둔다.
+    const originalPreviewHtmlByNum = {};
     for (const num of nums) {
       const blockXml = entry.markers.get(num).blockXml;
       rawTextByNum[num] = decodeXmlEntities(stripTags(blockXml));
-      previewHtmlByNum[num] = await hwpBodyXmlToHtml(blockXml, entry);
+      const original = await hwpBodyXmlToHtml(blockXml, entry);
+      originalPreviewHtmlByNum[num] = original;
+      const ex = existingByNum.get(String(num));
+      previewHtmlByNum[num] = (ex && ex.editedRaw) ? renderEditedText(ex.editedRaw) : original;
     }
 
     box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint">총 ${nums.length}문제. 저장하면 시험지 파일은 그대로 두고 단원/유형 정보만 갱신됩니다.</p>`;
     const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
     const guessedUnit = guessUnitFromText(f.filename, knownUnits);
-    renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, true, previewHtmlByNum);
+    renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, true, previewHtmlByNum, originalPreviewHtmlByNum);
 
     // "[정답] ... [풀이] ..." 형식으로 문제 파일 자체에 해설이 포함돼 있는
     // 경우(이 학원 자료에서 흔한 형식) 정답을 자동으로 뽑아서 채워준다 —
@@ -768,8 +853,8 @@ async function openTagEditor(f) {
         // 정답(answer)은 questionData와 분리해서 별도 액션으로 보낸다 —
         // updatetags/list는 인증 없이 열려 있어서, 여기 answer를 같이
         // 넣으면 그대로 공개 API를 통해 새어나가게 된다.
-        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type }) =>
-          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type }));
+        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, editedRaw }) =>
+          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, editedRaw: editedRaw || undefined }));
         const answers = {};
         questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
         await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(publicTags) });

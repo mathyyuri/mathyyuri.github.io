@@ -777,11 +777,17 @@ async function loadFileIntoRow(row, filename, buf, bankId, questionDataJson) {
   const zipData = await JSZip.loadAsync(buf);
   const parsed = await parseHwpx(zipData);
   let unitByNum = new Map();
+  // 문제은행(problembank.html)의 "문제 수정"에서 저장한 editedRaw가 있으면
+  // "HTML로 만들기"에서 원본 hwpx 재파싱 대신 그 내용을 쓴다 — 아래
+  // classHtmlBtn 핸들러 참고. "한글로 만들기"(hwpx 그대로 다운로드)는
+  // 원본 구조를 직접 복사하는 별도 방식이라 여기 적용 안 됨.
+  let editedRawByNum = new Map();
   try {
     const qd = JSON.parse(questionDataJson || '[]');
     unitByNum = new Map(qd.filter(q => q && q.unit).map(q => [String(q.num), q.unit]));
+    editedRawByNum = new Map(qd.filter(q => q && q.editedRaw).map(q => [String(q.num), q.editedRaw]));
   } catch (e) {}
-  const entry = { uid: fileUidCounter++, filename, bankId, unitByNum, ...parsed };
+  const entry = { uid: fileUidCounter++, filename, bankId, unitByNum, editedRawByNum, ...parsed };
   loadedFiles.push(entry);
   fillRowWithQuestions(row, entry);
   updateGenBtn();
@@ -1777,7 +1783,8 @@ classHtmlBtn.addEventListener('click', async () => {
       const entry = byFile.get(uid);
       const marker = entry && entry.markers.get(num);
       if (!marker) continue;
-      const bodyHtml = await hwpBodyXmlToHtml(marker.blockXml, entry);
+      const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
+      const bodyHtml = editedRaw ? renderEditedText(editedRaw) : await hwpBodyXmlToHtml(marker.blockXml, entry);
       const cite = loadedFiles.length > 1
         ? `${escapeHtml(entry.filename.replace(/\.hwpx$/i, ''))} · ${num}번`
         : `${num}번`;

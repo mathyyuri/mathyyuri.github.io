@@ -803,6 +803,28 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// 문제은행에서 강사가 직접 고친 문제 본문(원본 hwpx 대신 쓰는 텍스트) —
+// 빈 줄로 문단을 나누고, "$...$"로 감싼 부분을 수식(LaTeX)으로 렌더링한다.
+// hwpBodyXmlToHtml의 출력과 같은 모양(<p> 문단, 수식은 <span class="eq">
+// \(...\)</span>)으로 만들어서, 이 함수를 거치든 원본을 파싱해서 거치든
+// 그 뒤에 오는 렌더링(katex auto-render, 페이지 배치 등)이 똑같이
+// 동작한다 — 소문항 번호나 선지 자동 정렬 같은 자동 서식은 이 경로에는
+// 적용되지 않는다(강사가 직접 줄바꿈/기호로 원하는 대로 배치).
+function renderEditedText(text) {
+  const paras = String(text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (!paras.length) return '';
+  return paras.map(para => {
+    const oneLine = para.replace(/\r?\n/g, ' ');
+    const parts = oneLine.split(/\$([^$]+)\$/);
+    // split()으로 "$...$"를 뽑으면 홀수 인덱스가 항상 수식 안쪽 내용이고,
+    // 짝수 인덱스가 그 사이의 일반 텍스트다.
+    const html = parts.map((chunk, i) =>
+      i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
+    ).join('');
+    return `<p>${html}</p>`;
+  }).join('');
+}
+
 // A run's children (text/equation/picture/table) are siblings, not nested
 // in each other — collect each recognized tag type separately then merge
 // back into document order by start offset, rather than assume any single
