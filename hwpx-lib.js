@@ -1255,7 +1255,16 @@ function formatConditionBox(inner, rawText) {
   // 그냥 통과해버린다. 하지만 이런 문장은 항상 "구하시오/쓰시오/고르시오/
   // 것은?/값은?"처럼 질문으로 끝난다 — 진짜 조건절(예: "(가) a≠0일 때 ~")은
   // 그렇게 끝나지 않으므로, 문장 끝 패턴으로 앞 문단과 상관없이 잡아낸다.
-  if (/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(rawText.trim())) return null;
+  // "(단, a<b)" 단서절이나 "[4점]" 배점 표시가 질문 끝에 붙으면 위 문장끝
+  // 패턴이 더 이상 진짜 문자열의 끝(&#x24;)이 아니게 돼서 안 걸린다 — 실제
+  // 파일에서 확인됨: "...f(b-a)의 값은? (단, a<b) [4점]"가 그대로 조건
+  // 박스로 잘못 묶임. 검사 직전에 그 꼬리만 떼어내고 문장 자체의 끝을
+  // 본다(원래 rawText는 그대로 둬서 다른 로직에 영향 없음).
+  const forEndingCheck = rawText.trim()
+    .replace(/\[\s*\d+\s*점\s*\]\s*$/, '')
+    .replace(/\(\s*단\s*,[^)]*\)\s*$/, '')
+    .trim();
+  if (/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(forEndingCheck)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에

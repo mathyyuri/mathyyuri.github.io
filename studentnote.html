@@ -1431,6 +1431,26 @@ function formatConditionBox(inner, rawText) {
   // "substantive"), wrongly wrapping the question's own instruction
   // sentence in a condition box instead of leaving it as plain text.
   if (/\([가나다라마]\)\s*~/.test(rawText)) return null;
+  // "위의 과정에서 (가), (마)에 알맞은 것을 잘못 짝지은 것은?" / "다음은
+  // ... 간단히 하는 과정이다. (가),(나)에 사용된 집합의 연산 법칙을
+  // 구하시오." — 둘 다 어떤 풀이 과정(항상 자기 자신의 hwpRectBox/표로
+  // 따로 표시됨)을 소개하거나 되짚는 "질문 문장"이지, 진짜 여러-절 조건
+  // 목록이 아니다. "과정이다"/"과정에서"가 문장 어디에 있든 이 계열의
+  // 공통 신호.
+  if (/과정이다|과정에서|짝지은\s*것/.test(rawText)) return null;
+  // 위 "질문 문장" 경우가 원본에서 별도 문단으로 떨어져 있을 수도 있음 —
+  // 이 문단만 보면 "과정이다"가 안 보여 위 검사를 통과해버리지만, 이런
+  // 문장은 항상 "구하시오/쓰시오/고르시오/것은?/값은?"처럼 질문으로
+  // 끝난다(진짜 조건절은 그렇게 끝나지 않음). "(단, a<b)" 단서절이나
+  // "[4점]" 배점 표시가 질문 끝에 붙으면 더 이상 문자열의 진짜 끝이
+  // 아니게 돼서 안 걸리므로, 검사 직전에 그 꼬리만 떼어내고 본다(실제
+  // 파일에서 확인됨: "...f(b-a)의 값은? (단, a<b) [4점]"이 그대로 조건
+  // 박스로 잘못 묶임).
+  const forEndingCheck = rawText.trim()
+    .replace(/\[\s*\d+\s*점\s*\]\s*$/, '')
+    .replace(/\(\s*단\s*,[^)]*\)\s*$/, '')
+    .trim();
+  if (/(구하시오|쓰시오|고르시오|짝지은\s*것|것은|값은)[.?]?\s*$/.test(forEndingCheck)) return null;
   const parts = inner.split(/(?=\([가나다라마]\))/).map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) return null;
   // A plain enumeration of blank labels ("빈칸의 (가), (나), (다), (라)에
