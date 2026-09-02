@@ -382,7 +382,7 @@ function initCharts(rows, scores, subj) {
 
   // 반별 / 학교별 평균·최고점
   const cls = groupAvgMax(rows, 'cls', subj.key, 'avg');
-  const sch = groupAvgMax(rows, 'school', subj.key, null);
+  const sch = groupAvgMax(rows, 'school', subj.key, 'avg');
 
   if (charts.cls) charts.cls.destroy();
   charts.cls = new Chart(document.getElementById('chart-class'), {
