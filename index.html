@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MATHY YURI — Summer Dashboard</title>
+<title>MATHY YURI — Midterm Project</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
@@ -392,9 +392,9 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
 <!-- =============== ⓪ 메인 (랜딩) =============== -->
 <div id="view-landing" class="login-wrap">
   <div class="login-hero">
-    <div class="eyebrow">MATHY YURI · SUMMER INTENSIVE 2026</div>
-    <h1 class="hero-title">SUMMER<br><em>Mission</em> BOARD</h1>
-    <p class="hero-sub">여름방학 진도 · 과제 · 오답 · TEST · 9월 모의고사 대비</p>
+    <div class="eyebrow">MATHY YURI · MIDTERM PROJECT 2026</div>
+    <h1 class="hero-title">MIDTERM<br><em>Prep</em> PROJECT</h1>
+    <p class="hero-sub">공통수학2 중간고사 대비 · 진도 · 개념 · 오답</p>
 
     <div class="login-card">
       <button class="login-btn" onclick="enterBoard()">들어가기</button>
@@ -411,7 +411,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
 <div id="view-public" class="hidden">
   <div class="topbar">
     <div>
-      <div class="eyebrow">SUMMER 2026 · ALL STUDENTS</div>
+      <div class="eyebrow">MIDTERM 2026 · ALL STUDENTS</div>
       <div class="brand">MATHY <span>YURI</span></div>
     </div>
     <div class="top-actions">
@@ -463,9 +463,9 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
 <!-- =============== ② 로그인 =============== -->
 <div id="view-login" class="login-wrap hidden">
   <div class="login-hero">
-    <div class="eyebrow">MATHY YURI · SUMMER INTENSIVE 2026</div>
-    <h1 class="hero-title">SUMMER<br><em>Mission</em> BOARD</h1>
-    <p class="hero-sub">여름방학 진도 · 과제 · 오답 · TEST · 9월 모의고사 대비</p>
+    <div class="eyebrow">MATHY YURI · MIDTERM PROJECT 2026</div>
+    <h1 class="hero-title">MIDTERM<br><em>Prep</em> PROJECT</h1>
+    <p class="hero-sub">공통수학2 중간고사 대비 · 진도 · 개념 · 오답</p>
 
     <div class="login-card">
       <div class="field">
@@ -488,7 +488,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
 <div id="view-personal" class="hidden">
   <div class="topbar">
     <div>
-      <div class="eyebrow">SUMMER 2026 · MY REPORT</div>
+      <div class="eyebrow">MIDTERM 2026 · MY REPORT</div>
       <div class="brand">MATHY <span>YURI</span></div>
     </div>
     <div class="top-actions">
@@ -1721,7 +1721,7 @@ function renderPersonal(){
   document.getElementById('me-nick').textContent=s.name;
   const coh=COHORT_LABELS[s.cohort]||null;
   document.getElementById('me-meta').innerHTML='<b>'+esc(s.class)+'</b> · '+esc(s.school)
-    +(coh?' · '+esc(coh.name):'')+' · SUMMER 2026';
+    +(coh?' · '+esc(coh.name):'')+' · MIDTERM 2026';
   document.getElementById('ov-class').textContent=s.class;
 
   // 대수연마 1000제만 듣는 학생(정규반 S/S+/PRISM에 등록된 줄이 아예 없어
