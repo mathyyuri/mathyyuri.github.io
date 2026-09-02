@@ -528,7 +528,15 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     document.getElementById('scWeightBar').style.display = '';
     renderScoreTable();
     document.getElementById('scSaveBtn').disabled = false;
-    msg.textContent = scStudents.length + '명 불러왔습니다.';
+    // 문항 수/시작 번호를 메시지에 항상 같이 보여준다 — 이전 미션에서
+    // 남아있던 문항 수가 그대로 표시되는 걸 못 알아채고 저장해버리는
+    // 실수가 실제로 있었다(원장님 리포트: "변형" 미션을 새로 불러왔는데
+    // 계속 이전 "교과서" 미션의 30문항 화면 그대로 보임 — 서버에 저장된
+    // 데이터가 없는 새 미션이면 직접 입력한 문항 수를 그대로 쓰는 게
+        // 맞는 동작이지만, 화면에 안 띄워주니 바뀐 줄 모르고 그대로 저장해서
+    // 틀린 문항 수가 그 미션의 배점으로 굳어버렸다). 지금은 몇 번부터
+    // 몇 문항인지 항상 눈에 보이니 다른 미션이면 바로 알아챌 수 있다.
+    msg.textContent = `${scStudents.length}명 불러왔습니다. (문항 수: ${scQCount}, 시작 번호: ${scStartNum})`;
     msg.className = 'hint ok';
   } catch (e) {
     msg.textContent = '오류: ' + e.message;
