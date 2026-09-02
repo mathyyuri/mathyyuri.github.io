@@ -28,6 +28,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .header h1 em{font-style:italic;color:var(--mint-dark);}
 .header-sub{font-size:11px;color:var(--text3);}
 
+.pagetab-bar{display:flex;justify-content:center;gap:8px;padding:14px 16px 0;max-width:960px;margin:0 auto;}
+.pagetab{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 20px;font-size:12px;font-weight:700;letter-spacing:.06em;border-radius:100px;border:1px solid var(--border2);background:#fff;color:var(--text2);text-decoration:none;transition:.18s;}
+.pagetab.active{background:var(--mint-dark);border-color:var(--mint-dark);color:#fff;}
+.pagetab:not(.active):hover{border-color:var(--mint-dark);color:var(--mint-dark);}
+
 .subjtab-bar{display:flex;gap:6px;overflow-x:auto;padding:14px 16px 0;max-width:960px;margin:0 auto;scrollbar-width:none;}
 .subjtab-bar::-webkit-scrollbar{display:none;}
 .subjtab{flex:0 0 auto;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;cursor:pointer;transition:.15s;}
@@ -92,6 +97,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   <h1>2026년 9월 고1<br><em>성적 분석</em></h1>
   <div style="width:32px;height:2px;background:var(--mint);border-radius:2px;margin:12px auto 10px;"></div>
   <div class="header-sub">대치S+ 학원</div>
+</div>
+
+<div class="pagetab-bar">
+  <a class="pagetab" href="score_form_9.html">📝 성적 제출</a>
+  <a class="pagetab active" href="26_9moresult.html">📊 성적 통계 보기</a>
 </div>
 
 <div class="subjtab-bar" id="subjtabs"></div>

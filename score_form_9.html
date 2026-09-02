@@ -40,6 +40,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .header-sub{font-size:12px;color:var(--text3);letter-spacing:0.06em;}
 .accent-line{width:32px;height:2px;background:var(--mint-deep);border-radius:2px;margin:16px auto 12px;}
 
+.pagetab-bar{display:flex;justify-content:center;gap:8px;padding:16px 16px 0;max-width:1040px;margin:0 auto;}
+.pagetab{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 20px;font-size:12px;font-weight:700;letter-spacing:.06em;border-radius:100px;border:1px solid var(--gold-line);background:#fff;color:var(--text2);text-decoration:none;transition:.18s;}
+.pagetab.active{background:var(--mint-deep);border-color:var(--mint-deep);color:#fff;}
+.pagetab:not(.active):hover{border-color:var(--mint-deep);color:var(--mint-deep);}
+
 /* 모바일: 세로 1단. 데스크톱(768px~): 카드들을 가로로 넓게 배치 */
 .wrap{max-width:480px;margin:0 auto;padding:24px 16px 0;}
 
@@ -146,6 +151,11 @@ textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
   <h1>2026년 9월 고1<br><em>전국연합 학력평가</em></h1>
   <div class="accent-line"></div>
   <div class="header-sub">2026.09.02 &nbsp;·&nbsp; 성적 입력 폼</div>
+</div>
+
+<div class="pagetab-bar">
+  <a class="pagetab active" href="score_form_9.html">📝 성적 제출</a>
+  <a class="pagetab" href="26_9moresult.html">📊 성적 통계 보기</a>
 </div>
 
 <div class="wrap">
@@ -277,8 +287,9 @@ async function submitForm(){
 
   try{
     await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    toast('제출 완료! 수고했어요 :)','ok');
+    toast('제출 완료! 성적 통계로 이동합니다 :)','ok');
     btn.textContent='제출 완료';
+    setTimeout(()=>{ location.href='26_9moresult.html'; },1300);
   }catch(e){
     toast('오류가 발생했습니다. 다시 시도해 주세요.','err');
     btn.disabled=false; btn.textContent='성적 제출하기';
