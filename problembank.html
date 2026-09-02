@@ -172,8 +172,11 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagRowPreview { flex: 1 1 260px; min-width: 120px; color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tagRowContent { flex: 1 1 auto; min-width: 0; font-size: 14px; line-height: 1.55; max-height: 280px; overflow-y: auto; padding-right: 6px; }
 .tagRowContent p { margin: 0 0 6px; }
-.tagRowInputs { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; width: 190px; position: sticky; top: 8px; }
+.tagRowInputs { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; width: 220px; position: sticky; top: 8px; }
 .tagUnitInput, .tagTypeInput, .tagAnswerInput { width: 100%; }
+.tagRowInputsRow2 { display: flex; gap: 6px; }
+.tagRowInputsRow2 > * { flex: 1; min-width: 0; }
+.tagDifficultyInput, .tagFormatInput, .tagPointsInput, .tagSourceInput { width: 100%; font-size: 12px; }
 .tagEditBox { border: 2px solid var(--gold); }
 .editQBtn { background: var(--gold-soft); }
 .editQBox { flex-basis: 100%; margin-top: 8px; padding: 10px; border: 1px dashed var(--gold); border-radius: 6px; background: #fffaf0; }
@@ -212,6 +215,7 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 
 <datalist id="unitSuggestList"></datalist>
 <datalist id="typeSuggestList"></datalist>
+<datalist id="sourceSuggestList"></datalist>
 
 <script>
 // 대시보드 Apps Script(단일 통합 스크립트) URL — 교재/시험지 저장소 기능도 여기 포함되어 있습니다.
@@ -484,7 +488,7 @@ function attachDragHandlers(row, groupKey, orderMap) {
 async function refreshList() {
   groupsEl.innerHTML = '<p class="hint">불러오는 중...</p>';
   try {
-    const { files } = await callGet({ action: 'list' });
+    const [{ files }] = await Promise.all([callGet({ action: 'list' }), fetchServerUnits()]);
     renderGroups(files);
     updateTagSuggestLists(files);
   } catch (e) {
@@ -496,7 +500,7 @@ async function refreshList() {
 // 지금까지 어떤 파일에서든 한 번이라도 입력된 단원/유형 값을 모아 <datalist>로
 // 제공 — 같은 단원인데 "수열"/"수열 "처럼 표기가 갈리는 걸 줄여준다.
 function collectTagSuggestions(files) {
-  const units = new Set(), types = new Set();
+  const units = new Set(), types = new Set(), sources = new Set();
   for (const f of files) {
     let qd;
     try { qd = JSON.parse(f.questionData || '[]'); } catch (e) { continue; }
@@ -504,22 +508,38 @@ function collectTagSuggestions(files) {
     for (const q of qd) {
       if (q && q.unit) units.add(q.unit);
       if (q && q.type) types.add(q.type);
+      if (q && q.source) sources.add(q.source);
     }
   }
-  return { units: [...units].sort((a, b) => a.localeCompare(b, 'ko')), types: [...types].sort((a, b) => a.localeCompare(b, 'ko')) };
+  const bySort = (a, b) => a.localeCompare(b, 'ko');
+  return { units: [...units].sort(bySort), types: [...types].sort(bySort), sources: [...sources].sort(bySort) };
 }
 function updateTagSuggestLists(files) {
-  const { units, types } = collectTagSuggestions(files);
+  const { units, types, sources } = collectTagSuggestions(files);
   document.getElementById('unitSuggestList').innerHTML = units.map(u => `<option value="${escapeHtml(u)}">`).join('');
   document.getElementById('typeSuggestList').innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
+  document.getElementById('sourceSuggestList').innerHTML = (sources.length ? sources : DEFAULT_SOURCE_SUGGESTIONS).map(s => `<option value="${escapeHtml(s)}">`).join('');
 }
+const DEFAULT_SOURCE_SUGGESTIONS = ['자체제작', '기출', '모의고사', '시중교재'];
 
 // ---------- 단원 탭 (빠른 선택용, 나중에 추가/변경 가능) ----------
-// localStorage에 저장 — 처음엔 공통수학2 기준 기본값으로 시작하고,
-// "+ 탭 추가"로 원장님이 직접 늘릴 수 있음.
+// 원래 localStorage에만 저장했더니 원장님 PC와 조교 PC에서 목록이 다르게
+// 보이는 문제가 있었음 — 이제 서버("단원설정" 시트)를 기준으로 삼고,
+// localStorage는 서버 조회가 실패했을 때만 쓰는 오프라인 폴백으로 둔다.
 const UNIT_TABS_KEY = 'problembank_unit_tabs_v1';
 const DEFAULT_UNIT_TABS = ['평면좌표', '직선의 방정식', '원의 방정식', '도형의 이동', '집합과 명제', '함수', '경우의 수'];
+let serverUnitList = null; // fetchServerUnits()가 채움 — null이면 아직 서버 응답 전(로컬 값 사용)
+async function fetchServerUnits() {
+  try {
+    const r = await callGet({ action: 'unitlist' });
+    if (r && Array.isArray(r.units) && r.units.length) {
+      serverUnitList = r.units;
+      saveUnitTabs(r.units); // 다음 접속(오프라인 등) 대비 로컬에도 캐시
+    }
+  } catch (e) { /* 서버 조회 실패 — 아래 loadUnitTabs가 로컬 캐시/기본값으로 대체 */ }
+}
 function loadUnitTabs() {
+  if (Array.isArray(serverUnitList) && serverUnitList.length) return serverUnitList;
   let saved;
   try { saved = JSON.parse(localStorage.getItem(UNIT_TABS_KEY)); } catch (e) {}
   return Array.isArray(saved) && saved.length ? saved : DEFAULT_UNIT_TABS.slice();
@@ -531,7 +551,12 @@ function addUnitTab(name) {
   name = name.trim();
   if (!name) return;
   const tabs = loadUnitTabs();
-  if (!tabs.includes(name)) { tabs.push(name); saveUnitTabs(tabs); }
+  if (!tabs.includes(name)) {
+    const next = tabs.concat([name]);
+    serverUnitList = next; // 화면엔 바로 반영
+    saveUnitTabs(next);
+    callPost({ action: 'addunit', name }).catch(() => {}); // 서버(다른 기기용)에도 저장 — 실패해도 이 화면은 이미 반영됨
+  }
 }
 // 파일명/메모 등 텍스트 안에 이미 알려진 단원 이름이 그대로 들어있는
 // 경우가 많음(예: "[S+반] 2. 직선의 방정식 진도미션") — 가장 긴 이름부터
@@ -657,12 +682,34 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
       <div class="tagRowInputs">
         <input type="text" class="tagUnitInput" list="unitSuggestList" placeholder="단원" value="${escapeHtml(qd.unit || '')}">
         <input type="text" class="tagTypeInput" list="typeSuggestList" placeholder="유형" value="${escapeHtml(qd.type || '')}">
+        <div class="tagRowInputsRow2">
+          <select class="tagDifficultyInput">
+            <option value="">난이도</option>
+            <option value="상"${qd.difficulty === '상' ? ' selected' : ''}>상</option>
+            <option value="중"${qd.difficulty === '중' ? ' selected' : ''}>중</option>
+            <option value="하"${qd.difficulty === '하' ? ' selected' : ''}>하</option>
+          </select>
+          <select class="tagFormatInput">
+            <option value="">형식</option>
+            <option value="객관식"${qd.format === '객관식' ? ' selected' : ''}>객관식</option>
+            <option value="단답형"${qd.format === '단답형' ? ' selected' : ''}>단답형</option>
+            <option value="서술형"${qd.format === '서술형' ? ' selected' : ''}>서술형</option>
+          </select>
+        </div>
+        <div class="tagRowInputsRow2">
+          <input type="number" class="tagPointsInput" placeholder="배점" min="0" step="0.5" value="${qd.points != null && qd.points !== '' ? escapeHtml(String(qd.points)) : ''}">
+          <input type="text" class="tagSourceInput" list="sourceSuggestList" placeholder="출처" value="${escapeHtml(qd.source || '')}">
+        </div>
         ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용)" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)">` : ''}
         ${originalPreviewHtmlByNum ? `<button type="button" class="selectAllBtn editQBtn">✏️ 문제 수정${qd.editedRaw ? ' (수정됨)' : ''}</button>` : ''}
       </div>
     `;
     row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); });
     row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); });
+    row.querySelector('.tagDifficultyInput').addEventListener('change', (e) => { qd.difficulty = e.target.value; });
+    row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; });
+    row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); });
+    row.querySelector('.tagSourceInput').addEventListener('input', (e) => { qd.source = e.target.value.trim(); });
     row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); });
     // "문제 수정" — 원본 hwpx를 다시 파싱하는 대신 강사가 직접 쓴 텍스트를
     // 쓰도록 questionData에 editedRaw를 채워 넣는다("$...$"는 수식으로
@@ -774,6 +821,7 @@ async function openTagEditor(f) {
         num, choiceCount: ex.choiceCount ?? null, hasBogi: ex.hasBogi ?? null,
         hasCondition: ex.hasCondition ?? null, warnings: ex.warnings || [],
         unit: ex.unit || '', type: ex.type || '', answer: existingAnswers[String(num)] || '',
+        difficulty: ex.difficulty || '', format: ex.format || '', points: ex.points || '', source: ex.source || '',
         editedRaw: ex.editedRaw || '',
       };
     });
@@ -784,6 +832,7 @@ async function openTagEditor(f) {
     // 파싱 결과(originalPreviewHtmlByNum)는 "원본으로 되돌리기"용으로
     // 따로 남겨둔다.
     const originalPreviewHtmlByNum = {};
+    const qdByNumForRawText = new Map(questionData.map(q => [String(q.num), q]));
     for (const num of nums) {
       const blockXml = entry.markers.get(num).blockXml;
       rawTextByNum[num] = decodeXmlEntities(stripTags(blockXml));
@@ -791,6 +840,8 @@ async function openTagEditor(f) {
       originalPreviewHtmlByNum[num] = original;
       const ex = existingByNum.get(String(num));
       previewHtmlByNum[num] = (ex && ex.editedRaw) ? renderEditedText(ex.editedRaw) : original;
+      const qd = qdByNumForRawText.get(String(num));
+      if (qd) qd.rawText = rawTextByNum[num].replace(/\s+/g, ' ').trim().slice(0, 4000);
     }
 
     box.innerHTML = `<h3>${escapeHtml(f.filename)} — 태그 편집</h3><p class="hint">총 ${nums.length}문제. 저장하면 시험지 파일은 그대로 두고 단원/유형 정보만 갱신됩니다.</p>`;
@@ -853,8 +904,8 @@ async function openTagEditor(f) {
         // 정답(answer)은 questionData와 분리해서 별도 액션으로 보낸다 —
         // updatetags/list는 인증 없이 열려 있어서, 여기 answer를 같이
         // 넣으면 그대로 공개 API를 통해 새어나가게 된다.
-        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, editedRaw }) =>
-          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, editedRaw: editedRaw || undefined }));
+        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, editedRaw, rawText }) =>
+          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, editedRaw: editedRaw || undefined, rawText }));
         const answers = {};
         questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
         await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(publicTags) });
@@ -1109,7 +1160,8 @@ async function validateOneFile(file, box) {
     questionData.push({
       num, choiceCount, hasBogi: html.includes('hwpBogi'), hasCondition: html.includes('hwpCondBox'),
       warnings: issues, // overflow(다단 초과)는 렌더 후 아래에서 채워짐
-      unit: '', type: '',
+      unit: '', type: '', difficulty: '', format: '', points: '', source: '',
+      rawText: rawText.replace(/\s+/g, ' ').trim().slice(0, 4000), // 문항DB 키워드 검색용 평문
     });
   }
 
