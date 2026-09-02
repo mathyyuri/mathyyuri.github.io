@@ -154,13 +154,15 @@ const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzG22SppZvMYk-sJy
 //   'relative' = 상대평가(국어·수학·탐구) → cuts를 직접 채워야 등급 표시됨.
 //   'absolute' = 절대평가(영어·한국사) → 교육부 고시 기준으로 이미 고정되어 있음.
 //   'sum'      = 6과목 합계(공식 등급 개념 없음, 통계만 표시).
+// 상대평가 과목(국어/수학/통합사회/통합과학) cuts는 이투스 예상 등급컷(원점수
+// 기준) — 정식 등급컷 발표되면 이 값들만 다시 바꿔주면 됨.
 const SUBJECTS = [
-  { key:'korean',  label:'국어',   max:100, kind:'relative', cuts:null },
-  { key:'math',    label:'수학',   max:100, kind:'relative', cuts:null },
+  { key:'korean',  label:'국어',   max:100, kind:'relative', cuts:{1:86,2:78,3:66,4:54,5:40,6:30,7:24,8:19} },
+  { key:'math',    label:'수학',   max:100, kind:'relative', cuts:{1:85,2:73,3:61,4:50,5:36,6:25,7:16,8:13} },
   { key:'english', label:'영어',   max:100, kind:'absolute', cuts:{1:90,2:80,3:70,4:60,5:50,6:40,7:30,8:20,9:0} },
   { key:'history', label:'한국사', max:50,  kind:'absolute', cuts:{1:40,2:35,3:30,4:25,5:20,6:15,7:10,8:5,9:0} },
-  { key:'society', label:'통합사회', max:50, kind:'relative', cuts:null },
-  { key:'science', label:'통합과학', max:50, kind:'relative', cuts:null },
+  { key:'society', label:'통합사회', max:50, kind:'relative', cuts:{1:42.5,2:39,3:35.5,4:31.5,5:24.5,6:14,7:9,8:7} },
+  { key:'science', label:'통합과학', max:50, kind:'relative', cuts:{1:47,2:42.5,3:35.5,4:27.5,5:19,6:11.5,7:9.5,8:6.5} },
   { key:'total',   label:'총점',   max:450, kind:'sum',      cuts:null },
 ];
 // ↑ 상대평가 과목은 예상 등급컷이 나오면 위 cuts를 예: {1:88,2:76,3:60,4:45} 처럼
@@ -339,7 +341,11 @@ function groupAvgMax(rows, key, subjKey, order){
   const map = {};
   rows.forEach(function(d){ const k=d[key]; if(!map[k]) map[k]=[]; map[k].push(d[subjKey]); });
   let labels = Object.keys(map);
-  if (order) {
+  const avgOf = function(l){ const arr=map[l]; return arr.reduce(function(a,b){return a+b;},0)/arr.length; };
+  if (order === 'avg') {
+    // 반 이름 순서가 아니라 평균이 높은 그룹부터 보이도록 정렬.
+    labels = labels.sort(function(a,b){ return avgOf(b) - avgOf(a); });
+  } else if (order) {
     labels = labels.sort(function(a,b){
       let ia = order.indexOf(a), ib = order.indexOf(b);
       if (ia===-1) ia=999; if (ib===-1) ib=999;
@@ -375,8 +381,7 @@ function initCharts(rows, scores, subj) {
   });
 
   // 반별 / 학교별 평균·최고점
-  const targetOrder = ['S+', 'A+', 'S', 'A', 'B', '기타'];
-  const cls = groupAvgMax(rows, 'cls', subj.key, targetOrder);
+  const cls = groupAvgMax(rows, 'cls', subj.key, 'avg');
   const sch = groupAvgMax(rows, 'school', subj.key, null);
 
   if (charts.cls) charts.cls.destroy();
