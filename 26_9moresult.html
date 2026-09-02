@@ -342,9 +342,13 @@ function groupAvgMax(rows, key, subjKey, order){
   rows.forEach(function(d){ const k=d[key]; if(!map[k]) map[k]=[]; map[k].push(d[subjKey]); });
   let labels = Object.keys(map);
   const avgOf = function(l){ const arr=map[l]; return arr.reduce(function(a,b){return a+b;},0)/arr.length; };
+  const maxOf = function(l){ return Math.max.apply(null, map[l]); };
   if (order === 'avg') {
     // 반 이름 순서가 아니라 평균이 높은 그룹부터 보이도록 정렬.
     labels = labels.sort(function(a,b){ return avgOf(b) - avgOf(a); });
+  } else if (order === 'max') {
+    // 학교별 차트는 평균이 아니라 최고점이 높은 학교부터 보이도록 정렬.
+    labels = labels.sort(function(a,b){ return maxOf(b) - maxOf(a); });
   } else if (order) {
     labels = labels.sort(function(a,b){
       let ia = order.indexOf(a), ib = order.indexOf(b);
@@ -382,7 +386,7 @@ function initCharts(rows, scores, subj) {
 
   // 반별 / 학교별 평균·최고점
   const cls = groupAvgMax(rows, 'cls', subj.key, 'avg');
-  const sch = groupAvgMax(rows, 'school', subj.key, 'avg');
+  const sch = groupAvgMax(rows, 'school', subj.key, 'max');
 
   if (charts.cls) charts.cls.destroy();
   charts.cls = new Chart(document.getElementById('chart-class'), {
