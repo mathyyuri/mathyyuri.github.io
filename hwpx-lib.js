@@ -426,6 +426,39 @@ function resolveMatrixLike(script, keyword, env) {
 function resolvePmatrix(script) { return resolveMatrixLike(script, 'pmatrix', 'pmatrix'); }
 function resolveMatrix(script) { return resolveMatrixLike(script, 'matrix', 'matrix'); }
 
+// A 4th matrix-syntax variant, confirmed in a real file ([비상교육] 1.
+// 평면좌표 교과서 데이터.hwpx, 103/107/108번 "연립방정식을 풀면" 풀이): instead
+// of its own matrix{...} braces, the author writes the literal word "matrix"
+// right before an ordinary LEFT{...RIGHT} delimiter block and reuses THAT
+// single brace pair to hold '#'-separated rows — so there's no bare
+// "matrix{" for resolveMatrix() above to find (its regex needs "matrix"
+// immediately followed by "{", not "matrix LEFT {"). Left alone, the
+// leading "matrix" word survives as stray literal text in front of the
+// bracket and the bare '#' passes straight through untouched, which KaTeX
+// rejects outright ("Expected '\right', got '#'") — the whole equation
+// failed to render.
+function resolveMatrixLeftRight(script) {
+  let s = script;
+  let guard = 0;
+  const re = /\bmatrix\s+LEFT\s*\{/i;
+  while (guard++ < 50) {
+    const m = s.match(re);
+    if (!m) break;
+    const braceStart = s.indexOf('{', m.index);
+    const [end, inner] = findAtomAfter(s, braceStart);
+    let innerContent = stripOuterBraces(inner);
+    // 그 "{...}" 맨 끝에 원래 있던 RIGHT 키워드는 델리미터 표시일 뿐이라
+    // 행 내용에서 떼어냈다가, 재조립할 때 그대로 다시 붙여서 아래
+    // LEFT{/RIGHT} 변환이 이어서 정상 처리하게 한다.
+    innerContent = innerContent.replace(/\bRIGHT\b\s*$/i, '');
+    const rows = splitTopLevel(innerContent, '#').map(r => r.trim()).filter(Boolean);
+    const rowsLatex = rows.map(r => splitTopLevel(r, '&').map(c => c.trim()).join(' & '));
+    const replacement = `LEFT {\\begin{matrix}${rowsLatex.join(' \\\\ ')}\\end{matrix} RIGHT}`;
+    s = s.slice(0, m.index) + replacement + s.slice(end);
+  }
+  return s;
+}
+
 const HWP_EQ_SYMBOLS = {
   LEQ: '\\leq', GEQ: '\\geq', NEQ: '\\neq', THEREFORE: '\\therefore',
   ANGLE: '\\angle', CDOTS: '\\cdots', TRIANGLE: '\\triangle',
@@ -605,6 +638,7 @@ function convertHwpEquationToLatex(script) {
   s = resolvePile(s);
   s = resolvePmatrix(s);
   s = resolveMatrix(s);
+  s = resolveMatrixLeftRight(s);
   // No leading \b and case-insensitive — LEFT/RIGHT show up as "left"
   // lowercase in some files, and can sit glued directly against the
   // preceding variable ("Aleft(x1,y1right)") with no boundary for \b to
