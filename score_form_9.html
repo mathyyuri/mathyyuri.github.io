@@ -4,58 +4,62 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>2026 9월 고1 전국연합 — 대치S+학원</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#f5f2ee;
+  --bg:#FBF8F1;
   --surface:#ffffff;
-  --surface2:#faf8f6;
-  --mint:#5dcaa5;
-  --mint-light:#e1f5ee;
-  --mint-mid:#9fe1cb;
-  --mint-dark:#0f6e56;
-  --pink:#d4537e;
-  --pink-light:#fbeaf0;
-  --pink-mid:#f4c0d1;
-  --pink-dark:#72243e;
-  --border:#e8e4df;
-  --border2:#d3cfc9;
-  --text:#2c2c2a;
-  --text2:#5f5e5a;
-  --text3:#888780;
-  --radius:12px;
-  --radius-sm:8px;
+  --surface2:#F7F2E7;
+  --ink:#1A1A1A;
+  --mint:#7FC8B4;
+  --mint-deep:#3E8F79;
+  --mint-deeper:#2c6b58;
+  --mint-soft:rgba(62,143,121,.10);
+  --mint-line:rgba(62,143,121,.32);
+  --gold:#A8853F;
+  --gold-soft:rgba(168,133,63,.12);
+  --gold-line:#E6DCC6;
+  --warn:#a8453f;
+  --warn-soft:rgba(168,69,63,.09);
+  --warn-line:rgba(168,69,63,.32);
+  --border:var(--gold-line);
+  --border2:#d8cdb2;
+  --text:var(--ink);
+  --text2:#5c5648;
+  --text3:#948c78;
+  --radius:6px;
+  --radius-sm:4px;
 }
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;padding-bottom:60px;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;padding-bottom:60px;-webkit-font-smoothing:antialiased;}
 
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:32px 20px 28px;text-align:center;}
-.header-badge{display:inline-block;font-size:10px;letter-spacing:0.18em;color:var(--mint-dark);background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:100px;padding:4px 14px;margin-bottom:14px;font-weight:500;}
-.header h1{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:700;color:var(--text);line-height:1.4;letter-spacing:-0.02em;margin-bottom:6px;}
-.header h1 em{font-style:italic;color:var(--mint-dark);}
-.header-sub{font-size:12px;color:var(--text3);letter-spacing:0.04em;}
-.accent-line{width:32px;height:2px;background:var(--mint);border-radius:2px;margin:14px auto 12px;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:34px 20px 30px;text-align:center;}
+.header-badge{display:inline-block;font-size:9px;letter-spacing:0.32em;color:var(--gold);background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:100px;padding:5px 15px;margin-bottom:16px;font-weight:700;}
+.header h1{font-family:'Playfair Display','Noto Serif KR',serif;font-size:26px;font-weight:900;color:var(--ink);line-height:1.38;letter-spacing:-0.01em;margin-bottom:6px;}
+.header h1 em{font-style:italic;font-weight:600;color:var(--mint-deep);}
+.header-sub{font-size:12px;color:var(--text3);letter-spacing:0.06em;}
+.accent-line{width:32px;height:2px;background:var(--mint-deep);border-radius:2px;margin:16px auto 12px;}
 
 /* 모바일: 세로 1단. 데스크톱(768px~): 카드들을 가로로 넓게 배치 */
 .wrap{max-width:480px;margin:0 auto;padding:24px 16px 0;}
 
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 14px;margin-bottom:16px;}
-.card-title{font-size:10px;letter-spacing:0.16em;color:var(--text3);font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title{font-size:10px;letter-spacing:0.22em;color:var(--gold);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
 .field{margin-bottom:14px;}
 .field:last-child{margin-bottom:0;}
 label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:400;}
-label .req{color:var(--pink);margin-left:2px;}
+label .req{color:var(--mint-deep);margin-left:2px;}
 
 input[type=text],input[type=number],select,textarea{
   width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
   color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:400;
   padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color .18s,background .18s;
 }
-input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--mint);background:#fff;}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--mint-deep);background:#fff;}
 input::placeholder,textarea::placeholder{color:var(--text3);}
-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888780' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23948c78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
 select option{background:#fff;color:var(--text);}
 textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
 
@@ -66,29 +70,30 @@ textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
 .sc-label{font-size:9px;color:var(--text3);font-weight:400;text-align:center;line-height:1.3;white-space:nowrap;letter-spacing:-0.02em;}
 .sc-label small{display:block;font-size:8px;color:var(--text3);opacity:.8;}
 .sc-input{
-  width:100%;background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:var(--radius-sm);
-  color:var(--mint-dark);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:500;
+  width:100%;background:var(--mint-soft);border:1px solid var(--mint-line);border-radius:var(--radius-sm);
+  color:var(--mint-deeper);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;
   padding:10px 2px;text-align:center;outline:none;-webkit-appearance:none;
   transition:border-color .18s,background .18s;
   -moz-appearance:textfield;
 }
 .sc-input::-webkit-outer-spin-button,.sc-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-.sc-input:focus{border-color:var(--mint);background:#fff;}
-.sc-input::placeholder{color:var(--mint-mid);font-weight:300;font-size:12px;}
+.sc-input:focus{border-color:var(--mint-deep);background:#fff;}
+.sc-input::placeholder{color:var(--mint);font-weight:300;font-size:12px;}
 
-.total-card{background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
-.total-label{font-size:12px;color:var(--mint-dark);font-weight:500;letter-spacing:0.06em;}
-.total-val{font-family:'Noto Serif KR',serif;font-size:26px;font-weight:700;color:var(--mint-dark);}
-.total-val small{font-size:12px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:#1d9e75;margin-left:4px;}
+.total-card{background:linear-gradient(135deg,var(--mint-soft),rgba(62,143,121,.16));border:1px solid var(--mint-line);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+.total-label{font-size:11px;color:var(--mint-deeper);font-weight:700;letter-spacing:0.14em;}
+.total-val{font-family:'Playfair Display','Noto Serif KR',serif;font-size:27px;font-weight:900;color:var(--mint-deeper);}
+.total-val small{font-size:12px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--mint-deep);margin-left:4px;}
 
 .submit-btn{
-  width:100%;padding:16px;background:var(--pink);color:#fff;border:none;border-radius:var(--radius);
-  font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:500;letter-spacing:0.04em;
-  cursor:pointer;transition:background .18s, transform .1s;margin-top:4px;
+  width:100%;padding:17px;background:linear-gradient(135deg,var(--mint) 0%,var(--mint-deep) 55%,var(--mint-deeper) 100%);color:#fff;border:none;border-radius:var(--radius);
+  font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.14em;
+  box-shadow:0 10px 24px rgba(62,143,121,.32),inset 0 1px 0 rgba(255,255,255,.2);
+  cursor:pointer;transition:box-shadow .2s,transform .15s,background .18s;margin-top:4px;
 }
-.submit-btn:hover{background:var(--pink-dark);}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(62,143,121,.4),inset 0 1px 0 rgba(255,255,255,.24);}
 .submit-btn:active{transform:scale(0.99);}
-.submit-btn:disabled{background:var(--border2);cursor:not-allowed;transform:none;}
+.submit-btn:disabled{background:var(--border2);box-shadow:none;cursor:not-allowed;transform:none;}
 
 .note{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.7;}
 
@@ -99,8 +104,8 @@ textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
   opacity:0;white-space:nowrap;z-index:100;
 }
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
-.toast.ok{border-color:var(--mint-mid);color:var(--mint-dark);}
-.toast.err{border-color:var(--pink-mid);color:var(--pink-dark);}
+.toast.ok{border-color:var(--mint-line);color:var(--mint-deeper);}
+.toast.err{border-color:var(--warn-line);color:var(--warn);}
 
 @media(max-width:360px){
   .sc-label{font-size:8px;}
@@ -129,7 +134,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
   .sc-input{font-size:16px;padding:14px 4px;}
   .total-val{font-size:32px;}
   .header{padding:40px 20px 34px;}
-  .header h1{font-size:30px;}
+  .header h1{font-size:32px;}
   .header h1 br{display:none;}
 }
 </style>
@@ -208,8 +213,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.65;font-size:13px;}
 <div class="toast" id="toast"></div>
 
 <script>
-// TODO: 아래 URL을 9월 모의고사 전용 Apps Script 웹 앱 URL로 바꿔주세요.
-const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzG22SppZvMYk-sJykm1s1lRyhX3Ve_QXRNjQCZmtV0DKVYlLhXyBpZBnaXemumwg8W/exec';
 const IDS = ['s1','s2','s3','s4','s5','s6'];
 
 function calcTotal(){
