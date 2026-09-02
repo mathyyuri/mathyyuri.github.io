@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>2026 9월 고1 전국연합 — 성적 통계</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f2ee;--surface:#fff;--surface2:#faf8f5;
+  --mint:#3daa8a;--mint-light:#e4f5ef;--mint-mid:#9fd8c8;--mint-dark:#1a6e55;
+  --gold:#b89a50;--gold-light:#fff9f0;--gold-mid:#e8d5a8;
+  --text:#1e1d1a;--text2:#5a5854;--text3:#9a9690;
+  --border:#e8e3dd;--border2:#d5cfc8;
+  --g1:#b89a50;--g2:#3daa8a;--g3:#5b9fd8;--g4:#8a8a8a;--g5plus:#c84870;
+  --radius:16px;--radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;padding-bottom:60px;}
+
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:28px 20px 22px;text-align:center;position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:400px;height:160px;background:radial-gradient(ellipse,rgba(61,170,138,0.07) 0%,transparent 70%);pointer-events:none;}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:500;letter-spacing:0.16em;color:var(--mint-dark);background:var(--mint-light);border:1px solid var(--mint-mid);border-radius:100px;padding:4px 14px;margin-bottom:12px;}
+.badge-dot{width:6px;height:6px;background:var(--mint);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,170,138,0.5)}70%{box-shadow:0 0 0 6px rgba(61,170,138,0)}100%{box-shadow:0 0 0 0 rgba(61,170,138,0)}}
+.header h1{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;line-height:1.4;letter-spacing:-0.02em;margin-bottom:4px;}
+.header h1 em{font-style:italic;color:var(--mint-dark);}
+.header-sub{font-size:11px;color:var(--text3);}
+
+.subjtab-bar{display:flex;gap:6px;overflow-x:auto;padding:14px 16px 0;max-width:960px;margin:0 auto;scrollbar-width:none;}
+.subjtab-bar::-webkit-scrollbar{display:none;}
+.subjtab{flex:0 0 auto;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;cursor:pointer;transition:.15s;}
+.subjtab.active{background:var(--text);color:#fff;border-color:var(--text);}
+
+.notice{display:flex;align-items:center;gap:8px;background:#fffbf0;border:1px solid var(--gold-mid);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#8a6a20;}
+.notice-icon{font-size:14px;flex-shrink:0;}
+
+.wrap{max-width:960px;margin:0 auto;padding:16px 16px 0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;margin-bottom:14px;}
+.card-label{font-size:10px;letter-spacing:0.14em;color:var(--text3);font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 14px 13px;}
+.stat-label{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.04em;margin-bottom:6px;}
+.stat-val{font-family:'Noto Serif KR',serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;}
+.stat-val small{font-size:12px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--text3);margin-left:2px;}
+
+.top-box{background:linear-gradient(135deg,var(--gold-light) 0%,#fef3e2 100%);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.top-label{font-size:11px;color:#8a6a20;font-weight:500;letter-spacing:0.04em;}
+.top-meta{font-size:11px;color:#b89a50;margin-top:3px;}
+.top-val{font-family:'Noto Serif KR',serif;font-size:38px;font-weight:700;color:#8a6a20;line-height:1;}
+.top-val small{font-size:13px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:#b89a50;margin-left:3px;}
+
+.chart-wrap{position:relative;}
+.h200{height:200px;}
+.h240{height:240px;}
+.h180{height:180px;}
+
+.grade-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:14px;}
+.grade-box{border-radius:var(--radius-sm);padding:10px 6px;text-align:center;border:1px solid transparent;}
+.g-label{font-size:10px;font-weight:700;margin-bottom:3px;}
+.g-cut{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:6px;line-height:1.3;}
+.g-count{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;line-height:1;}
+.g-pct{font-size:9px;margin-top:3px;}
+.gb1{background:#fffbf0;border-color:var(--gold-mid);}.gb1 .g-label{color:var(--g1);}.gb1 .g-count{color:var(--g1);}
+.gb2{background:var(--mint-light);border-color:var(--mint-mid);}.gb2 .g-label{color:var(--mint-dark);}.gb2 .g-count{color:var(--mint-dark);}
+.gb3{background:#eff5ff;border-color:#b0c8e8;}.gb3 .g-label{color:#2a5fa0;}.gb3 .g-count{color:#2a5fa0;}
+.gb4{background:#f5f5f5;border-color:#ccc;}.gb4 .g-label{color:#666;}.gb4 .g-count{color:#666;}
+.gb5{background:#fef0f4;border-color:#f0b0c4;}.gb5 .g-label{color:var(--g5plus);}.gb5 .g-count{color:var(--g5plus);}
+
+.no-cuts{text-align:center;padding:22px 10px;color:var(--text3);font-size:12px;line-height:1.7;background:var(--surface2);border-radius:var(--radius-sm);border:1px dashed var(--border2);}
+
+.loading{text-align:center;padding:40px 0;color:var(--text3);font-size:13px;}
+.ld{display:inline-block;width:6px;height:6px;background:var(--mint);border-radius:50%;margin:0 3px;animation:bounce .8s infinite;}
+.ld:nth-child(2){animation-delay:.15s;}.ld:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+@media(min-width:700px){
+  .stat-grid{grid-template-columns:repeat(4,1fr);}
+  .wrap{padding:20px 24px 0;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .two-col .card{margin-bottom:0;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge"><span class="badge-dot"></span>2026.09.02 · 전국연합학력평가</div>
+  <h1>2026년 9월 고1<br><em>성적 분석</em></h1>
+  <div style="width:32px;height:2px;background:var(--mint);border-radius:2px;margin:12px auto 10px;"></div>
+  <div class="header-sub">대치S+ 학원</div>
+</div>
+
+<div class="subjtab-bar" id="subjtabs"></div>
+
+<div class="wrap">
+  <div class="notice">
+    <span class="notice-icon">⚠️</span>
+    국어·수학·통합사회·통합과학은 상대평가라 등급컷을 학원에서 직접 입력해야 표시됩니다(영어·한국사는 절대평가 고정 기준). 정식/예상 등급컷 발표 후 코드 상단 CUTS 값을 채워주세요.
+  </div>
+
+  <div id="loading" class="loading">
+    <span class="ld"></span><span class="ld"></span><span class="ld"></span>
+    <div style="margin-top:10px;">데이터 불러오는 중…</div>
+  </div>
+
+  <div id="content" style="display:none;">
+
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="top-box" id="top-box"></div>
+
+    <div class="card">
+      <div class="card-label">등급별 인원 분포</div>
+      <div id="grade-area"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">점수 분포</div>
+      <div class="chart-wrap h240"><canvas id="chart-dist"></canvas></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-label">반별 평균 / 최고점</div>
+        <div class="chart-wrap h200"><canvas id="chart-class"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-label">학교별 평균 / 최고점</div>
+        <div class="chart-wrap h200"><canvas id="chart-school"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TODO: 9월 모의고사 전용 Apps Script 웹 앱 URL로 바꿔주세요(score_form_9.html과 같은 URL).
+const SHEET_API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+// 과목 정의: key는 응답 시트/폼의 필드명, max는 만점, kind는 채점 방식.
+//   'relative' = 상대평가(국어·수학·탐구) → cuts를 직접 채워야 등급 표시됨.
+//   'absolute' = 절대평가(영어·한국사) → 교육부 고시 기준으로 이미 고정되어 있음.
+//   'sum'      = 6과목 합계(공식 등급 개념 없음, 통계만 표시).
+const SUBJECTS = [
+  { key:'korean',  label:'국어',   max:100, kind:'relative', cuts:null },
+  { key:'math',    label:'수학',   max:100, kind:'relative', cuts:null },
+  { key:'english', label:'영어',   max:100, kind:'absolute', cuts:{1:90,2:80,3:70,4:60,5:50,6:40,7:30,8:20,9:0} },
+  { key:'history', label:'한국사', max:50,  kind:'absolute', cuts:{1:40,2:35,3:30,4:25,5:20,6:15,7:10,8:5,9:0} },
+  { key:'society', label:'통합사회', max:50, kind:'relative', cuts:null },
+  { key:'science', label:'통합과학', max:50, kind:'relative', cuts:null },
+  { key:'total',   label:'총점',   max:450, kind:'sum',      cuts:null },
+];
+// ↑ 상대평가 과목은 예상 등급컷이 나오면 위 cuts를 예: {1:88,2:76,3:60,4:45} 처럼
+//   채워주세요(1~4등급 컷만 있으면 충분 — 5등급은 "미만"으로 자동 처리됩니다).
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const G_COLORS = ['rgba(184,154,80,0.85)','rgba(61,170,138,0.82)','rgba(91,159,216,0.8)','rgba(140,140,140,0.75)','rgba(200,72,112,0.75)'];
+const G_LABELS = ['1등급', '2등급', '3등급', '4등급', '5등급이하'];
+const FIELD_MAP = { korean:'국어', math:'수학', english:'영어', history:'한국사', society:'통합사회', science:'통합과학', total:'합계' };
+
+let allRows = [];
+let curSubjIdx = 0;
+let charts = {};
+
+const barLabelsPlugin = {
+  id: 'barLabelsPlugin',
+  afterDatasetsDraw: function(chart) {
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach(function(dataset, i) {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.type !== 'bar') return;
+      meta.data.forEach(function(bar, index) {
+        const value = dataset.data[index];
+        if (value === 0 || value === null || value === undefined) return;
+        ctx.save();
+        ctx.fillStyle = '#5a5854';
+        ctx.font = 'bold 11px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        let label = dataset.customLabels ? dataset.customLabels[index] : (value + (dataset.suffix || ''));
+        ctx.fillText(label, bar.x, bar.y - 4);
+        ctx.restore();
+      });
+    });
+  }
+};
+
+function gradeOf(score, cuts){
+  if(!cuts) return null;
+  if(score>=cuts[1]) return 1;
+  if(score>=cuts[2]) return 2;
+  if(score>=cuts[3]) return 3;
+  if(score>=cuts[4]) return 4;
+  return 5;
+}
+
+async function loadData(){
+  try{
+    const r = await fetch(SHEET_API_URL);
+    if(!r.ok) throw new Error('API 연결 오류');
+    const raw = await r.json();
+    allRows = raw.map(function(row){
+      return {
+        school: row['학교']||'',
+        cls: row['반']||'',
+        name: row['이름']||'',
+        korean: parseFloat(row['국어']),
+        math: parseFloat(row['수학']),
+        english: parseFloat(row['영어']),
+        history: parseFloat(row['한국사']),
+        society: parseFloat(row['통합사회']),
+        science: parseFloat(row['통합과학']),
+        total: parseFloat(row['합계']),
+      };
+    });
+  }catch(e){
+    document.getElementById('loading').innerHTML='<div style="text-align:center;padding:40px;color:#c84870;font-size:13px;">데이터를 불러올 수 없어요. (Apps Script 설정을 확인하세요)</div>';
+    return;
+  }
+  renderTabs();
+  render();
+}
+
+function renderTabs(){
+  document.getElementById('subjtabs').innerHTML = SUBJECTS.map(function(s, i){
+    return '<div class="subjtab' + (i===curSubjIdx?' active':'') + '" data-i="' + i + '">' + s.label + '</div>';
+  }).join('');
+  document.querySelectorAll('.subjtab').forEach(function(el){
+    el.addEventListener('click', function(){
+      curSubjIdx = Number(el.dataset.i);
+      renderTabs();
+      render();
+    });
+  });
+}
+
+function eunNeun(word){
+  const last = word.charCodeAt(word.length - 1);
+  if (last < 0xAC00 || last > 0xD7A3) return '는'; // 한글 음절이 아니면 기본값
+  return (last - 0xAC00) % 28 === 0 ? '는' : '은';
+}
+function stats(arr){
+  if(!arr.length)return{avg:0,max:0,min:0,sd:0};
+  const avg=arr.reduce(function(a,b){return a+b;},0)/arr.length;
+  const sd=Math.sqrt(arr.map(function(v){return Math.pow(v-avg,2);}).reduce(function(a,b){return a+b;},0)/arr.length);
+  return{avg:Math.round(avg*10)/10,max:Math.max.apply(null,arr),min:Math.min.apply(null,arr),sd:Math.round(sd*10)/10};
+}
+
+function render(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+
+  const subj = SUBJECTS[curSubjIdx];
+  const rows = allRows.filter(function(d){ return !isNaN(d[subj.key]) && d[subj.key] > 0; });
+  const scores = rows.map(function(d){ return d[subj.key]; });
+  const s = stats(scores);
+  const n = scores.length;
+
+  document.getElementById('stat-grid').innerHTML=
+    '<div class="stat-box"><div class="stat-label">응시 인원</div><div class="stat-val">' + n + '<small>명</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">학원 평균</div><div class="stat-val">' + s.avg + '<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">최고점</div><div class="stat-val">' + s.max + '<small>점</small></div></div>' +
+    '<div class="stat-box"><div class="stat-label">표준편차</div><div class="stat-val">' + s.sd + '</div></div>';
+
+  const topStu = rows.find(function(d){ return d[subj.key]===s.max; });
+  const topMetaStr = topStu ? topStu.school+' · '+topStu.cls+'반 · '+topStu.name : '—';
+  document.getElementById('top-box').innerHTML=
+    '<div><div class="top-label">🏆 최고 점수 (' + subj.label + ')</div><div class="top-meta">' + topMetaStr + '</div></div>' +
+    '<div class="top-val">' + s.max + '<small>/ ' + subj.max + '점</small></div>';
+
+  const gradeArea = document.getElementById('grade-area');
+  if (subj.kind === 'sum' || !subj.cuts) {
+    gradeArea.innerHTML = '<div class="no-cuts">' +
+      (subj.kind === 'sum'
+        ? '총점은 등급이라는 개념이 없어요 — 반 안에서의 순위·백분위 참고용으로만 활용하세요.'
+        : subj.label + eunNeun(subj.label) + ' 아직 등급컷이 입력되지 않았습니다. 예상 등급컷이 나오면 코드 상단 CUTS 값을 채워주세요.') +
+      '</div>';
+    if (charts.grade) { charts.grade.destroy(); charts.grade = null; }
+  } else {
+    const cuts = subj.cuts;
+    const gradeCnt=[0,0,0,0,0];
+    scores.forEach(function(v){ const g=gradeOf(v,cuts); gradeCnt[Math.min(g,5)-1]++; });
+
+    let gradeGridHtml = '<div class="grade-grid">';
+    for(let i=0; i<5; i++){
+      const pct = n > 0 ? Math.round((gradeCnt[i]/n)*100) : 0;
+      let cutText = '';
+      if(i === 0) cutText = cuts[1] + '점↑';
+      else if(i === 1) cutText = cuts[2] + '~' + roundedMinus(cuts[1]);
+      else if(i === 2) cutText = cuts[3] + '~' + roundedMinus(cuts[2]);
+      else if(i === 3) cutText = cuts[4] + '~' + roundedMinus(cuts[3]);
+      else cutText = '~' + roundedMinus(cuts[4]);
+      gradeGridHtml += '<div class="grade-box gb' + (i+1) + '"><div class="g-label">' + G_LABELS[i] + '</div><div class="g-cut">' + cutText + '</div><div class="g-count">' + gradeCnt[i] + '</div><div class="g-pct">' + pct + '%</div></div>';
+    }
+    gradeGridHtml += '</div><div class="chart-wrap h180"><canvas id="chart-grade"></canvas></div>';
+    gradeArea.innerHTML = gradeGridHtml;
+
+    if (charts.grade) charts.grade.destroy();
+    charts.grade = new Chart(document.getElementById('chart-grade'), {
+      type: 'doughnut',
+      data: { labels: G_LABELS, datasets: [{ data: gradeCnt, backgroundColor: G_COLORS, borderWidth: 1 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
+    });
+  }
+
+  initCharts(rows, scores, subj);
+}
+function roundedMinus(v){ return Math.round((v-0.1)*10)/10; }
+
+function groupAvgMax(rows, key, subjKey, order){
+  const map = {};
+  rows.forEach(function(d){ const k=d[key]; if(!map[k]) map[k]=[]; map[k].push(d[subjKey]); });
+  let labels = Object.keys(map);
+  if (order) {
+    labels = labels.sort(function(a,b){
+      let ia = order.indexOf(a), ib = order.indexOf(b);
+      if (ia===-1) ia=999; if (ib===-1) ib=999;
+      return ia-ib;
+    });
+  } else {
+    labels = labels.sort();
+  }
+  const avgs = labels.map(function(l){ const arr=map[l]; return Math.round((arr.reduce(function(a,b){return a+b;},0)/arr.length)*10)/10; });
+  const maxs = labels.map(function(l){ return Math.max.apply(null, map[l]); });
+  return { labels, avgs, maxs };
+}
+
+function initCharts(rows, scores, subj) {
+  // 점수 분포 히스토그램 (만점에 맞춰 10구간)
+  const max = subj.max;
+  const binSize = max / 10;
+  const bins = Array(10).fill(0);
+  scores.forEach(function(v){
+    const idx = Math.min(Math.floor(v/binSize), 9);
+    bins[idx]++;
+  });
+  const binLabels = Array.from({length:10}, function(_,i){
+    const lo = Math.round(i*binSize), hi = Math.round((i+1)*binSize)-1;
+    return lo + '-' + hi;
+  });
+  if (charts.dist) charts.dist.destroy();
+  charts.dist = new Chart(document.getElementById('chart-dist'), {
+    type: 'bar',
+    data: { labels: binLabels, datasets: [{ label: '인원수', data: bins, backgroundColor: 'rgba(61,170,138,0.6)', borderColor: '#3daa8a', borderWidth: 1, suffix:'명' }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    plugins: [barLabelsPlugin]
+  });
+
+  // 반별 / 학교별 평균·최고점
+  const targetOrder = ['S+', 'A+', 'S', 'A', 'B', '기타'];
+  const cls = groupAvgMax(rows, 'cls', subj.key, targetOrder);
+  const sch = groupAvgMax(rows, 'school', subj.key, null);
+
+  if (charts.cls) charts.cls.destroy();
+  charts.cls = new Chart(document.getElementById('chart-class'), {
+    type: 'bar',
+    data: { labels: cls.labels, datasets: [
+      { label: '평균', data: cls.avgs, backgroundColor: 'rgba(61,170,138,0.8)', suffix:'점' },
+      { label: '최고점', data: cls.maxs, backgroundColor: 'rgba(184,154,80,0.8)', suffix:'점' }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: subj.max } } },
+    plugins: [barLabelsPlugin]
+  });
+
+  if (charts.sch) charts.sch.destroy();
+  charts.sch = new Chart(document.getElementById('chart-school'), {
+    type: 'bar',
+    data: { labels: sch.labels, datasets: [
+      { label: '평균', data: sch.avgs, backgroundColor: 'rgba(91,159,216,0.8)', suffix:'점' },
+      { label: '최고점', data: sch.maxs, backgroundColor: 'rgba(200,72,112,0.75)', suffix:'점' }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: subj.max } } },
+    plugins: [barLabelsPlugin]
+  });
+}
+
+window.onload = loadData;
+</script>
+</body>
+</html>
