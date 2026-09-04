@@ -80,6 +80,16 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #submitBar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--gold-line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
 #submitStatus { font-family:var(--kserif); font-size:13px; color:rgba(26,26,26,.6); }
 .hint { font-family:var(--kserif); font-size:12px; color:rgba(26,26,26,.5); }
+/* 원장님 전용 도구 모음 사이를 오가는 작은 메뉴 — admin.html 등 5개
+   파일에 똑같이 들어있음(공용 include가 없는 정적 사이트라 복붙). 이
+   페이지는 위쪽이 이미 헤더 툴바라 떠있는 버튼 대신 헤더 맨 끝(연결
+   상태 배지 옆)에 자연스럽게 끼워넣는다. */
+#mathyToolNavBtn{padding:4px 10px;border-radius:8px;border:1px solid var(--gold-line);background:#fff;cursor:pointer;font-size:12px;font-family:var(--sans)}
+#mathyToolNavPanel{display:none;position:fixed;z-index:99999;background:#fff;border:1px solid var(--gold-line);border-radius:9px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:6px;min-width:200px}
+#mathyToolNavPanel.open{display:block}
+#mathyToolNavPanel a{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#2a2a2a;font-size:13px;white-space:nowrap}
+#mathyToolNavPanel a:hover{background:#f5efe0}
+#mathyToolNavPanel a.active{background:#111;color:#fff;font-weight:600}
 </style>
 </head>
 <body>
@@ -89,6 +99,34 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
   <span id="roleBadgeEl" class="roleBadge"></span>
   <span id="metaEl" class="metaInfo"></span>
   <span id="connBadge">●</span>
+  <button id="mathyToolNavBtn" type="button" title="원장님 도구 메뉴">🧭 도구</button>
+  <div id="mathyToolNavPanel">
+    <a href="admin.html">📝 성적 입력</a>
+    <a href="oedapnotegenerator.html">📓 오답노트 생성기</a>
+    <a href="studentnote.html">📚 학생별 오답노트 (강사용)</a>
+    <a href="problembank.html">🗂️ 교재/시험지 관리</a>
+    <a href="whiteboard.html">✍️ 공동 필기</a>
+  </div>
+  <script>
+  (function(){
+    var btn=document.getElementById('mathyToolNavBtn');
+    var panel=document.getElementById('mathyToolNavPanel');
+    var cur=location.pathname.split('/').pop()||'index.html';
+    panel.querySelectorAll('a').forEach(function(a){
+      if(a.getAttribute('href')===cur) a.classList.add('active');
+    });
+    btn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      if(panel.classList.contains('open')){ panel.classList.remove('open'); return; }
+      var r=btn.getBoundingClientRect();
+      panel.style.top=(r.bottom+4)+'px';
+      panel.style.left=Math.max(4,r.right-200)+'px';
+      panel.classList.add('open');
+    });
+    document.addEventListener('click', function(){ panel.classList.remove('open'); });
+    panel.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  })();
+  </script>
 </header>
 <div id="banner"></div>
 <div id="toolbar">

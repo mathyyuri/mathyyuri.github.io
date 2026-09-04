@@ -140,11 +140,50 @@ button:disabled { opacity: 0.4; cursor: default; }
    sticky라 자리가 좁으므로 뱃지 목록은 줄바꿈되게(flex-wrap) 둔다. */
 .unitTallyChip { background: var(--gold-soft); color: var(--gold); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 #counterBadge { font-weight: 700; font-family: var(--serif); color: var(--gold); }
+/* 원장님 전용 도구 모음 사이를 오가는 작은 메뉴 — admin.html 등 5개
+   파일에 똑같이 들어있음(공용 include가 없는 정적 사이트라 복붙). 이
+   페이지는 왼쪽이 이미 명단 사이드바라 떠있는 버튼 대신 사이드바
+   맨 위에 자연스럽게 끼워넣고, 펼치는 패널만 position:fixed로 띄워서
+   사이드바의 overflow-y:auto에 잘려 보이지 않게 한다. */
+#mathyToolNavBtn{width:100%;padding:7px 10px;margin-bottom:12px;border-radius:8px;border:1px solid var(--gold-line);background:#fff;cursor:pointer;font-size:13px;font-family:var(--sans);text-align:left}
+#mathyToolNavPanel{display:none;position:fixed;z-index:99999;background:#fff;border:1px solid var(--gold-line);border-radius:9px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:6px;min-width:200px}
+#mathyToolNavPanel.open{display:block}
+#mathyToolNavPanel a{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#2a2a2a;font-size:13px;white-space:nowrap}
+#mathyToolNavPanel a:hover{background:#f5efe0}
+#mathyToolNavPanel a.active{background:#111;color:#fff;font-weight:600}
 </style>
 </head>
 <body>
 
 <div id="sidebar">
+  <button id="mathyToolNavBtn" type="button">🧭 다른 도구로 이동</button>
+  <div id="mathyToolNavPanel">
+    <a href="admin.html">📝 성적 입력</a>
+    <a href="oedapnotegenerator.html">📓 오답노트 생성기</a>
+    <a href="studentnote.html">📚 학생별 오답노트 (강사용)</a>
+    <a href="problembank.html">🗂️ 교재/시험지 관리</a>
+    <a href="whiteboard.html">✍️ 공동 필기</a>
+  </div>
+  <script>
+  (function(){
+    var btn=document.getElementById('mathyToolNavBtn');
+    var panel=document.getElementById('mathyToolNavPanel');
+    var cur=location.pathname.split('/').pop()||'index.html';
+    panel.querySelectorAll('a').forEach(function(a){
+      if(a.getAttribute('href')===cur) a.classList.add('active');
+    });
+    btn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      if(panel.classList.contains('open')){ panel.classList.remove('open'); return; }
+      var r=btn.getBoundingClientRect();
+      panel.style.top=(r.bottom+4)+'px';
+      panel.style.left=r.left+'px';
+      panel.classList.add('open');
+    });
+    document.addEventListener('click', function(){ panel.classList.remove('open'); });
+    panel.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  })();
+  </script>
   <p class="hint" id="rosterStatus">명단 불러오는 중...</p>
   <div id="cohort2"></div>
   <div id="cohort3"></div>

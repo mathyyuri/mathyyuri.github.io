@@ -53,9 +53,41 @@
   .modeBox { border: 1px solid #cddcf0; background: #f4f8ff; }
   .btnRow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
   .btnRow .hint { flex-basis: 100%; margin: 2px 0 0; }
+/* 원장님 전용 도구 모음 사이를 오가는 작은 메뉴 — admin.html 등 5개
+   파일에 똑같이 들어있음(공용 include가 없는 정적 사이트라 복붙). */
+#mathyToolNav{position:fixed;top:14px;left:14px;z-index:99999;font-family:var(--sans)}
+#mathyToolNavBtn{width:38px;height:38px;border-radius:9px;border:1px solid #E6DCC6;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.14);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+#mathyToolNavPanel{display:none;position:absolute;top:44px;left:0;background:#fff;border:1px solid #E6DCC6;border-radius:9px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:6px;min-width:200px}
+#mathyToolNavPanel.open{display:block}
+#mathyToolNavPanel a{display:block;padding:8px 10px;border-radius:6px;text-decoration:none;color:#2a2a2a;font-size:13px;white-space:nowrap}
+#mathyToolNavPanel a:hover{background:#f5efe0}
+#mathyToolNavPanel a.active{background:#111;color:#fff;font-weight:600}
 </style>
 </head>
 <body>
+<div id="mathyToolNav">
+  <button id="mathyToolNavBtn" type="button" title="원장님 도구 메뉴">🧭</button>
+  <div id="mathyToolNavPanel">
+    <a href="admin.html">📝 성적 입력</a>
+    <a href="oedapnotegenerator.html">📓 오답노트 생성기</a>
+    <a href="studentnote.html">📚 학생별 오답노트 (강사용)</a>
+    <a href="problembank.html">🗂️ 교재/시험지 관리</a>
+    <a href="whiteboard.html">✍️ 공동 필기</a>
+  </div>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('mathyToolNavBtn');
+  var panel=document.getElementById('mathyToolNavPanel');
+  var cur=location.pathname.split('/').pop()||'index.html';
+  panel.querySelectorAll('a').forEach(function(a){
+    if(a.getAttribute('href')===cur) a.classList.add('active');
+  });
+  btn.addEventListener('click', function(ev){ ev.stopPropagation(); panel.classList.toggle('open'); });
+  document.addEventListener('click', function(){ panel.classList.remove('open'); });
+  panel.addEventListener('click', function(ev){ ev.stopPropagation(); });
+})();
+</script>
 <h1>오답노트 생성기 (베타)</h1>
 
 <div class="box">
