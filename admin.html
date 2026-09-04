@@ -49,6 +49,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .fieldRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
 .fieldRow > div { display: flex; flex-direction: column; }
 .catChip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--gold-line); border-radius: 20px; padding: 4px 6px 4px 12px; margin: 3px; font-size: 12px; font-family: var(--kserif); background: #fafafa; }
+.classChipBox { display: flex; flex-wrap: wrap; gap: 6px; }
+.classChip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--gold-line); border-radius: 20px; padding: 6px 12px; font-size: 13px; font-weight: 400; font-family: var(--sans); background: #fff; cursor: pointer; }
+.classChip input { width: auto; margin: 0; }
+.classChip.checked { background: var(--mint-soft); border-color: var(--mint-deep); color: var(--mint-deep); font-weight: 700; }
 .catDeleteBtn { background: none; border: none; color: var(--pink-deep); font-size: 14px; font-weight: 900; line-height: 1; padding: 0 4px; cursor: pointer; }
 .catDeleteBtn:hover { color: var(--pink); }
 .scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12px; }
@@ -101,10 +105,10 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
       <div class="fieldRow">
         <div><label>기수</label><select id="scCohort"><option value="2">대치수학 2기</option></select></div>
         <div><label>카테고리</label><select id="scCategory"></select></div>
-        <div><label>반</label><select id="scClass"></select></div>
-        <div><label>시험명 (드롭다운에서 골라 이어서 수정하거나, 새로 입력)</label>
+        <div><label>반 <small>(여러 반 동시 선택 가능)</small></label><div id="scClassBox" class="classChipBox"></div></div>
+        <div><label id="scMissionLabel">시험명 (드롭다운에서 골라 이어서 수정하거나, 새로 입력)</label>
           <select id="scMissionSelect" style="width:220px;margin-bottom:4px"><option value="">-- 기존 시험명에서 고르기 --</option></select>
-          <input type="text" id="scMission" list="scMissionList" placeholder="예: 5회차 진도미션 (또는 위에서 선택)" style="width:220px" autocomplete="off">
+          <div id="scMissionField"><input type="text" id="scMission" list="scMissionList" placeholder="예: 5회차 진도미션 (또는 위에서 선택)" style="width:220px" autocomplete="off"></div>
           <datalist id="scMissionList"></datalist>
         </div>
         <div id="scQCountField"><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="60" style="width:70px" autocomplete="off"></div>
@@ -112,7 +116,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <button id="scLoadBtn">불러오기</button>
         <button type="button" id="scLoadMoreBtn" title="선택된 반의 학생 중 지금 표에 없는 학생만 추가로 불러옵니다(이미 입력한 채점은 그대로 유지) — 다른 반을 골라서 누르면 그 반 학생도 같은 표에 이어서 추가됩니다.">➕ 추가로 불러오기</button>
       </div>
-      <div class="fieldRow" style="margin-top:8px">
+      <div id="wbBox" class="fieldRow" style="margin-top:8px">
         <div><label>✍️ 필기용 숙제 원본 (PDF·이미지·hwpx 문제집, 선택)</label>
           <input type="file" id="wbDocFile" accept="application/pdf,image/*,.hwpx">
         </div>
@@ -125,6 +129,11 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <span class="hint">문항별 배점(기출 전용) — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다). 배점은 원장님만 수정 가능하고, 조교는 보기만 됩니다.</span>
         <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
       </div>
+      <div class="btnRow" id="scAllBtnRow" style="display:none;margin-top:6px">
+        <span class="hint">표 전체 학생을 한 번에:</span>
+        <button type="button" id="scAllOkBtn" class="selectAllBtn">전체 학생 전체 O</button>
+        <button type="button" id="scAllNoBtn" class="selectAllBtn">전체 학생 전체 X</button>
+      </div>
       <div id="scTableWrap"></div>
       <div class="btnRow" style="margin-top:10px">
         <button id="scSaveBtn" disabled>저장</button>
@@ -132,11 +141,11 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
       </div>
     </div>
 
-    <div class="box">
-      <p><b>미제출자 명단 (문자 발송용)</b></p>
-      <p class="hint">위 "성적 입력"에서 고른 기수·카테고리·반·시험명 기준으로 그 반 전체 명단을 불러옵니다 — 이 시험 기록이 없는 학생은 기본으로 체크돼 있고, 제출한 학생도 필요하면 직접 체크해서 추가할 수 있습니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
+    <div class="box" id="msBox">
+      <p><b>학생 명단 / 문자 보내기</b></p>
+      <p class="hint">위 "성적 입력"에서 고른 기수·반 기준으로 그 반 전체 명단을 불러옵니다. <b>시험명까지 골랐으면</b> 그 시험 미제출자가 기본으로 체크되고, <b>시험명 없이(공지사항 등)</b> 불러오면 전체 학생이 기본으로 체크됩니다 — 어느 쪽이든 필요한 대로 체크를 더하거나 빼면 됩니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
       <div class="btnRow">
-        <button type="button" id="msLoadBtn">미제출자 명단 불러오기</button>
+        <button type="button" id="msLoadBtn">명단 불러오기</button>
         <span id="msMsg" class="hint"></span>
       </div>
       <div id="msListWrap" style="display:none;margin-top:10px">
@@ -248,6 +257,16 @@ async function tryLogin(key) {
   // 서버에서 자동으로(examroster 응답 기준) 채워지니 숨겨도 동작엔 지장 없음.
   document.getElementById('scQCountField').style.display = myRole === 'admin' ? '' : 'none';
   document.getElementById('scStartNumField').style.display = myRole === 'admin' ? '' : 'none';
+  // 조교는 시험명을 새로 만들 일이 없다(원장님이 만들어둔 시험을 골라
+  // 채점만 함) — 자유 입력칸은 숨기고 드롭다운만 남긴다. 값은 드롭다운을
+  // 고르면 이 숨은 칸에 그대로 채워지니 동작엔 지장 없음.
+  document.getElementById('scMissionField').style.display = myRole === 'admin' ? '' : 'none';
+  document.getElementById('scMissionLabel').textContent = myRole === 'admin'
+    ? '시험명 (드롭다운에서 골라 이어서 수정하거나, 새로 입력)'
+    : '시험명 (드롭다운에서 고르기)';
+  // 조교는 필기 원본 연결/문자 발송 기능이 필요 없다 — 원장님만 사용.
+  document.getElementById('wbBox').style.display = myRole === 'admin' ? '' : 'none';
+  document.getElementById('msBox').style.display = myRole === 'admin' ? '' : 'none';
   await loadCategoriesAndRoster();
 }
 
@@ -365,6 +384,28 @@ function classesForCohort(cohort) {
   return [...set].sort();
 }
 
+// 반을 여러 개 동시에 선택할 수 있게 체크박스 칩으로 그린다(네이티브
+// <select multiple>은 ctrl/cmd+클릭을 알아야 해서 불편하다는 의견) —
+// 한 번에 여러 반을 불러와 이어서 채점하려는 목적.
+function renderClassCheckboxes(classes) {
+  const box = document.getElementById('scClassBox');
+  const prevChecked = new Set(getSelectedClasses());
+  box.innerHTML = classes.map(c => `
+    <label class="classChip" data-cls="${escHtml(c)}">
+      <input type="checkbox" class="scClassChk" value="${escHtml(c)}">${escHtml(c)}
+    </label>`).join('');
+  box.querySelectorAll('.scClassChk').forEach(chk => {
+    if (prevChecked.has(chk.value) || (!prevChecked.size && classes.length === 1)) chk.checked = true;
+    chk.closest('.classChip').classList.toggle('checked', chk.checked);
+    chk.addEventListener('change', () => {
+      chk.closest('.classChip').classList.toggle('checked', chk.checked);
+      refreshMissionList();
+    });
+  });
+}
+function getSelectedClasses() {
+  return [...document.querySelectorAll('.scClassChk:checked')].map(c => c.value);
+}
 function populateCohortDependents() {
   const cohort = document.getElementById('scCohort').value;
   const catSel = document.getElementById('scCategory');
@@ -372,22 +413,22 @@ function populateCohortDependents() {
     .filter(c => cohort !== '2' || SUMMER_ONLY_CATS.indexOf(c) === -1);
   catSel.innerHTML = cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
 
-  const clsSel = document.getElementById('scClass');
-  const classes = classesForCohort(cohort);
-  clsSel.innerHTML = classes.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+  renderClassCheckboxes(classesForCohort(cohort));
   refreshMissionList();
 }
 document.getElementById('scCohort').addEventListener('change', populateCohortDependents);
 document.getElementById('scCategory').addEventListener('change', refreshMissionList);
-document.getElementById('scClass').addEventListener('change', refreshMissionList);
 
 // 시험명 칸에서 그동안 이 반+카테고리에 쓰인 시험명을 골라 쓸 수 있게
 // datalist를 채운다 — "불러오기"를 누르기 전에도 뭐가 있었는지 바로 보임.
+// 반을 여러 개 골랐으면 특정 반으로 좁히지 않고 그 카테고리 전체 시험명을
+// 보여준다(어차피 자동완성용이라 반 상관없이 다 보여도 무방).
 let missionListReqId = 0;
 async function refreshMissionList() {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('scClass').value;
+  const selectedClasses = getSelectedClasses();
+  const cls = selectedClasses.length === 1 ? selectedClasses[0] : '';
   const dl = document.getElementById('scMissionList');
   const sel = document.getElementById('scMissionSelect');
   if (!category) { dl.innerHTML = ''; sel.innerHTML = '<option value="">-- 기존 시험명에서 고르기 --</option>'; return; }
@@ -509,14 +550,18 @@ function equalWeights(n) {
   const base = Math.floor(100 / n), extra = 100 - base * n;
   return Array.from({ length: n }, (_, i) => base + (i >= n - extra ? 1 : 0));
 }
+// 여러 반을 한 번에 골랐으면 반마다 examroster를 따로 불러서 하나의
+// 표로 합친다 — 문항 수/배점은 "어느 반이든 먼저 저장된 값이 있으면
+// 그걸 그대로 쓴다"는 원래 규칙을 반 목록 전체로 넓힌 것뿐이라, 반이
+// 하나일 때의 동작은 예전과 똑같다.
 document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('scClass').value;
+  const classes = getSelectedClasses();
   const mission = document.getElementById('scMission').value.trim();
   scQCount = Math.max(1, Math.min(60, Number(document.getElementById('scQCount').value) || 20));
   const msg = document.getElementById('scMsg');
-  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
   if (!mission) { msg.textContent = '시험명을 입력하세요.'; msg.className = 'hint err'; return; }
   msg.textContent = '불러오는 중...';
   msg.className = 'hint';
@@ -533,7 +578,16 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   // 있었다(원장님 리포트) — 시작 번호와 똑같은 실수를 문항 수에서도 했었다.
   const typedQCount = scQCount;
   try {
-    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
+    const responses = await Promise.all(classes.map(cls =>
+      callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission }).then(r => ({ cls, r }))
+    ));
+    const rawStudents = []; // {cls, s}
+    let sharedWeights = null, sharedStartNum = null;
+    responses.forEach(({ cls, r }) => {
+      r.students.forEach(s => rawStudents.push({ cls, s }));
+      if (r.weights && !sharedWeights) sharedWeights = r.weights;
+      if (r.startNum && sharedStartNum == null) sharedStartNum = r.startNum;
+    });
     // 이 미션의 진짜 문항 수를 자동으로 채운다. 실제로 기록된 학생별
     // 문항 배열이 있으면 그게 가장 확실한 진실이라 최우선으로 쓴다 —
     // 배점(weights)은 예전에 다른 문항 수로 한 번 잘못 저장돼서 실제
@@ -542,26 +596,23 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     // 잘못 뜨는 문제가 있었다 — 원장님 리포트로 근본 원인 확정, 구글
     // 시트 원본을 직접 대조해서 확인함). 학생 데이터가 아예 없는(완전
     // 새) 미션일 때만 배점 길이를 대신 쓴다.
-    const itemsMaxLen = Math.max(0, ...resp.students.map(function (s) { return (s.items || []).length; }));
-    const savedQCount = itemsMaxLen > 0 ? itemsMaxLen : (resp.weights ? resp.weights.length : 0);
-    if (savedQCount > 0) {
-      scQCount = savedQCount;
-      document.getElementById('scQCount').value = scQCount;
-    } else {
-      // 저장된 게 없으면 지금 입력창에 있는 값(typedQCount)을 그대로 쓴다.
-      scQCount = typedQCount;
-      document.getElementById('scQCount').value = scQCount;
-    }
-    scStudents = resp.students.map(s => ({
+    const itemsMaxLen = Math.max(0, ...rawStudents.map(function (x) { return (x.s.items || []).length; }));
+    const savedQCount = itemsMaxLen > 0 ? itemsMaxLen : (sharedWeights ? sharedWeights.length : 0);
+    // 저장된 게 없으면 지금 입력창에 있는 값(typedQCount)을 그대로 쓴다.
+    scQCount = savedQCount > 0 ? savedQCount : typedQCount;
+    document.getElementById('scQCount').value = scQCount;
+    scStudents = rawStudents.map(({ cls, s }) => ({
       name: s.name,
+      class: cls,
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
-    scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : equalWeights(scQCount);
-    scStartNum = typedStartNum > 1 ? typedStartNum : (resp.startNum || 1);
+    scWeights = (sharedWeights && sharedWeights.length === scQCount) ? sharedWeights.slice() : equalWeights(scQCount);
+    scStartNum = typedStartNum > 1 ? typedStartNum : (sharedStartNum || 1);
     document.getElementById('scStartNum').value = scStartNum;
     document.getElementById('scWeightBar').style.display = categoryUsesWeights() ? '' : 'none';
     document.getElementById('scEqualWeightBtn').style.display = weightsEditable() ? '' : 'none';
+    document.getElementById('scAllBtnRow').style.display = scStudents.length ? '' : 'none';
     renderScoreTable();
     document.getElementById('scSaveBtn').disabled = false;
     // 문항 수/시작 번호를 메시지에 항상 같이 보여준다 — 이전 미션에서
@@ -572,7 +623,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
         // 맞는 동작이지만, 화면에 안 띄워주니 바뀐 줄 모르고 그대로 저장해서
     // 틀린 문항 수가 그 미션의 배점으로 굳어버렸다). 지금은 몇 번부터
     // 몇 문항인지 항상 눈에 보이니 다른 미션이면 바로 알아챌 수 있다.
-    msg.textContent = `${scStudents.length}명 불러왔습니다. (문항 수: ${scQCount}, 시작 번호: ${scStartNum})`;
+    msg.textContent = `${scStudents.length}명 불러왔습니다. (${classes.join('·')} · 문항 수: ${scQCount}, 시작 번호: ${scStartNum})`;
     msg.className = 'hint ok';
   } catch (e) {
     msg.textContent = '오류: ' + e.message;
@@ -582,18 +633,18 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   }
 });
 
-// "추가로 불러오기" — 지금 표를 지우지 않고, 현재 선택된 반의 학생 중
-// 표에 아직 없는 사람만 이어 붙인다. 반을 바꿔서 누르면 그 반 학생들도
-// 같은 표에 추가되므로, 여러 반을 한 표에서 이어서 채점할 수 있고,
-// 명단에 늦게 추가된 학생을 다시 불러올 때도 이미 채점해둔 다른 학생
-// 것이 지워지지 않는다.
+// "추가로 불러오기" — 지금 표를 지우지 않고, 선택된 반들의 학생 중
+// 표에 아직 없는 사람만(같은 이름이라도 반이 다르면 별도 취급) 이어
+// 붙인다. 반 선택을 바꿔서 누르면 그 반 학생들도 같은 표에 추가되므로,
+// 여러 반을 한 표에서 이어서 채점할 수 있고, 명단에 늦게 추가된 학생을
+// 다시 불러올 때도 이미 채점해둔 다른 학생 것이 지워지지 않는다.
 document.getElementById('scLoadMoreBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('scClass').value;
+  const classes = getSelectedClasses();
   const mission = document.getElementById('scMission').value.trim();
   const msg = document.getElementById('scMsg');
-  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
   if (!mission) { msg.textContent = '시험명을 입력하세요.'; msg.className = 'hint err'; return; }
   if (!scStudents.length) { msg.textContent = '먼저 "불러오기"로 표를 만들어주세요.'; msg.className = 'hint err'; return; }
   const btn = document.getElementById('scLoadMoreBtn');
@@ -601,16 +652,25 @@ document.getElementById('scLoadMoreBtn').addEventListener('click', async () => {
   msg.textContent = '추가로 불러오는 중...';
   msg.className = 'hint';
   try {
-    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
-    const existingNames = new Set(scStudents.map(s => s.name));
-    const toAdd = resp.students.filter(s => !existingNames.has(s.name));
-    toAdd.forEach(s => {
-      scStudents.push({ name: s.name, items: fillDefaultItems(s.items), comment: s.comment || '' });
+    const responses = await Promise.all(classes.map(cls =>
+      callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission }).then(r => ({ cls, r }))
+    ));
+    const existingKeys = new Set(scStudents.map(s => (s.class || '') + '||' + s.name));
+    let addedCount = 0;
+    responses.forEach(({ cls, r }) => {
+      r.students.forEach(s => {
+        const key = cls + '||' + s.name;
+        if (existingKeys.has(key)) return;
+        existingKeys.add(key);
+        scStudents.push({ name: s.name, class: cls, items: fillDefaultItems(s.items), comment: s.comment || '' });
+        addedCount++;
+      });
     });
+    document.getElementById('scAllBtnRow').style.display = scStudents.length ? '' : 'none';
     renderScoreTable();
-    msg.textContent = toAdd.length
-      ? `${toAdd.length}명 추가됐습니다. (표 전체 ${scStudents.length}명)`
-      : `추가할 학생이 없습니다 — "${cls}"반 학생은 이미 다 표에 있어요.`;
+    msg.textContent = addedCount
+      ? `${addedCount}명 추가됐습니다. (표 전체 ${scStudents.length}명)`
+      : `추가할 학생이 없습니다 — 선택한 반 학생은 이미 다 표에 있어요.`;
     msg.className = 'hint ok';
   } catch (e) {
     msg.textContent = '오류: ' + e.message;
@@ -631,11 +691,15 @@ function fileToBase64(file) {
 document.getElementById('wbAssignBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('wbAllClasses').checked ? '' : document.getElementById('scClass').value;
+  const allClasses = document.getElementById('wbAllClasses').checked;
+  // 반을 여러 개 골랐으면 각 반에 따로 연결한다(assignwbdoc은 한 번에
+  // 반 하나 또는 "전체"만 받을 수 있음). "모든 반 공통" 체크가 우선.
+  const targetClasses = allClasses ? [''] : getSelectedClasses();
   const mission = document.getElementById('scMission').value.trim();
   const file = document.getElementById('wbDocFile').files[0];
   const msg = document.getElementById('wbAssignMsg');
   if (!category || !mission) { msg.textContent = '카테고리/시험명을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!allClasses && !targetClasses.length) { msg.textContent = '반을 선택하세요.'; msg.className = 'hint err'; return; }
   if (!file) { msg.textContent = '파일을 선택하세요.'; msg.className = 'hint err'; return; }
   const btn = document.getElementById('wbAssignBtn');
   btn.disabled = true;
@@ -650,10 +714,12 @@ document.getElementById('wbAssignBtn').addEventListener('click', async () => {
     });
     const uploadJson = await uploadRes.json();
     if (!uploadJson.ok) throw new Error(uploadJson.error || '업로드 실패');
-    await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort, category, class: cls, mission, docId: uploadJson.result.id, docType });
-    const check = await callGetJsonp({ action: 'assigneddoc', cohort, category, mission, class: cls });
+    for (const cls of targetClasses) {
+      await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort, category, class: cls, mission, docId: uploadJson.result.id, docType });
+    }
+    const check = await callGetJsonp({ action: 'assigneddoc', cohort, category, mission, class: targetClasses[0] });
     if (check.docId === uploadJson.result.id) {
-      msg.textContent = '연결되었습니다' + (cls ? ` (${cls} 반)` : ' (모든 반 공통)') + '.';
+      msg.textContent = '연결되었습니다' + (allClasses ? ' (모든 반 공통)' : ` (${targetClasses.join('·')} 반)`) + '.';
       msg.className = 'hint ok';
       document.getElementById('wbDocFile').value = '';
     } else {
@@ -692,8 +758,10 @@ function renderScoreTable() {
     html += '<th></th></tr>';
   }
   html += '</thead><tbody>';
+  const multiClass = new Set(scStudents.map(s => s.class)).size > 1;
   scStudents.forEach((s, si) => {
     html += `<tr><td class="nameCell">${escHtml(s.name)}`
+      + (multiClass && s.class ? ` <span class="classChip" style="padding:2px 8px;font-size:10px">${escHtml(s.class)}</span>` : '')
       + `<div class="rowAllBtns">`
       + `<button type="button" class="rowAllBtn allOk" data-si="${si}" data-val="1" title="이 학생 전체 정답 처리">전체O</button>`
       + `<button type="button" class="rowAllBtn allNo" data-si="${si}" data-val="2" title="이 학생 전체 오답 처리">전체X</button>`
@@ -758,11 +826,25 @@ document.getElementById('scEqualWeightBtn').addEventListener('click', () => {
   scWeights = equalWeights(scQCount);
   renderScoreTable();
 });
+// 표에 있는 학생 전원을 한 번에 전체 O/전체 X로 채운다 — 시험을 아예
+// 안 본 반이나 전원 만점(구술 확인 등) 같은 극단적인 상황을 몇 초 만에
+// 처리할 수 있게.
+document.getElementById('scAllOkBtn').addEventListener('click', () => {
+  scStudents.forEach(s => { s.items = Array(scQCount).fill(1); });
+  renderScoreTable();
+});
+document.getElementById('scAllNoBtn').addEventListener('click', () => {
+  scStudents.forEach(s => { s.items = Array(scQCount).fill(2); });
+  renderScoreTable();
+});
 
+// 표 안에 여러 반 학생이 섞여 있을 수 있어서(반을 여러 개 골라 불러온
+// 경우) 실제 반별로 나눠서 각각 저장한다 — saveexamscores는 한 번에
+// 반 하나 기준으로만 저장하게 돼 있어서, 반이 다른데 한 번에 보내면
+// 전부 마지막 반으로 잘못 저장돼버린다.
 document.getElementById('scSaveBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('scClass').value;
   const mission = document.getElementById('scMission').value.trim();
   const msg = document.getElementById('scMsg');
   msg.textContent = '저장하는 중...';
@@ -770,21 +852,37 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   document.getElementById('scSaveBtn').disabled = true;
   try {
     scStartNum = Number(document.getElementById('scStartNum').value) || 1;
-    const entries = scStudents.map(s => ({ name: s.name, items: s.items, comment: s.comment }));
     // 기출이 아니면 배점을 아예 안 보낸다 — 서버(handleSaveExamScores)가
     // weights가 없으면 자동으로 정답률(1의 개수/문항 수) 방식으로 점수를
     // 계산한다. 기출만 배점을 그대로 보낸다.
     const weightsToSend = categoryUsesWeights() ? scWeights : [];
-    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: weightsToSend, startNum: scStartNum });
+    const byClass = {};
+    scStudents.forEach(s => {
+      const cls = s.class || getSelectedClasses()[0] || '';
+      (byClass[cls] = byClass[cls] || []).push(s);
+    });
+    for (const cls of Object.keys(byClass)) {
+      const entries = byClass[cls].map(s => ({ name: s.name, items: s.items, comment: s.comment }));
+      await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: weightsToSend, startNum: scStartNum });
+    }
     await new Promise(r => setTimeout(r, 1200));
-    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
-    scStudents = resp.students.map(s => ({
+    const responses = await Promise.all(Object.keys(byClass).map(cls =>
+      callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission }).then(r => ({ cls, r }))
+    ));
+    const rawStudents = [];
+    let anyWeights = null;
+    responses.forEach(({ cls, r }) => {
+      r.students.forEach(s => rawStudents.push({ cls, s }));
+      if (r.weights && !anyWeights) anyWeights = r.weights;
+      if (r.startNum) scStartNum = r.startNum;
+    });
+    scStudents = rawStudents.map(({ cls, s }) => ({
       name: s.name,
+      class: cls,
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
-    scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : scWeights;
-    scStartNum = resp.startNum || scStartNum;
+    scWeights = (anyWeights && anyWeights.length === scQCount) ? anyWeights.slice() : scWeights;
     document.getElementById('scStartNum').value = scStartNum;
     renderScoreTable();
     msg.textContent = '저장 완료 ✓';
@@ -804,20 +902,26 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
 document.getElementById('msLoadBtn').addEventListener('click', async () => {
   const cohort = document.getElementById('scCohort').value;
   const category = document.getElementById('scCategory').value;
-  const cls = document.getElementById('scClass').value;
+  const classes = getSelectedClasses();
+  // 시험명은 이제 선택 사항 — 골라뒀으면 그 시험 기준 미제출자 조회,
+  // 안 골랐으면(공지사항 등) 반 전체 명단을 그냥 불러온다.
   const mission = document.getElementById('scMission').value.trim();
   const msg = document.getElementById('msMsg');
-  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
-  if (!mission) { msg.textContent = '위 "성적 입력"에서 시험명을 먼저 입력/선택하세요.'; msg.className = 'hint err'; return; }
+  if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
   msg.textContent = '불러오는 중...';
   msg.className = 'hint';
   try {
-    const resp = await callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission });
+    const responses = await Promise.all(classes.map(cls =>
+      callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission }).then(r => ({ cls, r }))
+    ));
     // 자동 감지된 미제출자만 보여주면, 이미 제출했지만 다른 이유로 문자를
     // 보내고 싶은 학생을 추가할 방법이 없었다(원장님 요청) — 반 전체
     // 명단을 다 보여주고, 미제출자만 기본으로 체크해둔 뒤 나머지는
-    // 직접 체크해서 추가할 수 있게 한다.
-    const list = resp.students || [];
+    // 직접 체크해서 추가할 수 있게 한다. 시험명 없이(공지사항) 불러온
+    // 경우는 "미제출" 개념이 없으니 전체를 기본 체크한다.
+    const hasContext = responses.length && responses[0].r.hasContext;
+    const list = [];
+    responses.forEach(({ cls, r }) => (r.students || []).forEach(s => list.push({ ...s, cls })));
     const wrap = document.getElementById('msCheckboxList');
     if (!list.length) {
       wrap.innerHTML = '<p class="hint">명단에 학생이 없습니다.</p>';
@@ -832,23 +936,30 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
         const scoreDisp = r1(s.score);
         const compDisp = r1(s.comp);
         let statusHtml;
-        if (compDisp == null) {
-          statusHtml = '<b style="color:var(--pink-deep)">미제출</b>';
+        if (!hasContext) {
+          statusHtml = '';
+        } else if (compDisp == null) {
+          statusHtml = ' · <b style="color:var(--pink-deep)">미제출</b>';
         } else if (compDisp === 100) {
-          statusHtml = '<b style="color:var(--mint-deep)">완성도 100%</b> · 원점수 ' + (scoreDisp ?? '-') + '점';
+          statusHtml = ' · <b style="color:var(--mint-deep)">완성도 100%</b> · 원점수 ' + (scoreDisp ?? '-') + '점';
         } else {
-          statusHtml = '완성도 <b style="color:var(--gold)">' + compDisp + '%</b>(' + s.correct + '/' + s.answered + '문항) · 원점수 ' + (scoreDisp ?? '-') + '점';
+          statusHtml = ' · 완성도 <b style="color:var(--gold)">' + compDisp + '%</b>(' + s.correct + '/' + s.answered + '문항) · 원점수 ' + (scoreDisp ?? '-') + '점';
         }
+        const checked = hasContext ? !s.submitted : true;
         return `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:normal;font-family:var(--sans);font-size:13px">
-          <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" ${s.submitted ? '' : 'checked'} style="width:auto">
-          ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')} · ${statusHtml}</span>
+          <input type="checkbox" class="msChk" data-student-phone="${escHtml(s.studentPhone)}" data-parent-phone="${escHtml(s.parentPhone)}" ${checked ? 'checked' : ''} style="width:auto">
+          [${escHtml(s.cls)}] ${escHtml(s.name)} <span class="hint">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}${statusHtml}</span>
         </label>`;
       }).join('');
     }
     document.getElementById('msListWrap').style.display = '';
-    const missingCount = list.filter(s => !s.submitted).length;
-    msg.textContent = '전체 ' + list.length + '명 중 미제출 ' + missingCount + '명(기본 체크됨) — 필요하면 추가로 체크하세요';
+    if (hasContext) {
+      const missingCount = list.filter(s => !s.submitted).length;
+      msg.textContent = '전체 ' + list.length + '명 중 미제출 ' + missingCount + '명(기본 체크됨) — 필요하면 추가로 체크하세요';
+    } else {
+      msg.textContent = '전체 ' + list.length + '명 불러왔습니다(전체 기본 체크됨) — 공지 대상만 남기고 체크 해제하세요';
+    }
     msg.className = 'hint ok';
   } catch (e) {
     msg.textContent = '오류: ' + e.message;
