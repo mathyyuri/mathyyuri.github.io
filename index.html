@@ -586,6 +586,11 @@ function catRowsFor(cohort,cat,mode){
   if(cohort==='2'&&cat==='교과서미션'){
     rows=rows.filter(r=>!/^변형\s*:/.test(String(r.mission||'').trim()));
   }
+  // 9월부터 등록을 그만두는 학생(SUMMER_ONLY_STUDENTS)은 중간고사 대비
+  // (main) 화면에서는 빼고, SUMMER 화면에서는 그대로 남긴다.
+  if(cohort==='2'&&mode==='main'&&SUMMER_ONLY_STUDENTS.length){
+    rows=rows.filter(r=>SUMMER_ONLY_STUDENTS.indexOf(String(r.nickname||'').trim())===-1);
+  }
   return rows;
 }
 function tabListFor(c){
