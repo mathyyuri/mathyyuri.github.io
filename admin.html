@@ -566,17 +566,23 @@ let scStartNum = 1;
 const TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'Y', null: 'N' };
 const TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', null: '−' };
 function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null : 1; }
-// 이미 저장된 기록이 있는 학생만 "빈 칸은 O"로 채운다(대부분 맞는 게
-// 보통이라 틀린 문항만 클릭해서 고치면 되게 하려는 원래 의도) — 시트에
-// 이 미션 행 자체가 없는(한 번도 채점한 적 없는) 학생까지 O로 채우면
-// 실제로는 안 낸 학생이 전부 만점으로 보이게 된다(원장님 리포트).
+// 이미 저장된 기록이 있는 "그 범위 안"에서만 빈 칸을 O로 채운다(대부분
+// 맞는 게 보통이라 틀린 문항만 클릭해서 고치면 되게 하려는 원래 의도) —
+// 시트에 이 미션 행 자체가 없는(한 번도 채점한 적 없는) 학생까지 O로
+// 채우면 실제로는 안 낸 학생이 전부 만점으로 보이게 된다(원장님 리포트).
 // items.length === 0 → 저장된 행이 아예 없다는 뜻(handleExamRoster가
 // 그렇게 반환함)이라, 이 경우엔 전부 빈 칸(null=아직 안 풀었음)으로 둔다.
+// missionRangeFromName으로 문항 수를 이름 기준(예: 60개)으로 넓혔는데
+// 이 학생은 그중 일부(예: 15개)까지만 저장돼 있는 경우도 있다 — 그
+// 15개를 넘어서는 자리는 "그 학생이 아직 손도 안 댄 문제"라 O로
+// 미리 채우면 안 되고(실제로 안 채점한 걸 채점한 것처럼 저장하게 될
+// 위험), 저장된 범위(0~14번째) 안의 빈 칸만 O로 채운다(원장님 리포트:
+// "76번부터는 채점이 안 되어있는데 왜 O로 보이냐").
 function fillDefaultItems(items) {
-  const hasExisting = items && items.length > 0;
+  const savedLen = items ? items.length : 0;
   return Array.from({ length: scQCount }, (_, i) => {
     if (items && items[i] != null) return items[i];
-    return hasExisting ? 1 : null;
+    return i < savedLen ? 1 : null;
   });
 }
 document.getElementById('scStartNum').addEventListener('input', () => {
