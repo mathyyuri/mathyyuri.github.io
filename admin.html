@@ -145,7 +145,14 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
 
     <div class="box" id="msBox">
       <p><b>학생 명단 / 문자 보내기</b></p>
-      <p class="hint">위 "성적 입력"에서 고른 기수·반 기준으로 그 반 전체 명단을 불러옵니다. <b>시험명까지 골랐으면</b> 그 시험 미제출자가 기본으로 체크되고, <b>시험명 없이(공지사항 등)</b> 불러오면 전체 학생이 기본으로 체크됩니다 — 어느 쪽이든 필요한 대로 체크를 더하거나 빼면 됩니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
+      <div class="fieldRow" style="margin-bottom:6px">
+        <div><label>보내는 방식</label>
+          <label style="font-weight:normal"><input type="radio" name="msMode" value="mission" checked style="width:auto"> 미션별 (한 시험 기준으로 미제출자 찾기)</label>
+          <label style="font-weight:normal;margin-left:10px"><input type="radio" name="msMode" value="student" style="width:auto"> 학생별 (학생마다 미완료 미션 모아보기)</label>
+        </div>
+      </div>
+      <p class="hint" id="msModeHintMission">위 "성적 입력"에서 고른 기수·반 기준으로 그 반 전체 명단을 불러옵니다. <b>시험명까지 골랐으면</b> 그 시험 미제출자가 기본으로 체크되고, <b>시험명 없이(공지사항 등)</b> 불러오면 전체 학생이 기본으로 체크됩니다 — 어느 쪽이든 필요한 대로 체크를 더하거나 빼면 됩니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
+      <p class="hint" id="msModeHintStudent" style="display:none">위 "성적 입력"에서 고른 기수·카테고리·반 기준으로, 그 반 학생마다 <b>그 카테고리 안의 모든 시험</b>을 모아서 완성도를 보여줍니다(시험명 선택은 이 모드에선 무시됩니다). 학생·미션 체크박스로 문자에 넣을 항목을 고르고, 아래 문구 틀({이름}/{미완료목록} 자동 채움)로 학생마다 다른 문자를 만들어 한 명씩 번호·문자를 복사해서 보내면 됩니다.</p>
       <div class="btnRow">
         <button type="button" id="msLoadBtn">명단 불러오기</button>
         <span id="msMsg" class="hint"></span>
@@ -169,6 +176,42 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
           <button type="button" id="msCopyBtn">선택 번호 복사</button>
           <button type="button" id="msDownloadBtn">번호 목록 다운로드 (.txt)</button>
           <span id="msActionMsg" class="hint"></span>
+        </div>
+      </div>
+      <div id="msStudentWrap" style="display:none;margin-top:10px">
+        <div class="fieldRow" style="margin-bottom:6px">
+          <div><label>받는 번호</label>
+            <label style="font-weight:normal"><input type="radio" name="msTarget2" value="student" checked style="width:auto"> 학생</label>
+            <label style="font-weight:normal;margin-left:10px"><input type="radio" name="msTarget2" value="parent" style="width:auto"> 학부모</label>
+            <label style="font-weight:normal;margin-left:10px"><input type="radio" name="msTarget2" value="both" style="width:auto"> 둘 다</label>
+          </div>
+        </div>
+        <div id="msStudentList" style="max-height:280px;overflow-y:auto;border:1px solid var(--gold-line);border-radius:3px;padding:8px"></div>
+        <div class="fieldRow" style="margin-top:8px">
+          <div style="flex:1 1 100%">
+            <label>문자 틀 (학생마다 자동으로 바뀜 — {이름}, {미완료목록} 그대로 넣어두세요)</label>
+            <textarea id="msTemplate" rows="5" style="width:100%;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--gold-line);border-radius:3px;box-sizing:border-box">안녕하세요 {이름} 학생, MATHY YURI입니다.
+아직 완료되지 않은 미션이 있어 안내드립니다.
+{미완료목록}
+확인 후 완료 부탁드립니다. 감사합니다.</textarea>
+          </div>
+        </div>
+        <div class="btnRow" style="margin-top:8px;align-items:center">
+          <button type="button" id="msPrevBtn">◀ 이전 학생</button>
+          <span id="msPersonalIdx" class="hint" style="min-width:120px;text-align:center"></span>
+          <button type="button" id="msNextBtn">다음 학생 ▶</button>
+        </div>
+        <div class="fieldRow" style="margin-top:6px">
+          <div style="flex:1 1 100%">
+            <label>미리보기 (아래 두 버튼으로 이 학생 번호·문자를 따로 복사해서 Phone Link에 붙여넣으세요)</label>
+            <textarea id="msPersonalPreview" rows="5" readonly style="width:100%;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--gold-line);border-radius:3px;box-sizing:border-box;background:#faf8f2"></textarea>
+          </div>
+        </div>
+        <div class="btnRow" style="margin-top:8px">
+          <button type="button" id="msPersonalCopyPhoneBtn">이 학생 번호 복사</button>
+          <button type="button" id="msPersonalCopyMsgBtn">이 학생 문자 복사</button>
+          <button type="button" id="msPersonalDownloadBtn">개별 문자 목록 다운로드 (.txt)</button>
+          <span id="msStudentActionMsg" class="hint"></span>
         </div>
       </div>
     </div>
@@ -1016,7 +1059,20 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   }
 });
 
-// ---------- 미제출자 명단 (문자 발송용) ----------
+// ---------- 학생별 모드 상태 ----------
+let msStudents = []; // [{name, cls, studentPhone, parentPhone, missions:[{mission,comp,score,correct,answered,checked}], checked}]
+let msPreviewIdx = 0;
+
+document.querySelectorAll('input[name="msMode"]').forEach(r => r.addEventListener('change', () => {
+  const mode = (document.querySelector('input[name="msMode"]:checked') || {}).value || 'mission';
+  document.getElementById('msModeHintMission').style.display = mode === 'mission' ? '' : 'none';
+  document.getElementById('msModeHintStudent').style.display = mode === 'student' ? '' : 'none';
+  document.getElementById('msListWrap').style.display = 'none';
+  document.getElementById('msStudentWrap').style.display = 'none';
+  document.getElementById('msMsg').textContent = '';
+}));
+
+// ---------- 미제출자 명단 / 학생별 미완료 모아보기 (문자 발송용) ----------
 // 위 "성적 입력"에서 고른 기수·카테고리·반·시험명을 그대로 재사용한다
 // (선택 칸을 따로 안 두는 이유 — 이미 그 미션을 고른 김에 바로 미제출자도
 // 확인하는 흐름이 자연스럽고, 드롭다운 채우는 코드를 중복시킬 필요가 없다).
@@ -1025,12 +1081,23 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
   const category = document.getElementById('scCategory').value;
   const classes = getSelectedClasses();
   // 시험명은 이제 선택 사항 — 골라뒀으면 그 시험 기준 미제출자 조회,
-  // 안 골랐으면(공지사항 등) 반 전체 명단을 그냥 불러온다.
+  // 안 골랐으면(공지사항 등) 반 전체 명단을 그냥 불러온다. 학생별 모드에선
+  // 애초에 시험명을 안 쓰므로 이 값 자체가 무시된다.
   const mission = document.getElementById('scMission').value.trim();
+  const mode = (document.querySelector('input[name="msMode"]:checked') || {}).value || 'mission';
   const msg = document.getElementById('msMsg');
   if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
   msg.textContent = '불러오는 중...';
   msg.className = 'hint';
+  if (mode === 'student') {
+    try {
+      await loadMsStudentMode(cohort, category, classes, msg);
+    } catch (e) {
+      msg.textContent = '오류: ' + e.message;
+      msg.className = 'hint err';
+    }
+    return;
+  }
   try {
     const responses = await Promise.all(classes.map(cls =>
       callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission }).then(r => ({ cls, r }))
@@ -1131,6 +1198,164 @@ document.getElementById('msDownloadBtn').addEventListener('click', () => {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
   actionMsg.textContent = '다운로드됨 — 문자자동화 스크립트가 읽는 파일입니다.';
+  actionMsg.className = 'hint ok';
+});
+
+// ---------- 학생별 모드: 학생마다 그 카테고리의 모든 시험을 모아서
+// 미완료(완성도 100% 아님) 미션을 골라 개인화된 문자를 만든다 ----------
+async function loadMsStudentMode(cohort, category, classes, msg) {
+  const responses = await Promise.all(classes.map(cls =>
+    callGetJsonp({ action: 'studentmissionstatus', key: myKey, cohort, category, class: cls }).then(r => ({ cls, r }))
+  ));
+  msStudents = [];
+  responses.forEach(({ cls, r }) => (r.students || []).forEach(s => {
+    // 완성도 100%가 아니면(미제출 포함) 그 미션은 "미완료"로 보고 기본 체크 —
+    // 학생 자체도 미완료 미션이 하나라도 있으면 기본으로 함께 체크한다.
+    const missions = (s.missions || []).map(m => ({ ...m, checked: m.comp !== 100 }));
+    msStudents.push({
+      name: s.name, cls, studentPhone: s.studentPhone, parentPhone: s.parentPhone,
+      missions,
+      checked: missions.some(m => m.checked),
+    });
+  }));
+  msPreviewIdx = 0;
+  renderMsStudentList();
+  renderMsPreview();
+  document.getElementById('msStudentWrap').style.display = '';
+  const incompleteCount = msStudents.filter(s => s.checked).length;
+  msg.textContent = '전체 ' + msStudents.length + '명 중 미완료 있는 학생 ' + incompleteCount + '명(기본 체크됨) — 학생·미션 체크를 확인하고 아래에서 한 명씩 보내세요';
+  msg.className = 'hint ok';
+}
+
+function renderMsStudentList() {
+  const wrap = document.getElementById('msStudentList');
+  if (!msStudents.length) { wrap.innerHTML = '<p class="hint">명단에 학생이 없습니다.</p>'; return; }
+  const r1 = n => (n == null || n === '') ? null : Math.round(n * 10) / 10;
+  wrap.innerHTML = msStudents.map((s, si) => {
+    const missionsHtml = s.missions.length
+      ? s.missions.map((m, mi) => {
+        const compDisp = r1(m.comp);
+        let statusHtml;
+        if (compDisp == null) statusHtml = '<b style="color:var(--pink-deep)">미제출</b>';
+        else if (compDisp === 100) statusHtml = '<b style="color:var(--mint-deep)">완성도 100%</b>';
+        else statusHtml = '완성도 <b style="color:var(--gold)">' + compDisp + '%</b>(' + m.correct + '/' + m.answered + '문항)';
+        return `<label style="display:flex;align-items:center;gap:6px;padding:2px 0 2px 24px;font-weight:normal;font-family:var(--sans);font-size:12px">
+          <input type="checkbox" class="msMissionChk" data-si="${si}" data-mi="${mi}" ${m.checked ? 'checked' : ''} style="width:auto">
+          ${escHtml(m.mission)} <span class="hint">${statusHtml}</span>
+        </label>`;
+      }).join('')
+      : '<p class="hint" style="padding-left:24px">이 카테고리에 기록된 시험이 없습니다.</p>';
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--gold-line)">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-family:var(--sans);font-size:13px">
+        <input type="checkbox" class="msStudentChk" data-si="${si}" ${s.checked ? 'checked' : ''} style="width:auto">
+        [${escHtml(s.cls)}] ${escHtml(s.name)} <span class="hint" style="font-weight:normal">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}</span>
+      </label>
+      ${missionsHtml}
+    </div>`;
+  }).join('');
+}
+document.getElementById('msStudentList').addEventListener('change', (ev) => {
+  const t = ev.target;
+  const si = Number(t.dataset.si);
+  if (t.classList.contains('msStudentChk')) {
+    msStudents[si].checked = t.checked;
+  } else if (t.classList.contains('msMissionChk')) {
+    msStudents[si].missions[Number(t.dataset.mi)].checked = t.checked;
+  } else return;
+  renderMsPreview();
+});
+
+function checkedMsStudentIndices() {
+  const idxs = [];
+  msStudents.forEach((s, i) => { if (s.checked) idxs.push(i); });
+  return idxs;
+}
+// {이름}/{미완료목록} 자리표시자를 그 학생 데이터로 채운 실제 문자 내용을 만든다.
+function buildPersonalMessage(s) {
+  const template = document.getElementById('msTemplate').value;
+  const r1 = n => (n == null || n === '') ? null : Math.round(n * 10) / 10;
+  const lines = s.missions.filter(m => m.checked).map(m => {
+    const compDisp = r1(m.comp);
+    const stat = compDisp == null ? '미제출' : (compDisp === 100 ? '완성도 100%' : ('완성도 ' + compDisp + '%(' + m.correct + '/' + m.answered + '문항)'));
+    return '- ' + m.mission + ': ' + stat;
+  });
+  const list = lines.length ? lines.join('\n') : '(모두 완료했습니다 🎉)';
+  return template.replace(/\{이름\}/g, s.name).replace(/\{미완료목록\}/g, list);
+}
+function renderMsPreview() {
+  const idxs = checkedMsStudentIndices();
+  const idxLabel = document.getElementById('msPersonalIdx');
+  const preview = document.getElementById('msPersonalPreview');
+  if (!idxs.length) { idxLabel.textContent = '0 / 0'; preview.value = ''; return; }
+  if (msPreviewIdx >= idxs.length) msPreviewIdx = 0;
+  if (msPreviewIdx < 0) msPreviewIdx = idxs.length - 1;
+  const s = msStudents[idxs[msPreviewIdx]];
+  idxLabel.textContent = (msPreviewIdx + 1) + ' / ' + idxs.length + ' ' + s.name;
+  preview.value = buildPersonalMessage(s);
+}
+document.getElementById('msTemplate').addEventListener('input', renderMsPreview);
+document.getElementById('msPrevBtn').addEventListener('click', () => { msPreviewIdx--; renderMsPreview(); });
+document.getElementById('msNextBtn').addEventListener('click', () => { msPreviewIdx++; renderMsPreview(); });
+function currentMsPreviewStudent() {
+  const idxs = checkedMsStudentIndices();
+  if (!idxs.length) return null;
+  if (msPreviewIdx >= idxs.length) msPreviewIdx = 0;
+  return msStudents[idxs[msPreviewIdx]];
+}
+document.getElementById('msPersonalCopyPhoneBtn').addEventListener('click', async () => {
+  const actionMsg = document.getElementById('msStudentActionMsg');
+  const s = currentMsPreviewStudent();
+  if (!s) { actionMsg.textContent = '선택된 학생이 없습니다.'; actionMsg.className = 'hint err'; return; }
+  const target = (document.querySelector('input[name="msTarget2"]:checked') || {}).value || 'student';
+  const phones = [];
+  if ((target === 'student' || target === 'both') && s.studentPhone) phones.push(s.studentPhone);
+  if ((target === 'parent' || target === 'both') && s.parentPhone) phones.push(s.parentPhone);
+  if (!phones.length) { actionMsg.textContent = '이 학생은 번호가 없습니다.'; actionMsg.className = 'hint err'; return; }
+  try {
+    await navigator.clipboard.writeText(phones.join(', '));
+    actionMsg.textContent = s.name + ' 번호 복사됨 — Phone Link 받는사람 칸에 붙여넣으세요.';
+    actionMsg.className = 'hint ok';
+  } catch (e) {
+    actionMsg.textContent = '복사 실패: ' + e.message;
+    actionMsg.className = 'hint err';
+  }
+});
+document.getElementById('msPersonalCopyMsgBtn').addEventListener('click', async () => {
+  const actionMsg = document.getElementById('msStudentActionMsg');
+  const s = currentMsPreviewStudent();
+  if (!s) { actionMsg.textContent = '선택된 학생이 없습니다.'; actionMsg.className = 'hint err'; return; }
+  try {
+    await navigator.clipboard.writeText(buildPersonalMessage(s));
+    actionMsg.textContent = s.name + ' 문자 복사됨 — Phone Link 문자 입력칸에 붙여넣으세요.';
+    actionMsg.className = 'hint ok';
+  } catch (e) {
+    actionMsg.textContent = '복사 실패: ' + e.message;
+    actionMsg.className = 'hint err';
+  }
+});
+document.getElementById('msPersonalDownloadBtn').addEventListener('click', () => {
+  const idxs = checkedMsStudentIndices();
+  const actionMsg = document.getElementById('msStudentActionMsg');
+  if (!idxs.length) { actionMsg.textContent = '선택된 학생이 없습니다.'; actionMsg.className = 'hint err'; return; }
+  const target = (document.querySelector('input[name="msTarget2"]:checked') || {}).value || 'student';
+  const blocks = idxs.map(i => {
+    const s = msStudents[i];
+    const phones = [];
+    if ((target === 'student' || target === 'both') && s.studentPhone) phones.push(s.studentPhone);
+    if ((target === 'parent' || target === 'both') && s.parentPhone) phones.push(s.parentPhone);
+    return '-----학생-----\n이름: ' + s.name + '\n번호: ' + (phones.join(', ') || '없음') + '\n문자:\n' + buildPersonalMessage(s);
+  });
+  const content = blocks.join('\n\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '학생별문자.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  actionMsg.textContent = idxs.length + '명 다운로드됨 — 지금은 위 두 복사 버튼으로 한 명씩 직접 보내면 되고, 나중에 자동발송 스크립트가 완성되면 이 파일을 그대로 씁니다.';
   actionMsg.className = 'hint ok';
 });
 </script>
