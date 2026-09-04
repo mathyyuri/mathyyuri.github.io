@@ -1046,9 +1046,21 @@ function setClassFilter(c){
 }
 function tabRows(){return (publicData&&publicData[pubCohort]&&publicData[pubCohort][pubTab])||[];}
 function filteredRows(){return tabRows().filter(r=>pubClass==='전체'||r.class===pubClass);}
+// 채점 칸 60문항 제한 때문에 "변형 : 평면좌표(1~60)"/"(61~120)"/"(121~147)"처럼
+// 번호 구간을 나눠서 미션을 여러 개로 등록한 경우, 학생/원장님 화면에서는
+// 이걸 하나로 합쳐서 보여준다 — 뒤에 붙은 "(숫자~숫자)"만 떼어내면 공통
+// 이름이 그룹 키가 된다. 그런 표시가 없는 보통 미션은 자기 이름 그대로가
+// 그룹(=원래처럼 미션 하나하나가 각자 따로 카드로 보임).
+function missionGroupKey(name){
+  const m=String(name||'').match(/^(.*?)\s*\(\d+\s*~\s*\d+\)$/);
+  return m?m[1].trim():name;
+}
 function missionOrder(rows){
   const list=[],seen={};
-  rows.forEach(r=>{if(r.mission&&!seen[r.mission]){seen[r.mission]=1;list.push(r.mission);}});
+  rows.forEach(r=>{
+    const key=missionGroupKey(r.mission);
+    if(key&&!seen[key]){seen[key]=1;list.push(key);}
+  });
   return list;
 }
 function studentKey(r){ return r.sid!=null ? 's'+r.sid : 'n'+r.nickname; }
@@ -1101,18 +1113,24 @@ function aggregate(rows){
   const stu={},order=[];
   rows.forEach(r=>{
     const key=studentKey(r);
-    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},comps:{},wrongByMission:{},wrongLeft:0};order.push(key);}
+    const gm=missionGroupKey(r.mission);
+    if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,scores:{},_scoreArrs:{},comps:{},_compArrs:{},wrongByMission:{},wrongLeft:0};order.push(key);}
     stu[key].nickname=r.nickname; // 가장 최근 닉네임
-    if(r.score!=null)stu[key].scores[r.mission]=r.score;
+    // 번호 구간별로 나뉜 미션(예: 변형(1~60)/(61~120)/(121~147))은 같은
+    // 그룹 키(gm)로 모이므로, 점수/완성도는 그 학생의 해당 구간들 평균으로
+    // 합친다 — 나뉘지 않은 보통 미션은 배열에 값이 하나뿐이라 그대로 나옴.
+    if(r.score!=null)(stu[key]._scoreArrs[gm]=stu[key]._scoreArrs[gm]||[]).push(r.score);
     const cp=compValOf(r);
-    if(cp!=null)stu[key].comps[r.mission]=cp;
+    if(cp!=null)(stu[key]._compArrs[gm]=stu[key]._compArrs[gm]||[]).push(cp);
     let wm=0;
     (r.items||[]).forEach(v=>{if(v===2){wm++;stu[key].wrongLeft++;}});
-    stu[key].wrongByMission[r.mission]=(stu[key].wrongByMission[r.mission]||0)+wm;
+    stu[key].wrongByMission[gm]=(stu[key].wrongByMission[gm]||0)+wm;
   });
   const students=order.map(id=>{
     const s=stu[id];
-    const vals=Object.values(s.scores);
+    Object.keys(s._scoreArrs).forEach(gm=>{s.scores[gm]=mean(s._scoreArrs[gm]);});
+    Object.keys(s._compArrs).forEach(gm=>{s.comps[gm]=mean(s._compArrs[gm]);});
+    const vals=Object.values(s.scores).filter(v=>v!=null);
     s.avg=mean(vals);
     s.done=vals.length;
     return s;
@@ -1202,7 +1220,7 @@ function renderCards(){
   let html='<button class="sum-card'+(pubMission==null?' active':'')+'" onclick="selectMission(null)">'
     +'<div class="k">'+pubTab+(isAlgebra?' 누적 총점':' 누적 현황')+'</div><div class="v">'+totalAvg+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
   missions.forEach(m=>{
-    const avg=mean(rows.filter(r=>r.mission===m&&r.score!=null).map(r=>r.score))??'—';
+    const avg=mean(students.map(s=>s.scores[m]).filter(v=>v!=null))??'—';
     html+='<button class="sum-card'+(pubMission===m?' active':'')+'" onclick="selectMission(\''+m.replace(/'/g,"\\'")+'\')">'
       +'<div class="k">'+esc(m)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">'+(isAlgebra?'회차 순위':'정오표')+'</div></button>';
   });
@@ -1612,12 +1630,39 @@ function renderDetailResources(){
 }
 
 /* ---- 미션별 정오표 ---- */
+// missionGroupKey로 묶인 여러 구간 미션(예: 변형(1~60)/(61~120)/(121~147))의
+// 원본 행들을 학생 한 명당 한 줄로 합친다 — 각 구간의 numStart를 기준으로
+// items를 전체 번호 범위(1~147 등)에 제 위치에 끼워 넣고, 점수는 그 학생이
+// 실제로 응시한 구간들의 평균으로 낸다. 구간이 안 나뉜 보통 미션은 원래
+// numStart 그대로 raw row 하나만 들어오므로 사실상 원본과 동일하게 나온다.
+function mergeMissionRows(rawRows){
+  const byStu={},order=[];
+  rawRows.forEach(r=>{
+    const key=studentKey(r);
+    if(!byStu[key]){byStu[key]={nickname:r.nickname,class:r.class,sid:r.sid,chunks:[]};order.push(key);}
+    byStu[key].nickname=r.nickname;
+    byStu[key].chunks.push(r);
+  });
+  return order.map(key=>{
+    const s=byStu[key];
+    let maxNum=0;
+    s.chunks.forEach(c=>{const start=c.numStart||1;maxNum=Math.max(maxNum,start+(c.items||[]).length-1);});
+    const items=Array(maxNum).fill(null);
+    s.chunks.forEach(c=>{
+      const start=c.numStart||1;
+      (c.items||[]).forEach((v,i)=>{items[start-1+i]=v;});
+    });
+    const scores=s.chunks.map(c=>c.score).filter(v=>v!=null);
+    return {nickname:s.nickname,class:s.class,sid:s.sid,items,score:scores.length?mean(scores):null,numStart:1};
+  });
+}
 function renderMissionDetail(){
   document.getElementById('detail-title').textContent=pubMission;
   document.getElementById('detail-legend').classList.remove('hidden');
   renderDetailResources();
   loadMissionDownloadBtn(pubTab,pubMission);
-  let rows=filteredRows().filter(r=>r.mission===pubMission);
+  const rawRows=filteredRows().filter(r=>missionGroupKey(r.mission)===pubMission);
+  let rows=mergeMissionRows(rawRows);
   rows=rows.slice().sort((a,b)=>(b.score??-1)-(a.score??-1));
   document.getElementById('detail-sub').textContent='ITEM ANALYSIS · '+rows.length+'명 · 점수 높은 순';
 
