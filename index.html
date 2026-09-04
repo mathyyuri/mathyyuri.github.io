@@ -511,6 +511,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   <div class="me-hero">
     <div class="me-nick" id="me-nick">—</div>
     <div class="me-meta" id="me-meta">—</div>
+    <button class="summer-toggle-btn hidden" id="me-summer-toggle-btn" onclick="toggleMeSummerView()"></button>
   </div>
 
   <!-- ① OVERVIEW: 정답률 세로막대 + 종목별 오각형 -->
@@ -851,6 +852,7 @@ let pubTab = '종합';
 let pubClass = '전체';
 let pubMission = null; // null = 누적 현황
 let pubShowSummer = false; // 대치수학 2기 전용 — true면 8월까지의 여름방학 특강 화면
+let meShowSummer = false; // 개인 대시보드용 — 공개 종합 탭의 SUMMER 보기와 같은 개념, 로그인해서 보는 화면에도 똑같이 적용해달라는 요청
 let charts = {};
 
 /* ---- 대치수학 2기: 여름방학(8월까지) vs 중간고사 대비(9월부터) 화면 분리 ----
@@ -1036,6 +1038,7 @@ async function loginWithCreds(name,pw,silent){
       return false;
     }
     me = json;
+    meShowSummer=false; // 새로 로그인하면 항상 기본(9월부터) 보기로 시작
     sessionStorage.setItem(MY_LOGIN_KEY,JSON.stringify({name,pw}));
     await refreshMyPendingHw();
     renderPersonal();
@@ -1903,13 +1906,48 @@ function myAcc(list){
   list.forEach(r=>r.items.forEach(v=>{if(v!=null){tot++;if(v===1)ok++;}}));
   return tot?Math.round(ok/tot*100):null;
 }
+// 공개 "종합" 탭의 SUMMER 보기와 같은 개념을 개인 로그인 화면에도 적용 —
+// 기본은 지금 보이는(9월부터) 데이터만, SUMMER 탭을 눌러야 8월까지
+// 데이터가 보인다(원장님 요청). 카테고리 자체가 여름 전용(진도미션 등)인
+// 건 mySheets(catsFor에 mode를 넘겨서)에서 이미 걸러지고, TEST/클리닉처럼
+// 같은 카테고리 안에서 미션 단위로 갈리는 건 여기서 한 번 더 거른다.
+function filterRecordsForMode(rawRec,cohort,showSummer,studentName){
+  // 9월부터 등록을 그만두는 학생(SUMMER_ONLY_STUDENTS, 예: 천범준)은 혹시
+  // 본인이 직접 로그인해도 메인(9월부터) 보기에는 아무 기록도 안 보이고
+  // SUMMER 보기에서만 보이게 한다 — 공개 종합 탭(catRowsFor)과 같은 규칙을
+  // 개인 로그인 화면에도 그대로 적용.
+  if(cohort==='2'&&!showSummer&&SUMMER_ONLY_STUDENTS.indexOf(String(studentName||'').trim())!==-1) return {};
+  const out={};
+  Object.keys(rawRec).forEach(cat=>{
+    let list=rawRec[cat]||[];
+    if(cohort==='2'&&COHORT2_SPLIT_CATS.indexOf(cat)!==-1){
+      list=list.filter(r=>splitMissionIsNew(cat,r.mission)===!showSummer);
+    }
+    out[cat]=list;
+  });
+  return out;
+}
+function toggleMeSummerView(){
+  meShowSummer=!meShowSummer;
+  renderPersonal();
+}
 function renderPersonal(){
-  const s=me.student, rec=me.records, avgMap=me.classAvg||{};
+  const s=me.student, rawRec=me.records, avgMap=me.classAvg||{};
+  const rec=filterRecordsForMode(rawRec,s.cohort,meShowSummer,s.name);
   document.getElementById('me-nick').textContent=s.name;
   const coh=COHORT_LABELS[s.cohort]||null;
   document.getElementById('me-meta').innerHTML='<b>'+esc(s.class)+'</b> · '+esc(s.school)
     +(coh?' · '+esc(coh.name):'')+' · MIDTERM 2026';
   document.getElementById('ov-class').textContent=s.class;
+
+  const meSummerBtn=document.getElementById('me-summer-toggle-btn');
+  if(s.cohort==='2'){
+    meSummerBtn.classList.remove('hidden');
+    meSummerBtn.classList.toggle('on',meShowSummer);
+    meSummerBtn.textContent=meShowSummer?'← 중간고사 대비로':'☀️ SUMMER 보기 (8월까지)';
+  }else{
+    meSummerBtn.classList.add('hidden');
+  }
 
   // 대수연마 1000제만 듣는 학생(정규반 S/S+/PRISM에 등록된 줄이 아예 없어
   // student.class가 findStudentByName/handleLogin의 "정규반 우선" 로직을
@@ -1920,7 +1958,7 @@ function renderPersonal(){
   document.getElementById('overview-block').classList.toggle('hidden',algOnly);
   const wrap=document.getElementById('me-blocks');
   wrap.innerHTML='';
-  const mySheets=catsFor(s.cohort);
+  const mySheets=catsFor(s.cohort,meShowSummer?'summer':'main');
   if(!algOnly){
   /* ---- 정답률 비교 (세로 막대) · 전체 통계는 S+ BLACK 제외 ---- */
   const allRecs=mySheets.flatMap(k=>rec[k]||[]);
@@ -1980,9 +2018,10 @@ function renderPersonal(){
   });
   drawRadar('chart-overview',mySheets,catMine,catCls);
 
-  /* ---- 종목별 세부 블록 (S+ BLACK은 수강 기록이 있는 학생에게만) ---- */
+  /* ---- 종목별 세부 블록 (S+ BLACK은 수강 기록이 있는 학생에게만, 그리고
+     여름 전용 특강이라 SUMMER 보기일 때만) ---- */
   const blockSheets=mySheets.slice();
-  if(sheetsFor(s.cohort).indexOf('S+ BLACK')!==-1 && (rec['S+ BLACK']||[]).length){
+  if(meShowSummer && sheetsFor(s.cohort).indexOf('S+ BLACK')!==-1 && (rec['S+ BLACK']||[]).length){
     blockSheets.push('S+ BLACK');
   }
   blockSheets.forEach((k,ki)=>{
