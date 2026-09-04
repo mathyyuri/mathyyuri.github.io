@@ -622,6 +622,20 @@ function missionRangeFromName(name) {
   if (!start || !end || end < start) return null;
   return { start, count: end - start + 1 };
 }
+// 문항 수/시작 번호 칸(조교는 안 보임)에 이전에 열었던 다른 시험의 값이
+// 그대로 남아있다가, 그 값이 처음 채점하는 새 시험에 잘못 물려 붙는
+// 사고가 있었다(원장님 리포트: "M.TAT 1회"가 121번부터 22칸으로 뜸 —
+// 직전에 열었던 "변형 : 평면좌표(121~147)"의 잔여값이 그대로 남아있던
+// 것). 시험명이 바뀌면(이전에 불러온 시험과 다르면) 그 칸을 깨끗한
+// 기본값(20문항·1번부터)으로 먼저 되돌린 뒤에 불러온다 — 조교는 이
+// 칸을 볼 수 없어서 스스로 고칠 방법이 없으니, 애초에 잘못된 값이
+// 남아있지 않게 막는 게 안전하다.
+let lastLoadedMissionKey = null;
+function resetQCountFieldsIfMissionChanged(missionKey) {
+  if (missionKey === lastLoadedMissionKey) return;
+  document.getElementById('scQCount').value = 20;
+  document.getElementById('scStartNum').value = 1;
+}
 // 여러 반을 한 번에 골랐으면 반마다 examroster를 따로 불러서 하나의
 // 표로 합친다 — 문항 수/배점은 "어느 반이든 먼저 저장된 값이 있으면
 // 그걸 그대로 쓴다"는 원래 규칙을 반 목록 전체로 넓힌 것뿐이라, 반이
@@ -631,6 +645,8 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   const category = document.getElementById('scCategory').value;
   const classes = getSelectedClasses();
   const mission = document.getElementById('scMission').value.trim();
+  const missionKey = cohort + '||' + category + '||' + mission;
+  resetQCountFieldsIfMissionChanged(missionKey);
   scQCount = Math.max(1, Math.min(60, Number(document.getElementById('scQCount').value) || 20));
   const msg = document.getElementById('scMsg');
   if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
@@ -700,6 +716,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
         // 맞는 동작이지만, 화면에 안 띄워주니 바뀐 줄 모르고 그대로 저장해서
     // 틀린 문항 수가 그 미션의 배점으로 굳어버렸다). 지금은 몇 번부터
     // 몇 문항인지 항상 눈에 보이니 다른 미션이면 바로 알아챌 수 있다.
+    lastLoadedMissionKey = missionKey;
     msg.textContent = `${scStudents.length}명 불러왔습니다. (${classes.join('·')} · 문항 수: ${scQCount}, 시작 번호: ${scStartNum})`;
     msg.className = 'hint ok';
   } catch (e) {
