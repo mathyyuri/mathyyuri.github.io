@@ -816,7 +816,11 @@ async function loadFileIntoRow(row, filename, buf, bankId, questionDataJson) {
   let editedRawByNum = new Map();
   try {
     const qd = JSON.parse(questionDataJson || '[]');
-    unitByNum = new Map(qd.filter(q => q && q.unit).map(q => [String(q.num), q.unit]));
+    // 문제은행의 새 4단계 선택칸(과목>대단원>중단원>소단원) 기준으로는
+    // q.unit이 대단원(예: "도형의 방정식")이라 오답노트에서 보기엔 너무
+    // 뭉뚱그려짐(원장님 리포트, studentnote.html과 같이 고침) — 중단원
+    // (예: "평면좌표")이 있으면 그걸 우선 쓴다.
+    unitByNum = new Map(qd.filter(q => q && (q.unitMid || q.unit)).map(q => [String(q.num), q.unitMid || q.unit]));
     editedRawByNum = new Map(qd.filter(q => q && q.editedRaw).map(q => [String(q.num), q.editedRaw]));
   } catch (e) {}
   const entry = { uid: fileUidCounter++, filename, bankId, unitByNum, editedRawByNum, ...parsed };

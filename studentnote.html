@@ -3594,7 +3594,13 @@ function resolveUnitForMissionNum(mission, num, category) {
   try { qd = JSON.parse(file.questionData); } catch (e) { return ''; }
   if (!Array.isArray(qd)) return '';
   const entry = qd.find(q => String(q.num) === String(num));
-  return (entry && entry.unit) || '';
+  if (!entry) return '';
+  // 문제은행의 새 4단계 선택칸(과목>대단원>중단원>소단원) 기준으로는
+  // entry.unit이 대단원(예: "도형의 방정식")이라 오답노트에서 보기엔
+  // 너무 뭉뚱그려짐(원장님 리포트) — 중단원(예: "평면좌표")이 있으면
+  // 그걸 우선 쓰고, 아직 이 4단계로 안 옮겨진 옛 데이터만 대단원/예전
+  // 자유입력 단원(entry.unit)으로 대체한다.
+  return entry.unitMid || entry.unit || '';
 }
 
 // 통계 페이지의 "회차별 정답률" — 회차별로 그 회차에 채점된 문항 전체의
