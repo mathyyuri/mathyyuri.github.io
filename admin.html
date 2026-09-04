@@ -189,7 +189,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         </div>
       </div>
       <p class="hint" id="msModeHintMission">위 "성적 입력"에서 고른 기수·반 기준으로 그 반 전체 명단을 불러옵니다. <b>시험명까지 골랐으면</b> 그 시험 미제출자가 기본으로 체크되고, <b>시험명 없이(공지사항 등)</b> 불러오면 전체 학생이 기본으로 체크됩니다 — 어느 쪽이든 필요한 대로 체크를 더하거나 빼면 됩니다. 명단 시트 F열=학생 전화번호, G열=학부모 전화번호를 채워두셔야 번호가 나옵니다.</p>
-      <p class="hint" id="msModeHintStudent" style="display:none">위 "성적 입력"에서 고른 기수·카테고리·반 기준으로, 그 반 학생마다 <b>그 카테고리 안의 모든 시험</b>을 모아서 완성도를 보여줍니다(시험명 선택은 이 모드에선 무시됩니다). 학생·미션 체크박스로 문자에 넣을 항목을 고르고, 아래 문구 틀({이름}/{미완료목록} 자동 채움)로 학생마다 다른 문자를 만들어 한 명씩 번호·문자를 복사해서 보내면 됩니다.</p>
+      <p class="hint" id="msModeHintStudent" style="display:none">위 "성적 입력"에서 고른 기수·반 기준으로(카테고리·시험명은 이 모드에선 무시됩니다), 그 반 학생마다 <b>모든 카테고리(교과서미션·변형미션·TEST·기출·클리닉 등)의 시험을 다 모아서</b> 완성도를 보여줍니다 — 여름(8월까지) 미션은 mathyyuri.com에 이제 안 보이는 것과 똑같이 빠집니다. 학생·미션 체크박스로 문자에 넣을 항목을 고르고, 아래 문구 틀({이름}/{미완료목록} 자동 채움)로 학생마다 다른 문자를 만들어 한 명씩 번호·문자를 복사해서 보내면 됩니다.</p>
       <div class="btnRow">
         <button type="button" id="msLoadBtn">명단 불러오기</button>
         <span id="msMsg" class="hint"></span>
@@ -1129,19 +1129,24 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
   const msg = document.getElementById('msMsg');
   // 카테고리/반은 이 박스 안에 따로 없고 맨 위 "성적 입력"의 드롭다운·체크박스를
   // 그대로 재사용한다 — 처음 쓰는 사람은 이게 안 보여서 헷갈릴 수 있어 안내를
-  // 구체적으로 어디를 보라고 짚어준다.
-  if (!category || !classes.length) { msg.textContent = '위쪽 "성적 입력"에서 카테고리를 고르고 반을 체크한 다음 다시 눌러주세요.'; msg.className = 'hint err'; return; }
-  msg.textContent = '불러오는 중...';
-  msg.className = 'hint';
+  // 구체적으로 어디를 보라고 짚어준다. 학생별 모드는 카테고리 하나로
+  // 좁히지 않고 그 반의 모든 카테고리를 다 모아서 보므로 카테고리 선택은
+  // 필요 없다(원장님 요청) — 반만 체크하면 된다.
   if (mode === 'student') {
+    if (!classes.length) { msg.textContent = '위쪽 "성적 입력"에서 반을 체크한 다음 다시 눌러주세요.'; msg.className = 'hint err'; return; }
+    msg.textContent = '불러오는 중...';
+    msg.className = 'hint';
     try {
-      await loadMsStudentMode(cohort, category, classes, msg);
+      await loadMsStudentMode(cohort, classes, msg);
     } catch (e) {
       msg.textContent = '오류: ' + e.message;
       msg.className = 'hint err';
     }
     return;
   }
+  if (!category || !classes.length) { msg.textContent = '위쪽 "성적 입력"에서 카테고리를 고르고 반을 체크한 다음 다시 눌러주세요.'; msg.className = 'hint err'; return; }
+  msg.textContent = '불러오는 중...';
+  msg.className = 'hint';
   try {
     const responses = await Promise.all(classes.map(cls =>
       callGetJsonp({ action: 'missingsubmitters', key: myKey, cohort, category, class: cls, mission }).then(r => ({ cls, r }))
@@ -1247,30 +1252,47 @@ document.getElementById('msDownloadBtn').addEventListener('click', () => {
 
 // ---------- 학생별 모드: 학생마다 그 카테고리의 모든 시험을 모아서
 // 미완료(완성도 100% 아님) 미션을 골라 개인화된 문자를 만든다 ----------
-async function loadMsStudentMode(cohort, category, classes, msg) {
-  const responses = await Promise.all(classes.map(cls =>
-    callGetJsonp({ action: 'studentmissionstatus', key: myKey, cohort, category, class: cls }).then(r => ({ cls, r }))
+// 카테고리는 고르지 않고 반만 고르면, 그 반 학생마다 이 기수의 모든
+// 카테고리(교과서미션·변형미션·TEST·기출·클리닉 등)를 한 번에 다 모아서
+// 보여준다(원장님 요청) — "학생 한 명의 전체 현황"을 보고 싶은 거지
+// 카테고리 하나로 좁혀 보는 게 아니기 때문.
+async function loadMsStudentMode(cohort, classes, msg) {
+  const categories = (categoriesData.byCohort[cohort] || [])
+    .filter(c => cohort !== '2' || SUMMER_ONLY_CATS.indexOf(c) === -1);
+  if (!categories.length) { msg.textContent = '이 기수에 등록된 카테고리가 없습니다.'; msg.className = 'hint err'; return; }
+  const calls = [];
+  classes.forEach(cls => categories.forEach(category => calls.push({ cls, category })));
+  const responses = await Promise.all(calls.map(({ cls, category }) =>
+    callGetJsonp({ action: 'studentmissionstatus', key: myKey, cohort, category, class: cls })
+      .then(r => ({ cls, category, r }))
   ));
-  // TEST/클리닉처럼 여름(8월까지)·중간고사 대비(9월부터)가 미션 단위로
-  // 갈리는 카테고리는, mathyyuri.com에 지금 실제로 보이는(중간고사 대비)
-  // 미션만 남기고 예전 여름 미션은 아예 뺀다 — 이제 체크할 필요 없는
-  // 8월 미션까지 매번 다 펼쳐 보일 이유가 없다(원장님 요청). index.html의
-  // catRowsFor(mode='main')와 같은 기준(splitMissionIsNew)을 그대로 씀.
-  const filterSummerMissions = cohort === '2' && SPLIT_CATS.indexOf(category) !== -1;
-  msStudents = [];
-  responses.forEach(({ cls, r }) => (r.students || []).forEach(s => {
-    // 완성도 100%가 아니면(미제출 포함) 그 미션은 "미완료"로 보고 기본 체크 —
-    // 학생 자체도 미완료 미션이 하나라도 있으면 기본으로 함께 체크한다.
-    const missions = (s.missions || [])
-      .filter(m => !filterSummerMissions || splitMissionIsNew(category, m.mission))
-      .map(m => ({ ...m, checked: m.comp !== 100 }));
-    msStudents.push({
-      name: s.name, cls, studentPhone: s.studentPhone, parentPhone: s.parentPhone,
-      missions,
-      checked: missions.some(m => m.checked),
-      expanded: false, // 학생을 눌러 펼쳐야 미션별 완수율이 보이게(원장님 요청) — 처음엔 다 접어서 요약만
+  const byKey = {}; // "반||이름" -> 학생 항목(여러 카테고리 응답이 여기로 다 모임)
+  const order = [];
+  responses.forEach(({ cls, category, r }) => {
+    // TEST/클리닉처럼 여름(8월까지)·중간고사 대비(9월부터)가 미션 단위로
+    // 갈리는 카테고리는, mathyyuri.com에 지금 실제로 보이는(중간고사 대비)
+    // 미션만 남기고 예전 여름 미션은 아예 뺀다(원장님 요청). index.html의
+    // catRowsFor(mode='main')와 같은 기준(splitMissionIsNew)을 그대로 씀.
+    const filterSummerMissions = cohort === '2' && SPLIT_CATS.indexOf(category) !== -1;
+    (r.students || []).forEach(s => {
+      const key = cls + '||' + s.name;
+      if (!byKey[key]) {
+        byKey[key] = { name: s.name, cls, studentPhone: s.studentPhone, parentPhone: s.parentPhone, missions: [], checked: false, expanded: false };
+        order.push(key);
+      }
+      // 완성도 100%가 아니면(미제출 포함) 그 미션은 "미완료"로 보고 기본 체크 —
+      // 카테고리 이름도 같이 저장해서 여러 카테고리가 섞여도 어떤 시험인지
+      // 구분되게 한다.
+      (s.missions || [])
+        .filter(m => !filterSummerMissions || splitMissionIsNew(category, m.mission))
+        .forEach(m => byKey[key].missions.push({ ...m, category, checked: m.comp !== 100 }));
     });
-  }));
+  });
+  msStudents = order.map(k => {
+    const s = byKey[k];
+    s.checked = s.missions.some(m => m.checked);
+    return s;
+  });
   msPreviewIdx = 0;
   renderMsStudentList();
   renderMsPreview();
@@ -1300,7 +1322,7 @@ function renderMsStudentList() {
         else statusHtml = '완성도 <b style="color:var(--gold)">' + compDisp + '%</b>(' + m.correct + '/' + m.answered + '문항)';
         return `<label style="display:flex;align-items:center;gap:6px;padding:2px 0 2px 24px;font-weight:normal;font-family:var(--sans);font-size:12px">
           <input type="checkbox" class="msMissionChk" data-si="${si}" data-mi="${mi}" ${m.checked ? 'checked' : ''} style="width:auto">
-          ${escHtml(m.mission)} <span class="hint">${statusHtml}</span>
+          <span class="hint">[${escHtml(m.category)}]</span> ${escHtml(m.mission)} <span class="hint">${statusHtml}</span>
         </label>`;
       }).join('')
       : '<p class="hint" style="padding-left:24px">이 카테고리에 기록된 시험이 없습니다.</p>');
@@ -1346,7 +1368,7 @@ function buildPersonalMessage(s) {
   const lines = s.missions.filter(m => m.checked).map(m => {
     const compDisp = r1(m.comp);
     const stat = compDisp == null ? '미제출' : (compDisp === 100 ? '완성도 100%' : ('완성도 ' + compDisp + '%(' + m.correct + '/' + m.answered + '문항)'));
-    return '- ' + m.mission + ': ' + stat;
+    return '- [' + m.category + '] ' + m.mission + ': ' + stat;
   });
   const list = lines.length ? lines.join('\n') : '(모두 완료했습니다 🎉)';
   return template.replace(/\{이름\}/g, s.name).replace(/\{미완료목록\}/g, list);
