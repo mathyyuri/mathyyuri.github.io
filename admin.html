@@ -594,6 +594,19 @@ function equalWeights(n) {
   const base = Math.floor(100 / n), extra = 100 - base * n;
   return Array.from({ length: n }, (_, i) => base + (i >= n - extra ? 1 : 0));
 }
+// "변형 : 평면좌표(61~120)"처럼 이름 끝에 번호 구간이 붙어있으면, 문항
+// 수·시작 번호를 그 구간 그대로 확정해서 쓴다(index.html의 미션 합치기
+// 로직과 같은 이름 규칙). 지금까지 채점이 얼마나 됐는지에 기대지 않아도
+// 되니, 아직 15문항만 채점된 "(61~120)"이어도 조교가 열면 60칸이 전부
+// 뜬다 — 원장님 리포트: 아직 다 안 채점된 구간을 열면 채점된 만큼만
+// 뜨는 바람에 계속 15문항짜리인 줄 알고 헷갈렸던 문제.
+function missionRangeFromName(name) {
+  const m = String(name || '').match(/\((\d+)\s*~\s*(\d+)\)\s*$/);
+  if (!m) return null;
+  const start = Number(m[1]), end = Number(m[2]);
+  if (!start || !end || end < start) return null;
+  return { start, count: end - start + 1 };
+}
 // 여러 반을 한 번에 골랐으면 반마다 examroster를 따로 불러서 하나의
 // 표로 합친다 — 문항 수/배점은 "어느 반이든 먼저 저장된 값이 있으면
 // 그걸 그대로 쓴다"는 원래 규칙을 반 목록 전체로 넓힌 것뿐이라, 반이
@@ -642,8 +655,12 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     // 새) 미션일 때만 배점 길이를 대신 쓴다.
     const itemsMaxLen = Math.max(0, ...rawStudents.map(function (x) { return (x.s.items || []).length; }));
     const savedQCount = itemsMaxLen > 0 ? itemsMaxLen : (sharedWeights ? sharedWeights.length : 0);
+    // 미션명 자체에 번호 구간이 박혀있으면(예: "(61~120)") 그걸 최우선으로
+    // 쓴다 — 채점이 아직 덜 된 상태라도 항상 원래 의도한 문항 수/시작
+    // 번호가 정확히 뜨게 하기 위함.
+    const nameRange = missionRangeFromName(mission);
     // 저장된 게 없으면 지금 입력창에 있는 값(typedQCount)을 그대로 쓴다.
-    scQCount = savedQCount > 0 ? savedQCount : typedQCount;
+    scQCount = nameRange ? nameRange.count : (savedQCount > 0 ? savedQCount : typedQCount);
     document.getElementById('scQCount').value = scQCount;
     scStudents = rawStudents.map(({ cls, s }) => ({
       name: s.name,
@@ -652,7 +669,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       comment: s.comment || '',
     }));
     scWeights = (sharedWeights && sharedWeights.length === scQCount) ? sharedWeights.slice() : equalWeights(scQCount);
-    scStartNum = typedStartNum > 1 ? typedStartNum : (sharedStartNum || 1);
+    scStartNum = nameRange ? nameRange.start : (typedStartNum > 1 ? typedStartNum : (sharedStartNum || 1));
     document.getElementById('scStartNum').value = scStartNum;
     document.getElementById('scWeightBar').style.display = categoryUsesWeights() ? '' : 'none';
     document.getElementById('scEqualWeightBtn').style.display = weightsEditable() ? '' : 'none';
