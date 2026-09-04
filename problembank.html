@@ -934,8 +934,9 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     <h4>문제별 단원 · 유형</h4>
     ${guessedCount ? `<p class="hint">문제 내용을 보고 ${guessedCount}개 문제의 단원을 1차로 채워뒀어요 — 틀린 문제만 아래에서 고쳐주세요.</p>` : ''}
     <div class="tagBulkRow">
-      <label style="display:inline;margin:0">대단원 일괄 적용:</label>
+      <label style="display:inline;margin:0">단원 일괄 적용:</label>
       <select class="bulkMajorSelect"><option value="">대단원 선택</option>${majorOptions.map(({ subject, major }) => `<option value="${escapeHtml(major)}" data-subject="${escapeHtml(subject)}">${escapeHtml(subject)} &gt; ${escapeHtml(major)}</option>`).join('')}</select>
+      <select class="bulkMidSelect"><option value="">중단원 선택(선택사항)</option></select>
       <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
     </div>
     ${showAnswerInput ? '<p class="hint">정답을 입력해두면 AI 채점(숙제 사진 자동 확인)에 쓰입니다 — 정답은 학생 화면이나 공개 API로 절대 노출되지 않습니다.</p>' : '<p class="hint">업로드가 끝난 뒤 "태그 편집"에서 정답(AI 채점용)을 입력할 수 있습니다.</p>'}
@@ -1093,16 +1094,31 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     try { renderMathInElement(rows, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
   }
   const bulkMajorSelect = wrap.querySelector('.bulkMajorSelect');
+  const bulkMidSelect = wrap.querySelector('.bulkMidSelect');
+  // 대단원을 고르면 그 아래 중단원 목록으로 다시 채운다(문제은행 카드
+  // 자체의 4단계 선택칸과 같은 방식) — 중단원까지 일괄 적용하고 싶다는
+  // 요청. 중단원은 선택 사항 — 안 고르면 예전처럼 대단원만 적용된다.
+  function refreshBulkMidOptions() {
+    const subject = bulkMajorSelect.selectedOptions[0]?.dataset.subject || '';
+    const mids = (UNIT_TREE[subject] && UNIT_TREE[subject][bulkMajorSelect.value]) ? Object.keys(UNIT_TREE[subject][bulkMajorSelect.value]) : [];
+    bulkMidSelect.innerHTML = '<option value="">중단원 선택(선택사항)</option>' + mids.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  }
+  bulkMajorSelect.addEventListener('change', refreshBulkMidOptions);
   // guessedUnit은 예전 트리(단원 탭) 기준 이름이라 새 4단계 트리의 대단원
   // 이름과 다를 수 있음(예: "평면좌표"는 이제 중단원) — findUnitPath로
-  // 실제 대단원을 찾아서 채운다.
+  // 실제 경로를 찾아서 대단원·중단원 둘 다 미리 채운다.
   const guessedPath = guessedUnit && findUnitPath(guessedUnit);
-  if (guessedPath) bulkMajorSelect.value = guessedPath[1];
+  if (guessedPath) {
+    bulkMajorSelect.value = guessedPath[1];
+    refreshBulkMidOptions();
+    if (guessedPath[2]) bulkMidSelect.value = guessedPath[2];
+  }
   wrap.querySelector('.bulkApplyBtn').addEventListener('click', () => {
     const val = bulkMajorSelect.value;
     if (!val) return;
     const subject = bulkMajorSelect.selectedOptions[0]?.dataset.subject || '';
-    rowSyncers.forEach(({ qd, sync }) => { qd.subject = subject; qd.unitMajor = val; qd.unitMid = ''; qd.unitMinor = ''; sync(); });
+    const midVal = bulkMidSelect.value;
+    rowSyncers.forEach(({ qd, sync }) => { qd.subject = subject; qd.unitMajor = val; qd.unitMid = midVal; qd.unitMinor = ''; sync(); });
   });
   container.appendChild(wrap);
 }
