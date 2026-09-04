@@ -618,13 +618,30 @@ function addUnitTab(name) {
   }
 }
 // ---------- 단원 트리 (과목 > 대단원 > 중단원 > 소단원, 4단계) ----------
-// 원장님이 mathsecr.com에서 캡쳐해서 보내주신 공통수학2(2022개정) 단원
-// 구조를 그대로 옮김. "경우의 수"는 공통수학2가 아니라 공통수학1
-// 단원이라 여기 안 넣음(원장님 확인) — 나중에 공통수학1 캡쳐본을
-// 받으면 UNIT_TREE에 '공통수학1' 키를 새로 추가하면 됨(과목 선택칸은
-// 지금 키가 하나뿐이라 화면에 숨겨뒀는데, 두 번째 과목이 생기면 자동
-// 으로 다시 보이게 하면 됨).
+// 원장님이 mathsecr.com에서 캡쳐해서 보내주신 공통수학1·공통수학2
+// (2022개정) 단원 구조를 그대로 옮김. 나중에 더 세부적으로(소단원 아래
+// 한 단계 더) 채워야 하면 각 배열에 이름만 추가하면 됨 — 화면 쪽은 안
+// 고쳐도 됨.
 const UNIT_TREE = {
+  '공통수학1': {
+    '다항식': {
+      '다항식의 연산': ['다항식의 사칙연산'],
+      '나머지정리': ['항등식과 나머지 정리'],
+      '인수분해': ['다항식의 인수분해'],
+    },
+    '방정식과 부등식': {
+      '복소수와 이차방정식': ['복소수의 뜻과 성질', '이차방정식의 풀이', '이차방정식의 근과 계수와의 관계'],
+      '이차방정식과 이차함수': ['이차방정식과 이차함수의 관계', '이차함수의 그래프와 직선의 위치 관계', '이차함수의 최대·최소'],
+      '여러 가지 방정식과 부등식': ['삼차방정식과 사차방정식의 풀이', '미지수가 2개인 연립이차방정식', '미지수가 1개인 연립일차부등식', '절댓값을 포함한 일차부등식', '이차부등식과 연립이차부등식'],
+    },
+    '경우의 수': {
+      '합의 법칙과 곱의 법칙': ['합의 법칙과 곱의 법칙'],
+      '순열과 조합': ['순열', '조합'],
+    },
+    '행렬': {
+      '행렬과 그 연산': ['행렬', '행렬의 연산'],
+    },
+  },
   '공통수학2': {
     '도형의 방정식': {
       '평면좌표': ['선분의 내분, 내분점의 좌표'],
@@ -645,40 +662,48 @@ const UNIT_TREE = {
 // 예전 방식(자유 입력 "단원"/"유형" 두 칸)으로 이미 저장해둔 값 중에,
 // 이름이 트리 어딘가와 정확히 같은 게 있으면 그 경로를 찾아서 새
 // 4단계 선택칸에 자동으로 미리 채워준다(원장님이 일일이 다시 고를
-// 필요 없게) — 못 찾으면 null(직접 골라야 함).
+// 필요 없게) — 못 찾으면 null(직접 골라야 함). 과목이 여러 개라
+// 이름이 겹치면(지금은 안 겹침) 먼저 찾은 과목을 쓴다.
 function findUnitPath(name) {
   if (!name) return null;
-  for (const [major, mids] of Object.entries(UNIT_TREE['공통수학2'])) {
-    if (major === name) return ['공통수학2', major, '', ''];
-    for (const [mid, minors] of Object.entries(mids)) {
-      if (mid === name) return ['공통수학2', major, mid, ''];
-      for (const minor of minors) {
-        if (minor === name) return ['공통수학2', major, mid, minor];
+  for (const [subject, majors] of Object.entries(UNIT_TREE)) {
+    for (const [major, mids] of Object.entries(majors)) {
+      if (major === name) return [subject, major, '', ''];
+      for (const [mid, minors] of Object.entries(mids)) {
+        if (mid === name) return [subject, major, mid, ''];
+        for (const minor of minors) {
+          if (minor === name) return [subject, major, mid, minor];
+        }
       }
     }
   }
   return null;
 }
-// ---------- 단원 4단계 선택칸(대단원>중단원>소단원 — 과목은 지금
-// "공통수학2" 하나뿐이라 고를 필요 없이 자동으로 들어감) ----------
+// ---------- 단원 4단계 선택칸(과목>대단원>중단원>소단원) ----------
 function unitPickerHtml() {
-  const majors = Object.keys(UNIT_TREE['공통수학2']);
+  const subjects = Object.keys(UNIT_TREE);
   return `
     <div class="unitPickRow">
-      <select class="unitPickMajor"><option value="">대단원</option>${majors.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('')}</select>
+      <select class="unitPickSubject"><option value="">과목</option>${subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')}</select>
+      <select class="unitPickMajor"><option value="">대단원</option></select>
       <select class="unitPickMid"><option value="">중단원</option></select>
       <select class="unitPickMinor"><option value="">소단원</option></select>
     </div>`;
 }
-// 셀렉트 3개를 지금 qd.unitMajor/unitMid/unitMinor 값에 맞게 다시 그리고
-// (하위 단계 옵션은 상위 선택에 따라 달라짐), qd.unit/qd.type도 예전
-// 화면·기능(태그 완료 표시, 자동완성 등)이 계속 동작하도록 미러링한다.
+// 셀렉트 4개를 지금 qd.subject/unitMajor/unitMid/unitMinor 값에 맞게
+// 다시 그리고(하위 단계 옵션은 상위 선택에 따라 달라짐), qd.unit/qd.type도
+// 예전 화면·기능(태그 완료 표시, 자동완성 등)이 계속 동작하도록
+// 미러링한다.
 function syncUnitPicker(row, qd, refreshRowSummary) {
+  const subjectSel = row.querySelector('.unitPickSubject');
   const majorSel = row.querySelector('.unitPickMajor');
   const midSel = row.querySelector('.unitPickMid');
   const minorSel = row.querySelector('.unitPickMinor');
-  const tree = UNIT_TREE['공통수학2'];
+  subjectSel.value = qd.subject || '';
+  const majors = UNIT_TREE[qd.subject] ? Object.keys(UNIT_TREE[qd.subject]) : [];
+  majorSel.innerHTML = '<option value="">대단원</option>' + majors.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
   majorSel.value = qd.unitMajor || '';
+  const tree = UNIT_TREE[qd.subject] || {};
   const mids = tree[qd.unitMajor] ? Object.keys(tree[qd.unitMajor]) : [];
   midSel.innerHTML = '<option value="">중단원</option>' + mids.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
   midSel.value = qd.unitMid || '';
@@ -694,10 +719,11 @@ function syncUnitPicker(row, qd, refreshRowSummary) {
   if (refreshRowSummary) refreshRowSummary();
 }
 function wireUnitPicker(row, qd, refreshRowSummary) {
-  qd.subject = '공통수학2';
+  const subjectSel = row.querySelector('.unitPickSubject');
   const majorSel = row.querySelector('.unitPickMajor');
   const midSel = row.querySelector('.unitPickMid');
   const minorSel = row.querySelector('.unitPickMinor');
+  subjectSel.addEventListener('change', (e) => { qd.subject = e.target.value; qd.unitMajor = ''; qd.unitMid = ''; qd.unitMinor = ''; syncUnitPicker(row, qd, refreshRowSummary); });
   majorSel.addEventListener('change', (e) => { qd.unitMajor = e.target.value; qd.unitMid = ''; qd.unitMinor = ''; syncUnitPicker(row, qd, refreshRowSummary); });
   midSel.addEventListener('change', (e) => { qd.unitMid = e.target.value; qd.unitMinor = ''; syncUnitPicker(row, qd, refreshRowSummary); });
   minorSel.addEventListener('change', (e) => { qd.unitMinor = e.target.value; syncUnitPicker(row, qd, refreshRowSummary); });
@@ -897,13 +923,19 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
   const qdByNum = new Map(questionData.map(q => [String(q.num), q]));
   const wrap = document.createElement('div');
   wrap.className = 'tagListBox';
-  const majors = Object.keys(UNIT_TREE['공통수학2']);
+  // 과목이 여러 개라(공통수학1/2) 대단원 이름만으로는 어느 과목인지
+  // 알 수 없어서, 일괄 적용 드롭다운은 "과목 > 대단원"으로 표시하고
+  // data-subject에 과목을 같이 담아둔다.
+  const majorOptions = [];
+  for (const [subject, majorsObj] of Object.entries(UNIT_TREE)) {
+    for (const major of Object.keys(majorsObj)) majorOptions.push({ subject, major });
+  }
   wrap.innerHTML = `
     <h4>문제별 단원 · 유형</h4>
     ${guessedCount ? `<p class="hint">문제 내용을 보고 ${guessedCount}개 문제의 단원을 1차로 채워뒀어요 — 틀린 문제만 아래에서 고쳐주세요.</p>` : ''}
     <div class="tagBulkRow">
       <label style="display:inline;margin:0">대단원 일괄 적용:</label>
-      <select class="bulkMajorSelect"><option value="">대단원 선택</option>${majors.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('')}</select>
+      <select class="bulkMajorSelect"><option value="">대단원 선택</option>${majorOptions.map(({ subject, major }) => `<option value="${escapeHtml(major)}" data-subject="${escapeHtml(subject)}">${escapeHtml(subject)} &gt; ${escapeHtml(major)}</option>`).join('')}</select>
       <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
     </div>
     ${showAnswerInput ? '<p class="hint">정답을 입력해두면 AI 채점(숙제 사진 자동 확인)에 쓰입니다 — 정답은 학생 화면이나 공개 API로 절대 노출되지 않습니다.</p>' : '<p class="hint">업로드가 끝난 뒤 "태그 편집"에서 정답(AI 채점용)을 입력할 수 있습니다.</p>'}
@@ -938,12 +970,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
       <div class="tagRowInputs">
         ${unitPickerHtml()}
         <div class="tagRowInputsRow2">
-          <select class="tagDifficultyInput">
-            <option value="">난이도</option>
-            <option value="상"${qd.difficulty === '상' ? ' selected' : ''}>상</option>
-            <option value="중"${qd.difficulty === '중' ? ' selected' : ''}>중</option>
-            <option value="하"${qd.difficulty === '하' ? ' selected' : ''}>하</option>
-          </select>
+          <input type="number" class="tagDifficultyInput" min="1" step="1" placeholder="난이도(1~5, 더 어려우면 6·7…)" value="${qd.difficulty && /^\d+$/.test(String(qd.difficulty)) ? escapeHtml(String(qd.difficulty)) : ''}">
           <select class="tagFormatInput">
             <option value="">형식</option>
             <option value="객관식"${qd.format === '객관식' ? ' selected' : ''}>객관식</option>
@@ -993,7 +1020,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     });
     wireUnitPicker(row, qd, refreshRowSummary);
     rowSyncers.push({ qd, sync: () => syncUnitPicker(row, qd, refreshRowSummary) });
-    row.querySelector('.tagDifficultyInput').addEventListener('change', (e) => { qd.difficulty = e.target.value; refreshRowSummary(); });
+    row.querySelector('.tagDifficultyInput').addEventListener('input', (e) => { qd.difficulty = e.target.value.trim(); refreshRowSummary(); });
     row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; refreshRowSummary(); refreshChoicesVisibility(); });
     row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); refreshRowSummary(); });
     row.querySelector('.tagSourceInput').addEventListener('input', (e) => { qd.source = e.target.value.trim(); refreshRowSummary(); });
@@ -1074,7 +1101,8 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
   wrap.querySelector('.bulkApplyBtn').addEventListener('click', () => {
     const val = bulkMajorSelect.value;
     if (!val) return;
-    rowSyncers.forEach(({ qd, sync }) => { qd.unitMajor = val; qd.unitMid = ''; qd.unitMinor = ''; sync(); });
+    const subject = bulkMajorSelect.selectedOptions[0]?.dataset.subject || '';
+    rowSyncers.forEach(({ qd, sync }) => { qd.subject = subject; qd.unitMajor = val; qd.unitMid = ''; qd.unitMinor = ''; sync(); });
   });
   container.appendChild(wrap);
 }

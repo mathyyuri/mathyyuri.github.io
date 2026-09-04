@@ -3670,12 +3670,19 @@ async function getParsedFile(fileId, filename) {
   // 참고). "한글로 만들기"(generateHwpxNote)는 원본 hwpx 구조를 XML
   // 단위로 그대로 복사하는 별도 방식이라 여기 적용 안 됨.
   let editedRawByNum = new Map();
+  let sourceByNum = new Map();
   try {
     const bankEntry = bankFiles.find(b => b.id === fileId);
     const qd = JSON.parse((bankEntry && bankEntry.questionData) || '[]');
     editedRawByNum = new Map(qd.filter(q => q && q.editedRaw).map(q => [String(q.num), q.editedRaw]));
+    // 출처 줄(.mbCite)에 원래 파일명을 그대로 쓰면 너무 길어서 잘려
+    // 보이는 문제가 있었음(원장님 리포트) — 문제은행에서 문제별로
+    // "출처"(기출/모의고사/자체제작 등, 짧게 쓰도록 안내됨)를 태그해뒀으면
+    // 그 짧은 값을 대신 쓴다. 안 태그된 문제는 예전처럼 파일명으로 대체.
+    sourceByNum = new Map(qd.filter(q => q && q.source).map(q => [String(q.num), q.source]));
   } catch (e) {}
   parsed.editedRawByNum = editedRawByNum;
+  parsed.sourceByNum = sourceByNum;
   loadedFileCache.set(fileId, parsed);
   return parsed;
 }
@@ -3864,7 +3871,7 @@ async function generateHwpxNote(historicalBatch) {
       const marker = entry.markers.get(num);
       if (!marker) continue;
 
-      const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
+      const sourceLabel = (entry.sourceByNum && entry.sourceByNum.get(String(num))) || entry.filename.replace(/\.hwpx$/i, '');
       const citeText = buildCiteText(round, mission, sourceLabel, num);
       const isFirstQuestion = qBodyOrderNum === 1;
       // Each question gets its own column. In a real 2-column questions
@@ -4835,7 +4842,7 @@ async function generateHtmlNote(historicalBatch) {
       const entry = loadedFileCache.get(fileId);
       const marker = entry.markers.get(num);
       if (!marker) continue;
-      const sourceLabel = entry.filename.replace(/\.hwpx$/i, '');
+      const sourceLabel = (entry.sourceByNum && entry.sourceByNum.get(String(num))) || entry.filename.replace(/\.hwpx$/i, '');
       const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
       const bodyHtml = editedRaw ? renderEditedText(editedRaw) : await hwpBodyXmlToHtml(marker.blockXml, entry);
       questionParts.push({
