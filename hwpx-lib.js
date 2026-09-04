@@ -844,18 +844,38 @@ function escapeHtml(s) {
 // 그 뒤에 오는 렌더링(katex auto-render, 페이지 배치 등)이 똑같이
 // 동작한다 — 소문항 번호나 선지 자동 정렬 같은 자동 서식은 이 경로에는
 // 적용되지 않는다(강사가 직접 줄바꿈/기호로 원하는 대로 배치).
+// "$...$" 한 조각을 KaTeX가 읽는 <span class="eq">\(...\)</span>로 바꾼다.
+// renderEditedText 본문과 네모박스 안쪽 줄 둘 다 이 규칙을 그대로 쓴다.
+function renderEditedInline(oneLine) {
+  const parts = oneLine.replace(/\r?\n/g, ' ').split(/\$([^$]+)\$/);
+  // split()으로 "$...$"를 뽑으면 홀수 인덱스가 항상 수식 안쪽 내용이고,
+  // 짝수 인덱스가 그 사이의 일반 텍스트다.
+  return parts.map((chunk, i) =>
+    i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
+  ).join('');
+}
+// "[박스]"~"[/박스]" 사이는 원본 hwpx의 <조건박스>/<보기> 박스와 같은 모양
+// (.hwpCondBox)으로 감싸서 보여준다 — problembank.html의 "문제 수정"
+// 툴바에 있는 "네모박스 삽입" 버튼이 이 마커를 넣어준다. 박스 바깥은
+// 빈 줄로 문단을 나누지만, 박스 안쪽은 (가)/(나)/(다)처럼 한 줄씩이
+// 그대로 한 문단이 되게 줄바꿈 하나만으로 나눈다(빈 줄 없이 붙여 써도
+// 되도록) — 그래서 박스 구간을 먼저 정규식으로 통째로 뽑아 따로
+// 처리하고, 남은 텍스트만 평소처럼 빈 줄 기준으로 문단을 나눈다.
 function renderEditedText(text) {
-  const paras = String(text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  let src = String(text || '');
+  const boxes = [];
+  src = src.replace(/\[박스\]\s*\n?([\s\S]*?)\n?\s*\[\/박스\]/g, (m, inner) => {
+    const lines = inner.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const boxHtml = lines.map(line => `<p>${renderEditedInline(line)}</p>`).join('');
+    boxes.push(`<div class="hwpCondBox">${boxHtml}</div>`);
+    return '\n\n[[EDITBOX' + (boxes.length - 1) + ']]\n\n';
+  });
+  const paras = src.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
   if (!paras.length) return '';
   return paras.map(para => {
-    const oneLine = para.replace(/\r?\n/g, ' ');
-    const parts = oneLine.split(/\$([^$]+)\$/);
-    // split()으로 "$...$"를 뽑으면 홀수 인덱스가 항상 수식 안쪽 내용이고,
-    // 짝수 인덱스가 그 사이의 일반 텍스트다.
-    const html = parts.map((chunk, i) =>
-      i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
-    ).join('');
-    return `<p>${html}</p>`;
+    const boxRef = para.match(/^\[\[EDITBOX(\d+)\]\]$/);
+    if (boxRef) return boxes[Number(boxRef[1])];
+    return `<p>${renderEditedInline(para)}</p>`;
   }).join('');
 }
 

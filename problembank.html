@@ -184,6 +184,18 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .editQPreview { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; font-size: 14px; line-height: 1.55; min-height: 1.6em; }
 .editQPreview p { margin: 0 0 6px; }
 .tagEditFooter { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+/* "문제 수정" 텍스트칸 위 기호 툴바 — 탭(기본/부등호·집합/그리스문자/
+   미적분/박스)마다 눌러서 커서 위치에 바로 넣을 수 있는 기호 버튼들. */
+.eqToolbar { margin: 8px 0; }
+.eqTabRow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.eqTabBtn { padding: 4px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0; border-radius: 14px; border: 1px solid var(--gold-line); background: #fff; color: rgba(26,26,26,.7); }
+.eqTabBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); color: var(--ink); }
+.eqTabBtn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.eqSymPanel { display: none; flex-wrap: wrap; gap: 4px; padding: 6px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; }
+.eqSymPanel.active { display: flex; }
+.eqSymBtn { padding: 4px 10px; font-size: 15px; font-weight: 400; letter-spacing: 0; border-radius: 4px; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); min-width: 30px; }
+.eqSymBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); }
+.eqSymBtn small { font-size: 10px; color: rgba(26,26,26,.5); display: block; margin-top: 1px; }
 /* 원장님 전용 도구 모음 사이를 오가는 작은 메뉴 — admin.html 등 5개
    파일에 똑같이 들어있음(공용 include가 없는 정적 사이트라 복붙). */
 #mathyToolNav{position:fixed;top:14px;left:14px;z-index:99999;font-family:var(--sans)}
@@ -652,6 +664,118 @@ function htmlPreviewToDraftText(html) {
       .replace(/<[^>]+>/g, '')
   ).trim();
 }
+
+// ---------- "문제 수정" 칸 위 기호 툴바 ----------
+// 탭별 기호 목록. raw는 textarea에 그대로 넣을 LaTeX 조각(수식 기호는
+// $...$ 로 자동으로 감싸짐 — insertMathSnippet 참고), back은 넣고 난 뒤
+// 커서를 끝에서 몇 글자 앞으로 되돌릴지(빈 {} 안에 커서를 두기 위함).
+const EQ_TABS = [
+  { key: 'basic', label: '기본', syms: [
+    { label: '분수', raw: '\\dfrac{}{}', back: 3 },
+    { label: '√', raw: '\\sqrt{}', back: 1 },
+    { label: 'ⁿ√', raw: '\\sqrt[n]{}', back: 1 },
+    { label: 'x²', raw: '^{}', back: 1 },
+    { label: 'x₂', raw: '_{}', back: 1 },
+    { label: '|x|', raw: '||', back: 1 },
+    { label: '°', raw: '^\\circ', back: 0 },
+    { label: '∞', raw: '\\infty', back: 0 },
+    { label: 'π', raw: '\\pi', back: 0 },
+    { label: '조합 nCr', raw: '\\binom{}{}', back: 3 },
+  ] },
+  { key: 'rel', label: '부등호·집합', syms: [
+    { label: '≤', raw: '\\le', back: 0 },
+    { label: '≥', raw: '\\ge', back: 0 },
+    { label: '≠', raw: '\\ne', back: 0 },
+    { label: '≈', raw: '\\approx', back: 0 },
+    { label: '∈', raw: '\\in', back: 0 },
+    { label: '∉', raw: '\\notin', back: 0 },
+    { label: '⊂', raw: '\\subset', back: 0 },
+    { label: '⊆', raw: '\\subseteq', back: 0 },
+    { label: '∪', raw: '\\cup', back: 0 },
+    { label: '∩', raw: '\\cap', back: 0 },
+    { label: '∅', raw: '\\emptyset', back: 0 },
+    { label: '→', raw: '\\to', back: 0 },
+    { label: '⇒', raw: '\\Rightarrow', back: 0 },
+    { label: '⇔', raw: '\\Leftrightarrow', back: 0 },
+  ] },
+  { key: 'greek', label: '그리스문자', syms: [
+    { label: 'α', raw: '\\alpha', back: 0 }, { label: 'β', raw: '\\beta', back: 0 },
+    { label: 'γ', raw: '\\gamma', back: 0 }, { label: 'θ', raw: '\\theta', back: 0 },
+    { label: 'λ', raw: '\\lambda', back: 0 }, { label: 'μ', raw: '\\mu', back: 0 },
+    { label: 'σ', raw: '\\sigma', back: 0 }, { label: 'φ', raw: '\\varphi', back: 0 },
+    { label: 'Δ', raw: '\\Delta', back: 0 }, { label: 'Σ', raw: '\\Sigma', back: 0 },
+    { label: 'Ω', raw: '\\Omega', back: 0 },
+  ] },
+  { key: 'calc', label: '미적분', syms: [
+    { label: 'lim', raw: '\\lim_{x \\to }', back: 1 },
+    { label: '∫', raw: '\\int_{}^{}', back: 4 },
+    { label: '∑', raw: '\\sum_{}^{}', back: 4 },
+    { label: '∏', raw: '\\prod_{}^{}', back: 4 },
+    { label: 'sin', raw: '\\sin', back: 0 },
+    { label: 'cos', raw: '\\cos', back: 0 },
+    { label: 'tan', raw: '\\tan', back: 0 },
+    { label: '벡터', raw: '\\vec{}', back: 1 },
+    { label: "f'(x)", raw: "f'(x)", back: 0 },
+  ] },
+];
+// 커서 바로 앞에 있는 "$" 개수가 홀수면 이미 수식 안이라는 뜻 — 그럴 땐
+// 또 $...$로 겹쳐 감싸지 않고 LaTeX 조각만 그대로 넣는다.
+function eqCursorInsideMath(text, pos) {
+  let count = 0;
+  for (let i = 0; i < pos; i++) if (text[i] === '$') count++;
+  return count % 2 === 1;
+}
+function eqInsertAtCursor(textarea, insertText, backFromEnd) {
+  const start = textarea.selectionStart, end = textarea.selectionEnd;
+  const text = textarea.value;
+  textarea.value = text.slice(0, start) + insertText + text.slice(end);
+  const pos = start + insertText.length - (backFromEnd || 0);
+  textarea.focus();
+  textarea.setSelectionRange(pos, pos);
+  textarea.dispatchEvent(new Event('input'));
+}
+function eqInsertMathSymbol(textarea, sym) {
+  const inMath = eqCursorInsideMath(textarea.value, textarea.selectionStart);
+  const insertText = inMath ? sym.raw : ('$' + sym.raw + '$');
+  eqInsertAtCursor(textarea, insertText, sym.back + (inMath ? 0 : 1));
+}
+// 네모박스((가)(나)(다) 조건박스) — renderEditedText가 "[박스]"~"[/박스]"
+// 사이를 .hwpCondBox로 감싸 보여준다. 앞뒤로 빈 줄을 넣어서 커서가 문장
+// 중간에 있어도 독립된 문단으로 안전하게 떨어지게 한다.
+function eqInsertBox(textarea) {
+  const template = '\n\n[박스]\n(가) \n(나) \n(다) \n[/박스]\n\n';
+  eqInsertAtCursor(textarea, template, template.length - template.indexOf('(가) ') - 4);
+}
+function eqInsertBlank(textarea) {
+  eqInsertAtCursor(textarea, '□', 0);
+}
+function buildEqToolbarHtml() {
+  const tabs = EQ_TABS.map((t, i) => `<button type="button" class="eqTabBtn${i === 0 ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`).join('')
+    + `<button type="button" class="eqTabBtn" data-tab="box">박스·기타</button>`;
+  const panels = EQ_TABS.map((t, i) => `<div class="eqSymPanel${i === 0 ? ' active' : ''}" data-panel="${t.key}">`
+    + t.syms.map(s => `<button type="button" class="eqSymBtn" data-latex="${escapeHtml(s.raw)}" data-back="${s.back}" title="${escapeHtml(s.raw)}">${s.label}</button>`).join('')
+    + `</div>`).join('')
+    + `<div class="eqSymPanel" data-panel="box">
+        <button type="button" class="eqSymBtn eqBoxInsertBtn" title="(가)(나)(다) 조건박스 삽입">🔲 네모박스((가)(나)(다))</button>
+        <button type="button" class="eqSymBtn eqBlankInsertBtn" title="빈칸 기호 □ 삽입">□ 빈칸</button>
+      </div>`;
+  return `<div class="eqToolbar"><div class="eqTabRow">${tabs}</div>${panels}</div>`;
+}
+function wireEqToolbar(box, textarea) {
+  box.querySelectorAll('.eqTabBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      box.querySelectorAll('.eqTabBtn').forEach(b => b.classList.toggle('active', b === btn));
+      const key = btn.dataset.tab;
+      box.querySelectorAll('.eqSymPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === key));
+    });
+  });
+  box.querySelectorAll('.eqSymBtn[data-latex]').forEach(btn => {
+    btn.addEventListener('click', () => eqInsertMathSymbol(textarea, { raw: btn.dataset.latex, back: Number(btn.dataset.back) || 0 }));
+  });
+  box.querySelector('.eqBoxInsertBtn')?.addEventListener('click', () => eqInsertBox(textarea));
+  box.querySelector('.eqBlankInsertBtn')?.addEventListener('click', () => eqInsertBlank(textarea));
+}
+
 function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit, showAnswerInput = true, previewHtmlByNum = null, originalPreviewHtmlByNum = null) {
   let guessedCount = 0;
   for (const qd of questionData) {
@@ -755,7 +879,8 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
         const box = document.createElement('div');
         box.className = 'editQBox';
         box.innerHTML = `
-          <p class="hint">문단 사이는 빈 줄로 띄우고, 수식은 "$...$"로 감싸 LaTeX으로 입력하세요(예: $x^2+3x-1=0$, 분수는 $\\dfrac{1}{2}$).</p>
+          <p class="hint">문단 사이는 빈 줄로 띄우고, 수식은 "$...$"로 감싸 LaTeX으로 입력하세요(예: $x^2+3x-1=0$, 분수는 $\\dfrac{1}{2}$). 아래 기호 버튼을 누르면 커서 있는 자리에 바로 들어갑니다.</p>
+          ${buildEqToolbarHtml()}
           <textarea class="editQTextarea" rows="6">${escapeHtml(qd.editedRaw || htmlPreviewToDraftText(originalPreviewHtmlByNum[num]))}</textarea>
           <div class="editQPreview"></div>
           <div class="tagBulkRow">
@@ -767,6 +892,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
         row.appendChild(box);
         const textarea = box.querySelector('.editQTextarea');
         const previewEl = box.querySelector('.editQPreview');
+        wireEqToolbar(box, textarea);
         const updatePreview = () => {
           previewEl.innerHTML = renderEditedText(textarea.value);
           if (window.renderMathInElement) {
