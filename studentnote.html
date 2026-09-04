@@ -187,6 +187,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   <p class="hint" id="rosterStatus">명단 불러오는 중...</p>
   <div id="cohort2"></div>
   <div id="cohort3"></div>
+  <div id="hiddenClassManager"></div>
 </div>
 
 <div id="main">
@@ -3062,25 +3063,44 @@ function batchKeyFor(checked) {
   return [...checked].map(c => `${c.mission}||${c.category || ''}||${c.num}`).sort().join(',');
 }
 let loadedFileCache = new Map();
+let hiddenClasses = []; // [{cohort, class}] — 학생 목록에서 반째로 숨겨둔 것들
+let lastRosterStudents = [];
 
 // ---------- init: roster + mission map + bank list ----------
 
 async function init() {
   try {
-    const [rosterData, mapData, bankData] = await Promise.all([
+    const [rosterData, mapData, bankData, hiddenData] = await Promise.all([
       callGetJsonp(DASHBOARD_URL, { action: 'roster', key: TEACHER_KEY }),
       callGetJsonp(DASHBOARD_URL, { action: 'missionmap', key: TEACHER_KEY }),
       callGetJsonp(DASHBOARD_URL, { action: 'list' }),
+      callGetJsonp(DASHBOARD_URL, { action: 'hiddenclasses' }),
     ]);
     missionMap = { byClass: mapData.byClass, global: mapData.global };
     bankFiles = bankData.files;
-    renderRoster(rosterData.students);
+    hiddenClasses = hiddenData.hidden || [];
+    lastRosterStudents = rosterData.students;
+    renderRoster(lastRosterStudents);
     document.getElementById('rosterStatus').style.display = 'none';
   } catch (e) {
     document.getElementById('rosterStatus').textContent = '명단을 불러오지 못했습니다: ' + e.message;
     document.getElementById('rosterStatus').className = 'hint err';
   }
   refreshHwGrading();
+}
+
+// 반 전체 숨기기/다시 보이기 — "숨김반" 시트 기준(서버에 저장돼서 원장님/
+// 조교 어느 기기에서 열어도 같은 반이 숨겨진 채로 보임, 다음에 다시
+// 열어도 그대로 유지됨). 눌러서 바뀐 뒤 목록을 다시 그린다.
+async function toggleHiddenClass(cohort, cls, hidden) {
+  try {
+    await callPostNoCors(DASHBOARD_URL, { action: 'sethiddenclass', cohort, class: cls, hidden });
+  } catch (e) {}
+  try {
+    const r = await callGetJsonp(DASHBOARD_URL, { action: 'hiddenclasses' });
+    hiddenClasses = r.hidden || [];
+  } catch (e) {}
+  renderRoster(lastRosterStudents);
 }
 
 function renderRoster(students) {
@@ -3090,23 +3110,53 @@ function renderRoster(students) {
     if (!byClass[cohort][s.class]) byClass[cohort][s.class] = [];
     byClass[cohort][s.class].push(s);
   }
-  renderCohort('cohort2', '대치수학 2기', byClass['2']);
-  renderCohort('cohort3', '대치수학 3기', byClass['3']);
+  renderCohort('cohort2', '대치수학 2기', byClass['2'], '2');
+  renderCohort('cohort3', '대치수학 3기', byClass['3'], '3');
+  renderHiddenClassManager();
 }
 
-function renderCohort(elId, title, byClass) {
+// 숨긴 반이 하나라도 있으면 사이드바 맨 아래에 "숨긴 반 관리"를 펼쳐서
+// 반 이름과 "다시 보이기" 버튼을 보여준다 — 나중에 다시 보이게 할 수
+// 있어야 한다는 요청.
+function renderHiddenClassManager() {
+  const wrap = document.getElementById('hiddenClassManager');
+  if (!wrap) return;
+  if (!hiddenClasses.length) { wrap.innerHTML = ''; return; }
+  const label = { '2': '2기', '3': '3기' };
+  wrap.innerHTML = `<details style="margin-top:12px">
+    <summary class="hint" style="cursor:pointer">숨긴 반 관리 (${hiddenClasses.length}개)</summary>
+    <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+      ${hiddenClasses.map(h => `
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span>${label[h.cohort] || h.cohort} · ${h.class}</span>
+          <button type="button" class="unhideClassBtn" data-cohort="${h.cohort}" data-class="${h.class}" style="font-size:11px;padding:2px 8px">다시 보이기</button>
+        </div>`).join('')}
+    </div>
+  </details>`;
+  wrap.querySelectorAll('.unhideClassBtn').forEach(btn => {
+    btn.addEventListener('click', () => toggleHiddenClass(btn.dataset.cohort, btn.dataset.class, false));
+  });
+}
+
+function renderCohort(elId, title, byClass, cohort) {
   const el = document.getElementById(elId);
-  const classNames = Object.keys(byClass);
+  const classNames = Object.keys(byClass).filter(cls => !hiddenClasses.some(h => h.cohort === cohort && h.class === cls));
   if (!classNames.length) { el.innerHTML = ''; return; }
   let html = `<h2>${title}</h2>`;
   for (const cls of classNames) {
-    html += `<div class="hint" style="margin:6px 0 2px">${cls}</div>`;
+    html += `<div class="hint" style="margin:6px 0 2px;display:flex;align-items:center;gap:6px">${cls}<button type="button" class="hideClassBtn" data-cohort="${cohort}" data-class="${cls}" title="이 반을 목록에서 숨기기" style="font-size:10px;padding:1px 6px">숨기기</button></div>`;
     for (const s of byClass[cls]) {
       html += `<button class="studentBtn" data-name="${s.name}" data-class="${cls}">${s.name}</button>`;
     }
   }
   el.innerHTML = html;
   el.querySelectorAll('.studentBtn').forEach(btn => btn.addEventListener('click', () => selectStudent(btn)));
+  el.querySelectorAll('.hideClassBtn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleHiddenClass(btn.dataset.cohort, btn.dataset.class, true);
+    });
+  });
 }
 
 async function selectStudent(btn) {
@@ -3149,8 +3199,15 @@ async function selectStudent(btn) {
       // 같은 문제가 계속 순환되므로(오답노트→오답노트→...) 선택 화면
       // 자체에서 제외해달라는 요청.
       if (w.category === '오답미션') continue;
-      const key = `${w.mission}||${w.category}`;
-      if (!byMission.has(key)) byMission.set(key, { mission: w.mission, category: w.category, items: [] });
+      // "변형 : 평면좌표(1~60)"/"(61~120)"/"(121~147)"처럼 채점은 구간별로
+      // 나눠 하지만(조교가 나눠서 채점하기 편하라고), 완성도·정답률은
+      // 어차피 전체 문항 기준으로 이미 계산돼 있어서 오답노트 화면에
+      // 굳이 3개 블록으로 나눠 보일 필요가 없다(원장님 요청) — 뒤 숫자만
+      // 떼어낸 "그룹 이름"으로 묶는다. mathyyuri.com 공개 화면의
+      // missionGroupKey와 같은 규칙.
+      const groupMission = missionGroupKey(w.mission);
+      const key = `${groupMission}||${w.category}`;
+      if (!byMission.has(key)) byMission.set(key, { mission: groupMission, category: w.category, items: [] });
       byMission.get(key).items.push(w);
     }
     missionGroups = [...byMission.values()];
@@ -3408,6 +3465,15 @@ function resolveFileForMission(missionName, category, clsOverride) {
 // 다시 미션명과 이어붙이는 모든 곳도 카테고리까지 같이 써야 한 그룹의
 // 항목이 다른 그룹으로 잘못 흘러들어가지 않는다.
 function missionKey(mission, category) { return `${mission}||${category || ''}`; }
+// "변형 : 평면좌표(1~60)" → "변형 : 평면좌표" — 채점용으로 구간 나눠 등록된
+// 미션명 뒤의 "(N~M)"만 떼어낸다. mathyyuri.com 공개 화면(index.html)의
+// missionGroupKey와 같은 규칙 — 이 사이트도 같은 이름의 미션을 여러
+// 구간으로 쪼개 채점하는 경우가 있어서, 오답노트 선택 화면에서 하나로
+// 묶어 보여줄 때 씀.
+function missionGroupKey(name) {
+  const m = String(name || '').match(/^(.*?)\s*\(\d+\s*~\s*\d+\)$/);
+  return m ? m[1].trim() : name;
+}
 // 지난 회차를 다시 받을 때(historicalBatch)는 오답노트이력 시트 자체에
 // 카테고리 정보가 없어(백엔드 스키마 한계, 별도로 기록해 둠) category가
 // 없는 채로 들어올 수 있다 — 그럴 땐 어쩔 수 없이 미션명만으로 첫 번째
