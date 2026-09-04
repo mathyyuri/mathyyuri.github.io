@@ -1086,7 +1086,10 @@ document.getElementById('msLoadBtn').addEventListener('click', async () => {
   const mission = document.getElementById('scMission').value.trim();
   const mode = (document.querySelector('input[name="msMode"]:checked') || {}).value || 'mission';
   const msg = document.getElementById('msMsg');
-  if (!category || !classes.length) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  // 카테고리/반은 이 박스 안에 따로 없고 맨 위 "성적 입력"의 드롭다운·체크박스를
+  // 그대로 재사용한다 — 처음 쓰는 사람은 이게 안 보여서 헷갈릴 수 있어 안내를
+  // 구체적으로 어디를 보라고 짚어준다.
+  if (!category || !classes.length) { msg.textContent = '위쪽 "성적 입력"에서 카테고리를 고르고 반을 체크한 다음 다시 눌러주세요.'; msg.className = 'hint err'; return; }
   msg.textContent = '불러오는 중...';
   msg.className = 'hint';
   if (mode === 'student') {
@@ -1216,6 +1219,7 @@ async function loadMsStudentMode(cohort, category, classes, msg) {
       name: s.name, cls, studentPhone: s.studentPhone, parentPhone: s.parentPhone,
       missions,
       checked: missions.some(m => m.checked),
+      expanded: false, // 학생을 눌러 펼쳐야 미션별 완수율이 보이게(원장님 요청) — 처음엔 다 접어서 요약만
     });
   }));
   msPreviewIdx = 0;
@@ -1227,12 +1231,18 @@ async function loadMsStudentMode(cohort, category, classes, msg) {
   msg.className = 'hint ok';
 }
 
+// 학생이 많거나 미션이 많으면 다 펼쳐두면 스크롤이 끝없이 길어져서
+// (원장님 리포트) 기본은 학생마다 요약(미완료 개수)만 보여주고, 그
+// 학생을 눌러야 미션별 완수율 체크리스트가 펼쳐지게 한다.
 function renderMsStudentList() {
   const wrap = document.getElementById('msStudentList');
   if (!msStudents.length) { wrap.innerHTML = '<p class="hint">명단에 학생이 없습니다.</p>'; return; }
   const r1 = n => (n == null || n === '') ? null : Math.round(n * 10) / 10;
   wrap.innerHTML = msStudents.map((s, si) => {
-    const missionsHtml = s.missions.length
+    const incompleteCount = s.missions.filter(m => m.comp !== 100).length;
+    const summary = !s.missions.length ? '기록된 시험 없음'
+      : (incompleteCount ? incompleteCount + '개 미완료' : '전체 완료 🎉');
+    const missionsHtml = !s.expanded ? '' : (s.missions.length
       ? s.missions.map((m, mi) => {
         const compDisp = r1(m.comp);
         let statusHtml;
@@ -1244,16 +1254,26 @@ function renderMsStudentList() {
           ${escHtml(m.mission)} <span class="hint">${statusHtml}</span>
         </label>`;
       }).join('')
-      : '<p class="hint" style="padding-left:24px">이 카테고리에 기록된 시험이 없습니다.</p>';
+      : '<p class="hint" style="padding-left:24px">이 카테고리에 기록된 시험이 없습니다.</p>');
     return `<div style="padding:6px 0;border-bottom:1px solid var(--gold-line)">
-      <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-family:var(--sans);font-size:13px">
-        <input type="checkbox" class="msStudentChk" data-si="${si}" ${s.checked ? 'checked' : ''} style="width:auto">
-        [${escHtml(s.cls)}] ${escHtml(s.name)} <span class="hint" style="font-weight:normal">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')}</span>
-      </label>
+      <div style="display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;flex:1 1 auto">
+          <input type="checkbox" class="msStudentChk" data-si="${si}" ${s.checked ? 'checked' : ''} style="width:auto">
+          [${escHtml(s.cls)}] ${escHtml(s.name)} <span class="hint" style="font-weight:normal">학생 ${escHtml(s.studentPhone || '없음')} · 학부모 ${escHtml(s.parentPhone || '없음')} · ${summary}</span>
+        </label>
+        <button type="button" class="msExpandBtn" data-si="${si}" style="font-size:12px;padding:3px 8px;flex:0 0 auto">${s.expanded ? '▾ 접기' : '▸ 미션별 보기'}</button>
+      </div>
       ${missionsHtml}
     </div>`;
   }).join('');
 }
+document.getElementById('msStudentList').addEventListener('click', (ev) => {
+  const t = ev.target;
+  if (!t.classList.contains('msExpandBtn')) return;
+  const si = Number(t.dataset.si);
+  msStudents[si].expanded = !msStudents[si].expanded;
+  renderMsStudentList();
+});
 document.getElementById('msStudentList').addEventListener('change', (ev) => {
   const t = ev.target;
   const si = Number(t.dataset.si);

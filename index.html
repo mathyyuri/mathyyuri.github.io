@@ -602,6 +602,11 @@ function tabListFor(c){
   return ['종합'].concat(dyn);
 }
 const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','기출':'PAST EXAM','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
+// 9월부터(중간고사 대비) 등록을 그만두는 학생 — 닉네임 기준(대부분 실명을
+// 그대로 닉네임으로 씀). SUMMER 보기(8월까지)에서는 계속 보이고, 중간고사
+// 대비(9월부터, 기본 화면)에는 안 보이게 catRowsFor에서 걸러진다. 나중에
+// 비슷한 학생이 더 생기면 그냥 이 배열에 이름을 추가하면 됨.
+const SUMMER_ONLY_STUDENTS = ['천범준'];
 const ALG_TAB = '대수연마 1000제';
 const ALG_THRESHOLDS = [10000,20000,30000];
 const ALG_REWARDS = [{emoji:'🍦',name:'아이스크림'},{emoji:'🍔',name:'햄버거 세트'},{emoji:'🍕',name:'피자'}];
