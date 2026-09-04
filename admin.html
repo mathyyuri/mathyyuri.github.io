@@ -55,6 +55,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 1px 2px; text-align: center; }
 .scoreTable th { background: #fafafa; font-family: var(--kserif); }
 .scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 6px; }
+.rowAllBtns { display: inline-flex; gap: 3px; margin-left: 8px; }
+.rowAllBtn { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; cursor: pointer; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); }
+.rowAllBtn.allOk { border-color: var(--mint-deep); color: var(--mint-deep); }
+.rowAllBtn.allOk:hover { background: var(--mint-soft); }
+.rowAllBtn.allNo { border-color: var(--pink-deep); color: var(--pink-deep); }
+.rowAllBtn.allNo:hover { background: var(--pink-soft); }
 .scoreToggle { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 10px; padding: 0; }
 .scoreToggle.O { background: var(--mint-soft); color: var(--mint-deep); border-color: var(--mint-deep); }
 .scoreToggle.Y { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
@@ -101,9 +107,10 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
           <input type="text" id="scMission" list="scMissionList" placeholder="예: 5회차 진도미션 (또는 위에서 선택)" style="width:220px" autocomplete="off">
           <datalist id="scMissionList"></datalist>
         </div>
-        <div><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="60" style="width:70px" autocomplete="off"></div>
-        <div><label title="한 단원이 파일 여러 개로 나뉘어 있을 때(예: 복소수(1)=1~40번, 복소수(2)=41~70번), 두번째 파일의 시작 번호를 41로 넣으면 표/오답노트에 실제 시험지 번호 그대로 표시됩니다.">시작 번호 <small>(보통 1)</small></label><input type="number" id="scStartNum" value="1" min="1" style="width:70px" autocomplete="off"></div>
+        <div id="scQCountField"><label>문항 수</label><input type="number" id="scQCount" value="20" min="1" max="60" style="width:70px" autocomplete="off"></div>
+        <div id="scStartNumField"><label title="한 단원이 파일 여러 개로 나뉘어 있을 때(예: 복소수(1)=1~40번, 복소수(2)=41~70번), 두번째 파일의 시작 번호를 41로 넣으면 표/오답노트에 실제 시험지 번호 그대로 표시됩니다.">시작 번호 <small>(보통 1)</small></label><input type="number" id="scStartNum" value="1" min="1" style="width:70px" autocomplete="off"></div>
         <button id="scLoadBtn">불러오기</button>
+        <button type="button" id="scLoadMoreBtn" title="선택된 반의 학생 중 지금 표에 없는 학생만 추가로 불러옵니다(이미 입력한 채점은 그대로 유지) — 다른 반을 골라서 누르면 그 반 학생도 같은 표에 이어서 추가됩니다.">➕ 추가로 불러오기</button>
       </div>
       <div class="fieldRow" style="margin-top:8px">
         <div><label>✍️ 필기용 숙제 원본 (PDF·이미지·hwpx 문제집, 선택)</label>
@@ -115,7 +122,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
       </div>
       <p class="hint">위에서 고른 기수·카테고리·반·시험명 기준으로 연결됩니다. hwpx 문제집을 올리면 학생 화면에 오답노트처럼 예쁘게 렌더링되고, PDF/이미지는 그대로 보여집니다. 연결해두면 학생 개인화면의 미션 아래에 "📄 문제 보기"가 자동으로 뜨고, "✍️ 필기로 제출"을 눌렀을 때도 파일을 새로 올릴 필요 없이 바로 이 원본 위에 필기합니다.</p>
       <div class="fieldRow" id="scWeightBar" style="display:none">
-        <span class="hint">문항별 배점 — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다).</span>
+        <span class="hint">문항별 배점(기출 전용) — 표 맨 위 줄의 배점 칸에서 바로 고칠 수 있습니다 (합계 100이 아니어도 그대로 원점수로 씁니다). 배점은 원장님만 수정 가능하고, 조교는 보기만 됩니다.</span>
         <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
       </div>
       <div id="scTableWrap"></div>
@@ -236,6 +243,11 @@ async function tryLogin(key) {
   tag.textContent = myRole === 'admin' ? '관리자' : '조교';
   tag.className = 'roleTag ' + myRole;
   document.getElementById('categoryBox').style.display = myRole === 'admin' ? '' : 'none';
+  // 조교는 문항 수·시작 번호를 직접 정할 일이 없다(이미 원장님이 만들어둔
+  // 시험을 이어서 채점만 함) — 헷갈리지 않게 아예 숨긴다. 값 자체는 그대로
+  // 서버에서 자동으로(examroster 응답 기준) 채워지니 숨겨도 동작엔 지장 없음.
+  document.getElementById('scQCountField').style.display = myRole === 'admin' ? '' : 'none';
+  document.getElementById('scStartNumField').style.display = myRole === 'admin' ? '' : 'none';
   await loadCategoriesAndRoster();
 }
 
@@ -548,7 +560,8 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     scWeights = (resp.weights && resp.weights.length === scQCount) ? resp.weights.slice() : equalWeights(scQCount);
     scStartNum = typedStartNum > 1 ? typedStartNum : (resp.startNum || 1);
     document.getElementById('scStartNum').value = scStartNum;
-    document.getElementById('scWeightBar').style.display = '';
+    document.getElementById('scWeightBar').style.display = categoryUsesWeights() ? '' : 'none';
+    document.getElementById('scEqualWeightBtn').style.display = weightsEditable() ? '' : 'none';
     renderScoreTable();
     document.getElementById('scSaveBtn').disabled = false;
     // 문항 수/시작 번호를 메시지에 항상 같이 보여준다 — 이전 미션에서
@@ -566,6 +579,44 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     msg.className = 'hint err';
   } finally {
     document.getElementById('scLoadBtn').disabled = false;
+  }
+});
+
+// "추가로 불러오기" — 지금 표를 지우지 않고, 현재 선택된 반의 학생 중
+// 표에 아직 없는 사람만 이어 붙인다. 반을 바꿔서 누르면 그 반 학생들도
+// 같은 표에 추가되므로, 여러 반을 한 표에서 이어서 채점할 수 있고,
+// 명단에 늦게 추가된 학생을 다시 불러올 때도 이미 채점해둔 다른 학생
+// 것이 지워지지 않는다.
+document.getElementById('scLoadMoreBtn').addEventListener('click', async () => {
+  const cohort = document.getElementById('scCohort').value;
+  const category = document.getElementById('scCategory').value;
+  const cls = document.getElementById('scClass').value;
+  const mission = document.getElementById('scMission').value.trim();
+  const msg = document.getElementById('scMsg');
+  if (!category || !cls) { msg.textContent = '카테고리/반을 확인하세요.'; msg.className = 'hint err'; return; }
+  if (!mission) { msg.textContent = '시험명을 입력하세요.'; msg.className = 'hint err'; return; }
+  if (!scStudents.length) { msg.textContent = '먼저 "불러오기"로 표를 만들어주세요.'; msg.className = 'hint err'; return; }
+  const btn = document.getElementById('scLoadMoreBtn');
+  btn.disabled = true;
+  msg.textContent = '추가로 불러오는 중...';
+  msg.className = 'hint';
+  try {
+    const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
+    const existingNames = new Set(scStudents.map(s => s.name));
+    const toAdd = resp.students.filter(s => !existingNames.has(s.name));
+    toAdd.forEach(s => {
+      scStudents.push({ name: s.name, items: fillDefaultItems(s.items), comment: s.comment || '' });
+    });
+    renderScoreTable();
+    msg.textContent = toAdd.length
+      ? `${toAdd.length}명 추가됐습니다. (표 전체 ${scStudents.length}명)`
+      : `추가할 학생이 없습니다 — "${cls}"반 학생은 이미 다 표에 있어요.`;
+    msg.className = 'hint ok';
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  } finally {
+    btn.disabled = false;
   }
 });
 
@@ -617,18 +668,36 @@ document.getElementById('wbAssignBtn').addEventListener('click', async () => {
   }
 });
 
+// 배점(가중치) 입력은 이제 "기출"에서만 쓴다 — 그 외 카테고리는 전부
+// (1의 개수)/(문항수)를 그대로 점수로 쓰는 단순 정답률 방식으로 바뀌어서,
+// 배점 줄 자체를 표에서 뺀다(서버에도 weights를 안 보내면 자동으로
+// 정답률 방식으로 계산됨 — handleSaveExamScores 참고). 기출은 실제
+// 시험지 배점이 문항마다 달라서 계속 배점을 쓰되, 그 값은 원장님만
+// 고칠 수 있고 조교는 원장님이 정해둔 배점을 보기만 하고 채점만 한다.
+function categoryUsesWeights() { return document.getElementById('scCategory').value === '기출'; }
+function weightsEditable() { return categoryUsesWeights() && myRole === 'admin'; }
 function renderScoreTable() {
   const wrap = document.getElementById('scTableWrap');
   if (!scStudents.length) { wrap.innerHTML = '<p class="hint">이 반에 등록된 학생이 없습니다.</p>'; return; }
+  const showWeights = categoryUsesWeights();
+  const editWeights = weightsEditable();
   let html = '<table class="scoreTable"><thead><tr><th>이름</th>';
   for (let i = 0; i < scQCount; i++) html += `<th>${i + scStartNum}</th>`;
-  html += '<th>코멘트</th></tr><tr><th>배점</th>';
-  for (let i = 0; i < scQCount; i++) {
-    html += `<th><input type="number" class="weightInput" data-qi="${i}" min="0"></th>`;
+  html += '<th>코멘트</th></tr>';
+  if (showWeights) {
+    html += '<tr><th>배점</th>';
+    for (let i = 0; i < scQCount; i++) {
+      html += `<th><input type="number" class="weightInput" data-qi="${i}" min="0"${editWeights ? '' : ' disabled title="배점은 원장님만 수정할 수 있어요"'}></th>`;
+    }
+    html += '<th></th></tr>';
   }
-  html += '<th></th></tr></thead><tbody>';
+  html += '</thead><tbody>';
   scStudents.forEach((s, si) => {
-    html += `<tr><td class="nameCell">${escHtml(s.name)}</td>`;
+    html += `<tr><td class="nameCell">${escHtml(s.name)}`
+      + `<div class="rowAllBtns">`
+      + `<button type="button" class="rowAllBtn allOk" data-si="${si}" data-val="1" title="이 학생 전체 정답 처리">전체O</button>`
+      + `<button type="button" class="rowAllBtn allNo" data-si="${si}" data-val="2" title="이 학생 전체 오답 처리">전체X</button>`
+      + `</div></td>`;
     for (let i = 0; i < scQCount; i++) {
       const v = s.items[i];
       html += `<td><button type="button" class="scoreToggle ${TOGGLE_CLASS[v]}" data-si="${si}" data-qi="${i}">${TOGGLE_LABEL[v]}</button></td>`;
@@ -646,15 +715,30 @@ function renderScoreTable() {
       btn.textContent = TOGGLE_LABEL[next];
     });
   });
+  // 학생 한 명을 통째로 전체 O(정답)/전체 X(오답)로 채운다 — 표 전체를
+  // 다시 그리는 대신 그 학생 행의 토글 버튼만 갱신해서 다른 학생 채점
+  // 중이던 화면이 스크롤 튀는 일 없게 한다.
+  wrap.querySelectorAll('.rowAllBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const si = Number(btn.dataset.si), val = Number(btn.dataset.val);
+      scStudents[si].items = Array(scQCount).fill(val);
+      wrap.querySelectorAll(`.scoreToggle[data-si="${si}"]`).forEach(tb => {
+        tb.className = 'scoreToggle ' + TOGGLE_CLASS[val];
+        tb.textContent = TOGGLE_LABEL[val];
+      });
+    });
+  });
   wrap.querySelectorAll('.commentInput').forEach(inp => {
     inp.addEventListener('input', () => { scStudents[Number(inp.dataset.si)].comment = inp.value; });
   });
+  if (!showWeights) return;
   // value="..." 속성으로 innerHTML 문자열째 넣는 대신, DOM에 붙인 뒤 .value를
   // 직접 지정한다 — 일부 환경에서 대량의 number input을 한꺼번에 innerHTML로
   // 밀어넣을 때 값 속성이 안 먹는 경우가 실제로 보고돼서, 더 확실한 방식으로.
   wrap.querySelectorAll('.weightInput').forEach(inp => {
     const qi = Number(inp.dataset.qi);
     inp.value = scWeights[qi] != null ? scWeights[qi] : '';
+    if (!editWeights) return;
     inp.addEventListener('input', () => { scWeights[Number(inp.dataset.qi)] = Number(inp.value) || 0; });
     // 문항이 많으면 배점을 옆칸으로 계속 옮겨 다니며 입력해야 해서, 화살표
     // 좌우로 바로 옆 칸으로 넘어갈 수 있게 한다(스프레드시트처럼).
@@ -687,7 +771,11 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
   try {
     scStartNum = Number(document.getElementById('scStartNum').value) || 1;
     const entries = scStudents.map(s => ({ name: s.name, items: s.items, comment: s.comment }));
-    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: scWeights, startNum: scStartNum });
+    // 기출이 아니면 배점을 아예 안 보낸다 — 서버(handleSaveExamScores)가
+    // weights가 없으면 자동으로 정답률(1의 개수/문항 수) 방식으로 점수를
+    // 계산한다. 기출만 배점을 그대로 보낸다.
+    const weightsToSend = categoryUsesWeights() ? scWeights : [];
+    await callPostNoCors({ action: 'saveexamscores', key: myKey, cohort, category, class: cls, mission, entries: entries, weights: weightsToSend, startNum: scStartNum });
     await new Promise(r => setTimeout(r, 1200));
     const resp = await callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission });
     scStudents = resp.students.map(s => ({
