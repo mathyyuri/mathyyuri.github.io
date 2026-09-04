@@ -1251,11 +1251,19 @@ async function loadMsStudentMode(cohort, category, classes, msg) {
   const responses = await Promise.all(classes.map(cls =>
     callGetJsonp({ action: 'studentmissionstatus', key: myKey, cohort, category, class: cls }).then(r => ({ cls, r }))
   ));
+  // TEST/클리닉처럼 여름(8월까지)·중간고사 대비(9월부터)가 미션 단위로
+  // 갈리는 카테고리는, mathyyuri.com에 지금 실제로 보이는(중간고사 대비)
+  // 미션만 남기고 예전 여름 미션은 아예 뺀다 — 이제 체크할 필요 없는
+  // 8월 미션까지 매번 다 펼쳐 보일 이유가 없다(원장님 요청). index.html의
+  // catRowsFor(mode='main')와 같은 기준(splitMissionIsNew)을 그대로 씀.
+  const filterSummerMissions = cohort === '2' && SPLIT_CATS.indexOf(category) !== -1;
   msStudents = [];
   responses.forEach(({ cls, r }) => (r.students || []).forEach(s => {
     // 완성도 100%가 아니면(미제출 포함) 그 미션은 "미완료"로 보고 기본 체크 —
     // 학생 자체도 미완료 미션이 하나라도 있으면 기본으로 함께 체크한다.
-    const missions = (s.missions || []).map(m => ({ ...m, checked: m.comp !== 100 }));
+    const missions = (s.missions || [])
+      .filter(m => !filterSummerMissions || splitMissionIsNew(category, m.mission))
+      .map(m => ({ ...m, checked: m.comp !== 100 }));
     msStudents.push({
       name: s.name, cls, studentPhone: s.studentPhone, parentPhone: s.parentPhone,
       missions,
