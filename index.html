@@ -1759,9 +1759,23 @@ function mergeMissionRows(rawRows){
     byStu[key].nickname=r.nickname;
     byStu[key].chunks.push(r);
   });
+  // 구간별로 나눠 채점하는 미션(예: "변형 : 평면좌표(1~60)"/"(61~120)"/
+  // "(121~147)")을 합칠 때, 어떤 학생은 아직 뒤쪽 구간이 하나도 채점 안
+  // 됐을 수 있다(그 학생 행 자체가 그 구간 시트에 없음) — 그 학생 혼자
+  // 기준으로 문항수를 정하면 60(또는 120)으로 끝나버려서, 완성도를 볼 때
+  // 뒤쪽 87문항이 통째로 "질문 자체가 없는 것"처럼 빠져버린다(원장님
+  // 리포트 — 뒤 구간을 안 했는데도 CLEAR로 잘못 보임). 그래서 "이 미션
+  // 전체가 실제로 몇 번까지 있는지"를 그 학생 개인 데이터가 아니라, 이
+  // 미션에 걸린 모든 구간 이름((N~M) 접미사) 중 가장 큰 M으로 먼저
+  // 정해두고, 모든 학생의 문항 배열을 그 길이로 맞춘다.
+  let globalMaxNum=0;
+  rawRows.forEach(r=>{
+    const m=String(r.mission||'').match(/\((\d+)\s*~\s*(\d+)\)\s*$/);
+    if(m) globalMaxNum=Math.max(globalMaxNum,Number(m[2]));
+  });
   return order.map(key=>{
     const s=byStu[key];
-    let maxNum=0;
+    let maxNum=globalMaxNum;
     s.chunks.forEach(c=>{const start=c.numStart||1;maxNum=Math.max(maxNum,start+(c.items||[]).length-1);});
     const items=Array(maxNum).fill(null);
     s.chunks.forEach(c=>{
@@ -1786,6 +1800,18 @@ function renderMissionDetail(){
   if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
   const nQ=Math.max(...rows.map(r=>r.items.length),0);
   const numStart=rows[0]?.numStart||1;
+  // 이 표의 "완성도" 칸은 항상 이 미션의 전체 문항수(nQ, 예: 변형:평면좌표
+  // 처럼 구간별로 나눠 채점하는 미션을 mergeMissionRows로 합친 뒤의 1~147
+  // 전체)를 분모로 쓴다 — compValOf(전역, 다른 화면들과 공용)는 "이
+  // 학생이 답한 문항만" 분모로 삼아서, 뒤쪽 구간을 아직 하나도 안 채점한
+  // 학생이 실제로는 60/147만 했는데도 CLEAR(100%)로 잘못 보이는 문제가
+  // 있었다(원장님 리포트). 답 안 한(null) 문항도 "안 한 것"으로 분모에
+  // 넣어야 진짜 완성도가 나온다.
+  function itemAnalysisComp(items){
+    let done=0;
+    (items||[]).forEach(function(v){ if(v===1||v===3) done++; });
+    return nQ?Math.round(done/nQ*100):null;
+  }
 
   // 문항별 정답률 (표시 중인 학생들 기준)
   const rates=[];
@@ -1808,7 +1834,7 @@ function renderMissionDetail(){
     html+='<tr><td class="nick">'+classDot(r.class)+esc(r.nickname)+'</td>'
       +'<td class="score">'+fmtScore(r.score)+'</td>'
       +(hasGrade?'<td class="grade '+gradeCls(r.grade)+'">'+gradeHTML(r.grade)+'</td>':'')
-      +'<td class="comp">'+compHTML(compValOf(r),r.class)+'</td>';
+      +'<td class="comp">'+compHTML(itemAnalysisComp(r.items),r.class)+'</td>';
     for(let q=0;q<nQ;q++){
       const v=r.items[q];
       const cls=v===1?'ok':v===2?'no':v===3?'tri':'na';
