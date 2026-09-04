@@ -161,22 +161,36 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .unitTabBar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .unitTabBtn { font-family: var(--kserif); font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--mint-deep); background: var(--mint-soft); color: var(--mint-deep); cursor: pointer; }
 .unitTabBtn:hover { background: var(--mint-deep); color: #fff; }
-.tagRows { display: flex; flex-direction: column; gap: 10px; }
-/* 문제 내용을 직접 보면서(오른쪽 잘린 미리보기 텍스트가 아니라 실제
-   렌더링된 문제) 바로 옆에서 단원/유형을 입력할 수 있도록 카드형으로 —
-   예전엔 위쪽 가로 스크롤 미리보기 칸을 따로 봐야 해서 스크롤을 계속
-   오가야 했다는 요청. 문제 내용은 왼쪽, 입력칸은 오른쪽에 sticky로
-   고정해서 문제가 길어도 입력칸이 화면 밖으로 안 밀려나게 한다. */
-.tagRow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; font-size: 13px; padding: 10px 12px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; }
-.tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; width: 30px; font-size: 15px; padding-top: 3px; }
-.tagRowPreview { flex: 1 1 260px; min-width: 120px; color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tagRowContent { flex: 1 1 auto; min-width: 0; font-size: 14px; line-height: 1.55; max-height: 280px; overflow-y: auto; padding-right: 6px; }
+/* 문제 하나하나를 카드로 — mathsecr.com류 문제은행 사이트를 참고해
+   달라고 하신 요청. 카드 안 기본 모습은 문제 내용 + 지금 저장된
+   단원/유형/난이도 등을 읽기전용으로 요약해서 보여주고, "✏️ 수정"을
+   눌러야 실제 입력칸(단원/유형/난이도/배점/출처/정답/선택지, 문제 본문)이
+   펼쳐진다. */
+.tagRows { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.tagRow { display: flex; flex-direction: column; gap: 8px; font-size: 13px; padding: 12px; border: 1px solid var(--gold-line); border-radius: 8px; background: #fff; }
+.tagRowHead { display: flex; align-items: center; gap: 8px; }
+.tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; font-size: 15px; }
+.tagFormatBadge { font-family: var(--kserif); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); }
+.tagFormatBadge.empty { background: rgba(26,26,26,.06); color: rgba(26,26,26,.4); }
+.tagEditToggleBtn { margin-left: auto; font-size: 12px; padding: 4px 10px; background: var(--gold-soft); color: var(--ink); border-color: var(--gold-line); }
+.tagEditToggleBtn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.tagRowPreview { color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagRowContent { font-size: 14px; line-height: 1.55; max-height: 220px; overflow-y: auto; padding-right: 4px; }
 .tagRowContent p { margin: 0 0 6px; }
-.tagRowInputs { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; width: 220px; position: sticky; top: 8px; }
+.tagRowSummary { display: flex; flex-wrap: wrap; gap: 5px; font-family: var(--kserif); }
+.tagChip { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: var(--mint-soft); color: var(--mint-deep); }
+.tagChip.dim { background: rgba(26,26,26,.06); color: rgba(26,26,26,.4); }
+.tagRowInputs { display: none; flex-direction: column; gap: 6px; border-top: 1px dashed var(--gold-line); padding-top: 8px; }
+.tagRowInputs.open { display: flex; }
 .tagUnitInput, .tagTypeInput, .tagAnswerInput { width: 100%; }
 .tagRowInputsRow2 { display: flex; gap: 6px; }
 .tagRowInputsRow2 > * { flex: 1; min-width: 0; }
 .tagDifficultyInput, .tagFormatInput, .tagPointsInput, .tagSourceInput { width: 100%; font-size: 12px; }
+.tagChoicesBox { display: none; flex-direction: column; gap: 4px; }
+.tagChoicesBox.show { display: flex; }
+.tagChoiceRow { display: flex; align-items: center; gap: 6px; }
+.tagChoiceRow span { font-family: var(--kserif); font-size: 12px; color: var(--gold); flex: 0 0 16px; }
+.tagChoiceRow input { flex: 1; font-size: 12px; }
 .tagEditBox { border: 2px solid var(--gold); }
 .editQBtn { background: var(--gold-soft); }
 .editQBox { flex-basis: 100%; margin-top: 8px; padding: 10px; border: 1px dashed var(--gold); border-radius: 6px; background: #fffaf0; }
@@ -831,9 +845,18 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           const preview = (rawTextByNum[num] || '').replace(/\s+/g, ' ').trim().slice(0, 70);
           return `<span class="tagRowPreview" title="${escapeHtml(rawTextByNum[num] || '')}">${escapeHtml(preview)}</span>`;
         })();
+    // 선택지(①②③④⑤) — 형식이 "객관식"일 때만 쓰는 5칸. 이미 저장된 값이
+    // 있으면 그대로, 없으면 빈 배열로 시작(모두 빈칸).
+    if (!Array.isArray(qd.choices)) qd.choices = ['', '', '', '', ''];
+    const choiceMarks = ['①', '②', '③', '④', '⑤'];
     row.innerHTML = `
-      <span class="tagRowNum">${num}번</span>
+      <div class="tagRowHead">
+        <span class="tagRowNum">${num}번</span>
+        <span class="tagFormatBadgeSlot"></span>
+        <button type="button" class="selectAllBtn tagEditToggleBtn">✏️ 수정</button>
+      </div>
       ${contentHtml}
+      <div class="tagRowSummary"></div>
       <div class="tagRowInputs">
         <input type="text" class="tagUnitInput" list="unitSuggestList" placeholder="단원" value="${escapeHtml(qd.unit || '')}">
         <input type="text" class="tagTypeInput" list="typeSuggestList" placeholder="유형" value="${escapeHtml(qd.type || '')}">
@@ -855,17 +878,51 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           <input type="number" class="tagPointsInput" placeholder="배점" min="0" step="0.5" value="${qd.points != null && qd.points !== '' ? escapeHtml(String(qd.points)) : ''}">
           <input type="text" class="tagSourceInput" list="sourceSuggestList" placeholder="출처" value="${escapeHtml(qd.source || '')}">
         </div>
+        <div class="tagChoicesBox">
+          <p class="hint" style="margin:0">객관식 선택지 — 정답 칸엔 맞는 번호(예: ③)를 적으세요.</p>
+          ${choiceMarks.map((mark, i) => `<div class="tagChoiceRow"><span>${mark}</span><input type="text" class="tagChoiceInput" data-idx="${i}" value="${escapeHtml(qd.choices[i] || '')}"></div>`).join('')}
+        </div>
         ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용)" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)">` : ''}
-        ${originalPreviewHtmlByNum ? `<button type="button" class="selectAllBtn editQBtn">✏️ 문제 수정${qd.editedRaw ? ' (수정됨)' : ''}</button>` : ''}
+        ${originalPreviewHtmlByNum ? `<button type="button" class="selectAllBtn editQBtn">✏️ 문제 본문 수정${qd.editedRaw ? ' (수정됨)' : ''}</button>` : ''}
       </div>
     `;
-    row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); });
-    row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); });
-    row.querySelector('.tagDifficultyInput').addEventListener('change', (e) => { qd.difficulty = e.target.value; });
-    row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; });
-    row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); });
-    row.querySelector('.tagSourceInput').addEventListener('input', (e) => { qd.source = e.target.value.trim(); });
+    // 카드 기본 모습(형식 배지 + 단원/유형/난이도 등 요약)을 지금 저장된
+    // 값으로 다시 그린다 — 입력칸을 고치는 즉시(수정 모드 안 벗어나도)
+    // 바로 반영되게 매 입력마다 부른다.
+    const formatBadgeSlot = row.querySelector('.tagFormatBadgeSlot');
+    const summaryEl = row.querySelector('.tagRowSummary');
+    function refreshRowSummary() {
+      formatBadgeSlot.innerHTML = qd.format
+        ? `<span class="tagFormatBadge">${escapeHtml(qd.format)}</span>`
+        : `<span class="tagFormatBadge empty">형식 미입력</span>`;
+      const chips = [];
+      if (qd.unit) chips.push(`<span class="tagChip">${escapeHtml(qd.unit)}${qd.type ? ' &gt; ' + escapeHtml(qd.type) : ''}</span>`);
+      else chips.push(`<span class="tagChip dim">단원 미입력</span>`);
+      if (qd.difficulty) chips.push(`<span class="tagChip dim">난이도 ${escapeHtml(qd.difficulty)}</span>`);
+      if (qd.points != null && qd.points !== '') chips.push(`<span class="tagChip dim">${escapeHtml(String(qd.points))}점</span>`);
+      if (qd.source) chips.push(`<span class="tagChip dim">${escapeHtml(qd.source)}</span>`);
+      summaryEl.innerHTML = chips.join('');
+    }
+    refreshRowSummary();
+    const choicesBox = row.querySelector('.tagChoicesBox');
+    function refreshChoicesVisibility() { choicesBox.classList.toggle('show', qd.format === '객관식'); }
+    refreshChoicesVisibility();
+    const inputsBox = row.querySelector('.tagRowInputs');
+    row.querySelector('.tagEditToggleBtn').addEventListener('click', (e) => {
+      const open = inputsBox.classList.toggle('open');
+      e.target.classList.toggle('active', open);
+      e.target.textContent = open ? '접기' : '✏️ 수정';
+    });
+    row.querySelector('.tagUnitInput').addEventListener('input', (e) => { qd.unit = e.target.value.trim(); refreshRowSummary(); });
+    row.querySelector('.tagTypeInput').addEventListener('input', (e) => { qd.type = e.target.value.trim(); refreshRowSummary(); });
+    row.querySelector('.tagDifficultyInput').addEventListener('change', (e) => { qd.difficulty = e.target.value; refreshRowSummary(); });
+    row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; refreshRowSummary(); refreshChoicesVisibility(); });
+    row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); refreshRowSummary(); });
+    row.querySelector('.tagSourceInput').addEventListener('input', (e) => { qd.source = e.target.value.trim(); refreshRowSummary(); });
     row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); });
+    row.querySelectorAll('.tagChoiceInput').forEach(inp => {
+      inp.addEventListener('input', (e) => { qd.choices[Number(e.target.dataset.idx)] = e.target.value; });
+    });
     // "문제 수정" — 원본 hwpx를 다시 파싱하는 대신 강사가 직접 쓴 텍스트를
     // 쓰도록 questionData에 editedRaw를 채워 넣는다("$...$"는 수식으로
     // 렌더링됨). 저장하면(태그 저장과 같은 버튼) 오답노트 생성기의 "HTML로
@@ -979,6 +1036,7 @@ async function openTagEditor(f) {
         hasCondition: ex.hasCondition ?? null, warnings: ex.warnings || [],
         unit: ex.unit || '', type: ex.type || '', answer: existingAnswers[String(num)] || '',
         difficulty: ex.difficulty || '', format: ex.format || '', points: ex.points || '', source: ex.source || '',
+        choices: Array.isArray(ex.choices) ? ex.choices : ['', '', '', '', ''],
         editedRaw: ex.editedRaw || '',
       };
     });
@@ -1061,8 +1119,8 @@ async function openTagEditor(f) {
         // 정답(answer)은 questionData와 분리해서 별도 액션으로 보낸다 —
         // updatetags/list는 인증 없이 열려 있어서, 여기 answer를 같이
         // 넣으면 그대로 공개 API를 통해 새어나가게 된다.
-        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, editedRaw, rawText }) =>
-          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, editedRaw: editedRaw || undefined, rawText }));
+        const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, choices, editedRaw, rawText }) =>
+          ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, difficulty, format, points, source, choices, editedRaw: editedRaw || undefined, rawText }));
         const answers = {};
         questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
         await callPost({ action: 'updatetags', id: f.id, questionData: JSON.stringify(publicTags) });
