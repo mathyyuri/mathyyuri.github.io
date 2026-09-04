@@ -71,8 +71,12 @@ input{font-family:inherit}
 .cohort-btn.active small{color:var(--mint)}
 
 /* ===== 탭 / 칩 ===== */
-.tabbar{display:flex;border-bottom:1px solid var(--gold-line);overflow-x:auto;padding:0 4vw;scrollbar-width:none;background:#fff}
+.tabbar-row{display:flex;align-items:stretch;border-bottom:1px solid var(--gold-line);background:#fff}
+.tabbar{display:flex;flex:1;min-width:0;border-bottom:none;overflow-x:auto;padding:0 4vw;scrollbar-width:none;background:#fff}
 .tabbar::-webkit-scrollbar{display:none}
+.summer-toggle-btn{flex:0 0 auto;margin:8px 4vw 8px 0;padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:.05em;font-family:var(--kserif);border-radius:999px;border:1px solid var(--mint-deep);background:#fff;color:var(--mint-deep);white-space:nowrap;transition:.15s}
+.summer-toggle-btn:hover{background:var(--mint-soft)}
+.summer-toggle-btn.on{background:var(--mint-deep);color:#fff}
 .tab{background:none;border:none;border-bottom:3px solid transparent;padding:15px 15px;font-size:13px;font-weight:700;letter-spacing:.06em;white-space:nowrap;color:rgba(26,26,26,.38)}
 .tab.active{color:var(--ink);border-bottom-color:var(--gold)}
 .chips{display:flex;gap:8px;padding:16px 4vw 0}
@@ -421,7 +425,10 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   </div>
 
   <div class="cohort-bar" id="cohort-bar"></div>
-  <div class="tabbar" id="pub-tabs"></div>
+  <div class="tabbar-row">
+    <div class="tabbar" id="pub-tabs"></div>
+    <button class="summer-toggle-btn hidden" id="summer-toggle-btn" onclick="toggleSummerView()"></button>
+  </div>
   <div class="chips" id="pub-chips"></div>
 
   <!-- 카드 = 미션 탭 (항상 유지) -->
@@ -549,8 +556,38 @@ const COHORT_SHEETS = {
 };
 const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
 function sheetsFor(c){ return COHORT_SHEETS[c] || SHEETS; }
-function catsFor(c){ return sheetsFor(c).filter(k=>k!=='S+ BLACK'&&k!=='대수연마 1000제'); } /* 전체 통계에서 S+ BLACK·대수연마 1000제 제외 (점수 체계가 달라 평균에 섞을 수 없음) */
-function tabListFor(c){ return ['종합'].concat(sheetsFor(c)); }
+// mode를 안 주면(개인화면의 "안 한 미션" 체크 등) 예전처럼 전체 카테고리를
+// 그대로 준다 — 여름/중간고사 구분은 공개 "전체 현황"(종합 탭) 쪽에서만
+// 쓰고, mode='main'|'summer'를 넘겨서 그 화면 안에서만 걸러지게 한다.
+function catsFor(c,mode){
+  let list=sheetsFor(c);
+  if(c==='2'&&(mode==='main'||mode==='summer')){
+    list=mode==='summer'
+      ?COHORT2_SUMMER_ONLY_CATS.concat(COHORT2_SPLIT_CATS).filter(s=>list.indexOf(s)!==-1)
+      :list.filter(s=>COHORT2_SUMMER_ONLY_CATS.indexOf(s)===-1);
+  }
+  return list.filter(k=>k!=='S+ BLACK'&&k!=='대수연마 1000제'); /* 전체 통계에서 S+ BLACK·대수연마 1000제 제외 (점수 체계가 달라 평균에 섞을 수 없음) */
+}
+// "종합" 탭에서 카테고리 하나(cat)의 원본 행을 가져올 때 쓰는 공통 헬퍼 —
+// 클리닉/TEST처럼 미션 단위로 여름/중간고사가 갈리는 카테고리는 mode에
+// 맞춰 그 안에서도 한 번 더 걸러준다.
+function catRowsFor(cohort,cat,mode){
+  const rows=((publicData&&publicData[cohort])||{})[cat]||[];
+  if(cohort==='2'&&COHORT2_SPLIT_CATS.indexOf(cat)!==-1&&(mode==='main'||mode==='summer')){
+    return rows.filter(r=>splitMissionIsNew(cat,r.mission)===(mode==='main'));
+  }
+  return rows;
+}
+function tabListFor(c){
+  const dyn = sheetsFor(c);
+  if (c === '2') {
+    const wanted = pubShowSummer
+      ? COHORT2_SUMMER_ONLY_CATS.concat(COHORT2_SPLIT_CATS)
+      : dyn.filter(s => COHORT2_SUMMER_ONLY_CATS.indexOf(s) === -1);
+    return ['종합'].concat(dyn.filter(s => wanted.indexOf(s) !== -1));
+  }
+  return ['종합'].concat(dyn);
+}
 const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','기출':'PAST EXAM','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
 const ALG_TAB = '대수연마 1000제';
 const ALG_THRESHOLDS = [10000,20000,30000];
@@ -787,7 +824,47 @@ let pubCohort = '2';
 let pubTab = '종합';
 let pubClass = '전체';
 let pubMission = null; // null = 누적 현황
+let pubShowSummer = false; // 대치수학 2기 전용 — true면 8월까지의 여름방학 특강 화면
 let charts = {};
+
+/* ---- 대치수학 2기: 여름방학(8월까지) vs 중간고사 대비(9월부터) 화면 분리 ----
+   진도미션/과제미션/오답미션/9모대비/개념미션은 여름방학 특강 내용이라
+   "SUMMER 보기"를 눌러야만 보이게 하고, 평소 메인 탭에서는 뺀다.
+   클리닉/TEST는 카테고리(시트) 자체는 그대로 이어 쓰되(여름 것도 같은
+   시트에 계속 쌓여 있음), 그 안의 미션 하나하나를 이름으로 구분해서
+   메인/SUMMER 양쪽에 나눠 보여준다 — 성적행에 날짜 칼럼이 따로 없어서
+   자동 판단이 안 되기 때문에, 원장님이 이미 쓰시는/쓰기로 하신 이름
+   규칙을 그대로 기준으로 삼는다:
+     - 클리닉: 미션명 맨 앞의 "YYYY. M. D." 날짜가 중간고사 대비 시작일
+       이후면 새 것(중간고사 대비), 그 전이면 여름방학 것.
+     - TEST: 미션명이 "M."으로 시작하면(예: "M.TAT 1회") 새 것, 기존
+       "TAT 1회"~"TAT 13회"처럼 M. 표시가 없으면 여름방학 것.
+   기출은 나누지 않고 그대로 누적으로 보여준다(원장님 확인). */
+const MIDTERM_START_DATE = new Date(2026, 8, 2); // 2026-09-02 — 이 날짜부터 "중간고사 대비"
+const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '오답미션', '9모대비', '개념미션'];
+const COHORT2_SPLIT_CATS = ['클리닉', 'TEST']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
+function clinicMissionIsNew(name) {
+  const m = String(name || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
+  if (!m) return true; // 날짜 형식이 아니면 새로 등록된 걸로 보고 안전하게 보여줌
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return d >= MIDTERM_START_DATE;
+}
+function testMissionIsNew(name) {
+  return /^M\./i.test(String(name || '').trim());
+}
+function splitMissionIsNew(category, name) {
+  if (category === '클리닉') return clinicMissionIsNew(name);
+  if (category === 'TEST') return testMissionIsNew(name);
+  return true;
+}
+function toggleSummerView() {
+  pubShowSummer = !pubShowSummer;
+  pubMission = null;
+  buildPubTabs();
+  pubTab = '종합';
+  [...document.getElementById('pub-tabs').children].forEach(t => t.classList.toggle('active', t.textContent === '종합'));
+  renderPublic();
+}
 
 /* ---------- 막대 위 점수 표시 플러그인 ---------- */
 const valueLabel = {
@@ -1007,6 +1084,14 @@ function buildPubTabs(){
     };
     bar.appendChild(b);
   });
+  const summerBtn=document.getElementById('summer-toggle-btn');
+  if(pubCohort==='2'){
+    summerBtn.classList.remove('hidden');
+    summerBtn.classList.toggle('on',pubShowSummer);
+    summerBtn.textContent=pubShowSummer?'← 중간고사 대비로':'☀️ SUMMER 보기 (8월까지)';
+  }else{
+    summerBtn.classList.add('hidden');
+  }
 }
 function renderCohortBar(){
   const box=document.getElementById('cohort-bar');
@@ -1019,7 +1104,7 @@ function renderCohortBar(){
   box.innerHTML=html;
 }
 function setCohort(c){
-  pubCohort=c; pubMission=null; pubClass='전체';
+  pubCohort=c; pubMission=null; pubClass='전체'; pubShowSummer=false;
   buildPubTabs();
   renderPublic();
 }
@@ -1044,7 +1129,13 @@ function setClassFilter(c){
   pubClass=c;
   renderPublic(false);
 }
-function tabRows(){return (publicData&&publicData[pubCohort]&&publicData[pubCohort][pubTab])||[];}
+function tabRows(){
+  const raw=(publicData&&publicData[pubCohort]&&publicData[pubCohort][pubTab])||[];
+  if(pubCohort==='2'&&COHORT2_SPLIT_CATS.indexOf(pubTab)!==-1){
+    return raw.filter(r=>splitMissionIsNew(pubTab,r.mission)===!pubShowSummer);
+  }
+  return raw;
+}
 function filteredRows(){return tabRows().filter(r=>pubClass==='전체'||r.class===pubClass);}
 // 채점 칸 60문항 제한 때문에 "변형 : 평면좌표(1~60)"/"(61~120)"/"(121~147)"처럼
 // 번호 구간을 나눠서 미션을 여러 개로 등록한 경우, 학생/원장님 화면에서는
@@ -1199,8 +1290,8 @@ function renderCards(){
     const overall=mean(students.map(s=>s.overall).filter(v=>v!=null))??'—';
     let html='<button class="sum-card active" onclick="void(0)">'
       +'<div class="k">종합 누적 현황</div><div class="v">'+overall+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
-    catsFor(pubCohort).forEach(cat=>{
-      const rows=((publicData[pubCohort]||{})[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass);
+    catsFor(pubCohort,pubShowSummer?'summer':'main').forEach(cat=>{
+      const rows=catRowsFor(pubCohort,cat,pubShowSummer?'summer':'main').filter(r=>pubClass==='전체'||r.class===pubClass);
       const avg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
       html+='<button class="sum-card" onclick="jumpTab(\''+cat+'\')">'
         +'<div class="k">'+esc(cat)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">바로가기</div></button>';
@@ -1234,11 +1325,10 @@ function jumpTab(name){
 
 /* ---- 종합: 카테고리별 누적 평균 + 전체 랭킹 ---- */
 function aggregateSummary(){
-  const cd=(publicData&&publicData[pubCohort])||{};
-  const cats=catsFor(pubCohort);
+  const cats=catsFor(pubCohort,pubShowSummer?'summer':'main');
   const stu={},order=[];
   cats.forEach(cat=>{
-    (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(r=>{
+    catRowsFor(pubCohort,cat,pubShowSummer?'summer':'main').filter(r=>pubClass==='전체'||r.class===pubClass).forEach(r=>{
       const key=studentKey(r);
       if(!stu[key]){stu[key]={nickname:r.nickname,class:r.class,cats:{},wrongLeft:0};order.push(key);}
       stu[key].nickname=r.nickname; // 가장 최근 닉네임
@@ -1266,10 +1356,9 @@ function aggregateSummary(){
 }
 /* CLEAR MASTER: 완성도 100% 횟수 최다 (동률이면 완성도 합계) */
 function clearMaster(){
-  const cd=(publicData&&publicData[pubCohort])||{};
   const map={},order=[];
-  catsFor(pubCohort).forEach(function(cat){
-    (cd[cat]||[]).filter(r=>pubClass==='전체'||r.class===pubClass).forEach(function(r){
+  catsFor(pubCohort,pubShowSummer?'summer':'main').forEach(function(cat){
+    catRowsFor(pubCohort,cat,pubShowSummer?'summer':'main').filter(r=>pubClass==='전체'||r.class===pubClass).forEach(function(r){
       const cp=compValOf(r,cat);
       if(cp==null)return;
       const k=studentKey(r);
@@ -1306,7 +1395,7 @@ function podiumHTML(students){
   return '<div class="podium">'+pod+'</div>';
 }
 function renderSummary(){
-  const sumCats=catsFor(pubCohort);
+  const sumCats=catsFor(pubCohort,pubShowSummer?'summer':'main');
   document.getElementById('pub-title').textContent='종합';
   document.getElementById('pub-note').innerHTML='TOTAL RANKING · '+sumCats.length+'개 종목 누적 평균의 평균 순 · 닉네임 기준 (S+ BLACK 제외)'+clsLegendHTML();
   renderResources(false);
