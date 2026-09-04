@@ -130,9 +130,11 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <button type="button" id="scEqualWeightBtn" class="selectAllBtn">균등 배분</button>
       </div>
       <div class="btnRow" id="scAllBtnRow" style="display:none;margin-top:6px">
-        <span class="hint">표 전체 학생을 한 번에:</span>
-        <button type="button" id="scAllOkBtn" class="selectAllBtn">전체 학생 전체 O</button>
-        <button type="button" id="scAllNoBtn" class="selectAllBtn">전체 학생 전체 X</button>
+        <span class="hint">표 전체 학생의 "아직 채점 안 한(−)" 칸만 한 번에:</span>
+        <button type="button" id="scAllOkBtn" class="selectAllBtn">나머지 O</button>
+        <button type="button" id="scAllNoBtn" class="selectAllBtn">나머지 X</button>
+        <button type="button" id="scUndoBtn" class="selectAllBtn" title="지금 화면에서 고친 것들을 전부 취소하고, 방금 불러온 상태(저장 전이면 서버 값, 저장 직후면 그 결과)로 되돌립니다.">↩️ 불러온 상태로 되돌리기</button>
+        <span class="hint" style="color:var(--pink-deep)">이미 O/X/△로 채점된 칸은 안 건드립니다 — 실수로 기존 채점이 지워지지 않아요.</span>
       </div>
       <div id="scTableWrap"></div>
       <div class="btnRow" style="margin-top:10px">
@@ -422,10 +424,17 @@ function splitMissionIsNew(category, name) {
   if (category === 'TEST') return testMissionIsNew(name);
   return true;
 }
+// S+반이 성적 입력을 제일 많이 쓰는 반이라 항상 맨 앞에 오게 — 그 외
+// 정해둔 순서에 없는 반(대수연마 등)은 뒤에 알파벳/가나다 순으로 붙는다.
+const CLASS_ORDER = ['S+', 'S', 'PRISM'];
 function classesForCohort(cohort) {
   const set = new Set();
   rosterData.forEach(s => { if (s.cohort === cohort) set.add(s.class); });
-  return [...set].sort();
+  return [...set].sort((a, b) => {
+    const ia = CLASS_ORDER.indexOf(a), ib = CLASS_ORDER.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    return a.localeCompare(b, 'ko');
+  });
 }
 
 // 반을 여러 개 동시에 선택할 수 있게 체크박스 칩으로 그린다(네이티브
@@ -674,6 +683,7 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
+    takeScSnapshot();
     scWeights = (sharedWeights && sharedWeights.length === scQCount) ? sharedWeights.slice() : equalWeights(scQCount);
     scStartNum = nameRange ? nameRange.start : (typedStartNum > 1 ? typedStartNum : (sharedStartNum || 1));
     document.getElementById('scStartNum').value = scStartNum;
@@ -733,6 +743,7 @@ document.getElementById('scLoadMoreBtn').addEventListener('click', async () => {
         addedCount++;
       });
     });
+    takeScSnapshot();
     document.getElementById('scAllBtnRow').style.display = scStudents.length ? '' : 'none';
     renderScoreTable();
     msg.textContent = addedCount
@@ -830,8 +841,8 @@ function renderScoreTable() {
     html += `<tr><td class="nameCell">${escHtml(s.name)}`
       + (multiClass && s.class ? ` <span class="classChip" style="padding:2px 8px;font-size:10px">${escHtml(s.class)}</span>` : '')
       + `<div class="rowAllBtns">`
-      + `<button type="button" class="rowAllBtn allOk" data-si="${si}" data-val="1" title="이 학생 전체 정답 처리">전체O</button>`
-      + `<button type="button" class="rowAllBtn allNo" data-si="${si}" data-val="2" title="이 학생 전체 오답 처리">전체X</button>`
+      + `<button type="button" class="rowAllBtn allOk" data-si="${si}" data-val="1" title="이 학생의 '아직 채점 안 한(−)' 칸만 O로 채웁니다 — 이미 채점된 칸은 안 건드림">나머지O</button>`
+      + `<button type="button" class="rowAllBtn allNo" data-si="${si}" data-val="2" title="이 학생의 '아직 채점 안 한(−)' 칸만 X로 채웁니다 — 이미 채점된 칸은 안 건드림">나머지X</button>`
       + `</div></td>`;
     for (let i = 0; i < scQCount; i++) {
       const v = s.items[i];
@@ -850,17 +861,21 @@ function renderScoreTable() {
       btn.textContent = TOGGLE_LABEL[next];
     });
   });
-  // 학생 한 명을 통째로 전체 O(정답)/전체 X(오답)로 채운다 — 표 전체를
-  // 다시 그리는 대신 그 학생 행의 토글 버튼만 갱신해서 다른 학생 채점
-  // 중이던 화면이 스크롤 튀는 일 없게 한다.
+  // 학생 한 명의 "아직 채점 안 한(−)" 칸만 O/X로 채운다 — 이미 O/X/△로
+  // 채점돼 있는 칸은 절대 안 건드린다(일부만 채점된 상태에서 눌러도
+  // 기존 채점이 지워지지 않도록, 원장님 리포트로 확정). 표 전체를 다시
+  // 그리는 대신 그 학생 행의 토글 버튼만 갱신해서 다른 학생 채점 중이던
+  // 화면이 스크롤 튀는 일 없게 한다.
   wrap.querySelectorAll('.rowAllBtn').forEach(btn => {
     btn.addEventListener('click', () => {
       const si = Number(btn.dataset.si), val = Number(btn.dataset.val);
-      scStudents[si].items = Array(scQCount).fill(val);
-      wrap.querySelectorAll(`.scoreToggle[data-si="${si}"]`).forEach(tb => {
-        tb.className = 'scoreToggle ' + TOGGLE_CLASS[val];
-        tb.textContent = TOGGLE_LABEL[val];
-      });
+      const items = scStudents[si].items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i] != null) continue; // 이미 채점된 칸은 건드리지 않음
+        items[i] = val;
+        const tb = wrap.querySelector(`.scoreToggle[data-si="${si}"][data-qi="${i}"]`);
+        if (tb) { tb.className = 'scoreToggle ' + TOGGLE_CLASS[val]; tb.textContent = TOGGLE_LABEL[val]; }
+      }
     });
   });
   wrap.querySelectorAll('.commentInput').forEach(inp => {
@@ -893,16 +908,37 @@ document.getElementById('scEqualWeightBtn').addEventListener('click', () => {
   scWeights = equalWeights(scQCount);
   renderScoreTable();
 });
-// 표에 있는 학생 전원을 한 번에 전체 O/전체 X로 채운다 — 시험을 아예
-// 안 본 반이나 전원 만점(구술 확인 등) 같은 극단적인 상황을 몇 초 만에
-// 처리할 수 있게.
-document.getElementById('scAllOkBtn').addEventListener('click', () => {
-  scStudents.forEach(s => { s.items = Array(scQCount).fill(1); });
+// 표에 있는 학생 전원의 "아직 채점 안 한(−)" 칸만 한 번에 O/X로 채운다
+// — 시험을 아예 안 본 반이나 전원 만점(구술 확인 등) 같은 상황을 몇 초
+// 만에 처리하되, 이미 채점된 칸은 절대 덮어쓰지 않는다. (예전엔 무조건
+// 전체를 O/X로 덮어써서, 일부만 채점된 상태에서 눌렀다가 이미 채점해둔
+// 것까지 다 지워지는 사고가 날 뻔했다 — 원장님 리포트로 확정.)
+function fillRemainingOnly(val) {
+  scStudents.forEach(s => {
+    for (let i = 0; i < s.items.length; i++) {
+      if (s.items[i] == null) s.items[i] = val;
+    }
+  });
   renderScoreTable();
-});
-document.getElementById('scAllNoBtn').addEventListener('click', () => {
-  scStudents.forEach(s => { s.items = Array(scQCount).fill(2); });
+}
+document.getElementById('scAllOkBtn').addEventListener('click', () => fillRemainingOnly(1));
+document.getElementById('scAllNoBtn').addEventListener('click', () => fillRemainingOnly(2));
+
+// 되돌리기 — 지금 화면에서 만진 것들을 전부 취소하고, 마지막으로
+// 불러오거나 저장한 직후 상태로 되돌린다. scLoadBtn/scLoadMoreBtn/
+// scSaveBtn이 매번 scStudents를 새로 세팅한 직후에 이 스냅샷도 같이
+// 찍어둔다.
+let scSnapshot = null;
+function takeScSnapshot() {
+  scSnapshot = JSON.parse(JSON.stringify(scStudents));
+}
+document.getElementById('scUndoBtn').addEventListener('click', () => {
+  if (!scSnapshot) return;
+  if (!confirm('지금까지 이 화면에서 고친 내용을 전부 취소하고, 마지막으로 불러온/저장한 상태로 되돌립니다. 계속할까요?')) return;
+  scStudents = JSON.parse(JSON.stringify(scSnapshot));
   renderScoreTable();
+  document.getElementById('scMsg').textContent = '되돌렸습니다.';
+  document.getElementById('scMsg').className = 'hint ok';
 });
 
 // 표 안에 여러 반 학생이 섞여 있을 수 있어서(반을 여러 개 골라 불러온
@@ -949,6 +985,7 @@ document.getElementById('scSaveBtn').addEventListener('click', async () => {
       items: fillDefaultItems(s.items),
       comment: s.comment || '',
     }));
+    takeScSnapshot();
     scWeights = (anyWeights && anyWeights.length === scQCount) ? anyWeights.slice() : scWeights;
     document.getElementById('scStartNum').value = scStartNum;
     renderScoreTable();
