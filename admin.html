@@ -185,6 +185,15 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <p id="addCatMsg" class="hint"></p>
       </details>
     </div>
+
+    <div class="box" id="activityBox" style="display:none;padding:10px 16px">
+      <details>
+        <summary style="cursor:pointer;font-weight:700"><b>조교 활동 기록</b> <span class="hint" style="font-weight:normal">(누가 언제 성적을 입력했는지 — 클릭해서 펼치기)</span></summary>
+        <p class="hint">조교가 "성적 입력"에서 저장하거나 필기 원본을 연결할 때마다 자동으로 남습니다. 최근 50건만 보여줍니다.</p>
+        <div class="btnRow"><button type="button" id="activityRefreshBtn">새로고침</button><span id="activityMsg" class="hint"></span></div>
+        <div id="activityList" style="margin-top:8px"></div>
+      </details>
+    </div>
   </div>
 </div>
 
@@ -249,9 +258,13 @@ async function tryLogin(key) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appScreen').style.display = '';
   const tag = document.getElementById('roleTag');
-  tag.textContent = myRole === 'admin' ? '관리자' : '조교';
+  // 조교는 이름까지 같이 보여준다 — 지금 로그인된 게 누구인지 스스로도
+  // 바로 확인되고, 나중에 활동로그와 대조하기도 쉬워짐.
+  tag.textContent = myRole === 'admin' ? '관리자' : ('조교 · ' + (resp.name || ''));
   tag.className = 'roleTag ' + myRole;
   document.getElementById('categoryBox').style.display = myRole === 'admin' ? '' : 'none';
+  document.getElementById('activityBox').style.display = myRole === 'admin' ? '' : 'none';
+  if (myRole === 'admin') loadActivityLog();
   // 조교는 문항 수·시작 번호를 직접 정할 일이 없다(이미 원장님이 만들어둔
   // 시험을 이어서 채점만 함) — 헷갈리지 않게 아예 숨긴다. 값 자체는 그대로
   // 서버에서 자동으로(examroster 응답 기준) 채워지니 숨겨도 동작엔 지장 없음.
@@ -325,6 +338,37 @@ function renderCategoryList() {
     btn.addEventListener('click', () => deleteCategory(btn.dataset.cohort, btn.dataset.name));
   });
 }
+
+// 조교별 활동 기록(누가 언제 성적 입력/필기 원본 연결을 했는지) — 관리자
+// 전용. dashboardCode.gs의 logActivity가 저장하고, 여기서 최근 50건을
+// 최신순으로 보여준다.
+async function loadActivityLog() {
+  const el = document.getElementById('activityList');
+  const msg = document.getElementById('activityMsg');
+  msg.textContent = '불러오는 중...';
+  msg.className = 'hint';
+  try {
+    const resp = await callGetJsonp({ action: 'activitylog', key: myKey, limit: 50 });
+    const entries = resp.entries || [];
+    if (!entries.length) {
+      el.innerHTML = '<p class="hint">아직 기록이 없습니다.</p>';
+    } else {
+      el.innerHTML = '<table class="scoreTable" style="font-size:12px"><tr><th>시각</th><th>담당자</th><th>액션</th><th style="text-align:left">상세</th></tr>'
+        + entries.map(en => {
+            const t = new Date(en.time);
+            const timeStr = isNaN(t) ? String(en.time) : t.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            return `<tr><td>${escHtml(timeStr)}</td><td><b>${escHtml(en.who)}</b></td><td>${escHtml(en.action)}</td><td style="text-align:left">${escHtml(en.detail)}</td></tr>`;
+          }).join('')
+        + '</table>';
+    }
+    msg.textContent = entries.length + '건';
+    msg.className = 'hint ok';
+  } catch (e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.className = 'hint err';
+  }
+}
+document.getElementById('activityRefreshBtn').addEventListener('click', loadActivityLog);
 
 // 되돌릴 수 없는 작업(그 카테고리의 학생 성적 시트 자체가 통째로 삭제됨)
 // 이라, 실수로 누르는 걸 막으려고 이름을 직접 타이핑해서 확인받는다.
