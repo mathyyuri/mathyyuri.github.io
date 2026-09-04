@@ -564,7 +564,7 @@ function catsFor(c,mode){
   if(c==='2'&&(mode==='main'||mode==='summer')){
     list=mode==='summer'
       ?COHORT2_SUMMER_ONLY_CATS.concat(COHORT2_SPLIT_CATS).filter(s=>list.indexOf(s)!==-1)
-      :list.filter(s=>COHORT2_SUMMER_ONLY_CATS.indexOf(s)===-1);
+      :COHORT2_MAIN_ORDER.filter(s=>list.indexOf(s)!==-1);
   }
   return list.filter(k=>k!=='S+ BLACK'&&k!=='대수연마 1000제'); /* 전체 통계에서 S+ BLACK·대수연마 1000제 제외 (점수 체계가 달라 평균에 섞을 수 없음) */
 }
@@ -572,19 +572,28 @@ function catsFor(c,mode){
 // 클리닉/TEST처럼 미션 단위로 여름/중간고사가 갈리는 카테고리는 mode에
 // 맞춰 그 안에서도 한 번 더 걸러준다.
 function catRowsFor(cohort,cat,mode){
-  const rows=((publicData&&publicData[cohort])||{})[cat]||[];
+  let rows=((publicData&&publicData[cohort])||{})[cat]||[];
   if(cohort==='2'&&COHORT2_SPLIT_CATS.indexOf(cat)!==-1&&(mode==='main'||mode==='summer')){
-    return rows.filter(r=>splitMissionIsNew(cat,r.mission)===(mode==='main'));
+    rows=rows.filter(r=>splitMissionIsNew(cat,r.mission)===(mode==='main'));
+  }
+  // 변형미션 카테고리가 새로 생기기 전에는 "변형 : ..." 성적이 교과서미션
+  // 시트에 같이 쌓여 있었다 — 이제 변형미션으로 옮겨 등록하지만, 옛 시트에
+  // 남아있는 원본 행이 교과서미션 탭에 다시 섞여 보이지 않도록 걸러낸다.
+  if(cohort==='2'&&cat==='교과서미션'){
+    rows=rows.filter(r=>!/^변형\s*:/.test(String(r.mission||'').trim()));
   }
   return rows;
 }
 function tabListFor(c){
   const dyn = sheetsFor(c);
   if (c === '2') {
-    const wanted = pubShowSummer
-      ? COHORT2_SUMMER_ONLY_CATS.concat(COHORT2_SPLIT_CATS)
-      : dyn.filter(s => COHORT2_SUMMER_ONLY_CATS.indexOf(s) === -1);
-    return ['종합'].concat(dyn.filter(s => wanted.indexOf(s) !== -1));
+    if (pubShowSummer) {
+      const wanted = COHORT2_SUMMER_ONLY_CATS.concat(COHORT2_SPLIT_CATS);
+      return ['종합'].concat(dyn.filter(s => wanted.indexOf(s) !== -1));
+    }
+    // 메인은 정해둔 순서(교과서미션→변형미션→TEST→기출→클리닉)대로,
+    // 아직 실제로 존재하는(백엔드에 만들어진) 카테고리만 보여준다.
+    return ['종합'].concat(COHORT2_MAIN_ORDER.filter(s => dyn.indexOf(s) !== -1));
   }
   return ['종합'].concat(dyn);
 }
@@ -841,8 +850,10 @@ let charts = {};
        "TAT 1회"~"TAT 13회"처럼 M. 표시가 없으면 여름방학 것.
    기출은 나누지 않고 그대로 누적으로 보여준다(원장님 확인). */
 const MIDTERM_START_DATE = new Date(2026, 8, 2); // 2026-09-02 — 이 날짜부터 "중간고사 대비"
-const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '오답미션', '9모대비', '개념미션'];
+const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '오답미션', '9모대비', '개념미션', 'S+ BLACK', '대수연마 1000제'];
 const COHORT2_SPLIT_CATS = ['클리닉', 'TEST']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
+// 메인(중간고사 대비) 탭 순서 — 실제 존재하는 카테고리만 이 순서대로 보여줌.
+const COHORT2_MAIN_ORDER = ['교과서미션', '변형미션', 'TEST', '기출', '클리닉'];
 function clinicMissionIsNew(name) {
   const m = String(name || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
   if (!m) return true; // 날짜 형식이 아니면 새로 등록된 걸로 보고 안전하게 보여줌
@@ -1130,11 +1141,7 @@ function setClassFilter(c){
   renderPublic(false);
 }
 function tabRows(){
-  const raw=(publicData&&publicData[pubCohort]&&publicData[pubCohort][pubTab])||[];
-  if(pubCohort==='2'&&COHORT2_SPLIT_CATS.indexOf(pubTab)!==-1){
-    return raw.filter(r=>splitMissionIsNew(pubTab,r.mission)===!pubShowSummer);
-  }
-  return raw;
+  return catRowsFor(pubCohort,pubTab,pubShowSummer?'summer':'main');
 }
 function filteredRows(){return tabRows().filter(r=>pubClass==='전체'||r.class===pubClass);}
 // 채점 칸 60문항 제한 때문에 "변형 : 평면좌표(1~60)"/"(61~120)"/"(121~147)"처럼
