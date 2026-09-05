@@ -17,6 +17,9 @@
   --cream:#FBF8F1; --ink:#1A1A1A; --gold:#A8853F; --gold-line:#E6DCC6;
   --mint:#7FC8B4; --mint-deep:#3E8F79; --pink-deep:#C64E71;
   --serif:'Playfair Display','Noto Serif KR',serif; --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
+  /* 포인트 색깔 — accentSelect로 고르면 JS가 이 두 변수만 바꿔서 전체
+     디자인(로고 글자색, 표 라벨칸 배경)이 한 번에 바뀐다. */
+  --accent:#3E8F79; --accent-soft:#EAF4F0;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:var(--sans);background:var(--cream);color:var(--ink)}
@@ -54,25 +57,40 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .pageBlock .pageTools button:hover{background:var(--gold-line)}
 
 .examSheet{position:relative;background:#fff;box-shadow:0 2px 16px rgba(0,0,0,.18);overflow:hidden;padding:0 14mm}
-.examHeadTable{margin-top:12mm;border-collapse:collapse;width:100%;font-size:10.5px}
-.examHeadTable td{border:1.4px solid var(--ink);padding:2mm 3mm;vertical-align:middle}
-.examHeadTable .ehLabel{background:#F1EADA;font-weight:700;text-align:center;width:16%}
-.examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:15px;text-align:center}
-.examHeadTable .ehLogo{font-family:var(--serif);font-style:italic;font-weight:900;font-size:16px;text-align:center;color:var(--mint-deep)}
+.examHeadTable{margin-top:12mm;border-collapse:collapse;width:100%;font-size:11px;font-family:var(--sans)}
+.examHeadTable td{border:1px solid var(--ink);padding:2.6mm 3mm;vertical-align:middle}
+.examHeadTable .ehLabel{background:var(--accent-soft);font-weight:700;text-align:center;width:15%;color:var(--ink);letter-spacing:.02em}
+.examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:17px;text-align:center;letter-spacing:.01em}
+.examHeadTable .ehLogo{text-align:center;padding:1mm 2mm}
+.examHeadTable .ehLogo .wordmarkText{font-family:var(--serif);font-style:italic;font-weight:900;font-size:16px;color:var(--accent);line-height:1.25}
+.examHeadTable .ehLogo img{max-width:100%;max-height:16mm;display:block;margin:0 auto}
 .examSimpleHead{margin-top:8mm;padding-bottom:2mm;border-bottom:1.4px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
 .examSimpleHead .pageNo{font-family:var(--serif);font-size:20px;font-weight:900}
-.examSimpleHead .wordmark{font-family:var(--serif);font-style:italic;font-weight:900;color:var(--mint-deep)}
-.examQBody{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;margin-top:8mm}
-.examQCol{border-left:1px solid var(--gold-line);padding-left:8mm;min-width:0}
+.examSimpleHead .wordmark{font-family:var(--serif);font-style:italic;font-weight:900;color:var(--accent)}
+.examSimpleHead .wordmark img{max-height:9mm;display:block}
+/* top은 페이지 1(표 머리말)과 이후 페이지(간단 머리말)의 높이가 달라서
+   고정할 수 없다 — JS가 페이지를 그릴 때 style.top으로 직접 넣어준다.
+   bottom을 고정해서 칸이 항상 페이지 맨 아래까지 닿게 하고(6번 요청),
+   .examQCol이 flex+space-between이라 그 안 문제들도 이 높이에 맞춰
+   간격이 자동으로 벌어진다(2번 요청). */
+.examQBody{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;position:absolute;left:14mm;right:14mm;bottom:16mm}
+.examQCol{border-left:1px solid var(--gold-line);padding-left:8mm;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
 .examQCol:first-child{border-left:none;padding-left:0}
-.examQBlock{display:flex;align-items:flex-start;gap:2mm;margin-bottom:7mm;break-inside:avoid}
+.examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid}
 .examQBlock.forceBreakMark{outline:1.5px dashed var(--pink-deep);outline-offset:2px}
-.examQNum{flex:0 0 auto;font-family:var(--serif);font-weight:900;font-size:15px;color:var(--ink)}
+.examQNum{flex:0 0 auto;font-family:var(--serif);font-weight:900;font-size:21px;color:var(--ink);line-height:1.3}
 .examQBody2{flex:1;min-width:0;font-size:11.5px;line-height:1.6}
 .examQBody2 p{margin:0 0 2mm}
 .examQBody2 img{max-width:100%;height:auto;display:block;margin:2mm auto}
 .examQBody2 table{border-collapse:collapse;margin:2mm 0}
 .examQBody2 td{border:1px solid var(--gold-line);padding:0.5mm 1.2mm;font-size:9.5px;text-align:center;vertical-align:middle}
+/* 객관식 선택지(①②③④⑤) — hwpx-lib.js가 만드는 .choiceRow/.choiceItem에
+   맞는 간격 규칙을 이 페이지가 안 갖고 있어서(다른 페이지는 각자 갖고
+   있음, 예: studentnote.html:4618) 선택지가 다닥다닥 붙어 나왔다 —
+   3칸 그리드로 1,2,3이 한 줄을 꽉 채우고 4,5는 자동으로 1,2 자리 밑에
+   맞춰지도록(studentnote.html과 동일한 값). */
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:2mm;column-gap:4mm;margin:2mm 0}
+.choiceItem{min-width:0;overflow-wrap:break-word}
 .examFoot{position:absolute;bottom:8mm;left:0;right:0;text-align:center}
 .examFoot .pageBox{display:inline-flex;align-items:center;border:1px solid var(--ink);padding:1mm 4mm;font-size:10px}
 .examFoot .pageBox .cur{padding-right:2mm}
@@ -104,6 +122,16 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
     <input type="text" id="fExamKind" placeholder="예: 중간고사" value="중간고사">
     <label>선택형+서술형 개수 표기 (직접 수정 가능, 예: 16+6)</label>
     <input type="text" id="fQCountLabel" placeholder="자동 계산됨(수정 가능)">
+    <label>로고/서명 이미지 (없으면 "Mathy Yuri" 글자로 표시)</label>
+    <input type="file" id="logoFile" accept="image/*">
+    <label>포인트 색깔</label>
+    <select id="accentSelect">
+      <option value="mint">민트</option>
+      <option value="navy">네이비</option>
+      <option value="gold">골드</option>
+      <option value="pink">핑크</option>
+      <option value="blue">블루</option>
+    </select>
 
     <h2>3. 페이지 크기</h2>
     <select id="pageSizeSelect">
@@ -141,12 +169,37 @@ let hwpxEntry = null; // parseHwpx 결과
 let questions = []; // [{num, bodyHtml, choiceCount, forceBreak}]
 let pageSize = 'A4';
 let lastLayoutPages = []; // [[colHtml, colHtml], ...] — 페이지별 두 칸의 최종 HTML
+let logoDataUrl = null; // 업로드한 로고/서명 이미지(base64) — 없으면 "Mathy Yuri" 글자로 대체
 
 const statusEl = document.getElementById('status');
 const previewWrap = document.getElementById('previewWrap');
 const qOrderListEl = document.getElementById('qOrderList');
 const regenerateBtn = document.getElementById('regenerateBtn');
 const savePdfBtn = document.getElementById('savePdfBtn');
+
+// ---------- 로고/서명 이미지 ----------
+document.getElementById('logoFile').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { logoDataUrl = reader.result; renderHeadFootOnly(); };
+  reader.readAsDataURL(file);
+});
+
+// ---------- 포인트 색깔 ----------
+const ACCENT_THEMES = {
+  mint: { name: '민트', strong: '#3E8F79', soft: '#EAF4F0' },
+  navy: { name: '네이비', strong: '#2C4A6E', soft: '#EAF0F6' },
+  gold: { name: '골드', strong: '#A8853F', soft: '#F1EADA' },
+  pink: { name: '핑크', strong: '#C64E71', soft: '#FBEAEF' },
+  blue: { name: '블루', strong: '#3B6FA0', soft: '#EAF2FA' },
+};
+document.getElementById('accentSelect').addEventListener('change', (e) => {
+  const t = ACCENT_THEMES[e.target.value];
+  if (!t) return;
+  document.documentElement.style.setProperty('--accent', t.strong);
+  document.documentElement.style.setProperty('--accent-soft', t.soft);
+});
 
 function setStatus(msg, isErr) {
   statusEl.textContent = msg || '';
@@ -291,7 +344,7 @@ function headTableHtml() {
     <tr>
       <td class="ehLabel">시행일</td><td>${escapeHtml(examDate)}</td>
       <td class="ehSchool" colspan="3">${escapeHtml(school)}</td>
-      <td class="ehLogo" rowspan="3">Mathy<br>Yuri</td>
+      <td class="ehLogo" rowspan="3">${logoDataUrl ? `<img src="${logoDataUrl}" alt="로고">` : '<span class="wordmarkText">Mathy<br>Yuri</span>'}</td>
     </tr>
     <tr>
       <td class="ehLabel">과목 코드</td><td>${escapeHtml(subjectCode)}</td>
@@ -318,7 +371,8 @@ function renderHeadFootOnly() {
   });
 }
 function simpleHeadHtml(pageNum) {
-  return `<div class="examSimpleHead"><span class="pageNo">${pageNum}</span><span class="wordmark">Mathy Yuri</span></div>`;
+  const logo = logoDataUrl ? `<img src="${logoDataUrl}" alt="로고">` : 'Mathy Yuri';
+  return `<div class="examSimpleHead"><span class="pageNo">${pageNum}</span><span class="wordmark">${logo}</span></div>`;
 }
 
 // ---------- 전체 재배치 ----------
@@ -331,9 +385,10 @@ async function regenerateLayout() {
     const ratio = mmToPxRatio();
     const colWidthMm = (w - CONTENT_SIDE_MM * 2 - COL_GAP_MM) / COLUMNS_PER_PAGE;
     const colWidthPx = colWidthMm * ratio;
-    const page1HeightPx = (h - PAGE1_HEAD_MM - CONTENT_BOTTOM_MM) * ratio;
-    const otherHeightPx = (h - OTHER_HEAD_MM - CONTENT_BOTTOM_MM) * ratio;
-    const colHeightPxFor = (colIdx) => (colIdx < COLUMNS_PER_PAGE ? page1HeightPx : otherHeightPx);
+    const page1HeightMm = h - PAGE1_HEAD_MM - CONTENT_BOTTOM_MM;
+    const otherHeightMm = h - OTHER_HEAD_MM - CONTENT_BOTTOM_MM;
+    const colHeightMmFor = (colIdx) => (colIdx < COLUMNS_PER_PAGE ? page1HeightMm : otherHeightMm);
+    const colHeightPxFor = (colIdx) => colHeightMmFor(colIdx) * ratio;
 
     const columns = packQuestionsIntoColumns(questions, colWidthPx, colHeightPxFor);
     const pages = [];
@@ -343,14 +398,16 @@ async function regenerateLayout() {
     previewWrap.innerHTML = '';
     pages.forEach((cols, pageIdx) => {
       const pageNum = pageIdx + 1;
-      const colsHtml = cols.map(colBlocks => `<div class="examQCol">${colBlocks.join('')}</div>`).join('');
+      const colHeightMm = colHeightMmFor(pageIdx * COLUMNS_PER_PAGE);
+      const colsHtml = cols.map(colBlocks => `<div class="examQCol" style="height:${colHeightMm}mm">${colBlocks.join('')}</div>`).join('');
       const sheet = document.createElement('div');
       sheet.className = 'examSheet';
       sheet.style.width = w + 'mm';
       sheet.style.height = h + 'mm';
+      const headMm = pageIdx === 0 ? PAGE1_HEAD_MM : OTHER_HEAD_MM;
       sheet.innerHTML = `
         <div class="examHeadSlot">${pageIdx === 0 ? headTableHtml() : simpleHeadHtml(pageNum)}</div>
-        <div class="examQBody">${colsHtml}</div>
+        <div class="examQBody" style="top:${headMm}mm">${colsHtml}</div>
         <div class="examFoot"><span class="pageBox"><span class="cur">${pageNum}</span><span class="tot">${pages.length}</span></span></div>
       `;
       const block = document.createElement('div');
