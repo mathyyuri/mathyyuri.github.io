@@ -183,6 +183,8 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagRowInputs { display: none; flex-direction: column; gap: 6px; border-top: 1px dashed var(--gold-line); padding-top: 8px; }
 .tagRowInputs.open { display: flex; }
 .tagAnswerInput { width: 100%; }
+.tagAnswerPreview { min-height: 1.4em; padding: 4px 2px 0; font-size: 14px; color: var(--gold); }
+.tagAnswerPreview:empty { display: none; }
 .unitPickRow { display: flex; flex-direction: column; gap: 6px; }
 .unitPickRow select { width: 100%; font-size: 12px; }
 .tagRowInputsRow2 { display: flex; gap: 6px; }
@@ -882,6 +884,22 @@ function eqInsertBox(textarea) {
 function eqInsertBlank(textarea) {
   eqInsertAtCursor(textarea, '□', 0);
 }
+// 이미 그냥 글자로(예: "m^2+1") 쳐둔 부분을 나중에 골라서 한 번에 수식으로
+// 바꾸는 버튼 — "기호 버튼 없이 그냥 입력한 것도 수식으로 만들고 싶다"는
+// 요청. 매번 커서를 앞뒤로 옮겨가며 "$"를 직접 두 번 치는 대신, 선택만
+// 해두고 이 버튼 한 번이면 됨.
+function eqWrapSelectionAsMath(textarea) {
+  const start = textarea.selectionStart, end = textarea.selectionEnd;
+  if (start === end) return; // 선택한 게 없으면 뭘 감쌀지 알 수 없어 아무 것도 안 함
+  const text = textarea.value;
+  if (eqCursorInsideMath(text, start)) return; // 이미 수식 안이면 더 감쌀 필요 없음
+  const selected = text.slice(start, end);
+  const insertText = '$' + selected + '$';
+  textarea.value = text.slice(0, start) + insertText + text.slice(end);
+  textarea.focus();
+  textarea.setSelectionRange(start, start + insertText.length);
+  textarea.dispatchEvent(new Event('input'));
+}
 function buildEqToolbarHtml() {
   const tabs = EQ_TABS.map((t, i) => `<button type="button" class="eqTabBtn${i === 0 ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`).join('')
     + `<button type="button" class="eqTabBtn" data-tab="box">박스·기타</button>`;
@@ -892,12 +910,12 @@ function buildEqToolbarHtml() {
         <button type="button" class="eqSymBtn eqBoxInsertBtn" title="(가)(나)(다) 조건박스 삽입">🔲 네모박스((가)(나)(다))</button>
         <button type="button" class="eqSymBtn eqBlankInsertBtn" title="빈칸 기호 □ 삽입">□ 빈칸</button>
       </div>`;
-  return `<div class="eqToolbar"><div class="eqTabRow">${tabs}</div>${panels}</div>`;
+  return `<div class="eqToolbar"><div class="eqTabRow">${tabs}<button type="button" class="eqTabBtn eqWrapSelBtn" title="그냥 입력한 글자를 선택한 뒤 눌러보세요 — $...$로 감싸 수식으로 바꿔줍니다" style="margin-left:auto">🔤→∑ 선택한 글자를 수식으로</button></div>${panels}</div>`;
 }
 function wireEqToolbar(box, textarea) {
-  box.querySelectorAll('.eqTabBtn').forEach(btn => {
+  box.querySelectorAll('.eqTabBtn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
-      box.querySelectorAll('.eqTabBtn').forEach(b => b.classList.toggle('active', b === btn));
+      box.querySelectorAll('.eqTabBtn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
       const key = btn.dataset.tab;
       box.querySelectorAll('.eqSymPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === key));
     });
@@ -907,6 +925,7 @@ function wireEqToolbar(box, textarea) {
   });
   box.querySelector('.eqBoxInsertBtn')?.addEventListener('click', () => eqInsertBox(textarea));
   box.querySelector('.eqBlankInsertBtn')?.addEventListener('click', () => eqInsertBlank(textarea));
+  box.querySelector('.eqWrapSelBtn')?.addEventListener('click', () => eqWrapSelectionAsMath(textarea));
 }
 
 function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit, showAnswerInput = true, previewHtmlByNum = null, originalPreviewHtmlByNum = null) {
@@ -992,7 +1011,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           <p class="hint" style="margin:0">객관식 선택지 — 정답 칸엔 맞는 번호(예: ③)를 적으세요.</p>
           ${choiceMarks.map((mark, i) => `<div class="tagChoiceRow"><span>${mark}</span><input type="text" class="tagChoiceInput" data-idx="${i}" value="${escapeHtml(qd.choices[i] || '')}"></div>`).join('')}
         </div>
-        ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용)" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)">` : ''}
+        ${showAnswerInput ? `<input type="text" class="tagAnswerInput" placeholder="정답 (AI 채점용, 수식은 LaTeX로 — 예: \\sqrt{10})" value="${escapeHtml(qd.answer || '')}" style="border-color:var(--gold)"><div class="tagAnswerPreview"></div>` : ''}
         ${originalPreviewHtmlByNum ? `<button type="button" class="selectAllBtn editQBtn">✏️ 문제 본문 수정${qd.editedRaw ? ' (수정됨)' : ''}</button>` : ''}
       </div>
     `;
@@ -1030,7 +1049,21 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; refreshRowSummary(); refreshChoicesVisibility(); });
     row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); refreshRowSummary(); });
     row.querySelector('.tagSourceInput').addEventListener('input', (e) => { qd.source = e.target.value.trim(); refreshRowSummary(); });
-    row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); });
+    const answerPreviewEl = row.querySelector('.tagAnswerPreview');
+    function refreshAnswerPreview() {
+      if (!answerPreviewEl) return;
+      const v = (qd.answer || '').trim();
+      if (!v) { answerPreviewEl.innerHTML = ''; return; }
+      // 정답 칸은 문제 본문과 달리 "$...$"로 안 감싸도 전체를 그대로 수식
+      // 하나로 본다 — 정답은 보통 수식 하나(또는 단순 숫자·기호)뿐이라
+      // 매번 $ 를 직접 치는 게 더 번거롭다는 요청.
+      answerPreviewEl.innerHTML = '\\(' + v + '\\)';
+      if (window.renderMathInElement) {
+        try { renderMathInElement(answerPreviewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+      }
+    }
+    refreshAnswerPreview();
+    row.querySelector('.tagAnswerInput')?.addEventListener('input', (e) => { qd.answer = e.target.value.trim(); refreshAnswerPreview(); });
     row.querySelectorAll('.tagChoiceInput').forEach(inp => {
       inp.addEventListener('input', (e) => { qd.choices[Number(e.target.dataset.idx)] = e.target.value; });
     });
@@ -1580,7 +1613,14 @@ async function validateOneFile(file, box) {
 
   const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
   const guessedUnit = guessUnitFromText(file.name, knownUnits);
-  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, false, previewHtmlByNum);
+  // 업로드 전 미리보기도 태그 편집(이미 올라간 파일)과 똑같이 정답 입력 +
+  // "문제 본문 수정"이 되게 한다 — 예전엔 "파일 ID가 없어서 정답을 저장할
+  // 곳이 없다"고 막아뒀었는데, 실제로는 questionData가 업로드 요청에 그대로
+  // 실려가므로 막을 이유가 없었음(원장님 리포트로 발견). 다만 정답은
+  // 그대로 두면 공개 API로 새어나가니 업로드 시점에 분리해서 보내야 함
+  // (아래 업로드 버튼 핸들러에서 처리). previewHtmlByNum이 지금 막 원본을
+  // 파싱한 결과라 "원본으로 되돌리기"용 원본으로도 그대로 쓸 수 있다.
+  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, true, previewHtmlByNum, previewHtmlByNum);
 
   return { ok: warnCount === 0, hasCritical: false, questionData };
 }
@@ -1645,7 +1685,28 @@ document.getElementById('uploadBtn').addEventListener('click', async (ev) => {
       }
       const validated = validatedFiles.get(file.name);
       const questionData = validated && validated.questionData ? validated.questionData : [];
-      await callPost({ action: 'upload', filename: file.name, data: base64, memo, questionData: JSON.stringify(questionData) });
+      // 정답(answer)은 태그 편집(updatetags/updateanswers)과 같은 이유로
+      // 업로드 시점에도 분리해서 보낸다 — questionData는 인증 없이 열린
+      // action=list로 그대로 노출되니, 여기 정답을 같이 실어 보내면 업로드
+      // 전 미리보기에서 입력한 정답이 곧바로 공개 API로 새어나간다. 업로드
+      // 자체는 정답을 뺀 채로 하고, 업로드 뒤 파일 목록을 다시 불러와 방금
+      // 만든 파일의 id를 찾아서 정답만 별도(강사 키 필요한 updateanswers)로
+      // 보낸다 — upload POST는 no-cors라 응답에서 새 id를 바로 못 읽어서
+      // (이 사이트 전체가 쓰는 방식) 파일명으로 다시 찾아야 한다.
+      const publicQuestionData = questionData.map(({ answer, ...rest }) => rest);
+      const answers = {};
+      questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
+      await callPost({ action: 'upload', filename: file.name, data: base64, memo, questionData: JSON.stringify(publicQuestionData) });
+      if (Object.keys(answers).length) {
+        try {
+          const { files: freshFiles } = await callGet({ action: 'list' });
+          const match = (freshFiles || []).filter(f2 => f2.filename === file.name).pop(); // 이름이 같으면 방금 올라간 마지막 것
+          if (match) await callPost({ action: 'updateanswers', key: TEACHER_KEY, id: match.id, answers: JSON.stringify(answers) });
+          else log(`  (${file.name}: 방금 올린 파일을 다시 못 찾아 정답 저장 확인 불가 — 태그 편집에서 확인해주세요)`, 'err');
+        } catch (e) {
+          log(`  (${file.name}: 정답 저장 실패 — 태그 편집에서 다시 입력해주세요: ${e.message})`, 'err');
+        }
+      }
       okCount++;
     } catch (e) {
       log(`실패: ${file.name} — ${e.message}`, 'err');
