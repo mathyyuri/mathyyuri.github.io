@@ -760,9 +760,13 @@ function convertHwpEquationToLatex(script) {
   // right after "it" is such an unambiguous landmark (only the subscript
   // trigger puts a literal underscore there) that no left boundary check
   // is needed for that specific case at all.
-  s = s.replace(/rm(?=_)/g, '').replace(/it(?=_)/g, '');
-  s = s.replace(/\brm(?=[A-Za-z_])/g, '').replace(/\brm\b/g, '');
-  s = s.replace(/\bit(?=[A-Za-z_])/g, '').replace(/\bit\b/g, '');
+  // 대소문자 안 가리고 지운다 — 한글 문서에서 "rmA"뿐 아니라 "RMA"처럼
+  // 대문자로 입력해도(원장님이 실제로 겪은 경우 — 대문자로 친 부분만
+  // "RMA"가 글자 그대로 수식에 남아 보였음) 로만체 지정으로 인식돼야
+  // 하므로 두 정규식 다 대소문자 구분 없이(/i) 매칭한다.
+  s = s.replace(/rm(?=_)/gi, '').replace(/it(?=_)/gi, '');
+  s = s.replace(/\brm(?=[A-Za-z_])/gi, '').replace(/\brm\b/gi, '');
+  s = s.replace(/\bit(?=[A-Za-z_])/gi, '').replace(/\bit\b/gi, '');
   // No \b here either — digits are \w characters too, so "3lemle1" has no
   // word boundary between "3" and "l" for \b to find, same root cause as
   // the LEFT/RIGHT and applyUnary fixes above. [A-Za-z]+ already delimits

@@ -577,9 +577,14 @@ function updateTagSuggestLists(files) {
   const { units, types, sources } = collectTagSuggestions(files);
   document.getElementById('unitSuggestList').innerHTML = units.map(u => `<option value="${escapeHtml(u)}">`).join('');
   document.getElementById('typeSuggestList').innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
-  document.getElementById('sourceSuggestList').innerHTML = (sources.length ? sources : DEFAULT_SOURCE_SUGGESTIONS).map(s => `<option value="${escapeHtml(s)}">`).join('');
+  // 기본 출처 목록은 실제로 한 번도 안 써봤어도 항상 자동완성에 뜨게
+  // 계속 같이 보여준다 — 예전엔 "이미 쓰인 값이 하나라도 있으면 기본
+  // 목록을 통째로 안 보여줌" 방식이라, 교과서/교사용을 새로 추가해도
+  // 이미 다른 출처를 한 번이라도 써본 화면에서는 안 뜨는 문제가 있었음.
+  const sourceOptions = [...new Set([...DEFAULT_SOURCE_SUGGESTIONS, ...sources])];
+  document.getElementById('sourceSuggestList').innerHTML = sourceOptions.map(s => `<option value="${escapeHtml(s)}">`).join('');
 }
-const DEFAULT_SOURCE_SUGGESTIONS = ['자체제작', '기출', '모의고사', '시중교재'];
+const DEFAULT_SOURCE_SUGGESTIONS = ['자체제작', '교과서', '교사용', '기출', '모의고사', '시중교재'];
 
 // ---------- 단원 탭 (빠른 선택용, 나중에 추가/변경 가능) ----------
 // 원래 localStorage에만 저장했더니 원장님 PC와 조교 PC에서 목록이 다르게
