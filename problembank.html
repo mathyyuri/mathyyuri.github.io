@@ -71,6 +71,7 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .catHead h2 { font-family: var(--serif); font-weight: 700; font-size: 16px; margin: 0; }
 .catHead .count { font-size: 12px; color: var(--gold); font-family: var(--kserif); }
 .catHead .toggleIcon { font-size: 12px; color: var(--gold); transition: transform .15s; }
+.catHeadRight { display: flex; align-items: center; gap: 8px; }
 .catGroup.collapsed .toggleIcon { transform: rotate(-90deg); }
 .catGroup.collapsed .catBody { display: none; }
 .catBody { padding: 0 16px 12px; }
@@ -86,6 +87,14 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .fileRow .fName { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .fileRow .fMeta { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); font-family: var(--kserif); width: 150px; }
 .fileRow .fMemo { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); width: 120px; overflow-wrap: anywhere; }
+.hideCatBtn { font-size: 11px; padding: 2px 8px; background: #fff; color: var(--gold); border-color: var(--gold); }
+.catGroup.dragOverCat { outline: 2px dashed var(--mint-deep); outline-offset: -2px; }
+.renameBtn { font-size: 12px; padding: 6px 8px; }
+.catAddRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.catAddRow input[type=text] { width: 160px; }
+.hiddenCatManager { margin: 8px 0; font-size: 12px; }
+.hiddenCatManager summary { cursor: pointer; color: rgba(26,26,26,.6); }
+.hiddenCatManager .hcRow { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 
 /* ---- 업로드 전 검증 ---- */
 .validateFile { border: 1px solid var(--gold-line); background: #fff; border-radius: 4px; margin: 12px 0; padding: 12px 16px; }
@@ -263,7 +272,12 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 
 <div class="box">
   <p><b>업로드된 파일 목록</b></p>
-  <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다. 각 파일의 "태그 편집" 버튼으로 문제마다 단원·유형을 입력할 수 있습니다.</p>
+  <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다. 파일을 다른 카테고리 칸으로 드래그하면 그 카테고리로 옮겨집니다(파일명 앞 [대괄호]가 자동으로 바뀝니다). 각 파일의 "태그 편집" 버튼으로 문제마다 단원·유형을 입력하고, ✏️ 버튼으로 파일명을 고칠 수 있습니다.</p>
+  <div class="catAddRow">
+    <input type="text" id="newCatInput" placeholder="새 카테고리 이름 (예: S+반)">
+    <button type="button" id="addCatBtn">+ 카테고리 추가</button>
+  </div>
+  <div id="hiddenCatManager"></div>
   <div id="fileGroups"><p class="hint">불러오는 중...</p></div>
   <div class="toolbar">
     <button id="genBtn" disabled>선택한 파일로 오답노트 만들기</button>
@@ -433,13 +447,57 @@ function sortWithSavedOrder(items, groupKey, orderMap) {
 
 const collapsedState = {};
 let latestFiles = [];
+let hiddenCategories = []; // 숨긴 카테고리 이름들 — 서버(숨김카테고리 시트) 기준
+let categoryList = []; // 파일이 아직 없어도 미리 만들어둔 카테고리들 — 서버(카테고리목록 시트) 기준
+
+// 카테고리는 파일명 맨 앞 [대괄호]에서만 나오므로, 파일을 다른 카테고리로
+// "옮기는" 것도 결국 그 대괄호 부분만 새 카테고리로 바꿔서 파일명을 다시
+// 저장하는 것과 같다 — 대괄호가 원래 없던 파일(공통)을 다른 카테고리로
+// 옮길 때도, 반대로 어딘가로 옮겨져 있던 파일을 공통으로 뺄 때도 이 한
+// 함수로 처리된다.
+function buildRenamedFilenameForCategory(filename, newCat) {
+  const stripped = filename.replace(/^\[[^\]]+\]\s*/, '');
+  return newCat === '공통' ? stripped : `[${newCat}] ${stripped}`;
+}
+async function renameFileTo(id, newFilename) {
+  await callPost({ action: 'rename', id, filename: newFilename });
+  await refreshList();
+}
+async function onRenameFile(f) {
+  const next = prompt('파일명을 수정하세요 (맨 앞 [카테고리]도 여기서 바꿀 수 있어요)', f.filename);
+  if (next === null) return;
+  const trimmed = next.trim();
+  if (!trimmed || trimmed === f.filename) return;
+  await renameFileTo(f.id, trimmed);
+}
+async function toggleHiddenCategory(category, hidden) {
+  try {
+    const r = await callPost({ action: 'sethiddencategory', category, hidden });
+    hiddenCategories = r.hidden || [];
+  } catch (e) {}
+  renderGroups(latestFiles);
+}
+// 숨긴 카테고리가 하나라도 있으면 목록 위에 "숨긴 카테고리 관리"를 펼쳐서
+// 이름과 "다시 보이기" 버튼을 보여준다 — 반/미션 숨기기 관리와 같은 패턴.
+function renderHiddenCategoryManager(byCat) {
+  const wrap = document.getElementById('hiddenCatManager');
+  if (!wrap) return;
+  if (!hiddenCategories.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<details class="hiddenCatManager">
+    <summary>숨긴 카테고리 관리 (${hiddenCategories.length}개)</summary>
+    ${hiddenCategories.map(cat => `
+      <div class="hcRow">
+        <span>${escapeHtml(cat)} (${(byCat.get(cat) || []).length}개 파일)</span>
+        <button type="button" class="unhideCatBtn" data-cat="${escapeHtml(cat)}" style="font-size:11px;padding:2px 8px">다시 보이기</button>
+      </div>`).join('')}
+  </details>`;
+  wrap.querySelectorAll('.unhideCatBtn').forEach(btn => {
+    btn.addEventListener('click', () => toggleHiddenCategory(btn.dataset.cat, false));
+  });
+}
 
 function renderGroups(files) {
   latestFiles = files;
-  if (!files.length) {
-    groupsEl.innerHTML = '<p class="hint">업로드된 파일이 없습니다.</p>';
-    return;
-  }
   const orderMap = loadOrderMap();
   const byCat = new Map();
   for (const f of files) {
@@ -447,12 +505,23 @@ function renderGroups(files) {
     if (!byCat.has(cat)) byCat.set(cat, []);
     byCat.get(cat).push(f);
   }
+  if (!byCat.has('공통')) byCat.set('공통', []); // 항상 표시 — 다른 카테고리 파일을 드래그로 빼올 수 있는 칸
+  for (const cat of categoryList) { if (!byCat.has(cat)) byCat.set(cat, []); } // 파일 없이 미리 만들어둔 카테고리도 표시
+
   // 공통 last, everything else alphabetical.
-  const cats = [...byCat.keys()].sort((a, b) => {
+  const allCats = [...byCat.keys()].sort((a, b) => {
     if (a === '공통') return 1;
     if (b === '공통') return -1;
     return a.localeCompare(b, 'ko');
   });
+  const cats = allCats.filter(c => !hiddenCategories.includes(c));
+  renderHiddenCategoryManager(byCat);
+
+  if (!files.length && !categoryList.length) {
+    groupsEl.innerHTML = '<p class="hint">업로드된 파일이 없습니다.</p>';
+    updateGenBtn();
+    return;
+  }
 
   groupsEl.innerHTML = '';
   for (const cat of cats) {
@@ -463,7 +532,10 @@ function renderGroups(files) {
     group.innerHTML = `
       <div class="catHead">
         <h2><span class="catTag${isCommon ? ' common' : ''}">${cat}</span>${catItems.length}개 파일</h2>
-        <span class="toggleIcon">▼</span>
+        <span class="catHeadRight">
+          ${isCommon ? '' : `<button type="button" class="hideCatBtn" title="이 카테고리를 목록에서 숨기기">숨기기</button>`}
+          <span class="toggleIcon">▼</span>
+        </span>
       </div>
       <div class="catBody"></div>
     `;
@@ -490,15 +562,17 @@ function renderGroups(files) {
         row.dataset.id = f.id;
         row.dataset.groupKey = groupKey;
         row.innerHTML = `
-          <span class="dragHandle" title="드래그해서 순서 변경">⠿</span>
+          <span class="dragHandle" title="드래그해서 순서·카테고리 변경">⠿</span>
           <input type="checkbox" class="rowChk" data-id="${f.id}" data-name="${f.filename}">
-          <span class="fName">${f.filename}</span>
-          <span class="fMemo">${f.memo || ''}</span>
+          <span class="fName">${escapeHtml(f.filename)}</span>
+          <span class="fMemo">${escapeHtml(f.memo || '')}</span>
           <span class="fMeta">${uploadedAt}</span>
+          <button class="renameBtn" data-id="${f.id}" title="파일명 수정">✏️</button>
           <button class="tagEditBtn${tagsComplete(f) ? ' tagDone' : ''}" data-id="${f.id}">${tagsComplete(f) ? '✓ 태그완료' : '태그 편집'}</button>
           <button class="delBtn" data-id="${f.id}">삭제</button>
         `;
         row.querySelector('.tagEditBtn').addEventListener('click', () => openTagEditor(f));
+        row.querySelector('.renameBtn').addEventListener('click', () => onRenameFile(f));
         attachDragHandlers(row, groupKey, orderMap);
         typeDiv.appendChild(row);
       }
@@ -509,6 +583,12 @@ function renderGroups(files) {
       group.classList.toggle('collapsed');
       collapsedState[cat] = group.classList.contains('collapsed');
     });
+    const hideBtn = group.querySelector('.hideCatBtn');
+    if (hideBtn) hideBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleHiddenCategory(cat, true);
+    });
+    attachCategoryDropHandlers(group, cat);
     groupsEl.appendChild(group);
   }
   groupsEl.querySelectorAll('.rowChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
@@ -546,10 +626,43 @@ function attachDragHandlers(row, groupKey, orderMap) {
   });
 }
 
+// 카테고리 칸(.catGroup) 전체를 드롭 대상으로 삼아서, 파일을 다른
+// 카테고리로 드래그해서 옮길 수 있게 한다 — 같은 카테고리 안 순서 변경
+// (attachDragHandlers, 행 단위)과는 별개 동작이라 groupKey가 아니라
+// 지금 이 파일이 실제로 어느 카테고리인지(categoryOf)로 판단한다.
+function attachCategoryDropHandlers(group, cat) {
+  group.addEventListener('dragover', (ev) => {
+    if (!dragSrcRow) return;
+    const srcFile = latestFiles.find(x => x.id === dragSrcRow.dataset.id);
+    if (!srcFile || categoryOf(srcFile.filename) === cat) return;
+    ev.preventDefault();
+    group.classList.add('dragOverCat');
+  });
+  group.addEventListener('dragleave', (ev) => {
+    if (!group.contains(ev.relatedTarget)) group.classList.remove('dragOverCat');
+  });
+  group.addEventListener('drop', async (ev) => {
+    ev.preventDefault();
+    group.classList.remove('dragOverCat');
+    if (!dragSrcRow) return;
+    const srcFile = latestFiles.find(x => x.id === dragSrcRow.dataset.id);
+    dragSrcRow = null;
+    if (!srcFile || categoryOf(srcFile.filename) === cat) return;
+    await renameFileTo(srcFile.id, buildRenamedFilenameForCategory(srcFile.filename, cat));
+  });
+}
+
 async function refreshList() {
   groupsEl.innerHTML = '<p class="hint">불러오는 중...</p>';
   try {
-    const [{ files }] = await Promise.all([callGet({ action: 'list' }), fetchServerUnits()]);
+    const [{ files }, hiddenCatData, catListData] = await Promise.all([
+      callGet({ action: 'list' }),
+      callGet({ action: 'hiddencategories' }).catch(() => ({ hidden: [] })),
+      callGet({ action: 'categorylist' }).catch(() => ({ categories: [] })),
+      fetchServerUnits(),
+    ]);
+    hiddenCategories = hiddenCatData.hidden || [];
+    categoryList = catListData.categories || [];
     renderGroups(files);
     updateTagSuggestLists(files);
   } catch (e) {
@@ -1738,6 +1851,16 @@ genBtn.addEventListener('click', () => {
   const id = checked.dataset.id;
   const name = checked.dataset.name;
   location.href = `oedapnotegenerator.html?src=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+});
+
+document.getElementById('addCatBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newCatInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const r = await callPost({ action: 'addcategory', name });
+  categoryList = r.categories || categoryList;
+  input.value = '';
+  renderGroups(latestFiles);
 });
 
 refreshList();
