@@ -130,13 +130,18 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
    있음, 예: studentnote.html:4618) 선택지가 다닥다닥 붙어 나왔다 —
    3칸 그리드로 1,2,3이 한 줄을 꽉 채우고 4,5는 자동으로 1,2 자리 밑에
    맞춰지도록(studentnote.html과 동일한 값). */
-/* 원본 hwpx가 선택지를 세로 1열로 저장해뒀어도(문제별로 원본 파일마다
-   다름) 이 시험지에서는 항상 3칸 그리드로 가로로 눕혀서 보여달라는
-   요청 — hwpBodyXmlToHtml이 문항마다 다른 grid-template-columns를 인라인
-   스타일로 직접 박아버려서(원본 레이아웃 힌트를 그대로 따름) 이 클래스
-   규칙만으로는 못 이기므로 !important로 강제한다. */
-.choiceRow{display:grid;grid-template-columns:repeat(3,1fr) !important;row-gap:2mm;column-gap:4mm;margin:2mm 0}
-.choiceItem{min-width:0;overflow-wrap:break-word}
+/* 원본 hwpx가 선택지를 세로 1열/가로 여러열 중 뭘로 저장해뒀든(문제별로
+   원본 파일마다 다름, hwpBodyXmlToHtml이 인라인 grid-template-columns로
+   박아버림) 이 시험지에서는 무시하고 항상 이 규칙으로 다시 배치한다.
+   고정 3칸 그리드(예전 방식)는 "①-3 ②-1 ③1/3" 같은 짧은 선택지는
+   깔끔했지만, 집합 표기처럼 긴 선택지(예: "① A∩B^C = B-A")를 좁은 칸에
+   억지로 구겨넣어 식 중간에서 줄바꿈되는 문제가 있었다(원장님 스크린샷
+   확인). 그래서 grid 대신 flex-wrap으로 바꿔 각 선택지가 "자기 내용
+   길이만큼만" 너비를 차지하게 하고, 한 줄에 다 안 들어가면 그 선택지가
+   자동으로 다음 줄로 넘어가게 한다 — 짧은 선택지는 여전히 3~4개가 한
+   줄에 나란히 붙고, 긴 선택지는 자연스럽게 혼자 한 줄을 차지한다. */
+.choiceRow{display:flex !important;flex-wrap:wrap;row-gap:2mm;column-gap:6mm;margin:2mm 0}
+.choiceItem{flex:0 1 auto;min-width:0;max-width:100%;overflow-wrap:break-word}
 .examFoot{position:absolute;bottom:8mm;left:0;right:0;text-align:center}
 .examFoot .pageBox{display:inline-flex;align-items:center;border:1px solid var(--ink);padding:1mm 4mm;font-size:10px}
 .examFoot .pageBox .cur{padding-right:2mm}
