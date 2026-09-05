@@ -97,6 +97,13 @@ button:disabled { opacity: 0.4; cursor: default; }
 .gradingFooter { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
 .gradingFooter button { padding: 6px 16px; font-size: 12px; }
 .hwItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 12px 14px; margin: 10px 0; background: #fafafa; }
+/* 같은 숙제(같은 학생+미션)를 페이지별로 여러 번 제출했을 때 세로로
+   쭉 쌓아 스크롤하는 대신 가로로 넘겨보는 묶음 — 안쪽 각 페이지는
+   기존 .hwItem 카드를 그대로 재사용(테두리 이중으로 안 겹치게 묶음
+   자체엔 테두리를 안 줌). */
+.hwPageGroup { margin: 10px 0; }
+.hwPageNav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
+.hwPageNav .hwPageIdx { font-weight: 700; }
 .hwItem .hwMeta { font-family: var(--kserif); font-weight: 700; font-size: 14px; margin-bottom: 2px; }
 /* 사진과 채점 체크리스트를 나란히 — 사진 보면서 바로 옆에서 O/X와 정답을
    확인/채점할 수 있게. flex-wrap을 주면 화면(창) 폭이 좁을 때 체크리스트가
@@ -5087,6 +5094,14 @@ async function refreshHwGrading() {
 function renderHwGrading(submissions) {
   if (!submissions.length) { hwGradingListEl.innerHTML = '<p class="hint">채점 대기 중인 숙제가 없습니다.</p>'; return; }
   hwGradingListEl.innerHTML = '';
+  // 같은 학생이 같은 숙제(카테고리+미션)를 페이지별로 나눠 여러 번
+  // "제출"했을 때(원장님 요청 배경 — 학생들에게 페이지별로 제출하라고
+  // 안내함), 세로로 쭉 쌓인 카드를 하나하나 스크롤하며 보는 대신 가로로
+  // 넘겨보게 묶는다. 채점(저장)은 지금 보이는 페이지(제출 건)에만
+  // 적용되게 그대로 둔다 — 여러 건을 한 번에 합쳐서 저장하면 그 미션
+  // 성적 시트에 점수 줄이 페이지 수만큼 중복으로 쌓여버리기 때문
+  // (handleGradeHw가 저장할 때마다 미션 시트에 새 줄을 추가하는 구조).
+  const groups = new Map();
   submissions.forEach(sub => {
     // 문제지가 problembank에 태그돼 있으면(resolveFileForMission이 이미
     // 오답노트 화면에서 쓰는 매칭/자동매칭을 그대로 재사용) 문항 수를 알 수
@@ -5296,10 +5311,32 @@ function renderHwGrading(submissions) {
       }
     });
 
-    hwGradingListEl.appendChild(div);
+    const groupKey = [sub.name, sub.class, sub.category, sub.mission].join('||');
+    if (!groups.has(groupKey)) groups.set(groupKey, []);
+    groups.get(groupKey).push(div);
     loadHwPhotos(div);
     if (nQ && file) loadQuickAnswers(div, file);
     if (nQ) loadHwNumStart(div, sub);
+  });
+  groups.forEach(divs => {
+    if (divs.length === 1) { hwGradingListEl.appendChild(divs[0]); return; }
+    const wrap = document.createElement('div');
+    wrap.className = 'hwPageGroup';
+    const nav = document.createElement('div');
+    nav.className = 'hwPageNav';
+    nav.innerHTML = `<button type="button" class="hwPagePrevBtn selectAllBtn">◀ 이전 페이지</button><span class="hwPageIdx hint"></span><button type="button" class="hwPageNextBtn selectAllBtn">다음 페이지 ▶</button>`;
+    wrap.appendChild(nav);
+    divs.forEach(d => wrap.appendChild(d));
+    let pageIdx = 0;
+    function showPage(i) {
+      pageIdx = (i + divs.length) % divs.length;
+      divs.forEach((d, di) => { d.style.display = di === pageIdx ? '' : 'none'; });
+      nav.querySelector('.hwPageIdx').textContent = (pageIdx + 1) + ' / ' + divs.length + '페이지 (같은 숙제)';
+    }
+    nav.querySelector('.hwPagePrevBtn').addEventListener('click', () => showPage(pageIdx - 1));
+    nav.querySelector('.hwPageNextBtn').addEventListener('click', () => showPage(pageIdx + 1));
+    showPage(0);
+    hwGradingListEl.appendChild(wrap);
   });
 }
 
