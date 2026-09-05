@@ -57,6 +57,13 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .pageBlock .pageTools button:hover{background:var(--gold-line)}
 
 .examSheet{position:relative;background:#fff;box-shadow:0 2px 16px rgba(0,0,0,.18);overflow:hidden;padding:0 14mm}
+/* display:flow-root — .examHeadTable의 margin-top이 이 칸을 벗어나 위로
+   "새어나가"(마진 상쇄) .examHeadSlot 자기 높이엔 안 잡히던 문제. 그래서
+   measureHeaderHeightMm로 잰 높이가 실제보다 작았고, 문제 칸이 머리말과
+   겹쳐 잘려 보였다(원장님 리포트). flow-root는 눈에 보이는 변화 없이 이
+   칸을 독립된 레이아웃 영역으로 만들어서, 안쪽 마진이 새지 않고 높이에
+   그대로 잡히게 한다. */
+.examHeadSlot{display:flow-root}
 .examHeadTable{margin-top:12mm;border-collapse:collapse;width:100%;font-size:11px;font-family:var(--sans)}
 .examHeadTable td{border:1px solid var(--ink);padding:2.6mm 3mm;vertical-align:middle}
 .examHeadTable .ehLabel{background:var(--accent-soft);font-weight:700;text-align:center;width:15%;color:var(--ink);letter-spacing:.02em}
@@ -175,7 +182,11 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 <script>
 const PAGE_SIZES = { A4: { w: 210, h: 297 }, B4: { w: 257, h: 364 } };
 const CONTENT_SIDE_MM = 14, CONTENT_BOTTOM_MM = 16, COL_GAP_MM = 8;
-const PAGE1_HEAD_MM = 34, OTHER_HEAD_MM = 16; // 표지형 머리말(표) vs 이후 페이지 간단 머리말이 차지하는 높이
+// 머리말 높이를 34mm/16mm로 고정 추측해뒀더니 실제 렌더링 높이보다 작아서
+// 각 단 첫 문제가 머리말과 겹쳐 잘리는 문제가 있었음 — 이제 measureHeaderHeightMm로
+// 실제 렌더링 높이를 직접 재고, 그 위에 숨 쉴 여백만 더한다(1페이지는
+// 표 머리말이라 "좀 더", 2페이지부터는 "살짝"— 원장님 요청).
+const PAGE1_HEAD_GAP_MM = 6, OTHER_HEAD_GAP_MM = 3;
 const COLUMNS_PER_PAGE = 2;
 
 let hwpxEntry = null; // parseHwpx 결과
@@ -306,6 +317,20 @@ function mmToPxRatio() {
   d.remove();
   return ratio;
 }
+// 머리말(표 또는 간단 머리말) HTML을 실제 .examSheet와 같은 너비로 그려서
+// 진짜 렌더링 높이를 mm로 잰다 — 34mm/16mm로 미리 추측해두던 예전 방식은
+// 실제 렌더링 높이보다 작아서 각 단 첫 문제가 머리말과 겹쳐 잘리는
+// 문제가 있었음.
+function measureHeaderHeightMm(headHtml, pageWmm, ratio) {
+  const stage = document.createElement('div');
+  stage.className = 'examSheet';
+  stage.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${pageWmm}mm;height:auto;overflow:visible;`;
+  stage.innerHTML = `<div class="examHeadSlot">${headHtml}</div>`;
+  document.body.appendChild(stage);
+  const heightPx = stage.querySelector('.examHeadSlot').getBoundingClientRect().height;
+  stage.remove();
+  return heightPx / ratio;
+}
 
 // ---------- 문제들을 칸(column) 단위로 연속해서 채워 넣기 ----------
 // studentnote.html의 paginateQuestionsWithOverflow와 달리(그건 문항 하나가
@@ -398,8 +423,13 @@ async function regenerateLayout() {
     const ratio = mmToPxRatio();
     const colWidthMm = (w - CONTENT_SIDE_MM * 2 - COL_GAP_MM) / COLUMNS_PER_PAGE;
     const colWidthPx = colWidthMm * ratio;
-    const page1HeightMm = h - PAGE1_HEAD_MM - CONTENT_BOTTOM_MM;
-    const otherHeightMm = h - OTHER_HEAD_MM - CONTENT_BOTTOM_MM;
+    // 실제 렌더링될 머리말 높이를 직접 재서 쓴다(고정 추측값이 아님) —
+    // qCountLabel/totalPages 같은 텍스트 길이는 표 높이에 거의 영향이
+    // 없어서, 아직 배치 전이라도 지금 값 그대로 재는 것으로 충분하다.
+    const page1HeadMm = measureHeaderHeightMm(headTableHtml(), w, ratio) + PAGE1_HEAD_GAP_MM;
+    const otherHeadMm = measureHeaderHeightMm(simpleHeadHtml(2), w, ratio) + OTHER_HEAD_GAP_MM;
+    const page1HeightMm = h - page1HeadMm - CONTENT_BOTTOM_MM;
+    const otherHeightMm = h - otherHeadMm - CONTENT_BOTTOM_MM;
     const colHeightMmFor = (colIdx) => (colIdx < COLUMNS_PER_PAGE ? page1HeightMm : otherHeightMm);
     const colHeightPxFor = (colIdx) => colHeightMmFor(colIdx) * ratio;
 
@@ -426,7 +456,7 @@ async function regenerateLayout() {
       sheet.className = 'examSheet';
       sheet.style.width = w + 'mm';
       sheet.style.height = h + 'mm';
-      const headMm = pageIdx === 0 ? PAGE1_HEAD_MM : OTHER_HEAD_MM;
+      const headMm = pageIdx === 0 ? page1HeadMm : otherHeadMm;
       sheet.innerHTML = `
         <div class="examHeadSlot">${pageIdx === 0 ? headTableHtml() : simpleHeadHtml(pageNum)}</div>
         <div class="examQBody" style="top:${headMm}mm">${colsHtml}</div>
