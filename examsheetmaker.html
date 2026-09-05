@@ -98,9 +98,13 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .examQCol{border-left:1.5px solid var(--accent);padding-left:8mm;min-width:0;display:flex;flex-direction:column}
 .examQCol:first-child{border-left:none;padding-left:0}
 .examQSlot{display:flex;overflow:visible}
-.examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid;width:100%;cursor:grab}
+.examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid;width:100%;cursor:grab;touch-action:none}
 .examQBlock.forceBreakMark{outline:1.5px dashed var(--pink-deep);outline-offset:2px}
-.examQBlock.dragOverQ{outline:2px dashed var(--accent);outline-offset:2px;background:var(--accent-soft)}
+/* 미세 위치 조정 중(포인터 드래그) — 살짝 떠 보이게 해서 지금 옮기고
+   있다는 걸 알려준다. z-index로 다른 문제 위로 겹쳐 보이게 함(등분된 칸
+   경계를 살짝 넘어가도 잘리지 않고 다 보이도록, examQSlot이 이미
+   overflow:visible이라 실제로도 안 잘림). */
+.examQBlock.nudging{cursor:grabbing;opacity:.85;position:relative;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 /* "크기는 크지만 두껍지는 않게" 요청 — Playfair Display 400(얇은 굵기)을
    큰 사이즈로 써서 "얇지만 큰" 느낌을 낸다. 색은 포인트 색깔과 맞춰
    같이 바뀌도록 --accent를 그대로 씀. */
@@ -126,7 +130,12 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
    있음, 예: studentnote.html:4618) 선택지가 다닥다닥 붙어 나왔다 —
    3칸 그리드로 1,2,3이 한 줄을 꽉 채우고 4,5는 자동으로 1,2 자리 밑에
    맞춰지도록(studentnote.html과 동일한 값). */
-.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:2mm;column-gap:4mm;margin:2mm 0}
+/* 원본 hwpx가 선택지를 세로 1열로 저장해뒀어도(문제별로 원본 파일마다
+   다름) 이 시험지에서는 항상 3칸 그리드로 가로로 눕혀서 보여달라는
+   요청 — hwpBodyXmlToHtml이 문항마다 다른 grid-template-columns를 인라인
+   스타일로 직접 박아버려서(원본 레이아웃 힌트를 그대로 따름) 이 클래스
+   규칙만으로는 못 이기므로 !important로 강제한다. */
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr) !important;row-gap:2mm;column-gap:4mm;margin:2mm 0}
 .choiceItem{min-width:0;overflow-wrap:break-word}
 .examFoot{position:absolute;bottom:8mm;left:0;right:0;text-align:center}
 .examFoot .pageBox{display:inline-flex;align-items:center;border:1px solid var(--ink);padding:1mm 4mm;font-size:10px}
@@ -177,8 +186,9 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
     </select>
     <button type="button" id="regenerateBtn" disabled>다시 배치하기</button>
 
-    <h2>4. 문제 순서 · 줄바꿈</h2>
-    <p class="hint">⠿를 드래그해 순서를 바꾸고, "새 단"에 체크하면 그 문제부터 강제로 다음 단(또는 페이지)에서 시작합니다. 바뀌면 "다시 배치하기"를 눌러 반영하세요.</p>
+    <h2>4. 문제 순서 · 줄바꿈 · 위치</h2>
+    <p class="hint">⠿를 드래그해 순서를 바꾸고, "새 단"에 체크하면 그 문제부터 강제로 다음 단(또는 페이지)에서 시작합니다. 바뀌면 "다시 배치하기"를 눌러 반영하세요. 미리보기 화면에서 문제를 직접 잡고 끌면 순서는 그대로 두고 위치만 살짝 미세 조정됩니다.</p>
+    <button type="button" id="undoMoveBtn" class="secondary" disabled>↩ 위치 조정 되돌리기</button>
     <div id="qOrderList"></div>
 
     <h2>5. 내보내기</h2>
@@ -266,10 +276,12 @@ document.getElementById('hwpxFile').addEventListener('change', async (ev) => {
       try { bodyHtml = await hwpBodyXmlToHtml(blockXml, entry); } catch (e) { bodyHtml = '<p class="hint">(렌더링 실패)</p>'; }
       const choiceCount = (bodyHtml.match(/class="choiceItem"/g) || []).length;
       const hasImage = /<img[\s>]/i.test(bodyHtml);
-      qs.push({ num, bodyHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1 });
+      qs.push({ num, bodyHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1, offsetX: 0, offsetY: 0 });
     }
     hwpxEntry = entry;
     questions = qs;
+    undoStack = [];
+    updateUndoBtn();
     regenerateBtn.disabled = false;
     savePdfBtn.disabled = false;
     renderQOrderList();
@@ -347,43 +359,73 @@ function reorderQuestions(srcNum, dstNum) {
   return true;
 }
 
-// 사이드바 목록 말고 미리보기 화면에서 직접 문제를 끌어서 순서를 바꿀 수
-// 있게 — regenerateLayout이 매번 새로 그리므로(페이지/단이 바뀔 수 있어서)
-// 그때마다 다시 불러 연결한다. 페이지가 여러 장이라 화면보다 길 때는
-// 드래그 중 가장자리 근처로 가면 자동으로 위/아래로 스크롤된다("스크롤로
-// 이동" 요청).
-let previewDragSrcNum = null;
-function autoScrollWhileDragging(clientY) {
-  const threshold = 70, maxSpeed = 16;
-  const vh = window.innerHeight;
-  if (clientY < threshold) window.scrollBy(0, -maxSpeed * (1 - clientY / threshold));
-  else if (clientY > vh - threshold) window.scrollBy(0, maxSpeed * (1 - (vh - clientY) / threshold));
+// 미리보기에서 문제를 끌면 "순서 변경"이 아니라 그 문제의 위치를 원래
+// 자리(자동 배치 결과)에서 살짝 미세 조정하는 용도로 써달라는 요청 —
+// 순서 바꾸기는 사이드바 목록의 ⠿ 드래그로 이미 되니, 여기서는 완전히
+// 다른 동작(같은 자리에서 시각적으로만 살짝 옮기기)으로 바꾼다. 원래
+// HTML5 드래그(draggable=true)로 순서를 바꾸던 걸 포인터 이벤트 기반
+// 미세조정으로 교체 — 두 방식을 같은 요소에 같이 둘 수 없어서(브라우저가
+// draggable 요소는 자체적으로 드래그 제스처를 가로챔) draggable 속성 자체를
+// 뺐다. 자동 배치(칸 높이 등분 등)는 그대로 두고 transform:translate로만
+// 화면에 보이는 위치를 옮기므로, 다른 문제들의 배치엔 전혀 영향이 없다.
+const NUDGE_MAX_MM = 30; // "미세 조정" 취지에 맞게 너무 멀리는 못 옮기게 제한
+let undoStack = []; // [{num, prevOffsetX, prevOffsetY}]
+const undoBtn = document.getElementById('undoMoveBtn');
+function updateUndoBtn() {
+  if (undoBtn) undoBtn.disabled = undoStack.length === 0;
 }
+function blockTransform(q) {
+  return (q.offsetX || q.offsetY) ? `translate(${q.offsetX || 0}mm, ${q.offsetY || 0}mm)` : '';
+}
+function undoLastMove() {
+  const entry = undoStack.pop();
+  if (!entry) return;
+  const q = questions.find(x => x.num === entry.num);
+  if (q) {
+    q.offsetX = entry.prevOffsetX;
+    q.offsetY = entry.prevOffsetY;
+    const block = previewWrap.querySelector(`.examQBlock[data-num="${entry.num}"]`);
+    if (block) block.style.transform = blockTransform(q);
+  }
+  updateUndoBtn();
+}
+if (undoBtn) undoBtn.addEventListener('click', undoLastMove);
 function wirePreviewDrag() {
   previewWrap.querySelectorAll('.examQBlock').forEach(block => {
     const num = block.dataset.num;
-    block.addEventListener('dragstart', (e) => {
-      previewDragSrcNum = num;
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    block.addEventListener('dragover', (e) => {
-      if (previewDragSrcNum == null || previewDragSrcNum === num) return;
+    const q = questions.find(x => x.num === num);
+    if (!q) return;
+    let dragging = false, startX = 0, startY = 0, startOffX = 0, startOffY = 0, ratio = 1, pendingX = 0, pendingY = 0;
+    block.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      startOffX = q.offsetX || 0; startOffY = q.offsetY || 0;
+      pendingX = startOffX; pendingY = startOffY;
+      ratio = mmToPxRatio();
+      try { block.setPointerCapture(e.pointerId); } catch (err) {}
+      block.classList.add('nudging');
       e.preventDefault();
-      block.classList.add('dragOverQ');
-      autoScrollWhileDragging(e.clientY);
     });
-    block.addEventListener('dragleave', () => block.classList.remove('dragOverQ'));
-    block.addEventListener('drop', (e) => {
-      e.preventDefault();
-      block.classList.remove('dragOverQ');
-      const src = previewDragSrcNum;
-      previewDragSrcNum = null;
-      if (reorderQuestions(src, num)) {
-        renderQOrderList();
-        regenerateLayout();
+    block.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dxMm = (e.clientX - startX) / ratio;
+      const dyMm = (e.clientY - startY) / ratio;
+      pendingX = Math.max(-NUDGE_MAX_MM, Math.min(NUDGE_MAX_MM, startOffX + dxMm));
+      pendingY = Math.max(-NUDGE_MAX_MM, Math.min(NUDGE_MAX_MM, startOffY + dyMm));
+      block.style.transform = `translate(${pendingX}mm, ${pendingY}mm)`;
+    });
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      block.classList.remove('nudging');
+      if (pendingX !== startOffX || pendingY !== startOffY) {
+        undoStack.push({ num: q.num, prevOffsetX: startOffX, prevOffsetY: startOffY });
+        q.offsetX = pendingX; q.offsetY = pendingY;
+        updateUndoBtn();
       }
-    });
-    block.addEventListener('dragend', () => { previewDragSrcNum = null; });
+    }
+    block.addEventListener('pointerup', endDrag);
+    block.addEventListener('pointercancel', endDrag);
   });
 }
 
@@ -463,7 +505,8 @@ function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor) {
   function pushCol() { columns.push(curCol); curCol = []; curHeight = 0; }
 
   qs.forEach(q => {
-    const html = `<div class="examQBlock${q.forceBreak ? ' forceBreakMark' : ''}" draggable="true" data-num="${q.num}"><div class="examQNum">${q.num}.</div><div class="examQBody2">${q.bodyHtml}</div></div>`;
+    const t = blockTransform(q);
+    const html = `<div class="examQBlock${q.forceBreak ? ' forceBreakMark' : ''}" data-num="${q.num}"${t ? ` style="transform:${t}"` : ''}><div class="examQNum">${q.num}.</div><div class="examQBody2">${q.bodyHtml}</div></div>`;
     if (q.forceBreak && curCol.length > 0) pushCol();
     const maxH = colHeightPxFor(columns.length);
     const h = measure(html);
