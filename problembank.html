@@ -87,8 +87,13 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .fileRow .fName { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .fileRow .fMeta { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); font-family: var(--kserif); width: 150px; }
 .fileRow .fMemo { flex: 0 0 auto; font-size: 12px; color: rgba(26,26,26,.5); width: 120px; overflow-wrap: anywhere; }
-.hideCatBtn { font-size: 11px; padding: 2px 8px; background: #fff; color: var(--gold); border-color: var(--gold); }
+.hideCatBtn, .deleteCatBtn { font-size: 11px; padding: 2px 8px; background: #fff; color: var(--gold); border-color: var(--gold); }
+.deleteCatBtn { color: var(--pink-deep, #c64e71); border-color: var(--pink-deep, #c64e71); }
+.renameCatBtn { font-size: 12px; padding: 2px 6px; background: none; border: none; cursor: pointer; }
 .catGroup.dragOverCat { outline: 2px dashed var(--mint-deep); outline-offset: -2px; }
+.catDragHandle { cursor: grab; color: rgba(26,26,26,.35); font-size: 13px; margin-right: 4px; }
+.catHead[draggable="true"] { cursor: grab; }
+.catHead.catHeadDragOver { outline: 2px dashed var(--gold); outline-offset: -2px; }
 .renameBtn { font-size: 12px; padding: 6px 8px; }
 .catAddRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .catAddRow input[type=text] { width: 160px; }
@@ -468,8 +473,11 @@ function buildRenamedFilenameForCategory(filename, newCat) {
   const stripped = filename.replace(/^\[[^\]]+\]\s*/, '');
   return newCat === '공통' ? stripped : `[${newCat}] ${stripped}`;
 }
-async function renameFileTo(id, newFilename) {
+async function renameFileRaw(id, newFilename) {
   await callPost({ action: 'rename', id, filename: newFilename });
+}
+async function renameFileTo(id, newFilename) {
+  await renameFileRaw(id, newFilename);
   await refreshList();
 }
 async function onRenameFile(f) {
@@ -480,8 +488,14 @@ async function onRenameFile(f) {
   await renameFileTo(f.id, trimmed);
 }
 async function toggleHiddenCategory(category, hidden) {
+  // callPost는 no-cors라 응답을 못 읽는다(problembank.html:389 주석 참고) —
+  // POST로 서버 상태만 바꾸고, 결과는 별도 GET으로 다시 조회해야 한다
+  // (studentnote.html의 toggleHiddenClass와 같은 패턴). 예전엔 callPost의
+  // 반환값에서 바로 r.hidden을 읽으려 해서 항상 undefined라 에러가 나고
+  // (숨겨도) 화면이 안 바뀌는 버그가 있었음.
+  try { await callPost({ action: 'sethiddencategory', category, hidden }); } catch (e) {}
   try {
-    const r = await callPost({ action: 'sethiddencategory', category, hidden });
+    const r = await callGet({ action: 'hiddencategories' });
     hiddenCategories = r.hidden || [];
   } catch (e) {}
   renderGroups(latestFiles);
@@ -517,10 +531,16 @@ function renderGroups(files) {
   if (!byCat.has('공통')) byCat.set('공통', []); // 항상 표시 — 다른 카테고리 파일을 드래그로 빼올 수 있는 칸
   for (const cat of categoryList) { if (!byCat.has(cat)) byCat.set(cat, []); } // 파일 없이 미리 만들어둔 카테고리도 표시
 
-  // 공통 last, everything else alphabetical.
+  // 공통은 항상 맨 끝 고정, 나머지는 categoryList(서버, 드래그로 바꾼 순서)
+  // 기준 — 아직 목록에 없는 새 카테고리(예: 방금 파일명에 새 [대괄호]를
+  // 써서 처음 생긴 것)는 목록 뒤쪽에 이름순으로 붙는다.
+  const catOrderIndex = new Map(categoryList.map((c, i) => [c, i]));
   const allCats = [...byCat.keys()].sort((a, b) => {
     if (a === '공통') return 1;
     if (b === '공통') return -1;
+    const ia = catOrderIndex.has(a) ? catOrderIndex.get(a) : Infinity;
+    const ib = catOrderIndex.has(b) ? catOrderIndex.get(b) : Infinity;
+    if (ia !== ib) return ia - ib;
     return a.localeCompare(b, 'ko');
   });
   const cats = allCats.filter(c => !hiddenCategories.includes(c));
@@ -539,10 +559,10 @@ function renderGroups(files) {
     const group = document.createElement('div');
     group.className = 'catGroup' + (collapsedState[cat] ? ' collapsed' : '');
     group.innerHTML = `
-      <div class="catHead">
-        <h2><span class="catTag${isCommon ? ' common' : ''}">${cat}</span>${catItems.length}개 파일</h2>
+      <div class="catHead"${isCommon ? '' : ' draggable="true"'} title="${isCommon ? '' : '드래그해서 카테고리 순서 변경'}">
+        <h2>${isCommon ? '' : '<span class="catDragHandle">⠿</span>'}<span class="catTag${isCommon ? ' common' : ''}">${cat}</span>${catItems.length}개 파일</h2>
         <span class="catHeadRight">
-          ${isCommon ? '' : `<button type="button" class="hideCatBtn" title="이 카테고리를 목록에서 숨기기">숨기기</button>`}
+          ${isCommon ? '' : `<button type="button" class="renameCatBtn" title="카테고리 이름 수정">✏️</button><button type="button" class="deleteCatBtn" title="카테고리 삭제(파일은 공통으로 이동)">삭제</button><button type="button" class="hideCatBtn" title="이 카테고리를 목록에서 숨기기">숨기기</button>`}
           <span class="toggleIcon">▼</span>
         </span>
       </div>
@@ -597,7 +617,18 @@ function renderGroups(files) {
       ev.stopPropagation();
       toggleHiddenCategory(cat, true);
     });
+    const renameCatBtn = group.querySelector('.renameCatBtn');
+    if (renameCatBtn) renameCatBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      onRenameCategory(cat, catItems);
+    });
+    const deleteCatBtn = group.querySelector('.deleteCatBtn');
+    if (deleteCatBtn) deleteCatBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      onDeleteCategory(cat, catItems);
+    });
     attachCategoryDropHandlers(group, cat);
+    if (!isCommon) attachCategoryReorderHandlers(group.querySelector('.catHead'), cat, allCats.filter(c => c !== '공통'));
     groupsEl.appendChild(group);
   }
   groupsEl.querySelectorAll('.rowChk').forEach(chk => chk.addEventListener('change', updateGenBtn));
@@ -661,6 +692,74 @@ function attachCategoryDropHandlers(group, cat) {
   });
 }
 
+// 카테고리 이름 자체를 바꾼다 — 그 카테고리에 있는 파일 전부의 [대괄호]를
+// 새 이름으로 한 번에 바꿔주는 일괄 작업(파일마다 ✏️로 하나씩 고치지
+// 않아도 되게).
+async function onRenameCategory(cat, catItems) {
+  const next = prompt(`"${cat}" 카테고리의 새 이름을 입력하세요 (이 안의 파일 ${catItems.length}개 전부 함께 바뀝니다)`, cat);
+  if (next === null) return;
+  const trimmed = next.trim();
+  if (!trimmed || trimmed === cat) return;
+  for (const f of catItems) {
+    await renameFileRaw(f.id, buildRenamedFilenameForCategory(f.filename, trimmed));
+  }
+  try { await callPost({ action: 'renamefilecategory', oldCategory: cat, newCategory: trimmed }); } catch (e) {}
+  await refreshList();
+}
+
+// 카테고리를 지운다 — 실제 파일은 절대 안 지우고, 안에 파일이 있으면 전부
+// "공통"으로 옮긴 뒤 카테고리 목록에서만 이름을 뺀다.
+async function onDeleteCategory(cat, catItems) {
+  const msg = catItems.length
+    ? `"${cat}" 카테고리를 지울까요? 안에 있는 파일 ${catItems.length}개는 모두 "공통"으로 옮겨집니다(파일 자체는 지워지지 않습니다).`
+    : `"${cat}" 카테고리를 지울까요?`;
+  if (!confirm(msg)) return;
+  for (const f of catItems) {
+    await renameFileRaw(f.id, buildRenamedFilenameForCategory(f.filename, '공통'));
+  }
+  try { await callPost({ action: 'deletefilecategory', name: cat }); } catch (e) {}
+  await refreshList();
+}
+
+// 카테고리 표시 순서를 서버에 그대로 저장한다 — 우리가 방금 만든 순서가
+// 곧 정답이므로(setfilecategoryorder는 온 그대로 덮어씀), 다시 GET으로
+// 확인할 필요 없이 바로 이 값으로 화면을 다시 그린다.
+async function persistCategoryOrder(orderArr) {
+  categoryList = orderArr;
+  try { await callPost({ action: 'setfilecategoryorder', order: JSON.stringify(orderArr) }); } catch (e) {}
+  renderGroups(latestFiles);
+}
+let dragSrcCat = null;
+// 카테고리 제목(.catHead)을 드래그해서 다른 카테고리 위에 놓으면 그 자리로
+// 순서가 바뀐다 — 파일 드래그(attachDragHandlers/attachCategoryDropHandlers,
+// dragSrcRow 사용)와 완전히 다른 상태(dragSrcCat)를 써서 서로 안 섞이게 하고,
+// stopPropagation으로 부모 .catGroup의 파일-드롭 감지에도 안 걸리게 한다.
+function attachCategoryReorderHandlers(catHeadEl, cat, orderedCatsExcl공통) {
+  catHeadEl.addEventListener('dragstart', (ev) => {
+    dragSrcCat = cat;
+    ev.stopPropagation();
+    ev.dataTransfer.effectAllowed = 'move';
+  });
+  catHeadEl.addEventListener('dragover', (ev) => {
+    if (!dragSrcCat || dragSrcCat === cat) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    catHeadEl.classList.add('catHeadDragOver');
+  });
+  catHeadEl.addEventListener('dragleave', () => catHeadEl.classList.remove('catHeadDragOver'));
+  catHeadEl.addEventListener('drop', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    catHeadEl.classList.remove('catHeadDragOver');
+    if (!dragSrcCat || dragSrcCat === cat) return;
+    const srcCat = dragSrcCat;
+    dragSrcCat = null;
+    const order = orderedCatsExcl공통.filter(c => c !== srcCat);
+    order.splice(order.indexOf(cat), 0, srcCat);
+    persistCategoryOrder(order);
+  });
+}
+
 async function refreshList() {
   groupsEl.innerHTML = '<p class="hint">불러오는 중...</p>';
   try {
@@ -672,6 +771,17 @@ async function refreshList() {
     ]);
     hiddenCategories = hiddenCatData.hidden || [];
     categoryList = catListData.categories || [];
+    // 파일명 [대괄호]에서 실제로 쓰이는 카테고리 중 아직 순서 목록에 없는
+    // 게 있으면(예: 방금 새 [대괄호]로 파일을 올렸거나 옮긴 경우) 자동으로
+    // 등록한다 — 안 그러면 새 카테고리가 항상 순서 목록 밖(이름순 취급)으로
+    // 밀려서 드래그로 자리를 옮겨도 다음 새로고침 때 자꾸 튀어 보인다.
+    const realCats = new Set(files.map(f => categoryOf(f.filename)));
+    realCats.delete('공통');
+    const missing = [...realCats].filter(c => categoryList.indexOf(c) === -1);
+    if (missing.length) {
+      for (const c of missing) { try { await callPost({ action: 'addfilecategory', name: c }); } catch (e) {} }
+      categoryList = [...categoryList, ...missing];
+    }
     renderGroups(files);
     updateTagSuggestLists(files);
   } catch (e) {
@@ -942,12 +1052,18 @@ const EQ_TABS = [
   { key: 'rel', label: '부등호·집합', syms: [
     { label: '≤', raw: '\\le', back: 0 },
     { label: '≥', raw: '\\ge', back: 0 },
+    { label: '≪', raw: '\\ll', back: 0 },
+    { label: '≫', raw: '\\gg', back: 0 },
     { label: '≠', raw: '\\ne', back: 0 },
+    { label: '≡', raw: '\\equiv', back: 0 },
     { label: '≈', raw: '\\approx', back: 0 },
+    { label: '∝', raw: '\\propto', back: 0 },
     { label: '∈', raw: '\\in', back: 0 },
     { label: '∉', raw: '\\notin', back: 0 },
     { label: '⊂', raw: '\\subset', back: 0 },
+    { label: '⊃', raw: '\\supset', back: 0 },
     { label: '⊆', raw: '\\subseteq', back: 0 },
+    { label: '⊇', raw: '\\supseteq', back: 0 },
     { label: '∪', raw: '\\cup', back: 0 },
     { label: '∩', raw: '\\cap', back: 0 },
     { label: '∅', raw: '\\emptyset', back: 0 },
@@ -955,25 +1071,54 @@ const EQ_TABS = [
     { label: '⇒', raw: '\\Rightarrow', back: 0 },
     { label: '⇔', raw: '\\Leftrightarrow', back: 0 },
   ] },
+  { key: 'op', label: '연산자', syms: [
+    { label: '±', raw: '\\pm', back: 0 },
+    { label: '∓', raw: '\\mp', back: 0 },
+    { label: '×', raw: '\\times', back: 0 },
+    { label: '÷', raw: '\\div', back: 0 },
+    { label: '·', raw: '\\cdot', back: 0 },
+    { label: '∧', raw: '\\wedge', back: 0 },
+    { label: '∨', raw: '\\vee', back: 0 },
+    { label: '¬', raw: '\\neg', back: 0 },
+    { label: '⊥', raw: '\\perp', back: 0 },
+    { label: '∥', raw: '\\parallel', back: 0 },
+    { label: '∠', raw: '\\angle', back: 0 },
+    { label: '∴', raw: '\\therefore', back: 0 },
+    { label: '∵', raw: '\\because', back: 0 },
+  ] },
   { key: 'greek', label: '그리스문자', syms: [
     { label: 'α', raw: '\\alpha', back: 0 }, { label: 'β', raw: '\\beta', back: 0 },
-    { label: 'γ', raw: '\\gamma', back: 0 }, { label: 'θ', raw: '\\theta', back: 0 },
+    { label: 'γ', raw: '\\gamma', back: 0 }, { label: 'δ', raw: '\\delta', back: 0 },
+    { label: 'ε', raw: '\\varepsilon', back: 0 }, { label: 'θ', raw: '\\theta', back: 0 },
     { label: 'λ', raw: '\\lambda', back: 0 }, { label: 'μ', raw: '\\mu', back: 0 },
     { label: 'σ', raw: '\\sigma', back: 0 }, { label: 'φ', raw: '\\varphi', back: 0 },
+    { label: 'ω', raw: '\\omega', back: 0 },
     { label: 'Δ', raw: '\\Delta', back: 0 }, { label: 'Σ', raw: '\\Sigma', back: 0 },
     { label: 'Ω', raw: '\\Omega', back: 0 },
   ] },
   { key: 'calc', label: '미적분', syms: [
     { label: 'lim', raw: '\\lim_{x \\to }', back: 1 },
     { label: '∫', raw: '\\int_{}^{}', back: 4 },
+    { label: '∬', raw: '\\iint_{}^{}', back: 4 },
     { label: '∑', raw: '\\sum_{}^{}', back: 4 },
     { label: '∏', raw: '\\prod_{}^{}', back: 4 },
+    { label: '∂', raw: '\\partial', back: 0 },
+    { label: '∇', raw: '\\nabla', back: 0 },
     { label: 'sin', raw: '\\sin', back: 0 },
     { label: 'cos', raw: '\\cos', back: 0 },
     { label: 'tan', raw: '\\tan', back: 0 },
+    { label: 'log', raw: '\\log', back: 0 },
+    { label: 'ln', raw: '\\ln', back: 0 },
+    { label: 'exp', raw: '\\exp', back: 0 },
     { label: '벡터', raw: '\\vec{}', back: 1 },
     { label: '선분 AB', raw: '\\overline{}', back: 1 },
     { label: "f'(x)", raw: "f'(x)", back: 0 },
+  ] },
+  { key: 'bracket', label: '괄호·행렬', syms: [
+    { label: '(□)', raw: '\\left(\\right)', back: 7 },
+    { label: '[□]', raw: '\\left[\\right]', back: 7 },
+    { label: '{□}', raw: '\\left\\{\\right\\}', back: 8 },
+    { label: '2×2 행렬', raw: '\\begin{pmatrix} & \\\\ & \\end{pmatrix}', back: 0 },
   ] },
 ];
 // 커서 바로 앞에 있는 "$" 개수가 홀수면 이미 수식 안이라는 뜻 — 그럴 땐
@@ -1007,6 +1152,13 @@ function eqInsertBox(textarea) {
 function eqInsertBlank(textarea) {
   eqInsertAtCursor(textarea, '□', 0);
 }
+// 원형 숫자(①②③...) — 객관식 선택지처럼 수식이 아니라 그냥 문자라서
+// $...$로 감싸면 안 된다(감싸면 KaTeX가 못 읽는 글자로 처리해버림). □ 빈칸
+// 버튼과 같은 방식으로 있는 그대로 삽입한다.
+const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+function eqInsertLiteral(textarea, ch) {
+  eqInsertAtCursor(textarea, ch, 0);
+}
 // 이미 그냥 글자로(예: "m^2+1") 쳐둔 부분을 나중에 골라서 한 번에 수식으로
 // 바꾸는 버튼 — "기호 버튼 없이 그냥 입력한 것도 수식으로 만들고 싶다"는
 // 요청. 매번 커서를 앞뒤로 옮겨가며 "$"를 직접 두 번 치는 대신, 선택만
@@ -1032,6 +1184,7 @@ function buildEqToolbarHtml() {
     + `<div class="eqSymPanel" data-panel="box">
         <button type="button" class="eqSymBtn eqBoxInsertBtn" title="(가)(나)(다) 조건박스 삽입">🔲 네모박스((가)(나)(다))</button>
         <button type="button" class="eqSymBtn eqBlankInsertBtn" title="빈칸 기호 □ 삽입">□ 빈칸</button>
+        ${CIRCLED_NUMBERS.map(ch => `<button type="button" class="eqSymBtn eqLiteralBtn" data-literal="${ch}" title="${ch} 삽입(수식 아님, 글자 그대로)">${ch}</button>`).join('')}
       </div>`;
   return `<div class="eqToolbar"><div class="eqTabRow">${tabs}<button type="button" class="eqTabBtn eqWrapSelBtn" title="그냥 입력한 글자를 선택한 뒤 눌러보세요 — $...$로 감싸 수식으로 바꿔줍니다" style="margin-left:auto">🔤→∑ 선택한 글자를 수식으로</button></div>${panels}</div>`;
 }
@@ -1048,6 +1201,9 @@ function wireEqToolbar(box, textarea) {
   });
   box.querySelector('.eqBoxInsertBtn')?.addEventListener('click', () => eqInsertBox(textarea));
   box.querySelector('.eqBlankInsertBtn')?.addEventListener('click', () => eqInsertBlank(textarea));
+  box.querySelectorAll('.eqLiteralBtn[data-literal]').forEach(btn => {
+    btn.addEventListener('click', () => eqInsertLiteral(textarea, btn.dataset.literal));
+  });
   box.querySelector('.eqWrapSelBtn')?.addEventListener('click', () => eqWrapSelectionAsMath(textarea));
 }
 
@@ -1866,8 +2022,11 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
   const input = document.getElementById('newCatInput');
   const name = input.value.trim();
   if (!name) return;
-  const r = await callPost({ action: 'addcategory', name });
-  categoryList = r.categories || categoryList;
+  try { await callPost({ action: 'addfilecategory', name }); } catch (e) {}
+  try {
+    const r = await callGet({ action: 'categorylist' });
+    categoryList = r.categories || categoryList;
+  } catch (e) {}
   input.value = '';
   renderGroups(latestFiles);
 });
