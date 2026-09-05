@@ -97,6 +97,14 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #vScrollTrack { position:fixed; top:0; right:0; bottom:0; width:22px; z-index:15; display:none; }
 #vScrollThumb { position:absolute; left:3px; right:3px; background:var(--mint-deep); border-radius:8px; opacity:.55; touch-action:none; }
 #vScrollThumb:active { opacity:.85; }
+/* 휴대폰(좁은 화면)에서는 확대 안 해도 가로로도 다 안 들어오는 경우가
+   있다는 리포트 — 세로 막대와 완전히 같은 이유·같은 구조로 가로 막대도
+   둔다(#inkCanvas가 touch-action:none이라 손가락으로 가로로 밀어도
+   스크롤이 안 됨). #submitBar(학생 제출 바)가 화면 아래 고정으로 떠 있을
+   때는 그 위로 겹치지 않게 JS가 bottom 위치를 동기화한다. */
+#hScrollTrack { position:fixed; left:0; right:22px; bottom:0; height:22px; z-index:15; display:none; }
+#hScrollThumb { position:absolute; top:3px; bottom:3px; background:var(--mint-deep); border-radius:8px; opacity:.55; touch-action:none; }
+#hScrollThumb:active { opacity:.85; }
 #docHtmlLayer { position:absolute; top:0; left:0; pointer-events:none; display:none; background:#fff; box-sizing:border-box; padding:20px 24px; font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--ink); overflow:visible; }
 #docHtmlLayer .hwpxQ { margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--gold-line); }
 #docHtmlLayer .hwpxQ:last-child { border-bottom:none; }
@@ -194,6 +202,7 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
   <div id="stage"><canvas id="docCanvas"></canvas><div id="docHtmlLayer"></div><canvas id="inkCanvas"></canvas></div>
 </div>
 <div id="vScrollTrack"><div id="vScrollThumb"></div></div>
+<div id="hScrollTrack"><div id="hScrollThumb"></div></div>
 <div id="submitBar" style="display:none">
   <button type="button" id="submitBtn">제출</button>
   <span id="submitStatus"></span>
@@ -214,6 +223,16 @@ const cohort = qp.get('cohort') || '2';
 const category = qp.get('category') || '';
 const mission = qp.get('mission') || '';
 
+// 확대는 버튼(🔍-/🔍+)으로만 하기로 했는데, 브라우저 두손가락 확대가
+// <meta viewport>의 user-scalable=no/maximum-scale=1로 다 막힐 거라고
+// 믿었더니, 실제로는 그 메타 태그를 무시하는 모바일 브라우저(특히 최신
+// iOS Safari — 접근성 이유로 일부러 무시함)가 있어서 여전히 두 손가락으로
+// 화면 전체를 확대할 수 있었다(원장님 리포트 — 학생이 확대한 채로
+// 제출해서 페이지 일부만 찍힌 것으로 추정). 메타 태그만 믿지 않고
+// JS로도 두 손가락 접촉(핀치 제스처)을 직접 막는다.
+document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+
 const docCanvas = document.getElementById('docCanvas');
 const inkCanvas = document.getElementById('inkCanvas');
 const docHtmlLayer = document.getElementById('docHtmlLayer');
@@ -224,16 +243,26 @@ const stageWrap = document.getElementById('stageWrap');
 // 고정값 대신 ResizeObserver로 실제 높이를 계속 재서 맞춘다.
 const topBarEl = document.getElementById('topBar');
 const vScrollTrack = document.getElementById('vScrollTrack');
+const hScrollTrack = document.getElementById('hScrollTrack');
+const submitBarEl = document.getElementById('submitBar');
 function syncTopBarSpacing(){
   const h = topBarEl.offsetHeight;
   stageWrap.style.paddingTop = h + 'px';
   vScrollTrack.style.top = h + 'px'; // 스크롤 막대도 도구바 아래부터 시작
 }
+// #submitBar(학생 제출 바)도 화면 아래 고정이라, 가로 스크롤 막대가 그
+// 위에 겹치지 않게 막대 아래쪽 여백을 그 높이만큼 띄운다 — 제출 바가
+// 안 보일 땐(학생이 아니거나 제출 모드가 아닐 때) 0.
+function syncSubmitBarSpacing(){
+  hScrollTrack.style.bottom = submitBarEl.offsetHeight + 'px';
+}
 if (window.ResizeObserver) {
   new ResizeObserver(syncTopBarSpacing).observe(topBarEl);
+  new ResizeObserver(syncSubmitBarSpacing).observe(submitBarEl);
 } else {
   syncTopBarSpacing();
-  window.addEventListener('resize', syncTopBarSpacing);
+  syncSubmitBarSpacing();
+  window.addEventListener('resize', () => { syncTopBarSpacing(); syncSubmitBarSpacing(); });
 }
 let docCtx, inkCtx;
 let stageCssW = 0, stageCssH = 0;
@@ -331,6 +360,7 @@ function applyStageZoom(){
   if (outBtn) outBtn.disabled = stageZoom <= STAGE_ZOOM_MIN;
   if (inBtn) inBtn.disabled = stageZoom >= STAGE_ZOOM_MAX;
   updateVScrollbar(); // 확대·축소로 페이지 길이가 바뀌므로 스크롤 막대도 다시 계산
+  updateHScrollbar();
 }
 function changeStageZoom(delta){
   const next = Math.min(STAGE_ZOOM_MAX, Math.max(STAGE_ZOOM_MIN, Math.round((stageZoom + delta) * 100) / 100));
@@ -382,6 +412,51 @@ vScrollThumb.addEventListener('pointermove', e => {
 function endVScrollDrag(){ vDragging = false; }
 vScrollThumb.addEventListener('pointerup', endVScrollDrag);
 vScrollThumb.addEventListener('pointercancel', endVScrollDrag);
+
+// 세로 막대와 같은 이유(좁은 화면에서 확대하면 가로로 다 안 들어올 수
+// 있음)지만, 가로는 페이지(window) 스크롤이 아니라 #stageWrap 자체의
+// 스크롤이다 — #stageWrap이 overflow-x:auto라서 가로로 넘치는 내용은
+// 페이지 밖으로 안 새어나가고 그 안에서만 스크롤된다(세로는 stageWrap에
+// overflow-y 제한이 없어서 페이지 스크롤을 그대로 씀 — 그래서 세로/가로가
+// 서로 다른 대상을 스크롤해야 함).
+const hScrollThumb = document.getElementById('hScrollThumb');
+function updateHScrollbar(){
+  const viewportW = stageWrap.clientWidth;
+  const scrollable = stageWrap.scrollWidth > viewportW + 1;
+  hScrollTrack.style.display = scrollable ? 'block' : 'none';
+  if (!scrollable) return;
+  const trackW = hScrollTrack.clientWidth;
+  const thumbW = Math.max(36, trackW * (viewportW / stageWrap.scrollWidth));
+  const maxScroll = stageWrap.scrollWidth - viewportW;
+  const ratio = maxScroll > 0 ? Math.min(1, Math.max(0, stageWrap.scrollLeft / maxScroll)) : 0;
+  hScrollThumb.style.width = thumbW + 'px';
+  hScrollThumb.style.left = (ratio * (trackW - thumbW)) + 'px';
+}
+stageWrap.addEventListener('scroll', updateHScrollbar, { passive: true });
+window.addEventListener('resize', updateHScrollbar);
+let hDragging = false, hDragStartX = 0, hDragStartScroll = 0;
+hScrollThumb.addEventListener('pointerdown', e => {
+  hDragging = true;
+  hDragStartX = e.clientX;
+  hDragStartScroll = stageWrap.scrollLeft;
+  try { hScrollThumb.setPointerCapture(e.pointerId); } catch (err) {}
+  e.preventDefault();
+});
+hScrollThumb.addEventListener('pointermove', e => {
+  if (!hDragging) return;
+  const viewportW = stageWrap.clientWidth;
+  const trackW = hScrollTrack.clientWidth;
+  const thumbW = hScrollThumb.offsetWidth;
+  const maxScroll = stageWrap.scrollWidth - viewportW;
+  const trackRange = trackW - thumbW;
+  if (maxScroll <= 0 || trackRange <= 0) return;
+  const deltaX = e.clientX - hDragStartX;
+  stageWrap.scrollLeft = hDragStartScroll + deltaX * (maxScroll / trackRange);
+  updateHScrollbar();
+});
+function endHScrollDrag(){ hDragging = false; }
+hScrollThumb.addEventListener('pointerup', endHScrollDrag);
+hScrollThumb.addEventListener('pointercancel', endHScrollDrag);
 
 function renderDocBlank(){
   docCtx.fillStyle = '#fff';
@@ -595,8 +670,19 @@ function eraseAt(pt){
 // 마우스만 필기로 인식한다 — 손가락으로 살짝만 스쳐도 자꾸 필기가 돼서
 // 불편하다는 요청. 확대·축소는 이제 위 CSS(#inkCanvas touch-action:none)
 // 덕분에 손가락 제스처가 아예 안 먹으므로 버튼(🔍-/🔍+)으로만 한다.
+// 폰에는 펜이 없는 경우가 많아 손가락 필기가 꼭 필요하다는 요청 — 그런데
+// 손가락을 무조건 다 필기로 받으면, 태블릿에서 펜으로 쓰는 동안 손바닥이
+// 화면에 닿는 예전 문제(화면이 흔들리던 것과는 다른 문제 — 손바닥이 닿은
+// 자리에 원치 않는 낙서가 남는 문제)가 되살아난다. 그래서 "펜이 실제로
+// 눌려 있는 동안만" 손가락 입력을 무시한다(팜 리젝션) — 폰은 애초에 펜이
+// 없으니 이 조건에 전혀 안 걸려서 손가락으로 항상 잘 써지고, 펜이 있는
+// 태블릿은 펜을 쓰는 순간에만 손가락이 무시된다. touch-action:none(위
+// #inkCanvas 스타일)이 화면 이동/확대는 이미 다 막고 있어서, 손가락으로
+// 그림을 그려도 화면이 흔들리는 일은 없다.
+let penIsDown = false;
 inkCanvas.addEventListener('pointerdown', e => {
-  if (e.pointerType === 'touch') return;
+  if (e.pointerType === 'touch' && penIsDown) return;
+  if (e.pointerType === 'pen') penIsDown = true;
   try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 일부 브라우저/입력장치에서 캡처가 안 될 수 있음 — 캔버스 안에서 그리는 데는 지장 없음 */ }
   const pt = getNormPoint(e);
   if (currentTool === 'eraser') { drawing = 'erasing'; eraseAt(pt); return; }
@@ -607,7 +693,7 @@ inkCanvas.addEventListener('pointerdown', e => {
   scheduleRedraw();
 });
 inkCanvas.addEventListener('pointermove', e => {
-  if (e.pointerType === 'touch') return;
+  if (e.pointerType === 'touch' && penIsDown) return;
   if (!drawing) return;
   const pt = getNormPoint(e);
   if (drawing === 'erasing') { eraseAt(pt); return; }
@@ -621,6 +707,7 @@ inkCanvas.addEventListener('pointermove', e => {
   }
 });
 function endStroke(e){
+  if (e && e.pointerType === 'pen') penIsDown = false;
   if (drawing === true && curStrokeId) {
     if (strokesRef) {
       strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
