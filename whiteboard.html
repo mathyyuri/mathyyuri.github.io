@@ -211,6 +211,11 @@ function initHeader(){
   if (mission) bits.push(mission);
   document.getElementById('metaEl').textContent = bits.join(' · ');
   document.getElementById('clearBtn').style.display = role === 'teacher' ? '' : 'none';
+  // 원장님 도구 메뉴(다른 도구로 이동)는 학생이 "풀고 제출"로 들어왔을 때도
+  // 똑같이 보이고 있었음(원장님 리포트) — 학생에게는 필요 없는 관리자
+  // 전용 기능이라 선생님 모드일 때만 보이게 한다.
+  document.getElementById('mathyToolNavBtn').style.display = role === 'teacher' ? '' : 'none';
+  if (role !== 'teacher') document.getElementById('mathyToolNavPanel').classList.remove('open');
   updateSubmitBarVisibility();
 }
 // docKind는 loadDoc()이 끝나야 확정되므로(문서를 열어봐야 pdf/image/hwpx
