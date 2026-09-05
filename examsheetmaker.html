@@ -42,7 +42,10 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 #status{font-size:12px;color:var(--mint-deep);min-height:1.4em;margin:4px 0}
 #status.err{color:var(--pink-deep)}
 #qOrderList{border:1px solid var(--gold-line);border-radius:6px;max-height:340px;overflow-y:auto}
-.qOrderRow{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--gold-line);font-size:12px;background:#fff}
+.qOrderRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--gold-line);font-size:12px;background:#fff}
+.qImgScaleRow{flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:10.5px;color:rgba(26,26,26,.6);margin-top:2px}
+.qImgScaleRow input[type=range]{flex:1;min-width:0}
+.qImgScaleRow .qImgScaleVal{flex:0 0 34px;text-align:right}
 .qOrderRow:last-child{border-bottom:none}
 .qOrderRow .qDrag{cursor:grab;color:rgba(26,26,26,.35)}
 .qOrderRow .qNumBadge{font-weight:900;color:var(--gold);flex:0 0 22px}
@@ -67,7 +70,7 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .examHeadTable{margin-top:12mm;border-collapse:collapse;width:100%;font-size:11px;font-family:var(--sans)}
 .examHeadTable td{border:1px solid var(--ink);padding:2.6mm 3mm;vertical-align:middle}
 .examHeadTable .ehLabel{background:var(--accent-soft);font-weight:700;text-align:center;width:15%;color:var(--ink);letter-spacing:.02em}
-.examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:17px;text-align:center;letter-spacing:.01em}
+.examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:17px;text-align:center;letter-spacing:.01em;color:var(--accent)}
 .examHeadTable .ehLogo{text-align:center;padding:0}
 /* 참고 이미지처럼 로고 칸만 표 격자에서 살짝 도드라지는 카드로 보이게 —
    둥근 모서리 + 옅은 그림자를 로고 칸 안쪽에 별도로 줌(표 테두리 자체는
@@ -90,7 +93,9 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
    실제 내용 길이와 무관하게 항상 같은 크기의 여유 공간을 갖게 하려는
    요청). */
 .examQBody{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;position:absolute;left:14mm;right:14mm;bottom:16mm}
-.examQCol{border-left:1px solid var(--gold-line);padding-left:8mm;min-width:0;display:flex;flex-direction:column}
+/* 색깔 테마를 고르면 제목/문제번호/다단 구분선까지 세트로 같이 바뀌도록
+   요청 — 구분선도 고정된 --gold-line 대신 --accent를 쓴다. */
+.examQCol{border-left:1.5px solid var(--accent);padding-left:8mm;min-width:0;display:flex;flex-direction:column}
 .examQCol:first-child{border-left:none;padding-left:0}
 .examQSlot{display:flex;overflow:visible}
 .examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid;width:100%;cursor:grab}
@@ -103,8 +108,19 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .examQBody2{flex:1;min-width:0;font-size:11.5px;line-height:1.6}
 .examQBody2 p{margin:0 0 2mm}
 .examQBody2 img{max-width:100%;height:auto;display:block;margin:2mm auto}
-.examQBody2 table{border-collapse:collapse;margin:2mm 0}
-.examQBody2 td{border:1px solid var(--gold-line);padding:0.5mm 1.2mm;font-size:9.5px;text-align:center;vertical-align:middle}
+.examQBody2 table{border-collapse:collapse;margin:2mm 0;table-layout:auto}
+.examQBody2 td{border:1px solid var(--gold-line);padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap;text-align:center;vertical-align:middle}
+/* 원본 hwpx의 <보기> 박스/조건박스((가)(나)(다))/네모 표시 상자/빈칸
+   테두리 — 지금까지 이 페이지엔 이 클래스들 스타일이 아예 없어서 원본에
+   있던 박스·표가 테두리 없이 밋밋한 글자로만 나왔다(원장님 리포트) —
+   problembank.html/studentnote.html이 이미 쓰는 값 그대로 가져옴. */
+.examQBody2 .hwpBogi, .examQBody2 .hwpCondBox{border:1.3px solid var(--ink);border-radius:2px;padding:4mm 5mm;margin:3mm 0}
+.examQBody2 .hwpBogi p, .examQBody2 .hwpCondBox p{margin:0 0 1.5mm}
+.examQBody2 .hwpCondBox td{text-align:left}
+.examQBody2 .hwpBlankBox{display:inline-block;border:1.3px solid var(--ink);vertical-align:middle;margin:0 1mm}
+.examQBody2 .hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--gold-line);padding:2mm 3mm;margin:2mm 0;text-align:left}
+.examQBody2 p.eqLine{text-align:center}
+.examQBody2 .eqFallback{font-family:monospace;font-size:11px;color:var(--pink-deep);background:rgba(198,78,113,.08);padding:1px 4px;border-radius:2px}
 /* 객관식 선택지(①②③④⑤) — hwpx-lib.js가 만드는 .choiceRow/.choiceItem에
    맞는 간격 규칙을 이 페이지가 안 갖고 있어서(다른 페이지는 각자 갖고
    있음, 예: studentnote.html:4618) 선택지가 다닥다닥 붙어 나왔다 —
@@ -249,7 +265,8 @@ document.getElementById('hwpxFile').addEventListener('change', async (ev) => {
       let bodyHtml = '';
       try { bodyHtml = await hwpBodyXmlToHtml(blockXml, entry); } catch (e) { bodyHtml = '<p class="hint">(렌더링 실패)</p>'; }
       const choiceCount = (bodyHtml.match(/class="choiceItem"/g) || []).length;
-      qs.push({ num, bodyHtml, choiceCount, forceBreak: false });
+      const hasImage = /<img[\s>]/i.test(bodyHtml);
+      qs.push({ num, bodyHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1 });
     }
     hwpxEntry = entry;
     questions = qs;
@@ -289,8 +306,22 @@ function renderQOrderList() {
       <span class="qNumBadge">${q.num}</span>
       <span class="qPreview" title="${shortPreview(q.bodyHtml)}">${shortPreview(q.bodyHtml)}</span>
       <label><input type="checkbox" class="qForceBreak"${q.forceBreak ? ' checked' : ''}> 새 단</label>
+      ${q.hasImage ? `
+      <div class="qImgScaleRow">
+        <span>🖼 이미지 크기</span>
+        <input type="range" class="qImgScale" min="40" max="180" step="5" value="${Math.round(q.imageScale * 100)}">
+        <span class="qImgScaleVal">${Math.round(q.imageScale * 100)}%</span>
+      </div>` : ''}
     `;
     row.querySelector('.qForceBreak').addEventListener('change', (e) => { q.forceBreak = e.target.checked; });
+    const imgScaleInput = row.querySelector('.qImgScale');
+    if (imgScaleInput) {
+      imgScaleInput.addEventListener('input', (e) => {
+        q.imageScale = Number(e.target.value) / 100;
+        row.querySelector('.qImgScaleVal').textContent = e.target.value + '%';
+        applyImageScales();
+      });
+    }
     row.addEventListener('dragstart', () => { dragSrcQNum = q.num; });
     row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('dragOver'); });
     row.addEventListener('dragleave', () => row.classList.remove('dragOver'));
@@ -353,6 +384,34 @@ function wirePreviewDrag() {
       }
     });
     block.addEventListener('dragend', () => { previewDragSrcNum = null; });
+  });
+}
+
+// 문제 속 이미지를 원장님이 직접 크기 조절할 수 있게 — 사이드바의 슬라이더
+// (%)가 바뀔 때마다 다시 부른다. 이미지 자체(hwpBodyXmlToHtml이 만든
+// width/height 속성)를 건드리는 대신, 먼저 width를 지워 원래 크기로
+// 되돌린 뒤 그 원래 렌더링 폭을 기준으로 배율만큼 다시 늘리거나 줄인다
+// (매번 원래 크기부터 다시 계산해야 150%→80%처럼 왔다갔다 해도 정확함).
+// 배치(칸에 몇 문제가 들어갈지) 계산은 이미 끝난 뒤에 그림 크기만
+// 시각적으로 바꾸는 것이라, 많이 키우면 슬롯 경계를 살짝 넘어갈 수 있음
+// (overflow:visible이라 잘리지는 않음) — 너무 어긋나면 "다시 배치하기"를
+// 눌러 처음부터 다시 재는 것도 방법.
+function applyImageScales() {
+  questions.forEach(q => {
+    if (!q.hasImage) return;
+    const block = previewWrap.querySelector(`.examQBlock[data-num="${q.num}"]`);
+    if (!block) return;
+    block.querySelectorAll('img').forEach(img => {
+      img.style.width = '';
+      img.style.maxWidth = '';
+      if (q.imageScale === 1) return;
+      const naturalRenderedWidth = img.getBoundingClientRect().width;
+      // .examQBody2 img의 max-width:100%가 컨테이너 폭에서 그대로 캡을 걸어서,
+      // 150%처럼 키우려는 값이 도로 눌려버렸다(실제 확인: 150% 지정해도
+      // 100%로 그려짐) — 배율을 줄 때는 그 상한을 풀어줘야 실제로 커진다.
+      img.style.maxWidth = 'none';
+      img.style.width = (naturalRenderedWidth * q.imageScale) + 'px';
+    });
   });
 }
 
@@ -524,6 +583,7 @@ async function regenerateLayout() {
       try { renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
     }
     wirePreviewDrag();
+    applyImageScales();
     setStatus(`총 ${pages.length}쪽으로 배치되었습니다.`);
   } catch (e) {
     setStatus('배치 실패: ' + e.message, true);
