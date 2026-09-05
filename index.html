@@ -96,6 +96,11 @@ input{font-family:inherit}
 .sum-card .v small{font-size:.5em;font-weight:600}
 .sum-card .n{font-size:9px;letter-spacing:.08em;margin-top:2px;color:var(--gold)}
 .sum-card.active .n{color:var(--mint)}
+.sum-card.summer-card{border-color:var(--mint-deep)}
+.sum-card.summer-card .k,.sum-card.summer-card .n{color:var(--mint-deep)}
+.sum-card.summer-card:hover{background:var(--mint-soft)}
+.sum-card.summer-card.active{background:var(--mint-deep);border-color:var(--mint-deep);color:#fff}
+.sum-card.summer-card.active .k,.sum-card.summer-card.active .n{color:#fff}
 
 /* ===== 섹션 / 테이블 ===== */
 .section-pad{padding:12px 3vw 50px}
@@ -431,7 +436,6 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   <div class="tabbar-row">
     <div class="tabbar" id="pub-tabs"></div>
     <button class="summer-toggle-btn hidden" id="summer-toggle-btn" onclick="toggleSummerView()"></button>
-    <button class="summer-toggle-btn hidden" id="kichul-summer-toggle-btn" onclick="toggleKichulSummerView()"></button>
   </div>
   <div class="chips" id="pub-chips"></div>
 
@@ -1305,15 +1309,6 @@ function renderPublic(scrollTop){
   renderCohortBar();
   renderChips();
   renderCards();
-  // 기출 탭에서만 보이는 독립 SUMMER 토글 — 다른 탭으로 옮기면 숨긴다.
-  const kichulBtn=document.getElementById('kichul-summer-toggle-btn');
-  if(pubCohort==='2'&&pubTab==='기출'){
-    kichulBtn.classList.remove('hidden');
-    kichulBtn.classList.toggle('on',kichulShowSummer);
-    kichulBtn.textContent=kichulShowSummer?'← 9월 기출로':'☀️ SUMMER 기출 보기 (8월까지)';
-  }else{
-    kichulBtn.classList.add('hidden');
-  }
   const cumView=document.getElementById('pub-cum');
   const misView=document.getElementById('pub-mission');
   const spView=document.getElementById('pub-spblack');
@@ -1375,6 +1370,14 @@ function renderCards(){
     html+='<button class="sum-card'+(pubMission===m?' active':'')+'" onclick="selectMission(\''+m.replace(/'/g,"\\'")+'\')">'
       +'<div class="k">'+esc(m)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">'+(isAlgebra?'회차 순위':'정오표')+'</div></button>';
   });
+  // 기출 누적 현황과 같은 결의 카드로 — 예전엔 탭 줄 오른쪽에 따로 떨어진
+  // 버튼이었는데, "기출 누적 현황" 카드들과 같은 줄에 나란히 두는 게
+  // 더 자연스럽다는 요청으로 마지막 카드(지금 보이는 시험지들 바로 뒤)
+  // 자리로 옮김.
+  if(pubTab==='기출'&&pubCohort==='2'){
+    html+='<button class="sum-card summer-card'+(kichulShowSummer?' active':'')+'" onclick="toggleKichulSummerView()">'
+      +'<div class="k">'+(kichulShowSummer?'← 9월 기출로':'☀️ SUMMER 기출')+'</div><div class="v">8월</div><div class="n">'+(kichulShowSummer?'보는 중':'보기')+'</div></button>';
+  }
   box.innerHTML=html;
 }
 function jumpTab(name){
