@@ -788,7 +788,23 @@ function convertHwpEquationToLatex(script) {
   // the LEFT/RIGHT and applyUnary fixes above. [A-Za-z]+ already delimits
   // on its own (digits/symbols simply aren't in the class), so dropping
   // \b only lets through matches it was wrongly blocking, not new ones.
-  s = s.replace(/(?<!\\)([A-Za-z]+)/g, (m, w) => substituteSymbolsInRun(w));
+  //
+  // A plain (?<!\\)([A-Za-z]+) only blocks a match from STARTING right after
+  // a backslash — it does nothing for the rest of that same command word.
+  // applyUnary() above already turned "bar" into "\overline{...}" earlier in
+  // this pipeline, and "overline" itself contains "in" (…overl-IN-e…) — once
+  // the "in" keyword was added (∈), the scan's first attempt at "overline"
+  // (starting right after "\\") got blocked by the lookbehind as intended,
+  // but the engine then just retried one character later ("verline"), where
+  // the lookbehind no longer sees a backslash immediately before — nothing
+  // stopped IT from matching, so "in" got carved out of the middle and
+  // "\overline{AB}" broke into "\overl\in e{AB}" (confirmed against a real
+  // file: 원장님 리포트, 선분/합 표기가 있는 여러 문제). Matching a whole
+  // "\word" as one atomic alternative first makes the scanner jump straight
+  // past it, so no later position inside that word is ever tried at all —
+  // not just a defense for "overline", but for every backslash command this
+  // file inserts earlier (\sqrt, \hat, \vec, \tilde, \ddot, \dot, \boxed, …).
+  s = s.replace(/\\[A-Za-z]+|([A-Za-z]+)/g, (m, w) => w ? substituteSymbolsInRun(w) : m);
   // Safety net: a coordinate/pair like "A(1,5), B(3,a)" can be split by HWP
   // across separate <hp:equation> objects (e.g. the trailing "a" written as
   // its own equation for italic styling), so a single equation's script can
