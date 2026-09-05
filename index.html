@@ -596,8 +596,16 @@ function catRowsFor(cohort,cat,mode){
   // 요청) 전체 SUMMER 보기로 빼지 않고, 기출 탭 안에서만 따로 예전(8월)
   // 학교 시험지/새(9월) 시험지를 가르는 독립적인 토글(kichulShowSummer)을
   // 둔다 — 전역 SUMMER 보기(mode)와는 무관하게 항상 이 상태를 따른다.
+  // 미션 "이름"으로 구분하면 원장님이 기출 이름을 바꿀 때마다(실제로
+  // 이미 한 번 겪음 — "H여고 중간 기출"→"1-2M HS여고"처럼) 매칭이 깨져서
+  // 전부 "새" 쪽으로 떨어져버렸다 — 그래서 이름이 아니라 이 시트에 기출
+  // 미션이 등장한 "순서"(몇 번째 미션인지)로 구분한다. 시트에 새로 채점된
+  // 순서대로 쌓이므로 이름을 나중에 고쳐도 순서 자체는 안 바뀐다.
   if(cohort==='2'&&cat==='기출'){
-    rows=rows.filter(r=>(KICHUL_OLD_MISSIONS.indexOf(String(r.mission||'').trim())!==-1)===kichulShowSummer);
+    const seen={},order=[];
+    rows.forEach(r=>{const m=String(r.mission||'').trim();if(m&&!seen[m]){seen[m]=1;order.push(m);}});
+    const oldSet=new Set(order.slice(0,KICHUL_OLD_MISSION_COUNT));
+    rows=rows.filter(r=>oldSet.has(String(r.mission||'').trim())===kichulShowSummer);
   }
   // 9월부터 등록을 그만두는 학생(SUMMER_ONLY_STUDENTS)은 중간고사 대비
   // (main) 화면에서는 빼고, SUMMER 화면에서는 그대로 남긴다.
@@ -625,11 +633,12 @@ const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미�
 // 대비(9월부터, 기본 화면)에는 안 보이게 catRowsFor에서 걸러진다. 나중에
 // 비슷한 학생이 더 생기면 그냥 이 배열에 이름을 추가하면 됨.
 const SUMMER_ONLY_STUDENTS = ['천범준'];
-// 기출 탭 전용 — 예전(8월) 학교 시험지 이름 목록. 여기 없는 기출 미션은
-// 전부 "새(9월부터)"로 취급되므로, 나중에 새 시험지가 추가되면 따로
-// 손댈 필요 없이 자동으로 새 쪽에 들어간다. 목록 자체는 원장님이 "DS고
-// 까지는 8월, SD여고부터는 9월"이라고 알려주신 기준 그대로.
-const KICHUL_OLD_MISSIONS = ['2025 보라고 중간 기출','2025 신천고 중간 기출','2025 T여고 중간 기출','2025 H여고 중간 기출','2025 C예고 중간 기출','2025 MK고','2025 SK고','2025 WS고','2025 DS고'];
+// 기출 탭 전용 — 예전(8월) 학교 시험지가 몇 개인지(순서 기준). 이름으로
+// 목록을 관리하면 원장님이 기출 이름을 고칠 때마다(실제로 겪음) 매칭이
+// 깨지므로, "시트에 등장한 순서로 처음 N개까지가 8월"이라는 기준으로
+// 바꿈 — 이름을 아무리 바꿔도 등장 순서 자체는 안 바뀐다. 지금은 "DS고
+// 까지 9개가 8월, SD여고(10번째)부터 9월"이라고 알려주신 기준.
+const KICHUL_OLD_MISSION_COUNT = 9;
 let kichulShowSummer = false; // 기출 탭 안에서만 쓰는 독립 토글 — 전역 SUMMER 보기(pubShowSummer)와 무관
 const ALG_TAB = '대수연마 1000제';
 const ALG_THRESHOLDS = [10000,20000,30000];
