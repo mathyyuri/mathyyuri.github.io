@@ -271,6 +271,15 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 <div id="validateArea"></div>
 
 <div class="box">
+  <p><b>PDF에서 문제 추출 (실험적)</b></p>
+  <p class="hint">한글(hwpx) 파일이 아니라 PDF로 갖고 있는 시험지·문제집을 올리면, AI가 번호 매겨진 문제를 찾아 뽑아드립니다. AI가 완벽하지 않으니 저장 전에 꼭 내용을 확인·수정해주세요. 문제 수가 많은 파일은 시간이 좀 걸릴 수 있습니다.</p>
+  <input type="file" id="pdfExtractFile" accept=".pdf">
+  <span id="pdfExtractStatus" class="hint"></span>
+</div>
+
+<div id="pdfExtractArea"></div>
+
+<div class="box">
   <p><b>업로드된 파일 목록</b></p>
   <p class="hint">카테고리 제목을 클릭하면 접고 펼칠 수 있고, 각 종류(개념/진도미션/과제미션) 안에서는 파일을 드래그해서 순서를 바꿀 수 있습니다. 파일을 다른 카테고리 칸으로 드래그하면 그 카테고리로 옮겨집니다(파일명 앞 [대괄호]가 자동으로 바뀝니다). 각 파일의 "태그 편집" 버튼으로 문제마다 단원·유형을 입력하고, ✏️ 버튼으로 파일명을 고칠 수 있습니다.</p>
   <div class="catAddRow">
@@ -1861,6 +1870,113 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
   categoryList = r.categories || categoryList;
   input.value = '';
   renderGroups(latestFiles);
+});
+
+// ---------- PDF에서 문제 추출 (실험적) ----------
+// 문항DB(saveQuestionRows, 백엔드)는 "fileId + questionData 배열"만 있으면
+// 채워지는 구조라, PDF도 hwpx와 완전히 같은 파이프라인(upload → updatetags)
+// 을 그대로 태울 수 있다 — 새로 필요한 건 PDF를 Claude에 보내 문항을
+// 뽑아오는 액션 하나와, 그 결과를 검수하는 화면뿐. 기존 hwpx 업로드 흐름
+// (validatedFiles 등)과는 완전히 분리된 별도 상태로 둬서, 이미 검증된
+// hwpx 업로드 경로를 이 기능 때문에 건드리지 않는다.
+const pdfExtractArea = document.getElementById('pdfExtractArea');
+const pdfExtractStatus = document.getElementById('pdfExtractStatus');
+
+function renderPdfExtractReview(fileId, filename, questions) {
+  pdfExtractArea.innerHTML = '';
+  if (!questions.length) {
+    pdfExtractArea.innerHTML = '<p class="hint err">AI가 번호 매겨진 문제를 하나도 찾지 못했습니다 — 다른 PDF로 시도해보시거나, 기존 "태그 편집"에서 직접 입력해주세요.</p>';
+    return;
+  }
+  const box = document.createElement('div');
+  box.className = 'validateFile tagEditBox';
+  const nums = questions.map(q => q.num);
+  // renderTagList가 기대하는 모양 그대로 맞춘다 — openTagEditor/validateOneFile이
+  // 만드는 questionData와 같은 필드 구성(하위 호환을 위해 unit/type도
+  // 비워서 같이 넣어둠).
+  const questionData = questions.map(q => ({
+    num: q.num, choiceCount: q.choices.length, hasBogi: null, hasCondition: null, warnings: [],
+    unit: '', type: '', answer: q.answer || '',
+    subject: '', unitMajor: '', unitMid: '', unitMinor: '',
+    difficulty: '', format: q.format || '', points: '', source: '',
+    choices: q.choices && q.choices.length ? q.choices : ['', '', '', '', ''],
+    editedRaw: q.rawText || '', rawText: q.rawText || '',
+  }));
+  const rawTextByNum = {}, previewHtmlByNum = {};
+  questions.forEach(q => {
+    rawTextByNum[q.num] = q.rawText || '';
+    // AI가 뽑은 rawText는 "문제 본문 수정" 칸과 같은 형식($...$ 수식,
+    // 빈 줄로 문단 구분)으로 요청했으므로 renderEditedText(hwpx-lib.js,
+    // 기존 "문제 수정" 미리보기가 쓰는 바로 그 함수)를 그대로 재사용해서
+    // 미리보기 HTML을 만든다 — 새 렌더링 로직이 필요 없다.
+    previewHtmlByNum[q.num] = renderEditedText(q.rawText || '');
+  });
+
+  box.innerHTML = `<h3>${escapeHtml(filename)} — PDF 추출 결과 검수</h3><p class="hint">AI가 ${questions.length}개 문제를 찾았습니다. 내용을 확인하고, 필요하면 단원·유형·정답을 채운 뒤 저장하세요(저장하면 문제은행 목록과 문항DB에 반영됩니다).</p>`;
+  pdfExtractArea.appendChild(box);
+  const knownUnits = new Set([...loadUnitTabs(), ...collectTagSuggestions(latestFiles).units]);
+  const guessedUnit = guessUnitFromText(filename, knownUnits);
+  // 원본 hwpx XML이 없어서 "원본으로 되돌리기"용 원본이 따로 없다 —
+  // validateOneFile도 같은 이유로 previewHtmlByNum을 두 번째 자리에도
+  // 그대로 넘긴다(problembank.html:1624 부근과 같은 패턴).
+  renderTagList(box, nums, questionData, rawTextByNum, guessedUnit, true, previewHtmlByNum, previewHtmlByNum);
+
+  const footer = document.createElement('div');
+  footer.className = 'tagEditFooter';
+  footer.innerHTML = `<button type="button" class="saveTagBtn">저장</button><button type="button" class="delBtn cancelTagBtn">닫기</button><span class="tagSaveMsg hint"></span>`;
+  box.appendChild(footer);
+  footer.querySelector('.cancelTagBtn').addEventListener('click', () => { pdfExtractArea.innerHTML = ''; });
+  footer.querySelector('.saveTagBtn').addEventListener('click', async (ev) => {
+    ev.target.disabled = true;
+    const msgEl = footer.querySelector('.tagSaveMsg');
+    msgEl.textContent = '저장 중...';
+    msgEl.className = 'tagSaveMsg hint';
+    try {
+      // openTagEditor의 저장 로직과 완전히 동일 — 정답은 questionData와
+      // 분리해서 강사 전용 액션으로 따로 보낸다.
+      const publicTags = questionData.map(({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, subject, unitMajor, unitMid, unitMinor, difficulty, format, points, source, choices, editedRaw, rawText }) =>
+        ({ num, choiceCount, hasBogi, hasCondition, warnings, unit, type, subject, unitMajor, unitMid, unitMinor, difficulty, format, points, source, choices, editedRaw: editedRaw || undefined, rawText }));
+      const answers = {};
+      questionData.forEach(qd => { if (qd.answer) answers[qd.num] = qd.answer; });
+      await callPost({ action: 'updatetags', id: fileId, questionData: JSON.stringify(publicTags) });
+      await callPost({ action: 'updateanswers', key: TEACHER_KEY, id: fileId, answers: JSON.stringify(answers) });
+      msgEl.textContent = '저장되었습니다 — 문제은행 목록과 문항DB에 반영됐습니다.';
+      msgEl.className = 'tagSaveMsg ok';
+      pdfExtractArea.innerHTML = '';
+      await refreshList();
+    } catch (e) {
+      msgEl.textContent = '저장 실패: ' + e.message;
+      msgEl.className = 'tagSaveMsg err';
+    } finally {
+      ev.target.disabled = false;
+    }
+  });
+}
+
+document.getElementById('pdfExtractFile').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  ev.target.value = ''; // 같은 파일을 다시 고를 수 있게(선택 상태 초기화)
+  pdfExtractArea.innerHTML = '';
+  pdfExtractStatus.textContent = 'PDF 업로드 중...';
+  pdfExtractStatus.className = 'hint';
+  try {
+    const base64 = await fileToBase64(file);
+    // 업로드 자체는 기존 action=upload 그대로(questionData는 아직 비워둠) —
+    // upload POST는 no-cors라 응답에서 새 id를 못 읽으므로, 다른 곳에서도
+    // 쓰는 방식대로 목록을 다시 불러와 파일명으로 찾는다.
+    await callPost({ action: 'upload', filename: file.name, data: base64, memo: '', questionData: '[]' });
+    const { files: freshFiles } = await callGet({ action: 'list' });
+    const match = (freshFiles || []).filter(f => f.filename === file.name).pop();
+    if (!match) throw new Error('방금 올린 PDF를 다시 찾지 못했습니다.');
+    pdfExtractStatus.textContent = 'AI가 문제를 찾는 중입니다... (문제 수가 많으면 1분 이상 걸릴 수 있어요)';
+    const result = await callGet({ action: 'extractpdfquestions', id: match.id, key: TEACHER_KEY });
+    pdfExtractStatus.textContent = '';
+    renderPdfExtractReview(match.id, file.name, result.questions || []);
+  } catch (e) {
+    pdfExtractStatus.textContent = '추출 실패: ' + e.message;
+    pdfExtractStatus.className = 'hint err';
+  }
 });
 
 refreshList();
