@@ -62,7 +62,11 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #stage { position:relative; box-shadow:0 2px 14px rgba(0,0,0,.12); background:#fff; }
 #stage canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
 #docCanvas { pointer-events:none; }
-#inkCanvas { touch-action:none; cursor:crosshair; }
+/* 손가락(touch)은 이제 그림판이 아예 안 건드리고 브라우저 기본 동작
+   (두 손가락 확대·축소, 스크롤)에 그대로 맡긴다 — 펜만 필기로 인식하고
+   싶다는 요청. touch-action:none이었을 땐 손가락 제스처 자체를 브라우저가
+   못 가로채서 확대가 안 됐었음(펜/마우스는 이 속성 영향을 안 받음). */
+#inkCanvas { touch-action:manipulation; cursor:crosshair; }
 #docHtmlLayer { position:absolute; top:0; left:0; pointer-events:none; display:none; background:#fff; box-sizing:border-box; padding:20px 24px; font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--ink); overflow:visible; }
 #docHtmlLayer .hwpxQ { margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--gold-line); }
 #docHtmlLayer .hwpxQ:last-child { border-bottom:none; }
@@ -456,38 +460,16 @@ function eraseAt(pt){
   });
 }
 
-// 손가락 1개=필기, 2개 이상=화면 이동 — inkCanvas는 touch-action:none이라
-// 브라우저가 손가락 개수와 상관없이 스크롤을 전혀 안 해줘서, 2개 이상
-// 닿으면 직접 scrollBy로 화면을 움직여준다. activePointers로 지금 몇 개가
-// 닿아있는지 추적하다가, 2개째가 닿는 순간 이미 그리고 있던 1번째 손가락의
-// 선(대부분 의도치 않은 낙서)은 지우고 팬 모드로 전환 — 손가락이 전부
-// 떨어질 때까지(0개) 팬 모드를 유지해서, 두 손가락 중 하나만 먼저 떼도
-// 다시 그리기로 안 돌아간다.
-const activePointers = new Map();
-let panMode = false, panLastY = null;
-function avgActiveY(){
-  if (!activePointers.size) return null;
-  let sum = 0;
-  activePointers.forEach(p => { sum += p.y; });
-  return sum / activePointers.size;
-}
-function cancelCurrentStroke(){
-  if (drawing === true && curStrokeId) {
-    delete strokesCache[curStrokeId];
-    if (strokesRef) strokesRef.child(curStrokeId).remove();
-    scheduleRedraw();
-  }
-  drawing = false; curStrokeId = null; curPoints = [];
-}
+// 손가락(touch)은 필기 대상에서 아예 빼고 브라우저 기본 제스처(두 손가락
+// 확대·축소, 스크롤)에 그대로 맡긴다 — 손가락으로 살짝만 스쳐도 자꾸
+// 필기가 돼서 불편하다는 요청(태블릿에서 확대가 안 되던 것도 같은
+// 원인 — touch-action:none이 손가락 제스처 자체를 브라우저가 못
+// 가로채게 막고 있었음). 펜(pointerType==='pen')과 마우스만 필기로
+// 인식한다 — 예전에 있던 "손가락 2개=화면 이동" 대체 기능은 이제
+// 브라우저가 직접 확대·스크롤 다 해주므로 필요 없어져서 뺐다.
 inkCanvas.addEventListener('pointerdown', e => {
-  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType === 'touch') return;
   try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 일부 브라우저/입력장치에서 캡처가 안 될 수 있음 — 캔버스 안에서 그리는 데는 지장 없음 */ }
-  if (activePointers.size >= 2 || panMode) {
-    cancelCurrentStroke();
-    panMode = true;
-    panLastY = avgActiveY();
-    return;
-  }
   const pt = getNormPoint(e);
   if (currentTool === 'eraser') { drawing = 'erasing'; eraseAt(pt); return; }
   drawing = true;
@@ -497,13 +479,7 @@ inkCanvas.addEventListener('pointerdown', e => {
   scheduleRedraw();
 });
 inkCanvas.addEventListener('pointermove', e => {
-  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (panMode) {
-    const y = avgActiveY();
-    if (panLastY != null && y != null) window.scrollBy(0, panLastY - y);
-    panLastY = y;
-    return;
-  }
+  if (e.pointerType === 'touch') return;
   if (!drawing) return;
   const pt = getNormPoint(e);
   if (drawing === 'erasing') { eraseAt(pt); return; }
@@ -517,9 +493,6 @@ inkCanvas.addEventListener('pointermove', e => {
   }
 });
 function endStroke(e){
-  if (e && activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
-  if (activePointers.size === 0) { panMode = false; panLastY = null; }
-  if (panMode) return;
   if (drawing === true && curStrokeId) {
     if (strokesRef) {
       strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
