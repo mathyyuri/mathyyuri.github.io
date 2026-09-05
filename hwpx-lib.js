@@ -475,6 +475,14 @@ const HWP_EQ_SYMBOLS = {
   // "SMALL∫ER"(적분 기호가 중간에 끼어드는)처럼 깨지던 것도 같이 해결됨.
   cup: '\\cup', cap: '\\cap', smallinter: '\\cap', subset: '\\subset',
   emptyset: '\\emptyset',
+  // 원소 기호(∈/∉) — 이 표에 없어서 "1 IN A"/"5 NOTIN A" 같은 식이
+  // "1INA"/"5NOTINA"처럼 글자 그대로 깨져 나오던 문제(실제 확인됨: 집합
+  // 단원 문제 "1∈A, 3⊂A, n(A)=4, 5∉A, {1,9}⊂A" 중 ①④번 보기). "notin"(5글자)
+  // 이 "in"(2글자)보다 길어서 먼저 매칭되므로 순서는 안전하지만, "in" 자체는
+  // sin/min처럼 "in"으로 끝나는 다른 키워드 안에서도 부분적으로 걸릴 수
+  // 있어서(예: "sin"이 등록 안 돼 있으면 "s"+"\in"으로 깨짐) 바로 아래에
+  // sin/cos/tan/min/max도 같이 등록해 그 충돌을 막는다.
+  in: '\\in', notin: '\\notin',
   // 조건제시법 안의 "such that" 세로선("{x vert x<7}" = {x | x<7}) — HWP가
   // 이 자리에서 LEFT|/RIGHT| 대신 그냥 "vert"라는 글자 키워드를 쓰는 경우가
   // 있음 (실제 파일에서 확인됨: [대수연마1000제] 04. 로그함수 11~13번,
@@ -496,6 +504,14 @@ const HWP_EQ_SYMBOLS = {
   upsilon: '\\upsilon', phi: '\\phi', chi: '\\chi', psi: '\\psi', omega: '\\omega',
   SUM: '\\sum', sum: '\\sum', PROD: '\\prod', prod: '\\prod', INT: '\\int', int: '\\int',
   LIM: '\\lim', lim: '\\lim', LDOTS: '\\ldots', ldots: '\\ldots',
+  // sin/cos/tan/min/max — 지금까지 표에 없어서 이탤릭 글자 그대로("sin θ"가
+  // 곱셈처럼 s·i·n·θ로) 나오던 것도 고치지만, 그보다 더 중요한 이유는 위에
+  // 새로 추가한 "in" 키워드와의 충돌 방지다 — "sin"/"min"이 따로 등록 안
+  // 되어 있으면, 이 표는 "가장 긴 키워드부터" 매칭하는 방식이라 "sin"을
+  // 훑다가 "in"(2글자)이 "s" 다음부터 걸려서 "s\in"으로 깨진다. sin/min을
+  // 3글자 키워드로 먼저 등록해두면 "in"이 그 부분을 가로챌 기회 자체가
+  // 없어진다(cos/tan은 "in"을 포함하지 않아 원래 안전하지만 짝 맞춰 같이 등록).
+  sin: '\\sin', cos: '\\cos', tan: '\\tan', min: '\\min', max: '\\max',
   // 세로 줄임표(⋮) — 수열/수 나열을 아래로 죽 이어갈 때 씀(예: "3^3번째
   // 수를 a1, ... , VDOTS, 9×3^3번째 수를 a9"). CDOTS/LDOTS(가로 줄임표)만
   // 있고 이건 표에 없어서 "VDOTS" 글자 그대로 남던 문제(실제 파일: 2006년
