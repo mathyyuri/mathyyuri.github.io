@@ -37,7 +37,14 @@
    통째로 막는다(iOS의 길게 눌러 뜨는 메뉴도 같이 막아줌). */
 * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 body { margin:0; font-family:var(--sans); background:var(--cream); color:var(--ink); -webkit-font-smoothing:antialiased; }
-#topBar { position:sticky; top:0; z-index:20; }
+/* position:fixed로 둬야(sticky가 아니라) iOS 사파리 등에서 두 손가락으로
+   확대해도 이 바가 화면 크기·위치 그대로 붙박이로 남는다 — sticky는
+   스크롤 위치만 따라다닐 뿐 확대·축소 때는 나머지 페이지와 똑같이
+   같이 커져버려서, "문제 화면만 확대되고 위 필기 도구바는 그대로였으면
+   좋겠다"는 요청과 안 맞았음(아래 #submitBar는 원래도 fixed라 이미
+   붙박이로 잘 있었음). fixed는 문서 흐름에서 빠지므로, 그 자리만큼
+   #stageWrap 위쪽에 빈 공간을 JS로 채워준다(아래 topBarSpacer 참고). */
+#topBar { position:fixed; top:0; left:0; right:0; z-index:20; background:var(--cream); }
 header { padding:10px 16px; border-bottom:1px solid var(--gold-line); background:#fff; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0; }
 .roleBadge { font-family:var(--kserif); font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; }
@@ -183,6 +190,17 @@ const docCanvas = document.getElementById('docCanvas');
 const inkCanvas = document.getElementById('inkCanvas');
 const docHtmlLayer = document.getElementById('docHtmlLayer');
 const stageWrap = document.getElementById('stageWrap');
+// #topBar를 position:fixed로 바꾸면서 문서 흐름에서 빠졌으므로, 그만큼
+// #stageWrap 위쪽에 빈 공간을 만들어줘야 문제 화면이 도구바에 안 가려짐.
+// 도구바 높이는 화면 너비에 따라 버튼 줄바꿈 등으로 달라질 수 있어서
+// 고정값 대신 ResizeObserver로 실제 높이를 계속 재서 맞춘다.
+const topBarEl = document.getElementById('topBar');
+if (window.ResizeObserver) {
+  new ResizeObserver(() => { stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px'; }).observe(topBarEl);
+} else {
+  stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px';
+  window.addEventListener('resize', () => { stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px'; });
+}
 let docCtx, inkCtx;
 let stageCssW = 0, stageCssH = 0;
 let naturalW = 850, naturalH = 1202;
