@@ -255,6 +255,52 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .res-note{padding:10px 14px;font-family:var(--kserif);font-size:12.5px;line-height:1.6;color:rgba(26,26,26,.8)}
 .res-note b{font-family:var(--serif);font-size:9px;letter-spacing:.24em;color:var(--gold);margin-right:8px}
 
+/* ===== 미션 분석 (문항DB에 태그된 hwpx 미션에서만 나타남) ===== */
+.mission-analysis{margin-top:16px}
+.ma-title{font-family:var(--serif);font-weight:900;font-size:clamp(16px,3vw,22px);border-top:1.5px solid var(--gold);padding-top:14px;margin-bottom:2px}
+.ma-sub{font-size:10px;letter-spacing:.14em;color:var(--gold);margin-bottom:14px}
+.ma-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:700px){.ma-grid{grid-template-columns:1fr}}
+.ma-card{border:1px solid var(--gold-line);border-radius:4px;background:#fff;padding:14px 16px}
+.ma-card h4{font-family:var(--kserif);font-weight:700;font-size:13px;margin-bottom:10px}
+.ma-bar-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:7px}
+.ma-bar-row .lbl{flex:0 0 auto;min-width:64px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ma-bar-row .track{flex:1;height:8px;background:var(--gold-soft);border-radius:4px;overflow:hidden}
+.ma-bar-row .fill{display:block;height:100%;border-radius:4px;background:var(--mint-deep)}
+.ma-bar-row .fill.weak{background:var(--pink-deep)}
+.ma-bar-row .pct{flex:0 0 auto;width:38px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.ma-bar-row .n{flex:0 0 auto;font-size:10px;color:rgba(26,26,26,.45)}
+.ma-empty{font-size:12px;color:rgba(26,26,26,.5)}
+.ma-gap-row{display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:7px;padding:4px 0;border-bottom:1px dashed var(--gold-line)}
+.ma-gap-row:last-child{border-bottom:none}
+.ma-gap-row .qn{flex:0 0 auto;font-family:var(--serif);font-weight:900;color:var(--gold);width:26px}
+.ma-gap-row .cls{flex:0 0 auto;font-weight:700}
+.ma-gap-row .cls.csp{color:var(--mint-deep)}
+.ma-gap-row .cls.cs{color:var(--pink-deep)}
+.ma-hard-list{display:flex;flex-direction:column;gap:10px}
+.ma-hard-item{border:1px solid var(--gold-line);border-radius:4px;background:#fff}
+.ma-hard-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer}
+.ma-hard-head .qn{font-family:var(--serif);font-weight:900;font-size:16px;color:var(--gold)}
+.ma-hard-head .rate{font-weight:700;color:var(--pink-deep)}
+.ma-hard-head .tag{font-size:10px;color:rgba(26,26,26,.5)}
+.ma-hard-head .toggle{margin-left:auto;font-size:11px;color:var(--gold);white-space:nowrap}
+.ma-hard-body{display:none;padding:4px 16px 16px;font-size:12.5px;line-height:1.65;border-top:1px solid var(--gold-line)}
+.ma-hard-body.open{display:block}
+.ma-hard-body p{margin:0 0 2mm}
+.ma-hard-body img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid var(--gold-line);border-radius:4px}
+.ma-hard-body table{border-collapse:collapse;margin:2mm 0}
+.ma-hard-body td{border:1px solid var(--gold-line);padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap;text-align:center;vertical-align:middle}
+.ma-hard-body .eqFallback{font-family:monospace;font-size:11px;color:var(--pink-deep);background:rgba(198,78,113,.08);padding:1px 4px;border-radius:2px}
+.ma-hard-body .choiceRow{display:flex;flex-wrap:wrap;row-gap:2mm;column-gap:6mm;margin:2mm 0}
+.ma-hard-body .choiceItem{font-size:12.5px;min-width:0;overflow-wrap:break-word}
+.ma-hard-body .hwpBogi,.ma-hard-body .hwpCondBox{border:1.3px solid var(--ink);border-radius:2px;padding:4mm 5mm;margin:3mm 0}
+.ma-hard-body .hwpBogi p,.ma-hard-body .hwpCondBox p{margin:0 0 1.5mm}
+.ma-hard-body .hwpCondBox td{text-align:left}
+.ma-hard-body .hwpBlankBox{display:inline-block;border:1.3px solid var(--ink);vertical-align:middle;margin:0 1mm}
+.ma-hard-body .hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--gold-line);padding:2mm 3mm;margin:2mm 0;text-align:left}
+.ma-hard-body p.eqLine{text-align:center}
+.ma-loading{font-size:12px;color:rgba(26,26,26,.5);padding:8px 0}
+
 /* ===== 개인 대시보드 ===== */
 .me-hero{padding:34px 4vw 22px;border-bottom:1px solid var(--gold-line);background:#fff}
 .me-nick{font-family:var(--serif);font-weight:900;font-size:clamp(38px,8vw,74px);line-height:.95}
@@ -460,6 +506,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       <div class="grid-scroll" id="detail-table"></div>
       <div class="legend-row" id="detail-legend"><span class="ok"><i></i>정답</span><span class="no"><i></i>오답</span><span class="tri"><i></i>오답완료 △</span></div>
       <div class="res-wrap" id="detail-resources"></div>
+      <div class="mission-analysis hidden" id="detail-analysis"></div>
     </div>
   </div>
 
@@ -1842,7 +1889,7 @@ function renderMissionDetail(){
   document.getElementById('detail-sub').textContent='ITEM ANALYSIS · '+rows.length+'명 · 점수 높은 순';
 
   const box=document.getElementById('detail-table');
-  if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
+  if(!rows.length){box.innerHTML='<div class="empty">기록이 없습니다.</div>';document.getElementById('detail-analysis').classList.add('hidden');return;}
   const nQ=Math.max(...rows.map(r=>r.items.length),0);
   const numStart=rows[0]?.numStart||1;
   // 이 표의 "완성도" 칸은 항상 이 미션의 전체 문항수(nQ, 예: 변형:평면좌표
@@ -1888,6 +1935,261 @@ function renderMissionDetail(){
     html+='</tr>';
   });
   box.innerHTML=html+'</table>';
+  renderMissionAnalysis(nQ);
+}
+
+/* ---- 미션 분석: 이 미션의 원본 파일이 hwpx로 문제은행에 올라가서
+   문항DB에 단원/난이도 태그가 붙어 있으면(오답노트 만들 때 어차피 다
+   hwpx로 올리기로 함), 정오표 아래에 난이도/단원별 강약점/반별 격차/
+   오답률 TOP5(문제 미리보기 포함)를 보여준다. 태그가 없는 파일(PDF만
+   올렸거나 아직 태깅 전)은 조용히 섹션을 숨긴다 — 어차피 문항DB에
+   아무것도 안 걸려 있으면 분석할 재료가 없다. ---- */
+let missionAnalysisReqId=0;
+const hwpxFileBytesCache={}; // fileId → JSZip 인스턴스(Promise) — 같은 파일 문제를 여러 번 열어봐도 한 번만 내려받음
+async function renderMissionAnalysis(nQ){
+  const box=document.getElementById('detail-analysis');
+  const myReq=++missionAnalysisReqId;
+  box.classList.add('hidden');
+  box.innerHTML='';
+  if(!nQ) return;
+  try{
+    const cls=(typeof pubClass!=='undefined'&&pubClass!=='전체')?pubClass:'';
+    const ap=new URLSearchParams({action:'assigneddoc',cohort:pubCohort,category:pubTab,mission:pubMission,class:cls});
+    const ares=await fetch(GAS_URL+'?'+ap.toString());
+    const ajson=await ares.json();
+    if(myReq!==missionAnalysisReqId) return;
+    // hwpx로 연결된 미션만 분석 가능 — PDF/이미지는 문항DB에 태그가 없다.
+    if(!ajson.ok||!ajson.docId||ajson.docType!=='hwpx') return;
+    const fileId=ajson.docId;
+
+    const qp=new URLSearchParams({action:'filequestions',fileId});
+    const qres=await fetch(GAS_URL+'?'+qp.toString());
+    const qjson=await qres.json();
+    if(myReq!==missionAnalysisReqId) return;
+    const questions=qjson.questions||[];
+    if(!questions.length) return; // 이 파일에 아직 태그가 하나도 없으면 분석 재료가 없음
+    const tagsByNum={};
+    questions.forEach(q=>{ tagsByNum[Number(q.num)]=q; });
+
+    // 정오표는 현재 선택된 반(pubClass)만 보고 있을 수 있지만, 분석은 항상
+    // 전체 반 + 반별(S+/S) 데이터가 같이 필요하므로 tabRows()(반 필터 전)로
+    // 다시 모은다.
+    const allRaw=tabRows().filter(r=>missionGroupKey(r.mission)===pubMission);
+    const allRows=mergeMissionRows(allRaw);
+    function ratesFor(classFilter){
+      const rows=classFilter?allRows.filter(r=>r.class===classFilter):allRows;
+      const out=[];
+      for(let q=0;q<nQ;q++){
+        let ok=0,tot=0;
+        rows.forEach(r=>{const v=r.items[q];if(v===1){ok++;tot++;}else if(v===2||v===3){tot++;}});
+        out.push(tot?Math.round(ok/tot*100):null);
+      }
+      return out;
+    }
+    const overallRates=ratesFor(null);
+    const classNames=COHORT_CLASSES[pubCohort]||[];
+    const byClassRates={};
+    classNames.forEach(c=>{byClassRates[c]=ratesFor(c);});
+
+    box.innerHTML=buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId);
+    box.classList.remove('hidden');
+    wireMissionAnalysisToggles(box,fileId,tagsByNum);
+  }catch(e){ /* 조회 실패 시 조용히 섹션을 숨긴 채로 둠 */ }
+}
+
+function maBar(label,pct,n,weak){
+  const p=pct==null?0:pct;
+  return '<div class="ma-bar-row"><span class="lbl" title="'+esc(label)+'">'+esc(label)+'</span>'
+    +'<span class="track"><span class="fill'+(weak?' weak':'')+'" style="width:'+p+'%"></span></span>'
+    +'<span class="pct">'+(pct==null?'—':pct+'%')+'</span><span class="n">('+n+'문항)</span></div>';
+}
+
+function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId){
+  const numStartLocal=1;
+  // ---- 난이도 분석: 태그된 난이도(숫자, 1~7 자유입력)를 하/중/상 3구간으로 묶어
+  // 그 구간 문항들의 실제 정답률 평균을 낸다 — 태그 난이도가 실제 체감(정답률)과
+  // 맞는지 한눈에 보여준다.
+  const diffBuckets={'하(1~2)':[],'중(3)':[],'상(4 이상)':[]};
+  let taggedDiffCount=0;
+  for(let q=0;q<nQ;q++){
+    const t=tagsByNum[q+numStartLocal];
+    const d=t&&t.difficulty!==''&&t.difficulty!=null?Number(t.difficulty):null;
+    if(d==null||isNaN(d)) continue;
+    taggedDiffCount++;
+    const bucket=d<=2?'하(1~2)':d===3?'중(3)':'상(4 이상)';
+    if(overallRates[q]!=null) diffBuckets[bucket].push(overallRates[q]);
+  }
+  let diffHtml='';
+  if(taggedDiffCount){
+    Object.keys(diffBuckets).forEach(k=>{
+      const arr=diffBuckets[k];
+      const avg=arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+      diffHtml+=maBar(k,avg,arr.length,avg!=null&&avg<60);
+    });
+  }else{
+    diffHtml='<div class="ma-empty">난이도 태그가 아직 없습니다.</div>';
+  }
+
+  // ---- 단원별 강약점: 문항DB의 '단원'(=대단원, 예: "공통수학2")은 파일 하나
+  // 안에서 거의 다 똑같은 값이라 그룹으로 나누는 의미가 없다 — 실제로 세분화된
+  // 값은 '유형' 칸(problembank.html에서 중단원>소단원을 합쳐 저장, 예: "도형의
+  // 방정식 > 원의 방정식")이라 이걸로 묶어야 진짜 강약점이 보인다.
+  const unitAgg={};
+  for(let q=0;q<nQ;q++){
+    const t=tagsByNum[q+numStartLocal];
+    const u=t&&t.type?String(t.type).trim():'';
+    if(!u||overallRates[q]==null) continue;
+    if(!unitAgg[u]) unitAgg[u]=[];
+    unitAgg[u].push(overallRates[q]);
+  }
+  const unitRows=Object.keys(unitAgg).map(u=>{
+    const arr=unitAgg[u];
+    return {unit:u,avg:Math.round(arr.reduce((a,b)=>a+b,0)/arr.length),n:arr.length};
+  }).sort((a,b)=>a.avg-b.avg);
+  let unitHtml='';
+  if(unitRows.length){
+    unitRows.forEach(r=>{ unitHtml+=maBar(r.unit,r.avg,r.n,r.avg<60); });
+  }else{
+    unitHtml='<div class="ma-empty">단원 태그가 아직 없습니다.</div>';
+  }
+
+  // ---- 반별 격차: S+/S 두 반이 다 있을 때만(대치수학 2기), 문항별 정답률
+  // 차이가 큰 순서로 TOP5 — 어느 반이 더 약한지까지 같이 보여준다.
+  let gapHtml='';
+  if(classNames.length>1){
+    const gaps=[];
+    for(let q=0;q<nQ;q++){
+      const vals=classNames.map(c=>byClassRates[c][q]).filter(v=>v!=null);
+      if(vals.length<2) continue;
+      const max=Math.max(...classNames.map(c=>byClassRates[c][q]??-1));
+      const min=Math.min(...classNames.map(c=>byClassRates[c][q]??101));
+      const weakerCls=classNames.find(c=>byClassRates[c][q]===min);
+      gaps.push({q:q+numStartLocal,gap:max-min,weakerCls,rates:classNames.map(c=>({c,v:byClassRates[c][q]}))});
+    }
+    gaps.sort((a,b)=>b.gap-a.gap);
+    const top=gaps.slice(0,5).filter(g=>g.gap>0);
+    if(top.length){
+      top.forEach(g=>{
+        const parts=g.rates.map(r=>'<span class="cls '+(r.c==='S+'?'csp':r.c==='S'?'cs':'')+'">'+esc(r.c)+' '+(r.v==null?'—':r.v+'%')+'</span>').join(' vs ');
+        gapHtml+='<div class="ma-gap-row"><span class="qn">'+g.q+'번</span>'+parts+'<span class="n">(차이 '+g.gap+'%p, '+esc(g.weakerCls)+'반이 더 약함)</span></div>';
+      });
+    }else{
+      gapHtml='<div class="ma-empty">두 반의 정답률 차이가 거의 없습니다.</div>';
+    }
+  }
+
+  // ---- 오답률 TOP5: 정답률 낮은 순으로 5문항, 클릭하면 원본 문제를 그
+  // 자리에서 렌더링(hwpx를 그때 처음 내려받아 파싱, 이후 캐시).
+  const ranked=[];
+  for(let q=0;q<nQ;q++){ if(overallRates[q]!=null) ranked.push({q:q+numStartLocal,rate:overallRates[q]}); }
+  ranked.sort((a,b)=>a.rate-b.rate);
+  const hardTop=ranked.slice(0,5);
+  let hardHtml='';
+  if(hardTop.length){
+    hardTop.forEach(h=>{
+      const t=tagsByNum[h.q];
+      const tagTxt=t?[t.unit,t.type].filter(Boolean).join(' · '):'';
+      hardHtml+='<div class="ma-hard-item"><div class="ma-hard-head" data-num="'+h.q+'">'
+        +'<span class="qn">'+h.q+'번</span><span class="rate">정답률 '+h.rate+'%</span>'
+        +(tagTxt?'<span class="tag">'+esc(tagTxt)+'</span>':'')
+        +'<span class="toggle">문제 보기 ▾</span></div>'
+        +'<div class="ma-hard-body" id="ma-hard-body-'+h.q+'"></div></div>';
+    });
+  }else{
+    hardHtml='<div class="ma-empty">표시할 데이터가 없습니다.</div>';
+  }
+
+  return '<div class="ma-title">MISSION ANALYSIS · 문항 분석</div>'
+    +'<div class="ma-sub">문항DB 태그 기준 — 문항DB에 단원/난이도가 아직 안 채워졌으면 해당 항목은 비어 보일 수 있습니다</div>'
+    +'<div class="ma-grid">'
+    +'<div class="ma-card"><h4>난이도별 정답률</h4>'+diffHtml+'</div>'
+    +'<div class="ma-card"><h4>세부 단원별 정답률 (약한 순)</h4>'+unitHtml+'</div>'
+    +'</div>'
+    +(classNames.length>1?'<div class="ma-card" style="margin-bottom:14px"><h4>반별 격차가 큰 문항 TOP5</h4>'+gapHtml+'</div>':'')
+    +'<div class="ma-card"><h4>오답률 높은 문항 TOP5 — 조심해야 할 포인트</h4><div class="ma-hard-list">'+hardHtml+'</div></div>';
+}
+
+function wireMissionAnalysisToggles(box,fileId,tagsByNum){
+  box.querySelectorAll('.ma-hard-head').forEach(head=>{
+    head.addEventListener('click',()=>toggleHardQuestion(head,fileId));
+  });
+}
+
+async function toggleHardQuestion(head,fileId){
+  const num=head.dataset.num;
+  const body=document.getElementById('ma-hard-body-'+num);
+  if(body.classList.contains('open')){
+    body.classList.remove('open');
+    head.querySelector('.toggle').textContent='문제 보기 ▾';
+    return;
+  }
+  body.classList.add('open');
+  head.querySelector('.toggle').textContent='접기 ▴';
+  if(body.dataset.rendered) return; // 이미 한 번 그렸으면 다시 안 그림
+  body.innerHTML='<div class="ma-loading">문제를 불러오는 중...</div>';
+  try{
+    await ensureHwpQuestionRenderer();
+    const entry=await getHwpxEntry(fileId);
+    const marker=entry.markers.get(Number(num))||entry.markers.get(String(num));
+    if(!marker){ body.innerHTML='<div class="ma-empty">이 번호의 원본 문제를 찾지 못했습니다.</div>'; return; }
+    const html=await hwpBodyXmlToHtml(marker.blockXml,entry);
+    body.innerHTML=html;
+    body.dataset.rendered='1';
+    if(window.renderMathInElement){
+      try{ renderMathInElement(body,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false}); }catch(e){}
+    }
+  }catch(e){
+    body.innerHTML='<div class="ma-empty">문제를 불러오지 못했습니다: '+esc(e.message||String(e))+'</div>';
+  }
+}
+
+// hwpx 파일 하나를 fileId로 한 번만 내려받아 파싱해서 캐시해둔다(같은 미션의
+// 다른 오답률 TOP5 문항을 열어볼 때 다시 다운로드하지 않도록).
+const hwpxEntryCache={};
+async function getHwpxEntry(fileId){
+  if(hwpxEntryCache[fileId]) return hwpxEntryCache[fileId];
+  const p=hwpxEntryCache[fileId]=(async()=>{
+    const res=await fetch(GAS_URL+'?'+new URLSearchParams({action:'download',id:fileId}).toString());
+    const json=await res.json();
+    if(!json.ok||!json.file) throw new Error('원본 파일을 불러오지 못했습니다');
+    const bin=atob(json.file.data);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const zip=await JSZip.loadAsync(bytes);
+    return await parseHwpx(zip);
+  })();
+  try{ return await p; }catch(e){ delete hwpxEntryCache[fileId]; throw e; }
+}
+
+// 문제 미리보기(hwpx 파싱+KaTeX 렌더)에 필요한 라이브러리 — 이 섹션을 아무도
+// 안 펼치면 전혀 안 불러와서(katex 핵심은 이미 다른 화면에서 lazy-load되지만
+// auto-render/jszip/hwpx-lib은 이 기능 전용이라 여기서만), public 홈 화면
+// 첫 로딩을 무겁게 만들지 않는다.
+let hwpQuestionRendererPromise=null;
+function ensureHwpQuestionRenderer(){
+  if(hwpQuestionRendererPromise) return hwpQuestionRendererPromise;
+  hwpQuestionRendererPromise=(async()=>{
+    await ensureKatexLoaded();
+    await new Promise(resolve=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js';
+      s.onload=resolve; s.onerror=resolve;
+      document.head.appendChild(s);
+    });
+    await new Promise(resolve=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+      s.onload=resolve; s.onerror=resolve;
+      document.head.appendChild(s);
+    });
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='hwpx-lib.js?v=2';
+      s.onload=resolve; s.onerror=()=>reject(new Error('hwpx-lib.js 로드 실패'));
+      document.head.appendChild(s);
+    });
+  })();
+  return hwpQuestionRendererPromise;
 }
 
 /* ---- 미션 상세 화면: 선생님이 admin.html에서 연결해둔 문제 원본(PDF/이미지)을
