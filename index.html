@@ -431,6 +431,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
   <div class="tabbar-row">
     <div class="tabbar" id="pub-tabs"></div>
     <button class="summer-toggle-btn hidden" id="summer-toggle-btn" onclick="toggleSummerView()"></button>
+    <button class="summer-toggle-btn hidden" id="kichul-summer-toggle-btn" onclick="toggleKichulSummerView()"></button>
   </div>
   <div class="chips" id="pub-chips"></div>
 
@@ -587,6 +588,13 @@ function catRowsFor(cohort,cat,mode){
   if(cohort==='2'&&cat==='교과서미션'){
     rows=rows.filter(r=>!/^변형\s*:/.test(String(r.mission||'').trim()));
   }
+  // 기출은 TEST/클리닉과 달리 9월에도 계속 이어지는 카테고리라(원장님
+  // 요청) 전체 SUMMER 보기로 빼지 않고, 기출 탭 안에서만 따로 예전(8월)
+  // 학교 시험지/새(9월) 시험지를 가르는 독립적인 토글(kichulShowSummer)을
+  // 둔다 — 전역 SUMMER 보기(mode)와는 무관하게 항상 이 상태를 따른다.
+  if(cohort==='2'&&cat==='기출'){
+    rows=rows.filter(r=>(KICHUL_OLD_MISSIONS.indexOf(String(r.mission||'').trim())!==-1)===kichulShowSummer);
+  }
   // 9월부터 등록을 그만두는 학생(SUMMER_ONLY_STUDENTS)은 중간고사 대비
   // (main) 화면에서는 빼고, SUMMER 화면에서는 그대로 남긴다.
   if(cohort==='2'&&mode==='main'&&SUMMER_ONLY_STUDENTS.length){
@@ -613,6 +621,12 @@ const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미�
 // 대비(9월부터, 기본 화면)에는 안 보이게 catRowsFor에서 걸러진다. 나중에
 // 비슷한 학생이 더 생기면 그냥 이 배열에 이름을 추가하면 됨.
 const SUMMER_ONLY_STUDENTS = ['천범준'];
+// 기출 탭 전용 — 예전(8월) 학교 시험지 이름 목록. 여기 없는 기출 미션은
+// 전부 "새(9월부터)"로 취급되므로, 나중에 새 시험지가 추가되면 따로
+// 손댈 필요 없이 자동으로 새 쪽에 들어간다. 목록 자체는 원장님이 "DS고
+// 까지는 8월, SD여고부터는 9월"이라고 알려주신 기준 그대로.
+const KICHUL_OLD_MISSIONS = ['2025 보라고 중간 기출','2025 신천고 중간 기출','2025 T여고 중간 기출','2025 H여고 중간 기출','2025 C예고 중간 기출','2025 MK고','2025 SK고','2025 WS고','2025 DS고'];
+let kichulShowSummer = false; // 기출 탭 안에서만 쓰는 독립 토글 — 전역 SUMMER 보기(pubShowSummer)와 무관
 const ALG_TAB = '대수연마 1000제';
 const ALG_THRESHOLDS = [10000,20000,30000];
 const ALG_REWARDS = [{emoji:'🍦',name:'아이스크림'},{emoji:'🍔',name:'햄버거 세트'},{emoji:'🍕',name:'피자'}];
@@ -893,6 +907,13 @@ function toggleSummerView() {
   buildPubTabs();
   pubTab = '종합';
   [...document.getElementById('pub-tabs').children].forEach(t => t.classList.toggle('active', t.textContent === '종합'));
+  renderPublic();
+}
+// 기출 탭 안에서만 도는 독립 토글 — 전역 SUMMER 보기와 달리 탭을 벗어나지
+// 않고 기출 화면 안에서 예전/새 시험지만 바꿔 보여준다.
+function toggleKichulSummerView() {
+  kichulShowSummer = !kichulShowSummer;
+  pubMission = null;
   renderPublic();
 }
 
@@ -1284,6 +1305,15 @@ function renderPublic(scrollTop){
   renderCohortBar();
   renderChips();
   renderCards();
+  // 기출 탭에서만 보이는 독립 SUMMER 토글 — 다른 탭으로 옮기면 숨긴다.
+  const kichulBtn=document.getElementById('kichul-summer-toggle-btn');
+  if(pubCohort==='2'&&pubTab==='기출'){
+    kichulBtn.classList.remove('hidden');
+    kichulBtn.classList.toggle('on',kichulShowSummer);
+    kichulBtn.textContent=kichulShowSummer?'← 9월 기출로':'☀️ SUMMER 기출 보기 (8월까지)';
+  }else{
+    kichulBtn.classList.add('hidden');
+  }
   const cumView=document.getElementById('pub-cum');
   const misView=document.getElementById('pub-mission');
   const spView=document.getElementById('pub-spblack');
