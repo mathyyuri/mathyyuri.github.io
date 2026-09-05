@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>내신기출 시험지 만들기 — MATHY YURI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,600&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -61,24 +61,37 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
 .examHeadTable td{border:1px solid var(--ink);padding:2.6mm 3mm;vertical-align:middle}
 .examHeadTable .ehLabel{background:var(--accent-soft);font-weight:700;text-align:center;width:15%;color:var(--ink);letter-spacing:.02em}
 .examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:17px;text-align:center;letter-spacing:.01em}
-.examHeadTable .ehLogo{text-align:center;padding:1mm 2mm}
+.examHeadTable .ehLogo{text-align:center;padding:0}
+/* 참고 이미지처럼 로고 칸만 표 격자에서 살짝 도드라지는 카드로 보이게 —
+   둥근 모서리 + 옅은 그림자를 로고 칸 안쪽에 별도로 줌(표 테두리 자체는
+   그대로 두고, 그 안에 카드 하나 더 넣는 방식). */
+.examHeadTable .ehLogo .logoCard{margin:1.5mm;padding:2mm;border-radius:3mm;background:var(--accent-soft);box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .examHeadTable .ehLogo .wordmarkText{font-family:var(--serif);font-style:italic;font-weight:900;font-size:16px;color:var(--accent);line-height:1.25}
 .examHeadTable .ehLogo img{max-width:100%;max-height:16mm;display:block;margin:0 auto}
 .examSimpleHead{margin-top:8mm;padding-bottom:2mm;border-bottom:1.4px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
-.examSimpleHead .pageNo{font-family:var(--serif);font-size:20px;font-weight:900}
+/* "명조 두껍게" 요청 — 한글 명조체(Noto Serif KR) + 굵게. 문제 번호(아래
+   .examQNum)와는 반대로 페이지 상단 쪽수는 두꺼워야 함. */
+.examSimpleHead .pageNo{font-family:var(--kserif);font-size:20px;font-weight:900}
 .examSimpleHead .wordmark{font-family:var(--serif);font-style:italic;font-weight:900;color:var(--accent)}
 .examSimpleHead .wordmark img{max-height:9mm;display:block}
 /* top은 페이지 1(표 머리말)과 이후 페이지(간단 머리말)의 높이가 달라서
    고정할 수 없다 — JS가 페이지를 그릴 때 style.top으로 직접 넣어준다.
-   bottom을 고정해서 칸이 항상 페이지 맨 아래까지 닿게 하고(6번 요청),
-   .examQCol이 flex+space-between이라 그 안 문제들도 이 높이에 맞춰
-   간격이 자동으로 벌어진다(2번 요청). */
+   bottom을 고정해서 칸이 항상 페이지 맨 아래까지 닿게 한다(구분선이
+   페이지 끝까지 이어지도록). 문제 사이 간격은 이제 flex/space-between이
+   아니라, JS가 "문제 수만큼 등분한 칸"에 문제를 하나씩 넣는 방식으로
+   맞춘다(예: 3문제면 정확히 1/3씩, 2문제면 정확히 1/2씩 — 문제 하나하나가
+   실제 내용 길이와 무관하게 항상 같은 크기의 여유 공간을 갖게 하려는
+   요청). */
 .examQBody{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;position:absolute;left:14mm;right:14mm;bottom:16mm}
-.examQCol{border-left:1px solid var(--gold-line);padding-left:8mm;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+.examQCol{border-left:1px solid var(--gold-line);padding-left:8mm;min-width:0;display:flex;flex-direction:column}
 .examQCol:first-child{border-left:none;padding-left:0}
-.examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid}
+.examQSlot{display:flex;overflow:visible}
+.examQBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid;width:100%}
 .examQBlock.forceBreakMark{outline:1.5px dashed var(--pink-deep);outline-offset:2px}
-.examQNum{flex:0 0 auto;font-family:var(--serif);font-weight:900;font-size:21px;color:var(--ink);line-height:1.3}
+/* "크기는 크지만 두껍지는 않게" 요청 — Playfair Display 400(얇은 굵기)을
+   큰 사이즈로 써서 "얇지만 큰" 느낌을 낸다. 색은 포인트 색깔과 맞춰
+   같이 바뀌도록 --accent를 그대로 씀. */
+.examQNum{flex:0 0 auto;font-family:var(--serif);font-weight:400;font-size:26px;color:var(--accent);line-height:1.2}
 .examQBody2{flex:1;min-width:0;font-size:11.5px;line-height:1.6}
 .examQBody2 p{margin:0 0 2mm}
 .examQBody2 img{max-width:100%;height:auto;display:block;margin:2mm auto}
@@ -344,7 +357,7 @@ function headTableHtml() {
     <tr>
       <td class="ehLabel">시행일</td><td>${escapeHtml(examDate)}</td>
       <td class="ehSchool" colspan="3">${escapeHtml(school)}</td>
-      <td class="ehLogo" rowspan="3">${logoDataUrl ? `<img src="${logoDataUrl}" alt="로고">` : '<span class="wordmarkText">Mathy<br>Yuri</span>'}</td>
+      <td class="ehLogo" rowspan="3"><div class="logoCard">${logoDataUrl ? `<img src="${logoDataUrl}" alt="로고">` : '<span class="wordmarkText">Mathy<br>Yuri</span>'}</div></td>
     </tr>
     <tr>
       <td class="ehLabel">과목 코드</td><td>${escapeHtml(subjectCode)}</td>
@@ -399,7 +412,16 @@ async function regenerateLayout() {
     pages.forEach((cols, pageIdx) => {
       const pageNum = pageIdx + 1;
       const colHeightMm = colHeightMmFor(pageIdx * COLUMNS_PER_PAGE);
-      const colsHtml = cols.map(colBlocks => `<div class="examQCol" style="height:${colHeightMm}mm">${colBlocks.join('')}</div>`).join('');
+      // 문제 하나하나가 실제 분량과 무관하게 항상 같은 여유 공간을 갖도록,
+      // 칸 높이를 "그 칸에 들어간 문제 수"로 정확히 등분한다(3문제면
+      // 1/3씩, 2문제면 1/2씩) — 문제 자체가 그 칸보다 큰 예외적인 경우도
+      // 있을 수 있어(overflow:visible이라) 잘리지는 않고 다음 슬롯 위로
+      // 살짝 넘치기만 한다.
+      const colsHtml = cols.map(colBlocks => {
+        const slotH = colBlocks.length ? colHeightMm / colBlocks.length : colHeightMm;
+        const slotsHtml = colBlocks.map(b => `<div class="examQSlot" style="height:${slotH}mm">${b}</div>`).join('');
+        return `<div class="examQCol" style="height:${colHeightMm}mm">${slotsHtml}</div>`;
+      }).join('');
       const sheet = document.createElement('div');
       sheet.className = 'examSheet';
       sheet.style.width = w + 'mm';
