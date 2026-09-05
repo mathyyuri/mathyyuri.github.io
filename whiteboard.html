@@ -87,6 +87,16 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
    touch-action을 아예 처음부터 계속 none으로 고정 — 손가락(손바닥 포함)이
    언제 닿든 화면 이동/확대를 절대 일으키지 않는다. */
 #inkCanvas { touch-action:none; cursor:crosshair; }
+/* 확대(150% 등)하면 캔버스가 화면보다 커지는데, 캔버스 위는
+   touch-action:none이라 손가락으로 밀어서 스크롤하는 것도 안 된다(필기
+   중 화면이 흔들리는 걸 막으려고 일부러 그렇게 함) — 그래서 확대했을 때
+   스크롤할 여백이 없어져 불편하다는 요청. 캔버스 밖의 별도 막대라 여기는
+   touch-action을 막을 필요가 없고, 항상 오른쪽에 보이게 둬서 여백이 없어도
+   스크롤할 곳이 있게 한다. 내용이 화면에 다 들어와서 스크롤이 필요 없을
+   땐(확대 안 했을 때 등) JS가 display:none으로 숨긴다. */
+#vScrollTrack { position:fixed; top:0; right:0; bottom:0; width:22px; z-index:15; display:none; }
+#vScrollThumb { position:absolute; left:3px; right:3px; background:var(--mint-deep); border-radius:8px; opacity:.55; touch-action:none; }
+#vScrollThumb:active { opacity:.85; }
 #docHtmlLayer { position:absolute; top:0; left:0; pointer-events:none; display:none; background:#fff; box-sizing:border-box; padding:20px 24px; font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--ink); overflow:visible; }
 #docHtmlLayer .hwpxQ { margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--gold-line); }
 #docHtmlLayer .hwpxQ:last-child { border-bottom:none; }
@@ -183,6 +193,7 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 <div id="stageWrap">
   <div id="stage"><canvas id="docCanvas"></canvas><div id="docHtmlLayer"></div><canvas id="inkCanvas"></canvas></div>
 </div>
+<div id="vScrollTrack"><div id="vScrollThumb"></div></div>
 <div id="submitBar" style="display:none">
   <button type="button" id="submitBtn">제출</button>
   <span id="submitStatus"></span>
@@ -212,11 +223,17 @@ const stageWrap = document.getElementById('stageWrap');
 // 도구바 높이는 화면 너비에 따라 버튼 줄바꿈 등으로 달라질 수 있어서
 // 고정값 대신 ResizeObserver로 실제 높이를 계속 재서 맞춘다.
 const topBarEl = document.getElementById('topBar');
+const vScrollTrack = document.getElementById('vScrollTrack');
+function syncTopBarSpacing(){
+  const h = topBarEl.offsetHeight;
+  stageWrap.style.paddingTop = h + 'px';
+  vScrollTrack.style.top = h + 'px'; // 스크롤 막대도 도구바 아래부터 시작
+}
 if (window.ResizeObserver) {
-  new ResizeObserver(() => { stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px'; }).observe(topBarEl);
+  new ResizeObserver(syncTopBarSpacing).observe(topBarEl);
 } else {
-  stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px';
-  window.addEventListener('resize', () => { stageWrap.style.paddingTop = topBarEl.offsetHeight + 'px'; });
+  syncTopBarSpacing();
+  window.addEventListener('resize', syncTopBarSpacing);
 }
 let docCtx, inkCtx;
 let stageCssW = 0, stageCssH = 0;
@@ -313,6 +330,7 @@ function applyStageZoom(){
   const outBtn = document.getElementById('zoomOutBtn'), inBtn = document.getElementById('zoomInBtn');
   if (outBtn) outBtn.disabled = stageZoom <= STAGE_ZOOM_MIN;
   if (inBtn) inBtn.disabled = stageZoom >= STAGE_ZOOM_MAX;
+  updateVScrollbar(); // 확대·축소로 페이지 길이가 바뀌므로 스크롤 막대도 다시 계산
 }
 function changeStageZoom(delta){
   const next = Math.min(STAGE_ZOOM_MAX, Math.max(STAGE_ZOOM_MIN, Math.round((stageZoom + delta) * 100) / 100));
@@ -320,6 +338,50 @@ function changeStageZoom(delta){
   stageZoom = next;
   applyStageZoom();
 }
+
+// 확대해서 페이지가 화면보다 길어지면(#inkCanvas는 touch-action:none이라
+// 손가락으로 못 미니) 오른쪽 끝에 항상 손으로 잡고 끌 수 있는 막대를
+// 대신 보여준다 — 확대 안 해서 다 화면에 들어올 땐 숨긴다.
+const vScrollThumb = document.getElementById('vScrollThumb');
+function updateVScrollbar(){
+  const doc = document.documentElement;
+  const viewportH = window.innerHeight;
+  const scrollable = doc.scrollHeight > viewportH + 1;
+  vScrollTrack.style.display = scrollable ? 'block' : 'none';
+  if (!scrollable) return;
+  const trackH = vScrollTrack.clientHeight;
+  const thumbH = Math.max(36, trackH * (viewportH / doc.scrollHeight));
+  const maxScroll = doc.scrollHeight - viewportH;
+  const ratio = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+  vScrollThumb.style.height = thumbH + 'px';
+  vScrollThumb.style.top = (ratio * (trackH - thumbH)) + 'px';
+}
+window.addEventListener('scroll', updateVScrollbar, { passive: true });
+window.addEventListener('resize', updateVScrollbar);
+let vDragging = false, vDragStartY = 0, vDragStartScroll = 0;
+vScrollThumb.addEventListener('pointerdown', e => {
+  vDragging = true;
+  vDragStartY = e.clientY;
+  vDragStartScroll = window.scrollY;
+  try { vScrollThumb.setPointerCapture(e.pointerId); } catch (err) {}
+  e.preventDefault();
+});
+vScrollThumb.addEventListener('pointermove', e => {
+  if (!vDragging) return;
+  const doc = document.documentElement;
+  const viewportH = window.innerHeight;
+  const trackH = vScrollTrack.clientHeight;
+  const thumbH = vScrollThumb.offsetHeight;
+  const maxScroll = doc.scrollHeight - viewportH;
+  const trackRange = trackH - thumbH;
+  if (maxScroll <= 0 || trackRange <= 0) return;
+  const deltaY = e.clientY - vDragStartY;
+  window.scrollTo(0, vDragStartScroll + deltaY * (maxScroll / trackRange));
+  updateVScrollbar(); // 드래그 중엔 'scroll' 이벤트를 기다리지 않고 막대를 바로 따라오게 한다
+});
+function endVScrollDrag(){ vDragging = false; }
+vScrollThumb.addEventListener('pointerup', endVScrollDrag);
+vScrollThumb.addEventListener('pointercancel', endVScrollDrag);
 
 function renderDocBlank(){
   docCtx.fillStyle = '#fff';
