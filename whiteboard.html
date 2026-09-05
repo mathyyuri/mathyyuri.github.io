@@ -76,11 +76,17 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
 #stage { position:relative; box-shadow:0 2px 14px rgba(0,0,0,.12); background:#fff; }
 #stage canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
 #docCanvas { pointer-events:none; }
-/* 손가락(touch)은 이제 그림판이 아예 안 건드리고 브라우저 기본 동작
-   (두 손가락 확대·축소, 스크롤)에 그대로 맡긴다 — 펜만 필기로 인식하고
-   싶다는 요청. touch-action:none이었을 땐 손가락 제스처 자체를 브라우저가
-   못 가로채서 확대가 안 됐었음(펜/마우스는 이 속성 영향을 안 받음). */
-#inkCanvas { touch-action:manipulation; cursor:crosshair; }
+/* touch-action:manipulation(두 손가락 확대 허용)으로 뒀더니, 펜으로 쓰는
+   동안 손바닥이 화면에 닿는 순간 브라우저가 그 접촉을 "화면 이동(팬)"
+   제스처로 잡아버려 필기 중 화면이 흔들리는 문제가 계속 있었다(원장님
+   리포트). pointerdown 시점에 JS로 touch-action을 껐다 켰다 해봐도
+   실기기에서는 안 고쳐졌는데 — 손바닥이 펜보다 먼저(또는 펜 없이 계속)
+   닿아있으면 그 접촉의 제스처는 이미 처음 닿는 순간에 정해져서, 나중에
+   JS로 값을 바꿔도 그 접촉엔 적용이 안 되기 때문. 확대·축소는 이제
+   버튼(🔍-/🔍+)으로 하므로 손가락 제스처가 필요 없어졌고, 그래서
+   touch-action을 아예 처음부터 계속 none으로 고정 — 손가락(손바닥 포함)이
+   언제 닿든 화면 이동/확대를 절대 일으키지 않는다. */
+#inkCanvas { touch-action:none; cursor:crosshair; }
 #docHtmlLayer { position:absolute; top:0; left:0; pointer-events:none; display:none; background:#fff; box-sizing:border-box; padding:20px 24px; font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--ink); overflow:visible; }
 #docHtmlLayer .hwpxQ { margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--gold-line); }
 #docHtmlLayer .hwpxQ:last-child { border-bottom:none; }
@@ -523,28 +529,12 @@ function eraseAt(pt){
   });
 }
 
-// 손가락(touch)은 필기 대상에서 아예 빼고 브라우저 기본 제스처(두 손가락
-// 확대·축소, 스크롤)에 그대로 맡긴다 — 손가락으로 살짝만 스쳐도 자꾸
-// 필기가 돼서 불편하다는 요청(태블릿에서 확대가 안 되던 것도 같은
-// 원인 — touch-action:none이 손가락 제스처 자체를 브라우저가 못
-// 가로채게 막고 있었음). 펜(pointerType==='pen')과 마우스만 필기로
-// 인식한다 — 예전에 있던 "손가락 2개=화면 이동" 대체 기능은 이제
-// 브라우저가 직접 확대·스크롤 다 해주므로 필요 없어져서 뺐다.
-//
-// 그런데 touch-action:manipulation을 항상 켜두면, 펜으로 필기하는 동안
-// 손날/손바닥이 화면에 살짝 닿는 것까지 브라우저가 "화면 이동(팬)"
-// 제스처로 오해해서 화면이 흔들리는 문제가 생겼다(원장님 리포트 —
-// "펜으로 해도 화면이 흔들려서 글씨가 잘 안 먹힘", 태블릿에서 펜 쓸 때
-// 손바닥이 화면에 닿는 건 정상적인 필기 자세라 흔함). 그래서 펜이 실제로
-// 눌려 있는 동안만 touch-action을 다시 none으로 잠가서 손바닥 접촉이
-// 아무 것도 못 하게 막고(팬도 줌도 무시), 펜을 떼면 곧바로 manipulation
-// 으로 되돌려서 평소엔 두 손가락 확대·축소가 계속 되게 한다.
-function setPenActive(active) {
-  inkCanvas.style.touchAction = active ? 'none' : 'manipulation';
-}
+// 손가락(touch)은 필기 대상에서 아예 빼고 펜(pointerType==='pen')과
+// 마우스만 필기로 인식한다 — 손가락으로 살짝만 스쳐도 자꾸 필기가 돼서
+// 불편하다는 요청. 확대·축소는 이제 위 CSS(#inkCanvas touch-action:none)
+// 덕분에 손가락 제스처가 아예 안 먹으므로 버튼(🔍-/🔍+)으로만 한다.
 inkCanvas.addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') return;
-  if (e.pointerType === 'pen') setPenActive(true);
   try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 일부 브라우저/입력장치에서 캡처가 안 될 수 있음 — 캔버스 안에서 그리는 데는 지장 없음 */ }
   const pt = getNormPoint(e);
   if (currentTool === 'eraser') { drawing = 'erasing'; eraseAt(pt); return; }
@@ -569,7 +559,6 @@ inkCanvas.addEventListener('pointermove', e => {
   }
 });
 function endStroke(e){
-  if (e && e.pointerType === 'pen') setPenActive(false);
   if (drawing === true && curStrokeId) {
     if (strokesRef) {
       strokesRef.child(curStrokeId).set({ by: role, color: penColor, width: penWidth, points: curPoints, t: firebase.database.ServerValue.TIMESTAMP });
