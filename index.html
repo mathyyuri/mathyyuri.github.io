@@ -287,12 +287,12 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .ma-hard-body .hwpRectBox{display:block;max-width:100%;box-sizing:border-box;border:1px solid var(--gold-line);padding:2mm 3mm;margin:2mm 0;text-align:left}
 .ma-hard-body p.eqLine{text-align:center}
 .ma-loading{font-size:12px;color:rgba(26,26,26,.5);padding:8px 0}
-.ma-quickanswer{margin-top:8px;padding:8px 12px;background:var(--mint-soft);border-radius:4px;font-size:13px}
-.ma-quickanswer b{color:var(--mint-deep);font-family:var(--kserif);margin-right:6px}
-.ma-solution{margin-top:10px;border-top:1px dashed var(--gold-line);padding-top:8px}
-.ma-solution-head{font-size:12px;font-weight:700;color:var(--gold);cursor:pointer}
-.ma-solution-body{display:none;margin-top:8px;padding:10px 12px;background:var(--gold-soft);border-radius:4px;font-size:12.5px;line-height:1.6}
-.ma-solution-body.open{display:block}
+.ma-reveal{margin-top:10px;border-top:1px dashed var(--gold-line);padding-top:8px}
+.ma-reveal-head{font-size:12px;font-weight:700;color:var(--gold);cursor:pointer}
+.ma-reveal-body{display:none;margin-top:8px;padding:10px 12px;border-radius:4px;font-size:12.5px;line-height:1.6}
+.ma-reveal-body.open{display:block}
+.ma-reveal-body.ma-quickanswer{background:var(--mint-soft);font-size:13px}
+.ma-reveal-body.ma-solution{background:var(--gold-soft)}
 
 /* ===== 개인 대시보드 ===== */
 .me-hero{padding:34px 4vw 22px;border-bottom:1px solid var(--gold-line);background:#fff}
@@ -2197,12 +2197,14 @@ async function toggleHardQuestion(head,fileId,tagsByNum){
     const problemHtml=tag&&tag.editedRaw?renderEditedText(tag.editedRaw):await hwpBodyXmlToHtml(marker.blockXml,entry);
     // 빠른정답/풀이는 항상 원본 hwpx의 끝주(endnote)에서 뽑는다 — 문제 본문
     // 오타를 고친 editedRaw와는 무관하게 그대로 유효하다.
+    // 빠른정답도 풀이처럼 눌러야 보이게 — 문제를 펼치자마자 정답이 바로
+    // 보이면 풀어볼 마음이 안 든다는 요청(원장님 리포트).
     let extraHtml='';
     try{
       const qaXml=extractQuickAnswerXml(marker.blockXml);
       if(qaXml){
         const qaHtml=await hwpFragmentRunsToHtml(qaXml,entry);
-        if(qaHtml.trim()) extraHtml+='<div class="ma-quickanswer"><b>빠른정답</b> '+qaHtml+'</div>';
+        if(qaHtml.trim()) extraHtml+='<div class="ma-reveal"><div class="ma-reveal-head" data-label="정답">정답 보기 ▾</div><div class="ma-reveal-body ma-quickanswer">'+qaHtml+'</div></div>';
       }
     }catch(e){}
     let solutionHtml='';
@@ -2211,19 +2213,18 @@ async function toggleHardQuestion(head,fileId,tagsByNum){
       if(solXml) solutionHtml=await hwpBodyXmlToHtml(solXml,entry);
     }catch(e){}
     if(solutionHtml.trim()){
-      extraHtml+='<div class="ma-solution"><div class="ma-solution-head">풀이 보기 ▾</div><div class="ma-solution-body">'+solutionHtml+'</div></div>';
+      extraHtml+='<div class="ma-reveal"><div class="ma-reveal-head" data-label="풀이">풀이 보기 ▾</div><div class="ma-reveal-body ma-solution">'+solutionHtml+'</div></div>';
     }
     body.innerHTML=problemHtml+extraHtml;
     body.dataset.rendered='1';
     renderMathIn(body);
-    const solHead=body.querySelector('.ma-solution-head');
-    if(solHead){
-      solHead.addEventListener('click',()=>{
-        const solBody=body.querySelector('.ma-solution-body');
-        const open=solBody.classList.toggle('open');
-        solHead.textContent=open?'풀이 접기 ▴':'풀이 보기 ▾';
+    body.querySelectorAll('.ma-reveal-head').forEach(head=>{
+      head.addEventListener('click',()=>{
+        const revealBody=head.nextElementSibling;
+        const open=revealBody.classList.toggle('open');
+        head.textContent=(open?head.dataset.label+' 접기 ▴':head.dataset.label+' 보기 ▾');
       });
-    }
+    });
   }catch(e){
     body.innerHTML='<div class="ma-empty">문제를 불러오지 못했습니다: '+esc(e.message||String(e))+'</div>';
   }
