@@ -1945,7 +1945,6 @@ function renderMissionDetail(){
    올렸거나 아직 태깅 전)은 조용히 섹션을 숨긴다 — 어차피 문항DB에
    아무것도 안 걸려 있으면 분석할 재료가 없다. ---- */
 let missionAnalysisReqId=0;
-const hwpxFileBytesCache={}; // fileId → JSZip 인스턴스(Promise) — 같은 파일 문제를 여러 번 열어봐도 한 번만 내려받음
 async function renderMissionAnalysis(nQ){
   const box=document.getElementById('detail-analysis');
   const myReq=++missionAnalysisReqId;
@@ -1954,13 +1953,17 @@ async function renderMissionAnalysis(nQ){
   if(!nQ) return;
   try{
     const cls=(typeof pubClass!=='undefined'&&pubClass!=='전체')?pubClass:'';
-    const ap=new URLSearchParams({action:'assigneddoc',cohort:pubCohort,category:pubTab,mission:pubMission,class:cls});
+    // 이 미션에 연결된 hwpx 파일을 찾는 방법은 "필기원본 연결"(assigneddoc,
+    // 숙제 PDF 다운로드 버튼용 — whiteboard.html의 별도 업로드 저장소라
+    // 교재목록/문항DB의 파일 id와 아예 다른 체계)이 아니라, 오답노트가 이미
+    // 실전에서 검증한 자동 매칭(미션명↔파일명)과 같은 방법이어야 한다 —
+    // missionfile 액션이 서버에서 그 로직을 그대로 재사용해 돌려준다.
+    const ap=new URLSearchParams({action:'missionfile',category:pubTab,mission:pubMission,class:cls});
     const ares=await fetch(GAS_URL+'?'+ap.toString());
     const ajson=await ares.json();
     if(myReq!==missionAnalysisReqId) return;
-    // hwpx로 연결된 미션만 분석 가능 — PDF/이미지는 문항DB에 태그가 없다.
-    if(!ajson.ok||!ajson.docId||ajson.docType!=='hwpx') return;
-    const fileId=ajson.docId;
+    if(!ajson.ok||!ajson.fileId) return; // 이 미션에 매칭되는 파일이 없으면 분석 불가
+    const fileId=ajson.fileId;
 
     const qp=new URLSearchParams({action:'filequestions',fileId});
     const qres=await fetch(GAS_URL+'?'+qp.toString());
