@@ -1242,6 +1242,12 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
       <select class="bulkMidSelect"><option value="">중단원 선택(선택사항)</option></select>
       <button type="button" class="selectAllBtn bulkApplyBtn">전체 문제에 적용</button>
     </div>
+    <div class="tagBulkRow">
+      <label style="display:inline;margin:0">난이도·출처 일괄 적용:</label>
+      <input type="number" class="bulkDifficultyInput" min="1" step="1" placeholder="난이도(선택)" style="width:110px">
+      <input type="text" class="bulkSourceInput" list="sourceSuggestList" placeholder="출처(선택)" style="width:140px">
+      <button type="button" class="selectAllBtn bulkDiffSourceApplyBtn">전체 문제에 적용</button>
+    </div>
     ${showAnswerInput ? '<p class="hint">정답을 입력해두면 AI 채점(숙제 사진 자동 확인)에 쓰입니다 — 정답은 학생 화면이나 공개 API로 절대 노출되지 않습니다.</p>' : '<p class="hint">업로드가 끝난 뒤 "태그 편집"에서 정답(AI 채점용)을 입력할 수 있습니다.</p>'}
   `;
   const rows = document.createElement('div');
@@ -1323,7 +1329,17 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
       e.target.textContent = open ? '접기' : '✏️ 수정';
     });
     wireUnitPicker(row, qd, refreshRowSummary);
-    rowSyncers.push({ qd, sync: () => syncUnitPicker(row, qd, refreshRowSummary) });
+    // 난이도·출처 일괄 적용 버튼이 각 카드의 입력칸 값과 요약칩을 다시
+    // 그릴 때 씀 — 단원 일괄 적용(sync)과 같은 자리에 같이 등록해서 한
+    // 배열로 모든 카드를 순회할 수 있게 한다.
+    rowSyncers.push({
+      qd, sync: () => syncUnitPicker(row, qd, refreshRowSummary),
+      applyDiffSource: (difficulty, source) => {
+        if (difficulty !== '') { qd.difficulty = difficulty; row.querySelector('.tagDifficultyInput').value = difficulty; }
+        if (source !== '') { qd.source = source; row.querySelector('.tagSourceInput').value = source; }
+        refreshRowSummary();
+      },
+    });
     row.querySelector('.tagDifficultyInput').addEventListener('input', (e) => { qd.difficulty = e.target.value.trim(); refreshRowSummary(); });
     row.querySelector('.tagFormatInput').addEventListener('change', (e) => { qd.format = e.target.value; refreshRowSummary(); refreshChoicesVisibility(); });
     row.querySelector('.tagPointsInput').addEventListener('input', (e) => { qd.points = e.target.value.trim(); refreshRowSummary(); });
@@ -1439,6 +1455,14 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
     const subject = bulkMajorSelect.selectedOptions[0]?.dataset.subject || '';
     const midVal = bulkMidSelect.value;
     rowSyncers.forEach(({ qd, sync }) => { qd.subject = subject; qd.unitMajor = val; qd.unitMid = midVal; qd.unitMinor = ''; sync(); });
+  });
+  const bulkDifficultyInput = wrap.querySelector('.bulkDifficultyInput');
+  const bulkSourceInput = wrap.querySelector('.bulkSourceInput');
+  wrap.querySelector('.bulkDiffSourceApplyBtn').addEventListener('click', () => {
+    const difficulty = bulkDifficultyInput.value.trim();
+    const source = bulkSourceInput.value.trim();
+    if (!difficulty && !source) return; // 둘 다 비어있으면 적용할 게 없음
+    rowSyncers.forEach(({ applyDiffSource }) => applyDiffSource(difficulty, source));
   });
   container.appendChild(wrap);
 }
