@@ -3071,6 +3071,16 @@ let missionMap = { byClass: {}, global: {} }; // from 미션매핑 sheet: "반||
 let currentStudent = null;
 let missionGroups = [];
 let noteHistory = [];      // [{name,mission,num,round,at}]
+// 여름·진도 위주였던 예전 오답노트와 9월 중간고사 대비 오답노트를 표지의
+// 회차 번호가 섞이지 않게 구분하려는 요청(원장님) — 이 날짜 이후 생성분만
+// 세서 회차를 매기면, 예전에 이미 여러 회차를 만든 학생도 오늘부터는
+// 자동으로 "1회"부터 다시 시작한다. 예전 기록 자체는 그대로 남아있고
+// (오답노트이력 시트, 통계 페이지 등) 이 회차 번호 계산에서만 걸러진다.
+const MIDTERM_SEASON_START = new Date('2026-09-06T00:00:00+09:00');
+function computeNextNoteRound() {
+  const seasonHistory = noteHistory.filter(h => h.at && new Date(h.at) >= MIDTERM_SEASON_START);
+  return new Set(seasonHistory.map(h => h.at)).size + 1;
+}
 // 방금 만든 오답노트를 다른 형식(한글 → HTML 등)으로 바로 이어서 또
 // 만들 때, 완전히 똑같은 문제 구성이면 새 회차로 또 기록하지 않고 같은
 // 회차로 취급 — 그래야 "한글로 받고 이어서 HTML로도 받기"가 서버에는
@@ -3915,7 +3925,7 @@ async function generateHwpxNote(historicalBatch) {
     // 방금(또는 이미) 기록한 것과 문제 구성이 완전히 같으면(형식만 바꿔
     // 다시 받는 경우) 새 회차로 세지 않고 같은 회차 번호를 그대로 씁니다.
     const noteRound = historicalBatch ? historicalBatch.noteRound
-      : (reuseRound ? lastLoggedBatch.noteRound : new Set(noteHistory.map(h => h.at)).size + 1);
+      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
     // "대치수학 N기 X 이름" 패턴은 보통 문제 구역의 머리말에만 있고, 이름만
     // 단독으로 반복되는 표지 배지 같은 건 다른 구역에 있을 수 있어서, 이전
     // 학생 이름은 구역 하나가 아니라 서식 전체에서 한 번만 찾아둡니다.
@@ -4337,6 +4347,7 @@ function buildCoverPageHtml(info) {
     </div>
     <div class="coverBadge">MEN<br>BOOK</div>
     <div class="coverMain">
+      <div class="coverEyebrow">MIDTERM 2026 · 중간고사 대비</div>
       <div class="coverWordmark"><span class="men">MEN</span><br><span class="book">BOOK</span></div>
       <div class="coverSub">— Math Error Notebook —</div>
       <div class="coverTagline">&ldquo;Mistakes Become Mastery.&rdquo;</div>
@@ -4620,7 +4631,6 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
    구체성은 동일) 반드시 바로 다음 줄에 둔다. */
 .hwpTbl{table-layout:fixed;width:100%;max-width:100%}
 .hwpTbl td{white-space:normal;overflow-wrap:break-word;word-break:keep-all}
-   구체성은 동일) 반드시 바로 다음 줄에 둔다.
 .ansBlock{font-size:12px;line-height:1.7}
 .explNum{font-weight:800;color:var(--mb-navy);font-size:12px;margin-bottom:1.5mm}
 .eqFallback{font-family:monospace;font-size:11px;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
@@ -4658,6 +4668,9 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .coverSideRound{font-family:var(--kserif);font-weight:900;font-size:16px;color:#fff}
 .coverBadge{position:absolute;top:20mm;right:16mm;width:24mm;height:24mm;border:1.4px solid var(--mb-teal);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--kserif);font-weight:800;font-size:11px;color:var(--mb-teal);line-height:1.3}
 .coverMain{position:absolute;left:16mm;right:16mm;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+/* "9월부터 중간고사 대비 시즌" 표시 — 원장님 요청으로 표지에 추가. 다른
+   페이지들의 eyebrow 라벨(작게, 자간 넓게, 포인트색)과 같은 결. */
+.coverEyebrow{font-size:11px;letter-spacing:.32em;font-weight:700;color:var(--mb-teal-deep);margin-bottom:6mm}
 .coverWordmark{font-family:var(--kserif);font-weight:900;font-size:78px;line-height:1.05;letter-spacing:.02em}
 .coverSub{font-family:var(--kserif);font-weight:700;font-size:15px;color:var(--mb-navy);margin-top:6mm}
 .coverTagline{font-size:13px;color:rgba(26,26,26,.6);margin-top:4mm;font-style:italic}
@@ -4951,7 +4964,7 @@ async function generateHtmlNote(historicalBatch) {
     const batchKey = batchKeyFor(checked);
     const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
     const noteRound = historicalBatch ? historicalBatch.noteRound
-      : (reuseRound ? lastLoggedBatch.noteRound : new Set(noteHistory.map(h => h.at)).size + 1);
+      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
     const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
     const info = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound };
 
