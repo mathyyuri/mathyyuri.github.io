@@ -1490,7 +1490,12 @@ function wireAutoFillAnswers(box, nums, entry, questionData) {
       try {
         const fullBodyXml = extractEndnoteFullBodyXml(entry.markers.get(num).blockXml);
         if (!fullBodyXml) continue;
-        const html = await hwpBodyXmlToHtml(fullBodyXml, entry);
+        // skipChoiceDetect: [정답] 문단이 "④" 같은 정답 번호를 문장 속에
+        //언급만 하는 건데, 진짜 선택지 목록으로 오인해서 바로 뒤 [풀이]
+        // 문단까지 한데 묶여 "[풀이]" 표시 자체가 통째로 사라지는 경우가
+        // 있었다(실제 파일 확인) — 그러면 아래 정규식이 "[풀이]"를 못 찾아
+        // 정답 자동 채우기가 조용히 실패한다.
+        const html = await hwpBodyXmlToHtml(fullBodyXml, entry, { skipChoiceDetect: true });
         // decodeXmlEntities 없이는 "<"/">" 가 들어간 답(예: "log_5 8 < 2log_5 3")이
         // "&lt;" 글자 그대로 저장됐다(실제 파일에서 확인됨: [대수연마1000제]
         // 04. 로그함수 83번 등 부등호 들어간 답 다수).

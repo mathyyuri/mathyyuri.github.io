@@ -11,7 +11,12 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="hwpx-lib.js?v=2"></script>
+<!-- ?v=2를 손으로 고정해두면 hwpx-lib.js를 고쳐도 브라우저가 캐시된 옛
+     버전을 계속 쓸 수 있다(실제로 겪음: 해설 추출 버그를 고쳤는데 이
+     페이지에서 여전히 옛 결과가 나옴 — problembank.html/오답노트
+     생성기가 이미 겪고 고친 것과 같은 문제). Date.now()로 매번 다른
+     쿼리스트링을 붙여서 항상 최신 파일을 받아오게 한다. -->
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
 <style>
 :root{
   --cream:#FBF8F1; --ink:#1A1A1A; --gold:#A8853F; --gold-line:#E6DCC6;
@@ -310,7 +315,7 @@ document.getElementById('hwpxFile').addEventListener('change', async (ev) => {
       let answerHtml = '';
       try {
         const solXml = extractEndnoteFullBodyXml(blockXml);
-        if (solXml) answerHtml = await hwpBodyXmlToHtml(solXml, entry);
+        if (solXml) answerHtml = await hwpBodyXmlToHtml(solXml, entry, { skipChoiceDetect: true });
       } catch (e) {}
       qs.push({ num, bodyHtml, answerHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1, offsetX: 0, offsetY: 0 });
     }

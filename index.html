@@ -2210,7 +2210,7 @@ async function toggleHardQuestion(head,fileId,tagsByNum){
     let solutionHtml='';
     try{
       const solXml=extractEndnoteFullBodyXml(marker.blockXml);
-      if(solXml) solutionHtml=await hwpBodyXmlToHtml(solXml,entry);
+      if(solXml) solutionHtml=await hwpBodyXmlToHtml(solXml,entry,{skipChoiceDetect:true});
     }catch(e){}
     if(solutionHtml.trim()){
       extraHtml+='<div class="ma-reveal"><div class="ma-reveal-head" data-label="풀이">풀이 보기 ▾</div><div class="ma-reveal-body ma-solution">'+solutionHtml+'</div></div>';
@@ -2271,7 +2271,10 @@ function ensureHwpQuestionRenderer(){
     });
     await new Promise((resolve,reject)=>{
       const s=document.createElement('script');
-      s.src='hwpx-lib.js?v=2';
+      // ?v=2 고정은 hwpx-lib.js를 고쳐도 브라우저 캐시가 옛 버전을 계속
+      // 물고 있을 수 있다(실제로 겪음 — problembank.html도 같은 이유로
+      // Date.now()로 바꿨음). 매번 다른 값이라 항상 최신 파일을 받아온다.
+      s.src='hwpx-lib.js?v='+Date.now();
       s.onload=resolve; s.onerror=()=>reject(new Error('hwpx-lib.js 로드 실패'));
       document.head.appendChild(s);
     });

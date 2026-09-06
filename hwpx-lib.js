@@ -1465,7 +1465,18 @@ function formatConditionBox(inner, rawText) {
 
 // Converts a body of one or more <hp:p> paragraphs (a question's
 // blockXml, an endnote's full subList, or a table cell's subList) to HTML.
-async function hwpBodyXmlToHtml(xml, entry) {
+// opts.skipChoiceDetect — 해설/끝주([정답]/[풀이]) 내용을 그릴 때 켠다.
+// "[정답] ④ ..."처럼 정답 번호를 문장 속에서 그냥 언급하는 것뿐인데도
+// hasRealChoiceMarker가 이걸 진짜 선택지 목록으로 오인해서, 바로 뒤
+// [풀이] 문단까지 "선택지 run"으로 한데 묶어버리고 formatChoiceRow가
+// 각 문단에서 "마지막 마커 앞쪽"을 통째로 버리는 바람에 실제 풀이
+// 과정이 전부 사라지는 문제가 있었다(실제 파일 확인: "신도고" 해설 —
+// [정답] 문단과 [풀이] 문단이 인접해 있으면 markerCount>=2로 걸려서
+// [풀이]의 실제 유도 과정이 통째로 날아가고 "④이다."만 남았음). 문제
+// 본문(진짜 ①~⑤ 선택지가 있는 곳)에는 이 옵션을 안 켜서 기존 동작을
+// 그대로 유지한다.
+async function hwpBodyXmlToHtml(xml, entry, opts) {
+  const skipChoiceDetect = !!(opts && opts.skipChoiceDetect);
   const paras = findTopLevelBlocks(xml, 'hp:p');
   const items = [];
   for (const p of paras) {
@@ -1553,7 +1564,7 @@ async function hwpBodyXmlToHtml(xml, entry) {
   const resolved = [];
   let i = 0;
   while (i < items.length) {
-    if (hasRealChoiceMarker(items[i].raw)) {
+    if (!skipChoiceDetect && hasRealChoiceMarker(items[i].raw)) {
       const start = i;
       while (i < items.length && hasRealChoiceMarker(items[i].raw)) i++;
       const run = items.slice(start, i);
