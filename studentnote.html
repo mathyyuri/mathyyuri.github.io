@@ -942,6 +942,14 @@ function balanceLeftRight(s) {
 function convertHwpEquationToLatex(script) {
   if (!script) return '';
   let s = script;
+  // HWP 수식편집기가 점 이름 등을 로마체(직립)로 찍을 때 스크립트 자체에
+  // 백슬래시를 그대로 박아 넣는 경우가 실제 파일에서 확인됨 — "\A(-3)",
+  // "\OABC", "\DEFG" 등(hwpx-lib.js에서 먼저 발견·수정, studentnote.html은
+  // 별도 사본이라 그동안 빠져 있었음 — 원장님 스크린샷: "24번" \OABC 등이
+  // 빨간 글자로 깨져 보임). 이 시점(아직 \text{}/\neq 같은 백슬래시 명령을
+  // 하나도 안 넣은 상태)에 남아있는 백슬래시는 전부 이거다. 그냥 지우면
+  // 파일 안의 다른 점 이름(백슬래시 없는 "A(2,~3)")과 완전히 같은 모양이 됨.
+  s = s.replace(/\\([A-Za-z]+)/g, '$1');
   s = s.replace(/[㈎㈏㈐㈑㈒]/g, (ch) => `\\text{${HWP_ENCLOSED_HANGUL[ch]}}`);
   s = s.replace(/`/g, ' ');
   // Quoted labels ("⑦", "또는", ...) are literal text, not math — \text{}
@@ -1039,7 +1047,9 @@ function convertHwpEquationToLatex(script) {
   // \overline (not \bar) — \bar only draws a short accent over a single
   // character; segment notation like AB needs a full-width bar over the
   // whole label, which is what \overline does.
-  s = applyUnary(s, 'bar', '\\overline', false, true);
+  // "bar"가 대문자 "BAR"로도 나오는 파일이 실제로 확인됨(hwpx-lib.js에서
+  // 먼저 발견·수정) — caseInsensitive를 켜서 studentnote.html도 맞춤.
+  s = applyUnary(s, 'bar', '\\overline', true, true);
   s = applyUnary(s, 'hat', '\\hat');
   s = applyUnary(s, 'vec', '\\vec');
   s = applyUnary(s, 'tilde', '\\tilde');
