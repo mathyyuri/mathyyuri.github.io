@@ -1112,8 +1112,18 @@ async function hwpTblToHtml(tblXml, entry) {
   // table borderFillIDRef 11 = solid all sides, every cell's own
   // borderFillIDRef 12 = all none, which without this rendered with NO
   // border anywhere even though the source clearly draws a frame around it.
+  // "빈칸의 (가)~(라)에 알맞은 식은?" 유형처럼 각 행 첫 칸이 선택지 번호
+  // (①~⑤) 하나뿐인 격자 표는, 위 TAT11회 37번(행렬 계산 과정) 표와 소스
+  // 데이터(표 자체의 borderFillIDRef)만으로는 구분이 안 되지만, 이 경우엔
+  // hwpCondBox 테두리가 오히려 안 어울리고 선지가 좁은 칸에 눌려 수식이
+  // 중간에서 줄바꿈되기 쉽다는 리포트(원장님 스크린샷 — "[S+반] 1.
+  // 평면좌표 개념 n.hwpx" 14번, studentnote.html에서 먼저 확인/수정) —
+  // 첫 칸이 ①~⑤ 단독인 행이 2개 이상이면 선택지 표로 보고 테두리를
+  // 씌우지 않는다.
+  const choiceMarkerRowCount = (rowsHtml.match(/<td[^>]*><p>[①②③④⑤]<\/p><\/td>/g) || []).length;
+  const looksLikeChoiceGrid = choiceMarkerRowCount >= 2;
   const tblFillM = tblXml.match(/^<hp:tbl\b[^>]*\bborderFillIDRef="(\d+)"/);
-  if (tblFillM && !borderFillAllNone(entry, tblFillM[1])) return `<div class="hwpCondBox">${tableEl}</div>`;
+  if (!looksLikeChoiceGrid && tblFillM && !borderFillAllNone(entry, tblFillM[1])) return `<div class="hwpCondBox">${tableEl}</div>`;
   return tableEl;
 }
 
