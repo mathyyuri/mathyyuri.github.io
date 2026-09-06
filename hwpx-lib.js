@@ -653,6 +653,18 @@ function balanceLeftRight(s) {
 function convertHwpEquationToLatex(script) {
   if (!script) return '';
   let s = script;
+  // HWP 수식편집기가 점 이름 등을 로마체(직립)로 찍을 때 스크립트 자체에
+  // 백슬래시를 그대로 박아 넣는 경우가 실제 파일에서 확인됨 — "\A(-3)",
+  // "\B(5)", "\AB"(선분 AB), "\ABC"(삼각형) 등. 이 시점(함수 맨 처음, 우리가
+  // 아직 \text{}/\neq 같은 백슬래시 명령을 하나도 안 넣은 상태)에 남아있는
+  // 백슬래시는 전부 이거다 — 나중 단계들의 "(?<!\\)" 가드가 "우리가 방금
+  // 만든 명령이니 건드리지 마"라는 뜻으로 백슬래시 앞을 보호하는데, 이 HWP
+  // 원본 백슬래시도 똑같이 보호돼버려서 "\AB" 하나는 우리 심볼 치환도
+  // KATEX_SAFE_MACROS(한 글자짜리만 등록)도 못 구하고 KaTeX 오류로 남았다
+  // (원장님 리포트, "[교과서] 평면좌표.hwpx" 10번 실제 확인). 그냥 백슬래시만
+  // 지우면 파일 안의 다른 점 이름(백슬래시 없는 "A(2,~3)")과 완전히 같은
+  // 모양으로 나온다.
+  s = s.replace(/\\([A-Za-z]+)/g, '$1');
   s = s.replace(/[㈎㈏㈐㈑㈒]/g, (ch) => `\\text{${HWP_ENCLOSED_HANGUL[ch]}}`);
   s = s.replace(/`/g, ' ');
   // Quoted labels ("⑦", "또는", ...) are literal text, not math — \text{}
