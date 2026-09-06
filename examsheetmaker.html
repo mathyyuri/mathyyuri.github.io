@@ -146,6 +146,15 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
    보이던 것을 빈 줄 하나 들어간 정도로 띄웠다(원장님 요청). */
 .choiceRow{display:flex !important;flex-wrap:wrap;row-gap:3mm;column-gap:11mm;margin:5mm 0 3mm}
 .choiceItem{flex:0 1 auto;min-width:0;max-width:100%;overflow-wrap:break-word}
+/* 해설지 전용 — 문제 칸(examQBlock)과 거의 같은 골격이지만 드래그/이미지
+   조절이 필요 없어 더 단순하다. 번호 글꼴 크기만 문제보다 살짝 작게(해설은
+   글이 많아 한 단에 여러 문항이 들어가야 하므로). */
+.examAnswerBlock{display:flex;align-items:flex-start;gap:2.5mm;break-inside:avoid;width:100%}
+.examAnswerNum{flex:0 0 auto;font-family:var(--serif);font-weight:700;font-size:15px;color:var(--accent);line-height:1.2}
+.examAnswerBody{flex:1;min-width:0;font-size:10.5px;line-height:1.6}
+.examAnswerBody p{margin:0 0 1.5mm}
+.examAnswerBody .hint{color:rgba(26,26,26,.4);font-style:italic}
+.examCoverTitle{font-family:var(--serif);font-weight:900;font-size:22px;color:var(--accent);text-align:center;margin-bottom:4mm}
 .examFoot{position:absolute;bottom:8mm;left:0;right:0;text-align:center}
 .examFoot .pageBox{display:inline-flex;align-items:center;border:1px solid var(--ink);padding:1mm 4mm;font-size:10px}
 .examFoot .pageBox .cur{padding-right:2mm}
@@ -208,6 +217,8 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
       <input type="number" id="pdfEnd" min="1" placeholder="끝">
     </div>
     <button type="button" id="savePdfBtn" class="secondary" disabled>PDF로 저장</button>
+    <button type="button" id="saveAnswerPdfBtn" class="secondary" disabled>해설 PDF로 저장</button>
+    <p class="hint">문제 PDF와 해설 PDF는 각각 다른 파일로 저장됩니다.</p>
   </div>
 
   <div class="previewWrap" id="previewWrap">
@@ -236,6 +247,7 @@ const previewWrap = document.getElementById('previewWrap');
 const qOrderListEl = document.getElementById('qOrderList');
 const regenerateBtn = document.getElementById('regenerateBtn');
 const savePdfBtn = document.getElementById('savePdfBtn');
+const saveAnswerPdfBtn = document.getElementById('saveAnswerPdfBtn');
 
 // ---------- 로고/서명 이미지 ----------
 document.getElementById('logoFile').addEventListener('change', (ev) => {
@@ -285,7 +297,15 @@ document.getElementById('hwpxFile').addEventListener('change', async (ev) => {
       try { bodyHtml = await hwpBodyXmlToHtml(blockXml, entry); } catch (e) { bodyHtml = '<p class="hint">(렌더링 실패)</p>'; }
       const choiceCount = (bodyHtml.match(/class="choiceItem"/g) || []).length;
       const hasImage = /<img[\s>]/i.test(bodyHtml);
-      qs.push({ num, bodyHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1, offsetX: 0, offsetY: 0 });
+      // 해설지용 — hwpx 끝주([정답]/[풀이])에서 뽑는다. 이 학원 자료는
+      // 보통 [정답]과 [풀이]가 한 끝주 안에 같이 들어있어서 이거 하나로
+      // 충분하다(index.html 미션분석의 "풀이 보기"와 같은 방식).
+      let answerHtml = '';
+      try {
+        const solXml = extractEndnoteFullBodyXml(blockXml);
+        if (solXml) answerHtml = await hwpBodyXmlToHtml(solXml, entry);
+      } catch (e) {}
+      qs.push({ num, bodyHtml, answerHtml, choiceCount, forceBreak: false, hasImage, imageScale: 1, offsetX: 0, offsetY: 0 });
     }
     hwpxEntry = entry;
     questions = qs;
@@ -293,6 +313,7 @@ document.getElementById('hwpxFile').addEventListener('change', async (ev) => {
     updateUndoBtn();
     regenerateBtn.disabled = false;
     savePdfBtn.disabled = false;
+    saveAnswerPdfBtn.disabled = false;
     renderQOrderList();
     setStatus(`${qs.length}개 문제를 불러왔습니다.`);
     await regenerateLayout();
@@ -497,7 +518,10 @@ function measureHeaderHeightMm(headHtml, pageWmm, ratio) {
 // "연속 채우기" 알고리즘: 문제를 하나씩 측정해서 칸에 넣다가 넘치면 다음
 // 칸으로 넘긴다. "새 단" 체크한 문제는 그 자리에서 무조건 다음 칸부터
 // 새로 시작.
-function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor) {
+// blockHtmlFn(q) — 문항 하나를 실제 배치에 넣을 HTML로 바꾸는 함수를
+// 밖에서 주입받는다. 문제 시험지(examQBlock, 드래그·강제줄바꿈 포함)와
+// 해설지(examAnswerBlock, 그냥 이어붙이기만)가 이 함수 하나를 같이 쓴다.
+function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor, blockHtmlFn) {
   const stage = document.createElement('div');
   stage.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${colWidthPx}px;font-family:'Noto Sans KR',sans-serif;font-size:11.5px;line-height:1.6;`;
   document.body.appendChild(stage);
@@ -514,8 +538,7 @@ function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor) {
   function pushCol() { columns.push(curCol); curCol = []; curHeight = 0; }
 
   qs.forEach(q => {
-    const t = blockTransform(q);
-    const html = `<div class="examQBlock${q.forceBreak ? ' forceBreakMark' : ''}" data-num="${q.num}"${t ? ` style="transform:${t}"` : ''}><div class="examQNum">${q.num}.</div><div class="examQBody2">${q.bodyHtml}</div></div>`;
+    const html = blockHtmlFn(q);
     if (q.forceBreak && curCol.length > 0) pushCol();
     const maxH = colHeightPxFor(columns.length);
     const h = measure(html);
@@ -526,6 +549,14 @@ function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor) {
   if (curCol.length) columns.push(curCol);
   stage.remove();
   return columns;
+}
+function problemBlockHtml(q) {
+  const t = blockTransform(q);
+  return `<div class="examQBlock${q.forceBreak ? ' forceBreakMark' : ''}" data-num="${q.num}"${t ? ` style="transform:${t}"` : ''}><div class="examQNum">${q.num}.</div><div class="examQBody2">${q.bodyHtml}</div></div>`;
+}
+function answerBlockHtml(q) {
+  const body = q.answerHtml && q.answerHtml.trim() ? q.answerHtml : '<p class="hint">(해설 없음)</p>';
+  return `<div class="examAnswerBlock" data-num="${q.num}"><div class="examAnswerNum">${q.num}.</div><div class="examAnswerBody">${body}</div></div>`;
 }
 
 // ---------- 머리말/꼬리말만 다시 그리기(레이아웃 유지) ----------
@@ -592,7 +623,7 @@ async function regenerateLayout() {
     const colHeightMmFor = (colIdx) => (colIdx < COLUMNS_PER_PAGE ? page1HeightMm : otherHeightMm);
     const colHeightPxFor = (colIdx) => colHeightMmFor(colIdx) * ratio;
 
-    const columns = packQuestionsIntoColumns(questions, colWidthPx, colHeightPxFor);
+    const columns = packQuestionsIntoColumns(questions, colWidthPx, colHeightPxFor, problemBlockHtml);
     const pages = [];
     for (let i = 0; i < columns.length; i += COLUMNS_PER_PAGE) pages.push(columns.slice(i, i + COLUMNS_PER_PAGE));
     lastLayoutPages = pages;
@@ -660,6 +691,91 @@ async function saveSheetAsImage(sheet, pageNum) {
     alert('이미지 저장 실패: ' + e.message);
   }
 }
+// ---------- 해설지 생성 (문제 시험지와 별도 파일) ----------
+// 문제 시험지처럼 미리보기에서 손으로 다듬을 일이 별로 없어서(순서는
+// 문제와 항상 같고, 위치 미세조정도 필요 없음) 화면에 보여주지 않고
+// 저장 버튼을 누를 때만 화면 밖(-9999px)에 그렸다가 캡처하고 지운다 —
+// regenerateLayout과 같은 배치 방식(연속 채우기, 2단)을 그대로 재사용.
+function buildAnswerSheetElements() {
+  const { w, h } = PAGE_SIZES[pageSize];
+  const ratio = mmToPxRatio();
+  const colWidthMm = (w - CONTENT_SIDE_MM * 2 - COL_GAP_MM) / COLUMNS_PER_PAGE;
+  const colWidthPx = colWidthMm * ratio;
+  const titleHtml = `<div class="examCoverTitle">정답 및 해설</div>`;
+  const page1HeadHtml = simpleHeadHtml(1) + titleHtml;
+  const page1HeadMm = measureHeaderHeightMm(page1HeadHtml, w, ratio) + OTHER_HEAD_GAP_MM;
+  const otherHeadMm = measureHeaderHeightMm(simpleHeadHtml(2), w, ratio) + OTHER_HEAD_GAP_MM;
+  const page1HeightMm = h - page1HeadMm - CONTENT_BOTTOM_MM;
+  const otherHeightMm = h - otherHeadMm - CONTENT_BOTTOM_MM;
+  const colHeightMmFor = (colIdx) => (colIdx < COLUMNS_PER_PAGE ? page1HeightMm : otherHeightMm);
+  const colHeightPxFor = (colIdx) => colHeightMmFor(colIdx) * ratio;
+
+  const columns = packQuestionsIntoColumns(questions, colWidthPx, colHeightPxFor, answerBlockHtml);
+  const pages = [];
+  for (let i = 0; i < columns.length; i += COLUMNS_PER_PAGE) pages.push(columns.slice(i, i + COLUMNS_PER_PAGE));
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:-9999px;top:0;';
+  document.body.appendChild(container);
+  const sheets = pages.map((cols, pageIdx) => {
+    const pageNum = pageIdx + 1;
+    const colHeightMm = colHeightMmFor(pageIdx * COLUMNS_PER_PAGE);
+    const colsHtml = cols.map(colBlocks => {
+      const slotH = colBlocks.length ? colHeightMm / colBlocks.length : colHeightMm;
+      const slotsHtml = colBlocks.map(b => `<div class="examQSlot" style="height:${slotH}mm">${b}</div>`).join('');
+      return `<div class="examQCol" style="height:${colHeightMm}mm">${slotsHtml}</div>`;
+    }).join('');
+    const headMm = pageIdx === 0 ? page1HeadMm : otherHeadMm;
+    const sheet = document.createElement('div');
+    sheet.className = 'examSheet';
+    sheet.style.width = w + 'mm';
+    sheet.style.height = h + 'mm';
+    sheet.innerHTML = `
+      <div class="examHeadSlot">${pageIdx === 0 ? page1HeadHtml : simpleHeadHtml(pageNum)}</div>
+      <div class="examQBody" style="top:${headMm}mm">${colsHtml}</div>
+      <div class="examFoot"><span class="pageBox"><span class="cur">${pageNum}</span><span class="tot">${pages.length}</span></span></div>
+    `;
+    container.appendChild(sheet);
+    return sheet;
+  });
+  if (window.renderMathInElement) {
+    try { renderMathInElement(container, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
+  }
+  return { container, sheets };
+}
+saveAnswerPdfBtn.addEventListener('click', async () => {
+  if (!questions.length) return;
+  saveAnswerPdfBtn.disabled = true;
+  const orig = saveAnswerPdfBtn.textContent;
+  let container = null;
+  try {
+    saveAnswerPdfBtn.textContent = '배치하는 중...';
+    const built = buildAnswerSheetElements();
+    container = built.container;
+    const sheets = built.sheets;
+    if (!sheets.length) throw new Error('해설 내용을 찾지 못했습니다(끝주에 [정답]/[풀이]가 있는 파일만 지원).');
+    const jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) throw new Error('PDF 라이브러리를 불러오지 못했습니다');
+    const pageWmm = PAGE_SIZES[pageSize].w;
+    let pdf = null;
+    for (let i = 0; i < sheets.length; i++) {
+      saveAnswerPdfBtn.textContent = `캡처 중... (${i + 1}/${sheets.length})`;
+      const canvas = await captureSheet(sheets[i]);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pageHmm = pageWmm * (canvas.height / canvas.width);
+      if (!pdf) pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: [pageWmm, pageHmm] });
+      else pdf.addPage([pageWmm, pageHmm], 'portrait');
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWmm, pageHmm, undefined, 'FAST');
+    }
+    pdf.save(`내신기출_해설.pdf`);
+  } catch (e) {
+    alert('해설 PDF 저장 실패: ' + e.message);
+  } finally {
+    if (container) container.remove();
+    saveAnswerPdfBtn.disabled = false;
+    saveAnswerPdfBtn.textContent = orig;
+  }
+});
 savePdfBtn.addEventListener('click', async () => {
   if (!lastLayoutPages.length) return;
   const sheets = [...document.querySelectorAll('.examSheet')];
