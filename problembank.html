@@ -1341,7 +1341,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
       // $ 기호를 무시하고 그려서 실수로 넣어도 정상적으로 보이게 한다.
       answerPreviewEl.innerHTML = '\\(' + v.replace(/\$/g, '') + '\\)';
       if (window.renderMathInElement) {
-        try { renderMathInElement(answerPreviewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+        try { renderMathInElement(answerPreviewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
       }
     }
     refreshAnswerPreview();
@@ -1379,7 +1379,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
         const updatePreview = () => {
           previewEl.innerHTML = renderEditedText(textarea.value);
           if (window.renderMathInElement) {
-            try { renderMathInElement(previewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+            try { renderMathInElement(previewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
           }
         };
         updatePreview();
@@ -1389,7 +1389,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           const content = row.querySelector('.tagRowContent');
           if (content) {
             content.innerHTML = renderEditedText(qd.editedRaw);
-            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {} }
           }
           editBtn.textContent = '✏️ 문제 수정 (수정됨)';
         });
@@ -1399,7 +1399,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           const content = row.querySelector('.tagRowContent');
           if (content) {
             content.innerHTML = originalPreviewHtmlByNum[num];
-            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+            if (window.renderMathInElement) { try { renderMathInElement(content, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {} }
           }
           editBtn.textContent = '✏️ 문제 수정';
           updatePreview();
@@ -1411,7 +1411,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
   }
   wrap.appendChild(rows);
   if (previewHtmlByNum && window.renderMathInElement) {
-    try { renderMathInElement(rows, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+    try { renderMathInElement(rows, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
   }
   const bulkMajorSelect = wrap.querySelector('.bulkMajorSelect');
   const bulkMidSelect = wrap.querySelector('.bulkMidSelect');
@@ -1857,7 +1857,7 @@ async function validateOneFile(file, box) {
 
   if (window.renderMathInElement) {
     try {
-      renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+      renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS });
     } catch (e) {}
   }
 

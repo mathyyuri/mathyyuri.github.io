@@ -2139,7 +2139,7 @@ async function toggleHardQuestion(head,fileId){
     body.innerHTML=html;
     body.dataset.rendered='1';
     if(window.renderMathInElement){
-      try{ renderMathInElement(body,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false}); }catch(e){}
+      try{ renderMathInElement(body,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false,macros:KATEX_SAFE_MACROS}); }catch(e){}
     }
   }catch(e){
     body.innerHTML='<div class="ma-empty">문제를 불러오지 못했습니다: '+esc(e.message||String(e))+'</div>';

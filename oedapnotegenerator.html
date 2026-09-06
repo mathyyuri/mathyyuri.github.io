@@ -1248,9 +1248,18 @@ ${slidesHtml.join('\n')}
 </div>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
+  // 문제 수정(직접 타이핑)에서 실수로 "\\\\A"/"\\\\B"처럼 점 이름 앞에
+  // 백슬래시를 붙이는 경우(hwpx-lib.js의 KATEX_SAFE_MACROS와 같은 이유) —
+  // 이 화면은 별도로 저장되는 독립 문서라 그 파일을 못 불러오므로 여기
+  // 에도 똑같이 정의해둔다.
+  var KATEX_SAFE_MACROS = (function () {
+    var m = {};
+    for (var i = 65; i <= 90; i++) { var ch = String.fromCharCode(i); m['\\\\' + ch] = ch; }
+    return m;
+  })();
   function tryRender() {
     if (window.renderMathInElement) {
-      renderMathInElement(document.body, { delimiters: [{ left: '\\\\(', right: '\\\\)', display: false }], throwOnError: false });
+      renderMathInElement(document.body, { delimiters: [{ left: '\\\\(', right: '\\\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS });
     } else { setTimeout(tryRender, 100); }
   }
   tryRender();
@@ -1750,7 +1759,7 @@ async function paneOverflowsHalfSlide(bodyHtml) {
     <div class="__mPaneBody" style="font-size:1.5rem;line-height:1.6;flex:1 1 auto;min-height:0;overflow:visible;">${bodyHtml}</div>
   </div>`;
   if (window.renderMathInElement) {
-    renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+    renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS });
   }
   await new Promise(r => setTimeout(r, 0));
   const bodyEl = host.querySelector('.__mPaneBody');
@@ -1784,7 +1793,7 @@ async function soloPaneOverflowsAt(bodyHtml, fontSizeRem) {
     <div class="__mFullPaneBody" style="font-size:${fontSizeRem}rem;line-height:1.6;flex:1 1 auto;min-height:0;overflow:visible;columns:2;column-gap:4%;column-fill:auto;">${bodyHtml}</div>
   </div>`;
   if (window.renderMathInElement) {
-    renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+    renderMathInElement(host, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS });
   }
   await new Promise(r => setTimeout(r, 0));
   const bodyEl = host.querySelector('.__mFullPaneBody');

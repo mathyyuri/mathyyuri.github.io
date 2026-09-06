@@ -500,7 +500,7 @@ function packQuestionsIntoColumns(qs, colWidthPx, colHeightPxFor) {
   const measure = (html) => {
     stage.innerHTML = html;
     if (window.renderMathInElement) {
-      try { renderMathInElement(stage, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+      try { renderMathInElement(stage, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
     }
     return stage.getBoundingClientRect().height;
   };
@@ -628,7 +628,7 @@ async function regenerateLayout() {
       previewWrap.appendChild(block);
     });
     if (window.renderMathInElement) {
-      try { renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+      try { renderMathInElement(previewWrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
     }
     wirePreviewDrag();
     applyImageScales();

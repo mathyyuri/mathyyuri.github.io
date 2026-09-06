@@ -4,6 +4,23 @@
 // scratchpad/extract_lib.js after any change to the corresponding
 // function in studentnote.html — do not let the two drift.
 
+// problembank.html의 "문제 수정"(직접 타이핑, renderEditedText 참고)에서
+// "선분 AB"를 표시하려다 \overline{AB} 대신 실수로 \A, \B처럼 점 이름
+// 앞에 백슬래시를 붙이는 경우가 실제로 확인됨(원장님 리포트) — KaTeX엔
+// \A/\B 같은 명령이 없어서 그 자리 전체가 빨간 오류로 깨져 보였다.
+// \A~\Z(대문자 점 이름은 이 사이트에서 항상 이렇게 씀)를 그냥 그 글자
+// 자신으로 렌더링되게 미리 정의해두면, 이런 실수를 했을 때도 의도한
+// 대로("점 A") 조용히 정상 표시된다 — \alpha 등 그리스 문자 명령과는
+// 철자가 전혀 겹치지 않아 다른 실수를 가리는 부작용도 없다. 소문자
+// a~z는 등록하지 않는다 — HWP 원본 변환기(convertHwpEquationToLatex)가
+// 실제로 \rm 접두사 등에 소문자를 쓰는 경우가 있어 겹칠 위험이 있고,
+// 실제로 확인된 실수 사례는 전부 대문자 점 이름이었다.
+const KATEX_SAFE_MACROS = (() => {
+  const m = {};
+  for (let i = 65; i <= 90; i++) { const ch = String.fromCharCode(i); m['\\' + ch] = ch; }
+  return m;
+})();
+
 function findTopLevelBlocks(xml, tagName) {
   const blocks = [];
   let depth = 0, start = -1;
