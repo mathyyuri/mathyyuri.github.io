@@ -1948,9 +1948,15 @@ let missionAnalysisReqId=0;
 async function renderMissionAnalysis(nQ){
   const box=document.getElementById('detail-analysis');
   const myReq=++missionAnalysisReqId;
-  box.classList.add('hidden');
   box.innerHTML='';
-  if(!nQ) return;
+  if(!nQ){ box.classList.add('hidden'); return; }
+  // missionfile→filequestions 두 번의 Apps Script 왕복이 합쳐서 5~10초
+  // 넘게 걸릴 수 있어서(구글 서버 자체 지연 — 원장님이 "안 뜬다"고 오해한
+  // 실제 원인), 로딩 표시 없이 그냥 숨겨둔 채로 있으면 고장난 것처럼
+  // 보인다. 바로 로딩 문구를 보여주고, 끝나면 실제 내용으로(또는 분석할
+  // 재료가 없으면 다시 숨김으로) 교체한다.
+  box.classList.remove('hidden');
+  box.innerHTML='<div class="ma-title">MISSION ANALYSIS · 문항 분석</div><div class="ma-loading">불러오는 중... (문항 태그가 붙은 미션은 몇 초 정도 걸릴 수 있어요)</div>';
   try{
     const cls=(typeof pubClass!=='undefined'&&pubClass!=='전체')?pubClass:'';
     // 이 미션에 연결된 hwpx 파일을 찾는 방법은 "필기원본 연결"(assigneddoc,
@@ -1961,8 +1967,8 @@ async function renderMissionAnalysis(nQ){
     const ap=new URLSearchParams({action:'missionfile',category:pubTab,mission:pubMission,class:cls});
     const ares=await fetch(GAS_URL+'?'+ap.toString());
     const ajson=await ares.json();
-    if(myReq!==missionAnalysisReqId) return;
-    if(!ajson.ok||!ajson.fileId) return; // 이 미션에 매칭되는 파일이 없으면 분석 불가
+    if(myReq!==missionAnalysisReqId) return; // 그 사이 다른 미션을 클릭한 경우 낡은 응답 무시(박스는 새 클릭 쪽이 이미 관리 중)
+    if(!ajson.ok||!ajson.fileId){ box.classList.add('hidden'); box.innerHTML=''; return; } // 이 미션에 매칭되는 파일이 없으면 분석 불가
     const fileId=ajson.fileId;
 
     const qp=new URLSearchParams({action:'filequestions',fileId});
@@ -1970,7 +1976,7 @@ async function renderMissionAnalysis(nQ){
     const qjson=await qres.json();
     if(myReq!==missionAnalysisReqId) return;
     const questions=qjson.questions||[];
-    if(!questions.length) return; // 이 파일에 아직 태그가 하나도 없으면 분석 재료가 없음
+    if(!questions.length){ box.classList.add('hidden'); box.innerHTML=''; return; } // 이 파일에 아직 태그가 하나도 없으면 분석 재료가 없음
     const tagsByNum={};
     questions.forEach(q=>{ tagsByNum[Number(q.num)]=q; });
 
@@ -1997,7 +2003,9 @@ async function renderMissionAnalysis(nQ){
     box.innerHTML=buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId);
     box.classList.remove('hidden');
     wireMissionAnalysisToggles(box,fileId,tagsByNum);
-  }catch(e){ /* 조회 실패 시 조용히 섹션을 숨긴 채로 둠 */ }
+  }catch(e){
+    if(myReq===missionAnalysisReqId){ box.classList.add('hidden'); box.innerHTML=''; } // 조회 실패 시 "불러오는 중" 문구가 안 남게 정리
+  }
 }
 
 function maBar(label,pct,n,weak){
