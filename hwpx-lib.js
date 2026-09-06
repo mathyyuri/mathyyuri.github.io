@@ -742,7 +742,13 @@ function convertHwpEquationToLatex(script) {
   // \overline (not \bar) — \bar only draws a short accent over a single
   // character; segment notation like AB needs a full-width bar over the
   // whole label, which is what \overline does.
-  s = applyUnary(s, 'bar', '\\overline', false, true);
+  // 대소문자 섞여 나옴(파일별로 다름, 이 파일 곳곳의 "LEFT/left" 주석과
+  // 같은 문제) — "BARAP"/"BARBP"처럼 대문자 BAR가 그대로 안 바뀌고 글자로
+  // 남는 게 실제 파일에서 확인됨(M.TAT 1회 19번, "BARAP +BARBP"). sqrt/
+  // root와 달리 여기 하나는 실제로 대문자로 나온 사례가 있어 caseInsensitive
+  // 를 켠다 — "bar"를 부분 문자열로 포함하는 다른 키워드가 없어(주석
+  // 참고) 대소문자 무시로 켜도 새로 충돌할 위험은 없다.
+  s = applyUnary(s, 'bar', '\\overline', true, true);
   s = applyUnary(s, 'hat', '\\hat');
   s = applyUnary(s, 'vec', '\\vec');
   s = applyUnary(s, 'tilde', '\\tilde');
