@@ -66,8 +66,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 .qUnit { color: var(--gold); font-size: 11px; }
 .qGrid { display: flex; flex-wrap: wrap; gap: 6px; }
 /* 선택한 문제 미리보기(체크박스 화면에서 바로 확인·수정) — 문제은행의
-   문제 카드와 같은 결로 맞춤. */
-.chPrevItem { border: 1px solid var(--gold-line); border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+   "문제별 단원·유형" 카드 그리드와 같은 배치(한 줄에 카드 여러 개,
+   auto-fill로 화면 폭에 따라 자동으로 줄 수가 정해짐 — 넓은 화면에선
+   보통 4개 정도) — 원장님 요청. */
+#checkedPreviewList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.chPrevItem { display: flex; flex-direction: column; border: 1px solid var(--gold-line); border-radius: 4px; padding: 10px 12px; background: #fff; }
 .chPrevHead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .chPrevNum { font-family: var(--serif); font-weight: 900; color: var(--gold); font-size: 15px; }
 .chPrevSrc { font-size: 11px; color: rgba(26,26,26,.5); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
