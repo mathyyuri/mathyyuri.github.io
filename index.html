@@ -263,20 +263,7 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 @media(max-width:700px){.ma-grid{grid-template-columns:1fr}}
 .ma-card{border:1px solid var(--gold-line);border-radius:4px;background:#fff;padding:14px 16px}
 .ma-card h4{font-family:var(--kserif);font-weight:700;font-size:13px;margin-bottom:10px}
-.ma-bar-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:7px}
-.ma-bar-row .lbl{flex:0 0 auto;min-width:64px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ma-bar-row .track{flex:1;height:8px;background:var(--gold-soft);border-radius:4px;overflow:hidden}
-.ma-bar-row .fill{display:block;height:100%;border-radius:4px;background:var(--mint-deep)}
-.ma-bar-row .fill.weak{background:var(--pink-deep)}
-.ma-bar-row .pct{flex:0 0 auto;width:38px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
-.ma-bar-row .n{flex:0 0 auto;font-size:10px;color:rgba(26,26,26,.45)}
 .ma-empty{font-size:12px;color:rgba(26,26,26,.5)}
-.ma-gap-row{display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:7px;padding:4px 0;border-bottom:1px dashed var(--gold-line)}
-.ma-gap-row:last-child{border-bottom:none}
-.ma-gap-row .qn{flex:0 0 auto;font-family:var(--serif);font-weight:900;color:var(--gold);width:26px}
-.ma-gap-row .cls{flex:0 0 auto;font-weight:700}
-.ma-gap-row .cls.csp{color:var(--mint-deep)}
-.ma-gap-row .cls.cs{color:var(--pink-deep)}
 .ma-hard-list{display:flex;flex-direction:column;gap:10px}
 .ma-hard-item{border:1px solid var(--gold-line);border-radius:4px;background:#fff}
 .ma-hard-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer}
@@ -2000,19 +1987,14 @@ async function renderMissionAnalysis(nQ){
     const byClassRates={};
     classNames.forEach(c=>{byClassRates[c]=ratesFor(c);});
 
-    box.innerHTML=buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId);
+    const built=buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId);
+    box.innerHTML=built.html;
     box.classList.remove('hidden');
+    drawMissionAnalysisCharts(built);
     wireMissionAnalysisToggles(box,fileId,tagsByNum);
   }catch(e){
     if(myReq===missionAnalysisReqId){ box.classList.add('hidden'); box.innerHTML=''; } // 조회 실패 시 "불러오는 중" 문구가 안 남게 정리
   }
-}
-
-function maBar(label,pct,n,weak){
-  const p=pct==null?0:pct;
-  return '<div class="ma-bar-row"><span class="lbl" title="'+esc(label)+'">'+esc(label)+'</span>'
-    +'<span class="track"><span class="fill'+(weak?' weak':'')+'" style="width:'+p+'%"></span></span>'
-    +'<span class="pct">'+(pct==null?'—':pct+'%')+'</span><span class="n">('+n+'문항)</span></div>';
 }
 
 function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRates,fileId){
@@ -2030,16 +2012,10 @@ function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRa
     const bucket=d<=2?'하(1~2)':d===3?'중(3)':'상(4 이상)';
     if(overallRates[q]!=null) diffBuckets[bucket].push(overallRates[q]);
   }
-  let diffHtml='';
-  if(taggedDiffCount){
-    Object.keys(diffBuckets).forEach(k=>{
-      const arr=diffBuckets[k];
-      const avg=arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
-      diffHtml+=maBar(k,avg,arr.length,avg!=null&&avg<60);
-    });
-  }else{
-    diffHtml='<div class="ma-empty">난이도 태그가 아직 없습니다.</div>';
-  }
+  const diffData=Object.keys(diffBuckets).map(k=>{
+    const arr=diffBuckets[k];
+    return {label:k,avg:arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null,n:arr.length};
+  });
 
   // ---- 단원별 강약점: 문항DB의 '단원'(=대단원, 예: "공통수학2")은 파일 하나
   // 안에서 거의 다 똑같은 값이라 그룹으로 나누는 의미가 없다 — 실제로 세분화된
@@ -2053,20 +2029,14 @@ function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRa
     if(!unitAgg[u]) unitAgg[u]=[];
     unitAgg[u].push(overallRates[q]);
   }
-  const unitRows=Object.keys(unitAgg).map(u=>{
+  const unitData=Object.keys(unitAgg).map(u=>{
     const arr=unitAgg[u];
-    return {unit:u,avg:Math.round(arr.reduce((a,b)=>a+b,0)/arr.length),n:arr.length};
+    return {label:u,avg:Math.round(arr.reduce((a,b)=>a+b,0)/arr.length),n:arr.length};
   }).sort((a,b)=>a.avg-b.avg);
-  let unitHtml='';
-  if(unitRows.length){
-    unitRows.forEach(r=>{ unitHtml+=maBar(r.unit,r.avg,r.n,r.avg<60); });
-  }else{
-    unitHtml='<div class="ma-empty">단원 태그가 아직 없습니다.</div>';
-  }
 
   // ---- 반별 격차: S+/S 두 반이 다 있을 때만(대치수학 2기), 문항별 정답률
   // 차이가 큰 순서로 TOP5 — 어느 반이 더 약한지까지 같이 보여준다.
-  let gapHtml='';
+  let gapData=[];
   if(classNames.length>1){
     const gaps=[];
     for(let q=0;q<nQ;q++){
@@ -2075,18 +2045,10 @@ function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRa
       const max=Math.max(...classNames.map(c=>byClassRates[c][q]??-1));
       const min=Math.min(...classNames.map(c=>byClassRates[c][q]??101));
       const weakerCls=classNames.find(c=>byClassRates[c][q]===min);
-      gaps.push({q:q+numStartLocal,gap:max-min,weakerCls,rates:classNames.map(c=>({c,v:byClassRates[c][q]}))});
+      gaps.push({q:q+numStartLocal,gap:max-min,weakerCls,rates:byClassRates});
     }
     gaps.sort((a,b)=>b.gap-a.gap);
-    const top=gaps.slice(0,5).filter(g=>g.gap>0);
-    if(top.length){
-      top.forEach(g=>{
-        const parts=g.rates.map(r=>'<span class="cls '+(r.c==='S+'?'csp':r.c==='S'?'cs':'')+'">'+esc(r.c)+' '+(r.v==null?'—':r.v+'%')+'</span>').join(' vs ');
-        gapHtml+='<div class="ma-gap-row"><span class="qn">'+g.q+'번</span>'+parts+'<span class="n">(차이 '+g.gap+'%p, '+esc(g.weakerCls)+'반이 더 약함)</span></div>';
-      });
-    }else{
-      gapHtml='<div class="ma-empty">두 반의 정답률 차이가 거의 없습니다.</div>';
-    }
+    gapData=gaps.slice(0,5).filter(g=>g.gap>0);
   }
 
   // ---- 오답률 TOP5: 정답률 낮은 순으로 5문항, 클릭하면 원본 문제를 그
@@ -2110,14 +2072,87 @@ function buildMissionAnalysisHtml(nQ,tagsByNum,overallRates,classNames,byClassRa
     hardHtml='<div class="ma-empty">표시할 데이터가 없습니다.</div>';
   }
 
-  return '<div class="ma-title">MISSION ANALYSIS · 문항 분석</div>'
+  const unitChartH=Math.max(160,unitData.length*38);
+  const html='<div class="ma-title">MISSION ANALYSIS · 문항 분석</div>'
     +'<div class="ma-sub">문항DB 태그 기준 — 문항DB에 단원/난이도가 아직 안 채워졌으면 해당 항목은 비어 보일 수 있습니다</div>'
     +'<div class="ma-grid">'
-    +'<div class="ma-card"><h4>난이도별 정답률</h4>'+diffHtml+'</div>'
-    +'<div class="ma-card"><h4>세부 단원별 정답률 (약한 순)</h4>'+unitHtml+'</div>'
+    +'<div class="ma-card"><h4>난이도별 정답률</h4>'+(taggedDiffCount?'<div class="wrap" style="height:180px"><canvas id="ma-diff-chart"></canvas></div>':'<div class="ma-empty">난이도 태그가 아직 없습니다.</div>')+'</div>'
+    +'<div class="ma-card"><h4>세부 단원별 정답률 (약한 순)</h4>'+(unitData.length?'<div class="wrap" style="height:'+unitChartH+'px"><canvas id="ma-unit-chart"></canvas></div>':'<div class="ma-empty">단원 태그가 아직 없습니다.</div>')+'</div>'
     +'</div>'
-    +(classNames.length>1?'<div class="ma-card" style="margin-bottom:14px"><h4>반별 격차가 큰 문항 TOP5</h4>'+gapHtml+'</div>':'')
-    +'<div class="ma-card"><h4>오답률 높은 문항 TOP5 — 조심해야 할 포인트</h4><div class="ma-hard-list">'+hardHtml+'</div></div>';
+    +(classNames.length>1?'<div class="ma-card" style="margin-bottom:14px"><h4>반별 격차가 큰 문항 TOP5</h4>'+(gapData.length?'<div class="wrap" style="height:220px"><canvas id="ma-gap-chart"></canvas></div>':'<div class="ma-empty">두 반의 정답률 차이가 거의 없습니다.</div>')+'</div>':'')
+    +'<div class="ma-card"><h4>오답률 높은 문항 TOP5 — 조심해야 할 포인트</h4>'
+    +(hardTop.length?'<div class="wrap" style="height:190px;margin-bottom:12px"><canvas id="ma-hard-chart"></canvas></div>':'')
+    +'<div class="ma-hard-list">'+hardHtml+'</div></div>';
+
+  return {html,diffData,unitData,gapData,classNames,hardTop};
+}
+
+function drawMissionAnalysisCharts(d){
+  const rateColor=v=>v==null?'#ddd':v<60?cssColor('--pink-deep'):v<80?cssColor('--gold'):cssColor('--mint-deep');
+  ['ma-diff-chart','ma-unit-chart','ma-gap-chart','ma-hard-chart'].forEach(id=>{
+    if(charts[id]){charts[id].destroy();delete charts[id];}
+  });
+  if(d.diffData.some(x=>x.avg!=null)){
+    const canvas=document.getElementById('ma-diff-chart');
+    charts['ma-diff-chart']=new Chart(canvas,{
+      type:'bar',plugins:[valueLabel],
+      data:{labels:d.diffData.map(x=>x.label),datasets:[{
+        data:d.diffData.map(x=>x.avg),labelUnit:'%',
+        backgroundColor:d.diffData.map(x=>rateColor(x.avg)),
+        borderRadius:4,maxBarThickness:60,labelColor:cssColor('--ink')
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'% ('+d.diffData[c.dataIndex].n+'문항)'}}},
+        scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+          x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
+    });
+  }
+  if(d.unitData.length){
+    const canvas=document.getElementById('ma-unit-chart');
+    charts['ma-unit-chart']=new Chart(canvas,{
+      type:'bar',plugins:[valueLabel],
+      data:{labels:d.unitData.map(x=>x.label),datasets:[{
+        data:d.unitData.map(x=>x.avg),labelUnit:'%',
+        backgroundColor:d.unitData.map(x=>rateColor(x.avg)),
+        borderRadius:4,maxBarThickness:22,labelColor:cssColor('--ink')
+      }]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:34}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'% ('+d.unitData[c.dataIndex].n+'문항)'}}},
+        scales:{x:{beginAtZero:true,max:100,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+          y:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
+    });
+  }
+  if(d.gapData.length){
+    const canvas=document.getElementById('ma-gap-chart');
+    const colors={'S+':cssColor('--mint-deep'),'S':cssColor('--pink-deep')};
+    charts['ma-gap-chart']=new Chart(canvas,{
+      type:'bar',plugins:[valueLabel],
+      data:{labels:d.gapData.map(g=>g.q+'번'),
+        datasets:d.classNames.map(c=>({
+          label:c,data:d.gapData.map(g=>g.rates[c][g.q-1]),
+          backgroundColor:colors[c]||cssColor('--gold'),borderRadius:4,maxBarThickness:26,labelColor:cssColor('--ink')
+        }))},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
+        plugins:{legend:{position:'bottom',labels:{font:{family:'Noto Sans KR',size:11,weight:'700'},boxWidth:12}}},
+        scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+          x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
+    });
+  }
+  if(d.hardTop.length){
+    const canvas=document.getElementById('ma-hard-chart');
+    charts['ma-hard-chart']=new Chart(canvas,{
+      type:'bar',plugins:[valueLabel],
+      data:{labels:d.hardTop.map(h=>h.q+'번'),datasets:[{
+        data:d.hardTop.map(h=>h.rate),labelUnit:'%',
+        backgroundColor:cssColor('--pink-deep'),
+        borderRadius:4,maxBarThickness:44,labelColor:cssColor('--ink')
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(26,26,26,.07)'},ticks:{font:{family:'Noto Sans KR',size:10}}},
+          x:{grid:{display:false},ticks:{font:{family:'Noto Sans KR',size:11,weight:'700'}}}}}
+    });
+  }
 }
 
 function wireMissionAnalysisToggles(box,fileId,tagsByNum){
