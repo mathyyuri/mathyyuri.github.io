@@ -84,6 +84,20 @@ button:disabled { opacity: 0.4; cursor: default; }
 .chPrevMsg { font-size: 11px; margin-left: 6px; }
 .chPrevMsg.ok { color: var(--mint-deep); }
 .chPrevMsg.err { color: var(--pink-deep); }
+.chPrevQuickAnswer { margin: 6px 0; padding: 6px 10px; background: var(--mint-soft); border-radius: 4px; font-size: 12.5px; }
+.chPrevQuickAnswer b { color: var(--mint-deep); font-family: var(--kserif); margin-right: 6px; }
+.chPrevPreviewLabel { font-size: 11px; font-weight: 700; color: var(--gold); margin: 8px 0 4px; }
+.chPrevLivePreview { padding: 8px 10px; border: 1px solid var(--gold-line); border-radius: 4px; background: var(--cream); font-size: 13px; line-height: 1.6; min-height: 30px; }
+/* problembank.html "문제 수정"과 같은 수식 도구모음 */
+.eqToolbar { margin: 8px 0; }
+.eqTabRow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.eqTabBtn { padding: 4px 12px; font-size: 12px; font-weight: 600; letter-spacing: 0; border-radius: 14px; border: 1px solid var(--gold-line); background: #fff; color: rgba(26,26,26,.7); }
+.eqTabBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); color: var(--ink); }
+.eqTabBtn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.eqSymPanel { display: none; flex-wrap: wrap; gap: 4px; padding: 6px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; }
+.eqSymPanel.active { display: flex; }
+.eqSymBtn { padding: 4px 10px; font-size: 15px; font-weight: 400; letter-spacing: 0; border-radius: 4px; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); min-width: 30px; }
+.eqSymBtn:hover:not(:disabled) { background: var(--gold-soft); border-color: var(--gold); }
 /* 배경은 CSS 변수(--histBg)로 받는다 — 문항마다 O/X 이력에 따라 JS가
    인라인으로 값만 채워 넣고, 체크됐을 때 색(:has 규칙, 아래)이 이 값보다
    우선하도록 일부러 인라인 style이 아니라 변수로만 넘긴다. */
@@ -1143,16 +1157,32 @@ function buildCiteText(round, mission, sourceLabel, num) {
 // 그 뒤에 오는 렌더링(katex auto-render, 페이지 배치 등)이 똑같이
 // 동작한다 — 소문항 번호나 선지 자동 정렬 같은 자동 서식은 이 경로에는
 // 적용되지 않는다(강사가 직접 줄바꿈/기호로 원하는 대로 배치).
+function renderEditedInline(oneLine) {
+  const parts = oneLine.replace(/\r?\n/g, ' ').split(/\$([^$]+)\$/);
+  return parts.map((chunk, i) =>
+    i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
+  ).join('');
+}
+// hwpx-lib.js(problembank.html·오답노트 생성기가 공유)의 같은 이름
+// 함수와 동일 — "[박스]"~"[/박스]" 사이를 .hwpCondBox로 감싼다(선택한
+// 문제 미리보기의 "🔲 네모박스" 버튼이 이 마커를 넣어줌). 예전엔 이
+// 기능이 빠진 더 단순한 버전이었는데, 문제 수정 화면에 문제은행과 같은
+// 수식 도구모음을 넣으면서 같이 맞춤.
 function renderEditedText(text) {
-  const paras = String(text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  let src = String(text || '');
+  const boxes = [];
+  src = src.replace(/\[박스\]\s*\n?([\s\S]*?)\n?\s*\[\/박스\]/g, (m, inner) => {
+    const lines = inner.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const boxHtml = lines.map(line => `<p>${renderEditedInline(line)}</p>`).join('');
+    boxes.push(`<div class="hwpCondBox">${boxHtml}</div>`);
+    return '\n\n[[EDITBOX' + (boxes.length - 1) + ']]\n\n';
+  });
+  const paras = src.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
   if (!paras.length) return '';
   return paras.map(para => {
-    const oneLine = para.replace(/\r?\n/g, ' ');
-    const parts = oneLine.split(/\$([^$]+)\$/);
-    const html = parts.map((chunk, i) =>
-      i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
-    ).join('');
-    return `<p>${html}</p>`;
+    const boxRef = para.match(/^\[\[EDITBOX(\d+)\]\]$/);
+    if (boxRef) return boxes[Number(boxRef[1])];
+    return `<p>${renderEditedInline(para)}</p>`;
   }).join('');
 }
 // renderEditedText가 만드는 HTML을 다시 "$...$" 섞인 평문으로 되돌린다 —
@@ -1168,6 +1198,166 @@ function htmlPreviewToDraftText(html) {
       .replace(/<span class="eq">\\\(([\s\S]*?)\\\)<\/span>/g, (m, latex) => '$' + latex + '$')
       .replace(/<[^>]+>/g, '')
   ).trim();
+}
+// ---------- 수식 입력 도구모음 (problembank.html "문제 수정"과 동일 —
+// 선택한 문제 미리보기의 수정 칸에서도 똑같이 쓴다) ----------
+const EQ_TABS = [
+  { key: 'basic', label: '기본', syms: [
+    { label: '분수', raw: '\\dfrac{}{}', back: 3 },
+    { label: '√', raw: '\\sqrt{}', back: 1 },
+    { label: 'ⁿ√', raw: '\\sqrt[n]{}', back: 1 },
+    { label: 'x²', raw: '^{}', back: 1 },
+    { label: 'x₂', raw: '_{}', back: 1 },
+    { label: '|x|', raw: '||', back: 1 },
+    { label: '°', raw: '^\\circ', back: 0 },
+    { label: '∞', raw: '\\infty', back: 0 },
+    { label: 'π', raw: '\\pi', back: 0 },
+    { label: '조합 nCr', raw: '\\binom{}{}', back: 3 },
+  ] },
+  { key: 'rel', label: '부등호·집합', syms: [
+    { label: '≤', raw: '\\le', back: 0 },
+    { label: '≥', raw: '\\ge', back: 0 },
+    { label: '≪', raw: '\\ll', back: 0 },
+    { label: '≫', raw: '\\gg', back: 0 },
+    { label: '≠', raw: '\\ne', back: 0 },
+    { label: '≡', raw: '\\equiv', back: 0 },
+    { label: '≈', raw: '\\approx', back: 0 },
+    { label: '∝', raw: '\\propto', back: 0 },
+    { label: '∈', raw: '\\in', back: 0 },
+    { label: '∉', raw: '\\notin', back: 0 },
+    { label: '⊂', raw: '\\subset', back: 0 },
+    { label: '⊃', raw: '\\supset', back: 0 },
+    { label: '⊆', raw: '\\subseteq', back: 0 },
+    { label: '⊇', raw: '\\supseteq', back: 0 },
+    { label: '∪', raw: '\\cup', back: 0 },
+    { label: '∩', raw: '\\cap', back: 0 },
+    { label: '∅', raw: '\\emptyset', back: 0 },
+    { label: '→', raw: '\\to', back: 0 },
+    { label: '⇒', raw: '\\Rightarrow', back: 0 },
+    { label: '⇔', raw: '\\Leftrightarrow', back: 0 },
+  ] },
+  { key: 'op', label: '연산자', syms: [
+    { label: '±', raw: '\\pm', back: 0 },
+    { label: '∓', raw: '\\mp', back: 0 },
+    { label: '×', raw: '\\times', back: 0 },
+    { label: '÷', raw: '\\div', back: 0 },
+    { label: '·', raw: '\\cdot', back: 0 },
+    { label: '∧', raw: '\\wedge', back: 0 },
+    { label: '∨', raw: '\\vee', back: 0 },
+    { label: '¬', raw: '\\neg', back: 0 },
+    { label: '⊥', raw: '\\perp', back: 0 },
+    { label: '∥', raw: '\\parallel', back: 0 },
+    { label: '∠', raw: '\\angle', back: 0 },
+    { label: '∴', raw: '\\therefore', back: 0 },
+    { label: '∵', raw: '\\because', back: 0 },
+  ] },
+  { key: 'greek', label: '그리스문자', syms: [
+    { label: 'α', raw: '\\alpha', back: 0 }, { label: 'β', raw: '\\beta', back: 0 },
+    { label: 'γ', raw: '\\gamma', back: 0 }, { label: 'δ', raw: '\\delta', back: 0 },
+    { label: 'ε', raw: '\\varepsilon', back: 0 }, { label: 'θ', raw: '\\theta', back: 0 },
+    { label: 'λ', raw: '\\lambda', back: 0 }, { label: 'μ', raw: '\\mu', back: 0 },
+    { label: 'σ', raw: '\\sigma', back: 0 }, { label: 'φ', raw: '\\varphi', back: 0 },
+    { label: 'ω', raw: '\\omega', back: 0 },
+    { label: 'Δ', raw: '\\Delta', back: 0 }, { label: 'Σ', raw: '\\Sigma', back: 0 },
+    { label: 'Ω', raw: '\\Omega', back: 0 },
+  ] },
+  { key: 'calc', label: '미적분', syms: [
+    { label: 'lim', raw: '\\lim_{x \\to }', back: 1 },
+    { label: '∫', raw: '\\int_{}^{}', back: 4 },
+    { label: '∬', raw: '\\iint_{}^{}', back: 4 },
+    { label: '∑', raw: '\\sum_{}^{}', back: 4 },
+    { label: '∏', raw: '\\prod_{}^{}', back: 4 },
+    { label: '∂', raw: '\\partial', back: 0 },
+    { label: '∇', raw: '\\nabla', back: 0 },
+    { label: 'sin', raw: '\\sin', back: 0 },
+    { label: 'cos', raw: '\\cos', back: 0 },
+    { label: 'tan', raw: '\\tan', back: 0 },
+    { label: 'log', raw: '\\log', back: 0 },
+    { label: 'ln', raw: '\\ln', back: 0 },
+    { label: 'exp', raw: '\\exp', back: 0 },
+    { label: '벡터', raw: '\\vec{}', back: 1 },
+    { label: '선분 AB', raw: '\\overline{}', back: 1 },
+    { label: "f'(x)", raw: "f'(x)", back: 0 },
+  ] },
+  { key: 'bracket', label: '괄호·행렬', syms: [
+    { label: '(□)', raw: '\\left(\\right)', back: 7 },
+    { label: '[□]', raw: '\\left[\\right]', back: 7 },
+    { label: '{□}', raw: '\\left\\{\\right\\}', back: 8 },
+    { label: '2×2 행렬', raw: '\\begin{pmatrix} & \\\\ & \\end{pmatrix}', back: 0 },
+  ] },
+];
+function eqCursorInsideMath(text, pos) {
+  let count = 0;
+  for (let i = 0; i < pos; i++) if (text[i] === '$') count++;
+  return count % 2 === 1;
+}
+function eqInsertAtCursor(textarea, insertText, backFromEnd) {
+  const start = textarea.selectionStart, end = textarea.selectionEnd;
+  const text = textarea.value;
+  textarea.value = text.slice(0, start) + insertText + text.slice(end);
+  const pos = start + insertText.length - (backFromEnd || 0);
+  textarea.focus();
+  textarea.setSelectionRange(pos, pos);
+  textarea.dispatchEvent(new Event('input'));
+}
+function eqInsertMathSymbol(textarea, sym) {
+  const inMath = eqCursorInsideMath(textarea.value, textarea.selectionStart);
+  const insertText = inMath ? sym.raw : ('$' + sym.raw + '$');
+  eqInsertAtCursor(textarea, insertText, sym.back + (inMath ? 0 : 1));
+}
+function eqInsertBox(textarea) {
+  const template = '\n\n[박스]\n(가) \n(나) \n(다) \n[/박스]\n\n';
+  eqInsertAtCursor(textarea, template, template.length - template.indexOf('(가) ') - 4);
+}
+function eqInsertBlank(textarea) {
+  eqInsertAtCursor(textarea, '□', 0);
+}
+const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+function eqInsertLiteral(textarea, ch) {
+  eqInsertAtCursor(textarea, ch, 0);
+}
+function eqWrapSelectionAsMath(textarea) {
+  const start = textarea.selectionStart, end = textarea.selectionEnd;
+  if (start === end) return;
+  const text = textarea.value;
+  if (eqCursorInsideMath(text, start)) return;
+  const selected = text.slice(start, end);
+  const insertText = '$' + selected + '$';
+  textarea.value = text.slice(0, start) + insertText + text.slice(end);
+  textarea.focus();
+  textarea.setSelectionRange(start, start + insertText.length);
+  textarea.dispatchEvent(new Event('input'));
+}
+function buildEqToolbarHtml() {
+  const tabs = EQ_TABS.map((t, i) => `<button type="button" class="eqTabBtn${i === 0 ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`).join('')
+    + `<button type="button" class="eqTabBtn" data-tab="box">박스·기타</button>`;
+  const panels = EQ_TABS.map((t, i) => `<div class="eqSymPanel${i === 0 ? ' active' : ''}" data-panel="${t.key}">`
+    + t.syms.map(s => `<button type="button" class="eqSymBtn" data-latex="${escapeHtml(s.raw)}" data-back="${s.back}" title="${escapeHtml(s.raw)}">${s.label}</button>`).join('')
+    + `</div>`).join('')
+    + `<div class="eqSymPanel" data-panel="box">
+        <button type="button" class="eqSymBtn eqBoxInsertBtn" title="(가)(나)(다) 조건박스 삽입">🔲 네모박스((가)(나)(다))</button>
+        <button type="button" class="eqSymBtn eqBlankInsertBtn" title="빈칸 기호 □ 삽입">□ 빈칸</button>
+        ${CIRCLED_NUMBERS.map(ch => `<button type="button" class="eqSymBtn eqLiteralBtn" data-literal="${ch}" title="${ch} 삽입(수식 아님, 글자 그대로)">${ch}</button>`).join('')}
+      </div>`;
+  return `<div class="eqToolbar"><div class="eqTabRow">${tabs}<button type="button" class="eqTabBtn eqWrapSelBtn" title="그냥 입력한 글자를 선택한 뒤 눌러보세요 — $...$로 감싸 수식으로 바꿔줍니다" style="margin-left:auto">🔤→∑ 선택한 글자를 수식으로</button></div>${panels}</div>`;
+}
+function wireEqToolbar(box, textarea) {
+  box.querySelectorAll('.eqTabBtn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      box.querySelectorAll('.eqTabBtn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      const key = btn.dataset.tab;
+      box.querySelectorAll('.eqSymPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === key));
+    });
+  });
+  box.querySelectorAll('.eqSymBtn[data-latex]').forEach(btn => {
+    btn.addEventListener('click', () => eqInsertMathSymbol(textarea, { raw: btn.dataset.latex, back: Number(btn.dataset.back) || 0 }));
+  });
+  box.querySelector('.eqBoxInsertBtn')?.addEventListener('click', () => eqInsertBox(textarea));
+  box.querySelector('.eqBlankInsertBtn')?.addEventListener('click', () => eqInsertBlank(textarea));
+  box.querySelectorAll('.eqLiteralBtn[data-literal]').forEach(btn => {
+    btn.addEventListener('click', () => eqInsertLiteral(textarea, btn.dataset.literal));
+  });
+  box.querySelector('.eqWrapSelBtn')?.addEventListener('click', () => eqWrapSelectionAsMath(textarea));
 }
 // A run's children (text/equation/picture/table) are siblings, not nested
 // in each other — collect each recognized tag type separately then merge
@@ -3927,22 +4117,36 @@ async function toggleChPrevEdit(item) {
   const bodyEl = item.querySelector('.chPrevBody');
   const parsed = loadedFileCache.get(fileId);
   const editedRaw = parsed && parsed.editedRawByNum.get(String(num));
+  const marker = parsed && (parsed.markers.get(num) || parsed.markers.get(Number(num)));
   // editedRaw가 아직 없는(원본 hwpx 그대로인) 문제는 편집칸을 처음 열 때만
   // 원본을 "$...$" 평문으로 되돌려 채워 넣는다 — 매번 미리보기를 그릴 때마다
   // 이 변환을 미리 해두면(특히 그림 있는 문제) DOM에 불필요하게 큰 데이터를
   // 들고 있게 되므로, 편집 버튼을 실제로 눌렀을 때만 계산한다.
   let draftText = editedRaw;
   if (!draftText) {
-    const marker = parsed && (parsed.markers.get(num) || parsed.markers.get(Number(num)));
     const rawHtml = marker ? await hwpBodyXmlToHtml(marker.blockXml, parsed) : bodyEl.innerHTML;
     draftText = htmlPreviewToDraftText(rawHtml);
   }
+  // 빠른정답 — hwpx 끝주([정답]/[풀이])에서 뽑는다(index.html 미션분석의
+  // "빠른정답"과 같은 방식). 문제 수정 중에도 정답을 참고하면서 고칠 수
+  // 있게 — 원장님 요청.
+  let quickAnswerHtml = '';
+  try {
+    if (marker) {
+      const qaXml = extractQuickAnswerXml(marker.blockXml);
+      if (qaXml) quickAnswerHtml = await hwpFragmentRunsToHtml(qaXml, parsed);
+    }
+  } catch (e) {}
   if (item.querySelector('.chPrevEditBox')) return; // 원본 불러오는 사이 다시 눌려서 이미 열렸으면 중복 방지
   box = document.createElement('div');
   box.className = 'chPrevEditBox';
   box.innerHTML = `
-    <p class="hint">문단 사이는 빈 줄로 띄우고, 수식은 "$...$"로 감싸 LaTeX으로 입력하세요(예: $x^2+3x-1=0$).</p>
+    <p class="hint">문단 사이는 빈 줄로 띄우고, 수식은 "$...$"로 감싸 LaTeX으로 입력하세요(예: $x^2+3x-1=0$). 아래 기호 버튼을 누르면 커서 있는 자리에 바로 들어갑니다.</p>
+    ${quickAnswerHtml.trim() ? `<div class="chPrevQuickAnswer"><b>빠른정답</b>${quickAnswerHtml}</div>` : ''}
+    ${buildEqToolbarHtml()}
     <textarea class="chPrevTextarea">${escapeHtml(draftText)}</textarea>
+    <div class="chPrevPreviewLabel">미리보기</div>
+    <div class="chPrevLivePreview"></div>
     <div class="chPrevEditRow">
       <button type="button" class="selectAllBtn chPrevSaveBtn">저장 (문제은행 원본에도 반영)</button>
       <button type="button" class="selectAllBtn chPrevCancelBtn">취소</button>
@@ -3950,11 +4154,25 @@ async function toggleChPrevEdit(item) {
     </div>
   `;
   item.appendChild(box);
+  const textarea = box.querySelector('.chPrevTextarea');
+  const livePreview = box.querySelector('.chPrevLivePreview');
+  wireEqToolbar(box, textarea);
+  const updateLivePreview = () => {
+    livePreview.innerHTML = renderEditedText(textarea.value);
+    if (window.renderMathInElement) {
+      try { renderMathInElement(livePreview, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
+    }
+  };
+  updateLivePreview();
+  textarea.addEventListener('input', updateLivePreview);
+  if (quickAnswerHtml.trim() && window.renderMathInElement) {
+    try { renderMathInElement(box.querySelector('.chPrevQuickAnswer'), { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
+  }
   box.querySelector('.chPrevCancelBtn').addEventListener('click', () => box.remove());
   box.querySelector('.chPrevSaveBtn').addEventListener('click', async () => {
     const msgEl = box.querySelector('.chPrevMsg');
     const saveBtn = box.querySelector('.chPrevSaveBtn');
-    const newText = box.querySelector('.chPrevTextarea').value.trim();
+    const newText = textarea.value.trim();
     saveBtn.disabled = true;
     msgEl.textContent = '저장 중...';
     msgEl.className = 'chPrevMsg';
