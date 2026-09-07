@@ -750,9 +750,19 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
   // 있었다(원장님 리포트) — 시작 번호와 똑같은 실수를 문항 수에서도 했었다.
   const typedQCount = scQCount;
   try {
-    const responses = await Promise.all(classes.map(cls =>
-      callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission }).then(r => ({ cls, r }))
-    ));
+    const [responses, fileMatch] = await Promise.all([
+      Promise.all(classes.map(cls =>
+        callGetJsonp({ action: 'examroster', key: myKey, cohort, class: cls, category, mission }).then(r => ({ cls, r }))
+      )),
+      // 문제은행에 올려둔 실제 파일의 진짜 문항 수 — 아직 아무도 채점을
+      // 안 해서 savedQCount가 0인(방금 새로 올린) 미션도 정확한 문항 수로
+      // 뜨게 하려고 같이 조회한다(원장님 리포트: "직선의 방정식 교과서
+      // 미션은 48문제, 변형미션은 60문제인데 20개만 뜬다" — 채점 기록도
+      // 없고 시험명에 "(1~48)" 같은 구간 표시도 없어서 그동안 기본값
+      // 20으로 뜨고 있었음). 매칭 실패해도(파일을 아직 안 올렸거나 이름이
+      // 안 맞으면) qCount 0이 돌아와 그냥 기존 우선순위로 넘어간다.
+      callGetJsonp({ action: 'missionfile', key: myKey, category, mission, class: classes[0] || '' }).catch(() => null),
+    ]);
     const rawStudents = []; // {cls, s}
     let sharedWeights = null, sharedStartNum = null;
     responses.forEach(({ cls, r }) => {
@@ -770,12 +780,14 @@ document.getElementById('scLoadBtn').addEventListener('click', async () => {
     // 새) 미션일 때만 배점 길이를 대신 쓴다.
     const itemsMaxLen = Math.max(0, ...rawStudents.map(function (x) { return (x.s.items || []).length; }));
     const savedQCount = itemsMaxLen > 0 ? itemsMaxLen : (sharedWeights ? sharedWeights.length : 0);
+    const fileQCount = (fileMatch && fileMatch.qCount) ? Number(fileMatch.qCount) : 0;
     // 미션명 자체에 번호 구간이 박혀있으면(예: "(61~120)") 그걸 최우선으로
     // 쓴다 — 채점이 아직 덜 된 상태라도 항상 원래 의도한 문항 수/시작
     // 번호가 정확히 뜨게 하기 위함.
     const nameRange = missionRangeFromName(mission);
-    // 저장된 게 없으면 지금 입력창에 있는 값(typedQCount)을 그대로 쓴다.
-    scQCount = nameRange ? nameRange.count : (savedQCount > 0 ? savedQCount : typedQCount);
+    // 우선순위: 이름의 구간 표시 > 실제 채점된 데이터 > 문제은행 원본
+    // 파일의 진짜 문항 수 > 지금 입력창에 있는 값.
+    scQCount = nameRange ? nameRange.count : (savedQCount > 0 ? savedQCount : (fileQCount > 0 ? fileQCount : typedQCount));
     document.getElementById('scQCount').value = scQCount;
     scStudents = rawStudents.map(({ cls, s }) => ({
       name: s.name,
