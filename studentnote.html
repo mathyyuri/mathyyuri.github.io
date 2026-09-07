@@ -3885,10 +3885,16 @@ function resolveUnitForMissionNum(mission, num, category) {
   return entry.unitMid || entry.unit || '';
 }
 
-// 통계 페이지의 "회차별 정답률" — 회차별로 그 회차에 채점된 문항 전체의
-// 정답 비율을 집계(문제별 상세 O/X는 페이지 2의 "정오기록" 칸에 이미
-// 나오므로 여기서는 한눈에 보는 추이 그래프에 집중). 아직 채점 전인
-// 문항은 집계에서 제외.
+// 통계 페이지의 "회독수별 정답률" — history의 round는 오답노트를 몇 번째로
+// 발행했는지(=아래 buildBatchCompletion의 배치 번호)가 아니라, "같은 문항이
+// 같은 미션에서 몇 번째로 다시 틀렸는지"를 문항별로 따로 세는 값이다
+// (handleLogNote의 priorCount, dashboardCode.gs). 그래서 여기서는 "1회독
+// (처음 틀렸을 때)/2회독(그 문항이 두 번째로 다시 나왔을 때)/…"의 정답률을
+// 모아 "반복해서 틀리는 문항을 실제로 극복해가는지"를 보여준다 — 오답노트를
+// 몇 번 발행했는지(발행 횟수·소화율)는 완전히 다른 지표라 buildBatchCompletion
+// 으로 분리했다(실제로 원장님이 "9회까지 냈는데 왜 5회차까지만 보이냐"고
+// 헷갈리신 적 있음 — 발행 9번 중 같은 문항이 6번 이상 반복해서 틀린 적이
+// 없었을 뿐, 데이터 누락이 아니었다). 아직 채점 전인 문항은 집계에서 제외.
 function buildRoundAccuracy(history) {
   const byRound = new Map();
   for (const h of history) {
@@ -3901,6 +3907,30 @@ function buildRoundAccuracy(history) {
   return [...byRound.values()]
     .sort((a, b) => a.round - b.round)
     .map(b => ({ ...b, pct: Math.round((b.correct / b.total) * 100) }));
+}
+
+// 통계 페이지의 "회차별 오답노트 완성도" — 오답노트를 발행한 시각(at)을
+// 묶음(=몇 번째로 만들어준 오답노트인지) 키로 삼아, 그 배치에 부여된 문항
+// 중 실제로 채점(제출)까지 마친 비율을 보여준다. buildRoundAccuracy(회독수별
+// 정답률: 같은 문항의 반복 극복 여부)와는 축이 다른 지표 — 이건 "그날 낸
+// 오답노트를 학생이 얼마나 소화했는지"만 본다(정답/오답 여부는 안 따짐,
+// 결과 칸이 채워졌는지만 확인). 같은 at으로 기록된 문항이 하나도 채점 안
+// 된 배치(방금 막 발행돼 아직 풀 시간이 없었던 회차)도 0%로 그대로 나오는
+// 게 맞음 — 진행 중인 회차를 숨기지 않고 "아직 안 함"으로 보여주는 게 이
+// 지표의 목적.
+function buildBatchCompletion(history) {
+  const byAt = new Map();
+  for (const h of history) {
+    if (!h.at) continue;
+    const key = String(h.at);
+    if (!byAt.has(key)) byAt.set(key, { at: h.at, total: 0, done: 0 });
+    const b = byAt.get(key);
+    b.total++;
+    if (h.result != null) b.done++;
+  }
+  return [...byAt.values()]
+    .sort((a, b) => new Date(a.at) - new Date(b.at))
+    .map((b, i) => ({ ...b, batchNum: i + 1, pct: Math.round((b.done / b.total) * 100) }));
 }
 
 // 오답노트 현황 페이지의 "단원별 정답률" — 지금까지 채점된(result 있는)
@@ -4840,14 +4870,29 @@ function buildSummaryPageHtml(summaryRows, info) {
 // 경우에도 안전하게 최근 N개로만 표시 — 표 형태의 세밀한 회차별 정오
 // 기록은 페이지 2의 "정오기록" 칸에 이미 나오므로, 여기는 한눈에 보는
 // 그래프(막대) 요약에 집중한다.
+const STATS_MAX_BATCHES = 14;
 const STATS_MAX_ROUNDS = 14;
 const STATS_MAX_UNITS = 14;
-function buildStatsPageHtml(roundAccuracy, unitAccuracy, info) {
+function formatBatchDateLabel(at) {
+  const d = new Date(at);
+  if (isNaN(d)) return '';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+function buildStatsPageHtml(batchCompletion, roundAccuracy, unitAccuracy, info) {
+  const batchesShown = batchCompletion.slice(-STATS_MAX_BATCHES);
+  const batchesClipped = batchCompletion.length > batchesShown.length;
+  const batchRowsHtml = batchesShown.map(b => `
+    <div class="statBarRow">
+      <span class="statBarLabel">${b.batchNum}회차 <small>(${formatBatchDateLabel(b.at)})</small></span>
+      <div class="statBarWrap"><div class="statBar statBarBatch" style="width:${b.pct}%"></div></div>
+      <span class="statBarPct">${b.pct}% <small>(${b.done}/${b.total})</small></span>
+    </div>`).join('');
+
   const roundsShown = roundAccuracy.slice(-STATS_MAX_ROUNDS);
   const roundsClipped = roundAccuracy.length > roundsShown.length;
   const roundRowsHtml = roundsShown.map(r => `
     <div class="statBarRow">
-      <span class="statBarLabel">${r.round}회차</span>
+      <span class="statBarLabel">${r.round}회독</span>
       <div class="statBarWrap"><div class="statBar" style="width:${r.pct}%"></div></div>
       <span class="statBarPct">${r.pct}% <small>(${r.correct}/${r.total})</small></span>
     </div>`).join('');
@@ -4871,7 +4916,9 @@ function buildStatsPageHtml(roundAccuracy, unitAccuracy, info) {
       <div class="sumVol">VOL. ${escapeHtml(info.studentName)}</div>
       <div class="sumCredit">MATHY YURI &nbsp;|&nbsp; DAECHI S+ ACADEMY</div>
       <h1 class="sumTitle">${escapeHtml(info.studentName)}의 그동안의 학습 통계</h1>
-      <h2 class="sumSubTitle">회차별 정답률${roundsClipped ? ` <small>(최근 ${STATS_MAX_ROUNDS}회차)</small>` : ''}</h2>
+      <h2 class="sumSubTitle">회차별 오답노트 완성도${batchesClipped ? ` <small>(최근 ${STATS_MAX_BATCHES}회차)</small>` : ''}</h2>
+      <div class="statChart">${batchRowsHtml || '<div class="statEmpty">아직 발행된 오답노트가 없습니다.</div>'}</div>
+      <h2 class="sumSubTitle">회독수별 정답률${roundsClipped ? ` <small>(최근 ${STATS_MAX_ROUNDS}회독)</small>` : ''}</h2>
       <div class="statChart">${roundRowsHtml || '<div class="statEmpty">아직 채점된 기록이 없습니다.</div>'}</div>
       <h2 class="sumSubTitle">단원별 정답률 · 오답분포${unitsClipped ? ` <small>(취약 상위 ${STATS_MAX_UNITS}개)</small>` : ''}</h2>
       <div class="statChart">${unitRowsHtml || '<div class="statEmpty">단원 태그가 붙은 채점 기록이 없습니다.</div>'}</div>
@@ -5166,6 +5213,7 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 .statBarWrap{flex:1 1 auto;position:relative;background:rgba(26,26,26,.08);border-radius:2px;height:3.4mm}
 .statBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep);border-radius:2px}
 .statBarUnit{background:var(--mb-orange)}
+.statBarBatch{background:var(--mb-navy)}
 .statBarPct{flex:0 0 26mm;font-size:8px;font-weight:700}
 .statBarPct small{font-weight:500;color:rgba(26,26,26,.55)}
 .statEmpty{font-size:9px;color:rgba(26,26,26,.5)}
@@ -5448,6 +5496,7 @@ async function generateHtmlNote(historicalBatch) {
       qNum++;
     }
 
+    const batchCompletion = buildBatchCompletion(noteHistory);
     const roundAccuracy = buildRoundAccuracy(noteHistory);
     const unitAccuracy = buildUnitAccuracy(noteHistory);
 
@@ -5456,7 +5505,7 @@ async function generateHtmlNote(historicalBatch) {
     const pagesHtml = [];
     pagesHtml.push(buildCoverPageHtml(info));
     pagesHtml.push(buildSummaryPageHtml(summaryRows, info));
-    pagesHtml.push(buildStatsPageHtml(roundAccuracy, unitAccuracy, info));
+    pagesHtml.push(buildStatsPageHtml(batchCompletion, roundAccuracy, unitAccuracy, info));
 
     let pageNum = 4;
     const questionPages = paginateQuestionsWithOverflow(questionParts, 2);
