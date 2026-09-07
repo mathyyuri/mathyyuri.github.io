@@ -936,10 +936,17 @@ let charts = {};
        "TAT 1회"~"TAT 13회"처럼 M. 표시가 없으면 여름방학 것.
    기출은 나누지 않고 그대로 누적으로 보여준다(원장님 확인). */
 const MIDTERM_START_DATE = new Date(2026, 8, 2); // 2026-09-02 — 이 날짜부터 "중간고사 대비"
-const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '오답미션', '9모대비', '개념미션', 'S+ BLACK', '대수연마 1000제'];
-const COHORT2_SPLIT_CATS = ['클리닉', 'TEST']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
+// 오답미션(=오답노트 재채점 기록)도 클리닉/TEST와 같은 방식으로 메인/
+// SUMMER 나눠 보여준다 — dashboardCode.gs의 writeRetryMissionRow가
+// 9월 6일(MIDTERM_SEASON_START) 이후 배치는 "중간 오답노트 N회차"로
+// 다르게 이름을 짓기 시작했으므로(예전 "오답노트 N회차"와 안 겹치게),
+// 그 이름 접두어로 새/구를 가른다(원장님 요청: "9월부터 오답미션 기록
+// 1회부터 새로 시작해줘" — 데이터는 이미 그렇게 쌓이고 있으니, 화면도
+// 여름 것과 섞이지 않게 메인 탭에 새로 노출).
+const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '9모대비', '개념미션', 'S+ BLACK', '대수연마 1000제'];
+const COHORT2_SPLIT_CATS = ['클리닉', 'TEST', '오답미션']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
 // 메인(중간고사 대비) 탭 순서 — 실제 존재하는 카테고리만 이 순서대로 보여줌.
-const COHORT2_MAIN_ORDER = ['교과서미션', '변형미션', 'TEST', '기출', '클리닉'];
+const COHORT2_MAIN_ORDER = ['오답미션', '교과서미션', '변형미션', 'TEST', '기출', '클리닉'];
 function clinicMissionIsNew(name) {
   const m = String(name || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
   if (!m) return true; // 날짜 형식이 아니면 새로 등록된 걸로 보고 안전하게 보여줌
@@ -949,9 +956,13 @@ function clinicMissionIsNew(name) {
 function testMissionIsNew(name) {
   return /^M\./i.test(String(name || '').trim());
 }
+function retryMissionIsNew(name) {
+  return /^중간\s*오답노트/.test(String(name || '').trim());
+}
 function splitMissionIsNew(category, name) {
   if (category === '클리닉') return clinicMissionIsNew(name);
   if (category === 'TEST') return testMissionIsNew(name);
+  if (category === '오답미션') return retryMissionIsNew(name);
   return true;
 }
 function toggleSummerView() {
