@@ -3640,7 +3640,7 @@ function renderGradingRounds(rounds) {
     // 있어서). 백엔드가 이미 미션+카테고리 하나당 항목 하나로 묶어서
     // 주므로 여기서 또 나눌 필요는 없지만, 혹시 같은 키가 둘 이상 와도
     // 안전하게 합쳐지도록 그대로 둔다.
-    for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num });
+    for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num, rowIndex: it.rowIndex });
   }
 
   // "요약 N"(오답노트 요약표 안에서의 순서)은 예전엔 여기서도 다시 매겨서
@@ -3661,7 +3661,7 @@ function renderGradingRounds(rounds) {
           <span class="gradeItem">
             <span class="gradeNum">${it.num}번<small>(${it.round}회차)</small></span>
             <button type="button" class="gradeToggle O" data-value="1"
-              data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}">O</button>
+              data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}" data-row="${it.rowIndex || ''}">O</button>
           </span>`).join('')}
       </div>
       <button type="button" class="gradeAllBtn">전체 O</button>
@@ -3688,8 +3688,18 @@ function renderGradingRounds(rounds) {
   footer.innerHTML = `<button type="button" id="saveAllGradesBtn">전체 저장</button><span class="hint gradeStatus"></span>`;
   footer.querySelector('#saveAllGradesBtn').addEventListener('click', async (ev) => {
     const buttons = gradingRoundsEl.querySelectorAll('.gradeToggle');
+    // row(시트 행 번호, handleUngraded가 주는 rowIndex)를 같이 보내서
+    // 서버가 미션명+번호+회차로 다시 찾지 않고 그 행을 바로 채점하게
+    // 한다 — 미션 이름을 바꾸면(예: "2025 보라고 중간 기출" →
+    // "2025 보라고") 예전 행과 새로 만든 오답노트의 행이 미션명+번호+
+    // 회차까지 우연히 완전히 똑같아지는 경우가 실제로 있었다(원장님
+    // 리포트: 이다현 학생 채점이 저장이 안 됨 — 확인해보니 저장 자체는
+    // 됐는데 몇 달 전 8월에 채점해둔 엉뚱한 행이 덮어써지고 있었음).
+    // row가 있으면 그 행으로 바로, 없으면(옛 캐시된 페이지가 아직 안
+    // 새로고침된 경우 등) 예전 방식으로 대조.
     const updates = [...buttons].map(b => ({
       mission: b.dataset.mission, category: b.dataset.category, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
+      row: b.dataset.row || '',
     }));
     if (!updates.length) return;
     ev.target.disabled = true;
