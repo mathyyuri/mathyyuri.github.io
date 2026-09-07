@@ -1151,8 +1151,17 @@ async function hwpRectToHtml(rectXml, entry) {
     // A large EMPTY rect (real file: ~83mm×37mm, carrying nothing but a
     // stray colPr layout-switch control) is a structural/anchor artifact,
     // not a visible blank box — only small empty rects are genuine
-    // fill-in-the-blank boxes.
-    if (!sz || sz.w > 40 || sz.h > 20) return '';
+    // fill-in-the-blank boxes. The width side of this used to cut off at
+    // 40mm, but a real one-line answer-condition blank ("두 직선이 평행할
+    // 조건은 [ ] 이다") can legitimately span close to half the column
+    // width — confirmed against a real file: a 42.6mm×9.6mm blank box
+    // (well short/single-line, nothing like the 37mm-tall artifact) was
+    // being silently dropped as if it were the same kind of artifact.
+    // Height alone already separates the two cases cleanly (9.6mm vs
+    // 37mm), so only reject on width once it's wider than a full print
+    // column (~86mm in these two-column layouts) — genuinely anomalous,
+    // never a real inline blank.
+    if (!sz || sz.w > 90 || sz.h > 20) return '';
     return `<span class="hwpBlankBox" style="width:${sz.w.toFixed(1)}mm;height:${sz.h.toFixed(1)}mm"></span>`;
   }
   // hwpBodyXmlToHtml's output is block-level (<p>, <div>...) — a <span> is
@@ -1771,9 +1780,29 @@ function isEmptySpacerPara(p) {
 // Without this guard, "consume the next non-blank run as choices" would
 // swallow that label — and everything up to the next blank — straight
 // into the wrong question.
-function looksLikeNextQuestionMarker(p) {
+// paras/idx (not just the one paragraph) so it can peek at what comes
+// right after — see the bracket-caption case below.
+function looksLikeNextQuestionMarker(paras, idx) {
+  const p = paras[idx];
   const t = stripTags(p.text).trim();
-  return /^유형\s*\d+\s*[:：]/.test(t) || /^\[[^\]]*\]$/.test(t);
+  if (/^\[[^\]]*\]$/.test(t)) {
+    // A bracket-wrapped line immediately followed by a picture/table is
+    // that item's OWN caption ("[참고 자료: 한국풋살연맹, futsal.or.kr]"
+    // sitting right before its diagram), not the next question's topic
+    // label ("[유형 5]") — both look identical as "a single bracketed
+    // line" from text alone, so matching on the wording (e.g. "출처")
+    // is a losing game (this file used "참고 자료", not "출처", and slipped
+    // straight past an earlier version of this same fix). A real topic
+    // label is always followed by more of the NEXT question's own text,
+    // never a bare image/table right after it — so use that structural
+    // difference instead. Confirmed against a real file: "[교과서]
+    // 직선의 방정식.hwpx" 25번 — the caption AND the diagram right after
+    // it both got cut from the question's block and vanished.
+    const next = paras[idx + 1];
+    if (next && (next.text.includes('<hp:pic') || next.text.includes('<hp:tbl'))) return false;
+    return true;
+  }
+  return /^유형\s*\d+\s*[:：]/.test(t);
 }
 
 // Orphaned-content absorption (below) must only grab things we can
@@ -1841,8 +1870,15 @@ function detectEndnoteMarkers(xml) {
   const choicesEnd = boundaries.map(({ i }, idx) => {
     const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
     let j = i + 1;
-    while (j < nextI && isBlankPara(paras[j])) j++;
-    while (j < nextI && !isBlankPara(paras[j]) && !looksLikeNextQuestionMarker(paras[j])) j++;
+    // isEmptySpacerPara, not the plain isBlankPara — a paragraph carrying
+    // ONLY a picture/rect (no <hp:t> text of its own) reads as "blank" to
+    // isBlankPara too (it has no text to strip), which used to make this
+    // walk skip straight past a question's own diagram as if it were
+    // page-layout filler and stop the block one paragraph short of it.
+    // Confirmed against a real file: "[교과서] 직선의 방정식.hwpx" 25번's
+    // diagram (and its caption) vanished this way.
+    while (j < nextI && isEmptySpacerPara(paras[j])) j++;
+    while (j < nextI && !isEmptySpacerPara(paras[j]) && !looksLikeNextQuestionMarker(paras, j)) j++;
 
     // Orphaned content — a stray choice list (e.g. a "<보기>"-style
     // question whose "①ㄱ,ㄴ ②ㄱ,ㄷ..." line ended up separated from its
@@ -1863,11 +1899,11 @@ function detectEndnoteMarkers(xml) {
     // fragment turns out to be structurally closer to the NEXT question.
     for (;;) {
       let k = j, gap = 0;
-      while (k < nextI && isBlankPara(paras[k]) && gap < 3) { k++; gap++; }
+      while (k < nextI && isEmptySpacerPara(paras[k]) && gap < 3) { k++; gap++; }
       if (!(k < nextI && looksLikeOrphanedFragment(paras[k]))) break;
       const distHere = gap;
       let m = k;
-      while (m < nextI && !isBlankPara(paras[m]) && !looksLikeNextQuestionMarker(paras[m])) m++;
+      while (m < nextI && !isEmptySpacerPara(paras[m]) && !looksLikeNextQuestionMarker(paras, m)) m++;
       const distNext = nextI - m;
       // A tabular answer-choice grid ("(가)(나)(다)(라)" columns × "①-⑤"
       // rows, common for 빈칸채우기 proof-completion questions) is a real
