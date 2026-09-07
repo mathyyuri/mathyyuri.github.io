@@ -917,13 +917,27 @@ function escapeHtml(s) {
 // 적용되지 않는다(강사가 직접 줄바꿈/기호로 원하는 대로 배치).
 // "$...$" 한 조각을 KaTeX가 읽는 <span class="eq">\(...\)</span>로 바꾼다.
 // renderEditedText 본문과 네모박스 안쪽 줄 둘 다 이 규칙을 그대로 쓴다.
-function renderEditedInline(oneLine) {
-  const parts = oneLine.replace(/\r?\n/g, ' ').split(/\$([^$]+)\$/);
-  // split()으로 "$...$"를 뽑으면 홀수 인덱스가 항상 수식 안쪽 내용이고,
+// imgHtmls: 원본 문제에 있던 <img> 태그들을 등장 순서대로 담은 배열
+// (선택) — "[이미지N]" 표시를 그 순번의 실제 그림으로 되돌리는 용도.
+// 순수 텍스트 편집 칸은 그림을 직접 담을 수 없어서, 그림이 있던 자리는
+// 이 번호 표시로만 남겨두고(htmlPreviewToDraftText가 만듦) 그릴 때만
+// 진짜 그림으로 되돌린다 — 자세한 이유는 htmlPreviewToDraftText 주석 참고.
+function renderEditedInline(oneLine, imgHtmls) {
+  const parts = oneLine.replace(/\r?\n/g, ' ').split(/(\$[^$]+\$|\[이미지\d+\])/);
+  // split()으로 이 패턴들을 뽑으면 홀수 인덱스가 항상 매칭된 토큰이고,
   // 짝수 인덱스가 그 사이의 일반 텍스트다.
-  return parts.map((chunk, i) =>
-    i % 2 === 1 ? `<span class="eq">\\(${escapeHtml(chunk)}\\)</span>` : escapeHtml(chunk)
-  ).join('');
+  return parts.map((chunk, i) => {
+    if (i % 2 === 0) return escapeHtml(chunk);
+    const imgM = chunk.match(/^\[이미지(\d+)\]$/);
+    if (imgM) {
+      const html = imgHtmls && imgHtmls[Number(imgM[1]) - 1];
+      // imgHtmls가 없거나(원본을 다시 못 불러온 경우) 그 번호가 없으면
+      // (사용자가 그림 하나만 빼고 표시는 손대지 않은 경우 등) 표시를
+      // 그대로 글자로 남겨서 조용히 사라지는 대신 눈에 띄게 한다.
+      return html || escapeHtml(chunk);
+    }
+    return `<span class="eq">\\(${escapeHtml(chunk.slice(1, -1))}\\)</span>`;
+  }).join('');
 }
 // "[박스]"~"[/박스]" 사이는 원본 hwpx의 <조건박스>/<보기> 박스와 같은 모양
 // (.hwpCondBox)으로 감싸서 보여준다 — problembank.html의 "문제 수정"
@@ -932,12 +946,12 @@ function renderEditedInline(oneLine) {
 // 그대로 한 문단이 되게 줄바꿈 하나만으로 나눈다(빈 줄 없이 붙여 써도
 // 되도록) — 그래서 박스 구간을 먼저 정규식으로 통째로 뽑아 따로
 // 처리하고, 남은 텍스트만 평소처럼 빈 줄 기준으로 문단을 나눈다.
-function renderEditedText(text) {
+function renderEditedText(text, imgHtmls) {
   let src = String(text || '');
   const boxes = [];
   src = src.replace(/\[박스\]\s*\n?([\s\S]*?)\n?\s*\[\/박스\]/g, (m, inner) => {
     const lines = inner.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const boxHtml = lines.map(line => `<p>${renderEditedInline(line)}</p>`).join('');
+    const boxHtml = lines.map(line => `<p>${renderEditedInline(line, imgHtmls)}</p>`).join('');
     boxes.push(`<div class="hwpCondBox">${boxHtml}</div>`);
     return '\n\n[[EDITBOX' + (boxes.length - 1) + ']]\n\n';
   });
@@ -946,8 +960,53 @@ function renderEditedText(text) {
   return paras.map(para => {
     const boxRef = para.match(/^\[\[EDITBOX(\d+)\]\]$/);
     if (boxRef) return boxes[Number(boxRef[1])];
-    return `<p>${renderEditedInline(para)}</p>`;
+    return `<p>${renderEditedInline(para, imgHtmls)}</p>`;
   }).join('');
+}
+// 이미 렌더링된 원본 HTML(예: originalPreviewHtmlByNum에 캐시된 결과)에서
+// <img> 태그를 등장 순서 그대로 뽑는다 — renderEditedText의 imgHtmls
+// 인자로 그대로 넘기면 된다.
+function imgHtmlsFromHtml(html) {
+  return [...String(html || '').matchAll(/<img\b[^>]*>/g)].map(m => m[0]);
+}
+// editedRaw 텍스트 안의 "[이미지N]" 표시를 실제 <img>로 되돌리는 데 쓸
+// 배열을 만든다 — 원본 blockXml을 다시 그려서(hwpBodyXmlToHtml은 이미
+// 그림을 base64 <img>로 만들어주므로 그 결과에서 순서대로 뽑기만 하면
+// 됨) 그 안의 <img> 태그들을 등장 순서 그대로 모은다. 텍스트에 그 표시가
+// 아예 없으면(그림 없는 문제, 또는 편집하며 일부러 그림 표시를 지운
+// 경우) 원본을 다시 그리는 비용 자체를 건너뛴다. 원본 HTML이 이미
+// 렌더링돼 있으면(예: originalPreviewHtmlByNum) 다시 그릴 필요 없이
+// imgHtmlsFromHtml을 바로 쓰는 편이 낫다 — 이 함수는 blockXml만 있고
+// 아직 렌더링된 HTML이 없는 경우 전용.
+async function imgHtmlsForEditedText(text, blockXml, entry) {
+  if (!blockXml || !/\[이미지\d+\]/.test(String(text || ''))) return null;
+  const html = await hwpBodyXmlToHtml(blockXml, entry);
+  return imgHtmlsFromHtml(html);
+}
+// renderEditedText가 만드는 HTML을 다시 "$...$" 섞인 평문으로 되돌린다 —
+// problembank.html "문제 수정"·오답노트 생성기의 "선택한 문제 미리보기"
+// 양쪽 다, 처음 "수정"을 누를 때(아직 editedRaw가 없는 문제) 원본 렌더링
+// 결과를 편집 칸에 미리 채워 넣는 용도로 쓴다.
+//
+// <img>는 그대로 남겨두면(순수 텍스트 칸이라) 저장할 때 원본 base64
+// 그림 데이터가 통째로 다시 태워지거나(용량 폭탄), 아예 다른 처리 없이
+// 지워지거나 둘 중 하나였다 — 실제로 후자가 벌어져서 그림 있는 문제를
+// "행바꿈만 고치려고" 편집을 열었을 뿐인데 그림이 통째로 사라지는
+// 신고가 있었다. 그림 자리는 "[이미지1]" 같은 순번 표시로만 남겨서
+// 편집 칸에서도 그림이 있었다는 게 보이게 하고, 실제 그림은 그릴 때
+// 원본을 다시 읽어 그 순번에 되돌려 끼운다(renderEditedText의
+// imgHtmls 인자, imgHtmlsForEditedText 참고).
+function htmlPreviewToDraftText(html) {
+  let n = 0;
+  return decodeXmlEntities(
+    String(html || '')
+      .replace(/<p[^>]*>/g, '\n\n')
+      .replace(/<\/p>/g, '')
+      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<span class="eq">\\\(([\s\S]*?)\\\)<\/span>/g, (m, latex) => '$' + latex + '$')
+      .replace(/<img\b[^>]*>/g, () => `[이미지${++n}]`)
+      .replace(/<[^>]+>/g, '')
+  ).trim();
 }
 
 // A run's children (text/equation/picture/table) are siblings, not nested
