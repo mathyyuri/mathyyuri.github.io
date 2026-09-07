@@ -1102,9 +1102,13 @@ function convertHwpEquationToLatex(script) {
   // unambiguous landmark (only the subscript trigger puts a literal
   // underscore there) that no left boundary check is needed for that
   // specific case at all.
-  s = s.replace(/rm(?=_)/g, '').replace(/it(?=_)/g, '');
-  s = s.replace(/\brm(?=[A-Za-z_])/g, '').replace(/\brm\b/g, '');
-  s = s.replace(/\bit(?=[A-Za-z_])/g, '').replace(/\bit\b/g, '');
+  // 대소문자 안 가리고 지운다 — hwpx-lib.js와 같은 이유(원장님이 실제로
+  // 겪음: 대문자로 입력한 "RMA"만 글자 그대로 수식에 남아 보였음). 이
+  // 사본이 hwpx-lib.js의 /gi 수정을 못 받고 그동안 /g(대소문자 구분)로
+  // 남아 있었다 — "9. 세 점 RMA(1,-3)..." 문제에서 재확인.
+  s = s.replace(/rm(?=_)/gi, '').replace(/it(?=_)/gi, '');
+  s = s.replace(/\brm(?=[A-Za-z_])/gi, '').replace(/\brm\b/gi, '');
+  s = s.replace(/\bit(?=[A-Za-z_])/gi, '').replace(/\bit\b/gi, '');
   // No \b here either — digits are \w characters too, so "3lemle1" has no
   // word boundary between "3" and "l" for \b to find, same root cause as
   // the LEFT/RIGHT and applyUnary fixes above. [A-Za-z]+ already delimits
