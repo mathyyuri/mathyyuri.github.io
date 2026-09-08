@@ -28,6 +28,18 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 30px; }
 .hidden { display: none !important; }
 
+/* ---------- 필기 풀이 제출 (whiteboard.html 연동) ---------- */
+.wbSolveBtn {
+  width: 100%; margin-top: 4px; padding: 11px; border-radius: 12px; border: 1.5px dashed var(--mint-deep);
+  background: #f4f9f7; color: var(--mint-deep); font-weight: 700; font-size: 0.82rem; cursor: pointer; font-family: inherit;
+}
+.wbSolveBtn:active { background: #e9f3ef; }
+.docModal { display: none; position: fixed; inset: 0; background: rgba(26,26,26,0.6); z-index: 500; }
+.docModal.open { display: flex; flex-direction: column; }
+.docModalBar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--dark); color: #fff; font-size: 0.85rem; }
+.docModalBar button { background: var(--pink-deep); border: none; color: #fff; padding: 9px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 8px; cursor: pointer; }
+#docModalFrame { flex: 1; border: none; width: 100%; background: #fff; }
+
 /* ---------- header ---------- */
 .appHeader { text-align: center; padding: 26px 20px 16px; }
 .appHeader h1 { margin: 0; font-size: 1.15rem; letter-spacing: 3px; font-weight: 700; }
@@ -66,6 +78,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .roundBtn.locked .lbl { opacity: 0.6; }
 .roundBtn.done { border-color: var(--mint-deep); background: #f3f8f6; }
 .roundBtn.done .n { color: var(--mint-deep); }
+.roundBtn.done .lbl { font-size: 0.5rem; letter-spacing: 0; opacity: 0.75; line-height: 1.3; padding: 0 2px; }
 .legendNote { text-align: center; font-size: 0.7rem; color: #aaa; margin-top: 16px; line-height: 1.6; }
 
 /* ---------- quiz ---------- */
@@ -116,7 +129,8 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .retryBox .desc { font-size: 0.74rem; color: #999; margin-bottom: 14px; line-height: 1.5; }
 .retryItem { border-top: 1px solid var(--line); padding: 14px 0; }
 .retryItem:first-of-type { border-top: none; }
-.retryItem .qn { font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
+.retryItem .qn { font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.retryWbBtn { font-weight: 600; font-size: 0.68rem; color: var(--mint-deep); background: #f4f9f7; border: 1px solid var(--mint-deep); border-radius: 8px; padding: 4px 8px; cursor: pointer; font-family: inherit; }
 .retryChoices { display: flex; flex-wrap: wrap; gap: 6px; }
 .retryChoiceBtn { padding: 7px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); font-size: 0.78rem; cursor: pointer; font-family: inherit; }
 .retryChoiceBtn.picked { background: var(--gold); border-color: var(--gold); color: #fff; }
@@ -178,6 +192,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
         <button class="metaBtn" data-m="애매" type="button">애매</button>
         <button class="metaBtn" data-m="모름" type="button">모름</button>
       </div>
+      <button class="wbSolveBtn" id="wbSolveBtn" type="button">✍️ 풀어서 제출 (필기)</button>
     </div>
     <div class="quizNav">
       <button class="navBtn prevBtn" id="prevBtn" type="button">이전</button>
@@ -200,6 +215,12 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
       <button id="viewRankBtn" type="button">랭킹 보기</button>
     </div>
   </div>
+</div>
+
+<!-- ============ 필기 풀이 제출 모달 (whiteboard.html) ============ -->
+<div class="docModal" id="docModal">
+  <div class="docModalBar"><span id="docModalTitle"></span><button type="button" id="docModalClose">← 돌아가기</button></div>
+  <iframe id="docModalFrame"></iframe>
 </div>
 
 <script>
@@ -236,6 +257,39 @@ async function apiPost(body) {
   await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
 }
 
+/* ---------- 필기 풀이 제출 (whiteboard.html 연동) ----------
+   객관식 채점(자동)과는 별개 — 학생이 실제로 풀이 과정을 손으로 써서
+   제출하면 기존 "숙제 채점 대기" 화면(studentnote.html)에 그대로 같이
+   뜨도록, submithw가 이미 쓰는 category/mission 체계를 그대로 재사용한다
+   (원장님 요청: 새 화면 만들지 말고 기존 채점 대기 화면 재사용). 점수에는
+   전혀 영향 없는 참고용 첨부일 뿐이다. */
+function deterministicSessionId(str) {
+  let h1 = 0, h2 = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    h1 = (h1 * 31 + c) >>> 0;
+    h2 = (h2 * 131 + c) >>> 0;
+  }
+  return 'dq-' + h1.toString(36).padStart(7, '0') + h2.toString(36).padStart(7, '0');
+}
+function openWhiteboardModal(round, num) {
+  const mission = round + '회차 ' + num + '번';
+  const category = '일일일모';
+  const sessionId = deterministicSessionId(me.name + '|' + category + '|' + mission);
+  const p = new URLSearchParams({
+    session: sessionId, role: 'student', name: me.name, class: me.class, cohort: me.cohort,
+    category, mission, submit: '1',
+  });
+  $('docModalFrame').src = 'whiteboard.html?' + p.toString();
+  $('docModalTitle').textContent = mission + ' 풀이';
+  $('docModal').classList.add('open');
+}
+function closeDocModal() {
+  $('docModal').classList.remove('open');
+  $('docModalFrame').src = 'about:blank';
+}
+$('docModalClose').addEventListener('click', closeDocModal);
+
 /* ---------- 로그인 ---------- */
 async function doLogin(silent) {
   const name = silent ? me.name : $('in-name').value.trim();
@@ -254,7 +308,7 @@ async function doLogin(silent) {
       else { msg.textContent = json.error || '이름 또는 학부모 휴대폰 번호가 일치하지 않습니다.'; }
       return false;
     }
-    me = { name, pw, class: (json.student && json.student.class) || '' };
+    me = { name, pw, class: (json.student && json.student.class) || '', cohort: (json.student && json.student.cohort) || '2' };
     sessionStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
     $('whoText').textContent = me.name;
     $('whoClass').textContent = me.class ? me.class + '반' : '';
@@ -277,6 +331,7 @@ $('logoutBtn').addEventListener('click', () => {
 });
 
 /* ---------- 회차 선택 ---------- */
+let myStatusByRound = {}; // round -> {total, done, nextAttempt, ...} (dailyquizmystatus 결과)
 async function enterRoundsScreen() {
   show('screen-rounds');
   const grid = $('roundGrid');
@@ -285,24 +340,44 @@ async function enterRoundsScreen() {
     const json = await apiGet({ action: 'dailyquizactiverounds' });
     activeRounds = json.rounds || [];
   } catch (e) { activeRounds = []; }
+  try {
+    const statusJson = await apiGet({ action: 'dailyquizmystatus', name: me.name });
+    myStatusByRound = {};
+    (statusJson.rounds || []).forEach(s => { myStatusByRound[s.round] = s; });
+  } catch (e) { myStatusByRound = {}; }
   grid.innerHTML = '';
   for (let r = 1; r <= 30; r++) {
     const active = activeRounds.includes(r);
+    const status = myStatusByRound[r];
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'roundBtn' + (active ? '' : ' locked');
-    btn.innerHTML = `<span class="n">${r}</span><span class="lbl">${active ? '회차' : '잠김'}</span>`;
-    if (active) btn.addEventListener('click', () => openRound(r));
+    let cls = 'roundBtn';
+    let lblHtml = active ? '회차' : '잠김';
+    if (active && status) {
+      cls += ' done';
+      lblHtml = status.done ? `${status.total}점` : `${status.total}점 · ${status.nextAttempt}차`;
+    } else if (!active) {
+      cls += ' locked';
+    }
+    btn.className = cls;
+    btn.innerHTML = `<span class="n">${r}</span><span class="lbl">${lblHtml}</span>`;
+    if (active) btn.addEventListener('click', () => openRound(r, !!status));
     grid.appendChild(btn);
   }
 }
 
 /* ---------- 응시 화면 ---------- */
-async function openRound(round) {
+// resume: 이미 한 번 이상 제출한 회차를 다시 눌렀을 때 — 처음부터 다시
+// 풀게 하지 않고 곧장 정오표/재도전 화면으로 보낸다(원장님 요청: 회차
+// 목록에서 점수·시도차수 보고 바로 이어서 재도전할 수 있게).
+async function openRound(round, resume) {
   currentRound = round;
   qIndex = 0;
   answers = {};
-  submitCount = 0;
+  // 다음 제출을 눌렀을 때 "N회 제출하시겠습니까?" 안내가 이어서 맞게
+  // 나오도록, 이미 진행된 시도 차수를 서버 상태에서 이어받는다.
+  const status = myStatusByRound[round];
+  submitCount = (resume && status && status.nextAttempt) ? status.nextAttempt - 1 : 0;
   show('screen-quiz');
   $('qStem').innerHTML = '문제를 불러오는 중...';
   $('qChoices').innerHTML = '';
@@ -313,6 +388,7 @@ async function openRound(round) {
       $('qStem').innerHTML = '아직 이 회차 문제가 준비되지 않았어요.';
       return;
     }
+    if (resume) { await showResults(); return; }
     renderQuestion();
   } catch (e) {
     $('qStem').innerHTML = '문제를 불러오지 못했어요. 다시 시도해주세요.';
@@ -354,6 +430,7 @@ function renderQuestion() {
   });
   renderMath($('qStem'));
   renderMath($('qChoices'));
+  $('wbSolveBtn').onclick = () => openWhiteboardModal(currentRound, q.num);
 
   $('prevBtn').style.visibility = qIndex === 0 ? 'hidden' : 'visible';
   const valid = canAdvance(q.num);
@@ -446,9 +523,10 @@ function renderResults() {
     const row = document.createElement('div');
     row.className = 'retryItem';
     row.innerHTML = `
-      <div class="qn">${it.num}번</div>
+      <div class="qn">${it.num}번 <button type="button" class="retryWbBtn">✍️ 풀어서 제출</button></div>
       <div class="retryChoices">${q.choices.map((c, i) => `<button type="button" class="retryChoiceBtn" data-i="${i + 1}">${i + 1}</button>`).join('')}</div>
     `;
+    row.querySelector('.retryWbBtn').addEventListener('click', () => openWhiteboardModal(currentRound, it.num));
     row.querySelectorAll('.retryChoiceBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const i = Number(btn.dataset.i);
