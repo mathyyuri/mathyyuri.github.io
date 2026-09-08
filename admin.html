@@ -263,7 +263,7 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
 
     <div class="box" id="dailyQuizBox" style="display:none">
       <p><b>일일일모 관리</b></p>
-      <p class="hint">hwpx 파일 하나(15문제 × 30회 = 450문제, 전부 객관식) 올리면 문항을 자동으로 인식합니다. 문항마다 정답 번호를 고르고 "전체 저장"을 누르면 학생 화면(dailyquiz.html)에 그대로 반영됩니다 — 다시 올려서 저장하면 이전 450문제는 통째로 덮어써집니다.</p>
+      <p class="hint">hwpx 파일 하나(15문제 × 30회 = 450문제, 전부 객관식) 올리면 문항을 자동으로 인식합니다. 이미 정답을 골라둔 문제는 자동으로 다시 채워지니, <b>문제를 중간에 추가/삭제/순서변경 하지 않고 내용만 고쳐서</b> 다시 올리셔도 됩니다. 문항마다 정답 번호를 고르고 "전체 저장"을 누르면 학생 화면(dailyquiz.html)에 그대로 반영됩니다 — 저장할 때마다 이전 450문제는 통째로 덮어써집니다.</p>
       <div class="fieldRow">
         <div><label>일일일모 hwpx 파일</label><input type="file" id="dqFileInput" accept=".hwpx"></div>
       </div>
@@ -273,6 +273,10 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
         <button type="button" id="dqSaveBtn">전체 저장 (450문제 덮어쓰기)</button>
         <span id="dqSaveMsg" class="hint"></span>
       </div>
+
+      <p style="margin-top:26px"><b>회차별 학생 공개</b></p>
+      <p class="hint">켜둔 회차만 학생 화면에 그 회차 버튼이 보이고 풀 수 있습니다 — 문제 검수가 덜 끝난 회차는 꺼두세요. 버튼을 누르면 바로 토글됩니다.</p>
+      <div id="dqActiveGrid" class="btnRow" style="flex-wrap:wrap;gap:6px"></div>
 
       <p style="margin-top:26px"><b>회차별 정답 공개</b></p>
       <p class="hint">켜둔 회차만 학생 정오표 화면에 실제 정답 번호가 같이 보입니다. 버튼을 누르면 바로 토글됩니다.</p>
@@ -1552,9 +1556,30 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
         warning: choices.length !== 5 ? `선택지 ${choices.length}개 인식됨 (5개 기대)` : '',
       });
     }
+    // 이미 저장돼 있던 정답을 (회차,번호)로 맞춰서 미리 채워 넣는다 —
+    // 20문제만 고쳐서 재업로드할 때 나머지 430문제를 또 고르지 않아도
+    // 되게. 문제를 중간에 추가/삭제해서 회차·번호가 밀렸으면 이 매칭도
+    // 같이 틀어지므로(안내 문구에 이미 경고돼 있음), 그런 경우 잘못
+    // 채워진 정답은 검수하며 직접 고치면 된다.
+    let prefilledCount = 0;
+    try {
+      const keyResp = await callGetJsonp({ action: 'dailyquizanswerkey', key: myKey });
+      const answerMap = new Map((keyResp.answers || []).map(a => [a.round + '||' + a.num, a.answer]));
+      dqParsedQuestions.forEach(q => {
+        const prev = answerMap.get(q.round + '||' + q.num);
+        if (prev && prev >= 1 && prev <= q.choices.length) {
+          q.answer = prev;
+          q.prefilled = true;
+          prefilledCount++;
+        }
+      });
+    } catch (e) {
+      console.error('기존 정답 불러오기 실패(새로 다 고르시면 됩니다):', e);
+    }
+
     const warnCount = dqParsedQuestions.filter(q => q.warning).length;
     msgEl.textContent = nums.length === 450
-      ? `450문제 인식 완료.${warnCount ? ` ⚠️ 선택지 인식 문제 ${warnCount}건 — 아래서 확인해주세요.` : ''}`
+      ? `450문제 인식 완료.${prefilledCount ? ` 기존 정답 ${prefilledCount}개 자동으로 채움.` : ''}${warnCount ? ` ⚠️ 선택지 인식 문제 ${warnCount}건 — 아래서 확인해주세요.` : ''}`
       : `⚠️ 문항 ${nums.length}개 인식됨(450개 기대) — 그래도 계속하려면 아래서 확인 후 저장하세요.`;
     msgEl.className = (nums.length === 450 && !warnCount) ? 'hint ok' : 'hint err';
     renderDqReview();
@@ -1588,18 +1613,19 @@ function renderDqReview() {
     list.forEach(q => {
       const row = document.createElement('div');
       row.style.cssText = 'border-bottom:1px solid var(--gold-line);padding:10px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start';
-      const choiceOptions = q.choices.map((c, i) => `<option value="${i + 1}">${i + 1}. ${escapeHtml(stripTags(c)).slice(0, 30)}</option>`).join('');
+      const choiceOptions = q.choices.map((c, i) => `<option value="${i + 1}"${q.answer === i + 1 ? ' selected' : ''}>${i + 1}. ${escapeHtml(stripTags(c)).slice(0, 30)}</option>`).join('');
       row.innerHTML = `
         <div style="flex:1;min-width:0">
           <b>${q.num}번</b> <span class="hint" style="font-size:11px">(${dqDifficultyLabel(q.num)})</span>
           ${q.warning ? `<span style="color:var(--pink-deep);font-size:12px;margin-left:6px">${q.warning}</span>` : ''}
+          ${q.prefilled ? `<span style="color:var(--mint-deep);font-size:12px;margin-left:6px">✓ 기존 정답 불러옴</span>` : ''}
           <div style="margin:4px 0">${q.stemHtml}</div>
           <div style="font-size:13px;color:#555">${q.choices.map((c, i) => `<div>${i + 1}. ${c}</div>`).join('')}</div>
         </div>
         <div style="flex:0 0 auto">
           <label style="font-size:11px">정답</label><br>
           <select class="dqAnswerSelect" data-round="${q.round}" data-num="${q.num}">
-            <option value="">-</option>${choiceOptions}
+            <option value=""${q.answer ? '' : ' selected'}>-</option>${choiceOptions}
           </select>
         </div>`;
       listEl.appendChild(row);
@@ -1644,28 +1670,47 @@ document.getElementById('dqSaveBtn').addEventListener('click', async () => {
   }
 });
 
+// dailyquizrevealstatus 응답 하나로 "정답 공개"·"학생 공개(활성화)" 두
+// 그리드를 같이 채운다 — 같은 시트(일일일모설정)의 두 컬럼일 뿐이라
+// 조회를 따로 안 나눴다.
 async function loadDqRevealStatus() {
-  const grid = document.getElementById('dqRevealGrid');
-  grid.textContent = '불러오는 중...';
+  const revealGrid = document.getElementById('dqRevealGrid');
+  const activeGrid = document.getElementById('dqActiveGrid');
+  revealGrid.textContent = '불러오는 중...';
+  activeGrid.textContent = '불러오는 중...';
   try {
     const resp = await callGetJsonp({ action: 'dailyquizrevealstatus', key: myKey });
-    const byRound = new Map((resp.rounds || []).map(r => [r.round, r.revealed]));
-    grid.innerHTML = '';
+    const byRound = new Map((resp.rounds || []).map(r => [r.round, r]));
+    revealGrid.innerHTML = '';
+    activeGrid.innerHTML = '';
     for (let r = 1; r <= 30; r++) {
-      const revealed = byRound.get(r) || false;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = `${r}회차 ${revealed ? '✅공개' : '🔒비공개'}`;
-      btn.style.cssText = revealed ? 'background:var(--mint-deep);color:#fff;border-color:var(--mint-deep)' : '';
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        await callPostNoCors({ action: 'dailyquizsetreveal', key: myKey, round: r, reveal: !revealed });
+      const state = byRound.get(r) || { revealed: false, active: false };
+
+      const revealBtn = document.createElement('button');
+      revealBtn.type = 'button';
+      revealBtn.textContent = `${r}회차 ${state.revealed ? '✅공개' : '🔒비공개'}`;
+      revealBtn.style.cssText = state.revealed ? 'background:var(--mint-deep);color:#fff;border-color:var(--mint-deep)' : '';
+      revealBtn.addEventListener('click', async () => {
+        revealBtn.disabled = true;
+        await callPostNoCors({ action: 'dailyquizsetreveal', key: myKey, round: r, reveal: !state.revealed });
         setTimeout(loadDqRevealStatus, 900);
       });
-      grid.appendChild(btn);
+      revealGrid.appendChild(revealBtn);
+
+      const activeBtn = document.createElement('button');
+      activeBtn.type = 'button';
+      activeBtn.textContent = `${r}회차 ${state.active ? '✅열림' : '🔒잠김'}`;
+      activeBtn.style.cssText = state.active ? 'background:var(--gold);color:#fff;border-color:var(--gold)' : '';
+      activeBtn.addEventListener('click', async () => {
+        activeBtn.disabled = true;
+        await callPostNoCors({ action: 'dailyquizsetactive', key: myKey, round: r, active: !state.active });
+        setTimeout(loadDqRevealStatus, 900);
+      });
+      activeGrid.appendChild(activeBtn);
     }
   } catch (e) {
-    grid.textContent = '불러오기 실패: ' + (e.message || String(e));
+    revealGrid.textContent = '불러오기 실패: ' + (e.message || String(e));
+    activeGrid.textContent = '불러오기 실패: ' + (e.message || String(e));
   }
 }
 </script>
