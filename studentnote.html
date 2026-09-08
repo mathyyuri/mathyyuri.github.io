@@ -4026,28 +4026,40 @@ function buildRoundAccuracy(history) {
     .map(b => ({ ...b, pct: Math.round((b.correct / b.total) * 100) }));
 }
 
-// 통계 페이지의 "회차별 오답노트 완성도" — 오답노트를 발행한 시각(at)을
+// 통계 페이지의 "회차별 오답노트 완성도·정답률" — 오답노트를 발행한 시각(at)을
 // 묶음(=몇 번째로 만들어준 오답노트인지) 키로 삼아, 그 배치에 부여된 문항
-// 중 실제로 채점(제출)까지 마친 비율을 보여준다. buildRoundAccuracy(회독수별
-// 정답률: 같은 문항의 반복 극복 여부)와는 축이 다른 지표 — 이건 "그날 낸
-// 오답노트를 학생이 얼마나 소화했는지"만 본다(정답/오답 여부는 안 따짐,
-// 결과 칸이 채워졌는지만 확인). 같은 at으로 기록된 문항이 하나도 채점 안
-// 된 배치(방금 막 발행돼 아직 풀 시간이 없었던 회차)도 0%로 그대로 나오는
-// 게 맞음 — 진행 중인 회차를 숨기지 않고 "아직 안 함"으로 보여주는 게 이
-// 지표의 목적.
+// 중 실제로 채점(제출)까지 마친 비율(완성도)과, 그중 몇 개를 맞았는지(정답률)를
+// 함께 보여준다. buildRoundAccuracy(회독수별 정답률: 같은 문항의 반복 극복
+// 여부)와는 축이 다른 지표 — 이건 "그날 낸 오답노트를 학생이 얼마나
+// 소화했고, 그중 실제로 얼마나 맞았는지"를 본다. 완성도만 있으면 대부분
+// 100%로 수렴해 변별력이 없다는 원장님 피드백으로 정답률을 같이 추가함
+// (correct=1(O)만 정답으로 집계, 2(X)/3(△·재도전해서 맞음)은 완성도 분모엔
+// 들어가되 정답률에서는 오답으로 침 — buildRoundAccuracy/buildUnitAccuracy와
+// 같은 기준). 같은 at으로 기록된 문항이 하나도 채점 안 된 배치(방금 막
+// 발행돼 아직 풀 시간이 없었던 회차)도 완성도 0%로 그대로 나오는 게 맞음
+// — 진행 중인 회차를 숨기지 않고 "아직 안 함"으로 보여주는 게 이 지표의
+// 목적. 이런 배치는 정답률을 낼 분모(done)가 0이라 accPct는 null로 둔다.
 function buildBatchCompletion(history) {
   const byAt = new Map();
   for (const h of history) {
     if (!h.at) continue;
     const key = String(h.at);
-    if (!byAt.has(key)) byAt.set(key, { at: h.at, total: 0, done: 0 });
+    if (!byAt.has(key)) byAt.set(key, { at: h.at, total: 0, done: 0, correct: 0 });
     const b = byAt.get(key);
     b.total++;
-    if (h.result != null) b.done++;
+    if (h.result != null) {
+      b.done++;
+      if (h.result === 1) b.correct++;
+    }
   }
   return [...byAt.values()]
     .sort((a, b) => new Date(a.at) - new Date(b.at))
-    .map((b, i) => ({ ...b, batchNum: i + 1, pct: Math.round((b.done / b.total) * 100) }));
+    .map((b, i) => ({
+      ...b,
+      batchNum: i + 1,
+      pct: Math.round((b.done / b.total) * 100),
+      accPct: b.done > 0 ? Math.round((b.correct / b.done) * 100) : null,
+    }));
 }
 
 // 오답노트 현황 페이지의 "단원별 정답률" — 지금까지 채점된(result 있는)
@@ -5007,8 +5019,8 @@ function buildStatsPageHtml(batchCompletion, roundAccuracy, unitAccuracy, info) 
   const batchRowsHtml = batchesShown.map(b => `
     <div class="statBarRow">
       <span class="statBarLabel">${b.batchNum}회차 <small>(${formatBatchDateLabel(b.at)})</small></span>
-      <div class="statBarWrap"><div class="statBar statBarBatch" style="width:${b.pct}%"></div></div>
-      <span class="statBarPct">${b.pct}% <small>(${b.done}/${b.total})</small></span>
+      <div class="statBarWrap"><div class="statBar statBarBatch" style="width:${b.accPct == null ? 0 : b.accPct}%"></div></div>
+      <span class="statBarPct">${b.accPct == null ? '채점 전' : `정답 ${b.accPct}%(${b.correct}/${b.done})`}<small>·완성${b.pct}%</small></span>
     </div>`).join('');
 
   const roundsShown = roundAccuracy.slice(-STATS_MAX_ROUNDS);
@@ -5039,7 +5051,7 @@ function buildStatsPageHtml(batchCompletion, roundAccuracy, unitAccuracy, info) 
       <div class="sumVol">VOL. ${escapeHtml(info.studentName)}</div>
       <div class="sumCredit">MATHY YURI &nbsp;|&nbsp; DAECHI S+ ACADEMY</div>
       <h1 class="sumTitle">${escapeHtml(info.studentName)}의 그동안의 학습 통계</h1>
-      <h2 class="sumSubTitle">회차별 오답노트 완성도${batchesClipped ? ` <small>(최근 ${STATS_MAX_BATCHES}회차)</small>` : ''}</h2>
+      <h2 class="sumSubTitle">회차별 오답노트 완성도 · 정답률${batchesClipped ? ` <small>(최근 ${STATS_MAX_BATCHES}회차)</small>` : ''}</h2>
       <div class="statChart">${batchRowsHtml || '<div class="statEmpty">아직 발행된 오답노트가 없습니다.</div>'}</div>
       <h2 class="sumSubTitle">회독수별 정답률${roundsClipped ? ` <small>(최근 ${STATS_MAX_ROUNDS}회독)</small>` : ''}</h2>
       <div class="statChart">${roundRowsHtml || '<div class="statEmpty">아직 채점된 기록이 없습니다.</div>'}</div>
@@ -5337,7 +5349,7 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 .statBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep);border-radius:2px}
 .statBarUnit{background:var(--mb-orange)}
 .statBarBatch{background:var(--mb-navy)}
-.statBarPct{flex:0 0 26mm;font-size:8px;font-weight:700}
+.statBarPct{flex:0 0 34mm;font-size:8px;font-weight:700;white-space:nowrap}
 .statBarPct small{font-weight:500;color:rgba(26,26,26,.55)}
 .statEmpty{font-size:9px;color:rgba(26,26,26,.5)}
 
