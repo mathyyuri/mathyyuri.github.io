@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>일일일모 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+:root {
+  --bg: #fdfbf7;
+  --card: #ffffff;
+  --dark: #3a3530;
+  --gold: #c8a84b;
+  --gold-deep: #a8853f;
+  --line: #eae5da;
+  --pink: #e58ba4;
+  --pink-deep: #c64e71;
+  --mint: #8ba8a1;
+  --mint-deep: #5b8a80;
+  --blue: #8a96b8;
+  --shadow: 0 10px 30px rgba(58,53,48,0.06);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; }
+.wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 30px; }
+.hidden { display: none !important; }
+
+/* ---------- header ---------- */
+.appHeader { text-align: center; padding: 26px 20px 16px; }
+.appHeader h1 { margin: 0; font-size: 1.15rem; letter-spacing: 3px; font-weight: 700; }
+.appHeader p { margin: 4px 0 0; font-size: 0.68rem; opacity: 0.45; letter-spacing: 2px; }
+
+/* ---------- login ---------- */
+#screen-login { padding: 20px; flex: 1; display: flex; align-items: center; }
+.loginCard { width: 100%; background: var(--card); border-radius: 20px; padding: 34px 26px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.loginCard h2 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin: 0 0 6px; }
+.loginCard .sub { text-align: center; font-size: 0.78rem; opacity: 0.5; margin: 0 0 26px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 0.78rem; font-weight: 600; color: #777; margin-bottom: 7px; }
+.field input { width: 100%; padding: 13px 15px; border-radius: 12px; border: 1px solid #ddd; background: var(--bg); font-size: 1rem; outline: none; font-family: inherit; }
+.field input:focus { border-color: var(--gold); }
+.loginBtn { width: 100%; background: var(--dark); color: #fff; padding: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; }
+.loginBtn:disabled { background: #bbb; }
+.errMsg { color: var(--pink-deep); font-size: 0.8rem; margin-top: 12px; min-height: 18px; text-align: center; }
+
+/* ---------- rounds ---------- */
+#screen-rounds { padding: 8px 18px 20px; flex: 1; }
+.userBar { display: flex; justify-content: space-between; align-items: center; background: var(--card); border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; border: 1px solid var(--line); }
+.userBar .who { font-weight: 700; font-family: 'Noto Serif KR'; font-size: 0.95rem; }
+.userBar .who small { display: block; font-weight: 400; font-size: 0.68rem; opacity: 0.5; margin-top: 2px; }
+.userBar button { background: none; border: 1px solid #ddd; border-radius: 20px; padding: 6px 13px; font-size: 0.72rem; color: #999; cursor: pointer; }
+.rankLinkRow { text-align: center; margin-bottom: 16px; }
+.rankLinkRow a { font-size: 0.78rem; color: var(--gold-deep); text-decoration: none; font-weight: 600; }
+.roundGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.roundBtn {
+  aspect-ratio: 1/1; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-family: 'Poppins'; cursor: pointer; color: var(--dark);
+}
+.roundBtn .n { font-size: 1.05rem; font-weight: 700; }
+.roundBtn .lbl { font-size: 0.55rem; opacity: 0.5; letter-spacing: 0.5px; }
+.roundBtn.locked { background: #f2f0eb; color: #bbb; border-style: dashed; cursor: not-allowed; }
+.roundBtn.locked .lbl { opacity: 0.6; }
+.roundBtn.done { border-color: var(--mint-deep); background: #f3f8f6; }
+.roundBtn.done .n { color: var(--mint-deep); }
+.legendNote { text-align: center; font-size: 0.7rem; color: #aaa; margin-top: 16px; line-height: 1.6; }
+
+/* ---------- quiz ---------- */
+#screen-quiz { padding: 0 18px 20px; flex: 1; display: flex; flex-direction: column; }
+.quizTop { padding: 10px 0 14px; }
+.progressRow { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #999; margin-bottom: 8px; }
+.progressRow b { color: var(--dark); font-weight: 700; }
+.progressBar { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.progressBar > div { height: 100%; background: var(--gold); transition: width 0.25s; }
+.qCard { background: var(--card); border-radius: 18px; padding: 22px 20px; box-shadow: var(--shadow); border: 1px solid var(--line); flex: 1; }
+.qStem { font-size: 0.98rem; line-height: 1.75; margin-bottom: 20px; word-break: keep-all; }
+.qStem img { max-width: 100%; border-radius: 8px; }
+.choiceList { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; }
+.choiceBtn {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 13px 15px; border-radius: 13px; border: 1.5px solid var(--line); background: var(--bg);
+  font-size: 0.92rem; line-height: 1.5; cursor: pointer; font-family: inherit; color: var(--dark);
+}
+.choiceBtn .num { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: #999; }
+.choiceBtn.picked { background: #fbf3e2; border-color: var(--gold); }
+.choiceBtn.picked .num { background: var(--gold); border-color: var(--gold); color: #fff; }
+.metaLabel { font-size: 0.76rem; font-weight: 700; color: #999; margin-bottom: 9px; letter-spacing: 0.5px; }
+.metaRow { display: flex; gap: 8px; margin-bottom: 4px; }
+.metaBtn { flex: 1; padding: 11px 4px; border-radius: 11px; border: 1.5px solid var(--line); background: var(--bg); font-size: 0.82rem; font-weight: 600; color: #999; cursor: pointer; font-family: inherit; }
+.metaBtn[data-m="확실"].picked { background: var(--mint-deep); border-color: var(--mint-deep); color: #fff; }
+.metaBtn[data-m="애매"].picked { background: var(--gold); border-color: var(--gold); color: #fff; }
+.metaBtn[data-m="모름"].picked { background: var(--pink-deep); border-color: var(--pink-deep); color: #fff; }
+.quizNav { display: flex; gap: 10px; margin-top: 18px; }
+.navBtn { flex: 1; padding: 15px; border-radius: 13px; border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.navBtn.prevBtn { background: var(--card); color: #999; border: 1.5px solid var(--line); flex: 0 0 78px; }
+.navBtn.nextBtn { background: var(--dark); color: #fff; }
+.navBtn.nextBtn:disabled { background: #ddd; color: #aaa; cursor: not-allowed; }
+.hintMsg { text-align: center; font-size: 0.72rem; color: #bbb; margin-top: 10px; }
+
+/* ---------- results ---------- */
+#screen-result { padding: 8px 18px 30px; flex: 1; }
+.scoreCard { background: var(--dark); color: #fff; border-radius: 20px; padding: 26px 20px; text-align: center; margin-bottom: 18px; }
+.scoreCard .label { font-size: 0.72rem; letter-spacing: 2px; opacity: 0.6; }
+.scoreCard .score { font-family: 'Noto Serif KR'; font-weight: 900; font-size: 2.4rem; margin: 6px 0; color: var(--gold); }
+.scoreCard .sub { font-size: 0.78rem; opacity: 0.7; }
+.resultGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-bottom: 20px; }
+.resultCell { aspect-ratio: 1/1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; gap: 1px; }
+.resultCell.ok { background: #e9f3ef; color: var(--mint-deep); }
+.resultCell.no { background: #fbeaee; color: var(--pink-deep); }
+.resultCell .pts { font-size: 0.58rem; font-weight: 400; opacity: 0.75; }
+.retryBox { background: var(--card); border: 1.5px solid var(--pink); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+.retryBox .ttl { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+.retryBox .desc { font-size: 0.74rem; color: #999; margin-bottom: 14px; line-height: 1.5; }
+.retryItem { border-top: 1px solid var(--line); padding: 14px 0; }
+.retryItem:first-of-type { border-top: none; }
+.retryItem .qn { font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
+.retryChoices { display: flex; flex-wrap: wrap; gap: 6px; }
+.retryChoiceBtn { padding: 7px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); font-size: 0.78rem; cursor: pointer; font-family: inherit; }
+.retryChoiceBtn.picked { background: var(--gold); border-color: var(--gold); color: #fff; }
+.submitRetryBtn { width: 100%; background: var(--pink-deep); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 6px; }
+.submitRetryBtn:disabled { background: #ddd; color: #aaa; }
+.lockedNote { font-size: 0.72rem; color: #bbb; margin-top: 6px; }
+.resultFoot { display: flex; gap: 10px; margin-top: 10px; }
+.resultFoot button { flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: var(--dark); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="appHeader">
+    <h1>일일일모</h1>
+    <p>MATHY YURI · DAECHI ACADEMY</p>
+  </div>
+
+  <!-- ============ 로그인 ============ -->
+  <div id="screen-login">
+    <div class="loginCard">
+      <h2>일일일모 응시</h2>
+      <p class="sub">로그인하고 오늘의 회차를 풀어보세요</p>
+      <div class="field">
+        <label>이름</label>
+        <input id="in-name" type="text" placeholder="이름을 입력하세요" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>학부모 휴대폰 뒷 4자리</label>
+        <input id="in-pw" type="password" inputmode="numeric" maxlength="4" placeholder="뒷 4자리">
+      </div>
+      <button class="loginBtn" id="loginBtn">시작하기</button>
+      <div class="errMsg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <!-- ============ 회차 선택 ============ -->
+  <div id="screen-rounds" class="hidden">
+    <div class="userBar">
+      <div class="who"><span id="whoText">-</span><small id="whoClass"></small></div>
+      <button id="logoutBtn">로그아웃</button>
+    </div>
+    <div class="rankLinkRow"><a href="dailyquizranking.html">🏆 랭킹 보러가기 →</a></div>
+    <div class="roundGrid" id="roundGrid"></div>
+    <p class="legendNote">잠긴 회차는 아직 준비 중이에요.<br>초록 테두리는 이미 응시를 마친 회차예요.</p>
+  </div>
+
+  <!-- ============ 응시 화면 ============ -->
+  <div id="screen-quiz" class="hidden">
+    <div class="quizTop">
+      <div class="progressRow"><span id="quizRoundLabel">1회차</span><span><b id="quizIdx">1</b> / 15</span></div>
+      <div class="progressBar"><div id="quizProgressBar" style="width:6.6%"></div></div>
+    </div>
+    <div class="qCard">
+      <div class="qStem" id="qStem"></div>
+      <div class="choiceList" id="qChoices"></div>
+      <div class="metaLabel">이 문제, 어느 정도 확신하나요?</div>
+      <div class="metaRow" id="qMeta">
+        <button class="metaBtn" data-m="확실" type="button">확실</button>
+        <button class="metaBtn" data-m="애매" type="button">애매</button>
+        <button class="metaBtn" data-m="모름" type="button">모름</button>
+      </div>
+    </div>
+    <div class="quizNav">
+      <button class="navBtn prevBtn" id="prevBtn" type="button">이전</button>
+      <button class="navBtn nextBtn" id="nextBtn" type="button" disabled>다음</button>
+    </div>
+    <p class="hintMsg" id="quizHint">보기와 확신 정도를 골라주세요 ("모름"을 고르면 보기는 안 골라도 돼요)</p>
+  </div>
+
+  <!-- ============ 정오표/결과 ============ -->
+  <div id="screen-result" class="hidden">
+    <div class="scoreCard">
+      <div class="label" id="resultRoundLabel">1회차 결과</div>
+      <div class="score" id="resultScore">0점</div>
+      <div class="sub" id="resultSub">15문제 중 0개 정답</div>
+    </div>
+    <div class="resultGrid" id="resultGrid"></div>
+    <div id="retryBoxWrap"></div>
+    <div class="resultFoot">
+      <button id="backToRoundsBtn" type="button">회차 목록으로</button>
+      <button id="viewRankBtn" type="button">랭킹 보기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const LOGIN_KEY = 'dailyQuizLoginCreds';
+
+let me = null; // {name, pw}
+let activeRounds = [];      // [1,2,3,...]
+let doneRounds = new Set(); // 완료(전부 채점 완료) 회차
+let currentRound = null;
+let questions = [];         // [{num,difficulty,points,stemHtml,choices}]
+let qIndex = 0;
+let answers = {};           // num -> {choice, meta}
+let submitCount = 0;        // 이 회차에서 몇 번째 제출인지(1차, 2차...)
+let lastResult = null;      // dailyquizresult 응답
+
+function $(id) { return document.getElementById(id); }
+function show(id) {
+  ['screen-login', 'screen-rounds', 'screen-quiz', 'screen-result'].forEach(s => $(s).classList.toggle('hidden', s !== id));
+}
+function renderMath(el) {
+  if (window.renderMathInElement) {
+    try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+  }
+}
+
+/* ---------- API ---------- */
+async function apiGet(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(GAS_URL + '?' + qs);
+  return res.json();
+}
+async function apiPost(body) {
+  await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+}
+
+/* ---------- 로그인 ---------- */
+async function doLogin(silent) {
+  const name = silent ? me.name : $('in-name').value.trim();
+  const pw = silent ? me.pw : $('in-pw').value.trim();
+  const msg = $('loginMsg');
+  if (!silent) {
+    msg.textContent = '';
+    if (!name || pw.length !== 4) { msg.textContent = '이름과 학부모 휴대폰 뒷 4자리를 입력해주세요.'; return; }
+    $('loginBtn').disabled = true;
+    $('loginBtn').textContent = '확인 중...';
+  }
+  try {
+    const json = await apiGet({ action: 'login', name, pw });
+    if (!json.ok) {
+      if (silent) { sessionStorage.removeItem(LOGIN_KEY); }
+      else { msg.textContent = json.error || '이름 또는 학부모 휴대폰 번호가 일치하지 않습니다.'; }
+      return false;
+    }
+    me = { name, pw, class: json.studentClass || '' };
+    sessionStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
+    $('whoText').textContent = me.name;
+    $('whoClass').textContent = me.class ? me.class + '반' : '';
+    await enterRoundsScreen();
+    return true;
+  } catch (e) {
+    if (!silent) msg.textContent = '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    return false;
+  } finally {
+    if (!silent) { $('loginBtn').disabled = false; $('loginBtn').textContent = '시작하기'; }
+  }
+}
+$('loginBtn').addEventListener('click', () => doLogin(false));
+$('in-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(false); });
+$('logoutBtn').addEventListener('click', () => {
+  me = null;
+  sessionStorage.removeItem(LOGIN_KEY);
+  $('in-name').value = ''; $('in-pw').value = ''; $('loginMsg').textContent = '';
+  show('screen-login');
+});
+
+/* ---------- 회차 선택 ---------- */
+async function enterRoundsScreen() {
+  show('screen-rounds');
+  const grid = $('roundGrid');
+  grid.innerHTML = '<p class="hintMsg">불러오는 중...</p>';
+  try {
+    const json = await apiGet({ action: 'dailyquizactiverounds' });
+    activeRounds = json.rounds || [];
+  } catch (e) { activeRounds = []; }
+  grid.innerHTML = '';
+  for (let r = 1; r <= 30; r++) {
+    const active = activeRounds.includes(r);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'roundBtn' + (active ? '' : ' locked');
+    btn.innerHTML = `<span class="n">${r}</span><span class="lbl">${active ? '회차' : '잠김'}</span>`;
+    if (active) btn.addEventListener('click', () => openRound(r));
+    grid.appendChild(btn);
+  }
+}
+
+/* ---------- 응시 화면 ---------- */
+async function openRound(round) {
+  currentRound = round;
+  qIndex = 0;
+  answers = {};
+  submitCount = 0;
+  show('screen-quiz');
+  $('qStem').innerHTML = '문제를 불러오는 중...';
+  $('qChoices').innerHTML = '';
+  try {
+    const json = await apiGet({ action: 'dailyquizquestions', round });
+    questions = (json.questions || []).sort((a, b) => a.num - b.num);
+    if (!questions.length) {
+      $('qStem').innerHTML = '아직 이 회차 문제가 준비되지 않았어요.';
+      return;
+    }
+    renderQuestion();
+  } catch (e) {
+    $('qStem').innerHTML = '문제를 불러오지 못했어요. 다시 시도해주세요.';
+  }
+}
+
+function currentQ() { return questions[qIndex]; }
+
+function renderQuestion() {
+  const q = currentQ();
+  if (!q) return;
+  $('quizRoundLabel').textContent = currentRound + '회차';
+  $('quizIdx').textContent = qIndex + 1;
+  $('quizProgressBar').style.width = Math.round(((qIndex + 1) / questions.length) * 100) + '%';
+  $('qStem').innerHTML = q.stemHtml;
+  const a = answers[q.num] || {};
+  $('qChoices').innerHTML = q.choices.map((c, i) => `
+    <button type="button" class="choiceBtn${a.choice === i + 1 ? ' picked' : ''}" data-i="${i + 1}">
+      <span class="num">${i + 1}</span><span>${c}</span>
+    </button>`).join('');
+  $('qChoices').querySelectorAll('.choiceBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.i);
+      const cur = answers[q.num] || {};
+      cur.choice = cur.choice === i ? null : i;
+      answers[q.num] = cur;
+      renderQuestion();
+    });
+  });
+  $('qMeta').querySelectorAll('.metaBtn').forEach(btn => {
+    btn.classList.toggle('picked', a.meta === btn.dataset.m);
+    btn.onclick = () => {
+      const cur = answers[q.num] || {};
+      cur.meta = cur.meta === btn.dataset.m ? null : btn.dataset.m;
+      answers[q.num] = cur;
+      renderQuestion();
+    };
+  });
+  renderMath($('qStem'));
+  renderMath($('qChoices'));
+
+  $('prevBtn').style.visibility = qIndex === 0 ? 'hidden' : 'visible';
+  const valid = canAdvance(q.num);
+  $('nextBtn').disabled = !valid;
+  $('nextBtn').textContent = qIndex === questions.length - 1 ? '제출' : '다음';
+  $('quizHint').textContent = a.meta === '모름'
+    ? '확인 완료 — "모름"으로 표시돼요.'
+    : '보기와 확신 정도를 골라주세요 ("모름"을 고르면 보기는 안 골라도 돼요)';
+}
+
+function canAdvance(num) {
+  const a = answers[num];
+  if (!a || !a.meta) return false;
+  if (a.meta === '모름') return true;
+  return a.choice != null;
+}
+
+$('prevBtn').addEventListener('click', () => { if (qIndex > 0) { qIndex--; renderQuestion(); } });
+$('nextBtn').addEventListener('click', () => {
+  const q = currentQ();
+  if (!canAdvance(q.num)) return;
+  if (qIndex < questions.length - 1) { qIndex++; renderQuestion(); }
+  else submitAll();
+});
+
+async function submitAll() {
+  submitCount++;
+  if (!confirm(`${submitCount}회 제출하시겠습니까?`)) { submitCount--; return; }
+  const payload = questions.map(q => {
+    const a = answers[q.num] || {};
+    return { num: q.num, choice: a.choice || 0, meta: a.meta || '' };
+  });
+  $('nextBtn').disabled = true;
+  $('nextBtn').textContent = '제출 중...';
+  await apiPost({ action: 'dailyquizsubmit', name: me.name, round: currentRound, answers: payload });
+  await new Promise(r => setTimeout(r, 1200));
+  await showResults();
+}
+
+/* ---------- 정오표/결과 ---------- */
+async function showResults() {
+  show('screen-result');
+  $('resultGrid').innerHTML = '<p class="hintMsg">채점 중...</p>';
+  $('retryBoxWrap').innerHTML = '';
+  try {
+    const json = await apiGet({ action: 'dailyquizresult', name: me.name, round: currentRound });
+    lastResult = json;
+    renderResults();
+  } catch (e) {
+    $('resultGrid').innerHTML = '<p class="hintMsg">결과를 불러오지 못했어요.</p>';
+  }
+}
+
+function renderResults() {
+  const items = lastResult.items || [];
+  const correctCount = items.filter(it => it.correct).length;
+  $('resultRoundLabel').textContent = currentRound + '회차 결과';
+  $('resultScore').textContent = lastResult.total + '점';
+  $('resultSub').textContent = `${items.length}문제 중 ${correctCount}개 정답`;
+
+  $('resultGrid').innerHTML = items.map(it => `
+    <div class="resultCell ${it.correct ? 'ok' : 'no'}">
+      <span>${it.num}</span>
+      <span>${it.correct ? 'O' : (it.attempted ? 'X' : '−')}</span>
+      <span class="pts">${it.earned}점</span>
+    </div>`).join('');
+
+  const retryable = items.filter(it => it.canRetry);
+  const wrap = $('retryBoxWrap');
+  if (!retryable.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+  const box = document.createElement('div');
+  box.className = 'retryBox';
+  box.innerHTML = `
+    <div class="ttl">✏️ 오답 다시 풀기</div>
+    <div class="desc">틀린 문제를 다시 골라서 제출하면 절반 점수를 받을 수 있어요.</div>
+    <div id="retryList"></div>
+    <button class="submitRetryBtn" id="submitRetryBtn" type="button" disabled>다시 제출하기</button>
+  `;
+  wrap.innerHTML = '';
+  wrap.appendChild(box);
+
+  const retryAnswers = {}; // num -> choice
+  const listEl = box.querySelector('#retryList');
+  retryable.forEach(it => {
+    const q = questions.find(x => x.num === it.num);
+    if (!q) return;
+    const row = document.createElement('div');
+    row.className = 'retryItem';
+    row.innerHTML = `
+      <div class="qn">${it.num}번</div>
+      <div class="retryChoices">${q.choices.map((c, i) => `<button type="button" class="retryChoiceBtn" data-i="${i + 1}">${i + 1}</button>`).join('')}</div>
+    `;
+    row.querySelectorAll('.retryChoiceBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.i);
+        retryAnswers[it.num] = retryAnswers[it.num] === i ? null : i;
+        row.querySelectorAll('.retryChoiceBtn').forEach(b => b.classList.toggle('picked', Number(b.dataset.i) === retryAnswers[it.num]));
+        submitBtn.disabled = Object.values(retryAnswers).every(v => !v);
+      });
+    });
+    listEl.appendChild(row);
+  });
+  const submitBtn = box.querySelector('#submitRetryBtn');
+  submitBtn.addEventListener('click', async () => {
+    const payload = Object.keys(retryAnswers).filter(n => retryAnswers[n]).map(n => ({ num: Number(n), choice: retryAnswers[n], meta: '' }));
+    if (!payload.length) return;
+    submitCount++;
+    if (!confirm(`${submitCount}회 제출하시겠습니까?`)) { submitCount--; return; }
+    submitBtn.disabled = true;
+    submitBtn.textContent = '제출 중...';
+    await apiPost({ action: 'dailyquizsubmit', name: me.name, round: currentRound, answers: payload });
+    await new Promise(r => setTimeout(r, 1200));
+    await showResults();
+  });
+}
+
+$('backToRoundsBtn').addEventListener('click', enterRoundsScreen);
+$('viewRankBtn').addEventListener('click', () => { location.href = 'dailyquizranking.html'; });
+
+/* ---------- 자동 로그인 ---------- */
+(function init() {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(LOGIN_KEY) || 'null');
+    if (cached && cached.name && cached.pw) {
+      me = cached;
+      doLogin(true);
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
