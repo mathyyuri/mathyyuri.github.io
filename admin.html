@@ -1535,7 +1535,15 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
       // 버튼으로) 그려야 하기 때문에 problembank.html처럼 한 덩어리
       // HTML로만 두면 안 된다.
       const choices = [...html.matchAll(/<span class="choiceItem">([\s\S]*?)<\/span>/g)].map(m => m[1]);
-      const stemHtml = html.replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '').trim();
+      // 원장님이 문제마다 "S + : 난이도 상"/"난이도 중상" 같은 라벨을 별도
+      // 텍스트 상자(hp:rect)로 붙여두셨는데, hwpBodyXmlToHtml이 이걸
+      // .hwpRectBox로 그대로 렌더링해서 지문 끝에 그대로 남는다(실제 파일:
+      // "2026 9월... 일일일모 450제.hwpx" 207번 등) — 학생 화면에 보일
+      // 이유가 없는 관리용 라벨이라 지문에서 걷어낸다.
+      const stemHtml = html
+        .replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '')
+        .replace(/<div>\s*<div class="hwpRectBox">\s*<p>\s*(?:S\s*\+?\s*:\s*)?난이도\s*[가-힣]*\s*<\/p>\s*<\/div>\s*<\/div>/g, '')
+        .trim();
       const n = Number(num);
       const round = Math.ceil(n / 15);
       const posInRound = ((n - 1) % 15) + 1;

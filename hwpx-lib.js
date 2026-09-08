@@ -1899,7 +1899,7 @@ function looksLikeNextQuestionMarker(paras, idx) {
 // collide with the watermark/citation text this function is deliberately
 // narrow to avoid — that repeating notice never starts with a parenthesized
 // number.
-function looksLikeOrphanedFragment(p) {
+function looksLikeOrphanedFragment(p, paraFreq) {
   if (p.text.includes('<hp:pic') || p.text.includes('<hp:tbl')) return true;
   const t = stripTags(p.text).trim();
   if (/^[①②③④⑤㉠㉡㉢㉣]/.test(t) || /^[ㄱ-ㅎ]\s*[.)]/.test(t) || /^\([1-9]\d?\)/.test(t)) return true;
@@ -1916,6 +1916,19 @@ function looksLikeOrphanedFragment(p) {
     const before = p.text.slice(0, firstEq.index);
     if (!stripTags(before).trim()) return true;
   }
+  // 그 외의 평범한 문장도, 문서 전체에서 워터마크처럼 여러 번(3번 이상)
+  // 그대로 반복되는 게 아니라면 흡수 대상으로 본다 — 진짜 문제 문장은
+  // 절대 이렇게 통째로 반복되지 않는다. 이 문단의 소속은 이미 nextI(다음
+  // 문항의 미주 시작 지점)로 한 번 더 막혀 있어서(이 함수가 그 범위
+  // 밖을 보는 일은 없음), 여기서 느슨하게 봐도 다음 문항 내용을 잘못
+  // 끌어올 위험은 없다 — 실제 파일에서 확인: 그림/조건 앞뒤로 남겨둔
+  // 빈 줄(원장님이 시각적으로 여백을 준 것) 때문에 "가 있다. 선분..."
+  // 처럼 이어지는 평범한 문장이 흡수가 안 돼서 문제 뒷부분(조건 목록·
+  // 선택지까지)이 통째로 잘려나갔었다(실제 파일: "2026 9월 2학기
+  // 중간고사 대비 일일일모 450제" 208번 등 다수). 반대로 "난이도 상"
+  // 같은, 페이지마다 반복되는 라벨(별도 텍스트 상자)은 3번 이상 그대로
+  // 반복되므로 여전히 걸러진다.
+  if (t && paraFreq && (paraFreq.get(t) || 0) < 3) return true;
   return false;
 }
 
@@ -1925,6 +1938,13 @@ function detectEndnoteMarkers(xml) {
   for (let i = 0; i < paras.length; i++) {
     const m = paras[i].text.match(/<hp:endNote\b[^>]*\bnumber="(\d+)"/);
     if (m) boundaries.push({ i, key: m[1] });
+  }
+  // looksLikeOrphanedFragment의 "워터마크처럼 반복되는 문단은 흡수하지
+  // 않는다" 판단에 쓸 문서 전체 문단-텍스트 빈도표 — 여기서 한 번만 센다.
+  const paraFreq = new Map();
+  for (const p of paras) {
+    const t = stripTags(p.text).trim();
+    if (t) paraFreq.set(t, (paraFreq.get(t) || 0) + 1);
   }
   const choicesEnd = boundaries.map(({ i }, idx) => {
     const nextI = idx + 1 < boundaries.length ? boundaries[idx + 1].i : paras.length;
@@ -1959,7 +1979,7 @@ function detectEndnoteMarkers(xml) {
     for (;;) {
       let k = j, gap = 0;
       while (k < nextI && isEmptySpacerPara(paras[k]) && gap < 3) { k++; gap++; }
-      if (!(k < nextI && looksLikeOrphanedFragment(paras[k]))) break;
+      if (!(k < nextI && looksLikeOrphanedFragment(paras[k], paraFreq))) break;
       const distHere = gap;
       let m = k;
       while (m < nextI && !isEmptySpacerPara(paras[m]) && !looksLikeNextQuestionMarker(paras, m)) m++;
