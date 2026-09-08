@@ -166,7 +166,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
   <!-- ============ 응시 화면 ============ -->
   <div id="screen-quiz" class="hidden">
     <div class="quizTop">
-      <div class="progressRow"><span id="quizRoundLabel">1회차</span><span><b id="quizIdx">1</b> / 15</span></div>
+      <div class="progressRow"><span id="quizRoundLabel">1회차</span><span><b id="quizIdx">1</b> / <span id="quizTotal">15</span></span></div>
       <div class="progressBar"><div id="quizProgressBar" style="width:6.6%"></div></div>
     </div>
     <div class="qCard">
@@ -254,7 +254,7 @@ async function doLogin(silent) {
       else { msg.textContent = json.error || '이름 또는 학부모 휴대폰 번호가 일치하지 않습니다.'; }
       return false;
     }
-    me = { name, pw, class: json.studentClass || '' };
+    me = { name, pw, class: (json.student && json.student.class) || '' };
     sessionStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
     $('whoText').textContent = me.name;
     $('whoClass').textContent = me.class ? me.class + '반' : '';
@@ -326,6 +326,7 @@ function renderQuestion() {
   if (!q) return;
   $('quizRoundLabel').textContent = currentRound + '회차';
   $('quizIdx').textContent = qIndex + 1;
+  $('quizTotal').textContent = questions.length;
   $('quizProgressBar').style.width = Math.round(((qIndex + 1) / questions.length) * 100) + '%';
   $('qStem').innerHTML = q.stemHtml;
   const a = answers[q.num] || {};
