@@ -67,6 +67,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 1px 2px; text-align: center; }
 .scoreTable th { background: #fafafa; font-family: var(--kserif); }
 .dqRateBadge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-weight: 700; color: #fff; font-size: 12px; }
+.dqHardCard { border: 1px solid var(--gold-line); border-radius: 6px; padding: 12px 14px; margin-top: 10px; background: #fafafa; }
+.dqHardCard .dqHardHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-family: var(--kserif); }
+.dqHardCard .dqHardStem { font-size: 14px; line-height: 1.7; margin-bottom: 8px; }
+.dqHardCard .dqHardChoices { font-size: 13px; color: #555; margin-bottom: 8px; }
+.dqHardCard .dqHardAnswer { font-weight: 700; color: var(--mint-deep); margin-bottom: 6px; }
+.dqHardCard .dqHardExpl { font-size: 13px; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--gold-line); }
 .scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 6px; }
 .rowAllBtns { display: inline-flex; gap: 3px; margin-left: 8px; }
 .rowAllBtn { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; cursor: pointer; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); }
@@ -285,12 +291,22 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
       <p class="hint">켜둔 회차만 학생 정오표 화면에 실제 정답 번호가 같이 보입니다. 버튼을 누르면 바로 토글됩니다.</p>
       <div id="dqRevealGrid" class="btnRow" style="flex-wrap:wrap;gap:6px"></div>
 
+      <p style="margin-top:26px"><b>회차별 PDF 원본 연결 (필기용)</b></p>
+      <p class="hint">회차마다 그 회차 15문제가 담긴 PDF를 올려두면, 학생 화면에 "📄 PDF로 한번에 풀기" 버튼이 생겨서 문제마다 새로 불러오지 않고 그 PDF 위에 편하게 필기할 수 있습니다. 버튼을 누르면 그 회차용 PDF를 고르는 창이 뜹니다 — 객관식 채점과는 별개(참고용 첨부)입니다.</p>
+      <div id="dqPdfGrid" class="btnRow" style="flex-wrap:wrap;gap:6px"></div>
+      <input type="file" id="dqPdfFileInput" accept="application/pdf" style="display:none">
+      <p class="hint" id="dqPdfMsg"></p>
+
       <p style="margin-top:26px"><b>회당 문제 분석</b></p>
       <p class="hint">회차를 고르면 문항별 정답률을 보여줍니다 — <b>1차 시도만</b> 집계합니다(재도전으로 나중에 맞은 것까지 섞으면 "처음부터 얼마나 잘 풀었는지"를 볼 수 없어서).</p>
       <div class="fieldRow">
         <div><label>회차</label><select id="dqAnalysisRound"></select></div>
       </div>
       <div id="dqAnalysisResult"></div>
+
+      <p style="margin-top:20px"><b>오답률 높은 문제 해설</b></p>
+      <p class="hint">위에서 고른 회차 기준, 1차 정답률이 가장 낮은 문제 3개의 지문·정답·해설입니다. 원장님 화면에서는 정답 공개 여부와 상관없이 항상 보입니다 — 정답이 공개된 회차는 학생 화면에도 같은 내용이 뜹니다.</p>
+      <div id="dqHardResult"></div>
     </div>
 
     <div class="box" id="categoryBox" style="display:none;padding:10px 16px">
@@ -321,6 +337,14 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
 
 <script>
 const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+
+// 회차(1~30) ↔ 그 회차 문제의 출처 학교 — dailyquizranking.html/dailyquiz.html
+// 과 동일한 목록(계산엔 안 쓰이는 표시용).
+const ROUND_SCHOOLS = [
+  '', '수원여고', '부천북고', '광휘고', '보라고', '동패고', '능동고', '안곡고', '고양동산고', '도래울고', '백운고',
+  '고림고', '광덕고', '상일고', '성포고', '화정고', '덕산고', '저동고', '소명여고', '소래고', '풍무고',
+  '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
+];
 
 // ---------- JSONP (studentnote.html과 동일한 재시도 포함 버전) ----------
 let jsonpCounter = 0;
@@ -407,8 +431,11 @@ async function tryLogin(key) {
   document.getElementById('dailyQuizBox').style.display = myRole === 'admin' ? '' : 'none';
   if (myRole === 'admin') {
     loadDqRevealStatus();
+    loadDqPdfStatus();
     populateDqAnalysisRoundSelect();
-    renderDqAnalysis(Number(document.getElementById('dqAnalysisRound').value) || 1);
+    const initRound = Number(document.getElementById('dqAnalysisRound').value) || 1;
+    renderDqAnalysis(initRound);
+    renderDqHardQuestions(initRound);
   }
   // 원장님 도구 메뉴(오답노트생성기/문제은행/공동필기 등)도 관리자만 —
   // 조교는 저 도구들에 대한 접근 권한이 애초에 없다(로그인 자체가 없는
@@ -1562,11 +1589,18 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
         .replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '')
         .replace(/<div>\s*<div class="hwpRectBox">\s*<p>\s*(?:S\s*\+?\s*:\s*)?난이도\s*[가-힣]*\s*<\/p>\s*<\/div>\s*<\/div>/g, '')
         .trim();
+      // 미주(각주) 안에 붙어있는 빠른정답/해설을 studentnote.html 오답노트
+      // PDF 생성과 같은 방식으로 뽑아둔다 — "오답률 높은 문제 해설" 기능이
+      // 이걸 그대로 학생/원장님 화면에 보여준다.
+      const answerXml = extractQuickAnswerXml(marker.blockXml);
+      const quickAnswer = answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '';
+      const explXml = extractEndnoteFullBodyXml(marker.blockXml);
+      const explanation = explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
       const n = Number(num);
       const round = Math.ceil(n / 15);
       const posInRound = ((n - 1) % 15) + 1;
       dqParsedQuestions.push({
-        round, num: posInRound, sourceNum: n, stemHtml, choices, answer: null,
+        round, num: posInRound, sourceNum: n, stemHtml, choices, answer: null, quickAnswer, explanation,
         warning: choices.length !== 5 ? `선택지 ${choices.length}개 인식됨 (5개 기대)` : '',
       });
     }
@@ -1672,7 +1706,7 @@ document.getElementById('dqSaveBtn').addEventListener('click', async () => {
   try {
     await callPostNoCors({
       action: 'savedailyquiz', key: myKey,
-      questions: dqParsedQuestions.map(q => ({ round: q.round, num: q.num, stemHtml: q.stemHtml, choices: q.choices, answer: q.answer || 0 })),
+      questions: dqParsedQuestions.map(q => ({ round: q.round, num: q.num, stemHtml: q.stemHtml, choices: q.choices, answer: q.answer || 0, quickAnswer: q.quickAnswer || '', explanation: q.explanation || '' })),
     });
     msgEl.textContent = '저장 요청 완료! (약 10~20초 후 학생 화면에 반영됩니다)';
     msgEl.className = 'hint ok';
@@ -1736,10 +1770,13 @@ function populateDqAnalysisRoundSelect() {
   for (let r = 1; r <= 30; r++) {
     const opt = document.createElement('option');
     opt.value = r;
-    opt.textContent = r + '회차';
+    opt.textContent = r + '회차' + (ROUND_SCHOOLS[r] ? ` (${ROUND_SCHOOLS[r]})` : '');
     sel.appendChild(opt);
   }
-  sel.addEventListener('change', () => renderDqAnalysis(Number(sel.value)));
+  sel.addEventListener('change', () => {
+    renderDqAnalysis(Number(sel.value));
+    renderDqHardQuestions(Number(sel.value));
+  });
 }
 const dqRateColor = v => v == null ? '#ccc' : v < 60 ? 'var(--pink-deep)' : v < 80 ? 'var(--gold)' : 'var(--mint-deep)';
 async function renderDqAnalysis(round) {
@@ -1762,6 +1799,91 @@ async function renderDqAnalysis(round) {
     box.innerHTML = '<p class="hint err">불러오기 실패: ' + (e.message || String(e)) + '</p>';
   }
 }
+
+// 오답률 높은 문제 3개 미리보기 — dailyquizhardquestions는 정답 공개 전
+// 회차도 강사 키가 있으면 항상 내려주므로(정답 유출 방지 게이트는 서버가
+// 학생용 호출에만 적용), 원장님 화면에서는 공개 여부와 상관없이 항상 보임.
+async function renderDqHardQuestions(round) {
+  const box = document.getElementById('dqHardResult');
+  box.innerHTML = '<p class="hint">불러오는 중...</p>';
+  try {
+    const resp = await callGetJsonp({ action: 'dailyquizhardquestions', round, topN: 3, key: myKey });
+    const items = resp.items || [];
+    if (!items.length) { box.innerHTML = '<p class="hint">이 회차엔 아직 채점된 응시 기록이 없습니다.</p>'; return; }
+    box.innerHTML = items.map(it => {
+      const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+      const rateBadge = `<span class="dqRateBadge" style="background:${dqRateColor(it.rate)}">${it.rate}%</span>`;
+      return `<div class="dqHardCard">
+        <div class="dqHardHead"><span>${it.num}번</span>${rateBadge}<span class="hint">(1차 ${it.total}명 응시)</span></div>
+        <div class="dqHardStem">${it.stemHtml || '<span class="hint">지문 없음</span>'}</div>
+        <div class="dqHardChoices">${choicesHtml}</div>
+        <div class="dqHardAnswer">정답: ${it.answer || '(미입력)'}</div>
+        ${it.quickAnswer ? `<div class="dqHardExpl"><b>빠른정답</b><br>${it.quickAnswer}</div>` : ''}
+        ${it.explanation ? `<div class="dqHardExpl"><b>해설</b><br>${it.explanation}</div>` : (it.quickAnswer ? '' : '<div class="hint" style="margin-top:6px">이 문항엔 해설이 저장돼 있지 않습니다.</div>')}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = '<p class="hint err">불러오기 실패: ' + (e.message || String(e)) + '</p>';
+  }
+}
+
+// 회차별 PDF 원본 연결 — 기존 "필기용 숙제 원본" 메커니즘(assignwbdoc/
+// assigneddoc, wbBox와 같은 백엔드)을 그대로 재사용한다. category는
+// '일일일모', mission은 '{회차}회차'(문항별 필기 미션 '{회차}회차 {번호}번'
+// 과는 이름이 달라 안 겹침) — 반 구분 없이 항상 전체 공통(class='')으로
+// 연결한다.
+let dqPdfTargetRound = null;
+async function loadDqPdfStatus() {
+  const grid = document.getElementById('dqPdfGrid');
+  grid.textContent = '불러오는 중...';
+  try {
+    const results = await Promise.all(Array.from({ length: 30 }, (_, i) => {
+      const r = i + 1;
+      return callGetJsonp({ action: 'assigneddoc', cohort: '2', category: '일일일모', mission: r + '회차' })
+        .then(res => ({ r, has: !!res.docId }))
+        .catch(() => ({ r, has: false }));
+    }));
+    grid.innerHTML = '';
+    results.sort((a, b) => a.r - b.r).forEach(({ r, has }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = `${r}회차 ${has ? '📄있음' : '➕없음'}`;
+      btn.style.cssText = has ? 'background:var(--mint-deep);color:#fff;border-color:var(--mint-deep)' : '';
+      btn.addEventListener('click', () => {
+        dqPdfTargetRound = r;
+        document.getElementById('dqPdfFileInput').click();
+      });
+      grid.appendChild(btn);
+    });
+  } catch (e) {
+    grid.textContent = '불러오기 실패: ' + (e.message || String(e));
+  }
+}
+document.getElementById('dqPdfFileInput').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = ''; // 같은 파일을 다시 골라도 change가 또 뜨도록
+  if (!file || !dqPdfTargetRound) return;
+  const round = dqPdfTargetRound;
+  const msgEl = document.getElementById('dqPdfMsg');
+  msgEl.textContent = `${round}회차 PDF 업로드 중...`;
+  msgEl.className = 'hint';
+  try {
+    const base64 = await fileToBase64(file);
+    const uploadRes = await fetch(DASHBOARD_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'uploaddoc', data: base64, mime: file.type || 'application/pdf', name: round + '회차.pdf' }),
+    });
+    const uploadJson = await uploadRes.json();
+    if (!uploadJson.ok) throw new Error(uploadJson.error || '업로드 실패');
+    await callPostNoCors({ action: 'assignwbdoc', key: myKey, cohort: '2', category: '일일일모', class: '', mission: round + '회차', docId: uploadJson.result.id, docType: 'pdf' });
+    msgEl.textContent = `${round}회차 PDF 연결 완료!`;
+    msgEl.className = 'hint ok';
+    setTimeout(loadDqPdfStatus, 900);
+  } catch (e) {
+    msgEl.textContent = '업로드 실패: ' + (e.message || String(e));
+    msgEl.className = 'hint err';
+  }
+});
 </script>
 </body>
 </html>

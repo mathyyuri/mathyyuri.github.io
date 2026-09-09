@@ -162,6 +162,13 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .bg-king     { background: linear-gradient(135deg,#fff8e0,#ffe0f0,#e0e8ff); color: #4020a0; }
 
 /* 랭킹 탭 & 리스트 */
+.hidden { display: none !important; }
+.mode-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 36px; }
+.mode-btn { background: none; border: 1.5px solid var(--dark); padding: 9px 24px; border-radius: 20px; font-family: 'Poppins'; font-size: 0.85rem; font-weight: 700; cursor: pointer; color: var(--dark); transition: all 0.25s; }
+.mode-btn.active { background: var(--dark); color: #fff; }
+.round-select-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 25px; }
+.round-select-row label { font-size: 0.82rem; font-weight: 700; color: #999; }
+.round-select-row select { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; font-family: 'Poppins'; font-size: 0.85rem; font-weight: 600; color: var(--dark); background: #fff; }
 .rank-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
 .tab-btn { background: #eee; border: none; padding: 9px 22px; border-radius: 20px; font-family: 'Poppins'; font-size: 0.82rem; font-weight: 600; cursor: pointer; color: #888; transition: all 0.25s; }
 .tab-btn.active { background: var(--dark); color: #fff; }
@@ -196,15 +203,22 @@ footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
     <p>MATHY YURI | DAECHI ACADEMY</p>
   </header>
 
-  <section class="honor-section">
-    <h2>✦ 명예의 전당 ✦</h2>
-    <div class="honor-podium" id="honorPodium"></div>
-  </section>
+  <div class="mode-tabs">
+    <button class="mode-btn active" data-mode="overall">전체 랭킹</button>
+    <button class="mode-btn" data-mode="round">회차별 랭킹</button>
+  </div>
 
-  <section class="tier-section">
-    <h2>TIER STATUS (누적점수 × 평균 기준)</h2>
-    <div class="tier-bar" id="tierBar"></div>
-  </section>
+  <div id="overallSections">
+    <section class="honor-section">
+      <h2>✦ 명예의 전당 ✦</h2>
+      <div class="honor-podium" id="honorPodium"></div>
+    </section>
+
+    <section class="tier-section">
+      <h2>TIER STATUS (누적점수 × 평균 기준)</h2>
+      <div class="tier-bar" id="tierBar"></div>
+    </section>
+  </div>
 
   <div class="rank-tabs">
     <button class="tab-btn active" data-filter="all">TOTAL</button>
@@ -212,9 +226,14 @@ footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
     <button class="tab-btn" data-filter="S">S CLASS</button>
   </div>
 
-  <div class="score-type-tabs">
+  <div class="score-type-tabs" id="scoreTypeTabs">
     <button class="score-btn active" data-score="total">누적 점수</button>
     <button class="score-btn" data-score="average">회당 평균</button>
+  </div>
+
+  <div class="round-select-row hidden" id="roundSelectRow">
+    <label for="roundSelect">회차</label>
+    <select id="roundSelect"></select>
   </div>
 
   <div class="rank-box">
@@ -228,6 +247,15 @@ footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+
+// 회차(1~30) ↔ 그 회차 문제의 출처 학교 — 원장님이 확정해준 고정 목록
+// (계산에는 안 쓰이는 순수 표시용 라벨이라 시트로 안 빼고 여기 박아둠).
+// 인덱스 0은 안 씀(1회차부터).
+const ROUND_SCHOOLS = [
+  '', '수원여고', '부천북고', '광휘고', '보라고', '동패고', '능동고', '안곡고', '고양동산고', '도래울고', '백운고',
+  '고림고', '광덕고', '상일고', '성포고', '화정고', '덕산고', '저동고', '소명여고', '소래고', '풍무고',
+  '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
+];
 
 // 티어는 "누적점수 × (회당평균/100)" — 많이 풀수록(누적점수 커짐) *그리고*
 // 정확하게 풀수록(평균이 곱해짐) 유리하게 둘 다 반영한 종합 실력치.
@@ -251,8 +279,11 @@ const TIERS = [
 ];
 
 let allData = [];
+let roundData = [];
 let currentFilter = 'all';
 let currentScoreKey = 'total';
+let currentMode = 'overall'; // 'overall' | 'round'
+let currentRound = 1;
 
 function getTier(tierScore) {
   for (const t of TIERS) if (tierScore >= t.min) return t;
@@ -380,12 +411,61 @@ function renderMainList(data) {
   }).join('');
 }
 
+// ---- 회차별 랭킹 (그 회차 하나만의 점수, dailyquizroundranking) ----
+async function fetchRoundData(round) {
+  const listEl = document.getElementById('mainList');
+  listEl.innerHTML = '<div class="empty-msg">불러오는 중...</div>';
+  try {
+    const res = await fetch(GAS_URL + '?action=dailyquizroundranking&round=' + round + '&t=' + Date.now());
+    const json = await res.json();
+    const list = json.ok ? (json.students || []) : [];
+    roundData = list.map(s => ({ name: String(s.name || ''), class: String(s.class || ''), score: Number(s.score || 0) }));
+  } catch (err) {
+    console.error(err);
+    roundData = [];
+  }
+  renderRoundView();
+}
+
+function renderRoundView() {
+  const data = currentFilter === 'all' ? roundData : roundData.filter(d => d.class === currentFilter);
+  renderRoundList(data);
+}
+
+function renderRoundList(data) {
+  const listEl = document.getElementById('mainList');
+  const displayData = [...data].filter(d => d.score > 0).sort((a, b) => b.score - a.score);
+  const school = ROUND_SCHOOLS[currentRound];
+  document.getElementById('listTitle').innerText = currentRound + '회차 점수' + (school ? ` (${school} 기출)` : '') + ' 🏆';
+
+  if (!displayData.length) {
+    listEl.innerHTML = '<div class="empty-msg">이 회차엔 아직 채점된 응시 기록이 없습니다.</div>';
+    return;
+  }
+
+  listEl.innerHTML = displayData.map((d, i) => {
+    const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•';
+    return `<div class="rank-row">
+      <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
+      <span class="r-icon">${medal}</span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span></span>
+      <span class="r-pts">${d.score.toFixed(1)}<small>점</small></span>
+    </div>`;
+  }).join('');
+}
+
+function refreshView() {
+  if (currentMode === 'round') renderRoundView();
+  else renderAll();
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.onclick = function () {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     currentFilter = this.dataset.filter;
-    renderAll();
+    refreshView();
   };
 });
 
@@ -398,8 +478,35 @@ document.querySelectorAll('.score-btn').forEach(btn => {
   };
 });
 
+// ---- 전체 랭킹 / 회차별 랭킹 모드 전환 ----
+const roundSelectEl = document.getElementById('roundSelect');
+for (let r = 1; r <= 30; r++) {
+  const opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r + '회차' + (ROUND_SCHOOLS[r] ? ` (${ROUND_SCHOOLS[r]})` : '');
+  roundSelectEl.appendChild(opt);
+}
+roundSelectEl.addEventListener('change', () => {
+  currentRound = Number(roundSelectEl.value);
+  fetchRoundData(currentRound);
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.onclick = function () {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentMode = this.dataset.mode;
+    const isRound = currentMode === 'round';
+    document.getElementById('overallSections').classList.toggle('hidden', isRound);
+    document.getElementById('scoreTypeTabs').classList.toggle('hidden', isRound);
+    document.getElementById('roundSelectRow').classList.toggle('hidden', !isRound);
+    if (isRound) fetchRoundData(currentRound);
+    else renderAll();
+  };
+});
+
 fetchData();
-setInterval(fetchData, 180000);
+setInterval(() => { fetchData(); if (currentMode === 'round') fetchRoundData(currentRound); }, 180000);
 </script>
 </body>
 </html>

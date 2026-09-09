@@ -96,6 +96,8 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 /* ---------- quiz ---------- */
 #screen-quiz { padding: 0 18px 20px; flex: 1; display: flex; flex-direction: column; }
 .quizTop { padding: 10px 0 14px; }
+.roundPdfBtn { width: 100%; margin-top: 10px; padding: 11px; border-radius: 12px; border: 1.5px dashed var(--gold-deep); background: #fbf6ea; color: var(--gold-deep); font-weight: 700; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+.roundPdfBtn:active { background: #f6ecd4; }
 .progressRow { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #999; margin-bottom: 8px; }
 .progressRow b { color: var(--dark); font-weight: 700; }
 .progressBar { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
@@ -149,6 +151,18 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .submitRetryBtn { width: 100%; background: var(--pink-deep); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 6px; }
 .submitRetryBtn:disabled { background: #ddd; color: #aaa; }
 .lockedNote { font-size: 0.72rem; color: #bbb; margin-top: 6px; }
+.hardBox { background: var(--card); border: 1.5px solid var(--gold); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+.hardBox .ttl { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+.hardBox .desc { font-size: 0.74rem; color: #999; margin-bottom: 14px; line-height: 1.5; }
+.hardItem { border-top: 1px solid var(--line); padding: 14px 0; }
+.hardItem:first-of-type { border-top: none; }
+.hardItem .hqHead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
+.hardItem .hqRate { font-size: 0.7rem; font-weight: 700; color: #fff; background: var(--pink-deep); padding: 2px 9px; border-radius: 10px; }
+.hardItem .hqStem { font-size: 0.88rem; line-height: 1.7; margin-bottom: 8px; }
+.hardItem .hqChoices { font-size: 0.8rem; color: #777; margin-bottom: 8px; line-height: 1.8; }
+.hardItem .hqAnswer { font-weight: 700; color: var(--mint-deep); font-size: 0.82rem; margin-bottom: 6px; }
+.hardItem .hqExpl { font-size: 0.8rem; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--line); color: #555; }
+.hardItem .hqExpl b { color: var(--gold-deep); }
 .resultFoot { display: flex; gap: 10px; margin-top: 10px; }
 .resultFoot button { flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: var(--dark); }
 </style>
@@ -194,6 +208,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
     <div class="quizTop">
       <div class="progressRow"><span id="quizRoundLabel">1회차</span><span><b id="quizIdx">1</b> / <span id="quizTotal">15</span></span></div>
       <div class="progressBar"><div id="quizProgressBar" style="width:6.6%"></div></div>
+      <button type="button" class="roundPdfBtn hidden" id="roundPdfBtn">📄 이 회차 PDF로 한번에 풀기</button>
     </div>
     <div class="qCard">
       <div class="qStem" id="qStem"></div>
@@ -222,6 +237,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
     </div>
     <div class="resultGrid" id="resultGrid"></div>
     <div id="retryBoxWrap"></div>
+    <div id="hardQuestionsWrap"></div>
     <div class="resultFoot">
       <button id="backToRoundsBtn" type="button">회차 목록으로</button>
       <button id="viewRankBtn" type="button">랭킹 보기</button>
@@ -237,6 +253,14 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+
+// 회차(1~30) ↔ 그 회차 문제의 출처 학교 — dailyquizranking.html과 동일한
+// 목록(계산엔 안 쓰이는 표시용이라 시트로 안 빼고 각 파일에 그대로 둠).
+const ROUND_SCHOOLS = [
+  '', '수원여고', '부천북고', '광휘고', '보라고', '동패고', '능동고', '안곡고', '고양동산고', '도래울고', '백운고',
+  '고림고', '광덕고', '상일고', '성포고', '화정고', '덕산고', '저동고', '소명여고', '소래고', '풍무고',
+  '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
+];
 const LOGIN_KEY = 'dailyQuizLoginCreds';
 
 let me = null; // {name, pw}
@@ -346,6 +370,34 @@ function closeDocModal() {
 }
 $('docModalClose').addEventListener('click', closeDocModal);
 
+// 회차 전체가 담긴 PDF가 원장님이 미리 연결해둔 게 있으면(admin.html
+// "회차별 PDF 원본 연결"), 문제마다 새로 캡처하지 않고 그 PDF 위에서
+// 15문제를 한 번에 필기할 수 있는 버튼을 보여준다 — 객관식 채점(점수)과는
+// 완전히 별개, 참고용 필기 첨부일 뿐이다.
+async function checkRoundPdf(round) {
+  const btn = $('roundPdfBtn');
+  btn.classList.add('hidden');
+  try {
+    const json = await apiGet({ action: 'assigneddoc', cohort: me.cohort, category: '일일일모', mission: round + '회차' });
+    if (json.docId) {
+      btn.classList.remove('hidden');
+      btn.onclick = () => openRoundPdfWhiteboard(round, json.docId, json.docType || 'pdf');
+    }
+  } catch (e) { /* 연결된 PDF가 없거나 조회 실패 — 버튼 그냥 숨김 유지 */ }
+}
+function openRoundPdfWhiteboard(round, docId, docType) {
+  const mission = round + '회차';
+  const category = '일일일모';
+  const sessionId = deterministicSessionId(me.name + '|' + category + '|' + mission);
+  const p = new URLSearchParams({
+    session: sessionId, role: 'student', name: me.name, class: me.class, cohort: me.cohort,
+    category, mission, submit: '1', docId, docType,
+  });
+  $('docModalFrame').src = 'whiteboard.html?' + p.toString();
+  $('docModalTitle').textContent = mission + ' PDF 풀이';
+  $('docModal').classList.add('open');
+}
+
 /* ---------- 로그인 ---------- */
 async function doLogin(silent) {
   const name = silent ? me.name : $('in-name').value.trim();
@@ -443,6 +495,7 @@ async function openRound(round, resume) {
   show('screen-quiz');
   $('qStem').innerHTML = '문제를 불러오는 중...';
   $('qChoices').innerHTML = '';
+  checkRoundPdf(round);
   try {
     const json = await apiGet({ action: 'dailyquizquestions', round });
     questions = (json.questions || []).sort((a, b) => a.num - b.num);
@@ -560,6 +613,8 @@ function renderResults() {
       <span class="pts">${it.earned}점</span>
     </div>`).join('');
 
+  renderHardQuestions(); // 재도전 여부와 무관하게(정답 공개된 회차면) 항상 시도
+
   const retryable = items.filter(it => it.canRetry);
   const wrap = $('retryBoxWrap');
   if (!retryable.length) {
@@ -611,6 +666,48 @@ function renderResults() {
     await new Promise(r => setTimeout(r, 1200));
     await showResults();
   });
+}
+
+// 이 회차에서 오답률이 높았던 문제 top3 + 빠른정답/해설 — 정답이 공개된
+// 회차에서만 서버가 실제로 내려준다(dailyquizhardquestions가 자체적으로
+// 게이트를 검사함), 공개 전 회차는 items가 빈 배열로 와서 자연히 아무것도
+// 안 보인다.
+async function renderHardQuestions() {
+  const wrap = $('hardQuestionsWrap');
+  if (!lastResult.revealed) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<p class="hintMsg">많이 틀린 문제를 불러오는 중...</p>';
+  try {
+    const json = await apiGet({ action: 'dailyquizhardquestions', round: currentRound, topN: 3 });
+    const items = json.items || [];
+    if (!items.length) { wrap.innerHTML = ''; return; }
+    const box = document.createElement('div');
+    box.className = 'hardBox';
+    const school = ROUND_SCHOOLS[currentRound];
+    box.innerHTML = `
+      <div class="ttl">🔥 이 회차에서 많이 틀린 문제${school ? ` <small style="font-weight:400;color:#aaa">(${school} 기출)</small>` : ''}</div>
+      <div class="desc">다른 친구들도 많이 틀린 문제예요 — 정답과 해설을 확인해보세요.</div>
+      <div id="hardList"></div>
+    `;
+    wrap.innerHTML = '';
+    wrap.appendChild(box);
+    const listEl = box.querySelector('#hardList');
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'hardItem';
+      const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+      row.innerHTML = `
+        <div class="hqHead"><span>${it.num}번</span><span class="hqRate">정답률 ${it.rate}%</span></div>
+        <div class="hqStem">${it.stemHtml || ''}</div>
+        <div class="hqChoices">${choicesHtml}</div>
+        <div class="hqAnswer">정답: ${it.answer || '−'}</div>
+        ${it.quickAnswer || it.explanation ? `<div class="hqExpl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+      `;
+      listEl.appendChild(row);
+    });
+    renderMath(box);
+  } catch (e) {
+    wrap.innerHTML = '';
+  }
 }
 
 $('backToRoundsBtn').addEventListener('click', enterRoundsScreen);
