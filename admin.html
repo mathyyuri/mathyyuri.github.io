@@ -66,6 +66,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .scoreTable { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12px; }
 .scoreTable th, .scoreTable td { border: 1px solid var(--gold-line); padding: 1px 2px; text-align: center; }
 .scoreTable th { background: #fafafa; font-family: var(--kserif); }
+.nameClickable { cursor: pointer; }
+.nameClickable:hover { text-decoration: underline; }
+.scoreTable tr.rowHighlight td { background: rgba(255, 196, 0, .18); }
+.scoreTable tr.rowHighlight td.nameCell { font-weight: 900; }
 .dqRateBadge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-weight: 700; color: #fff; font-size: 12px; }
 .dqHardCard { border: 1px solid var(--gold-line); border-radius: 6px; padding: 12px 14px; margin-top: 10px; background: #fafafa; }
 .dqHardCard .dqHardHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-family: var(--kserif); }
@@ -1026,7 +1030,7 @@ function renderScoreTable() {
   html += '</thead><tbody>';
   const multiClass = new Set(scStudents.map(s => s.class)).size > 1;
   scStudents.forEach((s, si) => {
-    html += `<tr><td class="nameCell">${escHtml(s.name)}`
+    html += `<tr><td class="nameCell"><span class="nameClickable" data-si="${si}" title="이름을 누르면 이 줄이 색칠돼서 채점 중 다른 줄과 헷갈리지 않아요">${escHtml(s.name)}</span>`
       + (multiClass && s.class ? ` <span class="classChip" style="padding:2px 8px;font-size:10px">${escHtml(s.class)}</span>` : '')
       + `<div class="rowAllBtns">`
       + `<button type="button" class="rowAllBtn allOk" data-si="${si}" data-val="1" title="이 학생의 '아직 채점 안 한(−)' 칸만 O로 채웁니다 — 이미 채점된 칸은 안 건드림">나머지O</button>`
@@ -1068,6 +1072,16 @@ function renderScoreTable() {
   });
   wrap.querySelectorAll('.commentInput').forEach(inp => {
     inp.addEventListener('input', () => { scStudents[Number(inp.dataset.si)].comment = inp.value; });
+  });
+  // 이름을 누르면 그 줄 전체가 색칠됨 — 문항 수가 많을 때(58문항 등) 채점
+  // 중 옆줄로 잘못 클릭하는 실수를 줄여달라는 요청. 여러 학생 동시에
+  // 켜둘 수 있고(채점 끝낸 학생을 표시해두는 용도로도 쓸 수 있게), 다시
+  // 누르면 꺼진다. 표를 다시 그릴 때(renderScoreTable 재호출)는 초기화됨
+  // — 굳이 상태를 안 남겨도 되는 화면 보조 표시일 뿐이라 단순하게 둔다.
+  wrap.querySelectorAll('.nameClickable').forEach(span => {
+    span.addEventListener('click', () => {
+      span.closest('tr').classList.toggle('rowHighlight');
+    });
   });
   if (!showWeights) return;
   // value="..." 속성으로 innerHTML 문자열째 넣는 대신, DOM에 붙인 뒤 .value를
