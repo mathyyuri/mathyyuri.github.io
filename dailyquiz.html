@@ -291,10 +291,15 @@ function deterministicSessionId(str) {
 async function buildQuestionSnapshotBase64(num) {
   const q = questions.find(x => x.num === num);
   if (!q) return null;
+  // 필기 가능한 흰 캔버스는 이 이미지의 실제 픽셀 크기 그대로 만들어지므로
+  // (whiteboard.html의 loadDoc이 img.naturalWidth/Height로 캔버스를 잡음),
+  // 문제 내용만큼만 만들면 문제 아래로는 필기가 안 되는 좁은 캔버스가
+  // 된다(원장님 리포트 — 화면 대부분이 필기 안 되는 여백으로 남음). 문제
+  // 밑에 풀이 쓸 여백을 넉넉히 남겨서 캔버스 자체를 세로로 길게 만든다.
   const box = document.createElement('div');
-  box.style.cssText = 'position:fixed; left:-9999px; top:0; width:640px; background:#fff; padding:28px; font-family:"Noto Serif KR",serif; font-size:19px; line-height:1.85; color:#1a1a1a;';
+  box.style.cssText = 'position:fixed; left:-9999px; top:0; width:640px; min-height:1700px; background:#fff; padding:28px; font-family:"Noto Serif KR",serif; font-size:19px; line-height:1.85; color:#1a1a1a; box-sizing:border-box;';
   const choicesHtml = q.choices.map((c, i) => `<div style="margin-top:10px;">${i + 1}) ${c}</div>`).join('');
-  box.innerHTML = `<div style="font-weight:700; font-size:15px; color:#a8853f; margin-bottom:16px;">${currentRound}회차 ${num}번</div><div>${q.stemHtml}</div><div style="margin-top:20px;">${choicesHtml}</div>`;
+  box.innerHTML = `<div style="font-weight:700; font-size:15px; color:#a8853f; margin-bottom:16px;">${currentRound}회차 ${num}번</div><div>${q.stemHtml}</div><div style="margin-top:20px;">${choicesHtml}</div><div style="margin-top:36px; padding-top:14px; border-top:1.5px dashed #ddd; font-size:13px; color:#bbb;">✏️ 여기부터 풀이를 적어보세요</div>`;
   document.body.appendChild(box);
   renderMath(box);
   await new Promise(r => setTimeout(r, 250)); // KaTeX가 다 그릴 때까지 잠깐 대기
