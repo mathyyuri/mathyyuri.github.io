@@ -168,6 +168,10 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .hqDetails > summary { cursor: pointer; font-weight: 700; font-size: 0.8rem; color: var(--gold-deep); background: #fbf6ea; padding: 8px 12px; border-radius: 10px; list-style: none; }
 .hqDetails > summary::-webkit-details-marker { display: none; }
 .hqDetails[open] > summary { margin-bottom: 8px; }
+.allSolBox { background: var(--card); border: 1.5px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; }
+.allSolBox > summary { cursor: pointer; font-weight: 700; font-size: 0.86rem; color: var(--dark); list-style: none; }
+.allSolBox > summary::-webkit-details-marker { display: none; }
+.allSolBox[open] > summary { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .resultFoot { display: flex; gap: 10px; margin-top: 10px; }
 .resultFoot button { flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: var(--dark); }
 </style>
@@ -714,6 +718,47 @@ async function renderHardQuestions() {
       listEl.appendChild(row);
     });
     renderMath(box);
+
+    // 정답이 공개된 회차면 15문항 전체 해설도 열어볼 수 있게 — 펼칠 때
+    // 처음 한 번만 불러온다(15문항 해설·이미지가 무거울 수 있어서).
+    const allBox = document.createElement('details');
+    allBox.className = 'allSolBox';
+    allBox.innerHTML = `<summary>📚 이 회차 15문항 전체 해설 보기</summary><div id="allSolList"><p class="hintMsg">여기를 펼치면 불러옵니다.</p></div>`;
+    wrap.appendChild(allBox);
+    let loaded = false;
+    allBox.addEventListener('toggle', async () => {
+      if (!allBox.open || loaded) return;
+      loaded = true;
+      const listAll = allBox.querySelector('#allSolList');
+      listAll.innerHTML = '<p class="hintMsg">불러오는 중...</p>';
+      try {
+        const sj = await apiGet({ action: 'dailyquizroundsolutions', round: currentRound });
+        const sitems = sj.items || [];
+        if (!sitems.length) { listAll.innerHTML = '<p class="hintMsg">불러오지 못했어요.</p>'; loaded = false; return; }
+        listAll.innerHTML = '';
+        sitems.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'hardItem';
+          const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+          row.innerHTML = `
+            <div class="hqHead"><span>${it.num}번</span>${it.rate != null ? `<span class="hqRate">정답률 ${it.rate}%</span>` : ''}</div>
+            <div class="hqStem">${it.stemHtml || ''}</div>
+            <div class="hqChoices">${choicesHtml}</div>
+            ${it.video ? `<a class="hqVideo" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+            <details class="hqDetails">
+              <summary>📖 정답 · 해설 보기</summary>
+              <div class="hqAnswer">정답: ${it.answer || '−'}</div>
+              ${it.quickAnswer || it.explanation ? `<div class="hqExpl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="hintMsg">이 문항엔 해설이 저장돼 있지 않아요.</div>'}
+            </details>
+          `;
+          listAll.appendChild(row);
+        });
+        renderMath(listAll);
+      } catch (e) {
+        listAll.innerHTML = '<p class="hintMsg">불러오지 못했어요.</p>';
+        loaded = false;
+      }
+    });
   } catch (e) {
     wrap.innerHTML = '';
   }
