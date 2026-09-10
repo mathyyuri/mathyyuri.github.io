@@ -164,6 +164,10 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .hardItem .hqExpl { font-size: 0.8rem; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--line); color: #555; }
 .hardItem .hqExpl b { color: var(--gold-deep); }
 .hardItem .hqVideo { display: inline-block; margin-bottom: 8px; font-size: 0.8rem; font-weight: 700; color: var(--pink-deep); text-decoration: none; background: #fbeaee; padding: 5px 12px; border-radius: 10px; }
+.hqDetails { margin-top: 6px; }
+.hqDetails > summary { cursor: pointer; font-weight: 700; font-size: 0.8rem; color: var(--gold-deep); background: #fbf6ea; padding: 8px 12px; border-radius: 10px; list-style: none; }
+.hqDetails > summary::-webkit-details-marker { display: none; }
+.hqDetails[open] > summary { margin-bottom: 8px; }
 .resultFoot { display: flex; gap: 10px; margin-top: 10px; }
 .resultFoot button { flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: var(--dark); }
 </style>
@@ -700,9 +704,12 @@ async function renderHardQuestions() {
         <div class="hqHead"><span>${it.num}번</span><span class="hqRate">정답률 ${it.rate}%</span></div>
         <div class="hqStem">${it.stemHtml || ''}</div>
         <div class="hqChoices">${choicesHtml}</div>
-        <div class="hqAnswer">정답: ${it.answer || '−'}</div>
         ${it.video ? `<a class="hqVideo" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
-        ${it.quickAnswer || it.explanation ? `<div class="hqExpl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+        <details class="hqDetails">
+          <summary>📖 정답 · 해설 보기</summary>
+          <div class="hqAnswer">정답: ${it.answer || '−'}</div>
+          ${it.quickAnswer || it.explanation ? `<div class="hqExpl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+        </details>
       `;
       listEl.appendChild(row);
     });

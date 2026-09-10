@@ -214,6 +214,10 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .rr-video { display: inline-block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 700; color: #c64e71; text-decoration: none; background: #fbeaee; padding: 5px 11px; border-radius: 9px; }
 .rr-expl { font-size: 0.8rem; line-height: 1.7; color: #555; padding-top: 8px; border-top: 1px dashed #eee; }
 .rr-expl b { color: var(--gold); }
+.rr-details { margin-top: 6px; }
+.rr-details > summary { cursor: pointer; font-weight: 700; font-size: 0.78rem; color: var(--gold); background: rgba(200,168,75,.12); padding: 7px 12px; border-radius: 9px; list-style: none; }
+.rr-details > summary::-webkit-details-marker { display: none; }
+.rr-details[open] > summary { margin-bottom: 6px; }
 .refresh-btn { display: block; margin: 20px auto 0; background: none; border: 1px solid #ddd; border-radius: 20px; padding: 7px 20px; font-size: 0.78rem; color: #aaa; cursor: pointer; }
 footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
 </style>
@@ -491,9 +495,12 @@ async function renderRoundReport(round) {
       <div class="rr-ihead"><span>${it.num}번</span><span class="rr-irate">정답률 ${it.rate}%</span></div>
       <div class="rr-stem">${it.stemHtml || ''}</div>
       <div class="rr-choices">${choicesHtml}</div>
-      <div class="rr-answer">정답: ${it.answer || '−'}</div>
       ${it.video ? `<a class="rr-video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
-      ${it.quickAnswer || it.explanation ? `<div class="rr-expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+      <details class="rr-details">
+        <summary>📖 정답 · 해설 보기</summary>
+        <div class="rr-answer">정답: ${it.answer || '−'}</div>
+        ${it.quickAnswer || it.explanation ? `<div class="rr-expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+      </details>
     </div>`;
   }).join('');
   wrap.innerHTML = `<div class="rr-box">

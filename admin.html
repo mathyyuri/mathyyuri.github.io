@@ -77,6 +77,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .dqHardCard .dqHardChoices { font-size: 13px; color: #555; margin-bottom: 8px; }
 .dqHardCard .dqHardAnswer { font-weight: 700; color: var(--mint-deep); margin-bottom: 6px; }
 .dqHardCard .dqHardExpl { font-size: 13px; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--gold-line); }
+.dqHardDetails { margin-top: 8px; }
+.dqHardDetails > summary { cursor: pointer; font-weight: 700; font-size: 12px; color: var(--gold); padding: 6px 10px; background: var(--gold-soft); border-radius: 4px; list-style: none; }
+.dqHardDetails > summary::-webkit-details-marker { display: none; }
+.dqHardDetails[open] > summary { margin-bottom: 6px; }
 .scoreTable td.nameCell { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 6px; }
 .rowAllBtns { display: inline-flex; gap: 3px; margin-left: 8px; }
 .rowAllBtn { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; cursor: pointer; border: 1px solid var(--gold-line); background: #fff; color: var(--ink); }
@@ -1834,14 +1838,18 @@ async function renderDqHardQuestions(round) {
     box.innerHTML = items.map(it => {
       const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
       const rateBadge = `<span class="dqRateBadge" style="background:${dqRateColor(it.rate)}">${it.rate}%</span>`;
+      const hasExpl = it.quickAnswer || it.explanation;
       return `<div class="dqHardCard">
         <div class="dqHardHead"><span>${it.num}번</span>${rateBadge}<span class="hint">(1차 ${it.total}명 응시)</span></div>
         <div class="dqHardStem">${it.stemHtml || '<span class="hint">지문 없음</span>'}</div>
         <div class="dqHardChoices">${choicesHtml}</div>
-        <div class="dqHardAnswer">정답: ${it.answer || '(미입력)'}</div>
         ${it.video ? `<div style="margin:4px 0"><a href="${it.video}" target="_blank" rel="noopener" style="color:var(--pink-deep);font-weight:700;font-size:12px">▶️ 풀이영상</a></div>` : ''}
-        ${it.quickAnswer ? `<div class="dqHardExpl"><b>빠른정답</b><br>${it.quickAnswer}</div>` : ''}
-        ${it.explanation ? `<div class="dqHardExpl"><b>해설</b><br>${it.explanation}</div>` : (it.quickAnswer ? '' : '<div class="hint" style="margin-top:6px">이 문항엔 해설이 저장돼 있지 않습니다.</div>')}
+        <details class="dqHardDetails">
+          <summary>📖 정답 · 빠른정답 · 해설 보기</summary>
+          <div class="dqHardAnswer">정답: ${it.answer || '(미입력)'}</div>
+          ${it.quickAnswer ? `<div class="dqHardExpl"><b>빠른정답</b><br>${it.quickAnswer}</div>` : ''}
+          ${it.explanation ? `<div class="dqHardExpl"><b>해설</b><br>${it.explanation}</div>` : (hasExpl ? '' : '<div class="hint" style="margin-top:6px">이 문항엔 해설이 저장돼 있지 않습니다.</div>')}
+        </details>
       </div>`;
     }).join('');
   } catch (e) {
