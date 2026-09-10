@@ -309,8 +309,13 @@ input.weightInput { width: 30px; padding: 1px; font-size: 10px; text-align: cent
       <div id="dqAnalysisResult"></div>
 
       <p style="margin-top:20px"><b>오답률 높은 문제 해설</b></p>
-      <p class="hint">위에서 고른 회차 기준, 1차 정답률이 가장 낮은 문제 3개의 지문·정답·해설입니다. 원장님 화면에서는 정답 공개 여부와 상관없이 항상 보입니다 — 정답이 공개된 회차는 학생 화면에도 같은 내용이 뜹니다.</p>
+      <p class="hint">위에서 고른 회차 기준, 1차 정답률이 가장 낮은 문제 5개의 지문·정답·해설·풀이영상입니다. 원장님 화면에서는 정답 공개 여부와 상관없이 항상 보입니다 — 정답이 공개된 회차는 학생 화면에도 같은 내용이 뜹니다.</p>
       <div id="dqHardResult"></div>
+
+      <p style="margin-top:26px"><b>문항별 풀이영상 (유튜브 등)</b></p>
+      <p class="hint">위에서 고른 회차의 15문제마다 풀이영상 URL을 넣어두면, 정답이 공개된 회차의 학생 화면·랭킹 분석 화면에 "▶️ 풀이영상" 링크가 뜹니다. 칸을 벗어나면(다른 곳 클릭) 자동 저장돼요. 비우면 삭제됩니다. 이 목록은 hwpx를 다시 올려도 안 지워집니다.</p>
+      <div id="dqVideoGrid"></div>
+      <p class="hint" id="dqVideoMsg"></p>
     </div>
 
     <div class="box" id="categoryBox" style="display:none;padding:10px 16px">
@@ -440,6 +445,7 @@ async function tryLogin(key) {
     const initRound = Number(document.getElementById('dqAnalysisRound').value) || 1;
     renderDqAnalysis(initRound);
     renderDqHardQuestions(initRound);
+    loadDqVideos().then(() => renderDqVideoGrid(initRound));
   }
   // 원장님 도구 메뉴(오답노트생성기/문제은행/공동필기 등)도 관리자만 —
   // 조교는 저 도구들에 대한 접근 권한이 애초에 없다(로그인 자체가 없는
@@ -1790,6 +1796,7 @@ function populateDqAnalysisRoundSelect() {
   sel.addEventListener('change', () => {
     renderDqAnalysis(Number(sel.value));
     renderDqHardQuestions(Number(sel.value));
+    renderDqVideoGrid(Number(sel.value));
   });
 }
 const dqRateColor = v => v == null ? '#ccc' : v < 60 ? 'var(--pink-deep)' : v < 80 ? 'var(--gold)' : 'var(--mint-deep)';
@@ -1821,7 +1828,7 @@ async function renderDqHardQuestions(round) {
   const box = document.getElementById('dqHardResult');
   box.innerHTML = '<p class="hint">불러오는 중...</p>';
   try {
-    const resp = await callGetJsonp({ action: 'dailyquizhardquestions', round, topN: 3, key: myKey });
+    const resp = await callGetJsonp({ action: 'dailyquizhardquestions', round, topN: 5, key: myKey });
     const items = resp.items || [];
     if (!items.length) { box.innerHTML = '<p class="hint">이 회차엔 아직 채점된 응시 기록이 없습니다.</p>'; return; }
     box.innerHTML = items.map(it => {
@@ -1832,6 +1839,7 @@ async function renderDqHardQuestions(round) {
         <div class="dqHardStem">${it.stemHtml || '<span class="hint">지문 없음</span>'}</div>
         <div class="dqHardChoices">${choicesHtml}</div>
         <div class="dqHardAnswer">정답: ${it.answer || '(미입력)'}</div>
+        ${it.video ? `<div style="margin:4px 0"><a href="${it.video}" target="_blank" rel="noopener" style="color:var(--pink-deep);font-weight:700;font-size:12px">▶️ 풀이영상</a></div>` : ''}
         ${it.quickAnswer ? `<div class="dqHardExpl"><b>빠른정답</b><br>${it.quickAnswer}</div>` : ''}
         ${it.explanation ? `<div class="dqHardExpl"><b>해설</b><br>${it.explanation}</div>` : (it.quickAnswer ? '' : '<div class="hint" style="margin-top:6px">이 문항엔 해설이 저장돼 있지 않습니다.</div>')}
       </div>`;
@@ -1898,6 +1906,46 @@ document.getElementById('dqPdfFileInput').addEventListener('change', async (ev) 
     msgEl.className = 'hint err';
   }
 });
+
+// 문항별 풀이영상 URL 편집 — 문제 시트와 분리된 일일일모풀이영상 시트에
+// 저장(hwpx 재업로드해도 안 지워짐). 전체 목록을 한 번 받아 맵으로 들고
+// 있다가, 회차를 고르면 그 회차 15문항 입력칸을 채워 보여준다.
+let dqVideoMap = {};
+async function loadDqVideos() {
+  try {
+    const resp = await callGetJsonp({ action: 'dailyquizvideos', key: myKey });
+    dqVideoMap = {};
+    (resp.videos || []).forEach(v => { dqVideoMap[v.round + '||' + v.num] = v.url; });
+  } catch (e) { dqVideoMap = {}; }
+}
+function renderDqVideoGrid(round) {
+  const box = document.getElementById('dqVideoGrid');
+  let html = '<table class="scoreTable"><tr><th>번호</th><th>풀이영상 URL</th></tr>';
+  for (let n = 1; n <= 15; n++) {
+    const url = dqVideoMap[round + '||' + n] || '';
+    html += `<tr><td>${n}</td><td style="text-align:left"><input type="text" class="dqVideoInput" data-num="${n}" value="${url.replace(/"/g, '&quot;')}" placeholder="https://youtu.be/..." style="width:100%;box-sizing:border-box"></td></tr>`;
+  }
+  html += '</table>';
+  box.innerHTML = html;
+  box.querySelectorAll('.dqVideoInput').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const num = Number(inp.dataset.num);
+      const url = inp.value.trim();
+      const msgEl = document.getElementById('dqVideoMsg');
+      msgEl.textContent = `${round}회차 ${num}번 저장 중...`;
+      msgEl.className = 'hint';
+      try {
+        await callPostNoCors({ action: 'dailyquizsetvideo', key: myKey, round, num, url });
+        if (url) dqVideoMap[round + '||' + num] = url; else delete dqVideoMap[round + '||' + num];
+        msgEl.textContent = `${round}회차 ${num}번 저장됨.`;
+        msgEl.className = 'hint ok';
+      } catch (e) {
+        msgEl.textContent = '저장 실패: ' + (e.message || String(e));
+        msgEl.className = 'hint err';
+      }
+    });
+  });
+}
 </script>
 </body>
 </html>

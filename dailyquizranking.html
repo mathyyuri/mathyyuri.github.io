@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>일일일모 RANKING | MATHY YURI</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
 :root {
   --bg: #fdfbf7;
@@ -191,6 +194,26 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .r-pts { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
 .r-pts small { font-weight: 400; opacity: 0.45; font-size: 0.7rem; margin-left: 2px; }
 .empty-msg { text-align: center; padding: 40px; color: #bbb; font-size: 0.9rem; }
+
+/* 회차별 분석 패널 */
+.rr-box { background: white; border-radius: 24px; padding: 26px 22px; box-shadow: var(--shadow); max-width: 700px; margin: 20px auto 0; }
+.rr-box h3 { font-size: 1rem; font-weight: 700; margin: 0 0 16px; text-align: center; }
+.rr-rates { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 24px; }
+.rr-cell { border-radius: 8px; padding: 6px 2px; text-align: center; font-size: 0.72rem; color: #fff; }
+.rr-cell b { display: block; font-size: 0.82rem; }
+.rr-note { text-align: center; color: #bbb; font-size: 0.82rem; padding: 24px 0; }
+.rr-hard { border-top: 1px solid #f0ede8; padding-top: 16px; }
+.rr-hard h4 { font-size: 0.9rem; margin: 0 0 10px; }
+.rr-item { border-top: 1px solid #f6f2ec; padding: 14px 0; }
+.rr-item:first-of-type { border-top: none; }
+.rr-ihead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
+.rr-irate { font-size: 0.68rem; font-weight: 700; color: #fff; background: var(--dark); padding: 2px 8px; border-radius: 9px; }
+.rr-stem { font-size: 0.86rem; line-height: 1.7; margin-bottom: 6px; }
+.rr-choices { font-size: 0.78rem; color: #888; margin-bottom: 6px; }
+.rr-answer { font-weight: 700; font-size: 0.8rem; color: #3e8f79; margin-bottom: 6px; }
+.rr-video { display: inline-block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 700; color: #c64e71; text-decoration: none; background: #fbeaee; padding: 5px 11px; border-radius: 9px; }
+.rr-expl { font-size: 0.8rem; line-height: 1.7; color: #555; padding-top: 8px; border-top: 1px dashed #eee; }
+.rr-expl b { color: var(--gold); }
 .refresh-btn { display: block; margin: 20px auto 0; background: none; border: 1px solid #ddd; border-radius: 20px; padding: 7px 20px; font-size: 0.78rem; color: #aaa; cursor: pointer; }
 footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
 </style>
@@ -240,6 +263,8 @@ footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
     <div class="box-title" id="listTitle">누적 점수 💎</div>
     <div id="mainList"></div>
   </div>
+
+  <div id="roundReportWrap" class="hidden"></div>
 
   <button class="refresh-btn" onclick="fetchData()">↺ 새로고침</button>
   <footer>MATHY YURI · DAECHI ACADEMY</footer>
@@ -425,11 +450,60 @@ async function fetchRoundData(round) {
     roundData = [];
   }
   renderRoundView();
+  renderRoundReport(round);
 }
 
 function renderRoundView() {
   const data = currentFilter === 'all' ? roundData : roundData.filter(d => d.class === currentFilter);
   renderRoundList(data);
+}
+
+// 그 회차 문항별 정답률(15문제 전체) + 오답률 높은 5문제(정답·해설·풀이영상).
+// dailyquizroundreport는 정답 공개된 회차만 내용을 준다(공개 페이지 유출 방지) —
+// 공개 전이면 안내 문구만 보여준다.
+function rrRateColor(v) {
+  if (v == null) return '#ccc';
+  return v < 60 ? '#c64e71' : v < 80 ? '#c8a84b' : '#3e8f79';
+}
+async function renderRoundReport(round) {
+  const wrap = document.getElementById('roundReportWrap');
+  wrap.innerHTML = '<div class="rr-box"><p class="rr-note">문항 분석을 불러오는 중...</p></div>';
+  let json;
+  try {
+    const res = await fetch(GAS_URL + '?action=dailyquizroundreport&round=' + round + '&t=' + Date.now());
+    json = await res.json();
+  } catch (e) { wrap.innerHTML = ''; return; }
+  if (!json || !json.ok) { wrap.innerHTML = ''; return; }
+  const school = ROUND_SCHOOLS[round];
+  if (!json.revealed) {
+    wrap.innerHTML = `<div class="rr-box"><h3>📊 ${round}회차 문항 분석${school ? ` <small style="font-weight:400;color:#bbb">(${school})</small>` : ''}</h3><p class="rr-note">정답이 공개되면 문항별 정답률과 해설이 여기 표시됩니다.</p></div>`;
+    return;
+  }
+  const items = json.items || [];
+  const hard = json.hard || [];
+  const ratesHtml = items.map(it => {
+    const r = it.rate;
+    return `<div class="rr-cell" style="background:${rrRateColor(r)}"><span>${it.num}번</span><b>${r == null ? '-' : r + '%'}</b></div>`;
+  }).join('');
+  const hardHtml = hard.map(it => {
+    const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+    return `<div class="rr-item">
+      <div class="rr-ihead"><span>${it.num}번</span><span class="rr-irate">정답률 ${it.rate}%</span></div>
+      <div class="rr-stem">${it.stemHtml || ''}</div>
+      <div class="rr-choices">${choicesHtml}</div>
+      <div class="rr-answer">정답: ${it.answer || '−'}</div>
+      ${it.video ? `<a class="rr-video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+      ${it.quickAnswer || it.explanation ? `<div class="rr-expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="rr-box">
+    <h3>📊 ${round}회차 문항 분석${school ? ` <small style="font-weight:400;color:#bbb">(${school} 기출)</small>` : ''}</h3>
+    <div class="rr-rates">${ratesHtml || '<p class="rr-note">아직 채점된 응시 기록이 없습니다.</p>'}</div>
+    ${hard.length ? `<div class="rr-hard"><h4>🔥 많이 틀린 문제 ${hard.length}개</h4>${hardHtml}</div>` : ''}
+  </div>`;
+  if (window.renderMathInElement) {
+    try { renderMathInElement(wrap, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+  }
 }
 
 function renderRoundList(data) {
@@ -500,6 +574,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     document.getElementById('overallSections').classList.toggle('hidden', isRound);
     document.getElementById('scoreTypeTabs').classList.toggle('hidden', isRound);
     document.getElementById('roundSelectRow').classList.toggle('hidden', !isRound);
+    document.getElementById('roundReportWrap').classList.toggle('hidden', !isRound);
     if (isRound) fetchRoundData(currentRound);
     else renderAll();
   };
