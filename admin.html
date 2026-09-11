@@ -1909,7 +1909,7 @@ async function renderDqHardQuestions(round) {
     const items = resp.items || [];
     if (!items.length) { box.innerHTML = '<p class="hint">이 회차엔 아직 채점된 응시 기록이 없습니다.</p>'; return; }
     box.innerHTML = items.map(it => {
-      const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+      const choicesHtml = (it.choices || []).join(' &nbsp; ');
       const rateBadge = `<span class="dqRateBadge" style="background:${dqRateColor(it.rate)}">${it.rate}%</span>`;
       const hasExpl = it.quickAnswer || it.explanation;
       return `<div class="dqHardCard">

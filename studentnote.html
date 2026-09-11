@@ -3447,6 +3447,10 @@ function computeNextNoteRound() {
 // 회차로 취급 — 그래야 "한글로 받고 이어서 HTML로도 받기"가 서버에는
 // 두 개의 별도 회차로 중복 기록되지 않는다.
 let lastLoggedBatch = null; // { key, noteRound }
+// HTML 오답노트에 섞어 넣은 일일일모 문항의 이력 기록 중복 방지용 — 한글
+// 파일과 달리 HTML은 일일일모 문항을 포함할 수 있어서(hwpx 문항과는
+// 별도로) 이 문항들만의 배치 키를 따로 기억해둔다.
+let lastLoggedDqBatch = null; // { key }
 function batchKeyFor(checked) {
   return [...checked].map(c => `${c.mission}||${c.category || ''}||${c.num}`).sort().join(',');
 }
@@ -5748,7 +5752,7 @@ async function generateHtmlNote(historicalBatch) {
         summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: '-', hist: String(it.meta || '-') });
         qOrderNum++;
 
-        const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+        const choicesHtml = (it.choices || []).join(' &nbsp; ');
         const stemHtml = it.stemHtml || '';
         // splitTopLevelBlocks(paginateQuestionsWithOverflow)가 최상위 엘리먼트
         // 자식만 문단으로 인식해서, <p> 태그 밖으로 새는 텍스트는 그냥
@@ -5817,6 +5821,23 @@ async function generateHtmlNote(historicalBatch) {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+
+    // 일일일모 문항은 이미 정답/오답이 확정된 상태(오답노트에 담긴 시점
+    // 기준 전부 아직 못 맞힌 문제)라 result:2(오답)로 바로 기록한다 —
+    // 그래야 "지난 오답노트 채점" 대기열에 다시 안 올라간다(원장님 요청:
+    // "오답노트에 기록될거지?"). 같은 문항 구성으로 다시 받을 때(예:
+    // 한글로도 이어받기)는 또 새 회차로 세지 않는다.
+    if (checkedDq.length) {
+      const dqBatchKey = checkedDq.map(c => `${c.round}:${c.num}`).sort().join(',');
+      if (!lastLoggedDqBatch || lastLoggedDqBatch.key !== dqBatchKey) {
+        log('일일일모 문항 이력 기록 중...');
+        await callPostNoCors(DASHBOARD_URL, {
+          action: 'lognote', key: TEACHER_KEY, name: studentName,
+          items: checkedDq.map(c => ({ mission: `${c.round}회차`, category: '일일일모', num: c.num, result: 2 })),
+        });
+        lastLoggedDqBatch = { key: dqBatchKey };
+      }
+    }
 
     log('완료! HTML 파일이 다운로드되었습니다. (A4 인쇄/PDF 저장 시 페이지가 그대로 나뉩니다)', 'ok');
   } catch (e) {

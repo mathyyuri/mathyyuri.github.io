@@ -180,7 +180,7 @@ async function loadWrongNote() {
       const school = ROUND_SCHOOLS[r.round];
       html += `<div class="roundBlock"><h2>${r.round}회차${school ? ` (${school} 기출)` : ''} — ${r.items.length}문제</h2>`;
       r.items.forEach(it => {
-        const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+        const choicesHtml = (it.choices || []).join(' &nbsp; ');
         const metaTag = it.meta ? `<span class="metaTag ${it.meta}">${it.meta}</span>` : '';
         html += `<div class="qCard">
           <div class="qHead"><span>${it.num}번</span>${metaTag}</div>

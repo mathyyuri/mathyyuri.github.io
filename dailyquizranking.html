@@ -573,7 +573,7 @@ async function renderRoundReport(round) {
     return `<div class="rr-cell" style="background:${rrRateColor(r)}"><span>${it.num}번</span><b>${r == null ? '-' : r + '%'}</b></div>`;
   }).join('');
   const hardHtml = hard.map(it => {
-    const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+    const choicesHtml = (it.choices || []).join(' &nbsp; ');
     return `<div class="rr-item">
       <div class="rr-ihead"><span>${it.num}번</span><span class="rr-irate">정답률 ${it.rate}%</span></div>
       <div class="rr-stem">${it.stemHtml || ''}</div>
@@ -608,7 +608,7 @@ async function renderRoundReport(round) {
       const sitems = (sj && sj.ok) ? (sj.items || []) : [];
       if (!sitems.length) { listAll.innerHTML = '<p class="rr-note">불러오지 못했어요.</p>'; loaded = false; return; }
       listAll.innerHTML = sitems.map(it => {
-        const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+        const choicesHtml = (it.choices || []).join(' &nbsp; ');
         return `<div class="rr-item">
           <div class="rr-ihead"><span>${it.num}번</span>${it.rate != null ? `<span class="rr-irate">정답률 ${it.rate}%</span>` : ''}</div>
           <div class="rr-stem">${it.stemHtml || ''}</div>
