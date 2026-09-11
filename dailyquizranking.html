@@ -293,6 +293,15 @@ const ROUND_SCHOOLS = [
   '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
 ];
 
+// 회차별 "N회차까지" 배지 색 — 같은 회차에 있는 학생들끼리 색으로 바로
+// 묶여 보이게(원장님 요청: "1회차까지"/"2회차까지" 등 회차마다 색 구분).
+// 회차 번호마다 색상환(hue)을 고정폭으로 돌려서, 1~30회차 어디든 매번
+// 다른 색이 나오면서도 같은 회차는 새로고침해도 항상 같은 색이 되게 함.
+function roundBadgeColor(round) {
+  const hue = ((Number(round) - 1) * 47) % 360;
+  return { bg: `hsl(${hue}, 62%, 90%)`, text: `hsl(${hue}, 62%, 30%)` };
+}
+
 // 티어는 "누적점수 × (회당평균/100)" — 많이 풀수록(누적점수 커짐) *그리고*
 // 정확하게 풀수록(평균이 곱해짐) 유리하게 둘 다 반영한 종합 실력치.
 // 예: 3회차만 완벽하게(평균100) 풀면 300×1.0=300점, 25회차를 평균88로
@@ -438,11 +447,12 @@ function renderMainList(data) {
   listEl.innerHTML = displayData.map((d, i) => {
     const tier = getTier(d.tierScore);
     const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
+    const rc = roundBadgeColor(d.maxRound);
 
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
       <span class="r-icon">${tier.emoji}</span>
-      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><small class="r-sub" title="${d.roundsCompleted}회 응시">${d.maxRound}회차까지</small></span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><small class="r-sub" style="background:${rc.bg};color:${rc.text}" title="${d.roundsCompleted}회 응시">${d.maxRound}회차까지</small></span>
       <span class="r-pts">${d[currentScoreKey].toFixed(1)}<small>점</small></span>
     </div>`;
   }).join('');
