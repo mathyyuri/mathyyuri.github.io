@@ -14,10 +14,13 @@
   --dark: #3a3530;
   --gold: #c8a84b;
   --shadow: 0 10px 30px rgba(58,53,48,0.07);
-  --s-plus-bg: #f8eeee;
-  --s-plus-text: #a67d7d;
-  --s-bg: #edf2ee;
-  --s-text: #7d9681;
+  /* S/S+ 반 색 — 원장님 요청으로 예전보다 훨씬 선명하게(파스텔 대신 진한
+     톤+흰 글씨) 눈에 확 띄도록 바꿈. S+는 진한 로즈, S는 진한 그린으로
+     한눈에 구분. */
+  --s-plus-bg: #d63c63;
+  --s-plus-text: #ffffff;
+  --s-bg: #2f9e5c;
+  --s-text: #ffffff;
 }
 * { box-sizing: border-box; }
 body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; }
@@ -190,7 +193,7 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .r-tag.tag-s-plus { background: var(--s-plus-bg); color: var(--s-plus-text); }
 .r-tag.tag-s      { background: var(--s-bg); color: var(--s-text); }
 .r-tag.tag-default { background: #f0ede8; color: #999; }
-.r-sub { display: block; font-size: 0.68rem; opacity: 0.4; font-weight: 400; margin-top: 1px; }
+.r-sub { display: inline-block; font-size: 0.68rem; font-weight: 700; margin-left: 6px; padding: 2px 9px; border-radius: 10px; background: #e8ecf5; color: #4a5a80; vertical-align: middle; }
 .r-pts { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
 .r-pts small { font-weight: 400; opacity: 0.45; font-size: 0.7rem; margin-left: 2px; }
 .empty-msg { text-align: center; padding: 40px; color: #bbb; font-size: 0.9rem; }
@@ -337,6 +340,7 @@ async function fetchData() {
         total,
         average,
         roundsCompleted: Number(item.roundsCompleted || 0),
+        maxRound: Number(item.maxRound || 0),
         tierScore: Math.round(total * (average / 100) * 100) / 100,
       };
     });
@@ -438,7 +442,7 @@ function renderMainList(data) {
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
       <span class="r-icon">${tier.emoji}</span>
-      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><small class="r-sub">${d.roundsCompleted}회차 응시</small></span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><small class="r-sub" title="${d.roundsCompleted}회 응시">${d.maxRound}회차까지</small></span>
       <span class="r-pts">${d[currentScoreKey].toFixed(1)}<small>점</small></span>
     </div>`;
   }).join('');

@@ -209,6 +209,7 @@ button:disabled { opacity: 0.4; cursor: default; }
     <a href="whiteboard.html">✍️ 공동 필기</a>
     <a href="dailyquiz.html">✏️ 일일일모 (학생 화면)</a>
     <a href="dailyquizranking.html">🏆 일일일모 랭킹</a>
+    <a href="dailyquizwrongnote.html">📓 일일일모 오답노트</a>
   </div>
   <script>
   (function(){
@@ -250,6 +251,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 
   <div id="studentArea" style="display:none">
     <p id="studentInfo"><b></b></p>
+
+    <div class="box hidden" id="dqWrongBox">
+      <p><b>📓 일일일모 오답</b> <a id="dqWrongNoteLink" href="#" target="_blank" style="font-weight:normal;font-size:12px;margin-left:6px">→ 전체 오답노트 새 창으로 열기(인쇄/PDF)</a></p>
+      <p class="hint">정답이 공개된 회차 중 이 학생이 아직 못 맞힌 문제만 모은 것입니다 — 기존 오답노트(위 미션 목록)와는 별도 시스템(일일일모)입니다.</p>
+      <div id="dqWrongSummary"></div>
+    </div>
 
     <div class="box" id="gradingBox" style="display:none">
       <p><b>지난 오답노트 채점</b></p>
@@ -3582,6 +3589,7 @@ async function selectStudent(btn) {
     noteHistory = historyData.history;
     document.getElementById('studentInfo').innerHTML =
       `<b>${currentStudent.name}</b> (${currentStudent.class}반) — 오답 ${wrongData.wrong.length}문항`;
+    loadDqWrongSummary(currentStudent.name);
 
     // 미션명 하나만으로 묶으면, 서로 다른 카테고리(개념미션/진도미션 등)가
     // 우연히 같은 미션명을 쓸 때(같은 단원명을 개념/진도에 그대로 재사용하는
@@ -3614,6 +3622,33 @@ async function selectStudent(btn) {
     renderPastBatches();
   } catch (e) {
     missionBlocksEl.innerHTML = `<p class="hint err">불러오지 못했습니다: ${e.message}</p>`;
+  }
+}
+
+// 일일일모(객관식 온라인 응시) 오답 요약 — 기존 hwpx 기반 오답노트와는
+// 완전히 별개 시스템이라(dailyquizwronglist), 여기서는 회차별 문항번호만
+// 간단히 보여주고, 지문·해설까지 포함한 인쇄용 전체 보기는 새 창(
+// dailyquizwrongnote.html)으로 연다 — 원장님 요청: "따로도 있으면서
+// studentnote에서도 확인할 수 있게".
+async function loadDqWrongSummary(name) {
+  const box = document.getElementById('dqWrongBox');
+  const area = document.getElementById('dqWrongSummary');
+  box.classList.remove('hidden');
+  area.innerHTML = '<p class="hint">불러오는 중...</p>';
+  document.getElementById('dqWrongNoteLink').href = 'dailyquizwrongnote.html?name=' + encodeURIComponent(name) + '&key=' + encodeURIComponent(TEACHER_KEY);
+  try {
+    const data = await callGetJsonp(DASHBOARD_URL, { action: 'dailyquizwronglist', name, key: TEACHER_KEY });
+    const rounds = data.rounds || [];
+    const total = rounds.reduce((sum, r) => sum + r.items.length, 0);
+    if (!total) {
+      area.innerHTML = '<p class="hint">정답이 공개된 회차 중 아직 못 맞힌 문제가 없습니다.</p>';
+      return;
+    }
+    area.innerHTML = rounds.map(r =>
+      `<div style="margin-bottom:6px"><b>${r.round}회차</b> — ${r.items.map(it => `${it.num}번${it.meta ? `(${it.meta})` : ''}`).join(', ')}</div>`
+    ).join('') + `<p class="hint">총 ${rounds.length}개 회차 · ${total}문제</p>`;
+  } catch (e) {
+    area.innerHTML = '<p class="hint">불러오지 못했습니다.</p>';
   }
 }
 

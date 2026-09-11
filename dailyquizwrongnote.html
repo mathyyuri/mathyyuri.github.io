@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일일일모 오답노트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+:root {
+  --bg: #fdfbf7;
+  --card: #ffffff;
+  --dark: #3a3530;
+  --gold: #c8a84b;
+  --gold-deep: #a8853f;
+  --line: #eae5da;
+  --pink: #e58ba4;
+  --pink-deep: #c64e71;
+  --mint: #8ba8a1;
+  --mint-deep: #5b8a80;
+}
+* { box-sizing: border-box; }
+.hidden { display: none !important; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 20px 16px 60px; }
+.wrap { max-width: 720px; margin: 0 auto; }
+h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin: 0 0 4px; }
+.sub { text-align: center; font-size: 0.75rem; color: #999; letter-spacing: 1px; margin: 0 0 26px; }
+
+.loginCard, .searchCard { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.fieldRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fieldRow input { flex: 1; min-width: 160px; padding: 11px 13px; border-radius: 10px; border: 1px solid #ddd; font-size: 0.9rem; font-family: inherit; }
+.fieldRow button { background: var(--dark); color: #fff; border: none; padding: 11px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.fieldRow button:disabled { background: #bbb; }
+.msg { font-size: 0.8rem; margin-top: 8px; min-height: 16px; }
+.msg.err { color: var(--pink-deep); }
+.msg.ok { color: var(--mint-deep); }
+
+.noteHeader { text-align: center; margin: 30px 0 20px; }
+.noteHeader .name { font-family: 'Noto Serif KR'; font-weight: 900; font-size: 1.5rem; }
+.noteHeader .meta { font-size: 0.8rem; color: #999; margin-top: 4px; }
+.printBtn { display: block; margin: 0 auto 24px; background: var(--gold); color: #fff; border: none; padding: 11px 26px; border-radius: 20px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+.roundBlock { margin-bottom: 30px; }
+.roundBlock h2 { font-family: 'Noto Serif KR'; font-size: 1rem; color: var(--gold-deep); border-bottom: 2px solid var(--gold); padding-bottom: 6px; margin-bottom: 14px; }
+.qCard { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; break-inside: avoid; }
+.qHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; }
+.metaTag { font-size: 0.66rem; font-weight: 700; padding: 2px 9px; border-radius: 9px; }
+.metaTag.확실 { background: #fbeaee; color: var(--pink-deep); }
+.metaTag.애매 { background: #fbf6ea; color: var(--gold-deep); }
+.metaTag.모름 { background: #eef0f5; color: #4a5a80; }
+.stem { font-size: 0.92rem; line-height: 1.75; margin-bottom: 10px; }
+.stem img { max-width: 100%; }
+.choices { font-size: 0.84rem; color: #666; line-height: 1.9; margin-bottom: 10px; }
+.video { display: inline-block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700; color: var(--pink-deep); text-decoration: none; background: #fbeaee; padding: 5px 12px; border-radius: 10px; }
+.solBox { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
+.solBox .ans { font-weight: 700; color: var(--mint-deep); font-size: 0.85rem; margin-bottom: 6px; }
+.solBox .expl { font-size: 0.82rem; line-height: 1.75; color: #555; }
+.solBox .expl b { color: var(--gold-deep); }
+.emptyMsg { text-align: center; color: #bbb; padding: 40px 0; }
+
+@media print {
+  .loginCard, .searchCard, .printBtn { display: none !important; }
+  body { padding: 0; background: #fff; }
+  .qCard { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📓 일일일모 오답노트</h1>
+  <p class="sub">MATHY YURI · DAECHI ACADEMY (강사 전용)</p>
+
+  <div class="loginCard" id="loginCard">
+    <div class="fieldRow">
+      <input type="password" id="keyInput" placeholder="원장님/조교 비밀번호" autocomplete="off">
+      <button type="button" id="loginBtn">로그인</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div class="searchCard hidden" id="searchCard">
+    <div class="fieldRow">
+      <input type="text" id="nameInput" placeholder="학생 이름" autocomplete="off">
+      <button type="button" id="searchBtn">오답노트 불러오기</button>
+    </div>
+    <div class="msg" id="searchMsg">정답이 공개된 회차의 오답만 모아 보여줍니다 — 비공개 회차는 제외됩니다.</div>
+  </div>
+
+  <div id="noteArea"></div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+let myKey = '';
+
+function $(id) { return document.getElementById(id); }
+
+async function apiGet(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(GAS_URL + '?' + qs);
+  return res.json();
+}
+
+$('loginBtn').addEventListener('click', async () => {
+  const key = $('keyInput').value.trim();
+  const msg = $('loginMsg');
+  if (!key) { msg.textContent = '비밀번호를 입력하세요.'; msg.className = 'msg err'; return; }
+  msg.textContent = '확인 중...';
+  msg.className = 'msg';
+  try {
+    // dailyquizmetaanalysis는 requireStaff — 아무 회차나 넣어서 키 검증에 재사용.
+    const json = await apiGet({ action: 'dailyquizmetaanalysis', round: 1, key });
+    if (!json.ok) { msg.textContent = '비밀번호가 올바르지 않습니다.'; msg.className = 'msg err'; return; }
+    myKey = key;
+    $('loginCard').classList.add('hidden');
+    $('searchCard').classList.remove('hidden');
+  } catch (e) {
+    msg.textContent = '서버 연결에 실패했습니다.'; msg.className = 'msg err';
+  }
+});
+$('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+
+$('searchBtn').addEventListener('click', loadWrongNote);
+$('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadWrongNote(); });
+
+function renderMath(el) {
+  if (window.renderMathInElement) {
+    try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+  }
+}
+
+async function loadWrongNote() {
+  const name = $('nameInput').value.trim();
+  const msg = $('searchMsg');
+  const area = $('noteArea');
+  if (!name) { msg.textContent = '학생 이름을 입력하세요.'; msg.className = 'msg err'; return; }
+  msg.textContent = '불러오는 중...';
+  msg.className = 'msg';
+  area.innerHTML = '';
+  try {
+    const json = await apiGet({ action: 'dailyquizwronglist', name, key: myKey });
+    if (!json.ok) { msg.textContent = json.error || '불러오지 못했습니다.'; msg.className = 'msg err'; return; }
+    msg.textContent = ''; msg.className = 'msg';
+    const rounds = json.rounds || [];
+    const totalCount = rounds.reduce((s, r) => s + r.items.length, 0);
+    if (!totalCount) {
+      area.innerHTML = `<div class="emptyMsg">${escapeHtml(name)} 학생 — 정답 공개된 회차 중 아직 안 맞힌 문제가 없습니다.<br>(오답이 없거나, 해당 회차가 아직 공개 전입니다)</div>`;
+      return;
+    }
+    let html = `
+      <div class="noteHeader">
+        <div class="name">${escapeHtml(name)}의 일일일모 오답노트</div>
+        <div class="meta">${rounds.length}개 회차 · 총 ${totalCount}문제</div>
+      </div>
+      <button type="button" class="printBtn" onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button>
+    `;
+    rounds.forEach(r => {
+      const school = ROUND_SCHOOLS[r.round];
+      html += `<div class="roundBlock"><h2>${r.round}회차${school ? ` (${school} 기출)` : ''} — ${r.items.length}문제</h2>`;
+      r.items.forEach(it => {
+        const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+        const metaTag = it.meta ? `<span class="metaTag ${it.meta}">${it.meta}</span>` : '';
+        html += `<div class="qCard">
+          <div class="qHead"><span>${it.num}번</span>${metaTag}</div>
+          <div class="stem">${it.stemHtml || ''}</div>
+          <div class="choices">${choicesHtml}</div>
+          ${it.video ? `<a class="video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+          <div class="solBox">
+            <div class="ans">정답: ${it.answer || '−'}</div>
+            ${it.quickAnswer || it.explanation ? `<div class="expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="expl">이 문항엔 해설이 저장돼 있지 않습니다.</div>'}
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    });
+    area.innerHTML = html;
+    renderMath(area);
+  } catch (e) {
+    msg.textContent = '불러오지 못했습니다: ' + (e.message || String(e));
+    msg.className = 'msg err';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// 회차(1~30) ↔ 그 회차 문제의 출처 학교 — 다른 일일일모 화면들과 동일한
+// 목록(표시용).
+const ROUND_SCHOOLS = [
+  '', '수원여고', '부천북고', '광휘고', '보라고', '동패고', '능동고', '안곡고', '고양동산고', '도래울고', '백운고',
+  '고림고', '광덕고', '상일고', '성포고', '화정고', '덕산고', '저동고', '소명여고', '소래고', '풍무고',
+  '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
+];
+
+// studentnote.html에서 "→ 전체 오답노트 새 창으로 열기" 링크로 들어오면
+// ?name=&key=가 같이 붙어온다 — 로그인/검색을 또 안 하고 바로 결과가
+//뜨게 자동으로 채워서 실행한다. 직접 이 페이지에 들어온 경우(파라미터
+// 없음)는 기존처럼 로그인 화면부터 시작.
+(function autoLoadFromUrl() {
+  const qp = new URLSearchParams(location.search);
+  const urlKey = qp.get('key');
+  const urlName = qp.get('name');
+  if (!urlKey || !urlName) return;
+  window.addEventListener('load', () => {
+    $('keyInput').value = urlKey;
+    $('loginBtn').click();
+    const tryFill = () => {
+      if ($('searchCard').classList.contains('hidden')) { setTimeout(tryFill, 200); return; }
+      $('nameInput').value = urlName;
+      $('searchBtn').click();
+    };
+    setTimeout(tryFill, 200);
+  });
+})();
+</script>
+</body>
+</html>
