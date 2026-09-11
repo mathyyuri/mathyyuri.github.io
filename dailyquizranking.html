@@ -194,7 +194,7 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .r-tag.tag-s      { background: var(--s-bg); color: var(--s-text); }
 .r-tag.tag-default { background: #f0ede8; color: #999; }
 .r-gauge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: middle; }
-.r-gauge-track { width: 58px; height: 9px; border-radius: 5px; background: #e6e9f0; overflow: hidden; }
+.r-gauge-track { width: 80px; height: 9px; border-radius: 5px; background: #e6e9f0; overflow: hidden; }
 .r-gauge-fill { height: 100%; border-radius: 5px; transition: width .3s; }
 .r-gauge-num { font-size: 0.66rem; font-weight: 800; }
 .r-pts { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
@@ -242,7 +242,7 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
    않게 한다(원장님 요청: "가로가 꽉차게").*/
 @media (min-width: 760px) {
   .rr-box { max-width: 1000px; }
-  .rr-grid, #rrAllList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
+  .rr-grid, #rrAllList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
   .rr-grid .rr-item, #rrAllList .rr-item {
     border-top: none;
     border: 1px solid #f0ede8;
@@ -252,7 +252,7 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 }
 @media (min-width: 1300px) {
   .rr-box { max-width: 1400px; }
-  .rr-grid, #rrAllList { grid-template-columns: repeat(3, 1fr); }
+  .rr-grid, #rrAllList { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 footer { text-align: center; color: #ccc; font-size: 0.72rem; padding: 40px 0; }
 </style>
@@ -320,6 +320,10 @@ const ROUND_SCHOOLS = [
   '고림고', '광덕고', '상일고', '성포고', '화정고', '덕산고', '저동고', '소명여고', '소래고', '풍무고',
   '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
 ];
+
+// 랭킹 목록의 회차 진행도 게이지가 "전체 30회차 중 몇 회차까지 왔는지"를
+// 기준으로 채워지게 하는 분모(원장님 요청: "30까지 채워가는 느낌으로").
+const TOTAL_ROUNDS = 30;
 
 // 회차별 진행도 게이지 색 — 같은 회차에 있는 학생들끼리 색으로 바로
 // 묶여 보이게(원장님 요청: 회차마다 색 구분). 회차 번호마다 색상환(hue)을
@@ -500,13 +504,15 @@ function renderMainList(data) {
     return;
   }
 
-  const maxActiveRound = Math.max(1, ...displayData.map(d => d.maxRound));
-
   listEl.innerHTML = displayData.map((d, i) => {
     const tier = getTier(d.tierScore);
     const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
     const fillColor = roundGaugeColor(d.maxRound);
-    const pct = d.maxRound > 0 ? Math.max(10, Math.round(d.maxRound / maxActiveRound * 100)) : 0;
+    // 반 친구들 중 최고 회차 기준(상대값)이 아니라 전체 30회차 기준(절대값)
+    // 으로 채워지게 — 원장님 요청: "30까지 채워가는 느낌으로". 그래야
+    // 1·2·3회차처럼 학기 초반의 작은 차이도 눈에 보이고, 전체 30회차 중
+    // 지금 어디쯤 왔는지도 한눈에 들어온다.
+    const pct = d.maxRound > 0 ? Math.max(3, Math.round(d.maxRound / TOTAL_ROUNDS * 100)) : 0;
 
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>

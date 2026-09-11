@@ -5745,7 +5745,7 @@ async function generateHtmlNote(historicalBatch) {
       for (const { round, num } of checkedDq) {
         const it = dqMap.get(`${round}:${num}`);
         if (!it) continue;
-        summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: '-', hist: it.meta || '-' });
+        summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: '-', hist: String(it.meta || '-') });
         qOrderNum++;
 
         const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
@@ -5763,7 +5763,7 @@ async function generateHtmlNote(historicalBatch) {
           qNum,
         });
 
-        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${escapeHtml(it.answer || '-')}</div>`);
+        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${escapeHtml(String(it.answer ?? '-'))}</div>`);
 
         const explParts = [];
         if (it.quickAnswer) explParts.push(`<b>빠른정답</b><br>${it.quickAnswer}`);
