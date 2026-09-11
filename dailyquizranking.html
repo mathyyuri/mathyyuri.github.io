@@ -194,8 +194,16 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .r-tag.tag-s      { background: var(--s-bg); color: var(--s-text); }
 .r-tag.tag-default { background: #f0ede8; color: #999; }
 .r-gauge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: middle; }
-.r-gauge-track { width: 80px; height: 9px; border-radius: 5px; background: #e6e9f0; overflow: hidden; }
-.r-gauge-fill { height: 100%; border-radius: 5px; transition: width .3s; }
+.r-gauge-track { position: relative; width: 68px; height: 10px; border-radius: 3px; background: #e6e9f0; overflow: hidden; }
+@media (min-width: 420px) {
+  .r-gauge-track { width: 130px; }
+}
+.r-gauge-fill { position: absolute; inset: 0; height: 100%; transition: width .3s; }
+/* 1~30 전체를 30칸으로 쪼개 보여주는 눈금선 — 채워진 비율이 작아도(예:
+   학기 초반 1~3회차) "몇 칸 찼는지"가 또렷이 세어지게(원장님 요청:
+   "1부터 30까지로 길이로"). 흰 눈금선이 막대 전체(채워진 부분 포함)를
+   가로질러 30칸으로 나눔. */
+.r-gauge-ticks { position: absolute; inset: 0; background: repeating-linear-gradient(to right, #fff 0, #fff 1px, transparent 1px, transparent calc(100% / 30)); pointer-events: none; }
 .r-gauge-num { font-size: 0.66rem; font-weight: 800; }
 .r-pts { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
 .r-pts small { font-weight: 400; opacity: 0.45; font-size: 0.7rem; margin-left: 2px; }
@@ -517,7 +525,7 @@ function renderMainList(data) {
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
       <span class="r-icon">${tier.emoji}</span>
-      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><span class="r-gauge" title="${d.maxRound}회차까지 · ${d.roundsCompleted}회 응시"><span class="r-gauge-track"><span class="r-gauge-fill" style="width:${pct}%;background:${fillColor}"></span></span><b class="r-gauge-num" style="color:${fillColor}">${d.maxRound}</b></span></span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><span class="r-gauge" title="${d.maxRound}회차까지 · ${d.roundsCompleted}회 응시"><span class="r-gauge-track"><span class="r-gauge-fill" style="width:${pct}%;background:${fillColor}"></span><span class="r-gauge-ticks"></span></span><b class="r-gauge-num" style="color:${fillColor}">${d.maxRound}</b></span></span>
       <span class="r-pts">${d[currentScoreKey].toFixed(1)}<small>점</small></span>
     </div>`;
   }).join('');
