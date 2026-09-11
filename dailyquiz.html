@@ -164,6 +164,10 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .hardItem .hqExpl { font-size: 0.8rem; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--line); color: #555; }
 .hardItem .hqExpl b { color: var(--gold-deep); }
 .hardItem .hqVideo { display: inline-block; margin-bottom: 8px; font-size: 0.8rem; font-weight: 700; color: var(--pink-deep); text-decoration: none; background: #fbeaee; padding: 5px 12px; border-radius: 10px; }
+.ytFacade { position: relative; width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; margin-bottom: 8px; overflow: hidden; }
+.ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
+.ytFacade .ytPlayBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52px; height: 52px; background: rgba(0,0,0,.68); border-radius: 50%; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ytIframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 10px; margin-bottom: 8px; display: block; }
 .hqDetails { margin-top: 6px; }
 .hqDetails > summary { cursor: pointer; font-weight: 700; font-size: 0.8rem; color: var(--gold-deep); background: #fbf6ea; padding: 8px 12px; border-radius: 10px; list-style: none; }
 .hqDetails > summary::-webkit-details-marker { display: none; }
@@ -291,6 +295,36 @@ function renderMath(el) {
     try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
   }
 }
+
+/* ---------- 풀이영상 (index.html의 ytEmbed와 같은 방식) ----------
+   링크로 바로 유튜브 새 탭을 열지 않고, 썸네일을 먼저 보여주다가 누르면
+   그 자리에서 재생되게(홈페이지 안에서 바로 재생) — 원장님 요청. 영상을
+   눌러 재생하기 전까진 무거운 iframe을 아예 안 만들어서 페이지도 가볍다. */
+function ytEmbed(url) {
+  if (!url) return null;
+  let m = url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/[?&]v=([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  return null;
+}
+function ytThumbHtml(url) {
+  const yt = ytEmbed(url);
+  if (!yt) return '';
+  return `<div class="ytFacade" data-yid="${yt.id}" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="ytPlayBtn">▶</span></div>`;
+}
+document.addEventListener('click', e => {
+  const facade = e.target.closest('.ytFacade');
+  if (!facade) return;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'ytIframe';
+  iframe.src = `https://www.youtube.com/embed/${facade.dataset.yid}?autoplay=1`;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  iframe.allowFullscreen = true;
+  facade.replaceWith(iframe);
+});
 
 /* ---------- API ---------- */
 async function apiGet(params) {
@@ -708,7 +742,7 @@ async function renderHardQuestions() {
         <div class="hqHead"><span>${it.num}번</span><span class="hqRate">정답률 ${it.rate}%</span></div>
         <div class="hqStem">${it.stemHtml || ''}</div>
         <div class="hqChoices">${choicesHtml}</div>
-        ${it.video ? `<a class="hqVideo" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+        ${ytThumbHtml(it.video)}
         <details class="hqDetails">
           <summary>📖 정답 · 해설 보기</summary>
           <div class="hqAnswer">정답: ${it.answer || '−'}</div>
@@ -744,7 +778,7 @@ async function renderHardQuestions() {
             <div class="hqHead"><span>${it.num}번</span>${it.rate != null ? `<span class="hqRate">정답률 ${it.rate}%</span>` : ''}</div>
             <div class="hqStem">${it.stemHtml || ''}</div>
             <div class="hqChoices">${choicesHtml}</div>
-            ${it.video ? `<a class="hqVideo" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+            ${ytThumbHtml(it.video)}
             <details class="hqDetails">
               <summary>📖 정답 · 해설 보기</summary>
               <div class="hqAnswer">정답: ${it.answer || '−'}</div>

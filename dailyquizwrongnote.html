@@ -54,6 +54,10 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
 .stem img { max-width: 100%; }
 .choices { font-size: 0.84rem; color: #666; line-height: 1.9; margin-bottom: 10px; }
 .video { display: inline-block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700; color: var(--pink-deep); text-decoration: none; background: #fbeaee; padding: 5px 12px; border-radius: 10px; }
+.ytFacade { position: relative; width: 100%; max-width: 420px; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; margin-bottom: 8px; overflow: hidden; }
+.ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
+.ytFacade .ytPlayBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52px; height: 52px; background: rgba(0,0,0,.68); border-radius: 50%; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ytIframe { width: 100%; max-width: 420px; aspect-ratio: 16/9; border: none; border-radius: 10px; margin-bottom: 8px; display: block; }
 .solBox { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
 .solBox .ans { font-weight: 700; color: var(--mint-deep); font-size: 0.85rem; margin-bottom: 6px; }
 .solBox .expl { font-size: 0.82rem; line-height: 1.75; color: #555; }
@@ -61,7 +65,7 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
 .emptyMsg { text-align: center; color: #bbb; padding: 40px 0; }
 
 @media print {
-  .loginCard, .searchCard, .printBtn { display: none !important; }
+  .loginCard, .searchCard, .printBtn, .ytFacade, .ytIframe { display: none !important; }
   body { padding: 0; background: #fff; }
   .qCard { box-shadow: none; }
 }
@@ -166,7 +170,7 @@ async function loadWrongNote() {
           <div class="qHead"><span>${it.num}번</span>${metaTag}</div>
           <div class="stem">${it.stemHtml || ''}</div>
           <div class="choices">${choicesHtml}</div>
-          ${it.video ? `<a class="video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+          ${ytThumbHtml(it.video)}
           <div class="solBox">
             <div class="ans">정답: ${it.answer || '−'}</div>
             ${it.quickAnswer || it.explanation ? `<div class="expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="expl">이 문항엔 해설이 저장돼 있지 않습니다.</div>'}
@@ -182,6 +186,34 @@ async function loadWrongNote() {
     msg.className = 'msg err';
   }
 }
+
+/* 풀이영상 — index.html의 ytEmbed와 같은 방식: 링크로 새 탭 열지 않고
+   썸네일을 먼저 보여주다가 누르면 그 자리에서 재생(원장님 요청). */
+function ytEmbed(url) {
+  if (!url) return null;
+  let m = url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/[?&]v=([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  return null;
+}
+function ytThumbHtml(url) {
+  const yt = ytEmbed(url);
+  if (!yt) return '';
+  return `<div class="ytFacade" data-yid="${yt.id}" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="ytPlayBtn">▶</span></div>`;
+}
+document.addEventListener('click', e => {
+  const facade = e.target.closest('.ytFacade');
+  if (!facade) return;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'ytIframe';
+  iframe.src = `https://www.youtube.com/embed/${facade.dataset.yid}?autoplay=1`;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  iframe.allowFullscreen = true;
+  facade.replaceWith(iframe);
+});
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

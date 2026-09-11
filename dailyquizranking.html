@@ -193,7 +193,10 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .r-tag.tag-s-plus { background: var(--s-plus-bg); color: var(--s-plus-text); }
 .r-tag.tag-s      { background: var(--s-bg); color: var(--s-text); }
 .r-tag.tag-default { background: #f0ede8; color: #999; }
-.r-sub { display: inline-block; font-size: 0.68rem; font-weight: 700; margin-left: 6px; padding: 2px 9px; border-radius: 10px; background: #e8ecf5; color: #4a5a80; vertical-align: middle; }
+.r-gauge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.r-gauge-track { width: 34px; height: 9px; border-radius: 5px; background: #e6e9f0; overflow: hidden; }
+.r-gauge-fill { height: 100%; border-radius: 5px; transition: width .3s; }
+.r-gauge-num { font-size: 0.66rem; font-weight: 800; }
 .r-pts { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
 .r-pts small { font-weight: 400; opacity: 0.45; font-size: 0.7rem; margin-left: 2px; }
 .empty-msg { text-align: center; padding: 40px; color: #bbb; font-size: 0.9rem; }
@@ -215,6 +218,10 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .rr-choices { font-size: 0.78rem; color: #888; margin-bottom: 6px; }
 .rr-answer { font-weight: 700; font-size: 0.8rem; color: #3e8f79; margin-bottom: 6px; }
 .rr-video { display: inline-block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 700; color: #c64e71; text-decoration: none; background: #fbeaee; padding: 5px 11px; border-radius: 9px; }
+.ytFacade { position: relative; width: 100%; max-width: 420px; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; margin-bottom: 8px; overflow: hidden; }
+.ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
+.ytFacade .ytPlayBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52px; height: 52px; background: rgba(0,0,0,.68); border-radius: 50%; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ytIframe { width: 100%; max-width: 420px; aspect-ratio: 16/9; border: none; border-radius: 10px; margin-bottom: 8px; display: block; }
 .rr-expl { font-size: 0.8rem; line-height: 1.7; color: #555; padding-top: 8px; border-top: 1px dashed #eee; }
 .rr-expl b { color: var(--gold); }
 .rr-details { margin-top: 6px; }
@@ -293,13 +300,13 @@ const ROUND_SCHOOLS = [
   '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
 ];
 
-// 회차별 "N회차까지" 배지 색 — 같은 회차에 있는 학생들끼리 색으로 바로
-// 묶여 보이게(원장님 요청: "1회차까지"/"2회차까지" 등 회차마다 색 구분).
-// 회차 번호마다 색상환(hue)을 고정폭으로 돌려서, 1~30회차 어디든 매번
-// 다른 색이 나오면서도 같은 회차는 새로고침해도 항상 같은 색이 되게 함.
-function roundBadgeColor(round) {
+// 회차별 진행도 게이지 색 — 같은 회차에 있는 학생들끼리 색으로 바로
+// 묶여 보이게(원장님 요청: 회차마다 색 구분). 회차 번호마다 색상환(hue)을
+// 고정폭으로 돌려서, 1~30회차 어디든 매번 다른 색이 나오면서도 같은
+// 회차는 새로고침해도 항상 같은 색이 되게 함.
+function roundGaugeColor(round) {
   const hue = ((Number(round) - 1) * 47) % 360;
-  return { bg: `hsl(${hue}, 62%, 90%)`, text: `hsl(${hue}, 62%, 30%)` };
+  return `hsl(${hue}, 65%, 52%)`;
 }
 
 // 티어는 "누적점수 × (회당평균/100)" — 많이 풀수록(누적점수 커짐) *그리고*
@@ -329,6 +336,34 @@ let currentFilter = 'all';
 let currentScoreKey = 'total';
 let currentMode = 'overall'; // 'overall' | 'round'
 let currentRound = 1;
+
+/* 풀이영상 — index.html의 ytEmbed와 같은 방식: 링크로 새 탭 열지 않고
+   썸네일을 먼저 보여주다가 누르면 그 자리에서 재생(원장님 요청). */
+function ytEmbed(url) {
+  if (!url) return null;
+  let m = url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/[?&]v=([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  return null;
+}
+function ytThumbHtml(url) {
+  const yt = ytEmbed(url);
+  if (!yt) return '';
+  return `<div class="ytFacade" data-yid="${yt.id}" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="ytPlayBtn">▶</span></div>`;
+}
+document.addEventListener('click', e => {
+  const facade = e.target.closest('.ytFacade');
+  if (!facade) return;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'ytIframe';
+  iframe.src = `https://www.youtube.com/embed/${facade.dataset.yid}?autoplay=1`;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  iframe.allowFullscreen = true;
+  facade.replaceWith(iframe);
+});
 
 function getTier(tierScore) {
   for (const t of TIERS) if (tierScore >= t.min) return t;
@@ -444,15 +479,18 @@ function renderMainList(data) {
     return;
   }
 
+  const maxActiveRound = Math.max(1, ...displayData.map(d => d.maxRound));
+
   listEl.innerHTML = displayData.map((d, i) => {
     const tier = getTier(d.tierScore);
     const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
-    const rc = roundBadgeColor(d.maxRound);
+    const fillColor = roundGaugeColor(d.maxRound);
+    const pct = d.maxRound > 0 ? Math.max(10, Math.round(d.maxRound / maxActiveRound * 100)) : 0;
 
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
       <span class="r-icon">${tier.emoji}</span>
-      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><small class="r-sub" style="background:${rc.bg};color:${rc.text}" title="${d.roundsCompleted}회 응시">${d.maxRound}회차까지</small></span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><span class="r-gauge" title="${d.maxRound}회차까지 · ${d.roundsCompleted}회 응시"><span class="r-gauge-track"><span class="r-gauge-fill" style="width:${pct}%;background:${fillColor}"></span></span><b class="r-gauge-num" style="color:${fillColor}">${d.maxRound}</b></span></span>
       <span class="r-pts">${d[currentScoreKey].toFixed(1)}<small>점</small></span>
     </div>`;
   }).join('');
@@ -513,7 +551,7 @@ async function renderRoundReport(round) {
       <div class="rr-ihead"><span>${it.num}번</span><span class="rr-irate">정답률 ${it.rate}%</span></div>
       <div class="rr-stem">${it.stemHtml || ''}</div>
       <div class="rr-choices">${choicesHtml}</div>
-      ${it.video ? `<a class="rr-video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+      ${ytThumbHtml(it.video)}
       <details class="rr-details">
         <summary>📖 정답 · 해설 보기</summary>
         <div class="rr-answer">정답: ${it.answer || '−'}</div>
@@ -548,7 +586,7 @@ async function renderRoundReport(round) {
           <div class="rr-ihead"><span>${it.num}번</span>${it.rate != null ? `<span class="rr-irate">정답률 ${it.rate}%</span>` : ''}</div>
           <div class="rr-stem">${it.stemHtml || ''}</div>
           <div class="rr-choices">${choicesHtml}</div>
-          ${it.video ? `<a class="rr-video" href="${it.video}" target="_blank" rel="noopener">▶️ 풀이영상 보기</a>` : ''}
+          ${ytThumbHtml(it.video)}
           <details class="rr-details"><summary>📖 정답 · 해설 보기</summary>
             <div class="rr-answer">정답: ${it.answer || '−'}</div>
             ${it.quickAnswer || it.explanation ? `<div class="rr-expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="rr-note" style="padding:8px 0">이 문항엔 해설이 저장돼 있지 않아요.</div>'}

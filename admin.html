@@ -77,6 +77,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .dqHardCard .dqHardChoices { font-size: 13px; color: #555; margin-bottom: 8px; }
 .dqHardCard .dqHardAnswer { font-weight: 700; color: var(--mint-deep); margin-bottom: 6px; }
 .dqHardCard .dqHardExpl { font-size: 13px; line-height: 1.7; padding-top: 8px; border-top: 1px dashed var(--gold-line); }
+.ytFacade { position: relative; width: 100%; max-width: 360px; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 8px; cursor: pointer; margin: 6px 0; overflow: hidden; }
+.ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
+.ytFacade .ytPlayBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; background: rgba(0,0,0,.68); border-radius: 50%; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ytIframe { width: 100%; max-width: 360px; aspect-ratio: 16/9; border: none; border-radius: 8px; margin: 6px 0; display: block; }
 .dqHardDetails { margin-top: 8px; }
 .dqHardDetails > summary { cursor: pointer; font-weight: 700; font-size: 12px; color: var(--gold); padding: 6px 10px; background: var(--gold-soft); border-radius: 4px; list-style: none; }
 .dqHardDetails > summary::-webkit-details-marker { display: none; }
@@ -1811,6 +1815,34 @@ function populateDqAnalysisRoundSelect() {
   });
 }
 const dqRateColor = v => v == null ? '#ccc' : v < 60 ? 'var(--pink-deep)' : v < 80 ? 'var(--gold)' : 'var(--mint-deep)';
+
+/* 풀이영상 — index.html의 ytEmbed와 같은 방식: 링크로 새 탭 열지 않고
+   썸네일을 먼저 보여주다가 누르면 그 자리에서 재생(원장님 요청). */
+function ytEmbed(url) {
+  if (!url) return null;
+  let m = url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/[?&]v=([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  return null;
+}
+function ytThumbHtml(url) {
+  const yt = ytEmbed(url);
+  if (!yt) return '';
+  return `<div class="ytFacade" data-yid="${yt.id}" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="ytPlayBtn">▶</span></div>`;
+}
+document.addEventListener('click', e => {
+  const facade = e.target.closest('.ytFacade');
+  if (!facade) return;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'ytIframe';
+  iframe.src = `https://www.youtube.com/embed/${facade.dataset.yid}?autoplay=1`;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  iframe.allowFullscreen = true;
+  facade.replaceWith(iframe);
+});
 async function renderDqAnalysis(round) {
   const box = document.getElementById('dqAnalysisResult');
   box.innerHTML = '<p class="hint">불러오는 중...</p>';
@@ -1884,7 +1916,7 @@ async function renderDqHardQuestions(round) {
         <div class="dqHardHead"><span>${it.num}번</span>${rateBadge}<span class="hint">(1차 ${it.total}명 응시)</span></div>
         <div class="dqHardStem">${it.stemHtml || '<span class="hint">지문 없음</span>'}</div>
         <div class="dqHardChoices">${choicesHtml}</div>
-        ${it.video ? `<div style="margin:4px 0"><a href="${it.video}" target="_blank" rel="noopener" style="color:var(--pink-deep);font-weight:700;font-size:12px">▶️ 풀이영상</a></div>` : ''}
+        ${ytThumbHtml(it.video)}
         <details class="dqHardDetails">
           <summary>📖 정답 · 빠른정답 · 해설 보기</summary>
           <div class="dqHardAnswer">정답: ${it.answer || '(미입력)'}</div>
