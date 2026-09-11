@@ -253,9 +253,10 @@ button:disabled { opacity: 0.4; cursor: default; }
     <p id="studentInfo"><b></b></p>
 
     <div class="box hidden" id="dqWrongBox">
-      <p><b>📓 일일일모 오답</b> <a id="dqWrongNoteLink" href="#" target="_blank" style="font-weight:normal;font-size:12px;margin-left:6px">→ 전체 오답노트 새 창으로 열기(인쇄/PDF)</a></p>
-      <p class="hint">정답이 공개된 회차 중 이 학생이 아직 못 맞힌 문제만 모은 것입니다 — 기존 오답노트(위 미션 목록)와는 별도 시스템(일일일모)입니다.</p>
+      <p><b>📓 일일일모 오답</b> <span class="hint" id="dqWrongCounter" style="margin-left:6px"></span></p>
+      <p class="hint">정답이 공개된 회차 중 이 학생이 아직 못 맞힌 문제만 모은 것입니다 — 기존 오답노트(위 미션 목록)와는 별도 시스템(일일일모)입니다. 담을 문제를 체크한 뒤 아래 버튼을 누르세요.</p>
       <div id="dqWrongSummary"></div>
+      <button type="button" id="dqWrongGenBtn" disabled style="margin-top:10px">선택한 문제로 오답노트 열기(인쇄/PDF)</button>
     </div>
 
     <div class="box" id="gradingBox" style="display:none">
@@ -3625,17 +3626,29 @@ async function selectStudent(btn) {
   }
 }
 
-// 일일일모(객관식 온라인 응시) 오답 요약 — 기존 hwpx 기반 오답노트와는
-// 완전히 별개 시스템이라(dailyquizwronglist), 여기서는 회차별 문항번호만
-// 간단히 보여주고, 지문·해설까지 포함한 인쇄용 전체 보기는 새 창(
-// dailyquizwrongnote.html)으로 연다 — 원장님 요청: "따로도 있으면서
-// studentnote에서도 확인할 수 있게".
+// 일일일모(객관식 온라인 응시) 오답 요약 — 원래 hwpx 기반 오답노트와는
+// 별개 시스템(dailyquizwronglist)이지만, 원장님 요청("일일일모 문제와
+// 기존문제를 같이 선택해서 기존의 개별 오답노트 뽑듯이")에 따라 여기서
+// 체크한 문제도 아래 미션 체크박스(.qChk)와 함께 같은 "오답노트 생성"
+// 버튼(genBtn/genHtmlBtn)에 잡히게 한다 — generateHtmlNote가
+// dqWrongItemsData에서 내용을 찾아 문제/정답/해설 페이지에 이어붙인다.
+// 다만 한글(.hwpx) 생성은 실제 hwpx 원본 조각(XML)이 있어야만 가능해서
+// (일일일모 문제는 이미 HTML로 변환·저장된 상태라 원본 조각이 없음)
+// 일일일모 문제는 한글 파일에는 담을 수 없다 — generateHwpxNote에서
+// 체크돼 있으면 안내만 하고 제외한다. "선택한 문제로 오답노트 열기"
+// 버튼은 일일일모 문제만 따로 인쇄하고 싶을 때 쓰는 예전 방식 그대로 둔다.
+let dqWrongItemsData = []; // [{round, num, meta, stemHtml, choices, answer, quickAnswer, explanation, video}]
 async function loadDqWrongSummary(name) {
   const box = document.getElementById('dqWrongBox');
   const area = document.getElementById('dqWrongSummary');
+  const openBtn = document.getElementById('dqWrongGenBtn');
+  const counter = document.getElementById('dqWrongCounter');
   box.classList.remove('hidden');
   area.innerHTML = '<p class="hint">불러오는 중...</p>';
-  document.getElementById('dqWrongNoteLink').href = 'dailyquizwrongnote.html?name=' + encodeURIComponent(name) + '&key=' + encodeURIComponent(TEACHER_KEY);
+  openBtn.disabled = true;
+  openBtn.onclick = null;
+  counter.textContent = '';
+  dqWrongItemsData = [];
   try {
     const data = await callGetJsonp(DASHBOARD_URL, { action: 'dailyquizwronglist', name, key: TEACHER_KEY });
     const rounds = data.rounds || [];
@@ -3644,11 +3657,51 @@ async function loadDqWrongSummary(name) {
       area.innerHTML = '<p class="hint">정답이 공개된 회차 중 아직 못 맞힌 문제가 없습니다.</p>';
       return;
     }
-    area.innerHTML = rounds.map(r =>
-      `<div style="margin-bottom:6px"><b>${r.round}회차</b> — ${r.items.map(it => `${it.num}번${it.meta ? `(${it.meta})` : ''}`).join(', ')}</div>`
-    ).join('') + `<p class="hint">총 ${rounds.length}개 회차 · ${total}문제</p>`;
+    dqWrongItemsData = rounds.flatMap(r => r.items.map(it => ({ ...it, round: r.round })));
+    // 기존 미션별 오답노트 체크박스 화면(.qGrid/.selectAllBtn)과 같은
+    // 방식 — 원장님 요청: "내가 문제를 선택해서 하는 방식으로". 기본은
+    // 전부 체크된 상태(예전처럼 전체가 바로 담기는 동작과 같음)에서
+    // 원치 않는 문제만 눌러서 빼는 식으로 쓰면 된다.
+    area.innerHTML = rounds.map(r => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+          <b>${r.round}회차</b>
+          <button type="button" class="selectAllBtn dqRoundAllBtn" data-round="${r.round}">전체 해제</button>
+        </div>
+        <div class="qGrid">
+          ${r.items.map(it => `<label>
+            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}
+          </label>`).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    function updateDqCounter() {
+      const n = area.querySelectorAll('.dqChk:checked').length;
+      counter.textContent = `${n}/${total}문제 선택됨`;
+      openBtn.disabled = n === 0;
+      updateCounter(); // 아래 미션 체크박스와 합쳐 메인 "오답노트 생성" 버튼도 갱신
+    }
+    area.querySelectorAll('.dqChk').forEach(chk => chk.addEventListener('change', updateDqCounter));
+    area.querySelectorAll('.dqRoundAllBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const boxes = [...area.querySelectorAll(`.dqChk[data-round="${btn.dataset.round}"]`)];
+        const allChecked = boxes.every(b => b.checked);
+        boxes.forEach(b => { b.checked = !allChecked; });
+        btn.textContent = allChecked ? '전체 선택' : '전체 해제';
+        updateDqCounter();
+      });
+    });
+    updateDqCounter();
+    openBtn.onclick = () => {
+      const sel = [...area.querySelectorAll('.dqChk:checked')].map(chk => `${chk.dataset.round}:${chk.dataset.num}`).join(',');
+      const url = 'dailyquizwrongnote.html?name=' + encodeURIComponent(name) + '&key=' + encodeURIComponent(TEACHER_KEY) + '&sel=' + encodeURIComponent(sel);
+      window.open(url, '_blank');
+    };
   } catch (e) {
     area.innerHTML = '<p class="hint">불러오지 못했습니다.</p>';
+  } finally {
+    updateCounter();
   }
 }
 
@@ -4231,8 +4284,9 @@ function renderMissionBlocks() {
 
 function updateCounter() {
   const checked = [...document.querySelectorAll('.qChk:checked')];
-  const n = checked.length;
-  counterBadge.textContent = `${n}문제 선택됨`;
+  const dqChecked = document.querySelectorAll('.dqChk:checked').length;
+  const n = checked.length + dqChecked;
+  counterBadge.textContent = `${n}문제 선택됨` + (dqChecked ? ` (일일일모 ${dqChecked}개 포함)` : '');
   genBtn.disabled = n === 0;
   genHtmlBtn.disabled = n === 0;
   // 여러 미션에 걸쳐 체크하는 동안 단원별로 몇 개씩 쌓였는지 바로바로
@@ -4468,7 +4522,16 @@ async function generateHwpxNote(historicalBatch) {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
       mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
     }));
+    // 일일일모 문제는 원본 hwpx 조각이 없어(이미 HTML로 변환·저장된 상태)
+    // 한글 파일에는 담을 수 없다 — 체크돼 있으면 제외하고 안내만 한다.
+    const checkedDqCount = historicalBatch ? 0 : document.querySelectorAll('.dqChk:checked').length;
+    if (!checked.length && checkedDqCount > 0) {
+      throw new Error('일일일모 문제만 선택돼 있습니다 — 한글(hwpx) 파일에는 일일일모 문제를 담을 수 없어요. "오답노트 생성 (HTML)"을 이용해 주세요.');
+    }
     if (!checked.length) throw new Error('체크한 문제가 없습니다.');
+    if (checkedDqCount > 0) {
+      log(`일일일모 문제 ${checkedDqCount}개는 한글 파일에는 포함할 수 없어 제외했습니다. (HTML로 받으면 포함됩니다)`);
+    }
 
     const studentName = currentStudent.name;
     const examName = document.getElementById('examName').value.trim();
@@ -5592,7 +5655,14 @@ async function generateHtmlNote(historicalBatch) {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
       mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
     }));
-    if (!checked.length) throw new Error('체크한 문제가 없습니다.');
+    // 일일일모 체크박스(.dqChk)도 여기서 같이 담긴다 — HTML은 이미 있는
+    // stemHtml/선택지/해설을 그대로 이어붙이면 되므로 한글(hwpx)과 달리
+    // 원본 조각이 없어도 가능하다. "지난 회차 다시 받기"(historicalBatch)는
+    // 오답노트이력에 일일일모 문항을 기록하지 않으므로 대상에서 빠진다.
+    const checkedDq = historicalBatch ? [] : [...document.querySelectorAll('.dqChk:checked')].map(chk => ({
+      round: Number(chk.dataset.round), num: Number(chk.dataset.num),
+    }));
+    if (!checked.length && !checkedDq.length) throw new Error('체크한 문제가 없습니다.');
 
     const studentName = currentStudent.name;
 
@@ -5667,6 +5737,40 @@ async function generateHtmlNote(historicalBatch) {
       const explHtml = explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
       explanationBlocks.push(`<div class="mbQBlock"><div class="explNum">${qNum}번 해설</div>${explHtml}</div>`);
       qNum++;
+    }
+
+    if (checkedDq.length) {
+      log('일일일모 문제를 추가하는 중...');
+      const dqMap = new Map(dqWrongItemsData.map(it => [`${it.round}:${it.num}`, it]));
+      for (const { round, num } of checkedDq) {
+        const it = dqMap.get(`${round}:${num}`);
+        if (!it) continue;
+        summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: '-', hist: it.meta || '-' });
+        qOrderNum++;
+
+        const choicesHtml = (it.choices || []).map((c, i) => `${i + 1}) ${c}`).join(' &nbsp; ');
+        const stemHtml = it.stemHtml || '';
+        // splitTopLevelBlocks(paginateQuestionsWithOverflow)가 최상위 엘리먼트
+        // 자식만 문단으로 인식해서, <p> 태그 밖으로 새는 텍스트는 그냥
+        // 사라진다 — stemHtml이 <p>로 시작 안 하면(예: 순수 텍스트) 배지와
+        // 함께 반드시 하나의 <p>로 감싸야 한다.
+        const body = stemHtml.includes('<p>')
+          ? stemHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`)
+          : `<p><span class="mbQNum">${qNum}.</span>${stemHtml}</p>`;
+        questionParts.push({
+          cite: `<div class="mbCite">${escapeHtml(`[일일일모 ${round}회차] ${num}번${it.meta ? ` (${it.meta})` : ''}`)}</div>`,
+          body: body + `<p>${choicesHtml}</p>`,
+          qNum,
+        });
+
+        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${escapeHtml(it.answer || '-')}</div>`);
+
+        const explParts = [];
+        if (it.quickAnswer) explParts.push(`<b>빠른정답</b><br>${it.quickAnswer}`);
+        if (it.explanation) explParts.push(`<b>해설</b><br>${it.explanation}`);
+        explanationBlocks.push(`<div class="mbQBlock"><div class="explNum">${qNum}번 해설</div>${explParts.join('<br><br>') || '이 문항엔 해설이 저장돼 있지 않습니다.'}</div>`);
+        qNum++;
+      }
     }
 
     const batchCompletion = buildBatchCompletion(noteHistory);

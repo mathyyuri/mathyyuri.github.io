@@ -135,6 +135,16 @@ function renderMath(el) {
   }
 }
 
+// studentnote.html에서 체크박스로 문제를 고른 뒤 넘어오면 ?sel=회차:번호,...
+// 형태로 붙어온다 — 있으면 그 문제들만 걸러서 보여준다(원장님 요청:
+// "내가 문제를 선택해서 하는 방식으로"). 없으면(직접 검색) 예전처럼
+// 전체를 보여준다.
+function parseSelParam() {
+  const raw = new URLSearchParams(location.search).get('sel');
+  if (!raw) return null;
+  return new Set(raw.split(',').filter(Boolean));
+}
+
 async function loadWrongNote() {
   const name = $('nameInput').value.trim();
   const msg = $('searchMsg');
@@ -147,16 +157,22 @@ async function loadWrongNote() {
     const json = await apiGet({ action: 'dailyquizwronglist', name, key: myKey });
     if (!json.ok) { msg.textContent = json.error || '불러오지 못했습니다.'; msg.className = 'msg err'; return; }
     msg.textContent = ''; msg.className = 'msg';
-    const rounds = json.rounds || [];
+    const selFilter = parseSelParam();
+    let rounds = json.rounds || [];
+    if (selFilter) {
+      rounds = rounds
+        .map(r => ({ ...r, items: r.items.filter(it => selFilter.has(`${r.round}:${it.num}`)) }))
+        .filter(r => r.items.length);
+    }
     const totalCount = rounds.reduce((s, r) => s + r.items.length, 0);
     if (!totalCount) {
-      area.innerHTML = `<div class="emptyMsg">${escapeHtml(name)} 학생 — 정답 공개된 회차 중 아직 안 맞힌 문제가 없습니다.<br>(오답이 없거나, 해당 회차가 아직 공개 전입니다)</div>`;
+      area.innerHTML = `<div class="emptyMsg">${escapeHtml(name)} 학생 — ${selFilter ? '선택한 문제가 없습니다.' : '정답 공개된 회차 중 아직 안 맞힌 문제가 없습니다.<br>(오답이 없거나, 해당 회차가 아직 공개 전입니다)'}</div>`;
       return;
     }
     let html = `
       <div class="noteHeader">
         <div class="name">${escapeHtml(name)}의 일일일모 오답노트</div>
-        <div class="meta">${rounds.length}개 회차 · 총 ${totalCount}문제</div>
+        <div class="meta">${rounds.length}개 회차 · 총 ${totalCount}문제${selFilter ? ' (선택한 문제만)' : ''}</div>
       </div>
       <button type="button" class="printBtn" onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button>
     `;
@@ -227,10 +243,12 @@ const ROUND_SCHOOLS = [
   '광명고', '중산고', '부명고', '권선고', '송림고', '구리고', '화수고', '서현고', '수택고', '과전외고',
 ];
 
-// studentnote.html에서 "→ 전체 오답노트 새 창으로 열기" 링크로 들어오면
-// ?name=&key=가 같이 붙어온다 — 로그인/검색을 또 안 하고 바로 결과가
-//뜨게 자동으로 채워서 실행한다. 직접 이 페이지에 들어온 경우(파라미터
-// 없음)는 기존처럼 로그인 화면부터 시작.
+// studentnote.html에서 "선택한 문제로 오답노트 열기" 버튼으로 들어오면
+// ?name=&key=(&sel=)가 같이 붙어온다 — 로그인/검색을 또 안 하고 바로
+// 결과가 뜨게 자동으로 채워서 실행한다. sel은 loadWrongNote 안의
+// parseSelParam이 location.search에서 직접 다시 읽으므로 여기선 그대로
+// 둔다. 직접 이 페이지에 들어온 경우(파라미터 없음)는 기존처럼 로그인
+// 화면부터 시작.
 (function autoLoadFromUrl() {
   const qp = new URLSearchParams(location.search);
   const urlKey = qp.get('key');

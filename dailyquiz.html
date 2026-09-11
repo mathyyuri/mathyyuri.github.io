@@ -25,7 +25,8 @@
   --shadow: 0 10px 30px rgba(58,53,48,0.06);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; }
+html { overflow-x: hidden; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
 .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 30px; }
 .hidden { display: none !important; }
 
@@ -178,6 +179,37 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .allSolBox[open] > summary { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .resultFoot { display: flex; gap: 10px; margin-top: 10px; }
 .resultFoot button { flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: var(--dark); }
+
+/* 웹(넓은 화면)에서는 문제 카드가 세로로만 길게 늘어져 가로 공간을
+   못 쓰는 게 아쉽다는 원장님 요청 — 이 두 목록(많이 틀린 문제 / 15문항
+   전체 해설)만 .wrap(모바일 기준 480px 고정)을 벗어나 화면 폭을 쓰는
+   2단 그리드로 바꾼다. 모바일 폭에서는(이 미디어쿼리 자체가 안 걸림)
+   지금처럼 그대로 세로로 길게 보인다. 나머지 화면(로그인·회차 선택·
+   문제 풀이)은 손대지 않는다 — 한 문제씩 집중해서 푸는 흐름은 좁은 폭이
+   더 자연스럽기 때문.*/
+@media (min-width: 760px) {
+  .hardBox, .allSolBox {
+    width: 100vw;
+    box-sizing: border-box;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    padding-left: max(24px, calc(50vw - 480px));
+    padding-right: max(24px, calc(50vw - 480px));
+  }
+  #hardList, #allSolList {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .hardItem {
+    border-top: none;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+}
 </style>
 </head>
 <body>
