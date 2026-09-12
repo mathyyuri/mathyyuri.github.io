@@ -672,7 +672,11 @@ async function renderRoundReport(round) {
 
 function renderRoundList(data) {
   const listEl = document.getElementById('mainList');
-  const displayData = [...data].filter(d => d.score > 0).sort((a, b) => b.score - a.score);
+  // 0점도 그대로 보여준다 — 미제출자를 0점으로 채워 넣어도(원장님 요청,
+  // 2026-09-12) 이 필터가 score>0만 남기면 명단에서 통째로 사라져버려서
+  // "미제출로 뜨게 해달라"는 요청 자체가 무의미해졌었다. 0점은 정렬만
+  // 최하위로 자연스럽게 내려가고, 명단엔 그대로 보이게 함.
+  const displayData = [...data].sort((a, b) => b.score - a.score);
   const school = ROUND_SCHOOLS[currentRound];
   document.getElementById('listTitle').innerText = currentRound + '회차 점수' + (school ? ` (${school} 기출)` : '') + ' 🏆';
 
@@ -684,10 +688,11 @@ function renderRoundList(data) {
   listEl.innerHTML = displayData.map((d, i) => {
     const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•';
+    const noSubmit = d.score === 0 ? '<span class="r-delta down" style="min-width:auto">미제출</span>' : '';
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
       <span class="r-icon">${medal}</span>
-      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span></span>
+      <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span>${noSubmit}</span>
       <span class="r-pts">${d.score.toFixed(1)}<small>점</small></span>
     </div>`;
   }).join('');
