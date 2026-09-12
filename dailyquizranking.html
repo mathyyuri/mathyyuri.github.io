@@ -187,6 +187,14 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .rank-row:last-child { border-bottom: none; }
 .r-num { font-weight: 700; font-size: 0.9rem; min-width: 26px; color: var(--gold); }
 .r-num.top1 { color: #b8392b; font-size: 1rem; }
+/* 순위 변동(▲▼) 배지 — 서버가 스냅샷 대비로 계산해 내려주는 값(2026-09-12
+   추가). up/down은 반 태그와 같은 톤(--s-bg 그린/--s-plus-bg 로즈)을 재사용
+   해서 새 색을 안 늘림. */
+.r-delta { flex: none; font-size: 0.68rem; font-weight: 700; min-width: 30px; text-align: center; }
+.r-delta.up { color: var(--s-bg); }
+.r-delta.down { color: var(--s-plus-bg); }
+.r-delta.same { color: #ccc; }
+.r-delta.new { color: var(--gold); font-size: 0.6rem; letter-spacing: 0.5px; }
 .r-icon { font-size: 1.05rem; }
 .r-name { font-weight: 700; font-family: 'Noto Serif KR'; flex: 1; font-size: 0.95rem; }
 .r-tag { font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
@@ -420,6 +428,11 @@ async function fetchData() {
         roundsCompleted: Number(item.roundsCompleted || 0),
         maxRound: Number(item.maxRound || 0),
         tierScore: Math.round(total * (average / 100) * 100) / 100,
+        // null/undefined면 비교할 이전 스냅샷이 없다는 뜻(막 순위권에 들어온
+        // 경우 등) — 0과 구분해서 "NEW"로 따로 표시해야 하니 0으로 뭉개지
+        // 않는다.
+        rankChangeTotal: (item.rankChangeTotal === null || item.rankChangeTotal === undefined) ? null : Number(item.rankChangeTotal),
+        rankChangeAverage: (item.rankChangeAverage === null || item.rankChangeAverage === undefined) ? null : Number(item.rankChangeAverage),
       };
     });
     renderAll();
@@ -499,6 +512,15 @@ function renderTierBar(data) {
   }).join('');
 }
 
+// 순위 변동 배지 — 서버(handleDailyQuizRanking)가 스냅샷과 비교해 계산해준
+// delta(양수=순위 상승)를 ▲▼로 보여준다. delta가 null이면(비교할 이전
+// 스냅샷이 없음 — 막 순위권에 들어온 경우 등) "NEW"로 따로 표시.
+function rankDeltaBadge(delta) {
+  if (delta === null || delta === undefined) return '<span class="r-delta new">NEW</span>';
+  if (delta === 0) return '<span class="r-delta same">−</span>';
+  if (delta > 0) return `<span class="r-delta up">▲${delta}</span>`;
+  return `<span class="r-delta down">▼${-delta}</span>`;
+}
 function renderMainList(data) {
   const listEl = document.getElementById('mainList');
   const displayData = data
@@ -513,6 +535,7 @@ function renderMainList(data) {
     return;
   }
 
+  const deltaKey = currentScoreKey === 'total' ? 'rankChangeTotal' : 'rankChangeAverage';
   listEl.innerHTML = displayData.map((d, i) => {
     const tier = getTier(d.tierScore);
     const tagClass = d.class === 'S+' ? 'tag-s-plus' : (d.class === 'S' ? 'tag-s' : 'tag-default');
@@ -525,6 +548,7 @@ function renderMainList(data) {
 
     return `<div class="rank-row">
       <span class="r-num ${i < 3 ? 'top1' : ''}">${i + 1}</span>
+      ${rankDeltaBadge(d[deltaKey])}
       <span class="r-icon">${tier.emoji}</span>
       <span class="r-name">${d.name}<span class="r-tag ${tagClass}">${d.class}</span><span class="r-gauge" title="${d.maxRound}회차까지 · ${d.roundsCompleted}회 응시"><span class="r-gauge-track"><span class="r-gauge-fill" style="width:${pct}%;background:${fillColor}"></span><span class="r-gauge-ticks"></span></span><b class="r-gauge-num" style="color:${fillColor}">${d.maxRound}</b></span></span>
       <span class="r-pts">${d[currentScoreKey].toFixed(1)}<small>점</small></span>
