@@ -3758,7 +3758,7 @@ function renderGradingRounds(rounds) {
     // 있어서). 백엔드가 이미 미션+카테고리 하나당 항목 하나로 묶어서
     // 주므로 여기서 또 나눌 필요는 없지만, 혹시 같은 키가 둘 이상 와도
     // 안전하게 합쳐지도록 그대로 둔다.
-    for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num, rowIndex: it.rowIndex });
+    for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num, rowIndex: it.rowIndex, attempt: it.attempt });
   }
 
   // "요약 N"(오답노트 요약표 안에서의 순서)은 예전엔 여기서도 다시 매겨서
@@ -3786,7 +3786,7 @@ function renderGradingRounds(rounds) {
       <div class="gradingRowToggles">
         ${group.items.map(it => `
           <span class="gradeItem">
-            <span class="gradeNum">${it.num}번<small>(${it.round}회차)</small></span>
+            <span class="gradeNum">${it.num}번<small>(${it.attempt ? it.attempt + '차시도' : it.round + '회차'})</small></span>
             <button type="button" class="gradeToggle O" data-value="1"
               data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}" data-row="${it.rowIndex || ''}">O</button>
           </span>`).join('')}
