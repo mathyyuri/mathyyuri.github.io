@@ -1675,6 +1675,7 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
       const posInRound = ((n - 1) % 15) + 1;
       dqParsedQuestions.push({
         round, num: posInRound, sourceNum: n, stemHtml, choices, answer: null, quickAnswer, explanation,
+        unit: '', type: '',
         warning: choices.length !== 5 ? `선택지 ${choices.length}개 인식됨 (5개 기대)` : '',
       });
     }
@@ -1697,6 +1698,19 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
       });
     } catch (e) {
       console.error('기존 정답 불러오기 실패(새로 다 고르시면 됩니다):', e);
+    }
+    // 단원/유형 태그도 같은 방식으로 미리 채운다 — 문항DB(문제은행과 공유,
+    // saveQuestionRows가 회차를 "파일 하나"로 취급해 저장)에 이미 입력해둔
+    // 값이 있으면 재업로드해도 안 날아가게(원장님 요청, 2026-09-12).
+    try {
+      const tagResp = await callGetJsonp({ action: 'dailyquiztags', key: myKey });
+      const tagMap = new Map((tagResp.tags || []).map(t => [t.round + '||' + t.num, t]));
+      dqParsedQuestions.forEach(q => {
+        const prev = tagMap.get(q.round + '||' + q.num);
+        if (prev) { q.unit = prev.unit || ''; q.type = prev.type || ''; }
+      });
+    } catch (e) {
+      console.error('기존 단원/유형 태그 불러오기 실패(새로 입력하시면 됩니다):', e);
     }
 
     const warnCount = dqParsedQuestions.filter(q => q.warning).length;
@@ -1756,6 +1770,16 @@ function renderDqReview() {
           <select class="dqAnswerSelect" data-round="${q.round}" data-num="${q.num}">
             <option value=""${q.answer ? '' : ' selected'}>-</option>${choiceOptions}
           </select>
+          <div style="margin-top:6px">
+            <label style="font-size:11px">단원</label><br>
+            <input type="text" class="dqUnitInput" data-round="${q.round}" data-num="${q.num}" value="${escapeHtml(q.unit || '')}"
+              placeholder="예: 원의 방정식" style="width:110px;font-size:12px;border:1px solid var(--gold-line);border-radius:4px;padding:3px 5px">
+          </div>
+          <div style="margin-top:4px">
+            <label style="font-size:11px">유형</label><br>
+            <input type="text" class="dqTypeInput" data-round="${q.round}" data-num="${q.num}" value="${escapeHtml(q.type || '')}"
+              placeholder="예: 계산" style="width:110px;font-size:12px;border:1px solid var(--gold-line);border-radius:4px;padding:3px 5px">
+          </div>
         </div>`;
       listEl.appendChild(row);
     });
@@ -1771,6 +1795,20 @@ function renderDqReview() {
       const round = Number(sel.dataset.round), num = Number(sel.dataset.num);
       const q = dqParsedQuestions.find(qq => qq.round === round && qq.num === num);
       if (q) q.answer = sel.value ? Number(sel.value) : null;
+    });
+  });
+  wrap.querySelectorAll('.dqUnitInput').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const round = Number(inp.dataset.round), num = Number(inp.dataset.num);
+      const q = dqParsedQuestions.find(qq => qq.round === round && qq.num === num);
+      if (q) q.unit = inp.value.trim();
+    });
+  });
+  wrap.querySelectorAll('.dqTypeInput').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const round = Number(inp.dataset.round), num = Number(inp.dataset.num);
+      const q = dqParsedQuestions.find(qq => qq.round === round && qq.num === num);
+      if (q) q.type = inp.value.trim();
     });
   });
   // 자동 인식이 틀린 보기를 재업로드 없이 그 자리에서 고칠 수 있게 —
@@ -1811,7 +1849,7 @@ document.getElementById('dqSaveBtn').addEventListener('click', async () => {
   try {
     await callPostNoCors({
       action: 'savedailyquiz', key: myKey,
-      questions: dqParsedQuestions.map(q => ({ round: q.round, num: q.num, stemHtml: q.stemHtml, choices: q.choices, answer: q.answer || 0, quickAnswer: q.quickAnswer || '', explanation: q.explanation || '' })),
+      questions: dqParsedQuestions.map(q => ({ round: q.round, num: q.num, stemHtml: q.stemHtml, choices: q.choices, answer: q.answer || 0, quickAnswer: q.quickAnswer || '', explanation: q.explanation || '', unit: q.unit || '', type: q.type || '' })),
     });
     msgEl.textContent = '저장 요청 완료! (약 10~20초 후 학생 화면에 반영됩니다)';
     msgEl.className = 'hint ok';
