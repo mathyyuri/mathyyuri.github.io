@@ -536,15 +536,19 @@ function renderMainList(data) {
 async function fetchRoundData(round) {
   const listEl = document.getElementById('mainList');
   listEl.innerHTML = '<div class="empty-msg">불러오는 중...</div>';
+  let list = [];
   try {
     const res = await fetch(GAS_URL + '?action=dailyquizroundranking&round=' + round + '&t=' + Date.now());
     const json = await res.json();
-    const list = json.ok ? (json.students || []) : [];
-    roundData = list.map(s => ({ name: String(s.name || ''), class: String(s.class || ''), score: Number(s.score || 0) }));
+    list = json.ok ? (json.students || []) : [];
   } catch (err) {
     console.error(err);
-    roundData = [];
   }
+  // 이 요청이 도는 동안 회차를 바꿨으면(예: 1회차 응답이 늦게 도착했을 때 이미
+  // 2회차로 넘어간 뒤라면) 늦게 온 이전 회차 응답으로 화면을 덮어쓰지 않는다 —
+  // "2회차 점수" 제목 아래 "1회차 문항 분석"이 섞여 보이던 원인이 이것.
+  if (round !== currentRound) return;
+  roundData = list.map(s => ({ name: String(s.name || ''), class: String(s.class || ''), score: Number(s.score || 0) }));
   renderRoundView();
   renderRoundReport(round);
 }
@@ -568,7 +572,10 @@ async function renderRoundReport(round) {
   try {
     const res = await fetch(GAS_URL + '?action=dailyquizroundreport&round=' + round + '&t=' + Date.now());
     json = await res.json();
-  } catch (e) { wrap.innerHTML = ''; return; }
+  } catch (e) { if (round === currentRound) wrap.innerHTML = ''; return; }
+  // fetchRoundData와 같은 이유 — 이 fetch가 도는 동안 다른 회차로 넘어갔으면
+  // 늦게 온 이전 회차 응답을 버린다.
+  if (round !== currentRound) return;
   if (!json || !json.ok) { wrap.innerHTML = ''; return; }
   const school = ROUND_SCHOOLS[round];
   if (!json.revealed) {
