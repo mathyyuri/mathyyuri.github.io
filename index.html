@@ -217,6 +217,14 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .tab.algebra{background:var(--mint-deep);color:var(--cream);border-radius:4px;align-self:center;padding:8px 14px;margin:0 4px;border-bottom:none;letter-spacing:.08em}
 .tab.algebra::after{content:'MISSION';font-family:var(--serif);font-size:7.5px;letter-spacing:.2em;color:var(--gold-soft);display:block;margin-top:1px}
 .tab.algebra.active{color:#fff;box-shadow:0 0 0 2px var(--gold)}
+
+/* ===== 일일일모(로그인 없이 보는 공개 랭킹) 링크 탭 — 클리닉 탭 자리를 대신함 ===== */
+.tab.dailyquiz{background:var(--pink-deep);color:#fff;border-radius:4px;align-self:center;padding:8px 14px;margin:0 4px;border-bottom:none;letter-spacing:.08em}
+.tab.dailyquiz::after{content:'공개 랭킹';font-family:var(--serif);font-size:7.5px;letter-spacing:.2em;color:var(--gold-soft);display:block;margin-top:1px}
+.tab.dailyquiz.active{color:#fff;box-shadow:0 0 0 2px var(--gold)}
+.sum-card.dailyquiz-card{border-color:var(--pink-deep)}
+.sum-card.dailyquiz-card .k,.sum-card.dailyquiz-card .n{color:var(--pink-deep)}
+.sum-card.dailyquiz-card:hover{background:var(--pink-soft)}
 .gauge-wrap{border:1px solid var(--gold-line);border-radius:6px;padding:20px 16px 16px;margin-bottom:20px;background:linear-gradient(180deg,#fff,var(--mint-soft))}
 .gauge-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .gauge-title{font-family:var(--serif);font-weight:700;font-size:12px;letter-spacing:.06em;color:var(--mint-deep)}
@@ -1209,7 +1217,7 @@ function buildPubTabs(){
     // catsFor/COHORT2_MAIN_ORDER 등에서 여전히 쓰이는 카테고리 키라 이름은
     // 그대로 두고 이 버튼의 표시 텍스트·동작만 바꿨다).
     const isDailyQuizLink = (s === '클리닉');
-    b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===ALG_TAB?' algebra':'')+(s===pubTab?' active':'');
+    b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===ALG_TAB?' algebra':'')+(isDailyQuizLink?' dailyquiz':'')+(s===pubTab?' active':'');
     b.textContent = isDailyQuizLink ? '일일일모' : s;
     b.onclick = isDailyQuizLink ? () => { location.href = 'dailyquizranking.html'; } : ()=>{
       pubTab=s; pubMission=null;
@@ -1424,6 +1432,15 @@ function renderCards(){
     let html='<button class="sum-card active" onclick="void(0)">'
       +'<div class="k">종합 누적 현황</div><div class="v">'+overall+'<small>점</small></div><div class="n">'+students.length+'명</div></button>';
     catsFor(pubCohort,pubShowSummer?'summer':'main').forEach(cat=>{
+      // "클리닉" 카테고리는 위 탭바와 같은 이유로 일일일모 랭킹 페이지로 가는
+      // 카드로 대체 — 원래는 여기도 클리닉 점수 카드가 그대로 남아 있어서
+      // 탭은 "일일일모"로 바뀌었는데 이 카드 레일만 "클리닉 ㅡ점"으로 안 바뀐
+      // 채 남아있었음(2026-09-12 신고).
+      if(cat==='클리닉'){
+        html+='<button class="sum-card dailyquiz-card" onclick="location.href=\'dailyquizranking.html\'">'
+          +'<div class="k">일일일모</div><div class="v">🏆</div><div class="n">랭킹 보기</div></button>';
+        return;
+      }
       const rows=catRowsFor(pubCohort,cat,pubShowSummer?'summer':'main').filter(r=>pubClass==='전체'||r.class===pubClass);
       const avg=mean(rows.map(r=>r.score).filter(v=>v!=null))??'—';
       html+='<button class="sum-card" onclick="jumpTab(\''+cat+'\')">'
