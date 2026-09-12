@@ -1587,6 +1587,45 @@ function dqDifficultyLabel(num) {
   return '상';
 }
 
+// hwpx-lib.js의 formatChoiceRow가 만드는 <span class="choiceItem">...</span>는
+// 그 안에 수식마다 <span class="eq">...</span>가 중첩돼 들어있는데(수식이
+// 문단 인라인 렌더링 단계에서 이미 eq 스팬으로 감싸져 있음), 예전 코드는
+// non-greedy 정규식(/<span class="choiceItem">([\s\S]*?)<\/span>/g)으로 이걸
+// 뽑아서 "가장 먼저 나오는 </span>"에서 멈춰버렸다 — 보기 하나에 수식이
+// 2개 이상(예: "① x=1 또는 3x-4y+5=0"처럼 원과 직선의 방정식을 "또는"으로
+// 이어붙인 경우) 있으면 그 중첩된 eq 스팬의 첫 닫는 태그에서 잘려, 두
+// 번째 수식과 "또는"이 통째로 사라졌다(2026-09-12, 실제 파일 "4회차
+// 10번"/전체 업로드 순번 55번에서 5개 보기 전부 이 증상으로 확인됨: 정상
+// 문서엔 모든 보기가 "또는"으로 이어진 두 수식인데 화면엔 첫 수식만
+// 남음). 중첩 태그 깊이를 세어 진짜 짝이 맞는 닫는 태그를 찾도록 고침.
+function extractChoiceItemSpans(html) {
+  const openTag = '<span class="choiceItem">';
+  const out = [];
+  let i = 0;
+  while (true) {
+    const start = html.indexOf(openTag, i);
+    if (start === -1) break;
+    let depth = 1;
+    let pos = start + openTag.length;
+    const tagRe = /<span\b[^>]*>|<\/span>/g;
+    tagRe.lastIndex = pos;
+    let end = -1;
+    let m;
+    while ((m = tagRe.exec(html))) {
+      if (m[0] === '</span>') {
+        depth--;
+        if (depth === 0) { end = m.index; break; }
+      } else {
+        depth++;
+      }
+    }
+    if (end === -1) break;
+    out.push(html.slice(pos, end));
+    i = end + '</span>'.length;
+  }
+  return out;
+}
+
 document.getElementById('dqFileInput').addEventListener('change', async (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
@@ -1614,7 +1653,7 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
       // 빼낸다 — 학생 화면에서 지문과 선택지를 따로(선택지는 클릭 가능한
       // 버튼으로) 그려야 하기 때문에 problembank.html처럼 한 덩어리
       // HTML로만 두면 안 된다.
-      const choices = [...html.matchAll(/<span class="choiceItem">([\s\S]*?)<\/span>/g)].map(m => m[1]);
+      const choices = extractChoiceItemSpans(html);
       // 원장님이 문제마다 "S + : 난이도 상"/"난이도 중상" 같은 라벨을 별도
       // 텍스트 상자(hp:rect)로 붙여두셨는데, hwpBodyXmlToHtml이 이걸
       // .hwpRectBox로 그대로 렌더링해서 지문 끝에 그대로 남는다(실제 파일:
@@ -1703,7 +1742,14 @@ function renderDqReview() {
           ${q.warning ? `<span style="color:var(--pink-deep);font-size:12px;margin-left:6px">${q.warning}</span>` : ''}
           ${q.prefilled ? `<span style="color:var(--mint-deep);font-size:12px;margin-left:6px">✓ 기존 정답 불러옴</span>` : ''}
           <div style="margin:4px 0">${q.stemHtml}</div>
-          <div style="font-size:13px;color:#555">${q.choices.map((c, i) => `<div>${i + 1}. ${c}</div>`).join('')}</div>
+          <div style="font-size:13px;color:#555">${q.choices.map((c, i) => `
+            <div class="dqChoiceRow" style="display:flex;align-items:baseline;gap:6px;margin:2px 0">
+              <span style="flex:0 0 auto">${i + 1}.</span>
+              <span class="dqChoicePreview" data-round="${q.round}" data-num="${q.num}" data-idx="${i}" style="flex:1 1 auto">${c}</span>
+              <input type="text" class="dqChoiceInput" data-round="${q.round}" data-num="${q.num}" data-idx="${i}"
+                value="${escapeHtml(htmlPreviewToDraftText(c))}" title="자동 인식이 잘못됐을 때 여기서 직접 고치세요 (수식은 $...$ 로 감싸기)"
+                style="flex:1 1 auto;min-width:0;font-size:12px;color:#999;border:1px solid var(--gold-line);border-radius:4px;padding:2px 5px">
+            </div>`).join('')}</div>
         </div>
         <div style="flex:0 0 auto">
           <label style="font-size:11px">정답</label><br>
@@ -1725,6 +1771,30 @@ function renderDqReview() {
       const round = Number(sel.dataset.round), num = Number(sel.dataset.num);
       const q = dqParsedQuestions.find(qq => qq.round === round && qq.num === num);
       if (q) q.answer = sel.value ? Number(sel.value) : null;
+    });
+  });
+  // 자동 인식이 틀린 보기를 재업로드 없이 그 자리에서 고칠 수 있게 —
+  // 옆의 입력칸에 $...$ 문법(문제 수정 칸과 같은 규칙, renderEditedInline
+  // 참고)으로 고치면 그 문항의 choices 배열과 미리보기가 바로 갱신된다.
+  wrap.querySelectorAll('.dqChoiceInput').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const round = Number(inp.dataset.round), num = Number(inp.dataset.num), idx = Number(inp.dataset.idx);
+      const q = dqParsedQuestions.find(qq => qq.round === round && qq.num === num);
+      if (!q) return;
+      q.choices[idx] = renderEditedInline(inp.value);
+      const preview = wrap.querySelector(`.dqChoicePreview[data-round="${round}"][data-num="${num}"][data-idx="${idx}"]`);
+      if (preview) {
+        preview.innerHTML = q.choices[idx];
+        if (window.renderMathInElement) {
+          try { renderMathInElement(preview, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+        }
+      }
+      // 정답 select의 보기 텍스트(맨 앞 30자 미리보기)도 같이 갱신
+      const sel = wrap.querySelector(`.dqAnswerSelect[data-round="${round}"][data-num="${num}"]`);
+      if (sel) {
+        const opt = sel.querySelector(`option[value="${idx + 1}"]`);
+        if (opt) opt.textContent = `${idx + 1}. ${stripTags(q.choices[idx]).slice(0, 30)}`;
+      }
     });
   });
 }
