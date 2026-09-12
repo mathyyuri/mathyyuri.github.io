@@ -5822,18 +5822,20 @@ async function generateHtmlNote(historicalBatch) {
     a.remove();
     URL.revokeObjectURL(url);
 
-    // 일일일모 문항은 이미 정답/오답이 확정된 상태(오답노트에 담긴 시점
-    // 기준 전부 아직 못 맞힌 문제)라 result:2(오답)로 바로 기록한다 —
-    // 그래야 "지난 오답노트 채점" 대기열에 다시 안 올라간다(원장님 요청:
-    // "오답노트에 기록될거지?"). 같은 문항 구성으로 다시 받을 때(예:
-    // 한글로도 이어받기)는 또 새 회차로 세지 않는다.
+    // 일일일모 문항도 기존 문제와 똑같이 "채점 대기" 상태로 기록한다 —
+    // 원장님 요청(2026-09-12): "일일일모는 오답노트 채점에도 안 뜨면 정오표를
+    // 어떻게 기록하냐, 오답노트에서 적용되는 규칙이 잘 통했으면 좋겠다".
+    // 예전엔 result:2(오답)를 여기서 바로 확정해버려서 "지난 오답노트 채점"
+    // 대기열에 아예 안 올라왔는데, 그러면 학생이 종이로 다시 풀어서 실제로
+    // 맞혔는지 확인할 방법이 없었다 — result를 안 보내서(기존 문제와 같은
+    // 형식) 채점 대기 목록에 뜨게 하고, 선생님이 직접 채점하게 한다.
     if (checkedDq.length) {
       const dqBatchKey = checkedDq.map(c => `${c.round}:${c.num}`).sort().join(',');
       if (!lastLoggedDqBatch || lastLoggedDqBatch.key !== dqBatchKey) {
         log('일일일모 문항 이력 기록 중...');
         await callPostNoCors(DASHBOARD_URL, {
           action: 'lognote', key: TEACHER_KEY, name: studentName,
-          items: checkedDq.map(c => ({ mission: `${c.round}회차`, category: '일일일모', num: c.num, result: 2 })),
+          items: checkedDq.map(c => ({ mission: `${c.round}회차`, category: '일일일모', num: c.num })),
         });
         lastLoggedDqBatch = { key: dqBatchKey };
       }
