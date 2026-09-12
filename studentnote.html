@@ -3769,7 +3769,16 @@ function renderGradingRounds(rounds) {
   // 번호가 어긋나서 채점이 헷갈린다는 신고를 받고 아예 없앴다. 문항
   // 번호(굵게)+회차+미션만으로 채점 대상은 이미 정확히 특정되므로
   // 없어도 채점에는 지장이 없다.
-  for (const group of byMission.values()) {
+  // 일일일모 문항은 오답노트 생성 코드(generateHtmlNote)가 항상 기존
+  // 문제들 뒤에 붙여서 문서 맨 아래에 배치하는데, HISTORY_SHEET 행 순서는
+  // "그 학생의 일일일모 노트를 언제 만들었는지"에 따라 달라질 수 있어서
+  // (예: 일일일모 노트를 먼저 만든 적이 있으면 그 행이 더 위에 남아있음)
+  // 위 for-of가 그대로 믿는 "기록 순서"만으로는 일일일모 그룹이 채점
+  // 화면 맨 위로 올라올 수 있다 — 실제 인쇄물과 채점 화면 순서가 어긋나서
+  // 채점하기 불편하다는 신고(2026-09-12). 문서 배치 규칙과 똑같이 일일일모
+  // 그룹은 항상 맨 뒤로 — 나머지 그룹끼리의 상대 순서(기록 순서)는 그대로 둔다.
+  const sortedGroups = [...byMission.values()].sort((a, b) => (a.category === '일일일모') - (b.category === '일일일모'));
+  for (const group of sortedGroups) {
     const div = document.createElement('div');
     div.className = 'gradingRow';
     div.innerHTML = `
