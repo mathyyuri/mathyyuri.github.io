@@ -50,6 +50,7 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
 .metaTag.확실 { background: #fbeaee; color: var(--pink-deep); }
 .metaTag.애매 { background: #fbf6ea; color: var(--gold-deep); }
 .metaTag.모름 { background: #eef0f5; color: #4a5a80; }
+.correctTag { background: #eaf4f0; color: var(--mint-deep); }
 .stem { font-size: 0.92rem; line-height: 1.75; margin-bottom: 10px; }
 .stem img { max-width: 100%; }
 .choices { font-size: 0.84rem; color: #666; line-height: 1.9; margin-bottom: 10px; }
@@ -89,7 +90,7 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
       <input type="text" id="nameInput" placeholder="학생 이름" autocomplete="off">
       <button type="button" id="searchBtn">오답노트 불러오기</button>
     </div>
-    <div class="msg" id="searchMsg">정답이 공개된 회차의 오답만 모아 보여줍니다 — 비공개 회차는 제외됩니다.</div>
+    <div class="msg" id="searchMsg">정답이 공개된 회차의 오답 + 맞혔지만 확신 없었던 문항을 모아 보여줍니다 — 비공개 회차는 제외됩니다.</div>
   </div>
 
   <div id="noteArea"></div>
@@ -166,7 +167,7 @@ async function loadWrongNote() {
     }
     const totalCount = rounds.reduce((s, r) => s + r.items.length, 0);
     if (!totalCount) {
-      area.innerHTML = `<div class="emptyMsg">${escapeHtml(name)} 학생 — ${selFilter ? '선택한 문제가 없습니다.' : '정답 공개된 회차 중 아직 안 맞힌 문제가 없습니다.<br>(오답이 없거나, 해당 회차가 아직 공개 전입니다)'}</div>`;
+      area.innerHTML = `<div class="emptyMsg">${escapeHtml(name)} 학생 — ${selFilter ? '선택한 문제가 없습니다.' : '정답 공개된 회차 중 복습할 문제(오답 · 확신 낮게 맞은 문제)가 없습니다.<br>(그런 문제가 없거나, 해당 회차가 아직 공개 전입니다)'}</div>`;
       return;
     }
     let html = `
@@ -182,8 +183,11 @@ async function loadWrongNote() {
       r.items.forEach(it => {
         const choicesHtml = (it.choices || []).join(' &nbsp; ');
         const metaTag = it.meta ? `<span class="metaTag ${it.meta}">${it.meta}</span>` : '';
+        // 맞히긴 했지만 1차 시도 확신이 '확실'이 아니었던 문항(원장님 요청,
+        // 2026-09-12) — 오답이 아니라는 걸 바로 알 수 있게 별도 태그로 구분.
+        const correctTag = it.correct ? `<span class="metaTag correctTag">맞음 · 확신 낮음</span>` : '';
         html += `<div class="qCard">
-          <div class="qHead"><span>${it.num}번</span>${metaTag}</div>
+          <div class="qHead"><span>${it.num}번</span>${metaTag}${correctTag}</div>
           <div class="stem">${it.stemHtml || ''}</div>
           <div class="choices">${choicesHtml}</div>
           ${ytThumbHtml(it.video)}
