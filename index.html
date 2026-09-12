@@ -1201,9 +1201,17 @@ function buildPubTabs(){
   if(list.indexOf(pubTab)===-1) pubTab='종합';
   list.forEach(s=>{
     const b=document.createElement('button');
+    // "클리닉" 탭은 로그인 없이도 볼 수 있는 일일일모 랭킹/통계 페이지로
+    // 바로 이동하는 링크로 대체 — 원장님 요청(2026-09-12): 일일일모는 이미
+    // dailyquizranking.html에서 로그인 없이 랭킹·문항분석을 다 보여주고
+    // 있으므로, 이 공개 대시보드 안에 같은 걸 새로 만드는 대신 탭 하나를
+    // 그 페이지로 가는 문 역할만 하게 바꿈("클리닉" 자체는 내부적으로
+    // catsFor/COHORT2_MAIN_ORDER 등에서 여전히 쓰이는 카테고리 키라 이름은
+    // 그대로 두고 이 버튼의 표시 텍스트·동작만 바꿨다).
+    const isDailyQuizLink = (s === '클리닉');
     b.className='tab'+(s==='S+ BLACK'?' black':'')+(s===ALG_TAB?' algebra':'')+(s===pubTab?' active':'');
-    b.textContent=s;
-    b.onclick=()=>{
+    b.textContent = isDailyQuizLink ? '일일일모' : s;
+    b.onclick = isDailyQuizLink ? () => { location.href = 'dailyquizranking.html'; } : ()=>{
       pubTab=s; pubMission=null;
       [...bar.children].forEach(t=>t.classList.toggle('active',t.textContent===s));
       renderPublic();

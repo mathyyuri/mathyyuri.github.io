@@ -68,7 +68,12 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .userBar button { background: none; border: 1px solid #ddd; border-radius: 20px; padding: 6px 13px; font-size: 0.72rem; color: #999; cursor: pointer; }
 .rankLinkRow { text-align: center; margin-bottom: 16px; }
 .rankLinkRow a { font-size: 0.78rem; color: var(--gold-deep); text-decoration: none; font-weight: 600; }
-.roundGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+/* minmax(0,1fr)이 아니라 그냥 1fr만 쓰면, 점수 배지("67.5점" 같은 굵은
+   숫자)가 든 칸이 다른 칸보다 넓어지려 해도 트랙이 그 밑으로 못 줄어들어서
+   (기본 최소폭이 auto=내용 크기) 그리드 전체가 화면 폭을 넘어가 오른쪽이
+   잘려 보였다(모바일에서 확인됨, 2026-09-12) — 0으로 줄어들 수 있게 해서
+   화면 폭 안에서 5칸이 항상 고르게 나뉘도록 수정. */
+.roundGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .roundBtn {
   aspect-ratio: 1/1; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
@@ -134,7 +139,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .scoreCard .label { font-size: 0.72rem; letter-spacing: 2px; opacity: 0.6; }
 .scoreCard .score { font-family: 'Noto Serif KR'; font-weight: 900; font-size: 2.4rem; margin: 6px 0; color: var(--gold); }
 .scoreCard .sub { font-size: 0.78rem; opacity: 0.7; }
-.resultGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-bottom: 20px; }
+.resultGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-bottom: 20px; }
 .resultCell { aspect-ratio: 1/1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; gap: 1px; }
 .resultCell.ok { background: #e9f3ef; color: var(--mint-deep); }
 .resultCell.no { background: #fbeaee; color: var(--pink-deep); }
@@ -492,12 +497,12 @@ async function doLogin(silent) {
   try {
     const json = await apiGet({ action: 'login', name, pw });
     if (!json.ok) {
-      if (silent) { sessionStorage.removeItem(LOGIN_KEY); }
+      if (silent) { localStorage.removeItem(LOGIN_KEY); }
       else { msg.textContent = json.error || '이름 또는 학부모 휴대폰 번호가 일치하지 않습니다.'; }
       return false;
     }
     me = { name, pw, class: (json.student && json.student.class) || '', cohort: (json.student && json.student.cohort) || '2' };
-    sessionStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
+    localStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
     $('whoText').textContent = me.name;
     $('whoClass').textContent = me.class ? me.class + '반' : '';
     await enterRoundsScreen();
@@ -513,7 +518,7 @@ $('loginBtn').addEventListener('click', () => doLogin(false));
 $('in-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(false); });
 $('logoutBtn').addEventListener('click', () => {
   me = null;
-  sessionStorage.removeItem(LOGIN_KEY);
+  localStorage.removeItem(LOGIN_KEY);
   $('in-name').value = ''; $('in-pw').value = ''; $('loginMsg').textContent = '';
   show('screen-login');
 });
@@ -839,9 +844,12 @@ $('backToRoundsBtn').addEventListener('click', enterRoundsScreen);
 $('viewRankBtn').addEventListener('click', () => { location.href = 'dailyquizranking.html'; });
 
 /* ---------- 자동 로그인 ---------- */
+// localStorage(브라우저/기기에 계속 남음)를 씀 — sessionStorage는 탭을
+// 닫으면 사라져서, 뒤로가기·앱 재실행 후 다시 열었을 때 로그인이 풀려
+// 있었음(원장님 요청: 한 번 로그인하면 계속 유지, 2026-09-12).
 (function init() {
   try {
-    const cached = JSON.parse(sessionStorage.getItem(LOGIN_KEY) || 'null');
+    const cached = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
     if (cached && cached.name && cached.pw) {
       me = cached;
       doLogin(true);
