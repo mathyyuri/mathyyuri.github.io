@@ -1,0 +1,44 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this repo is
+
+Static frontend for **mathyyuri.com** (MATHY YURI · DAECHI 수학학원), served via GitHub Pages from `mathyyuri/mathyyuri.github.io` (custom domain via `CNAME`). Plain HTML/CSS/JS — no build step, no bundler, no `package.json`. Every page is a single self-contained `.html` file (some are 100K+ lines) that talks directly to a Google Apps Script backend.
+
+There are no build/lint/test commands — there is nothing to compile. To preview a page locally, serve the folder over HTTP (the repo already has `.claude/launch.json` configured for `python3 -m http.server 8791`) and open the file — opening via `file://` breaks anything that does `fetch()`.
+
+## The backend lives outside this repo
+
+**`dashboardCode.gs` (the entire Google Apps Script backend) is NOT in this git repository.** The working copy is a loose file at `C:\Users\user\OneDrive\바탕 화면\dashboardCode.gs` (one directory up from this repo). It is bound to a single Google Spreadsheet and deployed as a web app; every frontend file calls it via `GAS_URL` (a `script.google.com/macros/s/.../exec` URL, hardcoded per-file near the top of each `<script>` block — several files independently hardcode the *same* URL, so a change to the deployment ID means updating it in every file that calls that backend).
+
+**Editing `dashboardCode.gs` and committing to this repo does nothing to production.** To ship a backend change: paste the whole file into the Apps Script editor, save, and — for any change to actual logic/data shape — **Deploy → Manage deployments → New deployment** (a plain save is not enough; the live web app URL keeps serving the old code until redeployed). Adding a new sensitive scope (e.g. `MailApp`) additionally requires opening `appsscript.json` in the editor (Project Settings → "show appsscript.json manifest file") and adding the OAuth scope by hand, then running any function that touches it directly from the editor's function-picker once, so the permission dialog has a human to click "허용" — a scope missing from an explicit `oauthScopes` array fails silently in production (caught, logged, swallowed) since there's no user present to approve it.
+
+Because of this split, changes to frontend files (this repo, `git push`) and the backend (paste + redeploy, no git) ship independently and asynchronously — always tell the user explicitly which side (or both) needs redeploying after an edit, and never assume a `git push` alone finished the job for a change that touched `dashboardCode.gs`.
+
+`dashboardCode.gs` has an unusually complete header comment (the top ~230 lines) that is the actual source of truth for the Google Sheet schema (17+ sheets, one per subsystem) and the full HTTP API (every `doGet`/`doPost` action, its params, and its auth level). Read that header before assuming a sheet layout or adding a new action — don't rediscover it by grepping `getRange` calls.
+
+## Shared library and duplication traps
+
+`hwpx-lib.js` is the shared engine for parsing `.hwpx` (Hangul word-processor zip) files into HTML and back — `parseHwpx`, `hwpBodyXmlToHtml`, `renderEditedText`/`renderEditedInline` (the "$...$" plain-text-with-math editing convention used by every manual-edit textbox in this codebase), KaTeX-safe macro handling, etc. `problembank.html`, `admin.html`, `oedapnotegenerator.html`, `examsheetmaker.html`, and `index.html` all load it with cache-busting `?v=' + Date.now()`, so edits to `hwpx-lib.js` take effect on next load with no version bump needed in those files — **except `whiteboard.html`, which still pins a manual `?v=2`; bump that by hand or its copy goes stale.**
+
+`studentnote.html` does **not** load `hwpx-lib.js` at all — it carries its own full copy of the equation-conversion and rendering logic inline. Any fix made in `hwpx-lib.js` (equation parsing, KaTeX macros, etc.) must be re-applied by hand inside `studentnote.html`, or the same bug will appear "fixed everywhere except studentnote.html." Search for the function name in both places before considering a `hwpx-lib.js` fix complete.
+
+`oedapnotegenerator.html` and `studentnote.html` both implement "let the teacher check boxes next to problems, then generate a note" — historically, a UI feature (not just an equation-rendering fix) added to one of these screens was expected to exist in the other too. When asked to change one, check whether the same change makes sense in the other before treating the task as done.
+
+## The 일일일모 (daily quiz) subsystem is architecturally separate
+
+`dailyquiz.html` (student), `dailyquizranking.html` (public, no login), `dailyquizwrongnote.html` (teacher), and `admin.html`'s quiz-management panel form a self-contained subsystem with its own sheets (`일일일모문제`, `일일일모제출기록`, `일일일모설정`, `일일일모풀이영상`, `일일일모랭킹스냅샷`) and its own addressing scheme: **round (1–30) × position-in-round (1–15)**, not files. The entire question bank (450 rows) is uploaded as one `.hwpx` and is **fully overwritten** on every re-upload (`handleSaveDailyQuiz` clears and rewrites all rows) — per-question answers and unit/type tags only survive a re-upload because `admin.html` fetches the previous answer key (`dailyquizanswerkey`) and tags (`dailyquiztags`) first and re-matches them by round+number; anything that isn't matched this way is silently lost on the next upload.
+
+This subsystem is intentionally being bridged into the shared "문항DB" (the searchable/recombinable question index that `problembank.html` populates via `saveQuestionRows`) by treating each round as a synthetic "file" (`fileId = 'dailyquiz-r' + round`) — this lets `searchquestions` find daily-quiz questions too, without daily-quiz having real per-file storage the way `problembank.html` does. Keep that synthetic-fileId convention if extending either side.
+
+Apps Script has real concurrent-execution limits per script, and every write in this system goes through Google Sheets range reads/writes with no application-level cache — anything synchronous added to a high-frequency path (`handleDailyQuizSubmit` is called once per question batch per student, so it's hit hardest when a whole class submits at once) shows up as multi-second-to-multi-tens-of-seconds latency under load, not as an error. A `MailApp.sendEmail()` call added to that path once measured a 33s round trip under concurrent submissions and is currently commented out there for that reason (see the note at the top of `handleDailyQuizSubmit`) — if per-submission notification is wanted again, batch/digest it on a time trigger instead of sending inline.
+
+## Cross-cutting conventions worth knowing before editing
+
+- **Cohorts**: `COHORTS = { '2': '', '3': '3' }` — cohort 3 sheets are named with a literal `3` suffix (e.g. `기출3`), cohort 2 sheets have no suffix. This suffix convention is repeated across dozens of functions in `dashboardCode.gs`.
+- **명단 (roster) sheet** is the single source of truth for student name/class/cohort and must never contain TAs — several screens read it directly as "the list of students," so a TA row shows up as a fake student/class if ever added there. TAs live in a separate `조교목록` sheet or the `TA_KEYS` constant.
+- **Item-array columns** (`I` through `BP` in mission-score sheets): `1`=correct, `2`=wrong, `3`=wrong-then-fixed, blank=unanswered. Trailing blanks are always trimmed off the array before storing (several past bugs came from *not* trimming, which shifted every later question's column).
+- **오답노트이력 (`HISTORY_SHEET`) "round"** is "the Nth time this exact mission+problem-number has been assigned in a note," counted per (mission, category, num) — it is unrelated to a daily-quiz "round." Two different "round" concepts collide in vocabulary only; don't conflate them when reading `handleLogNote`/`handleGradeNote`/`handleUngraded`.
+- **Manual text-edit convention**: anywhere a teacher can hand-type a problem instead of using the parsed `.hwpx` (`problembank.html`'s "문제 수정," AI-extracted PDF text, etc.), the format is plain text with blank-line paragraph breaks and `$...$` for inline math, rendered via `renderEditedText`/`renderEditedInline` in `hwpx-lib.js`. Keep new manual-edit UIs consistent with this rather than inventing another convention.
+- When a data-fixing task turns out to need a real write against production Sheets data (rebuilding a snapshot, renaming a mislabeled exam, backfilling missed submissions, etc.), the established pattern in this codebase is a small one-off function added to `dashboardCode.gs` with a comment explaining why, run once from the Apps Script editor's function picker — not a generic always-on admin UI. Search for existing examples (`backfillMissingDailyQuizAsZero`, `renameMissionNames`, `cleanupTestRound5Submissions`) before writing a new one from scratch.
