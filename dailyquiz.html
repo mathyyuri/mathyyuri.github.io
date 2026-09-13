@@ -522,7 +522,12 @@ async function doLogin(silent) {
     $('loginBtn').textContent = '확인 중...';
   }
   try {
-    const json = await apiGet({ action: 'login', name, pw });
+    // 'login'(index.html 개인 대시보드용)은 인증 성공 시 그 기수 전체
+    // 반평균·문항별 정답률까지 매번 다시 계산해서 돌려준다 — 일일일모는
+    // 이 결과를 전혀 안 쓰는데도 그걸 그대로 써서, 로그인 한 번에 실측
+    // 15초 넘게 걸리는 게 "모바일/PC 안 가리고 로그인이 안 된다"는 신고의
+    // 진짜 원인이었다(2026-09-13). 인증만 하는 가벼운 전용 액션으로 교체.
+    const json = await apiGet({ action: 'dailyquizlogin', name, pw });
     if (!json.ok) {
       if (silent) { localStorage.removeItem(LOGIN_KEY); }
       else { msg.textContent = json.error || '이름 또는 학부모 휴대폰 번호가 일치하지 않습니다.'; }
