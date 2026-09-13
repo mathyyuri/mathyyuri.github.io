@@ -369,13 +369,40 @@ document.addEventListener('click', e => {
 });
 
 /* ---------- API ---------- */
+// 타임아웃도 재시도도 없이 fetch 한 번만 던지고 무한정 기다리는 구조라 —
+// 서버가 느려지면(오늘 실제로 최대 33초까지 걸림) 모바일에서 화면을 끄거나
+// 앱을 전환하는 순간 브라우저가 그 요청을 끊어버려서 "로그인/제출이 안
+// 된다"로 보였다(원장님 리포트, 2026-09-13). 응답이 늦으면 자동으로 몇 번
+// 재시도하고, 그래도 안 되면 명확한 에러를 던지도록 고친다.
+async function fetchWithRetry(url, options, attempts, timeoutMs) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw new Error('서버 응답이 없습니다 — 네트워크 상태를 확인하고 다시 시도해주세요.');
+}
 async function apiGet(params) {
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(GAS_URL + '?' + qs);
+  const res = await fetchWithRetry(GAS_URL + '?' + qs, {}, 3, 10000);
   return res.json();
 }
 async function apiPost(body) {
-  await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  // no-cors라 응답 내용은 원래도 못 읽지만(성공/실패 구분 불가), 요청
+  // 자체가 응답 없이 계속 매달려 있지는 않게 타임아웃/재시도는 그대로
+  // 적용한다 — 재시도로 같은 답을 두 번 보내도 서버가 이미 채점된
+  // 문항/시도횟수 초과는 그대로 무시하므로(handleDailyQuizSubmit) 중복
+  // 채점 걱정은 없다.
+  await fetchWithRetry(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }, 3, 10000);
 }
 
 /* ---------- 필기 풀이 제출 (whiteboard.html 연동) ----------
