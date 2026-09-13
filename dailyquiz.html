@@ -83,6 +83,11 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .roundBtn .lbl { font-size: 0.55rem; opacity: 0.5; letter-spacing: 0.5px; }
 .roundBtn.locked { background: #f2f0eb; color: #bbb; border-style: dashed; cursor: not-allowed; }
 .roundBtn.locked .lbl { opacity: 0.6; }
+/* 정답이 이미 공개된 회차 — "잠김"(아직 안 열림)과는 다르게 실선 테두리로
+   구분(한 번은 열렸다 닫힌 것이라는 느낌), 더 이상 제출이 안 되므로
+   눌러도 소용없다는 걸 미리 보여준다(원장님 요청, 2026-09-13). */
+.roundBtn.ended { background: #f2f0eb; color: #aaa; cursor: not-allowed; }
+.roundBtn.ended .lbl { opacity: 0.7; }
 /* 회차별 점수 배지 — 점수가 한눈에 크게 보이도록 회차 번호는 작게 줄이고
    점수를 주인공으로 키움. 재도전 단계(2차/3차)는 색으로 바로 구분되게
    (2차=골드, 3차=핑크로 "얼마 안 남았다" 느낌 강하게, 완료=민트). */
@@ -562,9 +567,11 @@ async function enterRoundsScreen() {
   show('screen-rounds');
   const grid = $('roundGrid');
   grid.innerHTML = '<p class="hintMsg">불러오는 중...</p>';
+  let revealedRounds = new Set();
   try {
     const json = await apiGet({ action: 'dailyquizactiverounds' });
     activeRounds = json.rounds || [];
+    revealedRounds = new Set(json.revealed || []);
   } catch (e) { activeRounds = []; }
   try {
     const statusJson = await apiGet({ action: 'dailyquizmystatus', name: me.name });
@@ -579,8 +586,22 @@ async function enterRoundsScreen() {
     btn.type = 'button';
     let cls = 'roundBtn';
     let inner = `<span class="n">${r}</span><span class="lbl">${active ? '회차' : '잠김'}</span>`;
+    // 이미 점수가 나온(status.done) 회차는 점수 자체가 "끝났다"는 신호라
+    // 그대로 두고, 정답은 공개됐는데 아예 시도조차 안 한 경우만 "종료"로
+    // 덮어쓴다 — 이 상태로 들어가면 새로 풀어봐야 서버가 제출을 막으므로
+    // (isDailyQuizRoundRevealed) "회차"(응시 가능한 것처럼 보임)로 남겨두면
+    // 헛눌러보게 된다(원장님 요청, 2026-09-13). 일부만 풀어둔 상태(status
+    // 있음, done 아님)는 재도전만 막힐 뿐 정오표/해설은 여전히 볼 수 있어야
+    // 하므로(dailyquizresult의 canRetry가 이미 revealed면 재도전 차단) 그
+    // 화면으로는 들어가지게 둔다 — "종료" 표시와 클릭 차단은 아예 시도
+    // 안 한 경우로만 좁힌다.
+    const neverTried = !status;
+    const ended = active && revealedRounds.has(r) && neverTried;
     if (!active) {
       cls += ' locked';
+    } else if (ended) {
+      cls += ' ended';
+      inner = `<span class="n">${r}</span><span class="lbl">종료</span>`;
     } else if (status) {
       cls += ' hasStatus';
       if (status.done) {
@@ -593,7 +614,7 @@ async function enterRoundsScreen() {
     }
     btn.className = cls;
     btn.innerHTML = inner;
-    if (active) btn.addEventListener('click', () => openRound(r, !!status));
+    if (active && !ended) btn.addEventListener('click', () => openRound(r, !!status));
     grid.appendChild(btn);
   }
 }
