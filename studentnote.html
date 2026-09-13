@@ -5388,8 +5388,15 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .hwpRectBoxInline{display:inline-block;max-width:none;padding:0 2mm;margin:0 1mm;vertical-align:middle}
 .mbQBlock p.eqLine{text-align:center;overflow-wrap:break-word}
 .mbQBlock p.eqLine .katex-display{margin:0}
-.mbQBlock p.eqLine .katex{white-space:normal!important}
-.mbQBlock p.eqLine .katex .base{white-space:normal!important}
+/* 예전엔 여기를 white-space:normal!important로 강제로 풀어놨었는데, KaTeX는
+   한 수식을 공백 없는 여러 <span>으로 쪼개 만들어서(서로 위치를 절대/상대
+   좌표로 맞춰 쌓는 방식) 그 사이 아무 데서나 줄바꿈이 되면 조각들이 순서
+   없이 여기저기 흩어져 보인다 — "x-3y+2=0, x-3y+6=0"처럼 식 두 개를 한
+   \(...\)에 콤마로 이어붙인 문항(일일일모 등)에서 실제로 이 증상이 재현됨
+   (원장님 스크린샷, 2026-09-13). 표 안 수식 줄바꿈을 막을 때(.hwpTbl
+   td:has(.eq), 위 참고)와 똑같은 이유로 여기도 nowrap이 맞다. */
+.mbQBlock p.eqLine .katex{white-space:nowrap}
+.mbQBlock p.eqLine .katex .base{white-space:nowrap}
 
 /* ---- 표지 ---- */
 .coverSide{position:absolute;left:0;top:0;bottom:0;width:16mm;background:var(--mb-navy);display:flex;flex-direction:column;align-items:center;padding:14mm 0}
@@ -5761,7 +5768,11 @@ async function generateHtmlNote(historicalBatch) {
         summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: it.attempt || 1, hist: String(it.meta || '-') });
         qOrderNum++;
 
-        const choicesHtml = (it.choices || []).join(' &nbsp; ');
+        // 예전엔 " &nbsp; "로 이어붙인 순수 텍스트 한 줄이라 폭이 좁으면
+        // "③" 바로 뒤에서 줄바꿈되는 등 보기가 깨져 보였다(원장님 리포트,
+        // 2026-09-13) — 일반 hwpx 문제와 같은 .choiceRow/.choiceItem 그리드로
+        // 통일(기본 3열이라 5지선다는 ④가 ①밑, ⑤가 ②밑에 자동으로 옴).
+        const choicesHtml = `<div class="choiceRow">${(it.choices || []).map(c => `<span class="choiceItem">${c}</span>`).join('')}</div>`;
         const stemHtml = it.stemHtml || '';
         // splitTopLevelBlocks(paginateQuestionsWithOverflow)가 최상위 엘리먼트
         // 자식만 문단으로 인식해서, <p> 태그 밖으로 새는 텍스트는 그냥
@@ -5772,7 +5783,7 @@ async function generateHtmlNote(historicalBatch) {
           : `<p><span class="mbQNum">${qNum}.</span>${stemHtml}</p>`;
         questionParts.push({
           cite: `<div class="mbCite">${escapeHtml(`[일일일모 ${round}회차] ${num}번${it.meta ? ` (${it.meta})` : ''}`)}</div>`,
-          body: body + `<p>${choicesHtml}</p>`,
+          body: body + choicesHtml,
           qNum,
         });
 
