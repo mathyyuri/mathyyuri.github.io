@@ -303,6 +303,24 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 
 <div id="tagEditArea"></div>
 
+<div class="box">
+  <p><b>🔍 문제 검색으로 교재 만들기</b></p>
+  <p class="hint">단원/유형/난이도/출처로 문항DB에 저장된 문제를 검색해서, 여러 파일(일일일모 문제 포함)에 흩어진 문제를 골라 새 교재(HTML)로 묶을 수 있습니다. 정답은 포함되지 않습니다 — 문제만 인쇄해서 풀게 하는 용도입니다.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <input type="text" id="rcUnit" placeholder="단원 (예: 원의 방정식)" style="flex:1;min-width:140px">
+    <input type="text" id="rcType" placeholder="유형" style="flex:1;min-width:100px">
+    <input type="text" id="rcDifficulty" placeholder="난이도" style="flex:1;min-width:100px">
+    <input type="text" id="rcSource" placeholder="출처" style="flex:1;min-width:100px">
+    <input type="text" id="rcKeyword" placeholder="키워드(본문 검색)" style="flex:1;min-width:140px">
+    <button type="button" id="rcSearchBtn">검색</button>
+  </div>
+  <div id="rcResults"></div>
+  <div class="toolbar" style="margin-top:10px;display:flex;gap:8px;align-items:center">
+    <input type="text" id="rcWorksheetName" placeholder="새 교재 이름 (예: 원의 방정식 모음)" style="flex:1;min-width:220px">
+    <button type="button" id="rcBuildBtn" disabled>선택한 문제로 교재 만들기 (0개)</button>
+  </div>
+</div>
+
 <div id="log"></div>
 
 <datalist id="unitSuggestList"></datalist>
@@ -2168,6 +2186,143 @@ document.getElementById('pdfExtractFile').addEventListener('change', async (ev) 
   } catch (e) {
     pdfExtractStatus.textContent = '추출 실패: ' + e.message;
     pdfExtractStatus.className = 'hint err';
+  }
+});
+
+/* ---------- 문제 검색으로 교재 재조합 ---------- */
+// 문항DB(searchquestions)는 이미 존재하는 검색 API인데 이 페이지 어디서도
+// 안 쓰고 있었다 — 여기서 처음 UI를 붙인다. 선택한 문제들을 파일별로
+// 묶어서(일일일모 문제는 dailyquiz-r{회차} 가짜 fileId라 별도 액션으로),
+// 각 원본에서 실제 지문을 다시 렌더링해 하나의 HTML 교재로 합친다. 정답은
+// 절대 포함하지 않는다(문제은행 list/download와 같은 원칙).
+let rcSearchResults = [];
+const rcSelected = new Map(); // qid -> 검색결과 항목
+
+document.getElementById('rcSearchBtn').addEventListener('click', searchForRecombine);
+async function searchForRecombine() {
+  const box = document.getElementById('rcResults');
+  box.innerHTML = '<p class="hint">검색 중...</p>';
+  try {
+    const json = await callGet({
+      action: 'searchquestions', limit: 100,
+      unit: document.getElementById('rcUnit').value.trim(),
+      type: document.getElementById('rcType').value.trim(),
+      difficulty: document.getElementById('rcDifficulty').value.trim(),
+      source: document.getElementById('rcSource').value.trim(),
+      keyword: document.getElementById('rcKeyword').value.trim(),
+    });
+    rcSearchResults = json.questions || [];
+    renderRecombineResults();
+  } catch (e) {
+    box.innerHTML = '<p class="hint err">검색 실패: ' + (e.message || String(e)) + '</p>';
+  }
+}
+function renderRecombineResults() {
+  const box = document.getElementById('rcResults');
+  if (!rcSearchResults.length) { box.innerHTML = '<p class="hint">검색 결과가 없습니다 — 조건을 비워두면 최근 등록된 문제부터 나옵니다.</p>'; return; }
+  box.innerHTML = rcSearchResults.map(q => `
+    <label style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--gold-line)">
+      <input type="checkbox" class="rcChk" data-qid="${escapeHtml(q.qid)}"${rcSelected.has(q.qid) ? ' checked' : ''}>
+      <span style="flex:1;min-width:0">
+        <b>${escapeHtml(q.filename || '')}</b> ${q.num}번
+        <span class="hint" style="margin-left:6px">${[q.unit, q.type, q.difficulty, q.source].filter(Boolean).map(escapeHtml).join(' · ')}</span>
+        <div class="hint" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml((q.editedRaw || '').slice(0, 100))}</div>
+      </span>
+    </label>
+  `).join('');
+  box.querySelectorAll('.rcChk').forEach(chk => {
+    chk.addEventListener('change', () => {
+      const q = rcSearchResults.find(r => r.qid === chk.dataset.qid);
+      if (chk.checked) rcSelected.set(chk.dataset.qid, q);
+      else rcSelected.delete(chk.dataset.qid);
+      updateRcBuildBtn();
+    });
+  });
+}
+function updateRcBuildBtn() {
+  const btn = document.getElementById('rcBuildBtn');
+  btn.disabled = rcSelected.size === 0;
+  btn.textContent = `선택한 문제로 교재 만들기 (${rcSelected.size}개)`;
+}
+
+// 일일일모 문제(fileId가 'dailyquiz-r'로 시작 — handleSaveDailyQuiz가 회차를
+// 파일 하나처럼 취급해 문항DB에 등록해둔 규칙, dashboardCode.gs 참고)는
+// 실제 hwpx 원본이 없어 dailyquizquestions로 따로 가져온다.
+const RC_DAILYQUIZ_PREFIX = 'dailyquiz-r';
+async function fetchRecombineContent(fileId, items, htmlByQid) {
+  if (fileId.indexOf(RC_DAILYQUIZ_PREFIX) === 0) {
+    const round = Number(fileId.slice(RC_DAILYQUIZ_PREFIX.length));
+    const json = await callGet({ action: 'dailyquizquestions', round });
+    const byNum = new Map((json.questions || []).map(x => [x.num, x]));
+    items.forEach(q => {
+      const dq = byNum.get(Number(q.num));
+      if (!dq) return;
+      const choicesHtml = (dq.choices || []).join(' &nbsp; ');
+      htmlByQid.set(q.qid, `<div>${dq.stemHtml || ''}</div><div style="margin-top:6px">${choicesHtml}</div>`);
+    });
+    return;
+  }
+  const json = await callGet({ action: 'download', id: fileId });
+  const zip = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
+  const entry = await parseHwpx(zip);
+  for (const q of items) {
+    const marker = entry.markers.get(Number(q.num));
+    if (!marker) continue;
+    const original = await hwpBodyXmlToHtml(marker.blockXml, entry);
+    htmlByQid.set(q.qid, q.editedRaw ? renderEditedText(q.editedRaw, imgHtmlsFromHtml(original)) : original);
+  }
+}
+
+document.getElementById('rcBuildBtn').addEventListener('click', async () => {
+  const selected = [...rcSelected.values()];
+  if (!selected.length) return;
+  const worksheetName = document.getElementById('rcWorksheetName').value.trim() || ('재조합교재_' + Date.now());
+  const btn = document.getElementById('rcBuildBtn');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '만드는 중...';
+  try {
+    const byFile = new Map(); // fileId -> [q, ...]
+    selected.forEach(q => {
+      if (!byFile.has(q.fileId)) byFile.set(q.fileId, []);
+      byFile.get(q.fileId).push(q);
+    });
+    const htmlByQid = new Map();
+    for (const [fileId, items] of byFile) {
+      try { await fetchRecombineContent(fileId, items, htmlByQid); }
+      catch (e) { console.error('문제 원본을 못 가져옴(' + fileId + '):', e); }
+    }
+    const bodyHtml = selected.map((q, i) => `
+      <div style="margin-bottom:28px;padding-bottom:16px;border-bottom:1px dashed #ccc">
+        <div style="font-size:12px;color:#999;margin-bottom:6px">${i + 1}. ${escapeHtml([q.unit, q.type, q.difficulty].filter(Boolean).join(' · '))}</div>
+        ${htmlByQid.get(q.qid) || '<p style="color:#c00">(내용을 불러오지 못했습니다 — 원본 파일이 삭제됐을 수 있습니다)</p>'}
+      </div>
+    `).join('');
+    const fullHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(worksheetName)}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+<style>body{font-family:'Noto Serif KR',serif;max-width:760px;margin:30px auto;padding:0 20px;line-height:1.8}h1{text-align:center}img{max-width:100%}</style>
+</head><body><h1>${escapeHtml(worksheetName)}</h1>${bodyHtml}
+<script>renderMathInElement(document.body,{delimiters:[{left:'\\\\(',right:'\\\\)',display:false}],throwOnError:false});<\/script>
+</body></html>`;
+    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = worksheetName + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    // 사용이력(문항DB의 usedIn) 기록 — 실패해도 이미 다운로드는 끝났으니
+    // 조용히 무시(정답률/재사용 통계는 나중 단계용 부가 정보일 뿐).
+    try { await callPost({ action: 'recordquestionusage', qids: selected.map(q => q.qid), label: worksheetName }); }
+    catch (e) { console.error('사용이력 기록 실패:', e); }
+    log(`"${worksheetName}" 교재 HTML이 다운로드되었습니다. (${selected.length}문제)`, 'ok');
+  } catch (e) {
+    console.error(e);
+    log('교재 생성 실패: ' + (e.message || String(e)), 'err');
+  } finally {
+    btn.disabled = rcSelected.size === 0;
+    updateRcBuildBtn();
   }
 });
 
