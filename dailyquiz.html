@@ -579,6 +579,29 @@ async function enterRoundsScreen() {
     myStatusByRound = {};
     (statusJson.rounds || []).forEach(s => { myStatusByRound[s.round] = s; });
   } catch (e) { myStatusByRound = {}; }
+
+  // 정답이 공개된 회차는 재도전 자체가 막혀 있어(isDailyQuizRoundRevealed)
+  // 사실상 최종 결과인데도, 서버의 done 판정(모든 문항을 맞혔거나 최대
+  // 시도횟수를 다 썼는지)은 재도전 가능 여부와 무관하게 계산되다 보니 일부
+  // 문항을 못 맞히고 시도횟수도 안 남은 학생이 "종료"(점수 없이 회색)로만
+  // 보이는 문제가 있었다(원장님 리포트, 2026-09-13: 허이준 1~3회차가 다
+  // 풀었는데도 "종료"만 뜸). 공개된 회차에서 응시 기록(status)이 하나라도
+  // 있으면 그 자체로 최종으로 보고, 점수 대신 그 회차 등수를 보여준다
+  // ("그러면 등수로 해달라고" 요청 반영) — dailyquizranking.html "회차별"
+  // 탭과 같은 공개 데이터(dailyquizroundranking)를 그대로 재사용.
+  const rankByRound = {};
+  const revealedWithStatus = Object.keys(myStatusByRound)
+    .map(Number)
+    .filter(r => revealedRounds.has(r));
+  await Promise.all(revealedWithStatus.map(async r => {
+    try {
+      const rj = await apiGet({ action: 'dailyquizroundranking', round: r });
+      const list = (rj.students || []).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+      const idx = list.findIndex(s => s.name === me.name);
+      if (idx !== -1) rankByRound[r] = { rank: idx + 1, of: list.length };
+    } catch (e) { /* 등수 못 가져오면 아래서 점수로 대체 표시 */ }
+  }));
+
   grid.innerHTML = '';
   for (let r = 1; r <= 30; r++) {
     const active = activeRounds.includes(r);
@@ -587,15 +610,11 @@ async function enterRoundsScreen() {
     btn.type = 'button';
     let cls = 'roundBtn';
     let inner = `<span class="n">${r}</span><span class="lbl">${active ? '회차' : '잠김'}</span>`;
-    // 이미 다 풀어서 최종 점수가 확정된(status.done) 회차만 그 점수를 그대로
-    // 보여주고, 그 외(정답 공개됐는데 아예 안 냈거나, 일부만 내고 재도전
-    // 대기 중이던 경우)는 전부 "종료"로 보여준다 — 재도전은 어차피 막혀
-    // 있으니(isDailyQuizRoundRevealed) "2차시도" 같은 재도전 태그를 그대로
-    // 두면 "더 풀 수 있다"는 착각을 준다(원장님 리포트, 2026-09-13: "종료된
-    // 거니깐 2차시도를 보여줄 필요가 없잖아"). 다만 클릭은(정오표/해설을
-    // 보는 용도로) status가 있는 한 계속 허용 — 아예 시도조차 안 한
-    // 경우에만 클릭도 막는다(들어가봐야 볼 결과가 없음).
-    const ended = active && revealedRounds.has(r) && !(status && status.done);
+    // 공개된 회차는 응시 기록이 있으면(즉 한 번이라도 냈으면) 재도전이
+    // 막혀 있으니 무조건 최종으로 취급한다. "종료"(볼 결과 없음)는 공개된
+    // 회차인데 아예 응시조차 안 한 경우에만 보여준다.
+    const revealedFinal = revealedRounds.has(r) && !!status;
+    const ended = active && revealedRounds.has(r) && !status;
     if (!active) {
       cls += ' locked';
     } else if (ended) {
@@ -603,9 +622,12 @@ async function enterRoundsScreen() {
       inner = `<span class="n">${r}</span><span class="lbl">종료</span>`;
     } else if (status) {
       cls += ' hasStatus';
-      if (status.done) {
+      if (revealedFinal || status.done) {
         cls += ' rbDone';
-        inner = `<span class="n">${r}</span><span class="rbScore">${status.total}점</span>`;
+        const rk = rankByRound[r];
+        inner = rk
+          ? `<span class="n">${r}</span><span class="rbScore">${rk.rank}등</span><span class="rbTag">${rk.of}명 중</span>`
+          : `<span class="n">${r}</span><span class="rbScore">${status.total}점</span>`;
       } else {
         cls += status.nextAttempt === 3 ? ' rbAttempt3' : ' rbAttempt2';
         inner = `<span class="n">${r}</span><span class="rbScore">${status.total}점</span><span class="rbTag">${status.nextAttempt}차</span>`;
