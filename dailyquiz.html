@@ -290,6 +290,7 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
       <div class="label" id="resultRoundLabel">1회차 결과</div>
       <div class="score" id="resultScore">0점</div>
       <div class="sub" id="resultSub">15문제 중 0개 정답</div>
+      <div class="sub" id="resultRank" style="margin-top:4px;font-weight:700;color:var(--gold)"></div>
     </div>
     <div class="resultGrid" id="resultGrid"></div>
     <div id="retryBoxWrap"></div>
@@ -740,8 +741,29 @@ async function showResults() {
     const json = await apiGet({ action: 'dailyquizresult', name: me.name, round: currentRound });
     lastResult = json;
     renderResults();
+    updateResultRank();
   } catch (e) {
     $('resultGrid').innerHTML = '<p class="hintMsg">결과를 불러오지 못했어요.</p>';
+  }
+}
+
+// 정답이 공개된 회차는 그 회차만의 등수도 같이 보여준다(원장님 요청,
+// 2026-09-13: "정답공개된 회차는 본인의 등수가 뜨게 하자") — 랭킹 페이지
+// "회차별" 탭과 같은 공개 데이터(dailyquizroundranking, 키 불필요)를 그대로
+// 재사용해서 같은 정렬 기준(점수 내림차순)으로 순위만 계산한다. 아직
+// 비공개인 회차는 점수 자체가 최종이 아닐 수 있어 등수를 안 보여준다.
+async function updateResultRank() {
+  const el = $('resultRank');
+  el.textContent = '';
+  if (!lastResult.revealed) return;
+  try {
+    const json = await apiGet({ action: 'dailyquizroundranking', round: currentRound });
+    const list = (json.students || []).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+    const idx = list.findIndex(s => s.name === me.name);
+    if (idx === -1) return; // 이 회차 점수가 0점이라 순위 목록에 없는 경우 등
+    el.textContent = `이 회차 ${idx + 1}등 (${list.length}명 중)`;
+  } catch (e) {
+    // 등수는 부가 정보라 실패해도 결과 화면 자체는 그대로 보이게 조용히 무시.
   }
 }
 
