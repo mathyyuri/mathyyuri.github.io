@@ -3446,11 +3446,13 @@ function computeNextNoteRound() {
 // 만들 때, 완전히 똑같은 문제 구성이면 새 회차로 또 기록하지 않고 같은
 // 회차로 취급 — 그래야 "한글로 받고 이어서 HTML로도 받기"가 서버에는
 // 두 개의 별도 회차로 중복 기록되지 않는다.
-let lastLoggedBatch = null; // { key, noteRound }
-// HTML 오답노트에 섞어 넣은 일일일모 문항의 이력 기록 중복 방지용 — 한글
-// 파일과 달리 HTML은 일일일모 문항을 포함할 수 있어서(hwpx 문항과는
-// 별도로) 이 문항들만의 배치 키를 따로 기억해둔다.
-let lastLoggedDqBatch = null; // { key }
+let lastLoggedBatch = null; // { key, noteRound, at }
+// HTML 오답노트에 섞어 넣은 일일일모 문항 중 어떤 게 이미 이력에
+// 기록됐는지 문항 단위(round:num)로 기억해둔다 — 배치 전체를 해시 하나로
+// 비교하면(예전 방식) 이미 기록된 문항 옆에 새 문항 하나만 추가 체크해서
+// 다시 생성했을 때 이미 기록된 것까지 또 기록해버렸다(차시도가 잘못
+// 늘어남). 학생을 바꾸면 loadDqWrongSummary에서 이 목록도 같이 비운다.
+let loggedDqKeys = new Set();
 function batchKeyFor(checked) {
   return [...checked].map(c => `${c.mission}||${c.category || ''}||${c.num}`).sort().join(',');
 }
@@ -3653,6 +3655,7 @@ async function loadDqWrongSummary(name) {
   openBtn.onclick = null;
   counter.textContent = '';
   dqWrongItemsData = [];
+  loggedDqKeys = new Set();
   try {
     const data = await callGetJsonp(DASHBOARD_URL, { action: 'dailyquizwronglist', name, key: TEACHER_KEY });
     const rounds = data.rounds || [];
@@ -4840,11 +4843,19 @@ async function generateHwpxNote(historicalBatch) {
     URL.revokeObjectURL(url);
 
     if (!reuseRound) {
+      // 이 시각(batchAt)을 lastLoggedBatch에 그대로 남겨둬서, 뒤이어 같은
+      // 구성으로 HTML을 생성할 때(일일일모 문항 추가 포함) 새 시각을 또
+      // 만들지 않고 이 시각을 그대로 재사용하게 한다 — 안 그러면 문서는
+      // 하나로 나갔는데 이력 시트엔 서로 다른 회차(시각)로 쪼개져 기록되는
+      // 문제가 생긴다(원장님 리포트: "32문제가 3회로 나갔는데 일부만
+      // 4회차로 따로 채점됨").
+      const batchAt = new Date().toISOString();
       log('생성 이력 기록 중...');
       await callPostNoCors(DASHBOARD_URL, {
-        action: 'lognote', key: TEACHER_KEY, name: studentName,
+        action: 'lognote', key: TEACHER_KEY, name: studentName, at: batchAt,
         items: checked.map(c => ({ mission: c.mission, category: c.category, num: c.num })),
       });
+      lastLoggedBatch = { key: batchKey, noteRound, at: batchAt };
       // refresh history/grading so round badges + the new ungraded round show up right away
       try {
         const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name: studentName, key: TEACHER_KEY });
@@ -4855,7 +4866,6 @@ async function generateHwpxNote(historicalBatch) {
         renderPastBatches();
       } catch (e) { /* non-fatal */ }
     }
-    lastLoggedBatch = { key: batchKey, noteRound };
 
     log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
   } catch (e) {
@@ -5877,15 +5887,33 @@ async function generateHtmlNote(historicalBatch) {
     // 대기열에 아예 안 올라왔는데, 그러면 학생이 종이로 다시 풀어서 실제로
     // 맞혔는지 확인할 방법이 없었다 — result를 안 보내서(기존 문제와 같은
     // 형식) 채점 대기 목록에 뜨게 하고, 선생님이 직접 채점하게 한다.
-    if (checkedDq.length) {
-      const dqBatchKey = checkedDq.map(c => `${c.round}:${c.num}`).sort().join(',');
-      if (!lastLoggedDqBatch || lastLoggedDqBatch.key !== dqBatchKey) {
-        log('일일일모 문항 이력 기록 중...');
+    //
+    // hwpx 문항과 일일일모 문항이 한 문서 안에 같이 있으면 반드시 같은
+    // 시각(=오답노트이력의 같은 회차)으로 같이 기록돼야 한다 — 원장님
+    // 리포트(2026-09-14): "32문제를 한 문서(3회차)로 냈는데 일일일모
+    // 문항만 따로 4회차로 채점되고 있다, 왜 분리하냐". HTML은 한글과
+    // 달리 hwpx+일일일모를 같이 담을 수 있는 유일한 형식이라, hwpx
+    // 문항이 아직(예: 한글로) 한 번도 기록 안 된 상태로 HTML부터 먼저
+    // 생성하면 여기서 hwpx 문항까지 같이 기록해서 한 시각으로 묶는다 —
+    // 이미 기록돼 있으면(reuseRound) 그 시각을 그대로 재사용한다.
+    {
+      const hwpxAlreadyLogged = checked.length > 0 && reuseRound;
+      // 이미 기록된 문항은 다시 체크된 채로 재생성해도 또 기록하지 않고
+      // (차시도가 잘못 늘어나는 것 방지), 새로 추가된 문항만 골라낸다.
+      const newDqItems = checkedDq.filter(c => !loggedDqKeys.has(`${c.round}:${c.num}`));
+      const needHwpxLog = checked.length > 0 && !hwpxAlreadyLogged;
+      const needDqLog = newDqItems.length > 0;
+      if (needHwpxLog || needDqLog) {
+        const batchAt = hwpxAlreadyLogged ? lastLoggedBatch.at : new Date().toISOString();
+        const items = [];
+        if (needHwpxLog) items.push(...checked.map(c => ({ mission: c.mission, category: c.category, num: c.num })));
+        if (needDqLog) items.push(...newDqItems.map(c => ({ mission: `${c.round}회차`, category: '일일일모', num: c.num })));
+        log('오답노트 이력 기록 중...');
         await callPostNoCors(DASHBOARD_URL, {
-          action: 'lognote', key: TEACHER_KEY, name: studentName,
-          items: checkedDq.map(c => ({ mission: `${c.round}회차`, category: '일일일모', num: c.num })),
+          action: 'lognote', key: TEACHER_KEY, name: studentName, at: batchAt, items,
         });
-        lastLoggedDqBatch = { key: dqBatchKey };
+        if (needHwpxLog) lastLoggedBatch = { key: batchKey, noteRound, at: batchAt };
+        if (needDqLog) newDqItems.forEach(c => loggedDqKeys.add(`${c.round}:${c.num}`));
       }
     }
 
