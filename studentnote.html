@@ -5668,6 +5668,33 @@ window.addEventListener('DOMContentLoaded', function () {
 </html>`;
 }
 
+// 선지가 그림(그래프 등)인 문제는 hwpBodyXmlToHtml이 원본 hwp 그대로
+// 문단 하나하나(선지 하나당 <p><img>) 세로로 죽 늘어놓기만 해서, 이미지가
+// 카드 폭에 맞게 줄어들게 고친 뒤에도(2026-09) 선지 5개가 전부 세로로
+// 쌓여 카드가 지나치게 길어졌다(원장님 리포트: "이미지가 커져버리네").
+// 본문 맨 뒤쪽에 "①/②/③/④/⑤로 시작 + 이미지 포함"인 문단이 연속으로
+// 있으면 그게 선지들이라고 보고, 기존 .choiceRow 그리드(hwpx 텍스트
+// 선지에 이미 쓰던 것과 같은 클래스)로 2열 재배치한다.
+function regroupImageChoices(html) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const children = [...wrap.children];
+  const CHOICE_RE = /^[①②③④⑤]/;
+  let start = -1;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const el = children[i];
+    if (CHOICE_RE.test(el.textContent.trim()) && el.querySelector('img')) { start = i; }
+    else break;
+  }
+  if (start === -1 || children.length - start < 2) return html; // 이미지 선지가 2개 이상 연속일 때만 재배치
+  const grid = document.createElement('div');
+  grid.className = 'choiceRow';
+  grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+  children.slice(start).forEach(el => grid.appendChild(el)); // wrap에서 grid로 옮겨짐
+  wrap.appendChild(grid);
+  return wrap.innerHTML;
+}
+
 async function generateHtmlNote(historicalBatch) {
   logEl.innerHTML = '';
   genHtmlBtn.disabled = true;
@@ -5742,7 +5769,8 @@ async function generateHtmlNote(historicalBatch) {
       const sourceLabel = (entry.sourceByNum && entry.sourceByNum.get(String(num))) || entry.filename.replace(/\.hwpx$/i, '');
       const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
       const editedImgHtmls = editedRaw ? await imgHtmlsForEditedText(editedRaw, marker.blockXml, entry) : null;
-      const bodyHtml = editedRaw ? renderEditedText(editedRaw, editedImgHtmls) : await hwpBodyXmlToHtml(marker.blockXml, entry);
+      let bodyHtml = editedRaw ? renderEditedText(editedRaw, editedImgHtmls) : await hwpBodyXmlToHtml(marker.blockXml, entry);
+      bodyHtml = regroupImageChoices(bodyHtml);
       questionParts.push({
         cite: `<div class="mbCite">${escapeHtml(buildCiteText(round, mission, sourceLabel, num))}</div>`,
         body: bodyHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`),
