@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>일일일모 풀이영상 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdfbf7;
+  --card: #ffffff;
+  --dark: #3a3530;
+  --gold: #c8a84b;
+  --gold-deep: #a8853f;
+  --line: #eae5da;
+  --pink: #e58ba4;
+  --pink-deep: #c64e71;
+  --mint: #8ba8a1;
+  --mint-deep: #5b8a80;
+  --shadow: 0 10px 30px rgba(58,53,48,0.06);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+.wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 30px; }
+.hidden { display: none !important; }
+
+.appHeader { text-align: center; padding: 26px 20px 16px; }
+.appHeader h1 { margin: 0; font-size: 1.15rem; letter-spacing: 3px; font-weight: 700; }
+.appHeader p { margin: 4px 0 0; font-size: 0.68rem; opacity: 0.45; letter-spacing: 2px; }
+
+.body { padding: 0 18px 20px; }
+
+.loadMsg { text-align: center; color: #aaa; font-size: 0.85rem; padding: 60px 0; }
+.errMsg { text-align: center; color: var(--pink-deep); font-size: 0.85rem; padding: 40px 20px; line-height: 1.7; }
+
+.roundTabs { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; scrollbar-width: none; }
+.roundTabs::-webkit-scrollbar { display: none; }
+.roundTab {
+  flex: none; padding: 10px 16px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--card);
+  font-family: inherit; font-size: 0.85rem; font-weight: 700; color: var(--dark); cursor: pointer; white-space: nowrap;
+}
+.roundTab .cnt { font-weight: 400; font-size: 0.7rem; opacity: 0.55; margin-left: 3px; }
+.roundTab.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+.videoCard { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.videoCard .qn { font-weight: 700; font-size: 0.9rem; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+.videoCard .qn b { color: var(--gold-deep); font-family: 'Noto Serif KR'; }
+
+.ytFacade { position: relative; width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; overflow: hidden; }
+.ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
+.ytFacade .ytPlayBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52px; height: 52px; background: rgba(0,0,0,.68); border-radius: 50%; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ytIframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 10px; display: block; }
+
+.emptyMsg { text-align: center; color: #bbb; padding: 50px 0; font-size: 0.85rem; line-height: 1.7; }
+
+@media (min-width: 760px) {
+  .wrap { max-width: 960px; }
+  #videoList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .videoCard { margin-bottom: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="appHeader">
+    <h1>🎬 일일일모 풀이영상</h1>
+    <p>MATHY YURI · DAECHI ACADEMY</p>
+  </div>
+  <div class="body">
+    <div id="loadMsg" class="loadMsg">영상 목록을 불러오는 중...</div>
+    <div id="mainArea" class="hidden">
+      <div class="roundTabs" id="roundTabs"></div>
+      <div id="videoList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+function $(id) { return document.getElementById(id); }
+
+async function fetchWithRetry(url, attempts, timeoutMs) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+/* ---------- 풀이영상 (dailyquiz.html과 같은 방식) ----------
+   썸네일을 먼저 보여주다가 누르면 그 자리에서 재생(홈페이지 안에서 바로
+   재생) — 무거운 iframe은 재생 전까진 아예 안 만든다. */
+function ytEmbed(url) {
+  if (!url) return null;
+  let m = url.match(/youtube\.com\/shorts\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  m = url.match(/[?&]v=([\w-]{6,})/);
+  if (m) return { id: m[1] };
+  return null;
+}
+function ytThumbHtml(url) {
+  const yt = ytEmbed(url);
+  if (!yt) return '';
+  return `<div class="ytFacade" data-yid="${yt.id}" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="ytPlayBtn">▶</span></div>`;
+}
+document.addEventListener('click', e => {
+  const facade = e.target.closest('.ytFacade');
+  if (!facade) return;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'ytIframe';
+  iframe.src = `https://www.youtube.com/embed/${facade.dataset.yid}?autoplay=1`;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+  iframe.allowFullscreen = true;
+  facade.replaceWith(iframe);
+});
+
+let byRound = new Map();
+let currentRound = null;
+
+function renderTabs() {
+  const rounds = [...byRound.keys()].sort((a, b) => a - b);
+  $('roundTabs').innerHTML = rounds.map(r =>
+    `<button type="button" class="roundTab${r === currentRound ? ' active' : ''}" data-round="${r}">${r}회차<span class="cnt">${byRound.get(r).length}개</span></button>`
+  ).join('');
+}
+function renderVideos() {
+  const items = byRound.get(currentRound) || [];
+  if (!items.length) {
+    $('videoList').innerHTML = '<div class="emptyMsg">이 회차에는 아직 올라온 풀이영상이 없어요.</div>';
+    return;
+  }
+  $('videoList').innerHTML = items.map(it => `
+    <div class="videoCard">
+      <div class="qn"><b>${it.num}번</b> 문제 풀이</div>
+      ${ytThumbHtml(it.url)}
+    </div>
+  `).join('');
+}
+$('roundTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.roundTab');
+  if (!btn) return;
+  currentRound = Number(btn.dataset.round);
+  renderTabs();
+  renderVideos();
+});
+
+async function init() {
+  try {
+    const res = await fetchWithRetry(GAS_URL + '?' + new URLSearchParams({ action: 'dailyquizvideolist' }).toString(), 3, 10000);
+    const json = await res.json();
+    if (!json.ok) throw new Error('load failed');
+    byRound = new Map();
+    (json.videos || []).forEach(v => {
+      if (!byRound.has(v.round)) byRound.set(v.round, []);
+      byRound.get(v.round).push(v);
+    });
+    byRound.forEach(list => list.sort((a, b) => a.num - b.num));
+    if (!byRound.size) {
+      $('loadMsg').textContent = '아직 올라온 풀이영상이 없어요. 곧 업로드될 예정이에요!';
+      return;
+    }
+    currentRound = Math.min(...byRound.keys());
+    $('loadMsg').classList.add('hidden');
+    $('mainArea').classList.remove('hidden');
+    renderTabs();
+    renderVideos();
+  } catch (e) {
+    $('loadMsg').outerHTML = '<div class="errMsg">영상 목록을 불러오지 못했습니다.<br>잠시 후 다시 시도해주세요.</div>';
+  }
+}
+init();
+</script>
+</body>
+</html>
