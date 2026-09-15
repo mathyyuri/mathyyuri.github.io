@@ -51,8 +51,11 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .videoCard .qn b { color: var(--gold-deep); font-family: 'Noto Serif KR'; }
 .qStem { font-size: 0.88rem; line-height: 1.65; margin-bottom: 10px; word-break: keep-all; }
 .qStem img { max-width: 100%; border-radius: 8px; }
-.quickAnswerBox { margin-top: 10px; padding: 9px 12px; background: #f3f8f6; border-radius: 10px; font-size: 0.82rem; line-height: 1.6; color: var(--mint-deep); }
-.quickAnswerBox b { color: var(--mint-deep); font-weight: 800; margin-right: 4px; }
+.quickAnswerBox { margin-top: 10px; }
+.quickAnswerBox > summary { cursor: pointer; font-weight: 700; font-size: 0.8rem; color: var(--mint-deep); background: #f3f8f6; padding: 8px 12px; border-radius: 10px; list-style: none; }
+.quickAnswerBox > summary::-webkit-details-marker { display: none; }
+.quickAnswerBox[open] > summary { border-radius: 10px 10px 0 0; margin-bottom: 0; }
+.quickAnswerBox .qaBody { padding: 9px 12px; background: #f3f8f6; border-radius: 0 0 10px 10px; font-size: 0.82rem; line-height: 1.6; color: var(--mint-deep); }
 
 .ytFacade { position: relative; width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; overflow: hidden; }
 .ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
@@ -160,7 +163,7 @@ function renderVideos() {
       <div class="qn"><b>${it.num}번</b> 문제 풀이</div>
       ${it.stemHtml ? `<div class="qStem">${it.stemHtml}</div>` : ''}
       ${ytThumbHtml(it.url)}
-      ${it.quickAnswer ? `<div class="quickAnswerBox"><b>빠른정답</b>${it.quickAnswer}</div>` : ''}
+      ${it.quickAnswer ? `<details class="quickAnswerBox"><summary>빠른정답 보기</summary><div class="qaBody">${it.quickAnswer}</div></details>` : ''}
     </div>
   `).join('');
   renderMath($('videoList'));
