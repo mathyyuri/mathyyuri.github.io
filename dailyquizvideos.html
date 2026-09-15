@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>일일일모 풀이영상 | MATHY YURI</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
 :root {
   --bg: #fdfbf7;
@@ -46,6 +49,10 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .videoCard { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid var(--line); }
 .videoCard .qn { font-weight: 700; font-size: 0.9rem; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
 .videoCard .qn b { color: var(--gold-deep); font-family: 'Noto Serif KR'; }
+.qStem { font-size: 0.88rem; line-height: 1.65; margin-bottom: 10px; word-break: keep-all; }
+.qStem img { max-width: 100%; border-radius: 8px; }
+.quickAnswerBox { margin-top: 10px; padding: 9px 12px; background: #f3f8f6; border-radius: 10px; font-size: 0.82rem; line-height: 1.6; color: var(--mint-deep); }
+.quickAnswerBox b { color: var(--mint-deep); font-weight: 800; margin-right: 4px; }
 
 .ytFacade { position: relative; width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; overflow: hidden; }
 .ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
@@ -79,6 +86,12 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 function $(id) { return document.getElementById(id); }
+
+function renderMath(el) {
+  if (window.renderMathInElement) {
+    try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
+  }
+}
 
 async function fetchWithRetry(url, attempts, timeoutMs) {
   let lastErr;
@@ -145,9 +158,12 @@ function renderVideos() {
   $('videoList').innerHTML = items.map(it => `
     <div class="videoCard">
       <div class="qn"><b>${it.num}번</b> 문제 풀이</div>
+      ${it.stemHtml ? `<div class="qStem">${it.stemHtml}</div>` : ''}
       ${ytThumbHtml(it.url)}
+      ${it.quickAnswer ? `<div class="quickAnswerBox"><b>빠른정답</b>${it.quickAnswer}</div>` : ''}
     </div>
   `).join('');
+  renderMath($('videoList'));
 }
 $('roundTabs').addEventListener('click', e => {
   const btn = e.target.closest('.roundTab');
