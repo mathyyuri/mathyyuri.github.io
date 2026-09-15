@@ -117,6 +117,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .dqGradeBadge.dqGradeO { background: var(--mint-deep); color: #fff; }
 .dqGradeBadge.dqGradeX { background: var(--pink-deep); color: #fff; }
 .dqGradeBadge.dqGradeWait { background: var(--gold); color: #fff; font-weight: 700; }
+.dqGradeBadge.dqCorrectedTag { background: #7d8fc4; color: #fff; }
+.dqGradeBadge.dqLowConfTag { background: #b3a68c; color: #fff; }
 .roundBadge .histQ { color: rgba(26,26,26,.4); font-weight: 700; }
 .roundBadge .histRound { color: rgba(26,26,26,.4); }
 .gradeToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
@@ -3715,7 +3717,7 @@ async function loadDqWrongSummary(name) {
         </div>
         <div class="qGrid">
           ${r.items.map(it => `<label>
-            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${dqGradeBadge(r.round, it.num)}
+            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
           </label>`).join('')}
         </div>
       </div>

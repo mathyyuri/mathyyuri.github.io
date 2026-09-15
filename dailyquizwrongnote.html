@@ -185,7 +185,13 @@ async function loadWrongNote() {
         const metaTag = it.meta ? `<span class="metaTag ${it.meta}">${it.meta}</span>` : '';
         // 맞히긴 했지만 1차 시도 확신이 '확실'이 아니었던 문항(원장님 요청,
         // 2026-09-12) — 오답이 아니라는 걸 바로 알 수 있게 별도 태그로 구분.
-        const correctTag = it.correct ? `<span class="metaTag correctTag">맞음 · 확신 낮음</span>` : '';
+        // 결국은 맞혔지만 왜 여기 실렸는지 이유를 구분해서 보여준다 —
+        // 1차 시도 자체가 틀렸던 경우(나중에 재도전으로 정정)와, 1차에
+        // 맞히긴 했는데 확신이 낮았던 경우는 서로 다른 신호라서(원장님
+        // 요청, 2026-09-15) 같은 "확신 낮음" 문구로 뭉뚱그리면 안 된다.
+        const correctTag = it.correct
+          ? (it.firstAttemptWrong ? `<span class="metaTag correctTag">1차 오답 · 정정됨</span>` : `<span class="metaTag correctTag">맞음 · 확신 낮음</span>`)
+          : '';
         const quickAnswer = cleanQuickAnswer(it.quickAnswer);
         html += `<div class="qCard">
           <div class="qHead"><span>${it.num}번</span>${metaTag}${correctTag}</div>
