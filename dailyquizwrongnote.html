@@ -182,19 +182,18 @@ async function loadWrongNote() {
       const school = ROUND_SCHOOLS[r.round];
       html += `<div class="roundBlock"><h2>${r.round}회차${school ? ` (${school} 기출)` : ''} — ${r.items.length}문제</h2>`;
       r.items.forEach(it => {
-        const choicesHtml = (it.choices || []).join(' &nbsp; ');
         const metaTag = it.meta ? `<span class="metaTag ${it.meta}">${it.meta}</span>` : '';
         // 맞히긴 했지만 1차 시도 확신이 '확실'이 아니었던 문항(원장님 요청,
         // 2026-09-12) — 오답이 아니라는 걸 바로 알 수 있게 별도 태그로 구분.
         const correctTag = it.correct ? `<span class="metaTag correctTag">맞음 · 확신 낮음</span>` : '';
+        const quickAnswer = cleanQuickAnswer(it.quickAnswer);
         html += `<div class="qCard">
           <div class="qHead"><span>${it.num}번</span>${metaTag}${correctTag}</div>
           <div class="stem">${it.stemHtml || ''}</div>
-          <div class="choices">${choicesHtml}</div>
           ${ytThumbHtml(it.video)}
           <div class="solBox">
-            <div class="ans">정답: ${it.answer || '−'}</div>
-            ${it.quickAnswer || it.explanation ? `<div class="expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="expl">이 문항엔 해설이 저장돼 있지 않습니다.</div>'}
+            <div class="ans">정답: ${answerValueText(it)}</div>
+            ${quickAnswer || it.explanation ? `<div class="expl">${quickAnswer ? `<b>빠른정답</b><br>${quickAnswer}` : ''}${it.explanation ? `${quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : '<div class="expl">이 문항엔 해설이 저장돼 있지 않습니다.</div>'}
           </div>
         </div>`;
       });
@@ -235,6 +234,23 @@ document.addEventListener('click', e => {
   iframe.allowFullscreen = true;
   facade.replaceWith(iframe);
 });
+
+// 일일일모 오답노트는 같은 문제를 반복해서 보다 보니 "정답은 ④"처럼
+// 선지 번호 자체를 외워버리는 학생이 많다는 리포트(2026-09-15) — 선지를
+// 아예 안 보여주고 단답형처럼 실제 정답 값만 보여준다. 값은 정답 번호
+// (answer)에 해당하는 선지 원문에서 동그라미 숫자만 뗀 것.
+function answerValueText(it) {
+  const idx = Number(it.answer) - 1;
+  const choice = (it.choices || [])[idx];
+  if (!choice) return it.answer != null && it.answer !== '' ? String(it.answer) : '−';
+  return choice.replace(/^[①②③④⑤]\s*/, '');
+}
+// 빠른정답 필드는 원래 "[정답] ④ 20/3"처럼 선지 번호를 같이 담고 있어서,
+// 그대로 보여주면 선지를 감춘 의미가 없다 — 앞의 "[정답] ④" 부분만 지운다.
+function cleanQuickAnswer(qa) {
+  if (!qa) return '';
+  return qa.replace(/^\s*\[정답\]\s*[①②③④⑤]?\s*/, '').trim();
+}
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

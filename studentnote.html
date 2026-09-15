@@ -113,6 +113,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .roundBadge { font-size: 11px; margin-left: 4px; }
 .roundBadge .histO { color: var(--mint-deep); font-weight: 700; }
 .roundBadge .histX { color: var(--pink-deep); font-weight: 700; }
+.dqGradeBadge { font-size: 11px; font-weight: 700; margin-left: 2px; }
+.dqGradeBadge.dqGradeO { color: var(--mint-deep); }
+.dqGradeBadge.dqGradeX { color: var(--pink-deep); }
+.dqGradeBadge.dqGradeWait { color: var(--gold); font-weight: normal; }
 .roundBadge .histQ { color: rgba(26,26,26,.4); font-weight: 700; }
 .roundBadge .histRound { color: rgba(26,26,26,.4); }
 .gradeToggle { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--pink-deep); background: var(--pink-soft); color: var(--pink-deep); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0; }
@@ -3686,6 +3690,19 @@ async function loadDqWrongSummary(name) {
       return;
     }
     dqWrongItemsData = rounds.flatMap(r => r.items.map(it => ({ ...it, round: r.round })));
+    // 이 문항이 예전 오답노트에 실려서 이미 채점된 적 있으면 O/X를 같이
+    // 보여준다 — 원장님 요청: "채점 기록은 여기에 표시가 안 되나보다".
+    // noteHistory(selectStudent에서 이미 불러온 것)에서 같은 회차·번호의
+    // 가장 최근(차시도 가장 큰) 기록을 찾는다. 채점 전(result 없음)이면
+    // 아무것도 안 보여준다.
+    function dqGradeBadge(round, num) {
+      const rows = noteHistory.filter(h => h.category === '일일일모' && h.mission === `${round}회차` && h.num === num);
+      if (!rows.length) return '';
+      const latest = rows.reduce((a, b) => (b.round > a.round ? b : a));
+      if (latest.result === 1) return '<span class="dqGradeBadge dqGradeO" title="지난 오답노트에서 맞음">O</span>';
+      if (latest.result === 2 || latest.result === 3) return '<span class="dqGradeBadge dqGradeX" title="지난 오답노트에서 틀림">X</span>';
+      return '<span class="dqGradeBadge dqGradeWait" title="지난 오답노트에 실렸지만 아직 채점 전">채점대기</span>';
+    }
     // 기존 미션별 오답노트 체크박스 화면(.qGrid/.selectAllBtn)과 같은
     // 방식 — 원장님 요청: "내가 문제를 선택해서 하는 방식으로". 기본은
     // 전부 체크된 상태(예전처럼 전체가 바로 담기는 동작과 같음)에서
@@ -3698,7 +3715,7 @@ async function loadDqWrongSummary(name) {
         </div>
         <div class="qGrid">
           ${r.items.map(it => `<label>
-            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}
+            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${dqGradeBadge(r.round, it.num)}
           </label>`).join('')}
         </div>
       </div>
@@ -5729,6 +5746,23 @@ function regroupImageChoices(html) {
   return wrap.innerHTML;
 }
 
+// 일일일모 오답노트는 같은 문제를 반복해서 보다 보니 "정답은 ④"처럼
+// 선지 번호 자체를 외워버리는 학생이 많다는 리포트(2026-09-15) — 선지를
+// 아예 안 보여주고 단답형처럼 실제 정답 값만 보여준다. 값은 정답 번호
+// (answer)에 해당하는 선지 원문에서 동그라미 숫자만 뗀 것.
+function dqAnswerValueText(it) {
+  const idx = Number(it.answer) - 1;
+  const choice = (it.choices || [])[idx];
+  if (!choice) return it.answer != null && it.answer !== '' ? String(it.answer) : '-';
+  return choice.replace(/^[①②③④⑤]\s*/, '');
+}
+// 빠른정답 필드는 원래 "[정답] ④ 20/3"처럼 선지 번호를 같이 담고 있어서,
+// 그대로 보여주면 선지를 감춘 의미가 없다 — 앞의 "[정답] ④" 부분만 지운다.
+function dqCleanQuickAnswer(qa) {
+  if (!qa) return '';
+  return qa.replace(/^\s*\[정답\]\s*[①②③④⑤]?\s*/, '').trim();
+}
+
 async function generateHtmlNote(historicalBatch) {
   logEl.innerHTML = '';
   genHtmlBtn.disabled = true;
@@ -5830,11 +5864,10 @@ async function generateHtmlNote(historicalBatch) {
         summaryRows.push({ n: qOrderNum, category: '일일일모', mission: `${round}회차`, num, round: it.attempt || 1, hist: String(it.meta || '-') });
         qOrderNum++;
 
-        // 예전엔 " &nbsp; "로 이어붙인 순수 텍스트 한 줄이라 폭이 좁으면
-        // "③" 바로 뒤에서 줄바꿈되는 등 보기가 깨져 보였다(원장님 리포트,
-        // 2026-09-13) — 일반 hwpx 문제와 같은 .choiceRow/.choiceItem 그리드로
-        // 통일(기본 3열이라 5지선다는 ④가 ①밑, ⑤가 ②밑에 자동으로 옴).
-        const choicesHtml = `<div class="choiceRow">${(it.choices || []).map(c => `<span class="choiceItem">${c}</span>`).join('')}</div>`;
+        // 선지는 아예 안 보여준다 — 오답노트를 반복해서 보다 보니 선지
+        // 번호(예: "정답은 ④")를 외워버리는 학생이 많다는 리포트
+        // (2026-09-15). 대신 정답 줄·빠른정답을 선지 참조 없는 단답형
+        // 값으로 바꿔서 보여준다(dqAnswerValueText/dqCleanQuickAnswer).
         const stemHtml = it.stemHtml || '';
         // splitTopLevelBlocks(paginateQuestionsWithOverflow)가 최상위 엘리먼트
         // 자식만 문단으로 인식해서, <p> 태그 밖으로 새는 텍스트는 그냥
@@ -5845,14 +5878,15 @@ async function generateHtmlNote(historicalBatch) {
           : `<p><span class="mbQNum">${qNum}.</span>${stemHtml}</p>`;
         questionParts.push({
           cite: `<div class="mbCite">${escapeHtml(`[일일일모 ${round}회차] ${num}번${it.meta ? ` (${it.meta})` : ''}`)}</div>`,
-          body: body + choicesHtml,
+          body,
           qNum,
         });
 
-        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${escapeHtml(String(it.answer ?? '-'))}</div>`);
+        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${dqAnswerValueText(it)}</div>`);
 
+        const dqQuickAnswer = dqCleanQuickAnswer(it.quickAnswer);
         const explParts = [];
-        if (it.quickAnswer) explParts.push(`<b>빠른정답</b><br>${it.quickAnswer}`);
+        if (dqQuickAnswer) explParts.push(`<b>빠른정답</b><br>${dqQuickAnswer}`);
         if (it.explanation) explParts.push(`<b>해설</b><br>${it.explanation}`);
         explanationBlocks.push(`<div class="mbQBlock"><div class="explNum">${qNum}번 해설</div>${explParts.join('<br><br>') || '이 문항엔 해설이 저장돼 있지 않습니다.'}</div>`);
         qNum++;
