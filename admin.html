@@ -753,11 +753,12 @@ let scQCount = 20;
 // 이 미션의 1번째 칸이 실제 시험지에서 몇 번인지 — 기본 1, 복소수(2)처럼
 // 이어지는 파일이면 41 같은 값을 입력. 표 머리글·저장 둘 다 이 값을 쓴다.
 let scStartNum = 1;
-// 문항 값: 1=O(정답) 2=X(오답) 3=오답완료(△) null=아직 풀지 않음.
-// 새로 불러온(저장된 값이 없는) 문항은 대부분 맞는 게 보통이라 기본을
-// O로 채워서, 실제로 틀린 문항만 클릭해서 바꾸면 되게 한다.
-const TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'Y', null: 'N' };
-const TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', null: '−' };
+// 문항 값: 1=O(정답) 2=X(오답) 3=오답완료(△) null=아직 풀지 않음(빈 칸,
+// "저장된 범위 안이면 O로 채우기" 대상) 0=아직 못 푼 문제(원장님이 시트에
+// 직접 표시, 2026-09-18) — null과 달리 그 채우기 대상이 아니라 항상 그대로
+// "−"로 남는다.
+const TOGGLE_CLASS = { 1: 'O', 2: '', 3: 'Y', null: 'N', 0: 'N' };
+const TOGGLE_LABEL = { 1: 'O', 2: 'X', 3: '△', null: '−', 0: '−' };
 function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null : 1; }
 // 이미 저장된 기록이 있는 "그 범위 안"에서만 빈 칸을 O로 채운다(대부분
 // 맞는 게 보통이라 틀린 문항만 클릭해서 고치면 되게 하려는 원래 의도) —
@@ -774,6 +775,8 @@ function nextToggleValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? null 
 function fillDefaultItems(items) {
   const savedLen = items ? items.length : 0;
   return Array.from({ length: scQCount }, (_, i) => {
+    // items[i]가 0("아직 못 푼 문제" 표시)이면 null이 아니라서 여기서
+    // 그대로 반환되고, 아래 "빈 칸은 O로" 채우기 대상이 안 된다 — 의도한 동작.
     if (items && items[i] != null) return items[i];
     return i < savedLen ? 1 : null;
   });
