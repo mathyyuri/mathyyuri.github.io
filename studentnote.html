@@ -4593,6 +4593,22 @@ async function generateHwpxNote(historicalBatch) {
       log(`일일일모 문제 ${checkedDq.length}개는 한글 파일에는 포함할 수 없어 제외했습니다. (HTML로 받으면 포함됩니다)`);
     }
 
+    // batchKey/reuseRound/noteRound는 원래 이 함수 훨씬 아래(시험지 파일을
+    // 다 불러오고 서식까지 다 만든 뒤)에서 계산했는데, 그 사이(파일 로딩 +
+    // 서식 조립 — 수 초 걸림)에 "HTML로 보기"를 또 눌러서 generateHtmlNote가
+    // 같은 조합을 놓고 동시에 돌아가면, 그쪽도 이 함수가 lastLoggedBatch를
+    // 아직 못 갱신한 상태를 보고 "아직 기록 안 됐네" 판단해 똑같은 문항을
+    // 또 기록해버렸다(원장님 리포트 2026-09-17: 박보영 26~29번이 1회차·
+    // 2회차로 중복 기록됨 — 실제로 두 기록의 시각이 완전히 같았음, 즉 두
+    // 버튼이 거의 동시에 눌린 것). checked/checkedDq를 읽자마자(느린 작업
+    // 시작 전에) 바로 계산하고 lastLoggedBatch를 즉시 선점해서, 겹치는
+    // 클릭이 있어도 나중 것이 곧바로 "이미 기록됨"으로 보게 한다.
+    const batchKey = batchKeyFor(checked);
+    const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
+    const noteRound = historicalBatch ? historicalBatch.noteRound
+      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
+    if (!reuseRound) lastLoggedBatch = { key: batchKey, noteRound };
+
     const studentName = currentStudent.name;
     const examName = document.getElementById('examName').value.trim();
 
@@ -4669,15 +4685,6 @@ async function generateHwpxNote(historicalBatch) {
     const colPr1RunXml = `<hp:run charPrIDRef="${textIds.charPrIDRef}"><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl></hp:run>`;
 
     log('시험지 안의 내용을 정리하는 중...');
-    const batchKey = batchKeyFor(checked);
-    // 지난 회차 다시 받기는 항상 그 회차 번호를 그대로 재사용하고 새로
-    // 기록하지 않는다.
-    const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
-    // "이 학생의 몇 번째 오답노트인지" — 같은 생성 시각(batch)을 하나로 묶어서 셉니다.
-    // 방금(또는 이미) 기록한 것과 문제 구성이 완전히 같으면(형식만 바꿔
-    // 다시 받는 경우) 새 회차로 세지 않고 같은 회차 번호를 그대로 씁니다.
-    const noteRound = historicalBatch ? historicalBatch.noteRound
-      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
     // "대치수학 N기 X 이름" 패턴은 보통 문제 구역의 머리말에만 있고, 이름만
     // 단독으로 반복되는 표지 배지 같은 건 다른 구역에 있을 수 있어서, 이전
     // 학생 이름은 구역 하나가 아니라 서식 전체에서 한 번만 찾아둡니다.
@@ -5781,6 +5788,21 @@ async function generateHtmlNote(historicalBatch) {
     }));
     if (!checked.length && !checkedDq.length) throw new Error('체크한 문제가 없습니다.');
 
+    // batchKey/reuseRound/noteRound는 원래 시험지 파일을 다 불러온 뒤에
+    // 계산했는데, 그 사이(파일 로딩 — 수 초 걸림)에 "한글로 만들기"를 또
+    // 눌러서 generateHwpxNote가 같은 조합을 놓고 동시에 돌아가면, 그쪽도
+    // 아직 lastLoggedBatch가 안 바뀐 상태를 보고 "아직 기록 안 됐네"
+    // 판단해 똑같은 문항을 또 기록해버렸다(원장님 리포트 2026-09-17: 박보영
+    // 26~29번이 1회차·2회차로 중복 기록 — 두 기록의 시각이 완전히 같았음,
+    // 즉 두 버튼이 거의 동시에 눌린 것). checked/checkedDq를 읽자마자(느린
+    // 작업 시작 전에) 바로 계산하고 lastLoggedBatch를 즉시 선점해서, 겹치는
+    // 클릭이 있어도 나중 것이 곧바로 "이미 기록됨"으로 보게 한다.
+    const batchKey = batchKeyFor(checked);
+    const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
+    const noteRound = historicalBatch ? historicalBatch.noteRound
+      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
+    if (!reuseRound) lastLoggedBatch = { key: batchKey, noteRound };
+
     const studentName = currentStudent.name;
 
     const missionFileId = new Map(missionGroups.map(g => [missionKey(g.mission, g.category), g.selectedFileId]));
@@ -5800,13 +5822,6 @@ async function generateHtmlNote(historicalBatch) {
       await getParsedFile(fid, f.filename);
     }
 
-    // 같은 문제 구성으로 방금(또는 이미) 한글 파일을 만들었다면, 그때와
-    // 같은 회차 번호를 그대로 써서 두 형식이 같은 회차를 가리키게 한다.
-    // 지난 회차 다시 받기는 그 회차 번호를 그대로 재사용한다.
-    const batchKey = batchKeyFor(checked);
-    const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
-    const noteRound = historicalBatch ? historicalBatch.noteRound
-      : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
     const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 ${noteRound}번째 오답노트`;
     const info = { cohort: currentStudent.cohort, className: currentStudent.class, studentName, noteRound };
 
