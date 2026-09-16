@@ -966,7 +966,7 @@ const MIDTERM_START_DATE = new Date(2026, 8, 2); // 2026-09-02 — 이 날짜부
 const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '9모대비', '개념미션', 'S+ BLACK', '대수연마 1000제'];
 const COHORT2_SPLIT_CATS = ['클리닉', 'TEST', '오답미션']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
 // 메인(중간고사 대비) 탭 순서 — 실제 존재하는 카테고리만 이 순서대로 보여줌.
-const COHORT2_MAIN_ORDER = ['오답미션', '교과서미션', '변형미션', 'TEST', '기출', '클리닉'];
+const COHORT2_MAIN_ORDER = ['오답미션', '교과서미션', '변형미션', 'S+ 미션', 'TEST', '기출', '클리닉'];
 function clinicMissionIsNew(name) {
   const m = String(name || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
   if (!m) return true; // 날짜 형식이 아니면 새로 등록된 걸로 보고 안전하게 보여줌
