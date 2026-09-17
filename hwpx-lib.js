@@ -2064,7 +2064,21 @@ function detectEndnoteMarkers(xml) {
       // (confirmed against a real file: the table fell in this exact gap
       // and vanished from BOTH questions). Tables always absorb here.
       const isTable = paras[k].text.includes('<hp:tbl');
-      if (!(isTable || distHere <= distNext)) break;
+      // A plain-text "①②③④⑤" choice list has the exact same problem as a
+      // table (above): it can butt right up against the NEXT question's own
+      // endnote paragraph with no blank line at all (distNext=0), while a
+      // perfectly normal blank line for visual spacing sits between it and
+      // ITS OWN stem (distHere=1) — the distance heuristic alone then hands
+      // it to the wrong question. A choice list can never legitimately be
+      // "the next question's content arriving early" (the next question
+      // always starts with its own stem/topic-label text, never a bare
+      // ①-marker line), so — like a table — it always belongs to THIS
+      // (preceding) question regardless of which side measures closer.
+      // Confirmed against a real file: "2026 9월 2학기 중간고사 대비 일일일모
+      // 450제.hwpx" 220번 — a blank line before its own newly-typed choices
+      // made them get silently dropped from the question entirely.
+      const looksLikeChoiceList = /^[①②③④⑤]/.test(stripTags(paras[k].text).trim());
+      if (!(isTable || looksLikeChoiceList || distHere <= distNext)) break;
       // A paragraph carrying an <hp:pic>/<hp:tbl> ANYWHERE in its markup
       // trips looksLikeOrphanedFragment regardless of what its stripped
       // text starts with — so a captioned image whose visible text also
