@@ -1553,6 +1553,48 @@ function formatConditionBox(inner, rawText) {
 // [풀이]의 실제 유도 과정이 통째로 날아가고 "④이다."만 남았음). 문제
 // 본문(진짜 ①~⑤ 선택지가 있는 곳)에는 이 옵션을 안 켜서 기존 동작을
 // 그대로 유지한다.
+// A choice list where every option is a PICTURE (e.g. 5 different graphs)
+// instead of text is laid out as a table: one column holding just the bare
+// ①-⑤ marker, the other holding the image. hwpTblToHtml already recognizes
+// this exact shape as "looksLikeChoiceGrid" (to skip drawing an outer frame
+// box around it), but until now that table still just rendered as one
+// opaque <table> — and since stripRectBlocksForRaw deliberately erases an
+// <hp:tbl>'s own marker text out of `.raw` (so it can't leak into a
+// SURROUNDING paragraph's choice detection), a paragraph whose ENTIRE
+// content is nothing but this table ended up with `.raw` completely empty,
+// and the whole table — 5 real answer choices — silently vanished from the
+// multiple-choice answer list entirely, absorbed into the question's own
+// stem instead (confirmed against a real file: "2026 9월 2학기 중간고사
+// 대비 일일일모 450제.hwpx" 117번, a coordinate-plane-graph choice set —
+// 0 choices came out, stem ballooned to 700K+ characters). This reads the
+// same marker-cell/content-cell row shape directly and returns real
+// per-choice HTML, so the caller below can wire it into the exact same
+// choiceItem/choiceRow structure a plain-text "①②③④⑤" list produces.
+async function extractImageChoiceItems(tblXml, entry) {
+  const trs = findTopLevelBlocks(tblXml, 'hp:tr');
+  const items = [];
+  for (const tr of trs) {
+    const tcs = findTopLevelBlocks(tr.text, 'hp:tc');
+    // A row can hold MORE THAN ONE marker+content pair (2 columns of
+    // "①/그림 ②/그림" side by side, not just one "①/그림" per row) —
+    // confirmed against a real file (117번): each data row is 4 cells,
+    // [marker][image][marker][image]. Scan every cell for a marker instead
+    // of assuming just one per row, and pair each with the very next cell.
+    for (let ci = 0; ci < tcs.length; ci++) {
+      const subList = findTopLevelBlocks(tcs[ci].text, 'hp:subList')[0];
+      const cellRaw = subList ? decodeXmlEntities(stripTags(subList.text)).trim() : '';
+      if (!/^[①②③④⑤]$/.test(cellRaw)) continue;
+      let contentHtml = '';
+      if (ci + 1 < tcs.length) {
+        const contentSubList = findTopLevelBlocks(tcs[ci + 1].text, 'hp:subList')[0];
+        if (contentSubList) contentHtml = await hwpBodyXmlToHtml(contentSubList.text, entry);
+      }
+      items.push({ marker: cellRaw, html: contentHtml });
+    }
+  }
+  return items.length >= 2 ? items : null;
+}
+
 async function hwpBodyXmlToHtml(xml, entry, opts) {
   const skipChoiceDetect = !!(opts && opts.skipChoiceDetect);
   const paras = findTopLevelBlocks(xml, 'hp:p');
@@ -1574,7 +1616,26 @@ async function hwpBodyXmlToHtml(xml, entry, opts) {
     // (3) an <hp:equation>'s own script text can itself contain a bare
     // ①-⑤ as a decorative fill-in-blank label ("box{~~①~~}") — see
     // stripEquationBlocksForRaw.
-    items.push({ raw: decodeXmlEntities(stripTags(stripEquationBlocksForRaw(stripRectBlocksForRaw(stripCtrlBlocks(p.text))))).trim(), inner });
+    const raw = decodeXmlEntities(stripTags(stripEquationBlocksForRaw(stripRectBlocksForRaw(stripCtrlBlocks(p.text))))).trim();
+    // raw가 텅 비었다는 건 이 문단의 전부가 표(테이블) 하나였고 그 표 안의
+    // 글자(예: ①②③④⑤)가 stripRectBlocksForRaw에 의해 통째로 지워졌다는
+    // 뜻이다(원래는 그 표가 다른 문단 쪽으로 새어나가 오인식하는 걸 막으려는
+    // 의도) — 이 경우 그 표가 정말로 "①/그림, ②/그림..." 같은 이미지 선택지
+    // 표인지 직접 확인해서, 맞으면 지문에 그대로 묻히게 두지 않고 진짜
+    // 선택지로 뽑아낸다(extractImageChoiceItems 위 주석 참고).
+    if (!raw) {
+      const tblBlocks = findTopLevelBlocks(p.text, 'hp:tbl');
+      if (tblBlocks.length === 1) {
+        const choiceItems = await extractImageChoiceItems(tblBlocks[0].text, entry);
+        if (choiceItems) {
+          const cols = choiceItems.length;
+          const rowHtml = `<div class="choiceRow" style="grid-template-columns:repeat(${cols},1fr)">${choiceItems.map(it => `<span class="choiceItem">${it.marker}${it.html}</span>`).join('')}</div>`;
+          items.push({ raw: '', inner: rowHtml, prebuiltChoiceRow: rowHtml });
+          continue;
+        }
+      }
+    }
+    items.push({ raw, inner });
   }
 
   // A "①...⑤" choice list is normally one paragraph with tab characters
@@ -1642,6 +1703,14 @@ async function hwpBodyXmlToHtml(xml, entry, opts) {
   const resolved = [];
   let i = 0;
   while (i < items.length) {
+    // extractImageChoiceItems가 이미지 선택지 표를 진짜 choiceRow로 통째로
+    // 만들어둔 항목 — raw가 비어 있어 일반 마커 탐지에는 안 걸리므로, 여기서
+    // 먼저 그대로 결과에 반영한다(일반 텍스트 선택지 행이 처리되는 방식과 동일).
+    if (items[i].prebuiltChoiceRow) {
+      resolved.push({ raw: '', html: items[i].prebuiltChoiceRow });
+      i++;
+      continue;
+    }
     if (!skipChoiceDetect && hasRealChoiceMarker(items[i].raw)) {
       const start = i;
       while (i < items.length && hasRealChoiceMarker(items[i].raw)) i++;
