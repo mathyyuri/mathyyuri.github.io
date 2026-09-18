@@ -1702,6 +1702,18 @@ document.getElementById('dqFileInput').addEventListener('change', async (ev) => 
     } catch (e) {
       console.error('기존 정답 불러오기 실패(새로 다 고르시면 됩니다):', e);
     }
+    // 서버에 저장된 정답이 없는 문항(저장 오류로 날아갔거나 새 문항)은 hwpx
+    // 해설(미주)의 "[정답] ④" / "[정답] 4번"에서 그대로 읽어 채운다(2026-09-19,
+    // 저장 실패로 정답이 전부 지워졌을 때 450문제 중 449개가 이 방식으로 복구됨).
+    let derivedCount = 0;
+    dqParsedQuestions.forEach(q => {
+      if (q.answer) return;
+      const t = String(q.quickAnswer || '').replace(/<[^>]+>/g, ' ').replace(/\\[()]/g, ' ');
+      const m = t.match(/\[\s*정답\s*\]\s*([①②③④⑤]|[1-5])/);
+      if (!m) return;
+      const a = '①②③④⑤'.indexOf(m[1]) >= 0 ? '①②③④⑤'.indexOf(m[1]) + 1 : Number(m[1]);
+      if (a >= 1 && a <= q.choices.length) { q.answer = a; q.prefilled = true; derivedCount++; prefilledCount++; }
+    });
     // 단원/유형 태그도 같은 방식으로 미리 채운다 — 문항DB(문제은행과 공유,
     // saveQuestionRows가 회차를 "파일 하나"로 취급해 저장)에 이미 입력해둔
     // 값이 있으면 재업로드해도 안 날아가게(원장님 요청, 2026-09-12).
