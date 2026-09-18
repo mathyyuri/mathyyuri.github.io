@@ -115,7 +115,12 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .progressBar > div { height: 100%; background: var(--gold); transition: width 0.25s; }
 .qCard { background: var(--card); border-radius: 18px; padding: 22px 20px; box-shadow: var(--shadow); border: 1px solid var(--line); flex: 1; }
 .qStem { font-size: 0.98rem; line-height: 1.75; margin-bottom: 20px; word-break: keep-all; }
-.qStem img { max-width: 100%; border-radius: 8px; }
+.qStem img { max-width: 100%; max-height: 240px; width: auto; height: auto; object-fit: contain; border-radius: 8px; }
+/* 선택지가 그림(그래프 등)이면 2개씩 한 줄에, 그림은 작게 */
+.choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; }
+.choiceList.imgChoices .choiceBtn p { margin: 0; }
+.choiceList.imgChoices .choiceBtn img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; }
 .choiceList { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; }
 .choiceBtn {
   display: flex; align-items: center; gap: 10px; text-align: left;
@@ -687,6 +692,7 @@ function renderQuestion() {
   $('quizProgressBar').style.width = Math.round(((qIndex + 1) / questions.length) * 100) + '%';
   $('qStem').innerHTML = q.stemHtml;
   const a = answers[q.num] || {};
+  $('qChoices').classList.toggle('imgChoices', q.choices.some(c => /<img\b/i.test(c)));
   $('qChoices').innerHTML = q.choices.map((c, i) => `
     <button type="button" class="choiceBtn${a.choice === i + 1 ? ' picked' : ''}" data-i="${i + 1}">
       <span class="num">${i + 1}</span><span>${stripChoiceMark(c)}</span>
