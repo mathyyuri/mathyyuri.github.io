@@ -3829,7 +3829,7 @@ function renderGradingRounds(rounds) {
       <div class="gradingRowToggles">
         ${group.items.map(it => `
           <span class="gradeItem">
-            <span class="gradeNum">${it.num}번<small>(${it.attempt ? it.attempt + '차시도' : it.round + '회차'})</small></span>
+            <span class="gradeNum">${it.num}번<small>(${it.attempt || it.round}차 시도)</small></span>
             <button type="button" class="gradeToggle O" data-value="1"
               data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}" data-row="${it.rowIndex || ''}">O</button>
           </span>`).join('')}
