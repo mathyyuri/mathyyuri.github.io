@@ -1454,7 +1454,10 @@ function renderCards(){
   }
 
   const rows=filteredRows();
-  const missions=missionOrder(tabRows()); // 탭 목록은 반 필터와 무관하게 유지
+  // 선택한 반에 기록이 하나도 없는 미션(예: S+에는 없는 교과서 미션)은 카드에서
+  // 뺀다 — 원장님 요청(2026-09-19: "아이들이 없으니깐"). 전체 보기에선 그대로.
+  const missions=missionOrder(rows);
+  if(pubMission!=null&&missions.indexOf(pubMission)===-1) pubMission=null;
   const {students}=aggregate(rows);
   const isAlgebra=pubTab===ALG_TAB;
   const totalAvg=isAlgebra
