@@ -778,7 +778,10 @@ function fillDefaultItems(items) {
     // items[i]가 0("아직 못 푼 문제" 표시)이면 null이 아니라서 여기서
     // 그대로 반환되고, 아래 "빈 칸은 O로" 채우기 대상이 안 된다 — 의도한 동작.
     if (items && items[i] != null) return items[i];
-    return i < savedLen ? 1 : null;
+    // 2026-09-19 원장님 요청: 시트에 비어 있는 칸은 저장된 범위 안이어도 O로
+    // 채우지 않고 "−"(아직 채점 안 함)로 보여준다 — 안 푼 문항이 정답으로
+    // 둔갑해 그대로 저장되는 일이 잦았다(허이준 사례).
+    return null;
   });
 }
 document.getElementById('scStartNum').addEventListener('input', () => {
