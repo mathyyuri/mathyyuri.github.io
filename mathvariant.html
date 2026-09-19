@@ -249,14 +249,25 @@ $('src').addEventListener('input', updatePreview); updatePreview();
 /* ---------- 검증 (정답을 안 알려주고 처음부터 풀게 함) ---------- */
 const VERIFIERS = { 'claude-sonnet-5': 'Sonnet', 'claude-opus-5': 'Opus', 'gemini': 'Gemini' };
 function verifyModels() { const v = $('verifyMode').value; return { none: [], one: ['claude-sonnet-5'], gem: ['claude-sonnet-5', 'gemini'], two: ['claude-sonnet-5', 'claude-opus-5'] }[v]; }
-function normAns(s) { return String(s || '').replace(/\\left|\\right|\\displaystyle/g, '').replace(/\\dfrac/g, '\\frac').replace(/[\s$]/g, '').replace(/정답|번|이다/g, '').replace(/\\[,;]/g, '').replace(/\.$/, ''); }
+// 답이 "같은지" 비교하기 전에 표기 차이를 지운다: $ 기호·공백·\left/\right, √ 기호와 \sqrt, \dfrac/\frac,
+// ^2 와 ^{2}, \sqrt2 와 \sqrt{2}, 곱셈 기호 등은 같은 것으로 본다.
+function normAns(s) {
+  return String(s || '')
+    .replace(/[①-⑤]/g, '').replace(/\\\(|\\\)|\$/g, '')
+    .replace(/√\s*(\d+(?:\.\d+)?|[a-zA-Z])/g, '\\sqrt{$1}').replace(/√\s*\(([^)]*)\)/g, '\\sqrt{$1}')
+    .replace(/\\sqrt\s*(\d+|[a-zA-Z])/g, '\\sqrt{$1}')
+    .replace(/\\left|\\right|\\displaystyle|\\,|\\;|\\!|\\ /g, '').replace(/\\[dt]frac/g, '\\frac')
+    .replace(/\^\s*(\d|[a-zA-Z])/g, '^{$1}').replace(/_\s*(\d|[a-zA-Z])/g, '_{$1}')
+    .replace(/\\cdot|\\times|×|·|\*/g, '').replace(/[−–]/g, '-')
+    .replace(/정답|답|최솟값|최댓값|값은|이다|입니다|번|[\s.]/g, '');
+}
 function sameAnswer(declared, got) {
   const cd = (declared.match(/[①-⑤]/) || [])[0], cg = (got.match(/[①-⑤]/) || [])[0];
   if (cd && cg) return cd === cg;
   const nd = (declared.match(/^\s*([1-5])\s*번?\s*$/) || [])[1], ng = (got.match(/^\s*([1-5])\s*번?\s*$/) || [])[1];
   if ((cd || nd) && (cg || ng)) return String(cd ? CIR.indexOf(cd) + 1 : nd) === String(cg ? CIR.indexOf(cg) + 1 : ng);
-  const a = normAns(declared), b = normAns(got);
-  return a === b || (a.length > 1 && b.includes(a));
+  const x = normAns(declared), y = normAns(got);
+  return x === y || (x.length > 1 && y.includes(x)) || (y.length > 1 && x.includes(y));
 }
 async function verifyOne(item, model) {
   const body = '[문제]\n' + item.problem + (item.figure ? '\n\n[그림(SVG 코드)]\n' + item.figure : '') +
@@ -265,7 +276,8 @@ async function verifyOne(item, model) {
   try {
     const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model });
     const verdict = tag(res.text, 'verdict').toUpperCase(), ans = tag(res.text, 'answer'), issue = tag(res.text, 'issue');
-    item.verify[model] = { state: 'done', ok: verdict.includes('OK') && sameAnswer(item.answer, ans), ans, issue: /^없음/.test(issue) ? '' : issue };
+    const same = sameAnswer(item.answer, ans), vok = verdict.includes('OK');
+    item.verify[model] = { state: 'done', ok: vok && same, same, vok, ans, issue: /^없음/.test(issue) ? '' : issue };
   } catch (e) { item.verify[model] = { state: 'err', msg: e.message }; }
 }
 function verifyBadge(item) {
@@ -275,7 +287,8 @@ function verifyBadge(item) {
     if (r.state === 'run') return `<span class="vb run">${n} 검증 중…</span>`;
     if (r.state === 'err') return `<span class="vb bad" title="${esc(r.msg)}">${n} 검증 실패</span>`;
     if (r.ok) return `<span class="vb good">${n} ✅ 일치</span>`;
-    return `<span class="vb bad" title="${esc(r.issue || '')}">${n} ⚠️ 불일치 (AI 답: ${esc(r.ans)})</span>`;
+    const why = !r.same ? `정답 불일치 (출제 정답 ${esc(item.answer)} / AI 답 ${esc(r.ans)})` : '문제 결함 지적';
+    return `<span class="vb bad" title="${esc(r.issue || '')}">${n} ⚠️ ${why}</span>`;
   });
   const done = ms.filter(m => item.verify[m].state === 'done');
   const allGood = done.length === ms.length && done.every(m => item.verify[m].ok);
