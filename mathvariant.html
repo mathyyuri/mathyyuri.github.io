@@ -98,9 +98,9 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
       </div>
       <div style="display:flex;gap:8px">
         <div style="flex:1"><label>그림(SVG)</label><select id="fig"><option value="none">없이</option><option value="auto" selected>필요할 때만</option><option value="always">가능하면 항상</option></select></div>
-        <div style="flex:1"><label>AI 검증</label><select id="verifyMode"><option value="one" selected>1중 (Sonnet)</option><option value="two">2중 (Sonnet+Opus, 느림)</option><option value="none">안 함</option></select></div>
+        <div style="flex:1"><label>AI 검증</label><select id="verifyMode"><option value="gem" selected>2중 (Sonnet+Gemini)</option><option value="one">1중 (Sonnet)</option><option value="two">2중 (Sonnet+Opus, 느림)</option><option value="none">안 함</option></select></div>
       </div>
-      <p class="hint">검증: 정답을 알려주지 않고 다른 AI가 처음부터 풀어 비교해요. 2중이 가장 정확하지만 비용이 더 들어요.</p>
+      <p class="hint">검증: 정답을 알려주지 않고 다른 AI가 처음부터 풀어 비교해요. Gemini는 다른 회사 AI라 실수가 덜 겹쳐요(무료 사용량 제한이 있을 수 있어요).</p>
       <label>추가 요구 (선택)</label>
       <textarea id="extra" rows="2" placeholder="예) 정답이 정수가 되게, 그림 없이, 학교 시험 서술형 느낌으로"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px">
@@ -247,8 +247,8 @@ function updatePreview() {
 $('src').addEventListener('input', updatePreview); updatePreview();
 
 /* ---------- 검증 (정답을 안 알려주고 처음부터 풀게 함) ---------- */
-const VERIFIERS = { 'claude-sonnet-5': 'Sonnet', 'claude-opus-5': 'Opus' };
-function verifyModels() { const v = $('verifyMode').value; return v === 'none' ? [] : v === 'one' ? ['claude-sonnet-5'] : ['claude-sonnet-5', 'claude-opus-5']; }
+const VERIFIERS = { 'claude-sonnet-5': 'Sonnet', 'claude-opus-5': 'Opus', 'gemini': 'Gemini' };
+function verifyModels() { const v = $('verifyMode').value; return { none: [], one: ['claude-sonnet-5'], gem: ['claude-sonnet-5', 'gemini'], two: ['claude-sonnet-5', 'claude-opus-5'] }[v]; }
 function normAns(s) { return String(s || '').replace(/\\left|\\right|\\displaystyle/g, '').replace(/\\dfrac/g, '\\frac').replace(/[\s$]/g, '').replace(/정답|번|이다/g, '').replace(/\\[,;]/g, '').replace(/\.$/, ''); }
 function sameAnswer(declared, got) {
   const cd = (declared.match(/[①-⑤]/) || [])[0], cg = (got.match(/[①-⑤]/) || [])[0];
