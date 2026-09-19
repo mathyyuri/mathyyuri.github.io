@@ -71,6 +71,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
         <input type="number" id="pickNum" placeholder="문제 번호" min="1">
         <button id="pickBtn" class="sec">불러오기</button>
       </div>
+      <label id="pickModeRow" class="hidden" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="origMode" style="width:auto"> 원본 번호로 찾기 (끄면 한글 문서에 보이는 번호)</label>
       <label>문제 내용 (수식은 $...$ 로 감싸세요)</label>
       <textarea id="src" rows="9" placeholder="예) 중심이 $(2,-3)$ 이고 반지름이 $5$ 인 원의 방정식은?"></textarea>
       <p class="hint">그래프·그림은 글로 설명해서 적어주세요(그림은 AI에게 전달되지 않아요).</p>
@@ -298,7 +299,7 @@ $('printPicked').onclick = () => {
 };
 
 /* ---------- hwpx에서 문제 불러오기 ---------- */
-let hEntry = null;
+let hEntry = null, hKeys = [];
 function spans(html) {
   const o = [], t = '<span class="choiceItem">'; let i = 0;
   while (true) {
@@ -321,11 +322,20 @@ $('hwpxIn').onchange = async ev => {
     const zip = await JSZip.loadAsync(await f.arrayBuffer());
     hEntry = await parseHwpx(zip);
     $('pickRow').classList.remove('hidden'); $('pickRow').style.display = 'flex';
-    $('status').className = 'ok'; $('status').textContent = '문제 ' + hEntry.markers.size + '개 인식됐어요. 번호를 입력하고 "불러오기"를 누르세요.';
+    // 골라 담은 교재처럼 번호가 1부터 이어지지 않는 파일은, 한글 문서에 보이는 번호(=순서)와
+    // 파일 안의 원본 미주 번호가 달라서 "7번"이 엉뚱한 문제로 불러와졌다.
+    const keys = [...hEntry.markers.keys()].map(Number).sort((a, b) => a - b);
+    hKeys = keys;
+    const consecutive = keys.every((k, i) => k === i + 1);
+    $('pickModeRow').classList.toggle('hidden', consecutive); $('pickModeRow').style.display = consecutive ? 'none' : 'flex';
+    $('status').className = 'ok'; $('status').textContent = '문제 ' + keys.length + '개 인식됐어요.' + (consecutive ? '' : ' (원본 번호 ' + keys[0] + '~' + keys[keys.length - 1] + ' 중 일부 — 기본은 한글 문서에 보이는 번호로 찾아요)') + ' 번호를 입력하고 "불러오기"를 누르세요.';
   } catch (e) { $('status').className = 'err'; $('status').textContent = '분석 실패: ' + e.message; }
 };
 $('pickBtn').onclick = async () => {
-  const mk = hEntry && hEntry.markers.get(String($('pickNum').value).trim());
+  const typed = Number($('pickNum').value);
+  const useOrig = hKeys.every((k, i) => k === i + 1) || $('origMode').checked;
+  const realKey = useOrig ? typed : hKeys[typed - 1];
+  const mk = hEntry && realKey != null && hEntry.markers.get(String(realKey));
   if (!mk) { $('status').className = 'err'; $('status').textContent = '그 번호의 문제를 찾지 못했어요.'; return; }
   const html = await hwpBodyXmlToHtml(mk.blockXml, hEntry);
   const ch = spans(html);
@@ -334,7 +344,7 @@ $('pickBtn').onclick = async () => {
   if (ch.length) txt += '\n' + ch.map(c => { const t = htmlToText(c); return /^[①-⑤]/.test(t) ? t : t; }).join('\n');
   try { const ax = extractQuickAnswerXml(mk.blockXml); if (ax) txt += '\n(원문 정답: ' + htmlToText(await hwpFragmentRunsToHtml(ax, hEntry)).replace(/^\[정답\]\s*/, '') + ')'; } catch (e) {}
   $('src').value = txt;
-  $('status').className = 'ok'; $('status').textContent = $('pickNum').value + '번 문제를 불러왔어요.' + (/\[그림\]/.test(txt) ? ' 그림이 있는 문제예요 — "[그림]" 자리를 글로 설명해 주세요.' : '');
+  $('status').className = 'ok'; $('status').textContent = typed + '번 문제를 불러왔어요' + (useOrig ? '.' : ' (원본 ' + realKey + '번).') + (/\[그림\]/.test(txt) ? ' 그림이 있는 문제예요 — "[그림]" 자리를 글로 설명해 주세요.' : '');
 };
 </script>
 </body>
