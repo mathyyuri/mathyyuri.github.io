@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교재 골라 담기 | MATHY YURI</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
+<style>
+body{margin:0;font-family:'Noto Sans KR',sans-serif;background:#FBF8F1;color:#1a1a1a}
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:20px;margin:0 0 4px}
+.sub{font-size:12px;color:#888;margin:0 0 22px}
+.card{background:#fff;border:1px solid #E6DCC6;border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{font-size:14px;margin:0 0 8px;color:#A8853F}
+.hint{font-size:12px;color:#777;line-height:1.6;margin:6px 0}
+textarea{width:100%;min-height:110px;padding:8px;font-size:13px;border:1px solid #E6DCC6;border-radius:6px;box-sizing:border-box;font-family:inherit}
+input[type=text]{width:100%;padding:8px;font-size:13px;border:1px solid #E6DCC6;border-radius:6px;box-sizing:border-box}
+button{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer}
+button:disabled{background:#bbb;cursor:not-allowed}
+#msg{font-size:13px;margin-top:10px;line-height:1.6;white-space:pre-wrap}
+.ok{color:#3E8F79}.err{color:#C64E71}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📚 교재 골라 담기</h1>
+  <p class="sub">원본 hwpx에서 고른 번호의 문제(와 해설)만 뽑아 새 hwpx 교재로 만듭니다.</p>
+
+  <div class="card">
+    <h2>1. 원본 hwpx</h2>
+    <input type="file" id="file" accept=".hwpx">
+    <p class="hint">예: [교과서] 도형의 방정식.hwpx (문제가 미주 번호로 1번부터 매겨진 파일)</p>
+  </div>
+
+  <div class="card">
+    <h2>2. 담을 문제 번호</h2>
+    <textarea id="nums">4, 7, 11, 12, 13, 14, 15, 18, 20, 22, 25, 26, 28, 29, 33, 39, 42, 43, 44, 45, 49, 50, 51, 52, 53, 55, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68, 73, 74, 78, 79, 80, 82, 85, 86, 88, 89, 90, 93, 96, 97, 98, 99, 101, 102, 103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 118, 119, 120, 121, 122, 123, 124, 127, 128, 132, 134, 135, 137, 139, 141, 143, 144, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186</textarea>
+    <p class="hint">쉼표나 띄어쓰기로 구분하고, "10-15"처럼 범위도 쓸 수 있어요. 문제는 원본 순서대로 담기고, 교재 안 번호는 1번부터 다시 매겨집니다.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. 만들기</h2>
+    <input type="text" id="outName" value="[교과서 2회독] 도형의 방정식">
+    <p class="hint">저장될 파일 이름(.hwpx는 자동으로 붙어요)</p>
+    <button id="goBtn" disabled>hwpx 교재 만들기</button>
+    <div id="msg"></div>
+  </div>
+</div>
+<script>
+let zip = null, entry = null;
+const $ = id => document.getElementById(id);
+function say(t, cls) { $('msg').textContent = t; $('msg').className = cls || ''; }
+
+function parseNumbers(text) {
+  const out = new Set();
+  String(text).split(/[\s,]+/).filter(Boolean).forEach(tok => {
+    const m = tok.match(/^(\d+)\s*[-~]\s*(\d+)$/);
+    if (m) { for (let n = Number(m[1]); n <= Number(m[2]); n++) out.add(n); }
+    else if (/^\d+$/.test(tok)) out.add(Number(tok));
+  });
+  return [...out].sort((a, b) => a - b);
+}
+
+$('file').addEventListener('change', async ev => {
+  const f = ev.target.files[0];
+  $('goBtn').disabled = true;
+  if (!f) return;
+  say('파일 분석 중...');
+  try {
+    zip = await JSZip.loadAsync(await f.arrayBuffer());
+    entry = await parseHwpx(zip);
+    if (entry.sectionOrder.length !== 1) throw new Error('구역이 여러 개인 파일은 아직 지원하지 않아요 (' + entry.sectionOrder.length + '개).');
+    const keys = [...entry.markers.keys()].map(Number).sort((a, b) => a - b);
+    if (!keys.length) throw new Error('문제를 하나도 찾지 못했어요.');
+    say('문제 ' + keys.length + '개 인식 (' + keys[0] + '~' + keys[keys.length - 1] + '번). 번호를 확인하고 "만들기"를 눌러주세요.', 'ok');
+    $('goBtn').disabled = false;
+  } catch (e) { console.error(e); say('분석 실패: ' + e.message, 'err'); }
+});
+
+$('goBtn').addEventListener('click', async () => {
+  $('goBtn').disabled = true;
+  try {
+    const want = parseNumbers($('nums').value);
+    const missing = want.filter(n => !entry.markers.has(String(n)));
+    const picked = want.filter(n => entry.markers.has(String(n)));
+    if (!picked.length) throw new Error('담을 수 있는 문제 번호가 없어요.');
+    const secPath = entry.sectionOrder[0];
+    const xml = await zip.file(secPath).async('string');
+    // 모든 문제 블록이 섹션 XML 안에서 차지하는 위치 — 문제 바깥(머리 부분·
+    // 맨 끝 꼬리)은 그대로 두고, 고른 블록만 원본 순서대로 이어 붙인다.
+    const spans = [];
+    for (const [k, m] of entry.markers) {
+      const s = xml.indexOf(m.blockXml);
+      if (s < 0) throw new Error(k + '번 문제 위치를 찾지 못했어요.');
+      spans.push({ n: Number(k), s, e: s + m.blockXml.length });
+    }
+    spans.sort((a, b) => a.s - b.s);
+    const head = xml.slice(0, spans[0].s);
+    const tail = xml.slice(spans[spans.length - 1].e);
+    const bodyParts = spans.filter(x => picked.includes(x.n)).map(x => xml.slice(x.s, x.e));
+    const newXml = head + bodyParts.join('') + tail;
+    const doc = new DOMParser().parseFromString(newXml, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('만들어진 문서 구조가 올바르지 않아요.');
+
+    const out = new JSZip();
+    for (const rel of Object.keys(zip.files)) {
+      const f = zip.files[rel];
+      if (f.dir) continue;
+      const opt = rel === 'mimetype' ? { compression: 'STORE' } : {};
+      if (rel === secPath) out.file(rel, newXml, opt);
+      else out.file(rel, await f.async('uint8array'), opt);
+    }
+    const blob = await out.generateAsync({ type: 'blob', mimeType: 'application/octet-stream', compression: 'DEFLATE' });
+    const name = ($('outName').value.trim() || '교재') + ' (' + picked.length + '문항).hwpx';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    say('완료! ' + picked.length + '문항을 담았어요 → ' + name + (missing.length ? '\n원본에 없어서 빠진 번호: ' + missing.join(', ') : ''), 'ok');
+  } catch (e) { console.error(e); say('실패: ' + e.message, 'err'); }
+  finally { $('goBtn').disabled = false; }
+});
+</script>
+</body>
+</html>
