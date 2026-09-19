@@ -46,6 +46,12 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
 .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 #status{font-size:13px;margin:8px 0;min-height:18px}
 .err{color:var(--pink)}.ok{color:var(--mint)}
+.preview{border:1px dashed var(--line);border-radius:6px;padding:8px 10px;background:#fcfbf7;line-height:1.9;min-height:40px;font-size:14px}
+.fig{margin:10px 0;text-align:center}.fig svg{max-width:100%;height:auto;max-height:260px}
+.vb{font-size:11.5px;padding:2px 8px;border-radius:10px;background:#eee;margin-right:4px}.vb.good{background:#dff1ea;color:#256b57}.vb.bad{background:#fbe3ea;color:#a3324f}.vb.run{background:#f1ecdf;color:#8a7440}.good{color:var(--mint)}
+.vrow{font-size:12px;margin-bottom:2px}
+.edit{display:flex;gap:6px;margin-top:10px}.edit input{flex:1}
+.vhead{gap:8px;align-items:flex-start}.vbadge{text-align:right}
 .chatbox{position:sticky;bottom:0;background:var(--cream);padding-top:8px}
 @media(max-width:900px){.layout{flex-direction:column}.side{flex:none;width:100%;position:static;max-height:none}}
 </style>
@@ -74,6 +80,8 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
       <label id="pickModeRow" class="hidden" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="origMode" style="width:auto"> 원본 번호로 찾기 (끄면 한글 문서에 보이는 번호)</label>
       <label>문제 내용 (수식은 $...$ 로 감싸세요)</label>
       <textarea id="src" rows="9" placeholder="예) 중심이 $(2,-3)$ 이고 반지름이 $5$ 인 원의 방정식은?"></textarea>
+      <label>화면에 보이는 모양 (미리보기)</label>
+      <div id="srcPreview" class="preview"></div>
       <p class="hint">그래프·그림은 글로 설명해서 적어주세요(그림은 AI에게 전달되지 않아요).</p>
     </div>
     <div class="card">
@@ -86,6 +94,11 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
         <div style="flex:1"><label>형식</label><select id="fmt"><option value="mc">5지선다</option><option value="short">단답형</option><option value="same">원문과 같게</option></select></div>
         <div style="flex:1"><label>난이도</label><select id="diff"><option value="keep">비슷하게</option><option value="easy">쉽게</option><option value="hard">어렵게</option></select></div>
       </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><label>그림(SVG)</label><select id="fig"><option value="none">없이</option><option value="auto" selected>필요할 때만</option><option value="always">가능하면 항상</option></select></div>
+        <div style="flex:1"><label>AI 검증</label><select id="verifyMode"><option value="two" selected>2중 (Sonnet+Opus)</option><option value="one">1중 (Sonnet)</option><option value="none">안 함</option></select></div>
+      </div>
+      <p class="hint">검증: 정답을 알려주지 않고 다른 AI가 처음부터 풀어 비교해요. 2중이 가장 정확하지만 비용이 더 들어요.</p>
       <label>추가 요구 (선택)</label>
       <textarea id="extra" rows="2" placeholder="예) 정답이 정수가 되게, 그림 없이, 학교 시험 서술형 느낌으로"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px">
@@ -107,13 +120,6 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
     <div id="status"></div>
     <div id="verBar" class="hidden" style="margin-bottom:8px;font-size:12px">버전: <select id="verSel" style="width:auto"></select></div>
     <div id="results"><div class="hint">왼쪽에서 원본 문제와 변형 단계를 정하고 "변형 문제 만들기"를 눌러주세요.</div></div>
-    <div class="chatbox hidden" id="chatbox">
-      <div class="chips" id="chips"></div>
-      <div style="display:flex;gap:8px">
-        <textarea id="chatIn" rows="2" placeholder="원하는 수정 방향을 적고 보내세요. 예) 2번 숫자를 더 간단하게 / 3번은 조건을 하나 더 추가 / 전부 한 단계 더 어렵게"></textarea>
-        <button id="chatBtn">수정 요청</button>
-      </div>
-    </div>
   </div>
 </div>
 </div>
@@ -137,10 +143,11 @@ function jsonp(params, timeout = 30000) {
     document.body.appendChild(s);
   });
 }
-async function askAI(msgs) {
+async function askAI(msgs, opts) {
+  opts = opts || {};
   const jobId = 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   fetch(DASHBOARD_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'mathvariant', key: KEY, jobId, messages: msgs }) }).catch(() => {});
+    body: JSON.stringify({ action: 'mathvariant', key: KEY, jobId, messages: msgs, mode: opts.mode || 'gen', model: opts.model || '' }) }).catch(() => {});
   const start = Date.now();
   await new Promise(r => setTimeout(r, 4000));
   while (Date.now() - start < 170000) {
@@ -184,105 +191,194 @@ function renderLevels() {
 renderLevels();
 
 /* ---------- 프롬프트 ---------- */
-const FORMAT_RULE = '각 변형 문제를 아래 태그 형식으로만 출력하세요(다른 글은 쓰지 마세요). 객관식이 아니면 <choices> 줄은 생략합니다.\n' +
-  '<variant>\n<problem>문제 본문</problem>\n<choices><c>①에 들어갈 내용</c><c>②</c><c>③</c><c>④</c><c>⑤</c></choices>\n<answer>정답 (객관식이면 번호와 값)</answer>\n<solution>간단한 풀이(검산 포함)</solution>\n<changes>원문에서 무엇을 어떻게 바꿨는지 한 줄</changes>\n</variant>';
+const FORMAT_RULE = '각 변형 문제를 아래 태그 형식으로만 출력하세요(다른 글은 쓰지 마세요). 객관식이 아니면 <choices> 줄을, 그림이 필요 없으면 <figure> 줄을 생략합니다.\n' +
+  '<variant>\n<problem>문제 본문</problem>\n<figure><svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">…필요할 때만…</svg></figure>\n<choices><c>①에 들어갈 내용</c><c>②</c><c>③</c><c>④</c><c>⑤</c></choices>\n<answer>정답 (객관식이면 번호와 값)</answer>\n<solution>간단한 풀이(검산 포함)</solution>\n<changes>원문에서 무엇을 어떻게 바꿨는지 한 줄</changes>\n</variant>';
 function firstMessage() {
   const fmt = { mc: '5지선다 객관식', short: '단답형(주관식)', same: '원문과 같은 형식' }[$('fmt').value];
   const diff = { keep: '원문과 비슷한 난이도', easy: '원문보다 조금 쉽게', hard: '원문보다 어렵게' }[$('diff').value];
+  const fig = { none: '그림 없이(조건을 글로 서술)', auto: '그림이 꼭 필요한 문제에만 SVG 그림 포함', always: '가능하면 모든 문제에 SVG 그림 포함' }[$('fig').value];
   const extra = $('extra').value.trim();
   return '[원본 문제]\n' + $('src').value.trim() + '\n\n[요청]\n- 변형 단계: ' + level + '단계 (' + LEVELS[level - 1][0] + ': ' + LEVELS[level - 1][1] + ')\n' +
-    '- 만들 문제 수: ' + $('count').value + '개\n- 형식: ' + fmt + '\n- 난이도: ' + diff + (extra ? '\n- 추가 요구: ' + extra : '') + '\n\n' + FORMAT_RULE;
+    '- 만들 문제 수: ' + $('count').value + '개\n- 형식: ' + fmt + '\n- 난이도: ' + diff + '\n- 그림: ' + fig + (extra ? '\n- 추가 요구: ' + extra : '') + '\n\n' + FORMAT_RULE;
 }
 
 /* ---------- 결과 파싱/표시 ---------- */
 function tag(s, name) { const m = s.match(new RegExp('<' + name + '>([\\s\\S]*?)</' + name + '>')); return m ? m[1].trim() : ''; }
+function sanitizeSvg(svg) {
+  const m = String(svg || '').match(/<svg[\s\S]*<\/svg>/i); if (!m) return '';
+  return m[0].replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi, '').replace(/(href|xlink:href)\s*=\s*("|')\s*(javascript:|https?:)[^"']*\2/gi, '');
+}
 function parseVariants(text) {
   const out = [];
   for (const m of text.matchAll(/<variant>([\s\S]*?)<\/variant>/g)) {
     const b = m[1];
     const ch = [...(tag(b, 'choices').matchAll(/<c>([\s\S]*?)<\/c>/g))].map(x => x[1].trim());
-    out.push({ problem: tag(b, 'problem'), choices: ch, answer: tag(b, 'answer'), solution: tag(b, 'solution'), changes: tag(b, 'changes') });
+    out.push({ problem: tag(b, 'problem'), figure: sanitizeSvg(tag(b, 'figure')), choices: ch, answer: tag(b, 'answer'), solution: tag(b, 'solution'), changes: tag(b, 'changes'), verify: {} });
   }
   return out;
 }
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const toHtml = s => esc(s).replace(/\n/g, '<br>');
 const CIR = ['①', '②', '③', '④', '⑤'];
+const chText = (c, i) => (/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c);
+function variantTag(v) {
+  return '<variant>\n<problem>' + v.problem + '</problem>\n' + (v.figure ? '<figure>' + v.figure + '</figure>\n' : '') +
+    (v.choices.length ? '<choices>' + v.choices.map(c => '<c>' + c + '</c>').join('') + '</choices>\n' : '') +
+    '<answer>' + v.answer + '</answer>\n<solution>' + v.solution + '</solution>\n<changes>' + v.changes + '</changes>\n</variant>';
+}
 function variantText(v) {
-  return v.problem + (v.choices.length ? '\n' + v.choices.map((c, i) => (/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('   ') : '') + '\n[정답] ' + v.answer + '\n[풀이] ' + v.solution;
+  return v.problem + (v.figure ? '\n[그림 있음]' : '') + (v.choices.length ? '\n' + v.choices.map(chText).join('   ') : '') + '\n[정답] ' + v.answer + '\n[풀이] ' + v.solution;
 }
 function renderMath(el) {
   if (window.renderMathInElement) try { renderMathInElement(el, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
 }
-function showVersion(i) {
-  const v = versions[i];
-  $('results').innerHTML = v.items.map((it, n) => `
-    <div class="vcard" data-n="${n}">
-      <div class="vhead"><span>변형 ${n + 1}</span><span></span></div>
+function flash(t) { $('status').textContent = t; $('status').className = 'ok'; setTimeout(() => { if ($('status').textContent === t) $('status').textContent = ''; }, 2000); }
+function updatePicked() { $('pickedCount').textContent = picked.length; }
+
+/* ---------- 원본 문제 미리보기 (화면에 보이는 모양) ---------- */
+let pvT = null;
+function updatePreview() {
+  clearTimeout(pvT);
+  pvT = setTimeout(() => { const t = $('src').value.trim(); $('srcPreview').innerHTML = t ? toHtml(t) : '<span class="hint">여기에 수식이 그려진 모양이 나와요.</span>'; renderMath($('srcPreview')); }, 250);
+}
+$('src').addEventListener('input', updatePreview); updatePreview();
+
+/* ---------- 검증 (정답을 안 알려주고 처음부터 풀게 함) ---------- */
+const VERIFIERS = { 'claude-sonnet-5': 'Sonnet', 'claude-opus-5': 'Opus' };
+function verifyModels() { const v = $('verifyMode').value; return v === 'none' ? [] : v === 'one' ? ['claude-sonnet-5'] : ['claude-sonnet-5', 'claude-opus-5']; }
+function normAns(s) { return String(s || '').replace(/\\left|\\right|\\displaystyle/g, '').replace(/\\dfrac/g, '\\frac').replace(/[\s$]/g, '').replace(/정답|번|이다/g, '').replace(/\\[,;]/g, '').replace(/\.$/, ''); }
+function sameAnswer(declared, got) {
+  const cd = (declared.match(/[①-⑤]/) || [])[0], cg = (got.match(/[①-⑤]/) || [])[0];
+  if (cd && cg) return cd === cg;
+  const nd = (declared.match(/^\s*([1-5])\s*번?\s*$/) || [])[1], ng = (got.match(/^\s*([1-5])\s*번?\s*$/) || [])[1];
+  if ((cd || nd) && (cg || ng)) return String(cd ? CIR.indexOf(cd) + 1 : nd) === String(cg ? CIR.indexOf(cg) + 1 : ng);
+  const a = normAns(declared), b = normAns(got);
+  return a === b || (a.length > 1 && b.includes(a));
+}
+async function verifyOne(item, model) {
+  const body = '[문제]\n' + item.problem + (item.figure ? '\n\n[그림(SVG 코드)]\n' + item.figure : '') +
+    (item.choices.length ? '\n\n[보기]\n' + item.choices.map(chText).join('\n') : '\n\n(주관식)');
+  item.verify[model] = { state: 'run' };
+  try {
+    const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model });
+    const verdict = tag(res.text, 'verdict').toUpperCase(), ans = tag(res.text, 'answer'), issue = tag(res.text, 'issue');
+    item.verify[model] = { state: 'done', ok: verdict.includes('OK') && sameAnswer(item.answer, ans), ans, issue: /^없음/.test(issue) ? '' : issue };
+  } catch (e) { item.verify[model] = { state: 'err', msg: e.message }; }
+}
+function verifyBadge(item) {
+  const ms = Object.keys(item.verify); if (!ms.length) return '';
+  const parts = ms.map(m => {
+    const r = item.verify[m], n = VERIFIERS[m];
+    if (r.state === 'run') return `<span class="vb run">${n} 검증 중…</span>`;
+    if (r.state === 'err') return `<span class="vb bad" title="${esc(r.msg)}">${n} 검증 실패</span>`;
+    if (r.ok) return `<span class="vb good">${n} ✅ 일치</span>`;
+    return `<span class="vb bad" title="${esc(r.issue || '')}">${n} ⚠️ 불일치 (AI 답: ${esc(r.ans)})</span>`;
+  });
+  const done = ms.filter(m => item.verify[m].state === 'done');
+  const allGood = done.length === ms.length && done.every(m => item.verify[m].ok);
+  const issues = done.map(m => item.verify[m].issue).filter(Boolean);
+  return `<div class="vrow">${allGood ? '<b class="good">✅ 검증 통과</b> ' : ''}${parts.join(' ')}${issues.length ? `<div class="changes err">지적: ${esc(issues.join(' / '))}</div>` : ''}</div>`;
+}
+async function verifyAll(ver, only) {
+  const models = verifyModels(); if (!models.length) return;
+  const tasks = [];
+  ver.items.forEach((it, n) => {
+    if (only != null && only !== n) return;
+    it.verify = {};
+    models.forEach(m => tasks.push(() => verifyOne(it, m).then(() => { if (versions[cur] === ver) refreshCard(n); })));
+  });
+  ver.items.forEach((_, n) => { if (only == null || only === n) refreshCard(n); });
+  let idx = 0;
+  await Promise.all(Array.from({ length: 3 }, async () => { while (idx < tasks.length) await tasks[idx++](); }));
+}
+
+/* ---------- 결과 카드 ---------- */
+let cur = -1;
+function cardHtml(it, n) {
+  return `
+      <div class="vhead"><span>변형 ${n + 1}</span><span class="vbadge">${verifyBadge(it)}</span></div>
       <div class="vprob">${toHtml(it.problem)}</div>
+      ${it.figure ? `<div class="fig">${it.figure}</div>` : ''}
       ${it.choices.length ? `<div class="vch">${it.choices.map((c, k) => `<div>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</div>`).join('')}</div>` : ''}
       <details><summary>정답 · 풀이 보기</summary><div><b>정답</b> ${toHtml(it.answer)}</div><div style="margin-top:6px">${toHtml(it.solution)}</div></details>
       ${it.changes ? `<div class="changes">바뀐 점: ${toHtml(it.changes)}</div>` : ''}
-      <div class="acts"><button class="sec pk">담기</button><button class="sec cp">복사</button></div>
-    </div>`).join('') + (v.truncated ? '<div class="err">⚠️ 응답이 길어 마지막이 잘렸을 수 있어요. 문제 수를 줄여보세요.</div>' : '');
-  $('results').querySelectorAll('.vcard').forEach(card => {
-    const it = v.items[Number(card.dataset.n)];
-    const isPicked = () => picked.some(p => p.text === variantText(it));
-    card.classList.toggle('picked', isPicked());
-    card.querySelector('.pk').onclick = () => {
-      if (isPicked()) picked = picked.filter(p => p.text !== variantText(it)); else picked.push({ item: it, text: variantText(it) });
-      card.classList.toggle('picked', isPicked()); updatePicked();
-    };
-    card.querySelector('.cp').onclick = () => navigator.clipboard.writeText(variantText(it)).then(() => flash('복사했어요'));
-  });
+      <div class="acts"><button class="sec pk">담기</button><button class="sec cp">복사</button><button class="sec rv">다시 검증</button></div>
+      <div class="edit"><input type="text" class="ei" placeholder="이 문제만 수정 요청 (예: 숫자를 더 간단하게 / 그림을 넣어줘 / 조건 하나 추가)"><button class="ed">수정</button></div>`;
+}
+function bindCard(card, n) {
+  const ver = versions[cur], it = ver.items[n];
+  const isPicked = () => picked.some(p => p.text === variantText(it));
+  card.classList.toggle('picked', isPicked());
+  card.querySelector('.pk').onclick = () => {
+    if (isPicked()) picked = picked.filter(p => p.text !== variantText(it)); else picked.push({ item: it, text: variantText(it) });
+    card.classList.toggle('picked', isPicked()); updatePicked();
+  };
+  card.querySelector('.cp').onclick = () => navigator.clipboard.writeText(variantText(it)).then(() => flash('복사했어요'));
+  card.querySelector('.rv').onclick = () => verifyAll(ver, n);
+  const go = () => { const t = card.querySelector('.ei').value.trim(); if (t) editOne(n, t); };
+  card.querySelector('.ed').onclick = go;
+  card.querySelector('.ei').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+}
+function refreshCard(n) {
+  const card = $('results').querySelector(`.vcard[data-n="${n}"]`); if (!card) return;
+  const keep = card.querySelector('.ei') ? card.querySelector('.ei').value : '';
+  const open = card.querySelector('details') && card.querySelector('details').open;
+  card.innerHTML = cardHtml(versions[cur].items[n], n);
+  card.querySelector('.ei').value = keep; if (open) card.querySelector('details').open = true;
+  bindCard(card, n); renderMath(card);
+}
+function showVersion(i) {
+  cur = i; const v = versions[i];
+  $('results').innerHTML = v.items.map((it, n) => `<div class="vcard" data-n="${n}">${cardHtml(it, n)}</div>`).join('') + (v.truncated ? '<div class="err">⚠️ 응답이 길어 마지막이 잘렸을 수 있어요. 문제 수를 줄여보세요.</div>' : '');
+  $('results').querySelectorAll('.vcard').forEach(c => bindCard(c, Number(c.dataset.n)));
   renderMath($('results'));
 }
-function flash(t) { $('status').textContent = t; $('status').className = 'ok'; setTimeout(() => { if ($('status').textContent === t) $('status').textContent = ''; }, 2000); }
-function updatePicked() { $('pickedCount').textContent = picked.length; }
-function pushVersion(label, res) {
-  const items = parseVariants(res.text);
-  if (!items.length) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 요청해 주세요.\n' + res.text.slice(0, 200));
-  versions.push({ label, items, truncated: res.truncated });
+function pushVersion(label, items, truncated) {
+  versions.push({ label, items, truncated });
   $('verSel').innerHTML = versions.map((v, i) => `<option value="${i}">${i + 1}. ${esc(v.label)}</option>`).join('');
   $('verSel').value = versions.length - 1;
   $('verBar').classList.toggle('hidden', versions.length < 2);
   showVersion(versions.length - 1);
+  return versions[versions.length - 1];
 }
 $('verSel').onchange = () => showVersion(Number($('verSel').value));
 
 /* ---------- 실행 ---------- */
 let busy = false;
-async function run(label, msgs, btn) {
-  if (busy) return; busy = true;
-  document.querySelectorAll('button').forEach(b => b.dataset.was = b.disabled ? '1' : '');
-  $('genBtn').disabled = $('chatBtn').disabled = true;
-  $('status').className = ''; $('status').textContent = '⏳ AI가 문제를 만드는 중... (보통 20~60초)';
-  try {
-    const res = await askAI(msgs);
-    pushVersion(label, res);
-    messages = msgs.concat([{ role: 'assistant', content: res.text }]);
-    $('chatbox').classList.remove('hidden');
-    $('status').textContent = '';
-  } catch (e) { $('status').className = 'err'; $('status').textContent = e.message; }
-  finally { busy = false; $('genBtn').disabled = $('chatBtn').disabled = false; }
-}
-$('genBtn').onclick = () => {
+function setBusy(b, msg) { busy = b; $('genBtn').disabled = b; $('status').className = ''; $('status').textContent = msg || ''; }
+$('genBtn').onclick = async () => {
+  if (busy) return;
   if (!$('src').value.trim()) { $('status').className = 'err'; $('status').textContent = '원본 문제를 입력해 주세요.'; return; }
-  messages = []; versions = [];
-  run('처음 생성 (' + level + '단계)', [{ role: 'user', content: firstMessage() }]);
+  versions = []; cur = -1;
+  setBusy(true, '⏳ AI가 문제를 만드는 중... (보통 20~60초)');
+  try {
+    const res = await askAI([{ role: 'user', content: firstMessage() }]);
+    const items = parseVariants(res.text);
+    if (!items.length) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.\n' + res.text.slice(0, 200));
+    const ver = pushVersion('처음 생성 (' + level + '단계)', items, res.truncated);
+    setBusy(false, verifyModels().length ? '문제를 만들었어요. 이어서 AI들이 정답을 검증하고 있어요…' : '');
+    await verifyAll(ver);
+    if (verifyModels().length) flash('검증이 끝났어요');
+  } catch (e) { setBusy(false, e.message); $('status').className = 'err'; }
 };
-function refine(text) {
-  if (!text.trim() || !messages.length) return;
-  const msg = text.trim() + '\n\n위 요청을 반영해서, 요청과 무관한 문제는 그대로 두고 전체 변형 문제 세트를 같은 태그 형식으로 다시 출력하세요.';
-  run(text.trim().slice(0, 24), messages.concat([{ role: 'user', content: msg }]));
-  $('chatIn').value = '';
+async function editOne(n, instr) {
+  if (busy) return;
+  const ver = versions[cur], it = ver.items[n];
+  setBusy(true, '⏳ 변형 ' + (n + 1) + '번을 수정하는 중...');
+  try {
+    const msg = '[원본 문제]\n' + $('src').value.trim() + '\n\n[현재 변형 문제]\n' + variantTag(it) + '\n\n[수정 요청]\n' + instr +
+      '\n\n위 변형 문제 하나만 요청대로 고쳐서 같은 태그 형식(<variant> 하나)으로 다시 출력하세요. 요청과 무관한 부분은 그대로 두세요.\n' + FORMAT_RULE;
+    const res = await askAI([{ role: 'user', content: msg }]);
+    const fixed = parseVariants(res.text)[0];
+    if (!fixed) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
+    const items = ver.items.map((x, k) => k === n ? fixed : x);
+    const nv = pushVersion('변형' + (n + 1) + ' 수정: ' + instr.slice(0, 18), items, false);
+    setBusy(false, '');
+    await verifyAll(nv, n);
+  } catch (e) { setBusy(false, e.message); $('status').className = 'err'; }
 }
-$('chatBtn').onclick = () => refine($('chatIn').value);
-$('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('chatBtn').click(); });
-['숫자를 더 간단하게', '한 단계 더 어렵게', '한 단계 더 쉽게', '정답이 정수가 되게', '오답 선지를 더 그럴듯하게', '조건을 하나 더 추가', '서술형 느낌으로'].forEach(t => {
-  const b = document.createElement('button'); b.textContent = t; b.onclick = () => refine(t); $('chips').appendChild(b);
-});
-$('resetBtn').onclick = () => { messages = []; versions = []; $('results').innerHTML = '<div class="hint">새로 시작했어요.</div>'; $('chatbox').classList.add('hidden'); $('verBar').classList.add('hidden'); $('status').textContent = ''; };
+$('resetBtn').onclick = () => { versions = []; cur = -1; $('results').innerHTML = '<div class="hint">새로 시작했어요.</div>'; $('verBar').classList.add('hidden'); $('status').textContent = ''; };
 
 /* ---------- 담은 문제 내보내기 ---------- */
 $('copyPicked').onclick = () => {
@@ -291,7 +387,7 @@ $('copyPicked').onclick = () => {
 };
 $('printPicked').onclick = () => {
   if (!picked.length) return flash('담은 문제가 없어요');
-  const body = picked.map((p, i) => `<div class="q"><b>${i + 1}.</b> ${toHtml(p.item.problem)}${p.item.choices.length ? '<div class="ch">' + p.item.choices.map((c, k) => `<span>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</span>`).join('') + '</div>' : ''}</div>`).join('');
+  const body = picked.map((p, i) => `<div class="q"><b>${i + 1}.</b> ${toHtml(p.item.problem)}${p.item.figure ? '<div style="text-align:center">' + p.item.figure + '</div>' : ''}${p.item.choices.length ? '<div class="ch">' + p.item.choices.map((c, k) => `<span>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</span>`).join('') + '</div>' : ''}</div>`).join('');
   const ans = picked.map((p, i) => `<div class="a"><b>${i + 1}.</b> 정답 ${toHtml(p.item.answer)}<div>${toHtml(p.item.solution)}</div></div>`).join('');
   const w = window.open('', '_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>변형 문제</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:'Noto Serif KR',serif;padding:24px;line-height:1.9}.q{margin-bottom:26px;break-inside:avoid}.ch{display:grid;grid-template-columns:repeat(2,1fr);gap:2px 20px;margin-top:6px}.a{margin-bottom:12px;font-size:13px}h2{page-break-before:always}</style></head><body>${body}<h2>정답 · 풀이</h2>${ans}<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script><script>window.onload=function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\\\(',right:'\\\\)',display:false}],throwOnError:false});setTimeout(function(){window.print()},600)}<\/script></body></html>`);
