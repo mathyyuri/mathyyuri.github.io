@@ -399,7 +399,7 @@ async function editOne(n, instr) {
     await verifyAll(nv, n);
   } catch (e) { setBusy(false, e.message); $('status').className = 'err'; }
 }
-$('resetBtn').onclick = () => { versions = []; cur = -1; $('results').innerHTML = '<div class="hint">새로 시작했어요.</div>'; $('verBar').classList.add('hidden'); $('status').textContent = ''; };
+$('resetBtn').onclick = () => { try { localStorage.removeItem('mathvariant_state_v1'); } catch (e) {} versions = []; cur = -1; $('results').innerHTML = '<div class="hint">새로 시작했어요.</div>'; $('verBar').classList.add('hidden'); $('status').textContent = ''; };
 
 /* ---------- 담은 문제 내보내기 ---------- */
 $('copyPicked').onclick = () => {
@@ -503,6 +503,29 @@ $('pickBtn').onclick = async () => {
   updatePreview();
   $('status').className = 'ok'; $('status').textContent = typed + '번 문제를 불러왔어요' + (useOrig ? '.' : ' (원본 ' + realKey + '번).') + (/\[그림\]/.test(txt) ? ' 그림이 있는 문제예요 — "[그림]" 자리를 글로 설명해 주세요.' : '');
 };
+
+/* ---------- 자동 저장: 새로고침해도 만든 문제·담은 문제가 남는다 (이 브라우저에만 저장) ---------- */
+(function () {
+  const K = 'mathvariant_state_v1'; let last = '';
+  function snap() { return JSON.stringify({ versions, cur, messages, picked: picked.map(p => p.item), src: $('src').value, srcImages }); }
+  setInterval(() => {
+    try { const t = snap(); if (t === last) return; localStorage.setItem(K, t); last = t; }
+    catch (e) { try { localStorage.setItem(K, JSON.stringify({ versions, cur, messages, picked: picked.map(p => p.item), src: $('src').value, srcImages: [] })); } catch (e2) {} }
+  }, 3000);
+  try {
+    const d = JSON.parse(localStorage.getItem(K) || 'null'); if (!d) return;
+    messages = d.messages || []; srcImages = d.srcImages || []; renderSrcImages();
+    if (d.src && !$('src').value.trim()) { $('src').value = d.src; updatePreview(); }
+    picked = (d.picked || []).map(it => ({ item: it, text: variantText(it) })); updatePicked();
+    const vs = d.versions || [];
+    if (vs.length) {
+      versions = vs; $('verSel').innerHTML = versions.map((v, i) => `<option value="${i}">${i + 1}. ${esc(v.label)}</option>`).join('');
+      cur = Math.min(Math.max(d.cur, 0), versions.length - 1); $('verSel').value = cur;
+      $('verBar').classList.toggle('hidden', versions.length < 2); showVersion(cur);
+    }
+    last = snap();
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
