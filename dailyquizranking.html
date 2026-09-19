@@ -230,6 +230,9 @@ header p  { font-size: 0.75rem; opacity: 0.4; letter-spacing: 2px; margin: 0; }
 .rr-item:first-of-type { border-top: none; }
 .rr-ihead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
 .rr-irate { font-size: 0.68rem; font-weight: 700; color: #fff; background: var(--dark); padding: 2px 8px; border-radius: 9px; }
+.imgGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.imgGrid > div { min-width: 0; }
+.imgGrid img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; display: block; }
 .rr-stem { font-size: 0.86rem; line-height: 1.7; margin-bottom: 6px; }
 .rr-item img { max-width: 100%; height: auto; border-radius: 6px; }
 .rr-choices { font-size: 0.78rem; color: #888; margin-bottom: 6px; }
@@ -583,6 +586,7 @@ function renderRoundView() {
   renderRoundList(data);
 }
 
+function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
 // 그 회차 문항별 정답률(15문제 전체) + 오답률 높은 5문제(정답·해설·풀이영상).
 // dailyquizroundreport는 정답 공개된 회차만 내용을 준다(공개 페이지 유출 방지) —
 // 공개 전이면 안내 문구만 보여준다.
@@ -614,7 +618,7 @@ async function renderRoundReport(round) {
     return `<div class="rr-cell" style="background:${rrRateColor(r)}"><span>${it.num}번</span><b>${r == null ? '-' : r + '%'}</b></div>`;
   }).join('');
   const hardHtml = hard.map(it => {
-    const choicesHtml = (it.choices || []).join(' &nbsp; ');
+    const choicesHtml = choiceInner(it.choices);
     return `<div class="rr-item">
       <div class="rr-ihead"><span>${it.num}번</span><span class="rr-irate">정답률 ${it.rate}%</span></div>
       <div class="rr-stem">${it.stemHtml || ''}</div>
@@ -649,7 +653,7 @@ async function renderRoundReport(round) {
       const sitems = (sj && sj.ok) ? (sj.items || []) : [];
       if (!sitems.length) { listAll.innerHTML = '<p class="rr-note">불러오지 못했어요.</p>'; loaded = false; return; }
       listAll.innerHTML = sitems.map(it => {
-        const choicesHtml = (it.choices || []).join(' &nbsp; ');
+        const choicesHtml = choiceInner(it.choices);
         return `<div class="rr-item">
           <div class="rr-ihead"><span>${it.num}번</span>${it.rate != null ? `<span class="rr-irate">정답률 ${it.rate}%</span>` : ''}</div>
           <div class="rr-stem">${it.stemHtml || ''}</div>

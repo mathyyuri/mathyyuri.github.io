@@ -174,6 +174,9 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .hardItem:first-of-type { border-top: none; }
 .hardItem .hqHead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
 .hardItem .hqRate { font-size: 0.7rem; font-weight: 700; color: #fff; background: var(--pink-deep); padding: 2px 9px; border-radius: 10px; }
+.imgGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.imgGrid > div { min-width: 0; }
+.imgGrid img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; display: block; }
 .hardItem .hqStem { font-size: 0.88rem; line-height: 1.7; margin-bottom: 8px; }
 .hardItem img { max-width: 100%; height: auto; border-radius: 6px; }
 .hardItem .hqChoices { font-size: 0.8rem; color: #777; margin-bottom: 8px; line-height: 1.8; }
@@ -329,6 +332,7 @@ let me = null; // {name, pw}
 let activeRounds = [];      // [1,2,3,...]
 let doneRounds = new Set(); // 완료(전부 채점 완료) 회차
 let currentRound = null;
+function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
 let questions = [];         // [{num,difficulty,points,stemHtml,choices}]
 let qIndex = 0;
 let answers = {};           // num -> {choice, meta}
@@ -890,7 +894,7 @@ async function renderHardQuestions() {
     items.forEach(it => {
       const row = document.createElement('div');
       row.className = 'hardItem';
-      const choicesHtml = (it.choices || []).join(' &nbsp; ');
+      const choicesHtml = choiceInner(it.choices);
       row.innerHTML = `
         <div class="hqHead"><span>${it.num}번</span><span class="hqRate">정답률 ${it.rate}%</span></div>
         <div class="hqStem">${it.stemHtml || ''}</div>
@@ -926,7 +930,7 @@ async function renderHardQuestions() {
         sitems.forEach(it => {
           const row = document.createElement('div');
           row.className = 'hardItem';
-          const choicesHtml = (it.choices || []).join(' &nbsp; ');
+          const choicesHtml = choiceInner(it.choices);
           row.innerHTML = `
             <div class="hqHead"><span>${it.num}번</span>${it.rate != null ? `<span class="hqRate">정답률 ${it.rate}%</span>` : ''}</div>
             <div class="hqStem">${it.stemHtml || ''}</div>
