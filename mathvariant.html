@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script><script src="hwpeq-lib.js?v=' + Date.now() + '"><\/script><script src="hwpx-writer.js?v=' + Date.now() + '"><\/script>');</script>
 <style>
 :root{--cream:#FBF8F1;--ink:#1a1a1a;--gold:#A8853F;--line:#E6DCC6;--mint:#3E8F79;--pink:#C64E71;}
 *{box-sizing:border-box}
@@ -113,6 +113,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
       <div class="acts" style="margin:0">
         <button class="sec" id="copyPicked">텍스트 복사</button>
         <button class="sec" id="printPicked">인쇄 / PDF</button>
+        <button class="sec" id="hwpxPicked">한글(hwpx)로 받기</button>
       </div>
       <p class="hint">결과 카드의 "담기"를 누르면 여기 모여요. 다른 변형 결과에서 골라 담아도 유지돼요.</p>
     </div>
@@ -404,6 +405,16 @@ $('resetBtn').onclick = () => { versions = []; cur = -1; $('results').innerHTML 
 $('copyPicked').onclick = () => {
   if (!picked.length) return flash('담은 문제가 없어요');
   navigator.clipboard.writeText(picked.map((p, i) => (i + 1) + '.\n' + p.text).join('\n\n')).then(() => flash('복사했어요'));
+};
+$('hwpxPicked').onclick = async () => {
+  if (!picked.length) return flash('담은 문제가 없어요');
+  const b = $('hwpxPicked'); b.disabled = true; const old = b.textContent; b.textContent = '만드는 중…';
+  try {
+    const r = await buildProblemsHwpx(picked.map(p => ({ problem: p.item.problem, figure: p.item.figure, choices: p.item.choices, answer: p.item.answer, solution: p.item.solution })), { title: '변형 문제' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(r.blob); a.download = '변형문제_' + picked.length + '문항.hwpx'; document.body.appendChild(a); a.click(); a.remove();
+    flash(r.warnings.length ? '받았어요 (확인 필요: ' + r.warnings.join(', ') + ')' : '받았어요');
+  } catch (e) { $('status').className = 'err'; $('status').textContent = 'hwpx 만들기 실패: ' + e.message; }
+  b.disabled = false; b.textContent = old;
 };
 $('printPicked').onclick = () => {
   if (!picked.length) return flash('담은 문제가 없어요');
