@@ -586,7 +586,7 @@ function renderRoundView() {
   renderRoundList(data);
 }
 
-function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
+function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img\b/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
 // 그 회차 문항별 정답률(15문제 전체) + 오답률 높은 5문제(정답·해설·풀이영상).
 // dailyquizroundreport는 정답 공개된 회차만 내용을 준다(공개 페이지 유출 방지) —
 // 공개 전이면 안내 문구만 보여준다.

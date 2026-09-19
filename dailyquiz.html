@@ -332,7 +332,7 @@ let me = null; // {name, pw}
 let activeRounds = [];      // [1,2,3,...]
 let doneRounds = new Set(); // 완료(전부 채점 완료) 회차
 let currentRound = null;
-function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
+function choiceInner(cs) { cs = cs || []; return cs.some(c => /<img\b/i.test(c)) ? '<div class="imgGrid">' + cs.map(c => '<div>' + c + '</div>').join('') + '</div>' : cs.join(' &nbsp; '); }
 let questions = [];         // [{num,difficulty,points,stemHtml,choices}]
 let qIndex = 0;
 let answers = {};           // num -> {choice, meta}
