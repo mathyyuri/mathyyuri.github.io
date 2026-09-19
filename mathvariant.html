@@ -47,6 +47,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
 #status{font-size:13px;margin:8px 0;min-height:18px}
 .err{color:var(--pink)}.ok{color:var(--mint)}
 .preview{border:1px dashed var(--line);border-radius:6px;padding:8px 10px;background:#fcfbf7;line-height:1.9;min-height:40px;font-size:14px}
+.simg{position:relative;display:inline-block;margin:4px 6px 0 0}.simg img{max-height:110px;max-width:160px;border:1px solid var(--line);border-radius:6px}.simg button{position:absolute;top:2px;right:2px;padding:0 6px;font-size:11px;background:#fff;color:var(--ink);border:1px solid var(--line)}
 .fig{margin:10px 0;text-align:center}.fig svg{max-width:100%;height:auto;max-height:260px}
 .vb{font-size:11.5px;padding:2px 8px;border-radius:10px;background:#eee;margin-right:4px}.vb.good{background:#dff1ea;color:#256b57}.vb.bad{background:#fbe3ea;color:#a3324f}.vb.run{background:#f1ecdf;color:#8a7440}.good{color:var(--mint)}
 .vrow{font-size:12px;margin-bottom:2px}
@@ -82,7 +83,8 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
       <textarea id="src" rows="9" placeholder="예) 중심이 $(2,-3)$ 이고 반지름이 $5$ 인 원의 방정식은?"></textarea>
       <label>화면에 보이는 모양 (미리보기)</label>
       <div id="srcPreview" class="preview"></div>
-      <p class="hint">그래프·그림은 글로 설명해서 적어주세요(그림은 AI에게 전달되지 않아요).</p>
+      <div id="srcImgs"></div>
+      <p class="hint">hwpx에서 불러온 문제의 그림은 AI에게 함께 전달돼요. 직접 입력한 문제는 그림을 글로 설명해 주세요.</p>
     </div>
     <div class="card">
       <h2>2. 변형 설정</h2>
@@ -96,7 +98,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
       </div>
       <div style="display:flex;gap:8px">
         <div style="flex:1"><label>그림(SVG)</label><select id="fig"><option value="none">없이</option><option value="auto" selected>필요할 때만</option><option value="always">가능하면 항상</option></select></div>
-        <div style="flex:1"><label>AI 검증</label><select id="verifyMode"><option value="two" selected>2중 (Sonnet+Opus)</option><option value="one">1중 (Sonnet)</option><option value="none">안 함</option></select></div>
+        <div style="flex:1"><label>AI 검증</label><select id="verifyMode"><option value="one" selected>1중 (Sonnet)</option><option value="two">2중 (Sonnet+Opus, 느림)</option><option value="none">안 함</option></select></div>
       </div>
       <p class="hint">검증: 정답을 알려주지 않고 다른 AI가 처음부터 풀어 비교해요. 2중이 가장 정확하지만 비용이 더 들어요.</p>
       <label>추가 요구 (선택)</label>
@@ -147,7 +149,7 @@ async function askAI(msgs, opts) {
   opts = opts || {};
   const jobId = 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   fetch(DASHBOARD_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'mathvariant', key: KEY, jobId, messages: msgs, mode: opts.mode || 'gen', model: opts.model || '' }) }).catch(() => {});
+    body: JSON.stringify({ action: 'mathvariant', key: KEY, jobId, messages: msgs, mode: opts.mode || 'gen', model: opts.model || '', images: opts.images || [] }) }).catch(() => {});
   const start = Date.now();
   await new Promise(r => setTimeout(r, 4000));
   while (Date.now() - start < 170000) {
@@ -346,14 +348,19 @@ $('verSel').onchange = () => showVersion(Number($('verSel').value));
 
 /* ---------- 실행 ---------- */
 let busy = false;
-function setBusy(b, msg) { busy = b; $('genBtn').disabled = b; $('status').className = ''; $('status').textContent = msg || ''; }
+let busyT = null;
+function setBusy(b, msg) {
+  busy = b; $('genBtn').disabled = b; $('status').className = ''; $('status').textContent = msg || '';
+  clearInterval(busyT);
+  if (b && msg) { const t0 = Date.now(), base = msg; busyT = setInterval(() => { if (busy) $('status').textContent = base + ' (' + Math.round((Date.now() - t0) / 1000) + '초 경과)'; }, 1000); }
+}
 $('genBtn').onclick = async () => {
   if (busy) return;
   if (!$('src').value.trim()) { $('status').className = 'err'; $('status').textContent = '원본 문제를 입력해 주세요.'; return; }
   versions = []; cur = -1;
   setBusy(true, '⏳ AI가 문제를 만드는 중... (보통 20~60초)');
   try {
-    const res = await askAI([{ role: 'user', content: firstMessage() }]);
+    const res = await askAI([{ role: 'user', content: firstMessage() }], { images: srcImages });
     const items = parseVariants(res.text);
     if (!items.length) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.\n' + res.text.slice(0, 200));
     const ver = pushVersion('처음 생성 (' + level + '단계)', items, res.truncated);
@@ -369,7 +376,7 @@ async function editOne(n, instr) {
   try {
     const msg = '[원본 문제]\n' + $('src').value.trim() + '\n\n[현재 변형 문제]\n' + variantTag(it) + '\n\n[수정 요청]\n' + instr +
       '\n\n위 변형 문제 하나만 요청대로 고쳐서 같은 태그 형식(<variant> 하나)으로 다시 출력하세요. 요청과 무관한 부분은 그대로 두세요.\n' + FORMAT_RULE;
-    const res = await askAI([{ role: 'user', content: msg }]);
+    const res = await askAI([{ role: 'user', content: msg }], { images: srcImages });
     const fixed = parseVariants(res.text)[0];
     if (!fixed) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
     const items = ver.items.map((x, k) => k === n ? fixed : x);
@@ -394,8 +401,35 @@ $('printPicked').onclick = () => {
   w.document.close();
 };
 
+/* ---------- 원본 그림 (AI에게 함께 전달) ---------- */
+async function toPng(dataUri) {
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1100 / Math.max(im.width, im.height));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/png'));
+    };
+    im.onerror = () => res(null);
+    im.src = dataUri;
+  });
+}
+async function collectImages(html) {
+  const uris = [...html.matchAll(/<img[^>]*\ssrc="(data:image\/[^"]+)"/g)].map(m => m[1]).slice(0, 3);
+  const out = [];
+  for (const u of uris) { const p = await toPng(u); if (p && p.length < 5000000) out.push(p); }
+  return out;
+}
+function renderSrcImages() {
+  $('srcImgs').innerHTML = srcImages.length
+    ? '<div class="hint">원본 그림 ' + srcImages.length + '개가 AI에게 함께 전달돼요. 필요 없으면 ✕로 빼세요.</div>' + srcImages.map((u, i) => `<span class="simg"><img src="${u}"><button type="button" data-i="${i}">✕</button></span>`).join('')
+    : '';
+  $('srcImgs').querySelectorAll('button').forEach(b => b.onclick = () => { srcImages.splice(Number(b.dataset.i), 1); renderSrcImages(); });
+}
+
 /* ---------- hwpx에서 문제 불러오기 ---------- */
-let hEntry = null, hKeys = [];
+let hEntry = null, hKeys = [], srcImages = [];
 function spans(html) {
   const o = [], t = '<span class="choiceItem">'; let i = 0;
   while (true) {
@@ -440,6 +474,9 @@ $('pickBtn').onclick = async () => {
   if (ch.length) txt += '\n' + ch.map(c => { const t = htmlToText(c); return /^[①-⑤]/.test(t) ? t : t; }).join('\n');
   try { const ax = extractQuickAnswerXml(mk.blockXml); if (ax) txt += '\n(원문 정답: ' + htmlToText(await hwpFragmentRunsToHtml(ax, hEntry)).replace(/^\[정답\]\s*/, '') + ')'; } catch (e) {}
   $('src').value = txt;
+  srcImages = await collectImages(html);
+  renderSrcImages();
+  updatePreview();
   $('status').className = 'ok'; $('status').textContent = typed + '번 문제를 불러왔어요' + (useOrig ? '.' : ' (원본 ' + realKey + '번).') + (/\[그림\]/.test(txt) ? ' 그림이 있는 문제예요 — "[그림]" 자리를 글로 설명해 주세요.' : '');
 };
 </script>
