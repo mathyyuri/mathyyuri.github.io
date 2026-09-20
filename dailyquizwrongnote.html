@@ -71,8 +71,10 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
 .solBox .expl b { color: var(--gold-deep); }
 .emptyMsg { text-align: center; color: #bbb; padding: 40px 0; }
 
+.chkRow { display: inline-block; font-size: 0.78rem; color: #8a6d2b; margin: 0 0 8px; cursor: pointer; }
+.chkRow input { margin-right: 4px; }
 @media print {
-  .loginCard, .searchCard, .printBtn, .ytFacade, .ytIframe { display: none !important; }
+  .chkRow, .loginCard, .searchCard, .printBtn, .ytFacade, .ytIframe { display: none !important; }
   body { padding: 0; background: #fff; }
   .qCard { box-shadow: none; }
 }
@@ -201,7 +203,7 @@ async function loadWrongNote() {
         html += `<div class="qCard">
           <div class="qHead"><span>${it.num}번</span>${metaTag}${correctTag}</div>
           <div class="stem">${it.stemHtml || ''}</div>
-          ${choicesHtml(it.choices)}
+          ${choiceToggleHtml(r.round, it)}
           ${ytThumbHtml(it.video)}
           <div class="solBox">
             <div class="ans">정답: ${answerValueText(it)}</div>
@@ -212,7 +214,7 @@ async function loadWrongNote() {
       html += '</div>';
     });
     area.innerHTML = html;
-    renderMath(area);
+    renderMath(area); bindChoiceToggles(area);
   } catch (e) {
     msg.textContent = '불러오지 못했습니다: ' + (e.message || String(e));
     msg.className = 'msg err';
@@ -251,6 +253,25 @@ document.addEventListener('click', e => {
 // 선지 번호 자체를 외워버리는 학생이 많다는 리포트(2026-09-15) — 선지를
 // 아예 안 보여주고 단답형처럼 실제 정답 값만 보여준다. 값은 정답 번호
 // (answer)에 해당하는 선지 원문에서 동그라미 숫자만 뗀 것.
+// 선지는 기본으로 숨긴다 — 학생들이 보기 번호(정답 번호)를 외워 버려서 오답노트의 의미가 사라지기 때문(원장님 요청).
+// 다만 선지가 없으면 답을 낼 수 없는 문제(예: "좌표는?")가 있어서, 카드마다 "선지 넣기"를 체크하면
+// 그 문제만 선지를 함께 보여준다. 체크 상태는 이 브라우저에 기억한다.
+const CHOICE_KEY = 'dqwn_choices_v1';
+function loadChoiceSet() { try { return new Set(JSON.parse(localStorage.getItem(CHOICE_KEY) || '[]')); } catch (e) { return new Set(); } }
+function saveChoiceSet(set) { try { localStorage.setItem(CHOICE_KEY, JSON.stringify([...set])); } catch (e) {} }
+function choiceToggleHtml(round, it) {
+  const html = choicesHtml(it.choices);
+  if (!html) return '';
+  const key = round + ':' + it.num, on = loadChoiceSet().has(key);
+  return `<label class="chkRow"><input type="checkbox" class="chkChoice" data-key="${key}"${on ? ' checked' : ''}> 선지 넣기</label>` +
+    `<div class="choiceWrap" data-key="${key}"${on ? '' : ' style="display:none"'}>${html}</div>`;
+}
+function bindChoiceToggles(root) {
+  root.querySelectorAll('.chkChoice').forEach(cb => cb.addEventListener('change', () => {
+    const set = loadChoiceSet(); cb.checked ? set.add(cb.dataset.key) : set.delete(cb.dataset.key); saveChoiceSet(set);
+    const w = root.querySelector('.choiceWrap[data-key="' + cb.dataset.key + '"]'); if (w) w.style.display = cb.checked ? '' : 'none';
+  }));
+}
 // 일일일모는 전부 객관식이라 선지가 문제의 일부다 — 오답노트에도 선지를 함께 싣는다.
 // 그림 선지는 한 행 2개, 짧은 선지는 한 줄에 이어서, 긴 선지는 한 줄에 하나씩.
 function choicesHtml(choices) {
