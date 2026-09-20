@@ -278,9 +278,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div class="box hidden" id="dqWrongBox">
       <p><b>📓 일일일모 오답</b> <span class="hint" id="dqWrongCounter" style="margin-left:6px"></span></p>
-      <p class="hint">정답이 공개된 회차 중 이 학생이 아직 못 맞힌 문제만 모은 것입니다 — 기존 오답노트(위 미션 목록)와는 별도 시스템(일일일모)입니다. 담을 문제를 체크한 뒤 아래 버튼을 누르세요.</p>
+      <p class="hint">정답이 공개된 회차 중 이 학생이 아직 못 맞힌 문제만 모은 것입니다 — 기존 오답노트(위 미션 목록)와는 별도 시스템(일일일모)입니다. 담을 문제를 체크한 뒤, 위 미션 문제들과 함께 위쪽의 "오답노트 생성" 버튼(한글/HTML)으로 만드세요. 일일일모 문제는 <b>HTML</b>로 받을 때만 들어가요.</p>
       <div id="dqWrongSummary"></div>
-      <button type="button" id="dqWrongGenBtn" disabled style="margin-top:10px">선택한 문제로 오답노트 열기(인쇄/PDF)</button>
+      <button type="button" id="dqWrongGenBtn" disabled style="display:none">선택한 문제로 오답노트 열기(인쇄/PDF)</button>   <!-- 일일일모만 따로 뽑는 버튼은 안 씀(원장님 요청) — 코드가 참조하므로 숨김 처리 -->
     </div>
 
     <div class="box" id="gradingBox" style="display:none">
