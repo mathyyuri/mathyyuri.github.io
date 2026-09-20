@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script><script src="hwpeq-lib.js?v=' + Date.now() + '"><\/script><script src="hwpx-writer.js?v=' + Date.now() + '"><\/script>');</script>
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script><script src="hwpeq-lib.js?v=' + Date.now() + '"><\/script><script src="hwpx-writer.js?v=' + Date.now() + '"><\/script><script src="wrongnote-variant.js?v=' + Date.now() + '"><\/script>');</script>
 <style>
 :root{--cream:#FBF8F1;--ink:#1a1a1a;--gold:#A8853F;--line:#E6DCC6;--mint:#3E8F79;--pink:#C64E71;}
 *{box-sizing:border-box}
@@ -48,6 +48,8 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
 .err{color:var(--pink)}.ok{color:var(--mint)}
 .preview{border:1px dashed var(--line);border-radius:6px;padding:8px 10px;background:#fcfbf7;line-height:1.9;min-height:40px;font-size:14px}
 .simg{position:relative;display:inline-block;margin:4px 6px 0 0}.simg img{max-height:110px;max-width:160px;border:1px solid var(--line);border-radius:6px}.simg button{position:absolute;top:2px;right:2px;padding:0 6px;font-size:11px;background:#fff;color:var(--ink);border:1px solid var(--line)}
+.varEdit{margin-top:8px;border:1px dashed var(--line);border-radius:8px;padding:6px 10px;background:#fff}.varEdit summary{font-size:12px;font-weight:700;cursor:pointer}
+.varEditBody label{font-size:12px;margin-right:8px}.varEditBody button{font-size:12px;padding:3px 8px;margin:2px 4px 0 0}.varEditBody .hint{margin:6px 0}
 .fig{margin:10px 0;text-align:center}.fig svg{max-width:100%;height:auto;max-height:260px}
 .vb{font-size:11.5px;padding:2px 8px;border-radius:10px;background:#eee;margin-right:4px}.vb.good{background:#dff1ea;color:#256b57}.vb.bad{background:#fbe3ea;color:#a3324f}.vb.run{background:#f1ecdf;color:#8a7440}.good{color:var(--mint)}
 .vrow{font-size:12px;margin-bottom:2px}
@@ -199,7 +201,7 @@ const FORMAT_RULE = '각 변형 문제를 아래 태그 형식으로만 출력�
 function firstMessage() {
   const fmt = { mc: '5지선다 객관식', short: '단답형(주관식)', same: '원문과 같은 형식' }[$('fmt').value];
   const diff = { keep: '원문과 비슷한 난이도', easy: '원문보다 조금 쉽게', hard: '원문보다 어렵게' }[$('diff').value];
-  const fig = { none: '그림 없이(조건을 글로 서술)', auto: '그림이 꼭 필요한 문제에만 SVG 그림 포함', always: '가능하면 모든 문제에 SVG 그림 포함' }[$('fig').value];
+  const fig = srcImages.length ? '원본 그림을 그대로 다시 쓸 예정이니 <figure>는 만들지 마세요. 그림 속에 적힌 식·숫자는 그대로 두거나, 바꿔야 하면 그 식은 그림에서 지울 것이므로 문제 본문에 조건을 글과 수식으로 빠짐없이 서술하세요(그림은 도형의 위치·모양만 보여주는 용도).' : { none: '그림 없이(조건을 글로 서술)', auto: '그림이 꼭 필요한 문제에만 SVG 그림 포함', always: '가능하면 모든 문제에 SVG 그림 포함' }[$('fig').value];
   const extra = $('extra').value.trim();
   return '[원본 문제]\n' + $('src').value.trim() + '\n\n[요청]\n- 변형 단계: ' + level + '단계 (' + LEVELS[level - 1][0] + ': ' + LEVELS[level - 1][1] + ')\n' +
     '- 만들 문제 수: ' + $('count').value + '개\n- 형식: ' + fmt + '\n- 난이도: ' + diff + '\n- 그림: ' + fig + (extra ? '\n- 추가 요구: ' + extra : '') + '\n\n' + FORMAT_RULE;
@@ -221,6 +223,9 @@ function parseVariants(text) {
   }
   return out;
 }
+// 원본 그림(hwpx에서 불러온 srcImages) 재사용: 변형 문제에 원본 그림을 그대로 붙이고, 그림 속 식은 드래그로 지운다(wrongnote-variant.js 공용)
+const figIt = item => ({ stemHtml: srcImages[item.figIdx || 0] ? '<img src="' + srcImages[item.figIdx || 0] + '">' : '' });
+function applyFigDefault(it) { if (srcImages.length) { it.figMode = 'orig'; it.figIdx = 0; it.figMasks = []; } else it.figMode = it.figure ? 'ai' : 'none'; return it; }
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const toHtml = s => esc(s).replace(/\n/g, '<br>');
 const CIR = ['①', '②', '③', '④', '⑤'];
@@ -271,11 +276,12 @@ function sameAnswer(declared, got) {
   return x === y || (x.length > 1 && y.includes(x)) || (y.length > 1 && x.includes(y));
 }
 async function verifyOne(item, model) {
-  const body = '[문제]\n' + item.problem + (item.figure ? '\n\n[그림(SVG 코드)]\n' + item.figure : '') +
+  const fg = await WrongnoteVariant.figureForAI(item, figIt(item));
+  const body = '[문제]\n' + item.problem + fg.text +
     (item.choices.length ? '\n\n[보기]\n' + item.choices.map(chText).join('\n') : '\n\n(주관식)');
   item.verify[model] = { state: 'run' };
   try {
-    const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model });
+    const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model, images: fg.images });
     const verdict = tag(res.text, 'verdict').toUpperCase(), ans = tag(res.text, 'answer'), issue = tag(res.text, 'issue');
     const same = sameAnswer(item.answer, ans), vok = verdict.includes('OK');
     item.verify[model] = { state: 'done', ok: vok && same, same, vok, ans, issue: /^없음/.test(issue) ? '' : issue };
@@ -315,8 +321,9 @@ function cardHtml(it, n) {
   return `
       <div class="vhead"><span>변형 ${n + 1}</span><span class="vbadge">${verifyBadge(it)}</span></div>
       <div class="vprob">${toHtml(it.problem)}</div>
-      ${it.figure ? `<div class="fig">${it.figure}</div>` : ''}
+      ${WrongnoteVariant.figureHtml(it, figIt(it), 60)}
       ${it.choices.length ? `<div class="vch">${it.choices.map((c, k) => `<div>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</div>`).join('')}</div>` : ''}
+      ${WrongnoteVariant.figEditorHtml({ v: it, it: figIt(it) })}
       <details><summary>정답 · 풀이 보기</summary><div><b>정답</b> ${toHtml(it.answer)}</div><div style="margin-top:6px">${toHtml(it.solution)}</div></details>
       ${it.changes ? `<div class="changes">바뀐 점: ${toHtml(it.changes)}</div>` : ''}
       <div class="acts"><button class="sec pk">담기</button><button class="sec cp">복사</button><button class="sec rv">다시 검증</button></div>
@@ -332,6 +339,7 @@ function bindCard(card, n) {
   };
   card.querySelector('.cp').onclick = () => navigator.clipboard.writeText(variantText(it)).then(() => flash('복사했어요'));
   card.querySelector('.rv').onclick = () => verifyAll(ver, n);
+  WrongnoteVariant.bindFigure(card, { v: it, it: figIt(it) }, () => refreshCard(n));
   const go = () => { const t = card.querySelector('.ei').value.trim(); if (t) editOne(n, t); };
   card.querySelector('.ed').onclick = go;
   card.querySelector('.ei').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
@@ -339,9 +347,9 @@ function bindCard(card, n) {
 function refreshCard(n) {
   const card = $('results').querySelector(`.vcard[data-n="${n}"]`); if (!card) return;
   const keep = card.querySelector('.ei') ? card.querySelector('.ei').value : '';
-  const open = card.querySelector('details') && card.querySelector('details').open;
+  const open = card.querySelector('details:not(.varEdit)') && card.querySelector('details:not(.varEdit)').open;
   card.innerHTML = cardHtml(versions[cur].items[n], n);
-  card.querySelector('.ei').value = keep; if (open) card.querySelector('details').open = true;
+  card.querySelector('.ei').value = keep; if (open) card.querySelector('details:not(.varEdit)').open = true;
   bindCard(card, n); renderMath(card);
 }
 function showVersion(i) {
@@ -375,7 +383,7 @@ $('genBtn').onclick = async () => {
   setBusy(true, '⏳ AI가 문제를 만드는 중... (보통 20~60초)');
   try {
     const res = await askAI([{ role: 'user', content: firstMessage() }], { images: srcImages });
-    const items = parseVariants(res.text);
+    const items = parseVariants(res.text).map(applyFigDefault);
     if (!items.length) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.\n' + res.text.slice(0, 200));
     const ver = pushVersion('처음 생성 (' + level + '단계)', items, res.truncated);
     setBusy(false, verifyModels().length ? '문제를 만들었어요. 이어서 AI들이 정답을 검증하고 있어요…' : '');
@@ -393,6 +401,7 @@ async function editOne(n, instr) {
     const res = await askAI([{ role: 'user', content: msg }], { images: srcImages });
     const fixed = parseVariants(res.text)[0];
     if (!fixed) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
+    Object.assign(fixed, { figMode: it.figMode, figIdx: it.figIdx, figMasks: it.figMasks });   // 그림 설정(원본/지운 영역)은 유지
     const items = ver.items.map((x, k) => k === n ? fixed : x);
     const nv = pushVersion('변형' + (n + 1) + ' 수정: ' + instr.slice(0, 18), items, false);
     setBusy(false, '');
@@ -410,7 +419,12 @@ $('hwpxPicked').onclick = async () => {
   if (!picked.length) return flash('담은 문제가 없어요');
   const b = $('hwpxPicked'); b.disabled = true; const old = b.textContent; b.textContent = '만드는 중…';
   try {
-    const r = await buildProblemsHwpx(picked.map(p => ({ problem: p.item.problem, figure: p.item.figure, choices: p.item.choices, answer: p.item.answer, solution: p.item.solution })), { title: '변형 문제' });
+    const list = [];
+    for (const p of picked) {
+      const it = p.item, mode = it.figMode || (it.figure ? 'ai' : 'none');
+      list.push({ problem: it.problem, figure: mode === 'ai' ? it.figure : '', figurePng: mode === 'orig' && srcImages[it.figIdx || 0] ? await WrongnoteVariant.maskedPng(srcImages[it.figIdx || 0], it.figMasks || []) : null, choices: it.choices, answer: it.answer, solution: it.solution });
+    }
+    const r = await buildProblemsHwpx(list, { title: '변형 문제' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(r.blob); a.download = '변형문제_' + picked.length + '문항.hwpx'; document.body.appendChild(a); a.click(); a.remove();
     flash(r.warnings.length ? '받았어요 (확인 필요: ' + r.warnings.join(', ') + ')' : '받았어요');
   } catch (e) { $('status').className = 'err'; $('status').textContent = 'hwpx 만들기 실패: ' + e.message; }
@@ -418,7 +432,7 @@ $('hwpxPicked').onclick = async () => {
 };
 $('printPicked').onclick = () => {
   if (!picked.length) return flash('담은 문제가 없어요');
-  const body = picked.map((p, i) => `<div class="q"><b>${i + 1}.</b> ${toHtml(p.item.problem)}${p.item.figure ? '<div style="text-align:center">' + p.item.figure + '</div>' : ''}${p.item.choices.length ? '<div class="ch">' + p.item.choices.map((c, k) => `<span>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</span>`).join('') + '</div>' : ''}</div>`).join('');
+  const body = picked.map((p, i) => `<div class="q"><b>${i + 1}.</b> ${toHtml(p.item.problem)}${WrongnoteVariant.figureHtml(p.item, figIt(p.item), 55)}${p.item.choices.length ? '<div class="ch">' + p.item.choices.map((c, k) => `<span>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</span>`).join('') + '</div>' : ''}</div>`).join('');
   const ans = picked.map((p, i) => `<div class="a"><b>${i + 1}.</b> 정답 ${toHtml(p.item.answer)}<div>${toHtml(p.item.solution)}</div></div>`).join('');
   const w = window.open('', '_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>변형 문제</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:'Noto Serif KR',serif;padding:24px;line-height:1.9}.q{margin-bottom:26px;break-inside:avoid}.ch{display:grid;grid-template-columns:repeat(2,1fr);gap:2px 20px;margin-top:6px}.a{margin-bottom:12px;font-size:13px}h2{page-break-before:always}</style></head><body>${body}<h2>정답 · 풀이</h2>${ans}<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script><script>window.onload=function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\\\(',right:'\\\\)',display:false}],throwOnError:false});setTimeout(function(){window.print()},600)}<\/script></body></html>`);

@@ -311,7 +311,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, bindFigure, figureHtml, origImgSrc, mathHtml, answerText, CIR };
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, bindFigure, figureHtml, figEditorHtml, figureForAI, maskedPng, origImgSrc, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {
