@@ -927,7 +927,7 @@ function renderEditedInline(oneLine, imgHtmls) {
   // split()으로 이 패턴들을 뽑으면 홀수 인덱스가 항상 매칭된 토큰이고,
   // 짝수 인덱스가 그 사이의 일반 텍스트다.
   return parts.map((chunk, i) => {
-    if (i % 2 === 0) return escapeHtml(chunk);
+    if (i % 2 === 0) return escapeHtml(chunk).replace(/ {2,}/g, m => ' ' + '&nbsp;'.repeat(m.length - 1)); // 스페이스를 여러 번 누른 간격(선지 사이 띄우기)이 HTML에서 한 칸으로 합쳐지지 않게
     const imgM = chunk.match(/^\[이미지(\d+)\]$/);
     if (imgM) {
       const html = imgHtmls && imgHtmls[Number(imgM[1]) - 1];
