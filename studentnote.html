@@ -5367,7 +5367,7 @@ const MB_RULES10 = [
 function buildSummaryPageHtml(summaryRows, info) {
   const rowsHtml = summaryRows.map(r =>
     (hideCite() && r.category === '일일일모')
-      ? `<tr><td>${r.n}</td><td>—</td><td>—</td><td>—</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
+      ? `<tr><td>${r.n}</td><td>일일일모</td><td>—</td><td>—</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
       : `<tr><td>${r.n}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.mission)}</td>` +
         `<td>${r.num}번</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
   ).join('');
