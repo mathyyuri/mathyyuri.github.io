@@ -1352,7 +1352,8 @@ async function hwpRunInnerToHtml(runXml, entry) {
     if (c.tag === 'hp:t') {
       const textM = c.text.match(/<hp:t\b[^>]*>([\s\S]*?)<\/hp:t>/);
       const raw = textM ? textM[1] : '';
-      const cleaned = hwpInlineControlsToHtml(raw);
+      // 줄바꿈(<hp:lineBreak/>)은 아래에서 다음 내용이 글머리표(∗ 등)일 때만 진짜 줄바꿈으로 살린다
+      const cleaned = hwpInlineControlsToHtml(raw.replace(/<hp:lineBreak\b[^>]*\/>/g, '\uE000'));
       out += escapeHtml(decodeXmlEntities(cleaned)).replace(/\n/g, '<br>');
     } else if (c.tag === 'hp:equation') {
       // HWP adds xml:space="preserve" to <hp:script> whenever the script
@@ -1395,7 +1396,8 @@ async function hwpRunInnerToHtml(runXml, entry) {
       out += await hwpRectToHtml(c.text, entry);
     }
   }
-  return out;
+  // 글머리표(∗ ※ • *)로 시작하는 조건들이 Shift+Enter로 줄을 나눈 경우: 줄바꿈을 살리고, 그 밖의 줄바꿈은 예전처럼 공백으로 둔다
+  return out.replace(/\uE000\s*(?=<span class="eq">\\\(\s*(?:\*|\\ast)\s*\\\)|[∗※•*])/g, '<br>').replace(/\uE000/g, ' ');
 }
 
 // Converts a fragment containing one or more sibling <hp:run> elements
