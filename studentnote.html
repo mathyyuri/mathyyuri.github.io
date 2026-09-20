@@ -122,6 +122,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .dqVarPanel { margin-top: 10px; }
 .dqVarPanel .varHeadT { font-weight: 700; margin-bottom: 6px; }
 .dqVarPanel select { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d8c9a3; background: #fff; }
+.dqVarPanel .varRev button { font-size: 12px !important; }
 .dqVarPanel button { font-size: 12px !important; letter-spacing: 0 !important; padding: 4px 10px !important; width: auto !important; font-weight: 600 !important; border-radius: 6px !important; border: 1px solid #d8c9a3 !important; background: #fff !important; color: #333 !important; }
 .dqVarPanel button:disabled { opacity: .5; }
 .varMsg { color: #8a6d2b; margin-left: 6px; font-size: 12px; } .varMsg.err { color: #c0392b; }
@@ -129,6 +130,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 .varHead { font-size: 12px; margin-bottom: 8px; } .varHead .good, .varAct .good { color: #1f8a5b; } .varHead .bad { color: #c0392b; }
 .vb { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 4px; } .vb.good { background: #e3f4ec; color: #1f8a5b; } .vb.bad { background: #fbe4e1; color: #c0392b; }
 .varBody { font-size: 14px; line-height: 1.75; } .varCh { margin: 6px 0; } .varAns { margin: 6px 0; } .varChg { color: #888; font-size: 12px; margin-top: 6px; } .varAct { margin-top: 8px; }
+.varRev { margin-top: 10px; padding: 8px 10px; border: 1px dashed #d8c9a3; border-radius: 8px; background: #fff; }
+.varRevT { font-size: 12px; font-weight: 700; color: #8a6d2b; margin-bottom: 6px; }
+.varRev .revIn { width: min(420px, 100%); font-size: 12px; padding: 5px 8px; border: 1px solid #d8c9a3; border-radius: 6px; margin-bottom: 4px; }
+.varRev select, .varRev button { font-size: 12px; }
 .pvOrig { margin: 8px 0 10px; padding: 8px 10px; border: 1px solid #e3d9bf; border-radius: 8px; background: #faf6ea; }
 .pvOrigT { font-size: 12px; font-weight: 700; color: #8a6d2b; margin-bottom: 4px; }
 .dqGradeBadge { font-size: 11px; font-weight: 800; margin-left: 4px; padding: 1px 7px; border-radius: 8px; }
@@ -3785,14 +3790,19 @@ function openDqVarPanel(name, btn) {
       gen.disabled = true; prev.innerHTML = ''; msg.className = 'varMsg pvMsg';
       try {
         const r = await WV.makeVariant(it, lv, t => { msg.textContent = t; });
-        msg.textContent = ''; prev.innerHTML = WV.previewHtml(lv, r); renderMathIn(prev);
-        prev.querySelector('.varUse').onclick = async () => {
-          const id = dqVarNewId(), verify = r.allGood ? '검증 통과' : r.anyErr ? '검증 일부 실패' : '검증 불일치 있음';
-          dqSaveVariantToServer(id, round, num, lv, r.v, verify).catch(() => {});   // 저장소에도 보관(다른 학생에게 재사용)
-          useVariant(r.v, id, lv);
-          setTimeout(async () => { try { stored = await dqServerVariants(round, num); draw(); } catch (e) {} }, 4000);
+        msg.textContent = '';
+        const show = () => {
+          prev.innerHTML = WV.previewHtml(lv, r); renderMathIn(prev);
+          prev.querySelector('.varUse').onclick = async () => {
+            const id = dqVarNewId(), verify = r.allGood ? '검증 통과' : r.anyErr ? '검증 일부 실패' : '검증 불일치 있음';
+            dqSaveVariantToServer(id, round, num, lv, r.v, verify).catch(() => {});   // 저장소에도 보관(다른 학생에게 재사용)
+            useVariant(r.v, id, lv);
+            setTimeout(async () => { try { stored = await dqServerVariants(round, num); draw(); } catch (e) {} }, 4000);
+          };
+          prev.querySelector('.varAgain').onclick = () => gen.click();
+          WV.bindRevise(prev, r, show);
         };
-        prev.querySelector('.varAgain').onclick = () => gen.click();
+        show();
       } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg pvMsg err'; }
       gen.disabled = false;
     };

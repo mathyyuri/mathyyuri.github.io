@@ -153,12 +153,39 @@
       return { v, ms, rs, allGood: rs.every(r => r.ok), anyErr: rs.some(r => r.err) };
     } finally { clearInterval(tick); }
   }
+  // 문제(지문·그림·보기)는 그대로 두고 정답·풀이만 원장님 지적을 반영해 다시 푼다 → 두 AI로 다시 검증
+  async function reviseVariant(v, instruction, model) {
+    const body = '[문제]\n' + v.problem + (v.figure ? '\n\n[그림(SVG 코드)]\n' + v.figure : '') +
+      (v.choices.length ? '\n\n[보기]\n' + v.choices.map((c, i) => /^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c).join('\n') : '\n\n(주관식)') +
+      '\n\n[현재 정답]\n' + v.answer + '\n\n[현재 풀이]\n' + v.solution + '\n\n[원장님 지적]\n' + (instruction || '정답과 풀이가 맞는지 처음부터 다시 풀어서 확인하고 틀렸으면 고쳐 주세요.');
+    const res = await askAI([{ role: 'user', content: body }], { mode: 'solve', model: model || 'claude-sonnet-5' });
+    const answer = tag(res.text, 'answer'), solution = tag(res.text, 'solution');
+    if (!answer) throw new Error('AI 답변을 읽지 못했어요. 다시 시도해 주세요.');
+    return { ...v, answer, solution: solution || v.solution };
+  }
+  // 미리보기(prev)의 "다시 풀기" 버튼을 연결한다. redraw()는 호출한 쪽이 미리보기를 다시 그리는 함수.
+  function bindRevise(prev, r, redraw) {
+    const btn = prev.querySelector('.varRevBtn'); if (!btn) return;
+    btn.onclick = async () => {
+      const msg = prev.querySelector('.revMsg'), inp = prev.querySelector('.revIn'), model = prev.querySelector('.revModel').value;
+      btn.disabled = true; msg.className = 'varMsg revMsg';
+      const t0 = Date.now(), tick = setInterval(() => { msg.textContent = '⏳ 다시 푸는 중… ' + Math.round((Date.now() - t0) / 1000) + '초'; }, 1000);
+      try {
+        const nv = await reviseVariant(r.v, inp.value.trim(), model);
+        clearInterval(tick); msg.textContent = '검증 중… (Sonnet + Gemini)';
+        r.v = nv; r.rs = await Promise.all(r.ms.map(m => verify(nv, m)));
+        r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err);
+        redraw();
+      } catch (e) { clearInterval(tick); msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg revMsg err'; btn.disabled = false; }
+    };
+  }
   function previewHtml(lv, r) {
     const v = r.v;
     return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
       `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
       (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
+      `<div class="varRev"><div class="varRevT">✏️ 문제는 그대로 두고 정답·풀이만 고치기</div><input type="text" class="revIn" placeholder="예: 정답이 ④예요 / 접선의 방정식을 다시 구해 보세요 / 계산이 틀렸어요"> <select class="revModel"><option value="claude-sonnet-5">Sonnet(빠름)</option><option value="claude-opus-5">Opus(더 정확, 느림)</option></select> <button type="button" class="varRevBtn">다시 풀기</button><span class="varMsg revMsg"></span></div>` +
       `<div class="varAct"><button type="button" class="varUse">✅ 이 변형으로 교체</button> <button type="button" class="varAgain">다시 만들기</button></div></div>`;
   }
   async function generate(card, slot, it) {
@@ -168,12 +195,16 @@
     try {
       const r = await makeVariant(it, lv, t => { msg.textContent = t; });
       msg.textContent = '';
-      prev.innerHTML = previewHtml(lv, r); renderMath(prev);
-      prev.querySelector('.varUse').onclick = () => {
-        const o = load(); o[skey(window.__wnName, card.dataset.key)] = r.v; save(o);
-        applyVariant(card, r.v); prev.innerHTML = ''; showApplied(card, slot);
+      const show = () => {
+        prev.innerHTML = previewHtml(lv, r); renderMath(prev);
+        prev.querySelector('.varUse').onclick = () => {
+          const o = load(); o[skey(window.__wnName, card.dataset.key)] = r.v; save(o);
+          applyVariant(card, r.v); prev.innerHTML = ''; showApplied(card, slot);
+        };
+        prev.querySelector('.varAgain').onclick = () => generate(card, slot, it);
+        bindRevise(prev, r, show);
       };
-      prev.querySelector('.varAgain').onclick = () => generate(card, slot, it);
+      show();
     } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg err'; }
     btn.disabled = false;
   }
@@ -183,7 +214,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, mathHtml, answerText, CIR };
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {
