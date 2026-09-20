@@ -3731,12 +3731,27 @@ function dqVariantMiniHtml(WV, v) {
     (v.choices && v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
     `<div class="varAns"><b>정답</b> ${WV.mathHtml(WV.answerText(v))}</div></div>`;
 }
+// 오답노트에 담으려고 체크한 일일일모 문제의 원본을 바로 보여준다(변형으로 바꿔 싣기로 한 문제는 그 표시도 함께).
+function renderDqSelPreview(name, area) {
+  const box = document.getElementById('dqSelPreview'); if (!box) return;
+  const sel = [...area.querySelectorAll('.dqChk:checked')].map(c => `${c.dataset.round}:${c.dataset.num}`);
+  if (!sel.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="varHeadT" style="margin-top:12px">📄 선택한 문제 원본 (${sel.length}개)</div>` + sel.map(k => {
+    const [round, num] = k.split(':');
+    const it = dqWrongItemsData.find(x => String(x.round) === round && String(x.num) === num); if (!it) return '';
+    const v = dqGetVariant(name, round, num), ch = dqWantChoices(name, round, num);
+    const choices = (it.choices || []).some(c => String(c || '').trim());
+    return `<div class="pvOrig"><div class="pvOrigT">${round}회차 ${num}번${v ? ' <span class="vb good">🔄 변형 문제로 교체되어 실려요</span>' : ''}${ch ? ' <span class="vb good">선지 포함</span>' : ''}</div>` +
+      `<div class="varBody">${it.stemHtml || ''}${choices ? `<div class="varCh">${it.choices.join('&nbsp;&nbsp;&nbsp;')}</div>` : ''}<div class="varAns"><b>정답</b> ${dqAnswerValueText(it)}</div></div></div>`;
+  }).join('');
+  renderMathIn(box);
+}
 function openDqVarPanel(name, btn) {
   const panel = document.getElementById('dqVarPanel'), round = btn.dataset.round, num = btn.dataset.num;
   const it = dqWrongItemsData.find(x => String(x.round) === String(round) && String(x.num) === String(num));
   if (!it || !window.WrongnoteVariant) { panel.innerHTML = '<p class="hint">변형 기능을 불러오지 못했어요. 새로고침(Ctrl+F5) 해 주세요.</p>'; return; }
   const WV = window.WrongnoteVariant, k = dqOptKey(name, round, num);
-  const setBtn = () => { const on = !!dqGetVariant(name, round, num); btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : dqVariantUsedBefore(name, round, num) ? '🔄새 변형 필요' : '🔄변형'; };
+  const setBtn = () => { const on = !!dqGetVariant(name, round, num); btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : dqVariantUsedBefore(name, round, num) ? '🔄새 변형 필요' : '🔄변형'; renderDqSelPreview(name, document.getElementById('dqWrongSummary')); };
   const useVariant = (v, id, level) => { const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = { ...v, id, level }; delete o[k].used; dqSave(DQ_VAR_KEY, o); setBtn(); draw(); };
   let stored = null; // 서버에 저장된 이 문제의 변형들(null = 불러오는 중)
   const draw = () => {
@@ -3832,26 +3847,27 @@ async function loadDqWrongSummary(name) {
       <div style="margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
           <b>${r.round}회차</b>
-          <button type="button" class="selectAllBtn dqRoundAllBtn" data-round="${r.round}">전체 해제</button>
+          <button type="button" class="selectAllBtn dqRoundAllBtn" data-round="${r.round}">전체 선택</button>
         </div>
         <div class="qGrid">
           ${r.items.map(it => `<span class="dqItem"><label>
-            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
+            <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}"> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
           </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : dqVariantUsedBefore(name, r.round, it.num) ? '🔄새 변형 필요' : '🔄변형'}</button><span class="dqVarCnt hint" data-key="${r.round}:${it.num}" title="이 문제에 저장된 변형 개수"></span><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
         </div>
       </div>
-    `).join('') + '<div id="dqVarPanel" class="dqVarPanel"></div>';
+    `).join('') + '<div id="dqSelPreview" class="dqSelPreview"></div><div id="dqVarPanel" class="dqVarPanel"></div>';
 
     function updateDqCounter() {
       const n = area.querySelectorAll('.dqChk:checked').length;
       counter.textContent = `${n}/${total}문제 선택됨`;
+      renderDqSelPreview(name, area);
       openBtn.disabled = n === 0;
       updateCounter(); // 아래 미션 체크박스와 합쳐 메인 "오답노트 생성" 버튼도 갱신
     }
     area.querySelectorAll('.dqChk').forEach(chk => chk.addEventListener('change', updateDqCounter));
     area.querySelectorAll('.dqChoiceOpt').forEach(cb => cb.addEventListener('change', () => {
       const k = dqOptKey(name, cb.dataset.round, cb.dataset.num), set = new Set(dqLoad(DQ_CH_KEY, '[]'));
-      cb.checked ? set.add(k) : set.delete(k); dqSave(DQ_CH_KEY, [...set]);
+      cb.checked ? set.add(k) : set.delete(k); dqSave(DQ_CH_KEY, [...set]); renderDqSelPreview(name, area);
     }));
     area.querySelectorAll('.dqVarBtn').forEach(btn => btn.addEventListener('click', () => openDqVarPanel(name, btn)));
     callGetJsonp(DASHBOARD_URL, { action: 'dqvariantcounts', key: TEACHER_KEY }).then(d => {
