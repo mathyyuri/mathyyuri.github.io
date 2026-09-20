@@ -3687,7 +3687,10 @@ function dqGetVariant(name, round, num) {
 function dqVariantUsedBefore(name, round, num) { const v = dqRawVariant(name, round, num); return !!(v && v.used && !loggedDqKeys.has(round + ':' + num)); }
 function dqMarkVariantUsed(name, round, num) {
   const o = dqLoad(DQ_VAR_KEY, '{}'), k = dqOptKey(name, round, num);
-  if (o[k] && !o[k].used) { o[k].used = new Date().toISOString(); dqSave(DQ_VAR_KEY, o); }
+  if (o[k] && !o[k].used) {
+    o[k].used = new Date().toISOString(); dqSave(DQ_VAR_KEY, o);
+    if (o[k].id) callPostNoCors(DASHBOARD_URL, { action: 'dqvariantuse', key: TEACHER_KEY, id: o[k].id, name }).catch(() => {});   // 저장소에 "이 학생에게 출제함" 기록
+  }
 }
 function dqWantChoices(name, round, num) { return dqLoad(DQ_CH_KEY, '[]').includes(dqOptKey(name, round, num)); }
 // 노트에 실을 선지 HTML(top-level 요소로): 그림 선지는 한 행 2개, 짧은 선지는 한 줄, 긴 선지는 한 줄에 하나
@@ -3699,33 +3702,67 @@ function dqChoicesBlockHtml(choiceHtmls) {
   return `<p style="margin:6px 0">${cs.join(plain > 34 ? '<br>' : '&nbsp;&nbsp;&nbsp;&nbsp;')}</p>`;
 }
 let dqWrongItemsData = []; // [{round, num, meta, stemHtml, choices, answer, quickAnswer, explanation, video}]
+// 변형 문제 저장소(서버 "일일일모변형" 시트): 문제(회차+번호)별로 만든 변형을 모아 두고 다른 학생에게도 다시 쓴다.
+const dqVarNewId = () => 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function dqServerVariants(round, num) { return callGetJsonp(DASHBOARD_URL, { action: 'dqvariants', key: TEACHER_KEY, round, num }).then(d => d.variants || []); }
+function dqSaveVariantToServer(id, round, num, level, v, verify) {
+  return callPostNoCors(DASHBOARD_URL, { action: 'dqvariantsave', key: TEACHER_KEY, id, round, num, level, v, verify });
+}
+function dqVariantMiniHtml(WV, v) {
+  return `<div class="varBody">${WV.mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:6px 0"><div style="display:inline-block;width:45%">${v.figure.replace('<svg ', '<svg style="width:100%;height:auto" ')}</div></div>` : ''}` +
+    (v.choices && v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
+    `<div class="varAns"><b>정답</b> ${WV.mathHtml(WV.answerText(v))}</div></div>`;
+}
 function openDqVarPanel(name, btn) {
   const panel = document.getElementById('dqVarPanel'), round = btn.dataset.round, num = btn.dataset.num;
   const it = dqWrongItemsData.find(x => String(x.round) === String(round) && String(x.num) === String(num));
   if (!it || !window.WrongnoteVariant) { panel.innerHTML = '<p class="hint">변형 기능을 불러오지 못했어요. 새로고침(Ctrl+F5) 해 주세요.</p>'; return; }
   const WV = window.WrongnoteVariant, k = dqOptKey(name, round, num);
-  const setBtn = on => { btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : '🔄변형'; };
+  const setBtn = () => { const on = !!dqGetVariant(name, round, num); btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : dqVariantUsedBefore(name, round, num) ? '🔄새 변형 필요' : '🔄변형'; };
+  const useVariant = (v, id, level) => { const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = { ...v, id, level }; delete o[k].used; dqSave(DQ_VAR_KEY, o); setBtn(); draw(); };
+  let stored = null; // 서버에 저장된 이 문제의 변형들(null = 불러오는 중)
   const draw = () => {
     const cur = dqGetVariant(name, round, num);
     panel.innerHTML = `<div class="varBox"><div class="varHeadT">🔄 ${round}회차 ${num}번 변형 문제</div>` +
-      (cur ? `<div class="varBody">${WV.mathHtml(cur.problem)}${cur.figure ? `<div style="text-align:center;margin:8px 0">${cur.figure}</div>` : ''}<div class="varAns"><b>정답</b> ${WV.mathHtml(WV.answerText(cur))}</div></div><p class="hint">✅ 이 문제는 오답노트에 <b>변형 문제로 바뀌어</b> 실려요.</p><button type="button" class="pvRevert">원본으로 되돌리기</button> ` : (dqVariantUsedBefore(name, round, num) ? '<p class="hint">⚠️ 지난 오답노트에 <b>이미 실은 변형 문제</b>가 있어요. 같은 문제를 또 싣으면 학생이 외우니, 새 변형을 만들어 주세요(안 만들면 원본이 실려요).</p>' : '<p class="hint">원본 대신 AI가 만든 변형 문제를 오답노트에 실을 수 있어요(정답을 외워도 소용없게).</p>')) +
-      `<div style="margin-top:8px"><select class="pvLvl"><option value="1">1단계 · 숫자만 바꾸기</option><option value="2">2단계 · 표현 바꾸기</option><option value="3">3단계 · 조건 바꾸기</option></select> <button type="button" class="pvGen">${cur ? '다시 만들기' : '변형 문제 만들기'}</button><span class="varMsg pvMsg"></span></div><div class="pvPrev"></div></div>`;
+      (cur ? `${dqVariantMiniHtml(WV, cur)}<p class="hint">✅ 이 학생 오답노트에 <b>변형 문제로 바뀌어</b> 실려요.</p><button type="button" class="pvRevert">원본으로 되돌리기</button> ` :
+        (dqVariantUsedBefore(name, round, num) ? '<p class="hint">⚠️ 이 학생 지난 오답노트에 <b>이미 실은 변형</b>이 있어요. 새 변형을 만들거나 아래 저장된 변형에서 다른 걸 고르세요(안 고르면 원본이 실려요).</p>' : '<p class="hint">원본 대신 AI가 만든 변형 문제를 오답노트에 실을 수 있어요(정답을 외워도 소용없게).</p>')) +
+      `<div style="margin-top:8px"><select class="pvLvl"><option value="1">1단계 · 숫자만 바꾸기</option><option value="2">2단계 · 표현 바꾸기</option><option value="3">3단계 · 조건 바꾸기</option></select> <button type="button" class="pvGen">새 변형 만들기</button><span class="varMsg pvMsg"></span></div><div class="pvPrev"></div>` +
+      `<div class="pvStored"><div class="varHeadT" style="margin-top:12px">📚 저장된 변형 ${stored ? stored.length + '개' : ''} <span class="hint">(다른 학생에게 쓴 것 포함 — 이 문제의 지난 변형 전부)</span></div>` +
+      (stored === null ? '<p class="hint">불러오는 중...</p>' : !stored.length ? '<p class="hint">아직 저장된 변형이 없어요. 위에서 만들면 자동으로 저장돼요.</p>' :
+        stored.map((sv, i) => {
+          const mine = (sv.usedBy || []).includes(name), isCur = cur && cur.id === sv.id;
+          return `<div class="varBox pvItem" data-i="${i}" style="${mine ? 'opacity:.85' : ''}"><div class="varHead">${sv.level}단계 · ${escapeHtml(String(sv.at || ''))} ${sv.verify ? `<span class="vb ${/통과/.test(sv.verify) ? 'good' : 'bad'}">${escapeHtml(sv.verify)}</span>` : ''}` +
+            `<span class="hint" style="margin-left:6px">출제: ${(sv.usedBy || []).length ? sv.usedBy.map(escapeHtml).join(', ') : '아직 없음'}</span>${mine ? ' <b class="bad">이 학생에게 이미 출제됨</b>' : ''}</div>` +
+            dqVariantMiniHtml(WV, sv.v) +
+            `<div class="varAct">${isCur ? '<b class="good">✅ 지금 이 변형이 실려요</b>' : `<button type="button" class="pvPick" data-i="${i}">${mine ? '다시 출제(이 학생에게 또)' : '이 학생에게 출제'}</button>`}</div></div>`;
+        }).join('')) + '</div></div>';
     renderMathIn(panel);
     const rv = panel.querySelector('.pvRevert');
-    if (rv) rv.onclick = () => { const o = dqLoad(DQ_VAR_KEY, '{}'); delete o[k]; dqSave(DQ_VAR_KEY, o); setBtn(false); draw(); };
+    if (rv) rv.onclick = () => { const o = dqLoad(DQ_VAR_KEY, '{}'); delete o[k]; dqSave(DQ_VAR_KEY, o); setBtn(); draw(); };
+    panel.querySelectorAll('.pvPick').forEach(b => b.onclick = () => {
+      const sv = stored[Number(b.dataset.i)];
+      if ((sv.usedBy || []).includes(name) && !confirm(name + ' 학생에게 이미 출제한 변형이에요. 그래도 다시 출제할까요?')) return;
+      useVariant(sv.v, sv.id, sv.level);
+    });
     panel.querySelector('.pvGen').onclick = async () => {
       const gen = panel.querySelector('.pvGen'), msg = panel.querySelector('.pvMsg'), prev = panel.querySelector('.pvPrev'), lv = Number(panel.querySelector('.pvLvl').value);
       gen.disabled = true; prev.innerHTML = ''; msg.className = 'varMsg pvMsg';
       try {
         const r = await WV.makeVariant(it, lv, t => { msg.textContent = t; });
         msg.textContent = ''; prev.innerHTML = WV.previewHtml(lv, r); renderMathIn(prev);
-        prev.querySelector('.varUse').onclick = () => { const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = r.v; dqSave(DQ_VAR_KEY, o); setBtn(true); draw(); };
+        prev.querySelector('.varUse').onclick = async () => {
+          const id = dqVarNewId(), verify = r.allGood ? '검증 통과' : '검증 불일치 있음';
+          dqSaveVariantToServer(id, round, num, lv, r.v, verify).catch(() => {});   // 저장소에도 보관(다른 학생에게 재사용)
+          useVariant(r.v, id, lv);
+          setTimeout(async () => { try { stored = await dqServerVariants(round, num); draw(); } catch (e) {} }, 4000);
+        };
         prev.querySelector('.varAgain').onclick = () => gen.click();
       } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg pvMsg err'; }
       gen.disabled = false;
     };
   };
   draw();
+  dqServerVariants(round, num).then(list => { stored = list; draw(); }).catch(() => { stored = []; draw(); });
   panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function renderMathIn(el) {
@@ -3779,7 +3816,7 @@ async function loadDqWrongSummary(name) {
         <div class="qGrid">
           ${r.items.map(it => `<span class="dqItem"><label>
             <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
-          </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : dqVariantUsedBefore(name, r.round, it.num) ? '🔄새 변형 필요' : '🔄변형'}</button><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
+          </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : dqVariantUsedBefore(name, r.round, it.num) ? '🔄새 변형 필요' : '🔄변형'}</button><span class="dqVarCnt hint" data-key="${r.round}:${it.num}" title="이 문제에 저장된 변형 개수"></span><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
         </div>
       </div>
     `).join('') + '<div id="dqVarPanel" class="dqVarPanel"></div>';
@@ -3796,6 +3833,9 @@ async function loadDqWrongSummary(name) {
       cb.checked ? set.add(k) : set.delete(k); dqSave(DQ_CH_KEY, [...set]);
     }));
     area.querySelectorAll('.dqVarBtn').forEach(btn => btn.addEventListener('click', () => openDqVarPanel(name, btn)));
+    callGetJsonp(DASHBOARD_URL, { action: 'dqvariantcounts', key: TEACHER_KEY }).then(d => {
+      area.querySelectorAll('.dqVarCnt').forEach(sp => { const n = (d.counts || {})[sp.dataset.key]; if (n) sp.textContent = '저장 ' + n; });
+    }).catch(() => {});
     area.querySelectorAll('.dqRoundAllBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const boxes = [...area.querySelectorAll(`.dqChk[data-round="${btn.dataset.round}"]`)];
