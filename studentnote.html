@@ -3724,6 +3724,18 @@ function dqGetVariant(name, round, num) {
   const v = dqRawVariant(name, round, num);
   return v && (!v.used || loggedDqKeys.has(round + ':' + num)) ? v : null;
 }
+// 변형이 있는 문제도 노트에 "원본"으로 실을 수 있다 — 문제별 선택(원본 선택한 문제만 기록, 이 브라우저에 저장)
+const DQ_ORIG_KEY = 'sn_dq_useorig_v1';
+const dqWantsOriginal = (name, round, num) => dqLoad(DQ_ORIG_KEY, '[]').includes(dqOptKey(name, round, num));
+function dqSetOriginal(name, round, num, on) { const set = new Set(dqLoad(DQ_ORIG_KEY, '[]')), k = dqOptKey(name, round, num); on ? set.add(k) : set.delete(k); dqSave(DQ_ORIG_KEY, [...set]); }
+// 노트에 실제로 실릴 변형 (변형이 있어도 "원본"을 골랐으면 null)
+function dqActiveVariant(name, round, num) { return dqWantsOriginal(name, round, num) ? null : dqGetVariant(name, round, num); }
+// 문제 옆 "원본/변형" 선택 칸 — 실을 수 있는 변형이 있을 때만 보인다
+function dqRefreshSrcSel(name, round, num) {
+  const sel = document.querySelector(`.dqSrcSel[data-round="${round}"][data-num="${num}"]`); if (!sel) return;
+  const has = !!dqGetVariant(name, round, num);
+  sel.style.display = has ? '' : 'none'; sel.value = dqWantsOriginal(name, round, num) ? 'orig' : 'var';
+}
 function dqVariantUsedBefore(name, round, num) { const v = dqRawVariant(name, round, num); return !!(v && v.used && !loggedDqKeys.has(round + ':' + num)); }
 function dqMarkVariantUsed(name, round, num) {
   const o = dqLoad(DQ_VAR_KEY, '{}'), k = dqOptKey(name, round, num);
@@ -3761,9 +3773,9 @@ function renderDqSelPreview(name, area) {
   box.innerHTML = `<div class="varHeadT" style="margin-top:12px">📄 선택한 문제 원본 (${sel.length}개)</div>` + sel.map(k => {
     const [round, num] = k.split(':');
     const it = dqWrongItemsData.find(x => String(x.round) === round && String(x.num) === num); if (!it) return '';
-    const v = dqGetVariant(name, round, num), ch = dqWantChoices(name, round, num);
+    const hasVar = !!dqGetVariant(name, round, num), v = dqActiveVariant(name, round, num), ch = dqWantChoices(name, round, num);
     const choices = (it.choices || []).some(c => String(c || '').trim());
-    return `<div class="pvOrig"><div class="pvOrigT">${round}회차 ${num}번${v ? ' <span class="vb good">🔄 변형 문제로 교체되어 실려요</span>' : ''}${ch ? ' <span class="vb good">선지 포함</span>' : ''}</div>` +
+    return `<div class="pvOrig"><div class="pvOrigT">${round}회차 ${num}번${v ? ' <span class="vb good">🔄 변형 문제로 교체되어 실려요</span>' : hasVar ? ' <span class="vb" style="background:#eef">원본으로 실려요(변형 있음)</span>' : ''}${ch ? ' <span class="vb good">선지 포함</span>' : ''}</div>` +
       `<div class="varBody">${it.stemHtml || ''}${choices ? `<div class="varCh">${it.choices.join('&nbsp;&nbsp;&nbsp;')}</div>` : ''}<div class="varAns"><b>정답</b> ${dqAnswerValueText(it)}</div></div></div>`;
   }).join('');
   renderMathIn(box);
@@ -3773,8 +3785,8 @@ function openDqVarPanel(name, btn) {
   const it = dqWrongItemsData.find(x => String(x.round) === String(round) && String(x.num) === String(num));
   if (!it || !window.WrongnoteVariant) { panel.innerHTML = '<p class="hint">변형 기능을 불러오지 못했어요. 새로고침(Ctrl+F5) 해 주세요.</p>'; return; }
   const WV = window.WrongnoteVariant, k = dqOptKey(name, round, num);
-  const setBtn = () => { const on = !!dqGetVariant(name, round, num); btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : dqVariantUsedBefore(name, round, num) ? '🔄새 변형 필요' : '🔄변형'; renderDqSelPreview(name, document.getElementById('dqWrongSummary')); };
-  const useVariant = (v, id, level) => { const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = { ...v, id, level }; delete o[k].used; dqSave(DQ_VAR_KEY, o); setBtn(); draw(); };
+  const setBtn = () => { dqRefreshSrcSel(name, round, num); const on = !!dqGetVariant(name, round, num); btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : dqVariantUsedBefore(name, round, num) ? '🔄새 변형 필요' : '🔄변형'; renderDqSelPreview(name, document.getElementById('dqWrongSummary')); };
+  const useVariant = (v, id, level) => { dqSetOriginal(name, round, num, false); const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = { ...v, id, level }; delete o[k].used; dqSave(DQ_VAR_KEY, o); setBtn(); draw(); };
   let stored = null; // 서버에 저장된 이 문제의 변형들(null = 불러오는 중)
   const draw = () => {
     const cur = dqGetVariant(name, round, num);
@@ -3879,7 +3891,7 @@ async function loadDqWrongSummary(name) {
         <div class="qGrid">
           ${r.items.map(it => `<span class="dqItem"><label>
             <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}"> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
-          </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : dqVariantUsedBefore(name, r.round, it.num) ? '🔄새 변형 필요' : '🔄변형'}</button><span class="dqVarCnt hint" data-key="${r.round}:${it.num}" title="이 문제에 저장된 변형 개수"></span><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
+          </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : dqVariantUsedBefore(name, r.round, it.num) ? '🔄새 변형 필요' : '🔄변형'}</button><select class="dqSrcSel" data-round="${r.round}" data-num="${it.num}" title="오답노트에 실을 문제" style="${dqGetVariant(name, r.round, it.num) ? '' : 'display:none'}"><option value="var"${dqWantsOriginal(name, r.round, it.num) ? '' : ' selected'}>변형 싣기</option><option value="orig"${dqWantsOriginal(name, r.round, it.num) ? ' selected' : ''}>원본 싣기</option></select><span class="dqVarCnt hint" data-key="${r.round}:${it.num}" title="이 문제에 저장된 변형 개수"></span><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
         </div>
       </div>
     `).join('') + '<div id="dqSelPreview" class="dqSelPreview"></div><div id="dqVarPanel" class="dqVarPanel"></div>';
@@ -3897,6 +3909,7 @@ async function loadDqWrongSummary(name) {
       cb.checked ? set.add(k) : set.delete(k); dqSave(DQ_CH_KEY, [...set]); renderDqSelPreview(name, area);
     }));
     area.querySelectorAll('.dqVarBtn').forEach(btn => btn.addEventListener('click', () => openDqVarPanel(name, btn)));
+    area.querySelectorAll('.dqSrcSel').forEach(sel => sel.addEventListener('change', () => { dqSetOriginal(name, sel.dataset.round, sel.dataset.num, sel.value === 'orig'); renderDqSelPreview(name, area); }));
     callGetJsonp(DASHBOARD_URL, { action: 'dqvariantcounts', key: TEACHER_KEY }).then(d => {
       area.querySelectorAll('.dqVarCnt').forEach(sp => { const n = (d.counts || {})[sp.dataset.key]; if (n) sp.textContent = '저장 ' + n; });
     }).catch(() => {});
@@ -6058,7 +6071,7 @@ async function generateHtmlNote(historicalBatch) {
         // (2026-09-15). 대신 정답 줄·빠른정답을 선지 참조 없는 단답형
         // 값으로 바꿔서 보여준다(dqAnswerValueText/dqCleanQuickAnswer).
         // AI 변형 문제로 바꿔 싣기로 한 문항이면 지문·그림·정답·해설을 변형 기준으로 쓴다. 선지는 "선지" 체크한 문항만.
-        const dqVar = dqGetVariant(studentName, round, num), wantCh = dqWantChoices(studentName, round, num);
+        const dqVar = dqActiveVariant(studentName, round, num), wantCh = dqWantChoices(studentName, round, num);
         const WV = window.WrongnoteVariant;
         let stemHtml = it.stemHtml || '';
         if (dqVar && WV) {
@@ -6172,7 +6185,7 @@ async function generateHtmlNote(historicalBatch) {
           action: 'lognote', key: TEACHER_KEY, name: studentName, at: batchAt, items,
         });
         if (needHwpxLog) lastLoggedBatch = { key: batchKey, noteRound };
-        if (needDqLog) newDqItems.forEach(c => { loggedDqKeys.add(`${c.round}:${c.num}`); dqMarkVariantUsed(studentName, c.round, c.num); });
+        if (needDqLog) newDqItems.forEach(c => { loggedDqKeys.add(`${c.round}:${c.num}`); if (dqActiveVariant(studentName, c.round, c.num)) dqMarkVariantUsed(studentName, c.round, c.num); });
       }
     }
 
