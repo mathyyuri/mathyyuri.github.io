@@ -13,6 +13,7 @@
     '<variant>\n<problem>문제 본문</problem>\n<figure><svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">…필요할 때만…</svg></figure>\n<choices><c>①에 들어갈 내용</c><c>②</c><c>③</c><c>④</c><c>⑤</c></choices>\n<answer>정답 (객관식이면 번호와 값)</answer>\n<solution>간단한 풀이(검산 포함)</solution>\n<changes>원문에서 무엇을 어떻게 바꿨는지 한 줄</changes>\n</variant>';
 
   /* ---- 통신 (mathvariant.html 과 동일) ---- */
+  let cfg = { url: () => GAS_URL, key: () => myKey };   // studentnote.html 은 setup({url, key})로 바꿔 쓴다
   let jc = 0;
   function jsonp(params, timeout) {
     return new Promise((resolve, reject) => {
@@ -20,7 +21,7 @@
       const t = setTimeout(() => { clean(); reject(new Error('요청 시간 초과')); }, timeout || 30000);
       function clean() { clearTimeout(t); delete window[cb]; s.remove(); }
       window[cb] = d => { clean(); d && d.ok ? resolve(d) : reject(new Error((d && d.error) || '서버 오류')); };
-      s.src = GAS_URL + '?' + new URLSearchParams({ ...params, callback: cb }).toString();
+      s.src = cfg.url() + '?' + new URLSearchParams({ ...params, callback: cb }).toString();
       s.onerror = () => { clean(); reject(new Error('스크립트 로드 실패')); };
       document.body.appendChild(s);
     });
@@ -28,12 +29,12 @@
   async function askAI(msgs, opts) {
     opts = opts || {};
     const jobId = 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'mathvariant', key: myKey, jobId, messages: msgs, mode: opts.mode || 'gen', model: opts.model || '', images: opts.images || [] }) }).catch(() => {});
+    fetch(cfg.url(), { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'mathvariant', key: cfg.key(), jobId, messages: msgs, mode: opts.mode || 'gen', model: opts.model || '', images: opts.images || [] }) }).catch(() => {});
     const start = Date.now();
     await new Promise(r => setTimeout(r, 4000));
     while (Date.now() - start < 170000) {
-      try { const r = await jsonp({ action: 'mathvariantresult', key: myKey, jobId }); if (!r.pending) return r; }
+      try { const r = await jsonp({ action: 'mathvariantresult', key: cfg.key(), jobId }); if (!r.pending) return r; }
       catch (e) { if (!/시간 초과|로드 실패/.test(e.message)) throw e; }
       await new Promise(r => setTimeout(r, 3000));
     }
@@ -133,11 +134,9 @@
     return `<span class="varCtl"><select class="varLvl"><option value="1">1단계 · 숫자만 바꾸기</option><option value="2">2단계 · 표현 바꾸기</option><option value="3">3단계 · 조건 바꾸기</option></select> ` +
       `<button type="button" class="varGen">🔄 변형 문제 만들기</button></span> <span class="varMsg"></span><div class="varPrev"></div>`;
   }
-  async function generate(card, slot, it) {
-    const msg = slot.querySelector('.varMsg'), prev = slot.querySelector('.varPrev'), btn = slot.querySelector('.varGen');
-    const lv = Number(slot.querySelector('.varLvl').value);
-    btn.disabled = true; prev.innerHTML = '';
-    const t0 = Date.now(), tick = setInterval(() => { msg.textContent = '⏳ AI가 변형 문제를 만드는 중… ' + Math.round((Date.now() - t0) / 1000) + '초'; }, 1000);
+  // 원본 문제(it: {stemHtml, choices, answer}) → 변형 1개 + 두 AI 검증. onStatus(글)로 진행 상황을 알려준다.
+  async function makeVariant(it, lv, onStatus) {
+    const t0 = Date.now(), tick = setInterval(() => onStatus('⏳ AI가 변형 문제를 만드는 중… ' + Math.round((Date.now() - t0) / 1000) + '초'), 1000);
     try {
       const stem = htmlToText(it.stemHtml);
       const choices = (it.choices || []).map(c => htmlToText(c)); const choiceImgs = choices.reduce((a, c) => a.concat(c.imgs), []);
@@ -148,24 +147,35 @@
       const res = await askAI([{ role: 'user', content: first }], { images: imgs });
       const v = parseVariant(res.text);
       if (!v || !v.problem) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
-      clearInterval(tick); msg.textContent = '검증 중… (Sonnet + Gemini)';
+      clearInterval(tick); onStatus('검증 중… (Sonnet + Gemini)');
       const ms = ['claude-sonnet-5', 'gemini'];
       const rs = await Promise.all(ms.map(m => verify(v, m)));
+      return { v, ms, rs, allGood: rs.every(r => r.ok) };
+    } finally { clearInterval(tick); }
+  }
+  function previewHtml(lv, r) {
+    const v = r.v;
+    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.allGood ? '<b class="good">✅ 검증 통과</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
+      `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
+      (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
+      `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
+      `<div class="varAct"><button type="button" class="varUse">✅ 이 변형으로 교체</button> <button type="button" class="varAgain">다시 만들기</button></div></div>`;
+  }
+  async function generate(card, slot, it) {
+    const msg = slot.querySelector('.varMsg'), prev = slot.querySelector('.varPrev'), btn = slot.querySelector('.varGen');
+    const lv = Number(slot.querySelector('.varLvl').value);
+    btn.disabled = true; prev.innerHTML = ''; msg.className = 'varMsg';
+    try {
+      const r = await makeVariant(it, lv, t => { msg.textContent = t; });
       msg.textContent = '';
-      const allGood = rs.every(r => r.ok);
-      prev.innerHTML = `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${allGood ? '<b class="good">✅ 검증 통과</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${rs.map((r, i) => badge(ms[i], r)).join(' ')}</div>` +
-        `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
-        (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
-        `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
-        `<div class="varAct"><button type="button" class="varUse">✅ 이 변형으로 교체</button> <button type="button" class="varAgain">다시 만들기</button></div></div>`;
-      renderMath(prev);
+      prev.innerHTML = previewHtml(lv, r); renderMath(prev);
       prev.querySelector('.varUse').onclick = () => {
-        const o = load(); o[skey(window.__wnName, card.dataset.key)] = v; save(o);
-        applyVariant(card, v); prev.innerHTML = ''; showApplied(card, slot);
+        const o = load(); o[skey(window.__wnName, card.dataset.key)] = r.v; save(o);
+        applyVariant(card, r.v); prev.innerHTML = ''; showApplied(card, slot);
       };
       prev.querySelector('.varAgain').onclick = () => generate(card, slot, it);
     } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg err'; }
-    clearInterval(tick); btn.disabled = false;
+    btn.disabled = false;
   }
   function showApplied(card, slot) {
     const msg = slot.querySelector('.varMsg'); msg.className = 'varMsg';
@@ -173,7 +183,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer };   // 점검용
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {

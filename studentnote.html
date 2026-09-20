@@ -305,9 +305,11 @@ button:disabled { opacity: 0.4; cursor: default; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>document.write('<script src="wrongnote-variant.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
 const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
 const TEACHER_KEY = 'mathyyuri2026'; // apps-script/dashboard-Code.gs의 TEACHER_KEY와 반드시 동일해야 합니다
+if (window.WrongnoteVariant) WrongnoteVariant.setup({ url: () => DASHBOARD_URL, key: () => TEACHER_KEY });
 
 const logEl = document.getElementById('log');
 const emptyHint = document.getElementById('emptyHint');
@@ -3669,7 +3671,56 @@ async function selectStudent(btn) {
 // 일일일모 문제는 한글 파일에는 담을 수 없다 — generateHwpxNote에서
 // 체크돼 있으면 안내만 하고 제외한다. "선택한 문제로 오답노트 열기"
 // 버튼은 일일일모 문제만 따로 인쇄하고 싶을 때 쓰는 예전 방식 그대로 둔다.
+// ---- 일일일모 문제별 옵션(이 브라우저에 저장): 선지 넣기 / AI 변형 문제로 교체 ----
+// 선지는 기본으로 안 싣는다(번호 암기 방지). 선지가 있어야 풀리는 문제(예: 155번 "좌표는?")만 체크해서 싣는다.
+// 변형 문제는 학생이 정답을 외워서 오답노트가 의미를 잃는 걸 막는다 — 원본은 건드리지 않고 이 학생 노트에만 바꿔 싣는다.
+const DQ_VAR_KEY = 'sn_dq_variants_v1', DQ_CH_KEY = 'sn_dq_choices_v1';
+const dqLoad = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || d); } catch (e) { return JSON.parse(d); } };
+const dqSave = (k, o) => { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} };
+const dqOptKey = (name, round, num) => name + '|' + round + ':' + num;
+function dqGetVariant(name, round, num) { return dqLoad(DQ_VAR_KEY, '{}')[dqOptKey(name, round, num)] || null; }
+function dqWantChoices(name, round, num) { return dqLoad(DQ_CH_KEY, '[]').includes(dqOptKey(name, round, num)); }
+// 노트에 실을 선지 HTML(top-level 요소로): 그림 선지는 한 행 2개, 짧은 선지는 한 줄, 긴 선지는 한 줄에 하나
+function dqChoicesBlockHtml(choiceHtmls) {
+  const cs = (choiceHtmls || []).filter(c => String(c || '').trim());
+  if (!cs.length) return '';
+  if (cs.some(c => /<img\b/i.test(c))) return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin:6px 0">${cs.map(c => `<div style="min-width:0">${c}</div>`).join('')}</div>`;
+  const plain = Math.max.apply(null, cs.map(c => c.replace(/<[^>]*>/g, '').replace(/\\\(|\\\)/g, '').length));
+  return `<p style="margin:6px 0">${cs.join(plain > 34 ? '<br>' : '&nbsp;&nbsp;&nbsp;&nbsp;')}</p>`;
+}
 let dqWrongItemsData = []; // [{round, num, meta, stemHtml, choices, answer, quickAnswer, explanation, video}]
+function openDqVarPanel(name, btn) {
+  const panel = document.getElementById('dqVarPanel'), round = btn.dataset.round, num = btn.dataset.num;
+  const it = dqWrongItemsData.find(x => String(x.round) === String(round) && String(x.num) === String(num));
+  if (!it || !window.WrongnoteVariant) { panel.innerHTML = '<p class="hint">변형 기능을 불러오지 못했어요. 새로고침(Ctrl+F5) 해 주세요.</p>'; return; }
+  const WV = window.WrongnoteVariant, k = dqOptKey(name, round, num);
+  const setBtn = on => { btn.classList.toggle('on', on); btn.textContent = on ? '🔄변형됨' : '🔄변형'; };
+  const draw = () => {
+    const cur = dqGetVariant(name, round, num);
+    panel.innerHTML = `<div class="varBox"><div class="varHeadT">🔄 ${round}회차 ${num}번 변형 문제</div>` +
+      (cur ? `<div class="varBody">${WV.mathHtml(cur.problem)}${cur.figure ? `<div style="text-align:center;margin:8px 0">${cur.figure}</div>` : ''}<div class="varAns"><b>정답</b> ${WV.mathHtml(WV.answerText(cur))}</div></div><p class="hint">✅ 이 문제는 오답노트에 <b>변형 문제로 바뀌어</b> 실려요.</p><button type="button" class="pvRevert">원본으로 되돌리기</button> ` : '<p class="hint">원본 대신 AI가 만든 변형 문제를 오답노트에 실을 수 있어요(정답을 외워도 소용없게).</p>') +
+      `<div style="margin-top:8px"><select class="pvLvl"><option value="1">1단계 · 숫자만 바꾸기</option><option value="2">2단계 · 표현 바꾸기</option><option value="3">3단계 · 조건 바꾸기</option></select> <button type="button" class="pvGen">${cur ? '다시 만들기' : '변형 문제 만들기'}</button><span class="varMsg pvMsg"></span></div><div class="pvPrev"></div></div>`;
+    renderMathIn(panel);
+    const rv = panel.querySelector('.pvRevert');
+    if (rv) rv.onclick = () => { const o = dqLoad(DQ_VAR_KEY, '{}'); delete o[k]; dqSave(DQ_VAR_KEY, o); setBtn(false); draw(); };
+    panel.querySelector('.pvGen').onclick = async () => {
+      const gen = panel.querySelector('.pvGen'), msg = panel.querySelector('.pvMsg'), prev = panel.querySelector('.pvPrev'), lv = Number(panel.querySelector('.pvLvl').value);
+      gen.disabled = true; prev.innerHTML = ''; msg.className = 'varMsg pvMsg';
+      try {
+        const r = await WV.makeVariant(it, lv, t => { msg.textContent = t; });
+        msg.textContent = ''; prev.innerHTML = WV.previewHtml(lv, r); renderMathIn(prev);
+        prev.querySelector('.varUse').onclick = () => { const o = dqLoad(DQ_VAR_KEY, '{}'); o[k] = r.v; dqSave(DQ_VAR_KEY, o); setBtn(true); draw(); };
+        prev.querySelector('.varAgain').onclick = () => gen.click();
+      } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg pvMsg err'; }
+      gen.disabled = false;
+    };
+  };
+  draw();
+  panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function renderMathIn(el) {
+  if (window.renderMathInElement) { try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {} }
+}
 async function loadDqWrongSummary(name) {
   const box = document.getElementById('dqWrongBox');
   const area = document.getElementById('dqWrongSummary');
@@ -3716,12 +3767,12 @@ async function loadDqWrongSummary(name) {
           <button type="button" class="selectAllBtn dqRoundAllBtn" data-round="${r.round}">전체 해제</button>
         </div>
         <div class="qGrid">
-          ${r.items.map(it => `<label>
+          ${r.items.map(it => `<span class="dqItem"><label>
             <input type="checkbox" class="dqChk" data-round="${r.round}" data-num="${it.num}" checked> ${it.num}번${it.meta ? `(${it.meta})` : ''}${it.correct ? (it.firstAttemptWrong ? '<span class="dqGradeBadge dqCorrectedTag">1차오답·정정</span>' : '<span class="dqGradeBadge dqLowConfTag">확신낮음</span>') : ''}${dqGradeBadge(r.round, it.num)}
-          </label>`).join('')}
+          </label><span class="dqTools"><button type="button" class="dqVarBtn${dqGetVariant(name, r.round, it.num) ? ' on' : ''}" data-round="${r.round}" data-num="${it.num}" title="AI 변형 문제로 바꿔 싣기">${dqGetVariant(name, r.round, it.num) ? '🔄변형됨' : '🔄변형'}</button><label title="선지가 있어야 풀 수 있는 문제만 체크"><input type="checkbox" class="dqChoiceOpt" data-round="${r.round}" data-num="${it.num}"${dqWantChoices(name, r.round, it.num) ? ' checked' : ''}> 선지</label></span></span>`).join('')}
         </div>
       </div>
-    `).join('');
+    `).join('') + '<div id="dqVarPanel" class="dqVarPanel"></div>';
 
     function updateDqCounter() {
       const n = area.querySelectorAll('.dqChk:checked').length;
@@ -3730,6 +3781,11 @@ async function loadDqWrongSummary(name) {
       updateCounter(); // 아래 미션 체크박스와 합쳐 메인 "오답노트 생성" 버튼도 갱신
     }
     area.querySelectorAll('.dqChk').forEach(chk => chk.addEventListener('change', updateDqCounter));
+    area.querySelectorAll('.dqChoiceOpt').forEach(cb => cb.addEventListener('change', () => {
+      const k = dqOptKey(name, cb.dataset.round, cb.dataset.num), set = new Set(dqLoad(DQ_CH_KEY, '[]'));
+      cb.checked ? set.add(k) : set.delete(k); dqSave(DQ_CH_KEY, [...set]);
+    }));
+    area.querySelectorAll('.dqVarBtn').forEach(btn => btn.addEventListener('click', () => openDqVarPanel(name, btn)));
     area.querySelectorAll('.dqRoundAllBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const boxes = [...area.querySelectorAll(`.dqChk[data-round="${btn.dataset.round}"]`)];
@@ -5885,7 +5941,17 @@ async function generateHtmlNote(historicalBatch) {
         // 번호(예: "정답은 ④")를 외워버리는 학생이 많다는 리포트
         // (2026-09-15). 대신 정답 줄·빠른정답을 선지 참조 없는 단답형
         // 값으로 바꿔서 보여준다(dqAnswerValueText/dqCleanQuickAnswer).
-        const stemHtml = it.stemHtml || '';
+        // AI 변형 문제로 바꿔 싣기로 한 문항이면 지문·그림·정답·해설을 변형 기준으로 쓴다. 선지는 "선지" 체크한 문항만.
+        const dqVar = dqGetVariant(studentName, round, num), wantCh = dqWantChoices(studentName, round, num);
+        const WV = window.WrongnoteVariant;
+        let stemHtml = it.stemHtml || '';
+        if (dqVar && WV) {
+          stemHtml = `<p>${WV.mathHtml(dqVar.problem)}</p>` + (dqVar.figure ? `<div style="text-align:center;margin:6px 0"><div style="display:inline-block;width:70%">${dqVar.figure.replace('<svg ', '<svg style="width:100%;height:auto" ')}</div></div>` : '');
+        }
+        if (wantCh) {
+          const chList = dqVar && WV ? dqVar.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)) : (it.choices || []);
+          stemHtml += dqChoicesBlockHtml(chList);
+        }
         // splitTopLevelBlocks(paginateQuestionsWithOverflow)가 최상위 엘리먼트
         // 자식만 문단으로 인식해서, <p> 태그 밖으로 새는 텍스트는 그냥
         // 사라진다 — stemHtml이 <p>로 시작 안 하면(예: 순수 텍스트) 배지와
@@ -5894,17 +5960,18 @@ async function generateHtmlNote(historicalBatch) {
           ? stemHtml.replace('<p>', `<p><span class="mbQNum">${qNum}.</span>`)
           : `<p><span class="mbQNum">${qNum}.</span>${stemHtml}</p>`;
         questionParts.push({
-          cite: `<div class="mbCite">${escapeHtml(`[일일일모 ${round}회차] ${num}번${it.meta ? ` (${it.meta})` : ''}`)}</div>`,
+          cite: `<div class="mbCite">${escapeHtml(`[일일일모 ${round}회차] ${num}번${dqVar ? ' [변형]' : ''}${it.meta ? ` (${it.meta})` : ''}`)}</div>`,
           body,
           qNum,
         });
 
-        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${dqAnswerValueText(it)}</div>`);
+        answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>정답: ${dqVar && WV ? WV.mathHtml(WV.answerText(dqVar)) : dqAnswerValueText(it)}</div>`);
 
-        const dqQuickAnswer = dqCleanQuickAnswer(it.quickAnswer);
+        const dqQuickAnswer = dqVar ? '' : dqCleanQuickAnswer(it.quickAnswer);
         const explParts = [];
         if (dqQuickAnswer) explParts.push(`<b>빠른정답</b><br>${dqQuickAnswer}`);
-        if (it.explanation) explParts.push(`<b>해설</b><br>${it.explanation}`);
+        if (dqVar && WV) explParts.push(`<b>풀이</b><br>${WV.mathHtml(dqVar.solution || '')}`);
+        else if (it.explanation) explParts.push(`<b>해설</b><br>${it.explanation}`);
         explanationBlocks.push(`<div class="mbQBlock"><div class="explNum">${qNum}번 해설</div>${explParts.join('<br><br>') || '이 문항엔 해설이 저장돼 있지 않습니다.'}</div>`);
         qNum++;
       }
