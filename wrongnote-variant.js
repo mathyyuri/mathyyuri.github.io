@@ -174,17 +174,40 @@
         const nv = await reviseVariant(r.v, inp.value.trim(), model);
         clearInterval(tick); msg.textContent = '검증 중… (Sonnet + Gemini)';
         r.v = nv; r.rs = await Promise.all(r.ms.map(m => verify(nv, m)));
-        r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err);
+        r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err); r.reverified = true;
         redraw();
       } catch (e) { clearInterval(tick); msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg revMsg err'; btn.disabled = false; }
     };
   }
+  // 미리보기의 "직접 고치기" 적용 + "검증하기" 버튼 연결. 직접 고친 내용은 그대로 r.v 에 반영(검증은 원하면 따로).
+  function bindEdit(prev, r, redraw) {
+    const ap = prev.querySelector('.varEditApply');
+    if (ap) ap.onclick = () => {
+      const g = sel => prev.querySelector(sel);
+      const nv = { ...r.v, problem: g('.edProblem').value.trim(), answer: g('.edAnswer').value.trim(), solution: g('.edSolution').value.trim() };
+      if (r.v.choices.length) nv.choices = [...prev.querySelectorAll('.edChoice')].map(i => i.value.trim());
+      if (!nv.problem) { g('.edMsg').textContent = '문제가 비어 있어요.'; g('.edMsg').className = 'varMsg edMsg err'; return; }
+      r.v = nv; r.edited = true; r.reverified = false; redraw();
+    };
+    const rv = prev.querySelector('.varReVerify');
+    if (rv) rv.onclick = async () => {
+      rv.disabled = true; rv.textContent = '검증 중…';
+      r.rs = await Promise.all(r.ms.map(m => verify(r.v, m)));
+      r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err); r.reverified = true; redraw();
+    };
+  }
   function previewHtml(lv, r) {
     const v = r.v;
-    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
+    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.edited && !r.reverified ? '<b class="bad">✏️ 직접 수정함 — 검증은 하지 않았어요</b> <button type="button" class="varReVerify">검증하기</button>' : r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.edited && !r.reverified ? '' : r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
       `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
       (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
+      `<details class="varEdit"><summary>✏️ 문제·선지·정답·풀이 직접 고치기</summary><div class="varEditBody">` +
+      `<label>문제 <span class="hint">(수식은 $...$)</span></label><textarea class="edProblem" rows="4">${escapeHtml(v.problem)}</textarea>` +
+      (v.choices.length ? `<label>선지</label>${v.choices.map((c, i) => `<div class="edCh"><span>${CIR[i] || i + 1}</span><input type="text" class="edChoice" value="${escapeHtml(String(c).replace(/^[①-⑤]\s*/, ''))}"></div>`).join('')}` : '') +
+      `<label>정답</label><input type="text" class="edAnswer" value="${escapeHtml(v.answer)}">` +
+      `<label>풀이</label><textarea class="edSolution" rows="5">${escapeHtml(v.solution)}</textarea>` +
+      `<div><button type="button" class="varEditApply">수정 적용</button> <span class="varMsg edMsg"></span></div></div></details>` +
       `<div class="varRev"><div class="varRevT">✏️ 문제는 그대로 두고 정답·풀이만 고치기</div><input type="text" class="revIn" placeholder="예: 정답이 ④예요 / 접선의 방정식을 다시 구해 보세요 / 계산이 틀렸어요"> <select class="revModel"><option value="claude-sonnet-5">Sonnet(빠름)</option><option value="claude-opus-5">Opus(더 정확, 느림)</option></select> <button type="button" class="varRevBtn">다시 풀기</button><span class="varMsg revMsg"></span></div>` +
       `<div class="varAct"><button type="button" class="varUse">✅ 이 변형으로 교체</button> <button type="button" class="varAgain">다시 만들기</button></div></div>`;
   }
@@ -202,7 +225,7 @@
           applyVariant(card, r.v); prev.innerHTML = ''; showApplied(card, slot);
         };
         prev.querySelector('.varAgain').onclick = () => generate(card, slot, it);
-        bindRevise(prev, r, show);
+        bindRevise(prev, r, show); bindEdit(prev, r, show);
       };
       show();
     } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg err'; }
@@ -214,7 +237,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, mathHtml, answerText, CIR };
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {
