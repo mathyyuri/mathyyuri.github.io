@@ -325,7 +325,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
     <div id="counterBar">
       <span id="counterBadge">0문제 선택됨</span>
-      <label id="hideCiteRow" style="flex-basis:100%;margin:0 0 4px;font-size:13px;font-weight:normal"><input type="checkbox" id="hideCiteChk" checked> 출력본에서 <b>출처(미션·문제번호) 숨기기</b> <span class="hint">— 학생이 출처를 보고 답을 찾아보는 것을 막아요</span></label>
+      <label id="hideCiteRow" style="flex-basis:100%;margin:0 0 4px;font-size:13px;font-weight:normal"><input type="checkbox" id="hideCiteChk" checked> 출력본에서 <b>일일일모 출처(회차·번호) 숨기기</b> <span class="hint">— 일일일모는 출처를 보고 답을 찾아볼 수 있어서 가려요(다른 문제는 그대로 표시)</span></label>
       <button id="genBtn" disabled>오답노트 생성 (한글)</button>
       <button id="genHtmlBtn" disabled>오답노트 생성 (HTML)</button>
       <span id="unitTally" style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;"></span>
@@ -1220,7 +1220,6 @@ function hideCite() { const c = document.getElementById('hideCiteChk'); return c
   });
 })();
 function buildCiteText(round, mission, sourceLabel, num) {
-  if (hideCite()) return `[ ${round}차시도 ]`;
   const same = String(sourceLabel || '').trim() === String(mission || '').trim();
   const parts = same ? [mission] : [mission, sourceLabel];
   return `[ ${round}차시도 ] ${parts.join(' · ')} ${num}번`;
@@ -4929,7 +4928,7 @@ async function generateHwpxNote(historicalBatch) {
       const inGroup = checked.filter(c => c.mission === g.mission && (c.category == null || c.category === g.category));
       for (const c of inGroup) {
         const hist = compactHistoryString(g.mission, c.num, g.category) || '기록없음';
-        summaryRows.push(hideCite() ? [`${qOrderNum}`, '—', '—', '—', `${c.round}차시도`, hist] : [`${qOrderNum}`, g.category, g.mission, `${c.num}번`, `${c.round}차시도`, hist]);
+        summaryRows.push([`${qOrderNum}`, g.category, g.mission, `${c.num}번`, `${c.round}차시도`, hist]);
         qOrderNum++;
       }
     }
@@ -5337,7 +5336,7 @@ const MB_RULES10 = [
 // ---- 페이지 2: 오답현황 데이터 ----
 function buildSummaryPageHtml(summaryRows, info) {
   const rowsHtml = summaryRows.map(r =>
-    hideCite()
+    (hideCite() && r.category === '일일일모')
       ? `<tr><td>${r.n}</td><td>—</td><td>—</td><td>—</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
       : `<tr><td>${r.n}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.mission)}</td>` +
         `<td>${r.num}번</td><td>${r.round}차시도</td><td>${escapeHtml(r.hist)}</td></tr>`
