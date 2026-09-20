@@ -86,6 +86,48 @@
     });
   }
 
+  /* ---- 그림: 원본 그림을 그대로 쓰고, 그림 속 식은 흰 칸으로 지운다 ---- */
+  // v.figMode: 'orig'(원본 그림) | 'ai'(AI가 그린 SVG) | 'none'.  v.figMasks: 지울 영역 [[x,y,w,h], …] (그림 크기 대비 0~1 비율)
+  function origImgSrc(it) {
+    const m = String((it && it.stemHtml) || '').match(/<img\b[^>]*\ssrc="([^"]+)"/i);
+    return m ? m[1] : null;
+  }
+  function figMode(v, it) { return v.figMode || (v.figure ? 'ai' : 'none'); }   // 옛 변형(figMode 없음)은 예전 방식 그대로
+  const MASK_STYLE = 'position:absolute;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  function figureHtml(v, it, widthPct) {
+    const mode = figMode(v, it), w = widthPct || 60;
+    if (mode === 'orig') {
+      const src = origImgSrc(it); if (!src) return '';
+      const masks = (v.figMasks || []).map(m => `<div style="${MASK_STYLE}left:${m[0] * 100}%;top:${m[1] * 100}%;width:${m[2] * 100}%;height:${m[3] * 100}%"></div>`).join('');
+      return `<div style="text-align:center;margin:8px 0"><div style="position:relative;display:inline-block;width:${w}%;line-height:0"><img src="${src}" style="width:100%;height:auto;display:block">${masks}</div></div>`;
+    }
+    if (mode === 'ai' && v.figure) return `<div style="text-align:center;margin:8px 0"><div style="display:inline-block;width:${w}%">${v.figure.replace('<svg ', '<svg style="width:100%;height:auto" ')}</div></div>`;
+    return '';
+  }
+  // AI에게 줄 그림: 원본 그림 모드면 "지운 뒤의 그림"(학생이 보는 그대로)을 PNG로 만들어 넘긴다
+  async function figureForAI(v, it) {
+    const mode = figMode(v, it);
+    if (mode === 'ai' && v.figure) return { text: '\n\n[그림(SVG 코드)]\n' + v.figure, images: [] };
+    if (mode === 'orig') {
+      const src = origImgSrc(it); if (!src) return { text: '', images: [] };
+      const png = await maskedPng(src, v.figMasks || []);
+      return { text: png ? '\n\n(그림 이미지가 함께 첨부되어 있습니다. 흰 칸으로 지워진 부분의 식은 문제 본문에 서술되어 있습니다.)' : '', images: png ? [png] : [] };
+    }
+    return { text: '', images: [] };
+  }
+  function maskedPng(src, masks) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 1100 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        (masks || []).forEach(m => g.fillRect(m[0] * c.width, m[1] * c.height, m[2] * c.width, m[3] * c.height));
+        res(c.toDataURL('image/png'));
+      };
+      im.onerror = () => res(null); im.src = src;
+    });
+  }
+
   /* ---- 화면용 변환: $..$ → \(..\) ---- */
   const mathHtml = t => escapeHtml(t).replace(/\$\$([^$]+)\$\$|\$([^$]+)\$/g, (m, a, b) => '\\(' + (a || b) + '\\)').replace(/\n/g, '<br>');
   function answerText(v) {
@@ -100,10 +142,10 @@
   const skey = (name, key) => name + '|' + key;
 
   /* ---- 카드에 변형 적용/되돌리기 ---- */
-  function applyVariant(card, v) {
+  function applyVariant(card, v, it) {
     const stem = card.querySelector('.stem'), wrap = card.querySelector('.choiceWrap'), sol = card.querySelector('.solBox'), yt = card.querySelector('.ytFacade,.ytIframe');
     if (!card.__orig) card.__orig = { stem: stem.innerHTML, wrap: wrap ? wrap.innerHTML : null, sol: sol.innerHTML, yt: yt ? yt.style.display : null };
-    stem.innerHTML = mathHtml(v.problem) + (v.figure ? `<div style="text-align:center;margin:10px 0">${v.figure}</div>` : '');
+    stem.innerHTML = mathHtml(v.problem) + figureHtml(v, it, 60);
     if (wrap && v.choices.length) wrap.innerHTML = choicesHtml(v.choices.map((c, i) => /^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c).map(mathHtml));
     sol.innerHTML = `<div class="ans">정답: ${mathHtml(answerText(v))}</div><div class="expl"><b>풀이</b><br>${mathHtml(v.solution || '')}</div>`;
     if (yt) yt.style.display = 'none';
@@ -117,10 +159,11 @@
   }
 
   /* ---- 검증 (mathvariant.html 과 같은 방식) ---- */
-  async function verify(v, model) {
-    const body = '[문제]\n' + v.problem + (v.figure ? '\n\n[그림(SVG 코드)]\n' + v.figure : '') + (v.choices.length ? '\n\n[보기]\n' + v.choices.map((c, i) => /^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c).join('\n') : '\n\n(주관식)');
+  async function verify(v, model, it) {
+    const fg = await figureForAI(v, it);
+    const body = '[문제]\n' + v.problem + fg.text + (v.choices.length ? '\n\n[보기]\n' + v.choices.map((c, i) => /^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c).join('\n') : '\n\n(주관식)');
     try {
-      const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model });
+      const res = await askAI([{ role: 'user', content: body }], { mode: 'verify', model, images: fg.images });
       const verdict = tag(res.text, 'verdict').toUpperCase(), ans = tag(res.text, 'answer'), issue = tag(res.text, 'issue');
       const same = sameAnswer(v.answer, ans), vok = verdict.includes('OK');
       return { ok: vok && same, same, ans, issue: /^없음/.test(issue) ? '' : issue };
@@ -142,23 +185,25 @@
       const choices = (it.choices || []).map(c => htmlToText(c)); const choiceImgs = choices.reduce((a, c) => a.concat(c.imgs), []);
       const imgs = []; for (const u of stem.imgs.concat(choiceImgs).slice(0, 3)) { const p = await toPng(u); if (p) imgs.push(p); }
       const orig = stem.text + (choices.length ? '\n\n[보기]\n' + choices.map(c => c.text).join('\n') : '') + (it.answer ? '\n\n[원문 정답] ' + it.answer + '번' : '');
-      const first = '[원본 문제]\n' + orig + '\n\n[요청]\n- 변형 단계: ' + lv + '단계 (' + LEVELS[lv][0] + ': ' + LEVELS[lv][1] + ')\n- 만들 문제 수: 1개\n- 형식: 원문과 같은 형식\n- 난이도: 원문과 비슷한 난이도\n- 그림: 그림이 꼭 필요한 문제에만 SVG 그림 포함\n' +
+      const first = '[원본 문제]\n' + orig + '\n\n[요청]\n- 변형 단계: ' + lv + '단계 (' + LEVELS[lv][0] + ': ' + LEVELS[lv][1] + ')\n- 만들 문제 수: 1개\n- 형식: 원문과 같은 형식\n- 난이도: 원문과 비슷한 난이도\n- 그림: ' + (imgs.length ? '원본 그림을 그대로 다시 쓸 예정이니 <figure>는 만들지 마세요. 그림 속에 적힌 식·숫자는 그대로 두거나, 바꿔야 하면 그 식은 그림에서 지울 것이므로 문제 본문에 조건을 글과 수식으로 빠짐없이 서술하세요(그림은 도형의 위치·모양만 보여주는 용도).' : '그림이 꼭 필요한 문제에만 SVG 그림 포함') + '\n' +
         '- 추가 요구: 학생들이 원문의 정답(번호와 값)을 외우고 있으니, 변형 문제의 정답 값이 원문과 달라지게 하고 객관식이면 정답 번호도 원문과 다른 번호가 되게 선지를 배치하세요.\n\n' + FORMAT_RULE;
       const res = await askAI([{ role: 'user', content: first }], { images: imgs });
       const v = parseVariant(res.text);
       if (!v || !v.problem) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
+      v.figMode = origImgSrc(it) ? 'orig' : (v.figure ? 'ai' : 'none'); v.figMasks = [];   // 원본에 그림이 있으면 그 그림을 그대로 쓴다
       clearInterval(tick); onStatus('검증 중… (Sonnet + Gemini)');
       const ms = ['claude-sonnet-5', 'gemini'];
-      const rs = await Promise.all(ms.map(m => verify(v, m)));
-      return { v, ms, rs, allGood: rs.every(r => r.ok), anyErr: rs.some(r => r.err) };
+      const rs = await Promise.all(ms.map(m => verify(v, m, it)));
+      return { v, it, ms, rs, allGood: rs.every(r => r.ok), anyErr: rs.some(r => r.err) };
     } finally { clearInterval(tick); }
   }
   // 문제(지문·그림·보기)는 그대로 두고 정답·풀이만 원장님 지적을 반영해 다시 푼다 → 두 AI로 다시 검증
-  async function reviseVariant(v, instruction, model) {
-    const body = '[문제]\n' + v.problem + (v.figure ? '\n\n[그림(SVG 코드)]\n' + v.figure : '') +
+  async function reviseVariant(v, instruction, model, it) {
+    const fg = await figureForAI(v, it);
+    const body = '[문제]\n' + v.problem + fg.text +
       (v.choices.length ? '\n\n[보기]\n' + v.choices.map((c, i) => /^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c).join('\n') : '\n\n(주관식)') +
       '\n\n[현재 정답]\n' + v.answer + '\n\n[현재 풀이]\n' + v.solution + '\n\n[원장님 지적]\n' + (instruction || '정답과 풀이가 맞는지 처음부터 다시 풀어서 확인하고 틀렸으면 고쳐 주세요.');
-    const res = await askAI([{ role: 'user', content: body }], { mode: 'solve', model: model || 'claude-sonnet-5' });
+    const res = await askAI([{ role: 'user', content: body }], { mode: 'solve', model: model || 'claude-sonnet-5', images: fg.images });
     const answer = tag(res.text, 'answer'), solution = tag(res.text, 'solution');
     if (!answer) throw new Error('AI 답변을 읽지 못했어요. 다시 시도해 주세요.');
     return { ...v, answer, solution: solution || v.solution };
@@ -171,9 +216,9 @@
       btn.disabled = true; msg.className = 'varMsg revMsg';
       const t0 = Date.now(), tick = setInterval(() => { msg.textContent = '⏳ 다시 푸는 중… ' + Math.round((Date.now() - t0) / 1000) + '초'; }, 1000);
       try {
-        const nv = await reviseVariant(r.v, inp.value.trim(), model);
+        const nv = await reviseVariant(r.v, inp.value.trim(), model, r.it);
         clearInterval(tick); msg.textContent = '검증 중… (Sonnet + Gemini)';
-        r.v = nv; r.rs = await Promise.all(r.ms.map(m => verify(nv, m)));
+        r.v = nv; r.rs = await Promise.all(r.ms.map(m => verify(nv, m, r.it)));
         r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err); r.reverified = true;
         redraw();
       } catch (e) { clearInterval(tick); msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg revMsg err'; btn.disabled = false; }
@@ -192,16 +237,45 @@
     const rv = prev.querySelector('.varReVerify');
     if (rv) rv.onclick = async () => {
       rv.disabled = true; rv.textContent = '검증 중…';
-      r.rs = await Promise.all(r.ms.map(m => verify(r.v, m)));
+      r.rs = await Promise.all(r.ms.map(m => verify(r.v, m, r.it)));
       r.allGood = r.rs.every(x => x.ok); r.anyErr = r.rs.some(x => x.err); r.reverified = true; redraw();
     };
+  }
+  // 그림 선택(원본/AI/없음) + 원본 그림에서 지울 영역 드래그
+  function figEditorHtml(r) {
+    const v = r.v, it = r.it, hasOrig = !!origImgSrc(it), hasAI = !!v.figure; if (!hasOrig && !hasAI) return '';
+    const mode = figMode(v, it), opt = (val, label, ok) => ok ? `<label><input type="radio" name="figMode${r.uid = r.uid || Math.random().toString(36).slice(2, 6)}" class="figModeR" value="${val}"${mode === val ? ' checked' : ''}> ${label}</label> ` : '';
+    return `<details class="varEdit varFigEd"${mode === 'orig' && (v.figMasks || []).length ? ' open' : ''}><summary>🖼 그림 (원본 그림 사용 · 그림 속 식 지우기)</summary><div class="varEditBody">` +
+      `<div>${opt('orig', '원본 그림', hasOrig)}${opt('ai', 'AI가 그린 그림', hasAI)}${opt('none', '그림 없음', true)}</div>` +
+      (mode === 'orig' ? `<p class="hint">그림 위에서 <b>마우스로 드래그</b>하면 그 부분이 흰색으로 지워져요(예: 그림에 적힌 직선의 방정식). 지운 영역은 아래 목록에서 취소할 수 있어요.</p>` +
+        `<div class="figBox" style="position:relative;display:block;width:60%;margin:6px auto;line-height:0;touch-action:none;cursor:crosshair;user-select:none"><img src="${origImgSrc(it)}" draggable="false" style="width:100%;height:auto;display:block">` +
+        (v.figMasks || []).map(m => `<div style="position:absolute;background:rgba(255,255,255,.92);border:1px dashed #c0392b;left:${m[0] * 100}%;top:${m[1] * 100}%;width:${m[2] * 100}%;height:${m[3] * 100}%"></div>`).join('') +
+        `<div class="figDrag" style="position:absolute;border:1px solid #c0392b;background:rgba(192,57,43,.15);display:none"></div></div>` +
+        `<div>${(v.figMasks || []).map((m, i) => `<button type="button" class="figMaskDel" data-i="${i}">지운 영역 ${i + 1} ✕</button> `).join('')}${(v.figMasks || []).length ? '<button type="button" class="figMaskClear">모두 되돌리기</button>' : ''}</div>` : '') +
+      `</div></details>`;
+  }
+  function bindFigure(prev, r, redraw) {
+    prev.querySelectorAll('.figModeR').forEach(rd => rd.onchange = () => { r.v.figMode = rd.value; r.edited = true; r.reverified = false; redraw(); });
+    prev.querySelectorAll('.figMaskDel').forEach(b => b.onclick = () => { r.v.figMasks.splice(Number(b.dataset.i), 1); r.edited = true; r.reverified = false; redraw(); });
+    const clr = prev.querySelector('.figMaskClear'); if (clr) clr.onclick = () => { r.v.figMasks = []; r.edited = true; r.reverified = false; redraw(); };
+    const box = prev.querySelector('.figBox'); if (!box) return;
+    const drag = box.querySelector('.figDrag'); let st = null;
+    const pt = e => { const b = box.getBoundingClientRect(); return [Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)), Math.min(1, Math.max(0, (e.clientY - b.top) / b.height))]; };
+    box.addEventListener('pointerdown', e => { st = pt(e); try { box.setPointerCapture(e.pointerId); } catch (err) {} drag.style.display = 'block'; e.preventDefault(); });
+    box.addEventListener('pointermove', e => { if (!st) return; const p = pt(e), x = Math.min(st[0], p[0]), y = Math.min(st[1], p[1]); Object.assign(drag.style, { left: x * 100 + '%', top: y * 100 + '%', width: Math.abs(p[0] - st[0]) * 100 + '%', height: Math.abs(p[1] - st[1]) * 100 + '%' }); });
+    box.addEventListener('pointerup', e => {
+      if (!st) return; const p = pt(e), x = Math.min(st[0], p[0]), y = Math.min(st[1], p[1]), w = Math.abs(p[0] - st[0]), h = Math.abs(p[1] - st[1]); st = null; drag.style.display = 'none';
+      if (w < 0.012 || h < 0.012) return;
+      (r.v.figMasks = r.v.figMasks || []).push([x, y, w, h]); r.edited = true; r.reverified = false; redraw();
+    });
   }
   function previewHtml(lv, r) {
     const v = r.v;
     return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.edited && !r.reverified ? '<b class="bad">✏️ 직접 수정함 — 검증은 하지 않았어요</b> <button type="button" class="varReVerify">검증하기</button>' : r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.edited && !r.reverified ? '' : r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
-      `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
+      `<div class="varBody">${mathHtml(v.problem)}${figureHtml(v, r.it, 60)}` +
       (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
+      figEditorHtml(r) +
       `<details class="varEdit"><summary>✏️ 문제·선지·정답·풀이 직접 고치기</summary><div class="varEditBody">` +
       `<label>문제 <span class="hint">(수식은 $...$)</span></label><textarea class="edProblem" rows="4">${escapeHtml(v.problem)}</textarea>` +
       (v.choices.length ? `<label>선지</label>${v.choices.map((c, i) => `<div class="edCh"><span>${CIR[i] || i + 1}</span><input type="text" class="edChoice" value="${escapeHtml(String(c).replace(/^[①-⑤]\s*/, ''))}"></div>`).join('')}` : '') +
@@ -222,10 +296,10 @@
         prev.innerHTML = previewHtml(lv, r); renderMath(prev);
         prev.querySelector('.varUse').onclick = () => {
           const o = load(); o[skey(window.__wnName, card.dataset.key)] = r.v; save(o);
-          applyVariant(card, r.v); prev.innerHTML = ''; showApplied(card, slot);
+          applyVariant(card, r.v, it); prev.innerHTML = ''; showApplied(card, slot);
         };
         prev.querySelector('.varAgain').onclick = () => generate(card, slot, it);
-        bindRevise(prev, r, show); bindEdit(prev, r, show);
+        bindRevise(prev, r, show); bindEdit(prev, r, show); bindFigure(prev, r, show);
       };
       show();
     } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg err'; }
@@ -237,7 +311,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, mathHtml, answerText, CIR };
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, bindFigure, figureHtml, origImgSrc, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {
@@ -246,7 +320,7 @@
       slot.innerHTML = slotHtml();
       slot.querySelector('.varGen').onclick = () => generate(card, slot, it);
       const v = saved[skey(name, card.dataset.key)];
-      if (v) { applyVariant(card, v); showApplied(card, slot); }
+      if (v) { applyVariant(card, v, it); showApplied(card, slot); }
     });
   };
 })();

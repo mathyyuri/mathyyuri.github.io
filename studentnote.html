@@ -3748,8 +3748,8 @@ function dqServerVariants(round, num) { return callGetJsonp(DASHBOARD_URL, { act
 function dqSaveVariantToServer(id, round, num, level, v, verify) {
   return callPostNoCors(DASHBOARD_URL, { action: 'dqvariantsave', key: TEACHER_KEY, id, round, num, level, v, verify });
 }
-function dqVariantMiniHtml(WV, v) {
-  return `<div class="varBody">${WV.mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:6px 0"><div style="display:inline-block;width:45%">${v.figure.replace('<svg ', '<svg style="width:100%;height:auto" ')}</div></div>` : ''}` +
+function dqVariantMiniHtml(WV, v, it) {
+  return `<div class="varBody">${WV.mathHtml(v.problem)}${WV.figureHtml(v, it, 45)}` +
     (v.choices && v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
     `<div class="varAns"><b>정답</b> ${WV.mathHtml(WV.answerText(v))}</div></div>`;
 }
@@ -3782,7 +3782,7 @@ function openDqVarPanel(name, btn) {
       `<div class="pvOrig"><div class="pvOrigT">📄 원본 문제</div><div class="varBody">${it.stemHtml || ''}` +
       ((it.choices || []).some(c => String(c || '').trim()) ? `<div class="varCh">${(it.choices || []).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${dqAnswerValueText(it)}</div></div></div>` +
-      (cur ? `${dqVariantMiniHtml(WV, cur)}<p class="hint">✅ 이 학생 오답노트에 <b>변형 문제로 바뀌어</b> 실려요.</p><button type="button" class="pvRevert">원본으로 되돌리기</button> ` :
+      (cur ? `${dqVariantMiniHtml(WV, cur, it)}<p class="hint">✅ 이 학생 오답노트에 <b>변형 문제로 바뀌어</b> 실려요.</p><button type="button" class="pvRevert">원본으로 되돌리기</button> ` :
         (dqVariantUsedBefore(name, round, num) ? '<p class="hint">⚠️ 이 학생 지난 오답노트에 <b>이미 실은 변형</b>이 있어요. 새 변형을 만들거나 아래 저장된 변형에서 다른 걸 고르세요(안 고르면 원본이 실려요).</p>' : '<p class="hint">원본 대신 AI가 만든 변형 문제를 오답노트에 실을 수 있어요(정답을 외워도 소용없게).</p>')) +
       `<div style="margin-top:8px"><select class="pvLvl"><option value="1">1단계 · 숫자만 바꾸기</option><option value="2">2단계 · 표현 바꾸기</option><option value="3">3단계 · 조건 바꾸기</option></select> <button type="button" class="pvGen">새 변형 만들기</button><span class="varMsg pvMsg"></span></div><div class="pvPrev"></div>` +
       `<div class="pvStored"><div class="varHeadT" style="margin-top:12px">📚 저장된 변형 ${stored ? stored.length + '개' : ''} <span class="hint">(다른 학생에게 쓴 것 포함 — 이 문제의 지난 변형 전부)</span></div>` +
@@ -3791,7 +3791,7 @@ function openDqVarPanel(name, btn) {
           const mine = (sv.usedBy || []).includes(name), isCur = cur && cur.id === sv.id;
           return `<div class="varBox pvItem" data-i="${i}" style="${mine ? 'opacity:.85' : ''}"><div class="varHead">${sv.level}단계 · ${escapeHtml(String(sv.at || ''))} ${sv.verify ? `<span class="vb ${/통과/.test(sv.verify) ? 'good' : 'bad'}">${escapeHtml(sv.verify)}</span>` : ''}` +
             `<span class="hint" style="margin-left:6px">출제: ${(sv.usedBy || []).length ? sv.usedBy.map(escapeHtml).join(', ') : '아직 없음'}</span>${mine ? ' <b class="bad">이 학생에게 이미 출제됨</b>' : ''}</div>` +
-            dqVariantMiniHtml(WV, sv.v) +
+            dqVariantMiniHtml(WV, sv.v, it) +
             `<div class="varAct">${isCur ? '<b class="good">✅ 지금 이 변형이 실려요</b>' : `<button type="button" class="pvPick" data-i="${i}">${mine ? '다시 출제(이 학생에게 또)' : '이 학생에게 출제'}</button>`}</div></div>`;
         }).join('')) + '</div></div>';
     renderMathIn(panel);
@@ -3817,7 +3817,7 @@ function openDqVarPanel(name, btn) {
             setTimeout(async () => { try { stored = await dqServerVariants(round, num); draw(); } catch (e) {} }, 4000);
           };
           prev.querySelector('.varAgain').onclick = () => gen.click();
-          WV.bindRevise(prev, r, show); WV.bindEdit(prev, r, show);
+          WV.bindRevise(prev, r, show); WV.bindEdit(prev, r, show); WV.bindFigure(prev, r, show);
         };
         show();
       } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'varMsg pvMsg err'; }
@@ -6062,7 +6062,7 @@ async function generateHtmlNote(historicalBatch) {
         const WV = window.WrongnoteVariant;
         let stemHtml = it.stemHtml || '';
         if (dqVar && WV) {
-          stemHtml = `<p>${WV.mathHtml(dqVar.problem)}</p>` + (dqVar.figure ? `<div style="text-align:center;margin:6px 0"><div style="display:inline-block;width:70%">${dqVar.figure.replace('<svg ', '<svg style="width:100%;height:auto" ')}</div></div>` : '');
+          stemHtml = `<p>${WV.mathHtml(dqVar.problem)}</p>` + WV.figureHtml(dqVar, it, 70);
         }
         if (wantCh) {
           const chList = dqVar && WV ? dqVar.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)) : (it.choices || []);
