@@ -5200,6 +5200,10 @@ function paginateBlocks(blocksHtml, columns) {
   const stage = document.createElement('div');
   stage.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${colWidthPx}px;font-family:'Noto Sans KR',sans-serif;font-size:12px;line-height:1.65;`;
   document.body.appendChild(stage);
+  // 실제 노트 CSS와 같은 규칙을 측정에도 적용해야 한다 — 안 그러면 작게 줄여 싣는 빠른정답 그림을 원래 크기로 재서 페이지 아래를 불필요하게 비워둔다
+  const measureCss = document.createElement('style');
+  measureCss.textContent = '.ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}.ansBlock .choiceRow{display:inline-grid;vertical-align:middle}';
+  document.head.appendChild(measureCss);
 
   const heights = blocksHtml.map(html => {
     stage.innerHTML = html;
@@ -5210,7 +5214,7 @@ function paginateBlocks(blocksHtml, columns) {
     }
     return stage.getBoundingClientRect().height;
   });
-  stage.remove();
+  stage.remove(); measureCss.remove();
 
   const GAP_PX = 8 * ratio; // 블록 사이 여백(대략 8mm)
   const pages = [];
