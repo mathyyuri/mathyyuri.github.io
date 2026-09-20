@@ -86,6 +86,27 @@
     });
   }
 
+  /* ---- 중복 판정: 이미 저장된 변형과 같은(거의 같은) 문제인지 ---- */
+  // 표기 차이(공백·$·\left/\right·\dfrac 등)를 없앤 글의 3글자 조각 겹침 비율(Jaccard)로 비교한다.
+  // 숫자만 바뀐 문제는 조각이 달라져서 "다른 문제"로 본다(그게 변형의 목적).
+  function normProblem(t) {
+    return String(t || '').toLowerCase().replace(/\\left|\\right|\\displaystyle|\\,|\\;|\\!|\\ /g, '').replace(/\\[dt]frac/g, '\\frac').replace(/\\cdot|\\times/g, '*')
+      .replace(/[$\s{}()\[\],.?~`'"]/g, '').replace(/[−–]/g, '-');
+  }
+  function similarity(a, b) {
+    a = normProblem(a); b = normProblem(b); if (!a || !b) return 0; if (a === b) return 1;
+    const gr = s => { const o = new Set(); for (let i = 0; i + 3 <= s.length; i++) o.add(s.slice(i, i + 3)); return o; };
+    const A = gr(a), B = gr(b); let inter = 0; A.forEach(x => { if (B.has(x)) inter++; });
+    return inter / (A.size + B.size - inter || 1);
+  }
+  // list: [{problem, answer}, …]  → 겹치는 것 하나 반환(없으면 null). 문제가 거의 같고 정답도 같아야 중복으로 본다.
+  function dupOf(v, list) {
+    for (const x of list || []) { if (x && similarity(v.problem, x.problem) >= 0.9) return x; }
+    return null;
+  }
+  function hashText(t) { let h = 5381; const s = normProblem(t); for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return 'h' + (h >>> 0).toString(36) + s.length.toString(36); }
+  const avoidBlock = list => (list && list.length) ? '\n\n[이미 만들어 둔 변형들 — 이것과 같거나 거의 같은 문제는 만들지 마세요. 숫자·조건·구하는 것을 확실히 다르게 하세요]\n' + list.slice(0, 12).map((x, i) => (i + 1) + '. ' + String(x.problem).replace(/\s+/g, ' ').slice(0, 260)).join('\n') : '';
+
   /* ---- 그림: 원본 그림을 그대로 쓰고, 그림 속 식은 흰 칸으로 지운다 ---- */
   // v.figMode: 'orig'(원본 그림) | 'ai'(AI가 그린 SVG) | 'none'.  v.figMasks: 지울 영역 [[x,y,w,h], …] (그림 크기 대비 0~1 비율)
   function origImgSrc(it) {
@@ -187,8 +208,16 @@
       const orig = stem.text + (choices.length ? '\n\n[보기]\n' + choices.map(c => c.text).join('\n') : '') + (it.answer ? '\n\n[원문 정답] ' + it.answer + '번' : '');
       const first = '[원본 문제]\n' + orig + '\n\n[요청]\n- 변형 단계: ' + lv + '단계 (' + LEVELS[lv][0] + ': ' + LEVELS[lv][1] + ')\n- 만들 문제 수: 1개\n- 형식: 원문과 같은 형식\n- 난이도: 원문과 비슷한 난이도\n- 그림: ' + (imgs.length ? '원본 그림을 그대로 다시 쓸 예정이니 <figure>는 만들지 마세요. 그림 속에 적힌 식·숫자는 그대로 두거나, 바꿔야 하면 그 식은 그림에서 지울 것이므로 문제 본문에 조건을 글과 수식으로 빠짐없이 서술하세요(그림은 도형의 위치·모양만 보여주는 용도).' : '그림이 꼭 필요한 문제에만 SVG 그림 포함') + '\n' +
         '- 추가 요구: 학생들이 원문의 정답(번호와 값)을 외우고 있으니, 변형 문제의 정답 값이 원문과 달라지게 하고 객관식이면 정답 번호도 원문과 다른 번호가 되게 선지를 배치하세요.\n\n' + FORMAT_RULE;
-      const res = await askAI([{ role: 'user', content: first }], { images: imgs });
-      const v = parseVariant(res.text);
+      const avoid = (it.avoid || []).slice();
+      let v = null;
+      for (let tryNo = 0; tryNo < 3; tryNo++) {   // 저장된 변형과 겹치면 최대 2번 더 만든다
+        const res = await askAI([{ role: 'user', content: first + avoidBlock(avoid) }], { images: imgs });
+        const cand = parseVariant(res.text);
+        if (!cand || !cand.problem) { if (!v) v = cand; break; }
+        v = cand;
+        if (!dupOf(v, avoid)) { v.dup = false; break; }
+        v.dup = true; avoid.push(v); if (tryNo < 2) onStatus('⏳ 저장된 변형과 겹쳐서 다시 만드는 중…');
+      }
       if (!v || !v.problem) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.');
       v.figMode = origImgSrc(it) ? 'orig' : (v.figure ? 'ai' : 'none'); v.figMasks = [];   // 원본에 그림이 있으면 그 그림을 그대로 쓴다
       clearInterval(tick); onStatus('검증 중… (Sonnet + Gemini)');
@@ -271,7 +300,7 @@
   }
   function previewHtml(lv, r) {
     const v = r.v;
-    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.edited && !r.reverified ? '<b class="bad">✏️ 직접 수정함 — 검증은 하지 않았어요</b> <button type="button" class="varReVerify">검증하기</button>' : r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.edited && !r.reverified ? '' : r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
+    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.v.dup ? '<b class="bad">⚠️ 저장된 변형과 거의 같아요</b> ' : ''}${r.edited && !r.reverified ? '<b class="bad">✏️ 직접 수정함 — 검증은 하지 않았어요</b> <button type="button" class="varReVerify">검증하기</button>' : r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.edited && !r.reverified ? '' : r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
       `<div class="varBody">${mathHtml(v.problem)}${figureHtml(v, r.it, 60)}` +
       (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
@@ -311,7 +340,7 @@
     msg.querySelector('.varRevert').onclick = () => { const o = load(); delete o[skey(window.__wnName, card.dataset.key)]; save(o); revertVariant(card); msg.textContent = ''; };
   }
 
-  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, previewHtml, reviseVariant, bindRevise, bindEdit, bindFigure, figureHtml, figEditorHtml, figureForAI, maskedPng, origImgSrc, mathHtml, answerText, CIR };
+  window.WrongnoteVariant = { htmlToText, parseVariant, sameAnswer, setup: c => { cfg = c; }, makeVariant, similarity, dupOf, hashText, normProblem, avoidBlock, previewHtml, reviseVariant, bindRevise, bindEdit, bindFigure, figureHtml, figEditorHtml, figureForAI, maskedPng, origImgSrc, mathHtml, answerText, CIR };
   window.initVariantUI = function (root, name, items) {
     window.__wnName = name; const saved = load();
     root.querySelectorAll('.qCard[data-key]').forEach(card => {

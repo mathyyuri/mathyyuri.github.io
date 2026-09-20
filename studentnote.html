@@ -3819,13 +3819,13 @@ function openDqVarPanel(name, btn) {
       const gen = panel.querySelector('.pvGen'), msg = panel.querySelector('.pvMsg'), prev = panel.querySelector('.pvPrev'), lv = Number(panel.querySelector('.pvLvl').value);
       gen.disabled = true; prev.innerHTML = ''; msg.className = 'varMsg pvMsg';
       try {
-        const r = await WV.makeVariant(it, lv, t => { msg.textContent = t; });
+        const r = await WV.makeVariant({ ...it, avoid: (stored || []).map(x => x.v) }, lv, t => { msg.textContent = t; });   // 저장된 변형과 겹치지 않게
         msg.textContent = '';
         const show = () => {
           prev.innerHTML = WV.previewHtml(lv, r); renderMathIn(prev);
           prev.querySelector('.varUse').onclick = async () => {
             const id = dqVarNewId(), verify = r.allGood ? '검증 통과' : r.anyErr ? '검증 일부 실패' : '검증 불일치 있음';
-            dqSaveVariantToServer(id, round, num, lv, r.v, verify).catch(() => {});   // 저장소에도 보관(다른 학생에게 재사용)
+            if (!r.v.dup) dqSaveVariantToServer(id, round, num, lv, r.v, verify).catch(() => {});   // 저장소에도 보관(다른 학생에게 재사용) — 저장된 것과 겹치면 저장 안 함
             useVariant(r.v, id, lv);
             setTimeout(async () => { try { stored = await dqServerVariants(round, num); draw(); } catch (e) {} }, 4000);
           };

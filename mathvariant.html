@@ -124,6 +124,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
   <div class="main">
     <div id="status"></div>
     <div id="verBar" class="hidden" style="margin-bottom:8px;font-size:12px">버전: <select id="verSel" style="width:auto"></select></div>
+    <details id="storedBox" style="margin-bottom:10px"><summary id="storedSum" style="cursor:pointer;font-weight:700;font-size:13px">📚 이 원본 문제로 저장된 변형 <span class="hint">(눌러서 보기)</span></summary><div id="storedList" class="hint">불러오는 중…</div></details>
     <div id="results"><div class="hint">왼쪽에서 원본 문제와 변형 단계를 정하고 "변형 문제 만들기"를 눌러주세요.</div></div>
   </div>
 </div>
@@ -166,6 +167,55 @@ async function askAI(msgs, opts) {
   }
   throw new Error('AI 응답이 너무 오래 걸려요. 잠시 후 다시 시도하거나 문제 수를 줄여보세요.');
 }
+
+/* ---------- 변형 저장소 (서버 "변형문제저장소" 시트) ---------- */
+// 원본 문제(글을 정규화한 해시)별로 만든 변형을 모아 두고, 같은 원본으로 다시 만들 때 겹치지 않게 한다.
+let store = { hash: '', list: [] };
+const srcHash = () => WrongnoteVariant.hashText($('src').value);
+async function loadStore(force) {
+  const h = srcHash();
+  if (!$('src').value.trim()) { store = { hash: '', list: [] }; return store; }
+  if (!force && store.hash === h) return store;
+  try { const r = await jsonp({ action: 'mvlist', key: KEY, hash: h }); store = { hash: h, list: r.variants || [] }; }
+  catch (e) { store = { hash: h, list: [], err: e.message }; }
+  return store;
+}
+const newVarId = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function verifySummary(it) {
+  const ms = Object.keys(it.verify || {}); if (!ms.length) return '';
+  const done = ms.filter(k => it.verify[k].state === 'done');
+  return done.length && done.length === ms.length ? (done.every(k => it.verify[k].ok) ? '검증 통과' : '검증 불일치 있음') : '검증 일부 실패';
+}
+function saveVariantItem(it) {   // 이미 id가 있으면 덮어쓴다(직접 고친 내용 반영)
+  if (it.dup) return;
+  const first = !it.id; if (first) it.id = newVarId();
+  const { verify, dup, saved, ...v } = it;
+  fetch(DASHBOARD_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'mvsave', key: KEY, id: it.id, hash: srcHash(), src: $('src').value, level, v, verify: verifySummary(it) }) }).catch(() => {});
+  it.saved = true;
+}
+async function saveVersionItems(ver) {
+  ver.items.forEach(it => saveVariantItem(it));
+  setTimeout(() => { store.hash = ''; renderStore(true); }, 4000);
+}
+async function renderStore(force) {
+  const box = $('storedList'), sum = $('storedSum');
+  if (!$('src').value.trim()) { sum.innerHTML = '📚 이 원본 문제로 저장된 변형 <span class="hint">(원본 문제를 입력하면 보여요)</span>'; box.innerHTML = ''; return; }
+  box.innerHTML = '불러오는 중…';
+  await loadStore(force);
+  const list = store.list;
+  sum.innerHTML = `📚 이 원본 문제로 저장된 변형 <span class="hint">(${list.length}개 — 눌러서 보기)</span>`;
+  if (store.err) { box.innerHTML = '<span class="err">불러오지 못했어요: ' + esc(store.err) + ' (서버 재배포가 필요할 수 있어요)</span>'; return; }
+  box.innerHTML = list.length ? list.map((x, i) => `<div class="vcard" style="margin-bottom:8px"><div class="vhead"><span>${esc(x.at)} · ${x.level}단계 ${x.verify ? '· ' + esc(x.verify) : ''}</span></div><div class="vprob">${toHtml(x.v.problem)}</div>${WrongnoteVariant.figureHtml(x.v, figIt(x.v), 40)}<div class="changes"><b>정답</b> ${toHtml(x.v.answer)}</div><div class="acts"><button class="sec stLoad" data-i="${i}">불러오기</button><button class="sec stDel" data-i="${i}">삭제</button></div></div>`).join('') : '아직 저장된 변형이 없어요. 변형을 만들면 자동으로 저장돼요.';
+  renderMath(box);
+  box.querySelectorAll('.stLoad').forEach(b => b.onclick = () => { const x = store.list[Number(b.dataset.i)]; const it = { ...x.v, id: x.id, verify: {}, saved: true }; if (!it.figMode) applyFigDefault(it); pushVersion('저장된 변형 불러옴', [it], false); });
+  box.querySelectorAll('.stDel').forEach(b => b.onclick = async () => {
+    const x = store.list[Number(b.dataset.i)]; if (!confirm('이 저장된 변형을 삭제할까요?')) return;
+    await fetch(DASHBOARD_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'mvdelete', key: KEY, id: x.id }) }).catch(() => {});
+    setTimeout(() => renderStore(true), 2500);
+  });
+}
+$('storedBox').addEventListener('toggle', () => { if ($('storedBox').open) renderStore(false); });
 
 /* ---------- 로그인 ---------- */
 async function login(key) {
@@ -319,7 +369,7 @@ async function verifyAll(ver, only) {
 let cur = -1;
 function cardHtml(it, n) {
   return `
-      <div class="vhead"><span>변형 ${n + 1}</span><span class="vbadge">${verifyBadge(it)}</span></div>
+      <div class="vhead"><span>변형 ${n + 1}${it.dup ? ' <span class="vb bad">⚠️ 저장된 변형과 거의 같아요(저장 안 함)</span>' : it.saved ? ' <span class="vb good">💾 저장됨</span>' : ''}</span><span class="vbadge">${verifyBadge(it)}</span></div>
       <div class="vprob">${toHtml(it.problem)}</div>
       ${WrongnoteVariant.figureHtml(it, figIt(it), 60)}
       ${it.choices.length ? `<div class="vch">${it.choices.map((c, k) => `<div>${/^[①-⑤]/.test(c) ? '' : CIR[k] + ' '}${toHtml(c)}</div>`).join('')}</div>` : ''}
@@ -353,7 +403,9 @@ function bindCard(card, n) {
     it.problem = problem; it.answer = g('.edAnswer').value.trim(); it.solution = g('.edSolution').value.trim();
     if (it.choices.length) it.choices = [...card.querySelectorAll('.cardEdit .edChoice')].map(i => i.value.trim());
     it.verify = {};                                   // 고친 내용은 다시 검증해야 한다
+    it.dup = false;
     picked.forEach(p => { if (p.item === it) p.text = variantText(it); });   // 담아 둔 문제도 고친 내용으로
+    if (it.id) saveVariantItem(it);
     refreshCard(n); flash('수정했어요');
   };
   const go = () => { const t = card.querySelector('.ei').value.trim(); if (t) editOne(n, t); };
@@ -398,13 +450,28 @@ $('genBtn').onclick = async () => {
   versions = []; cur = -1;
   setBusy(true, '⏳ AI가 문제를 만드는 중... (보통 20~60초)');
   try {
-    const res = await askAI([{ role: 'user', content: firstMessage() }], { images: srcImages });
-    const items = parseVariants(res.text).map(applyFigDefault);
+    await loadStore(false);
+    const W = WrongnoteVariant, known = store.list.map(x => x.v);       // 이미 저장된 변형들 — 겹치지 않게 AI에게 알려준다
+    const res = await askAI([{ role: 'user', content: firstMessage() + W.avoidBlock(known) }], { images: srcImages });
+    let items = parseVariants(res.text).map(applyFigDefault);
     if (!items.length) throw new Error('AI 답변을 문제로 읽지 못했어요. 다시 시도해 주세요.\n' + res.text.slice(0, 200));
+    // 저장된 변형(또는 같이 만든 것)과 겹치면 그 자리만 다시 만든다(최대 2번)
+    for (let tryNo = 0; tryNo < 2; tryNo++) {
+      const seen = known.slice(), dupIdx = [];
+      items.forEach((it, k) => { if (W.dupOf(it, seen)) dupIdx.push(k); else seen.push(it); });
+      if (!dupIdx.length) break;
+      setBusy(true, '⏳ 저장된 변형과 겹치는 ' + dupIdx.length + '개를 다시 만드는 중...');
+      const msg = firstMessage().replace(/- 만들 문제 수: \d+개/, '- 만들 문제 수: ' + dupIdx.length + '개') + W.avoidBlock(seen.concat(dupIdx.map(k => items[k])));
+      const r2 = await askAI([{ role: 'user', content: msg }], { images: srcImages });
+      const more = parseVariants(r2.text).map(applyFigDefault);
+      dupIdx.forEach((k, j) => { if (more[j]) items[k] = more[j]; });
+    }
+    { const seen = known.slice(); items.forEach(it => { it.dup = !!W.dupOf(it, seen); if (!it.dup) seen.push(it); }); }   // 끝내 겹치면 표시(저장 안 함)
     const ver = pushVersion('처음 생성 (' + level + '단계)', items, res.truncated);
     setBusy(false, verifyModels().length ? '문제를 만들었어요. 이어서 AI들이 정답을 검증하고 있어요…' : '');
     await verifyAll(ver);
-    if (verifyModels().length) flash('검증이 끝났어요');
+    saveVersionItems(ver);
+    if (verifyModels().length) flash('검증이 끝났어요 — 변형을 저장해 뒀어요');
   } catch (e) { setBusy(false, e.message); $('status').className = 'err'; }
 };
 async function editOne(n, instr) {
@@ -422,6 +489,7 @@ async function editOne(n, instr) {
     const nv = pushVersion('변형' + (n + 1) + ' 수정: ' + instr.slice(0, 18), items, false);
     setBusy(false, '');
     await verifyAll(nv, n);
+    saveVersionItems(nv);
   } catch (e) { setBusy(false, e.message); $('status').className = 'err'; }
 }
 $('resetBtn').onclick = () => { try { localStorage.removeItem('mathvariant_state_v1'); } catch (e) {} versions = []; cur = -1; $('results').innerHTML = '<div class="hint">새로 시작했어요.</div>'; $('verBar').classList.add('hidden'); $('status').textContent = ''; };
