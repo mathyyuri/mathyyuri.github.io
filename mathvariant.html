@@ -124,7 +124,7 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
   <div class="main">
     <div id="status"></div>
     <div id="verBar" class="hidden" style="margin-bottom:8px;font-size:12px">버전: <select id="verSel" style="width:auto"></select></div>
-    <details id="storedBox" style="margin-bottom:10px"><summary id="storedSum" style="cursor:pointer;font-weight:700;font-size:13px">📚 이 원본 문제로 저장된 변형 <span class="hint">(눌러서 보기)</span></summary><div id="storedList" class="hint">불러오는 중…</div></details>
+    <details id="storedBox" style="margin-bottom:10px"><summary id="storedSum" style="cursor:pointer;font-weight:700;font-size:13px">📚 이 원본 문제로 저장된 변형 <span class="hint">(눌러서 보기)</span></summary><div style="margin:6px 0"><button type="button" class="sec" id="storeAllBtn" title="지금 화면(자동 저장돼 있던 것 포함)에 있는 모든 버전의 변형을 저장소에 올립니다. 이미 저장됐거나 겹치는 건 건너뜁니다.">💾 지금 화면의 변형 전부 저장소에 올리기</button> <span id="storeAllMsg" class="hint"></span></div><div id="storedList" class="hint">불러오는 중…</div></details>
     <div id="results"><div class="hint">왼쪽에서 원본 문제와 변형 단계를 정하고 "변형 문제 만들기"를 눌러주세요.</div></div>
   </div>
 </div>
@@ -215,6 +215,19 @@ async function renderStore(force) {
     setTimeout(() => renderStore(true), 2500);
   });
 }
+$('storeAllBtn').onclick = async () => {
+  const msg = $('storeAllMsg'); if (!$('src').value.trim()) { msg.textContent = '원본 문제가 비어 있어요.'; return; }
+  await loadStore(true); const W = WrongnoteVariant, seen = store.list.map(x => x.v); let added = 0, skipped = 0;
+  const all = []; versions.forEach(v => v.items.forEach(it => { if (!all.includes(it)) all.push(it); }));
+  all.forEach(it => {
+    if (it.id && it.saved) { skipped++; return; }
+    if (W.dupOf(it, seen)) { skipped++; return; }
+    it.dup = false; saveVariantItem(it); seen.push(it); added++;
+  });
+  msg.textContent = `${added}개 저장, ${skipped}개는 이미 저장됐거나 겹쳐서 건너뜀`;
+  if (versions.length) showVersion(cur);
+  setTimeout(() => renderStore(true), 4000);
+};
 $('storedBox').addEventListener('toggle', () => { if ($('storedBox').open) renderStore(false); });
 
 /* ---------- 로그인 ---------- */
