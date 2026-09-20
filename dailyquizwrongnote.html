@@ -54,7 +54,12 @@ h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin
 .correctTag { background: #eaf4f0; color: var(--mint-deep); }
 .stem { font-size: 0.92rem; line-height: 1.75; margin-bottom: 10px; }
 .stem img { max-width: 100%; }
-.choices { font-size: 0.84rem; color: #666; line-height: 1.9; margin-bottom: 10px; }
+.choices { font-size: 0.9rem; color: #222; line-height: 1.9; margin-bottom: 12px; }
+.choices .ci { display: inline-block; margin-right: 22px; }
+.choices.imgGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.choices.imgGrid .ci { margin: 0; min-width: 0; }
+.choices.imgGrid img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; display: block; }
+.choices.longList .ci { display: block; margin-right: 0; }
 .video { display: inline-block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700; color: var(--pink-deep); text-decoration: none; background: #fbeaee; padding: 5px 12px; border-radius: 10px; }
 .ytFacade { position: relative; width: 100%; max-width: 420px; aspect-ratio: 16/9; background-size: cover; background-position: center; background-color: #eee; border-radius: 10px; cursor: pointer; margin-bottom: 8px; overflow: hidden; }
 .ytFacade::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.15); }
@@ -196,6 +201,7 @@ async function loadWrongNote() {
         html += `<div class="qCard">
           <div class="qHead"><span>${it.num}번</span>${metaTag}${correctTag}</div>
           <div class="stem">${it.stemHtml || ''}</div>
+          ${choicesHtml(it.choices)}
           ${ytThumbHtml(it.video)}
           <div class="solBox">
             <div class="ans">정답: ${answerValueText(it)}</div>
@@ -245,6 +251,16 @@ document.addEventListener('click', e => {
 // 선지 번호 자체를 외워버리는 학생이 많다는 리포트(2026-09-15) — 선지를
 // 아예 안 보여주고 단답형처럼 실제 정답 값만 보여준다. 값은 정답 번호
 // (answer)에 해당하는 선지 원문에서 동그라미 숫자만 뗀 것.
+// 일일일모는 전부 객관식이라 선지가 문제의 일부다 — 오답노트에도 선지를 함께 싣는다.
+// 그림 선지는 한 행 2개, 짧은 선지는 한 줄에 이어서, 긴 선지는 한 줄에 하나씩.
+function choicesHtml(choices) {
+  const cs = (choices || []).filter(c => String(c || '').trim());
+  if (!cs.length) return '';
+  const hasImg = cs.some(c => /<img\b/i.test(c));
+  const plainLen = Math.max.apply(null, cs.map(c => String(c).replace(/<[^>]*>/g, '').replace(/\\\(|\\\)/g, '').length));
+  const cls = hasImg ? 'choices imgGrid' : plainLen > 34 ? 'choices longList' : 'choices';
+  return `<div class="${cls}">${cs.map(c => `<span class="ci">${c}</span>`).join(hasImg ? '' : ' ')}</div>`;
+}
 function answerValueText(it) {
   const idx = Number(it.answer) - 1;
   const choice = (it.choices || [])[idx];
