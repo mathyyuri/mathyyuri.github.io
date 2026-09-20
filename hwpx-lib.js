@@ -1846,7 +1846,17 @@ async function hwpBodyXmlToHtml(xml, entry, opts) {
     htmlParas.push(resolved[j].html);
     j++;
   }
-  return htmlParas.join('\n');
+  return mergeImageChoiceParas(htmlParas.join('\n'));
+}
+// 선지가 "① 만 있는 문단" + "그림만 있는 문단"이 번갈아 나오는 형식(그림 선지를 표 없이 문단으로 쌓은 경우)은
+// 그대로 두면 선지가 세로로 길게 늘어선다 — 2개 이상 연속되면 한 행에 2개씩 배치하는 choiceRow로 묶는다.
+function mergeImageChoiceParas(html) {
+  const pairSrc = '<p>\\s*([①②③④⑤])\\s*</p>\\s*<p>\\s*(<img\\b[^>]*>)\\s*</p>';
+  const run = new RegExp('(?:' + pairSrc + '\\s*){2,}', 'g');
+  return html.replace(run, whole => {
+    const items = [...whole.matchAll(new RegExp(pairSrc, 'g'))].map(m => `<span class="choiceItem">${m[1]} ${m[2]}</span>`);
+    return `<div class="choiceRow" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px">${items.join('')}</div>`;
+  });
 }
 
 function mediaTypeForExt(ext) {
