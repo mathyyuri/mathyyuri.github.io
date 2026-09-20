@@ -150,12 +150,12 @@
       clearInterval(tick); onStatus('검증 중… (Sonnet + Gemini)');
       const ms = ['claude-sonnet-5', 'gemini'];
       const rs = await Promise.all(ms.map(m => verify(v, m)));
-      return { v, ms, rs, allGood: rs.every(r => r.ok) };
+      return { v, ms, rs, allGood: rs.every(r => r.ok), anyErr: rs.some(r => r.err) };
     } finally { clearInterval(tick); }
   }
   function previewHtml(lv, r) {
     const v = r.v;
-    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.allGood ? '<b class="good">✅ 검증 통과</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
+    return `<div class="varBox"><div class="varHead">변형 ${lv}단계 결과 ${r.allGood ? '<b class="good">✅ 검증 통과</b>' : r.anyErr ? '<b class="bad">⚠️ 검증 일부 실패(AI 연결 문제) — 직접 확인하세요</b>' : '<b class="bad">⚠️ 검증에서 걸림 — 꼭 직접 확인하세요</b>'} ${r.rs.map((x, i) => badge(r.ms[i], x)).join(' ')}</div>` +
       `<div class="varBody">${mathHtml(v.problem)}${v.figure ? `<div style="text-align:center;margin:8px 0">${v.figure}</div>` : ''}` +
       (v.choices.length ? `<div class="varCh">${v.choices.map((c, i) => mathHtml(/^[①-⑤]/.test(c) ? c : CIR[i] + ' ' + c)).join('&nbsp;&nbsp;&nbsp;')}</div>` : '') +
       `<div class="varAns"><b>정답</b> ${mathHtml(v.answer)}</div><details><summary>풀이·바꾼 점</summary>${mathHtml(v.solution)}<div class="varChg">바꾼 점: ${escapeHtml(v.changes)}</div></details></div>` +
