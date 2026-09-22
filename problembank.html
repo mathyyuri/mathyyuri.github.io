@@ -190,6 +190,7 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagEditToggleBtn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
 .tagRowPreview { color: rgba(26,26,26,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tagRowContent { font-size: 14px; line-height: 1.55; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.tagRowContent img { max-width: 100%; height: auto; }
 .tagRowContent p { margin: 0 0 6px; }
 .tagRowSummary { display: flex; flex-wrap: wrap; gap: 5px; font-family: var(--kserif); }
 .tagChip { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: var(--mint-soft); color: var(--mint-deep); }
@@ -215,6 +216,10 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .editQTextarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; padding: 8px; }
 .editQPreview { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--gold-line); border-radius: 6px; background: #fff; font-size: 14px; line-height: 1.55; min-height: 1.6em; }
 .editQPreview p { margin: 0 0 6px; }
+.editQPreview img { max-width: 100%; height: auto; }
+.imgSizeCtl { display: flex; gap: 4px; margin: 2px 0 8px; }
+.imgSizeCtl button { font-size: 10px; padding: 2px 7px; border: 1px solid var(--gold-line); border-radius: 10px; background: #fff; color: #666; cursor: pointer; }
+.imgSizeCtl button:hover { border-color: var(--gold); color: var(--gold); }
 .tagEditFooter { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 /* "문제 수정" 텍스트칸 위 기호 툴바 — 탭(기본/부등호·집합/그리스문자/
    미적분/박스)마다 눌러서 커서 위치에 바로 넣을 수 있는 기호 버튼들. */
@@ -1419,6 +1424,7 @@ function renderTagList(container, nums, questionData, rawTextByNum, guessedUnit,
           if (window.renderMathInElement) {
             try { renderMathInElement(previewEl, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false, macros: KATEX_SAFE_MACROS }); } catch (e) {}
           }
+          bindImageResizeControls(previewEl, textarea, updatePreview);
         };
         updatePreview();
         textarea.addEventListener('input', updatePreview);

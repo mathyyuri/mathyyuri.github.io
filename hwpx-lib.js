@@ -923,21 +923,47 @@ function escapeHtml(s) {
 // 이 번호 표시로만 남겨두고(htmlPreviewToDraftText가 만듦) 그릴 때만
 // 진짜 그림으로 되돌린다 — 자세한 이유는 htmlPreviewToDraftText 주석 참고.
 function renderEditedInline(oneLine, imgHtmls) {
-  const parts = oneLine.replace(/\r?\n/g, ' ').split(/(\$[^$]+\$|\[이미지\d+\])/);
+  // "[이미지2]"(원본 크기) 뒤에 "@50"처럼 퍼센트를 붙이면("[이미지2@50]") 그 그림을
+  // 원본 폭의 50%로 줄여서 싣는다 — 문제 수정 칸에 캡처 사진 같은 큰 그림이 있을 때
+  // 오답노트에서 너무 크게 나오는 걸 줄이기 위한 표시(원장님 요청, 2026-09-23).
+  // 크기 버튼(bindImageResizeControls)이 이 표시를 자동으로 붙였다 뗐다 한다.
+  const parts = oneLine.replace(/\r?\n/g, ' ').split(/(\$[^$]+\$|\[이미지\d+(?:@\d{1,3})?\])/);
   // split()으로 이 패턴들을 뽑으면 홀수 인덱스가 항상 매칭된 토큰이고,
   // 짝수 인덱스가 그 사이의 일반 텍스트다.
   return parts.map((chunk, i) => {
     if (i % 2 === 0) return escapeHtml(chunk).replace(/ {2,}/g, m => ' ' + '&nbsp;'.repeat(m.length - 1)); // 스페이스를 여러 번 누른 간격(선지 사이 띄우기)이 HTML에서 한 칸으로 합쳐지지 않게
-    const imgM = chunk.match(/^\[이미지(\d+)\]$/);
+    const imgM = chunk.match(/^\[이미지(\d+)(?:@(\d{1,3}))?\]$/);
     if (imgM) {
       const html = imgHtmls && imgHtmls[Number(imgM[1]) - 1];
       // imgHtmls가 없거나(원본을 다시 못 불러온 경우) 그 번호가 없으면
       // (사용자가 그림 하나만 빼고 표시는 손대지 않은 경우 등) 표시를
       // 그대로 글자로 남겨서 조용히 사라지는 대신 눈에 띄게 한다.
-      return html || escapeHtml(chunk);
+      if (!html) return escapeHtml(chunk);
+      const pct = imgM[2] && Number(imgM[2]) !== 100 ? Number(imgM[2]) : null;
+      // data-imgnum은 크기 버튼이 "이 그림이 몇 번 표시인지" 알아내는 용도(인쇄·저장 시엔 그냥 무시되는 속성).
+      return html.replace('<img ', `<img data-imgnum="${imgM[1]}"${pct ? ` style="width:${pct}%;height:auto"` : ''} `);
     }
     return `<span class="eq">\\(${escapeHtml(chunk.slice(1, -1))}\\)</span>`;
   }).join('');
+}
+// 문제 수정 칸의 미리보기에 그림마다 "25%·50%·75%·원본" 크기 버튼을 붙인다 — 누르면
+// textarea 안의 그 "[이미지N]" 표시에 "@퍼센트"를 붙이거나 떼고, rerender()로 다시 그리게 한다.
+// (버튼 자체는 미리보기 DOM에만 붙고 renderEditedText의 결과물엔 안 들어가므로, 저장되는
+// 오답노트·인쇄물에는 절대 안 나온다 — previewEl은 항상 "편집 중" 화면에만 쓰는 요소여야 함.)
+function bindImageResizeControls(previewEl, textarea, rerender) {
+  previewEl.querySelectorAll('img[data-imgnum]').forEach(img => {
+    const n = img.dataset.imgnum;
+    const ctl = document.createElement('div');
+    ctl.className = 'imgSizeCtl';
+    ctl.innerHTML = [25, 50, 75, 100].map(p => `<button type="button" data-p="${p}">${p}%</button>`).join('');
+    img.insertAdjacentElement('afterend', ctl);
+    ctl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      const p = b.dataset.p;
+      const re = new RegExp('\\[이미지' + n + '(?:@\\d{1,3})?\\]', 'g');
+      textarea.value = textarea.value.replace(re, p === '100' ? `[이미지${n}]` : `[이미지${n}@${p}]`);
+      rerender();
+    }));
+  });
 }
 // "[박스]"~"[/박스]" 사이는 원본 hwpx의 <조건박스>/<보기> 박스와 같은 모양
 // (.hwpCondBox)으로 감싸서 보여준다 — problembank.html의 "문제 수정"
