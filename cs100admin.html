@@ -241,7 +241,7 @@ function renderReview() {
         : `<input type="text" class="ansInput" data-num="${q.num}" value="${escapeHtml(q.answer)}" placeholder="정답(숫자)">`;
       row.innerHTML = `
         <div class="qNum">${q.num}번<span class="typeBadge ${q.type}">${q.type === 'choice' ? '객관식' : '주관식'}</span>${q.warning ? `<div class="warnBadge">${escapeHtml(q.warning)}</div>` : ''}${q.prefilled ? `<div class="okBadge">✓ 자동채움</div>` : ''}</div>
-        <div class="qBody">${q.stemHtml}${q.choices.length ? '<div style="margin-top:4px;font-size:0.8rem;color:#777">' + q.choices.map((c, i) => `①②③④⑤`[i] + ' ' + stripTags(c).slice(0, 24)).join(' &nbsp; ') + '</div>' : ''}</div>
+        <div class="qBody">${q.stemHtml}${q.choices.length ? '<div style="margin-top:4px;font-size:0.8rem;color:#777">' + q.choices.map(c => stripTags(c).slice(0, 26)).join(' &nbsp; ') + '</div>' : ''}</div>
         <div class="qAns">${ansInput}</div>
       `;
       body.appendChild(row);

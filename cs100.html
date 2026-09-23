@@ -58,7 +58,7 @@ button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line)
 
 .choiceList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
 .choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; font-family: inherit; text-align: left; font-size: 0.86rem; }
+.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--dark); cursor: pointer; font-family: inherit; text-align: left; font-size: 0.86rem; }
 .choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; }
 .choiceBtn img { max-width: 100%; max-height: 110px; object-fit: contain; }
 .choiceBtn .num { flex: 0 0 auto; font-weight: 700; color: var(--gold-deep); }
@@ -204,7 +204,8 @@ async function updateDayProgress(day) {
 }
 
 function choiceItemHtml(q, i) {
-  const c = q.choices[i] || '';
+  // hwpx에서 뽑은 선지는 이미 앞에 동그라미 번호가 붙어 있어서(①2 √17 …), num을 따로 또 붙이면 번호가 두 번 나온다.
+  const c = String(q.choices[i] || '').replace(/^[①②③④⑤]\s*/, '');
   const num = ['①', '②', '③', '④', '⑤'][i];
   const r = q.result;
   let cls = 'choiceBtn';
