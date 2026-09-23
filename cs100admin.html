@@ -173,7 +173,13 @@ $('fileInput').addEventListener('change', async ev => {
       const html = await hwpBodyXmlToHtml(marker.blockXml, entry);
       const choices = extractChoiceItemSpans(html);
       const type = choices.length ? 'choice' : 'short';
-      const stemHtml = html.replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '').trim();
+      // "[2025년 10월 고1 14번/4점]"처럼 출처 태그의 학년·문제번호가 한 수식 안에 "1 14"로 같이 들어있으면
+      // KaTeX가 그 사이 공백을 아주 좁게 그려서 "고114번"처럼 붙어 보인다(원장님 리포트, 2026-09-23) —
+      // 수식 하나를 학년/번호 두 개로 쪼개서 그 사이에 진짜(HTML) 공백이 생기게 한다.
+      const stemHtml = html
+        .replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '')
+        .replace(/<span class="eq">\\\(([1-3])\s+(\d{1,3})\\\)<\/span>/g, '<span class="eq">\\($1\\)</span> <span class="eq">\\($2\\)</span>')
+        .trim();
       const answerXml = extractQuickAnswerXml(marker.blockXml);
       const quickAnswer = answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '';
       const explXml = extractEndnoteFullBodyXml(marker.blockXml);
