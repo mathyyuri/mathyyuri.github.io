@@ -65,6 +65,11 @@ input{font-family:inherit}
 .gold-cta:active{transform:translateY(0)}
 .gold-cta-eyebrow{font-size:9px;letter-spacing:.34em;font-weight:700;color:rgba(255,255,255,.85)}
 .gold-cta-main{font-size:13px;letter-spacing:.16em;font-weight:800}
+.pink-cta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;background:linear-gradient(135deg,#ef9a72 0%,var(--pink-deep) 60%,#a83a5a 100%);color:#fff;border:none;padding:17px 10px;border-radius:4px;box-shadow:0 10px 26px rgba(198,78,113,.38),inset 0 1px 0 rgba(255,255,255,.22);transition:.25s cubic-bezier(.2,.8,.3,1)}
+.pink-cta:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(198,78,113,.48),inset 0 1px 0 rgba(255,255,255,.26)}
+.pink-cta:active{transform:translateY(0)}
+.pink-cta-eyebrow{font-size:8.5px;letter-spacing:.14em;font-weight:700;color:rgba(255,255,255,.85);text-align:center}
+.pink-cta-main{font-size:12.5px;letter-spacing:.08em;font-weight:800;text-align:center}
 .login-msg{margin-top:14px;font-size:13px;color:var(--pink-deep);min-height:18px;text-align:center;font-weight:500}
 .staff-login-link{display:block;text-align:center;margin-top:16px;font-size:11px;letter-spacing:.12em;color:var(--text3,#948c78);text-decoration:none;opacity:.75;transition:.15s}
 .staff-login-link:hover{opacity:1;color:var(--gold)}
@@ -465,14 +470,16 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
         <span class="mint-cta-eyebrow">SEPTEMBER MOCK EXAM</span>
         <span class="mint-cta-main">📝 9월 모의고사 성적 제출하기</span>
       </a>
-      <a class="gold-cta" href="dailyquiz.html" style="text-decoration:none;box-sizing:border-box">
-        <span class="gold-cta-eyebrow">DAILY MOCK TEST</span>
-        <span class="gold-cta-main">✏️ 일일일모 응시하기</span>
-      </a>
-      <a class="gold-cta" href="cs100.html" style="text-decoration:none;box-sizing:border-box">
-        <span class="gold-cta-eyebrow">추석특강 · 9/24~9/27</span>
-        <span class="gold-cta-main">🌕 추석특강 100제 풀기</span>
-      </a>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <a class="gold-cta" href="dailyquiz.html" style="text-decoration:none;box-sizing:border-box;margin-top:0;flex:1">
+          <span class="gold-cta-eyebrow">DAILY MOCK TEST</span>
+          <span class="gold-cta-main">✏️ 일일일모</span>
+        </a>
+        <a class="pink-cta" href="cs100.html" style="text-decoration:none;box-sizing:border-box;margin-top:0;flex:1">
+          <span class="pink-cta-eyebrow">추석특강 9/24~9/27</span>
+          <span class="pink-cta-main">🌕 추석특강 100제</span>
+        </a>
+      </div>
       <a class="staff-login-link" href="dailyquizvideos.html" style="margin-top:14px;font-weight:700">🎬 일일일모 풀이영상 보기</a>
       <a class="staff-login-link" href="admin.html">🔑 관리자·조교 로그인</a>
     </div>
