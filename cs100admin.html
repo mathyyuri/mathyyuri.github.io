@@ -289,7 +289,7 @@ async function loadProgress() {
     students.forEach(s => {
       html += '<tr><td class="nameCell">' + escapeHtml(s.name) + '</td>' + s.days.map(d => {
         if (!d.solved) return '<td class="cellNone">-</td>';
-        return `<td class="${d.solved === 25 ? 'cellDone' : ''}">${d.solved}/25 <span style="color:#999">(${d.correct}✓)</span></td>`;
+        return `<td class="${d.solved === 25 ? 'cellDone' : ''}">${d.solved}/25 <span style="color:#999">(${d.correct}✓)</span><br><b style="color:#c9683a">${d.score ?? 0}점</b></td>`;
       }).join('') + '</tr>';
     });
     html += '</tbody></table>';
