@@ -10,9 +10,9 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
 :root {
-  --bg: #fdfbf7; --card: #ffffff; --dark: #3a3530; --gold: #c8a84b; --gold-deep: #a8853f;
-  --line: #eae5da; --pink: #e58ba4; --pink-deep: #c64e71; --mint: #8ba8a1; --mint-deep: #5b8a80;
-  --shadow: 0 10px 30px rgba(58,53,48,0.06);
+  --bg: #fdf8f5; --card: #ffffff; --dark: #3a3530; --peach: #e8935f; --peach-deep: #c9683a;
+  --line: #f0e2d8; --pink: #e58ba4; --pink-deep: #c64e71; --mint: #8ba8a1; --mint-deep: #5b8a80;
+  --shadow: 0 10px 30px rgba(120,70,40,0.08);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { overflow-x: hidden; }
@@ -21,65 +21,92 @@ body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); co
 .hidden { display: none !important; }
 
 h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.25rem; margin: 0 0 4px; }
-.sub { text-align: center; font-size: 0.72rem; color: #999; letter-spacing: 1px; margin: 0 0 22px; }
+.sub { text-align: center; font-size: 0.72rem; color: #a58; letter-spacing: 1px; margin: 0 0 22px; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .fieldRow { display: flex; gap: 8px; flex-wrap: wrap; }
 .fieldRow input { flex: 1; min-width: 100px; padding: 12px 13px; border-radius: 10px; border: 1px solid #ddd; font-size: 0.95rem; font-family: inherit; }
-button { background: var(--dark); color: #fff; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.86rem; }
-button:disabled { background: #ccc; cursor: default; }
+button { background: var(--peach-deep); color: #fff; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.86rem; }
+button:disabled { background: #ddc; cursor: default; }
 button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line); }
 .msg { font-size: 0.8rem; margin-top: 8px; min-height: 16px; }
 .msg.err { color: var(--pink-deep); }
 .msg.ok { color: var(--mint-deep); }
 
 .whoBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.82rem; }
-.whoBar .logoutBtn { background: none; color: #999; padding: 4px 8px; font-weight: 400; font-size: 0.76rem; text-decoration: underline; }
+.whoBar .logoutBtn { background: none; color: #b89; padding: 4px 8px; font-weight: 400; font-size: 0.76rem; text-decoration: underline; }
 
 .dayTabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
 .dayTab { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 4px; text-align: center; cursor: pointer; }
 .dayTab .d { font-weight: 700; font-size: 0.9rem; }
-.dayTab .dt { font-size: 0.66rem; color: #999; }
-.dayTab.active { border-color: var(--gold); background: #fdf7e8; }
-.dayTab .prog { font-size: 0.66rem; color: var(--mint-deep); font-weight: 700; margin-top: 2px; }
+.dayTab .dt { font-size: 0.64rem; color: #b89; }
+.dayTab.active { border-color: var(--peach); background: #fdf0e6; }
+.dayTab .prog { font-size: 0.64rem; color: var(--peach-deep); font-weight: 700; margin-top: 2px; }
 
-.summaryBar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg,#f4f0e5,#fdf7e8); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.85rem; }
-.summaryBar b { color: var(--gold-deep); font-family: 'Noto Serif KR'; }
+/* ---------- 문제 풀이(한 문제씩) ---------- */
+.quizTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8rem; color: #b89; }
+.quizBarWrap { height: 5px; background: #f3e6dc; border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+.quizBar { height: 100%; background: var(--peach); transition: width .25s; }
+.qStem { font-size: 0.98rem; line-height: 1.8; margin-bottom: 16px; }
+.qStem img { max-width: 100%; }
+
+.choiceList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 12px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--dark); cursor: pointer; font-family: inherit; text-align: left; font-size: 0.9rem; }
+.choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; }
+.choiceBtn img { max-width: 100%; max-height: 110px; object-fit: contain; }
+.choiceBtn .num { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #999; }
+.choiceBtn.picked { border-color: var(--peach); background: #fdf0e6; }
+.choiceBtn.picked .num { background: var(--peach); border-color: var(--peach); color: #fff; }
+
+.shortRow input { width: 100%; padding: 13px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 1rem; font-family: inherit; margin-bottom: 4px; }
+
+.metaLabel { font-size: 0.8rem; color: #a58; margin: 16px 0 8px; text-align: center; }
+.metaRow { display: flex; gap: 8px; margin-bottom: 6px; }
+.metaBtn { flex: 1; padding: 11px 4px; border-radius: 11px; border: 1.5px solid var(--line); background: #fff; font-size: 0.82rem; font-weight: 600; color: #999; cursor: pointer; font-family: inherit; }
+.metaBtn[data-m="확실"].picked { background: var(--mint-deep); border-color: var(--mint-deep); color: #fff; }
+.metaBtn[data-m="애매"].picked { background: var(--peach); border-color: var(--peach); color: #fff; }
+.metaBtn[data-m="모름"].picked { background: var(--pink-deep); border-color: var(--pink-deep); color: #fff; }
+.quizHint { text-align: center; font-size: 0.74rem; color: #b89; margin-bottom: 14px; }
+
+.navRow { display: flex; gap: 8px; }
+.navRow button { flex: 1; }
+#prevBtn { visibility: hidden; }
+
+/* ---------- 결과 화면 ---------- */
+.resultHead { text-align: center; margin-bottom: 14px; }
+.resultScore { font-family: 'Noto Serif KR'; font-weight: 900; font-size: 2.1rem; color: var(--peach-deep); }
+.resultScore small { font-size: 1rem; font-weight: 400; color: #b89; }
+.resultSub { font-size: 0.82rem; color: #987; margin-top: 2px; }
+.resultGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px; }
+.resultCell { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 2px; text-align: center; font-size: 0.72rem; }
+.resultCell.ok { border-color: var(--mint); background: #f3f8f6; }
+.resultCell.no { border-color: var(--pink); background: #fdf3f5; }
+.resultCell .pts { display: block; color: #a58; font-size: 0.64rem; }
 
 .qCard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
 .qCard.correct { border-color: var(--mint); background: #f6faf8; }
 .qCard.wrong { border-color: var(--pink); background: #fdf5f7; }
-.qHead { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; }
+.qHead { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; flex-wrap: wrap; }
 .resultTag { font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 9px; }
 .resultTag.o { background: #eaf4f0; color: var(--mint-deep); }
 .resultTag.x { background: #fbeaee; color: var(--pink-deep); }
-.stem { font-size: 0.92rem; line-height: 1.75; margin-bottom: 12px; }
+.metaTag { font-size: 0.64rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; background: #f3e6dc; color: #a67; }
+.attTag { font-size: 0.64rem; color: #bbb; }
+.stem { font-size: 0.9rem; line-height: 1.7; margin-bottom: 10px; }
 .stem img { max-width: 100%; }
-
-.choiceList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
-.choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--dark); cursor: pointer; font-family: inherit; text-align: left; font-size: 0.86rem; }
-.choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; }
-.choiceBtn img { max-width: 100%; max-height: 110px; object-fit: contain; }
-.choiceBtn .num { flex: 0 0 auto; font-weight: 700; color: var(--gold-deep); }
-.choiceBtn.picked { border-color: var(--gold); background: #fdf7e8; }
-.choiceBtn.rightPick { border-color: var(--mint); background: #eaf4f0; }
-.choiceBtn.wrongPick { border-color: var(--pink); background: #fbeaee; }
-
-.shortRow { display: flex; gap: 8px; margin-bottom: 6px; }
-.shortRow input { flex: 1; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 0.95rem; font-family: inherit; }
-
-.solBox { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 8px; }
+.solBox { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 6px; }
 .solBox .ans { font-weight: 700; color: var(--mint-deep); font-size: 0.85rem; margin-bottom: 6px; }
-.solBox .expl { font-size: 0.82rem; line-height: 1.75; color: #555; }
-.solBox .expl b { color: var(--gold-deep); }
-.retryBtn { margin-top: 8px; background: none; border: 1px solid var(--line); color: #999; padding: 6px 12px; font-size: 0.76rem; font-weight: 400; }
+.solBox .expl { font-size: 0.82rem; line-height: 1.75; color: #665; }
+.solBox .expl b { color: var(--peach-deep); }
+.retryRow { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.retryRow .lbl { font-size: 0.78rem; color: #a58; margin-bottom: 6px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🌕 추석특강 100제</h1>
-  <p class="sub">MATHY YURI · 도형의 방정식 4점 기출 (9/24~9/27, 1일차 25문제)</p>
+  <p class="sub">MATHY YURI · 도형의 방정식 4점 기출 (9/24~9/27, 1일차 25문제 · 100점)</p>
 
   <div class="card" id="loginCard">
     <div class="fieldRow">
@@ -96,24 +123,64 @@ button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line)
       <button type="button" class="logoutBtn" id="logoutBtn">로그아웃</button>
     </div>
 
-    <div class="dayTabs" id="dayTabs"></div>
-    <div class="summaryBar" id="summaryBar"></div>
-    <div id="qList"></div>
+    <div id="screen-days">
+      <div class="dayTabs" id="dayTabs"></div>
+      <p class="msg" id="daysMsg" style="text-align:center"></p>
+    </div>
+
+    <div id="screen-quiz" class="hidden">
+      <div class="quizTop"><span id="quizDayLabel"></span><span><span id="quizIdx"></span> / <span id="quizTotal"></span></span></div>
+      <div class="quizBarWrap"><div class="quizBar" id="quizBar" style="width:0%"></div></div>
+      <div class="card">
+        <div class="qStem" id="qStem"></div>
+        <div id="qBody"></div>
+        <div class="metaLabel">이 문제, 어느 정도 확신하나요?</div>
+        <div class="metaRow" id="qMeta">
+          <button class="metaBtn" data-m="확실" type="button">확실</button>
+          <button class="metaBtn" data-m="애매" type="button">애매</button>
+          <button class="metaBtn" data-m="모름" type="button">모름</button>
+        </div>
+        <div class="quizHint" id="quizHint"></div>
+        <div class="navRow">
+          <button type="button" class="sec" id="prevBtn">이전</button>
+          <button type="button" id="nextBtn" disabled>다음</button>
+        </div>
+      </div>
+      <button type="button" class="sec" id="backToDaysBtn" style="width:100%">← 일차 선택으로</button>
+    </div>
+
+    <div id="screen-result" class="hidden">
+      <div class="resultHead">
+        <div class="resultScore" id="resultScore">–</div>
+        <div class="resultSub" id="resultSub"></div>
+      </div>
+      <div class="resultGrid" id="resultGrid"></div>
+      <button type="button" class="sec" id="backToDaysBtn2" style="width:100%;margin-bottom:14px">← 일차 선택으로</button>
+      <div id="resultList"></div>
+    </div>
   </div>
 </div>
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
-const LOGIN_KEY = 'cs100_login_v1';
+const LOGIN_KEY = 'cs100_login_v2';
 const DAY_DATES = { 1: '9/24', 2: '9/25', 3: '9/26', 4: '9/27' };
+const CIR = ['①', '②', '③', '④', '⑤'];
 let me = null; // {name, pw}
 let curDay = 1;
-let dayItems = []; // 지금 보고 있는 일차의 25문제(질문 데이터 + 결과 병합)
+let questions = []; // 지금 일차의 25문제(정답 없음)
+let dayResultCache = {}; // day -> 마지막으로 받아온 cs100result
+let answers = {}; // num -> {answer, meta}  (한 문제씩 풀 때 임시 저장)
+let qIndex = 0;
+let submitCount = 0;
 
 function $(id) { return document.getElementById(id); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function renderMath(el) {
   if (window.renderMathInElement) { try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+}
+function show(id) {
+  ['screen-days', 'screen-quiz', 'screen-result'].forEach(s => $(s).classList.toggle('hidden', s !== id));
 }
 async function apiGet(params) {
   const res = await fetch(GAS_URL + '?' + new URLSearchParams(params).toString());
@@ -138,7 +205,8 @@ async function doLogin(silent) {
     $('app').classList.remove('hidden');
     $('whoName').textContent = name;
     renderDayTabs();
-    selectDay(1);
+    show('screen-days');
+    refreshAllDayBadges();
   } catch (e) {
     if (!silent) { msg.textContent = '서버 연결 실패: ' + e.message; msg.className = 'msg err'; }
   }
@@ -162,140 +230,207 @@ function renderDayTabs() {
     <div class="dayTab" data-day="${d}">
       <div class="d">${d}일차</div>
       <div class="dt">${DAY_DATES[d]}</div>
-      <div class="prog" id="dayProg${d}"></div>
+      <div class="prog" id="dayProg${d}">…</div>
     </div>
   `).join('');
-  $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.addEventListener('click', () => selectDay(Number(el.dataset.day))));
+  $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.addEventListener('click', () => openDay(Number(el.dataset.day))));
+}
+async function refreshAllDayBadges() {
+  for (const d of [1, 2, 3, 4]) {
+    try {
+      const r = await apiGet({ action: 'cs100result', name: me.name, day: d });
+      if (r.ok) { dayResultCache[d] = r; updateDayBadge(d); }
+    } catch (e) {}
+  }
+}
+function updateDayBadge(day) {
+  const r = dayResultCache[day];
+  const el = $('dayProg' + day);
+  if (!el || !r) return;
+  el.textContent = r.items.length ? `${r.items.length}/25 · ${r.total}점` : '시작 전';
 }
 
-async function selectDay(day) {
+async function openDay(day) {
   curDay = day;
   $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.classList.toggle('active', Number(el.dataset.day) === day));
-  $('qList').innerHTML = '<p style="text-align:center;color:#999;font-size:0.85rem;padding:20px 0">불러오는 중...</p>';
+  $('daysMsg').textContent = '불러오는 중...'; $('daysMsg').className = 'msg';
   try {
     const [qRes, rRes] = await Promise.all([
       apiGet({ action: 'cs100questions', day }),
       apiGet({ action: 'cs100result', name: me.name, day }),
     ]);
     if (!qRes.ok) throw new Error(qRes.error || '문제를 불러오지 못했습니다.');
-    const resultByNum = {};
-    (rRes.ok ? rRes.items : []).forEach(it => { resultByNum[it.num] = it; });
-    dayItems = qRes.items.map(q => ({ ...q, result: resultByNum[q.num] || null, picked: '' }));
-    renderQList();
-    updateDayProgress(day);
+    $('daysMsg').textContent = '';
+    questions = qRes.items;
+    dayResultCache[day] = rRes.ok ? rRes : { ok: true, total: 0, items: [] };
+    updateDayBadge(day);
+    // 이미 한 문제라도 낸 적이 있으면(재접속 등) 바로 결과 화면으로 — 처음이면 1문제씩 풀이 화면부터.
+    if (dayResultCache[day].items.length > 0) renderResultScreen();
+    else startQuiz();
   } catch (e) {
-    $('qList').innerHTML = `<p class="msg err" style="text-align:center">불러오지 못했습니다: ${escapeHtml(e.message)}</p>`;
+    $('daysMsg').textContent = '불러오지 못했습니다: ' + e.message; $('daysMsg').className = 'msg err';
   }
 }
+$('backToDaysBtn').addEventListener('click', () => show('screen-days'));
+$('backToDaysBtn2').addEventListener('click', () => show('screen-days'));
 
-function updateSummary() {
-  const total = dayItems.length;
-  const answered = dayItems.filter(q => q.result).length;
-  const correct = dayItems.filter(q => q.result && q.result.correct).length;
-  $('summaryBar').innerHTML = `<span>${curDay}일차 진행</span><span><b>${answered}/${total}</b> 확인함 · <b>${correct}</b>개 정답</span>`;
+/* ---------- 한 문제씩 풀기 ---------- */
+function startQuiz() {
+  answers = {}; qIndex = 0;
+  show('screen-quiz');
+  renderQuestion();
 }
-async function updateDayProgress(day) {
-  // 다른 날짜 탭에도 작게 진행 표시 — 이미 불러온 날짜는 캐시 없이 매번 새로 세지 않고, 지금 본 날짜만 갱신(가벼움 우선).
-  const el = $('dayProg' + day);
-  if (el) {
-    const answered = dayItems.filter(q => q.result).length;
-    el.textContent = answered ? `${answered}/25` : '';
-  }
+function currentQ() { return questions[qIndex]; }
+function canAdvance(num) {
+  const a = answers[num];
+  if (!a || !a.meta) return false;
+  if (a.meta === '모름') return true;
+  return !!(a.answer && String(a.answer).trim());
 }
-
-function choiceItemHtml(q, i) {
-  // hwpx에서 뽑은 선지는 이미 앞에 동그라미 번호가 붙어 있어서(①2 √17 …), num을 따로 또 붙이면 번호가 두 번 나온다.
-  const c = String(q.choices[i] || '').replace(/^[①②③④⑤]\s*/, '');
-  const num = ['①', '②', '③', '④', '⑤'][i];
-  const r = q.result;
-  let cls = 'choiceBtn';
-  if (r) {
-    if (String(i + 1) === String(r.yourAnswer) && r.correct) cls += ' rightPick';
-    else if (String(i + 1) === String(r.yourAnswer) && !r.correct) cls += ' wrongPick';
-    else if (String(i + 1) === String(r.correctAnswer)) cls += ' rightPick';
-  }
-  return `<button type="button" class="${cls}" data-i="${i + 1}"><span class="num">${num}</span><span>${c}</span></button>`;
-}
-
-function qCardHtml(q) {
-  const r = q.result;
-  const headTag = r ? `<span class="resultTag ${r.correct ? 'o' : 'x'}">${r.correct ? '정답' : '오답'}</span>` : '';
-  let bodyHtml;
+function renderQuestion() {
+  const q = currentQ();
+  $('quizDayLabel').textContent = curDay + '일차 · ' + q.num + '번';
+  $('quizIdx').textContent = qIndex + 1;
+  $('quizTotal').textContent = questions.length;
+  $('quizBar').style.width = Math.round(((qIndex + 1) / questions.length) * 100) + '%';
+  $('qStem').innerHTML = q.stemHtml;
+  const a = answers[q.num] || {};
+  const body = $('qBody');
   if (q.type === 'choice') {
-    const hasImg = (q.choices || []).some(c => /<img\b/i.test(c));
-    bodyHtml = `<div class="choiceList${hasImg ? ' imgChoices' : ''}">${q.choices.map((c, i) => choiceItemHtml(q, i)).join('')}</div>`;
+    const hasImg = q.choices.some(c => /<img\b/i.test(c));
+    body.innerHTML = `<div class="choiceList${hasImg ? ' imgChoices' : ''}">${q.choices.map((c, i) => {
+      const content = String(c || '').replace(/^[①②③④⑤]\s*/, '');
+      return `<button type="button" class="choiceBtn${a.answer === String(i + 1) ? ' picked' : ''}" data-i="${i + 1}"><span class="num">${i + 1}</span><span>${content}</span></button>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('.choiceBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = String(btn.dataset.i);
+        const cur = answers[q.num] || {};
+        cur.answer = cur.answer === i ? '' : i;
+        answers[q.num] = cur;
+        renderQuestion();
+      });
+    });
   } else {
-    bodyHtml = `<div class="shortRow"><input type="text" inputmode="decimal" class="shortInput" placeholder="정답(숫자)" value="${r ? escapeHtml(r.yourAnswer) : ''}" ${r ? 'disabled' : ''}><button type="button" class="shortCheckBtn" ${r ? 'style="display:none"' : ''}>확인</button></div>`;
+    body.innerHTML = `<div class="shortRow"><input type="text" inputmode="decimal" id="shortInput" placeholder="정답(숫자)" value="${escapeHtml(a.answer || '')}"></div>`;
+    const inp = $('shortInput');
+    inp.addEventListener('input', () => { const cur = answers[q.num] || {}; cur.answer = inp.value; answers[q.num] = cur; updateNav(); });
+    setTimeout(() => inp.focus(), 50);
   }
-  const solHtml = r ? `
+  $('qMeta').querySelectorAll('.metaBtn').forEach(btn => {
+    btn.classList.toggle('picked', a.meta === btn.dataset.m);
+    btn.onclick = () => {
+      const cur = answers[q.num] || {};
+      cur.meta = cur.meta === btn.dataset.m ? null : btn.dataset.m;
+      answers[q.num] = cur;
+      renderQuestion();
+    };
+  });
+  renderMath($('qStem')); renderMath(body);
+  $('prevBtn').style.visibility = qIndex === 0 ? 'hidden' : 'visible';
+  updateNav();
+}
+function updateNav() {
+  const q = currentQ();
+  const valid = canAdvance(q.num);
+  $('nextBtn').disabled = !valid;
+  $('nextBtn').textContent = qIndex === questions.length - 1 ? '제출' : '다음';
+  const a = answers[q.num] || {};
+  $('quizHint').textContent = a.meta === '모름' ? '확인 완료 — "모름"으로 표시돼요.' : (q.type === 'choice' ? '보기와 확신 정도를 골라주세요 ("모름"을 고르면 보기는 안 골라도 돼요)' : '답과 확신 정도를 입력해주세요 ("모름"을 고르면 답은 안 써도 돼요)');
+}
+$('prevBtn').addEventListener('click', () => { if (qIndex > 0) { qIndex--; renderQuestion(); } });
+$('nextBtn').addEventListener('click', () => {
+  const q = currentQ();
+  if (!canAdvance(q.num)) return;
+  if (qIndex < questions.length - 1) { qIndex++; renderQuestion(); }
+  else submitAll();
+});
+async function submitAll() {
+  submitCount++;
+  if (!confirm(`${curDay}일차를 ${submitCount}차시도로 제출하시겠습니까?`)) { submitCount--; return; }
+  const payload = questions.map(q => {
+    const a = answers[q.num] || {};
+    return { num: q.num, answer: a.answer || '', meta: a.meta || '' };
+  });
+  $('nextBtn').disabled = true; $('nextBtn').textContent = '제출 중...';
+  await apiPost({ action: 'cs100submit', name: me.name, day: curDay, answers: payload });
+  await new Promise(r => setTimeout(r, 1200));
+  await loadResult(curDay);
+  renderResultScreen();
+}
+
+/* ---------- 결과 화면 ---------- */
+async function loadResult(day) {
+  const r = await apiGet({ action: 'cs100result', name: me.name, day });
+  if (r.ok) { dayResultCache[day] = r; updateDayBadge(day); }
+}
+function choiceHtmlFor(q, i) {
+  const c = String((q.choices || [])[i] || '').replace(/^[①②③④⑤]\s*/, '');
+  return `${CIR[i]} ${c}`;
+}
+function renderResultScreen() {
+  show('screen-result');
+  const r = dayResultCache[curDay] || { total: 0, maxTotal: 100, items: [] };
+  const byNum = {}; r.items.forEach(it => { byNum[it.num] = it; });
+  $('resultScore').innerHTML = `${r.total}<small> / ${r.maxTotal || 100}점</small>`;
+  const answeredCount = r.items.length, correctCount = r.items.filter(it => it.correct).length;
+  $('resultSub').textContent = `${curDay}일차 · ${answeredCount}/${questions.length || 25}문제 확인 · ${correctCount}개 정답`;
+  $('resultGrid').innerHTML = questions.length
+    ? questions.map(q => {
+        const it = byNum[q.num];
+        const cls = !it ? '' : (it.correct ? 'ok' : 'no');
+        const mark = !it ? '−' : (it.correct ? 'O' : 'X');
+        return `<div class="resultCell ${cls}"><span>${q.num}</span><span>${mark}</span><span class="pts">${it ? it.earned : 0}점</span></div>`;
+      }).join('')
+    : r.items.map(it => `<div class="resultCell ${it.correct ? 'ok' : 'no'}"><span>${it.num}</span><span>${it.correct ? 'O' : 'X'}</span><span class="pts">${it.earned}점</span></div>`).join('');
+  $('resultList').innerHTML = r.items.map(it => resultCardHtml(it)).join('');
+  renderMath($('resultList'));
+  bindResultList();
+}
+function resultCardHtml(it) {
+  const q = questions.find(x => x.num === it.num) || {};
+  const metaTag = it.meta ? `<span class="metaTag">${it.meta}</span>` : '';
+  const attTag = it.attemptCount > 1 ? `<span class="attTag">${it.attemptCount}차시도</span>` : '';
+  const retryHtml = it.canRetry ? `<div class="retryRow" data-num="${it.num}"><div class="lbl">✏️ 다시 풀어보기 (맞히면 ${it.earned === 0 ? Math.round(4 / Math.pow(2, it.attemptCount)) : ''}점 획득 — 점점 줄어들어요)</div>${retryBodyHtml(q, it)}</div>` : '';
+  return `<div class="qCard ${it.correct ? 'correct' : 'wrong'}" data-num="${it.num}">
+    <div class="qHead"><span>${it.num}번</span><span class="resultTag ${it.correct ? 'o' : 'x'}">${it.correct ? '정답' : '오답'}</span>${metaTag}${attTag}</div>
+    <div class="stem">${q.stemHtml || ''}</div>
     <div class="solBox">
-      <div class="ans">정답: ${escapeHtml(r.correctAnswer)}</div>
-      ${r.quickAnswer || r.explanation ? `<div class="expl">${r.quickAnswer ? `<b>빠른정답</b><br>${r.quickAnswer}` : ''}${r.explanation ? `${r.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${r.explanation}` : ''}</div>` : ''}
-      <button type="button" class="retryBtn" data-num="${q.num}">다시 풀기</button>
-    </div>` : '';
-  return `<div class="qCard ${r ? (r.correct ? 'correct' : 'wrong') : ''}" data-num="${q.num}">
-    <div class="qHead"><span>${q.num}번</span>${headTag}</div>
-    <div class="stem">${q.stemHtml}</div>
-    ${bodyHtml}
-    ${solHtml}
+      <div class="ans">내 답: ${escapeHtml(it.yourAnswer || '')}${!it.correct ? ` &nbsp;·&nbsp; 정답: ${escapeHtml(it.correctAnswer || '')}` : ''}</div>
+      ${it.quickAnswer || it.explanation ? `<div class="expl">${it.quickAnswer ? `<b>빠른정답</b><br>${it.quickAnswer}` : ''}${it.explanation ? `${it.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${it.explanation}` : ''}</div>` : ''}
+    </div>
+    ${retryHtml}
   </div>`;
 }
-
-function renderQList() {
-  $('qList').innerHTML = dayItems.map(qCardHtml).join('');
-  renderMath($('qList'));
-  updateSummary();
-  bindQList();
-}
-function bindQList() {
-  $('qList').querySelectorAll('.qCard').forEach(card => {
-    const num = Number(card.dataset.num);
-    const q = dayItems.find(x => x.num === num);
-    if (!q || q.result) return; // 이미 채점된 문제는 클릭 안 되게(다시 풀기로만 재도전)
-    if (q.type === 'choice') {
-      card.querySelectorAll('.choiceBtn').forEach(btn => btn.addEventListener('click', () => submitAnswer(q, btn.dataset.i)));
-    } else {
-      const inp = card.querySelector('.shortInput'), btn = card.querySelector('.shortCheckBtn');
-      const go = () => { if (inp.value.trim()) submitAnswer(q, inp.value.trim()); };
-      btn.addEventListener('click', go);
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-    }
-  });
-  $('qList').querySelectorAll('.retryBtn').forEach(btn => btn.addEventListener('click', () => {
-    const q = dayItems.find(x => x.num === Number(btn.dataset.num));
-    if (!q) return;
-    q.result = null;
-    rerenderCard(q);
-  }));
-}
-function rerenderCard(q) {
-  const card = $('qList').querySelector(`.qCard[data-num="${q.num}"]`);
-  if (!card) return;
-  const html = qCardHtml(q);
-  const wrap = document.createElement('div');
-  wrap.innerHTML = html;
-  card.replaceWith(wrap.firstElementChild);
-  renderMath($('qList'));
-  updateSummary();
-  bindQList();
-}
-async function submitAnswer(q, answer) {
-  const card = $('qList').querySelector(`.qCard[data-num="${q.num}"]`);
-  if (card) card.style.opacity = '.6';
-  try {
-    await apiPost({ action: 'cs100submit', name: me.name, num: q.num, answer });
-    await new Promise(r => setTimeout(r, 900)); // no-cors라 응답을 못 읽어서, 채점이 시트에 반영될 시간을 준 뒤 다시 읽어온다
-    const rRes = await apiGet({ action: 'cs100result', name: me.name, day: curDay });
-    if (rRes.ok) {
-      const item = rRes.items.find(it => it.num === q.num);
-      if (item) q.result = item;
-    }
-  } catch (e) {
-    alert('채점 중 오류가 발생했어요. 다시 시도해주세요: ' + e.message);
+function retryBodyHtml(q, it) {
+  if (q.type === 'choice') {
+    const hasImg = (q.choices || []).some(c => /<img\b/i.test(c));
+    return `<div class="choiceList${hasImg ? ' imgChoices' : ''}">${(q.choices || []).map((c, i) => `<button type="button" class="choiceBtn retryChoiceBtn" data-i="${i + 1}"><span class="num">${i + 1}</span><span>${String(c).replace(/^[①②③④⑤]\s*/, '')}</span></button>`).join('')}</div>`;
   }
-  if (card) card.style.opacity = '';
-  rerenderCard(q);
-  updateDayProgress(curDay);
+  return `<div class="shortRow"><input type="text" inputmode="decimal" class="retryInput" placeholder="정답(숫자)"></div><button type="button" class="sec retrySubmitBtn">다시 제출</button>`;
+}
+function bindResultList() {
+  $('resultList').querySelectorAll('.retryRow').forEach(row => {
+    const num = Number(row.dataset.num);
+    row.querySelectorAll('.retryChoiceBtn').forEach(btn => {
+      btn.addEventListener('click', () => submitRetry(num, btn.dataset.i));
+    });
+    const retryBtn = row.querySelector('.retrySubmitBtn');
+    if (retryBtn) retryBtn.addEventListener('click', () => {
+      const v = row.querySelector('.retryInput').value.trim();
+      if (v) submitRetry(num, v);
+    });
+    const inp = row.querySelector('.retryInput');
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') { const v = inp.value.trim(); if (v) submitRetry(num, v); } });
+  });
+}
+async function submitRetry(num, answer) {
+  submitCount++;
+  if (!confirm(`${curDay}일차 ${num}번을 ${submitCount}차시도로 제출하시겠습니까?`)) { submitCount--; return; }
+  await apiPost({ action: 'cs100submit', name: me.name, day: curDay, answers: [{ num, answer, meta: '' }] });
+  await new Promise(r => setTimeout(r, 1000));
+  await loadResult(curDay);
+  renderResultScreen();
 }
 </script>
 </body>
