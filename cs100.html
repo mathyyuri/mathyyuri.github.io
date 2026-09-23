@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>추석특강 100제 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+:root {
+  --bg: #fdfbf7; --card: #ffffff; --dark: #3a3530; --gold: #c8a84b; --gold-deep: #a8853f;
+  --line: #eae5da; --pink: #e58ba4; --pink-deep: #c64e71; --mint: #8ba8a1; --mint-deep: #5b8a80;
+  --shadow: 0 10px 30px rgba(58,53,48,0.06);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; }
+.wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
+.hidden { display: none !important; }
+
+h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.25rem; margin: 0 0 4px; }
+.sub { text-align: center; font-size: 0.72rem; color: #999; letter-spacing: 1px; margin: 0 0 22px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.fieldRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.fieldRow input { flex: 1; min-width: 100px; padding: 12px 13px; border-radius: 10px; border: 1px solid #ddd; font-size: 0.95rem; font-family: inherit; }
+button { background: var(--dark); color: #fff; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.86rem; }
+button:disabled { background: #ccc; cursor: default; }
+button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line); }
+.msg { font-size: 0.8rem; margin-top: 8px; min-height: 16px; }
+.msg.err { color: var(--pink-deep); }
+.msg.ok { color: var(--mint-deep); }
+
+.whoBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.82rem; }
+.whoBar .logoutBtn { background: none; color: #999; padding: 4px 8px; font-weight: 400; font-size: 0.76rem; text-decoration: underline; }
+
+.dayTabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.dayTab { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 4px; text-align: center; cursor: pointer; }
+.dayTab .d { font-weight: 700; font-size: 0.9rem; }
+.dayTab .dt { font-size: 0.66rem; color: #999; }
+.dayTab.active { border-color: var(--gold); background: #fdf7e8; }
+.dayTab .prog { font-size: 0.66rem; color: var(--mint-deep); font-weight: 700; margin-top: 2px; }
+
+.summaryBar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg,#f4f0e5,#fdf7e8); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.85rem; }
+.summaryBar b { color: var(--gold-deep); font-family: 'Noto Serif KR'; }
+
+.qCard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.qCard.correct { border-color: var(--mint); background: #f6faf8; }
+.qCard.wrong { border-color: var(--pink); background: #fdf5f7; }
+.qHead { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; }
+.resultTag { font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 9px; }
+.resultTag.o { background: #eaf4f0; color: var(--mint-deep); }
+.resultTag.x { background: #fbeaee; color: var(--pink-deep); }
+.stem { font-size: 0.92rem; line-height: 1.75; margin-bottom: 12px; }
+.stem img { max-width: 100%; }
+
+.choiceList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; font-family: inherit; text-align: left; font-size: 0.86rem; }
+.choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; }
+.choiceBtn img { max-width: 100%; max-height: 110px; object-fit: contain; }
+.choiceBtn .num { flex: 0 0 auto; font-weight: 700; color: var(--gold-deep); }
+.choiceBtn.picked { border-color: var(--gold); background: #fdf7e8; }
+.choiceBtn.rightPick { border-color: var(--mint); background: #eaf4f0; }
+.choiceBtn.wrongPick { border-color: var(--pink); background: #fbeaee; }
+
+.shortRow { display: flex; gap: 8px; margin-bottom: 6px; }
+.shortRow input { flex: 1; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 0.95rem; font-family: inherit; }
+
+.solBox { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 8px; }
+.solBox .ans { font-weight: 700; color: var(--mint-deep); font-size: 0.85rem; margin-bottom: 6px; }
+.solBox .expl { font-size: 0.82rem; line-height: 1.75; color: #555; }
+.solBox .expl b { color: var(--gold-deep); }
+.retryBtn { margin-top: 8px; background: none; border: 1px solid var(--line); color: #999; padding: 6px 12px; font-size: 0.76rem; font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌕 추석특강 100제</h1>
+  <p class="sub">MATHY YURI · 도형의 방정식 4점 기출 (9/24~9/27, 1일차 25문제)</p>
+
+  <div class="card" id="loginCard">
+    <div class="fieldRow">
+      <input type="text" id="in-name" placeholder="이름" autocomplete="off">
+      <input type="password" id="in-pw" placeholder="비밀번호(4자리)" inputmode="numeric" maxlength="4" autocomplete="off">
+    </div>
+    <button type="button" id="loginBtn" style="width:100%;margin-top:10px">시작하기</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="whoBar">
+      <span><b id="whoName"></b>님</span>
+      <button type="button" class="logoutBtn" id="logoutBtn">로그아웃</button>
+    </div>
+
+    <div class="dayTabs" id="dayTabs"></div>
+    <div class="summaryBar" id="summaryBar"></div>
+    <div id="qList"></div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const LOGIN_KEY = 'cs100_login_v1';
+const DAY_DATES = { 1: '9/24', 2: '9/25', 3: '9/26', 4: '9/27' };
+let me = null; // {name, pw}
+let curDay = 1;
+let dayItems = []; // 지금 보고 있는 일차의 25문제(질문 데이터 + 결과 병합)
+
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function renderMath(el) {
+  if (window.renderMathInElement) { try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+}
+async function apiGet(params) {
+  const res = await fetch(GAS_URL + '?' + new URLSearchParams(params).toString());
+  return res.json();
+}
+async function apiPost(body) {
+  await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+}
+
+async function doLogin(silent) {
+  const name = silent ? me.name : $('in-name').value.trim();
+  const pw = silent ? me.pw : $('in-pw').value.trim();
+  const msg = $('loginMsg');
+  if (!name || !pw) { if (!silent) { msg.textContent = '이름과 비밀번호를 입력하세요.'; msg.className = 'msg err'; } return; }
+  if (!silent) { msg.textContent = '확인 중...'; msg.className = 'msg'; }
+  try {
+    const json = await apiGet({ action: 'dailyquizlogin', name, pw });
+    if (!json.ok) { msg.textContent = json.error || '로그인 실패'; msg.className = 'msg err'; return; }
+    me = { name, pw };
+    localStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw }));
+    $('loginCard').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('whoName').textContent = name;
+    renderDayTabs();
+    selectDay(1);
+  } catch (e) {
+    if (!silent) { msg.textContent = '서버 연결 실패: ' + e.message; msg.className = 'msg err'; }
+  }
+}
+$('loginBtn').addEventListener('click', () => doLogin(false));
+$('in-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(false); });
+$('logoutBtn').addEventListener('click', () => {
+  me = null; localStorage.removeItem(LOGIN_KEY);
+  $('app').classList.add('hidden'); $('loginCard').classList.remove('hidden');
+  $('in-name').value = ''; $('in-pw').value = '';
+});
+(function tryAutoLogin() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
+    if (cached && cached.name && cached.pw) { me = cached; doLogin(true); }
+  } catch (e) {}
+})();
+
+function renderDayTabs() {
+  $('dayTabs').innerHTML = [1, 2, 3, 4].map(d => `
+    <div class="dayTab" data-day="${d}">
+      <div class="d">${d}일차</div>
+      <div class="dt">${DAY_DATES[d]}</div>
+      <div class="prog" id="dayProg${d}"></div>
+    </div>
+  `).join('');
+  $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.addEventListener('click', () => selectDay(Number(el.dataset.day))));
+}
+
+async function selectDay(day) {
+  curDay = day;
+  $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.classList.toggle('active', Number(el.dataset.day) === day));
+  $('qList').innerHTML = '<p style="text-align:center;color:#999;font-size:0.85rem;padding:20px 0">불러오는 중...</p>';
+  try {
+    const [qRes, rRes] = await Promise.all([
+      apiGet({ action: 'cs100questions', day }),
+      apiGet({ action: 'cs100result', name: me.name, day }),
+    ]);
+    if (!qRes.ok) throw new Error(qRes.error || '문제를 불러오지 못했습니다.');
+    const resultByNum = {};
+    (rRes.ok ? rRes.items : []).forEach(it => { resultByNum[it.num] = it; });
+    dayItems = qRes.items.map(q => ({ ...q, result: resultByNum[q.num] || null, picked: '' }));
+    renderQList();
+    updateDayProgress(day);
+  } catch (e) {
+    $('qList').innerHTML = `<p class="msg err" style="text-align:center">불러오지 못했습니다: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function updateSummary() {
+  const total = dayItems.length;
+  const answered = dayItems.filter(q => q.result).length;
+  const correct = dayItems.filter(q => q.result && q.result.correct).length;
+  $('summaryBar').innerHTML = `<span>${curDay}일차 진행</span><span><b>${answered}/${total}</b> 확인함 · <b>${correct}</b>개 정답</span>`;
+}
+async function updateDayProgress(day) {
+  // 다른 날짜 탭에도 작게 진행 표시 — 이미 불러온 날짜는 캐시 없이 매번 새로 세지 않고, 지금 본 날짜만 갱신(가벼움 우선).
+  const el = $('dayProg' + day);
+  if (el) {
+    const answered = dayItems.filter(q => q.result).length;
+    el.textContent = answered ? `${answered}/25` : '';
+  }
+}
+
+function choiceItemHtml(q, i) {
+  const c = q.choices[i] || '';
+  const num = ['①', '②', '③', '④', '⑤'][i];
+  const r = q.result;
+  let cls = 'choiceBtn';
+  if (r) {
+    if (String(i + 1) === String(r.yourAnswer) && r.correct) cls += ' rightPick';
+    else if (String(i + 1) === String(r.yourAnswer) && !r.correct) cls += ' wrongPick';
+    else if (String(i + 1) === String(r.correctAnswer)) cls += ' rightPick';
+  }
+  return `<button type="button" class="${cls}" data-i="${i + 1}"><span class="num">${num}</span><span>${c}</span></button>`;
+}
+
+function qCardHtml(q) {
+  const r = q.result;
+  const headTag = r ? `<span class="resultTag ${r.correct ? 'o' : 'x'}">${r.correct ? '정답' : '오답'}</span>` : '';
+  let bodyHtml;
+  if (q.type === 'choice') {
+    const hasImg = (q.choices || []).some(c => /<img\b/i.test(c));
+    bodyHtml = `<div class="choiceList${hasImg ? ' imgChoices' : ''}">${q.choices.map((c, i) => choiceItemHtml(q, i)).join('')}</div>`;
+  } else {
+    bodyHtml = `<div class="shortRow"><input type="text" inputmode="decimal" class="shortInput" placeholder="정답(숫자)" value="${r ? escapeHtml(r.yourAnswer) : ''}" ${r ? 'disabled' : ''}><button type="button" class="shortCheckBtn" ${r ? 'style="display:none"' : ''}>확인</button></div>`;
+  }
+  const solHtml = r ? `
+    <div class="solBox">
+      <div class="ans">정답: ${escapeHtml(r.correctAnswer)}</div>
+      ${r.quickAnswer || r.explanation ? `<div class="expl">${r.quickAnswer ? `<b>빠른정답</b><br>${r.quickAnswer}` : ''}${r.explanation ? `${r.quickAnswer ? '<br><br>' : ''}<b>해설</b><br>${r.explanation}` : ''}</div>` : ''}
+      <button type="button" class="retryBtn" data-num="${q.num}">다시 풀기</button>
+    </div>` : '';
+  return `<div class="qCard ${r ? (r.correct ? 'correct' : 'wrong') : ''}" data-num="${q.num}">
+    <div class="qHead"><span>${q.num}번</span>${headTag}</div>
+    <div class="stem">${q.stemHtml}</div>
+    ${bodyHtml}
+    ${solHtml}
+  </div>`;
+}
+
+function renderQList() {
+  $('qList').innerHTML = dayItems.map(qCardHtml).join('');
+  renderMath($('qList'));
+  updateSummary();
+  bindQList();
+}
+function bindQList() {
+  $('qList').querySelectorAll('.qCard').forEach(card => {
+    const num = Number(card.dataset.num);
+    const q = dayItems.find(x => x.num === num);
+    if (!q || q.result) return; // 이미 채점된 문제는 클릭 안 되게(다시 풀기로만 재도전)
+    if (q.type === 'choice') {
+      card.querySelectorAll('.choiceBtn').forEach(btn => btn.addEventListener('click', () => submitAnswer(q, btn.dataset.i)));
+    } else {
+      const inp = card.querySelector('.shortInput'), btn = card.querySelector('.shortCheckBtn');
+      const go = () => { if (inp.value.trim()) submitAnswer(q, inp.value.trim()); };
+      btn.addEventListener('click', go);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    }
+  });
+  $('qList').querySelectorAll('.retryBtn').forEach(btn => btn.addEventListener('click', () => {
+    const q = dayItems.find(x => x.num === Number(btn.dataset.num));
+    if (!q) return;
+    q.result = null;
+    rerenderCard(q);
+  }));
+}
+function rerenderCard(q) {
+  const card = $('qList').querySelector(`.qCard[data-num="${q.num}"]`);
+  if (!card) return;
+  const html = qCardHtml(q);
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  card.replaceWith(wrap.firstElementChild);
+  renderMath($('qList'));
+  updateSummary();
+  bindQList();
+}
+async function submitAnswer(q, answer) {
+  const card = $('qList').querySelector(`.qCard[data-num="${q.num}"]`);
+  if (card) card.style.opacity = '.6';
+  try {
+    await apiPost({ action: 'cs100submit', name: me.name, num: q.num, answer });
+    await new Promise(r => setTimeout(r, 900)); // no-cors라 응답을 못 읽어서, 채점이 시트에 반영될 시간을 준 뒤 다시 읽어온다
+    const rRes = await apiGet({ action: 'cs100result', name: me.name, day: curDay });
+    if (rRes.ok) {
+      const item = rRes.items.find(it => it.num === q.num);
+      if (item) q.result = item;
+    }
+  } catch (e) {
+    alert('채점 중 오류가 발생했어요. 다시 시도해주세요: ' + e.message);
+  }
+  if (card) card.style.opacity = '';
+  rerenderCard(q);
+  updateDayProgress(curDay);
+}
+</script>
+</body>
+</html>

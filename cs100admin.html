@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>추석특강 100제 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>document.write('<script src="hwpx-lib.js?v=' + Date.now() + '"><\/script>');</script>
+<style>
+:root { --bg: #fdfbf7; --card: #ffffff; --dark: #3a3530; --gold: #c8a84b; --gold-deep: #a8853f; --line: #eae5da; --pink-deep: #c64e71; --mint-deep: #5b8a80; }
+* { box-sizing: border-box; }
+.hidden { display: none !important; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 20px 16px 60px; }
+.wrap { max-width: 900px; margin: 0 auto; }
+h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.3rem; margin: 0 0 4px; }
+.sub { text-align: center; font-size: 0.75rem; color: #999; letter-spacing: 1px; margin: 0 0 26px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.card h2 { font-family: 'Noto Serif KR'; font-size: 1.05rem; margin: 0 0 12px; color: var(--gold-deep); }
+.fieldRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fieldRow input[type=text], .fieldRow input[type=password] { flex: 1; min-width: 160px; padding: 11px 13px; border-radius: 10px; border: 1px solid #ddd; font-size: 0.9rem; font-family: inherit; }
+button { background: var(--dark); color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.85rem; }
+button:disabled { background: #bbb; cursor: default; }
+button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line); }
+.msg { font-size: 0.8rem; margin-top: 8px; min-height: 16px; }
+.msg.err { color: var(--pink-deep); }
+.msg.ok { color: var(--mint-deep); }
+.hint { font-size: 0.78rem; color: #999; line-height: 1.6; }
+.dayGroup { margin-bottom: 8px; }
+.dayGroup > summary { cursor: pointer; font-weight: 700; padding: 8px 0; font-size: 0.92rem; }
+.qRow { border-bottom: 1px solid var(--line); padding: 12px 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; }
+.qRow .qNum { flex: 0 0 auto; font-weight: 700; color: var(--gold-deep); white-space: nowrap; }
+.qRow .qBody { flex: 1 1 260px; min-width: 0; font-size: 0.86rem; line-height: 1.6; }
+.qRow .qBody img { max-width: 160px; max-height: 120px; }
+.qRow .qAns { flex: 0 0 110px; margin-left: auto; }
+.qRow .qAns input, .qRow .qAns select { width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #ddd; font-family: inherit; font-size: 0.85rem; }
+.typeBadge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; margin-left: 6px; }
+.typeBadge.choice { background: #eaf4f0; color: var(--mint-deep); }
+.typeBadge.short { background: #fbf6ea; color: var(--gold-deep); }
+.warnBadge { font-size: 0.68rem; color: var(--pink-deep); margin-left: 6px; }
+.okBadge { font-size: 0.68rem; color: var(--mint-deep); margin-left: 6px; }
+table.progressTbl { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+table.progressTbl th, table.progressTbl td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: center; }
+table.progressTbl th { color: #999; font-weight: 700; font-size: 0.76rem; }
+table.progressTbl td.nameCell { text-align: left; font-weight: 700; }
+.cellDone { color: var(--mint-deep); font-weight: 700; }
+.cellNone { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌕 추석특강 100제 관리</h1>
+  <p class="sub">MATHY YURI · DAECHI ACADEMY (강사 전용) — 도형의 방정식 4점 기출 100제, 1일차~4일차(25문제씩)</p>
+
+  <div class="card" id="loginCard">
+    <div class="fieldRow">
+      <input type="password" id="keyInput" placeholder="원장님/조교 비밀번호" autocomplete="off">
+      <button type="button" id="loginBtn">로그인</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <h2>1. hwpx 업로드 → 자동 인식</h2>
+      <p class="hint">번호(1~100)를 그대로 인식합니다. 1~25번=1일차, 26~50번=2일차, 51~75번=3일차, 76~100번=4일차로 자동 계산해요.
+        선지가 있으면 객관식(정답 자동으로 [정답] ④ 같은 표시에서 채워짐), 없으면 주관식(정답 자동으로 [정답] 40 같은 숫자에서 채워짐)으로 인식해요 — 자동으로 못 채운 것만 확인해서 채워주시면 됩니다.</p>
+      <input type="file" id="fileInput" accept=".hwpx">
+      <div class="msg" id="parseMsg"></div>
+      <div id="reviewList"></div>
+      <div id="saveRow" class="hidden" style="margin-top:14px">
+        <button type="button" id="saveBtn">전체 저장 (100문제)</button>
+        <span class="msg" id="saveMsg" style="display:inline-block"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. 학생별 진행 현황</h2>
+      <button type="button" class="sec" id="refreshProgressBtn">새로고침</button>
+      <div class="msg" id="progressMsg"></div>
+      <div id="progressArea" style="margin-top:10px;overflow-x:auto"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+let myKey = '';
+let parsedQuestions = []; // [{num, type, stemHtml, choices, answer, quickAnswer, explanation, warning, prefilled}]
+
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function stripTags(s) { return String(s || '').replace(/<[^>]+>/g, ''); }
+function renderMath(el) {
+  if (window.renderMathInElement) { try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+}
+
+let jc = 0;
+function callGetJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const cb = 'cs100_cb_' + (jc++) + '_' + Date.now();
+    const s = document.createElement('script');
+    const t = setTimeout(() => { clean(); reject(new Error('요청 시간 초과')); }, 30000);
+    function clean() { clearTimeout(t); delete window[cb]; s.remove(); }
+    window[cb] = d => { clean(); d && d.ok ? resolve(d) : reject(new Error((d && d.error) || '서버 오류')); };
+    s.src = GAS_URL + '?' + new URLSearchParams({ ...params, callback: cb }).toString();
+    s.onerror = () => { clean(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(s);
+  });
+}
+async function callPostNoCors(body) {
+  await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+}
+
+$('loginBtn').addEventListener('click', async () => {
+  const key = $('keyInput').value.trim();
+  const msg = $('loginMsg');
+  if (!key) { msg.textContent = '비밀번호를 입력하세요.'; msg.className = 'msg err'; return; }
+  msg.textContent = '확인 중...'; msg.className = 'msg';
+  try {
+    await callGetJsonp({ action: 'whoami', key });
+    myKey = key;
+    $('loginCard').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    loadProgress();
+  } catch (e) { msg.textContent = '인증 실패: ' + e.message; msg.className = 'msg err'; }
+});
+$('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+
+// hwpx-lib.js의 formatChoiceRow가 만드는 choiceItem 스팬을 뽑는다 — admin.html의 같은 이름
+// 함수와 동일(중첩 태그 깊이를 세어 짝이 맞는 닫는 태그를 찾음, 보기 안에 수식이 2개 이상이어도 안전).
+function extractChoiceItemSpans(html) {
+  const openTag = '<span class="choiceItem">';
+  const out = [];
+  let i = 0;
+  while (true) {
+    const start = html.indexOf(openTag, i);
+    if (start === -1) break;
+    let depth = 1;
+    let pos = start + openTag.length;
+    const tagRe = /<span\b[^>]*>|<\/span>/g;
+    tagRe.lastIndex = pos;
+    let end = -1, m;
+    while ((m = tagRe.exec(html))) {
+      if (m[0] === '</span>') { depth--; if (depth === 0) { end = m.index; break; } }
+      else depth++;
+    }
+    if (end === -1) break;
+    out.push(html.slice(pos, end));
+    i = end + '</span>'.length;
+  }
+  return out;
+}
+
+$('fileInput').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const msgEl = $('parseMsg');
+  msgEl.textContent = '파싱 중...'; msgEl.className = 'msg';
+  $('reviewList').innerHTML = ''; $('saveRow').classList.add('hidden');
+  try {
+    const buf = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const entry = await parseHwpx(zip);
+    const nums = [...entry.markers.keys()].map(Number).sort((a, b) => a - b);
+    if (!nums.length) { msgEl.textContent = '문제를 하나도 찾지 못했습니다.'; msgEl.className = 'msg err'; return; }
+    parsedQuestions = [];
+    for (const num of nums) {
+      const marker = entry.markers.get(String(num)) || entry.markers.get(num);
+      const html = await hwpBodyXmlToHtml(marker.blockXml, entry);
+      const choices = extractChoiceItemSpans(html);
+      const type = choices.length ? 'choice' : 'short';
+      const stemHtml = html.replace(/<div class="choiceRow"[^>]*>[\s\S]*?<\/div>/g, '').trim();
+      const answerXml = extractQuickAnswerXml(marker.blockXml);
+      const quickAnswer = answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '';
+      const explXml = extractEndnoteFullBodyXml(marker.blockXml);
+      const explanation = explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
+      parsedQuestions.push({
+        num, type, stemHtml, choices, answer: '', quickAnswer, explanation, prefilled: false,
+        warning: type === 'choice' && choices.length !== 5 ? `선택지 ${choices.length}개 인식됨(5개 기대)` : '',
+      });
+    }
+    // [정답] 표시에서 자동으로 채운다 — 객관식은 동그라미 숫자/1~5, 주관식은 그 뒤에 오는 숫자(또는 짧은 값) 그대로.
+    let filled = 0;
+    parsedQuestions.forEach(q => {
+      const t = stripTags(q.quickAnswer).replace(/\\[()]/g, ' ');
+      if (q.type === 'choice') {
+        const m = t.match(/\[\s*정답\s*\]\s*([①②③④⑤]|[1-5])/);
+        if (!m) return;
+        const a = '①②③④⑤'.indexOf(m[1]) >= 0 ? '①②③④⑤'.indexOf(m[1]) + 1 : Number(m[1]);
+        if (a >= 1 && a <= q.choices.length) { q.answer = String(a); q.prefilled = true; filled++; }
+      } else {
+        const m = t.match(/\[\s*정답\s*\]\s*([-\d./,\s]+)/);
+        if (!m) return;
+        const a = m[1].trim().replace(/\s+/g, ' ');
+        if (a) { q.answer = a; q.prefilled = true; filled++; }
+      }
+    });
+    const warnCount = parsedQuestions.filter(q => q.warning).length;
+    const noAnsCount = parsedQuestions.filter(q => !q.answer).length;
+    msgEl.textContent = `${nums.length}문제 인식 완료 (정답 자동 채움 ${filled}개, 미입력 ${noAnsCount}개).` + (warnCount ? ` ⚠️ 선택지 인식 문제 ${warnCount}건 — 아래서 확인해주세요.` : '');
+    msgEl.className = (nums.length === 100 && !warnCount && !noAnsCount) ? 'msg ok' : 'msg err';
+    renderReview();
+    $('saveRow').classList.remove('hidden');
+  } catch (e) {
+    console.error(e);
+    msgEl.textContent = '파싱 실패: ' + (e.message || String(e));
+    msgEl.className = 'msg err';
+  }
+});
+
+function renderReview() {
+  const wrap = $('reviewList');
+  wrap.innerHTML = '';
+  const byDay = new Map();
+  parsedQuestions.forEach(q => {
+    const day = Math.ceil(q.num / 25);
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(q);
+  });
+  [...byDay.keys()].sort((a, b) => a - b).forEach(day => {
+    const list = byDay.get(day);
+    const warnCount = list.filter(q => q.warning).length;
+    const noAnsCount = list.filter(q => !q.answer).length;
+    const details = document.createElement('details');
+    details.className = 'dayGroup';
+    details.open = day === 1;
+    details.innerHTML = `<summary>${day}일차 (${list.length}문제)` +
+      (warnCount ? ` <span class="warnBadge">⚠️선택지 ${warnCount}건</span>` : '') +
+      (noAnsCount ? ` <span class="warnBadge">정답 미입력 ${noAnsCount}개</span>` : '') +
+      `</summary>`;
+    const body = document.createElement('div');
+    list.forEach(q => {
+      const row = document.createElement('div');
+      row.className = 'qRow';
+      const ansInput = q.type === 'choice'
+        ? `<select class="ansInput" data-num="${q.num}">` + ['', 1, 2, 3, 4, 5].map(v => `<option value="${v}"${String(q.answer) === String(v) ? ' selected' : ''}>${v === '' ? '선택' : v + '번'}</option>`).join('') + `</select>`
+        : `<input type="text" class="ansInput" data-num="${q.num}" value="${escapeHtml(q.answer)}" placeholder="정답(숫자)">`;
+      row.innerHTML = `
+        <div class="qNum">${q.num}번<span class="typeBadge ${q.type}">${q.type === 'choice' ? '객관식' : '주관식'}</span>${q.warning ? `<div class="warnBadge">${escapeHtml(q.warning)}</div>` : ''}${q.prefilled ? `<div class="okBadge">✓ 자동채움</div>` : ''}</div>
+        <div class="qBody">${q.stemHtml}${q.choices.length ? '<div style="margin-top:4px;font-size:0.8rem;color:#777">' + q.choices.map((c, i) => `①②③④⑤`[i] + ' ' + stripTags(c).slice(0, 24)).join(' &nbsp; ') + '</div>' : ''}</div>
+        <div class="qAns">${ansInput}</div>
+      `;
+      body.appendChild(row);
+    });
+    details.appendChild(body);
+    wrap.appendChild(details);
+  });
+  wrap.querySelectorAll('.ansInput').forEach(el => {
+    el.addEventListener('input', () => {
+      const q = parsedQuestions.find(x => x.num === Number(el.dataset.num));
+      if (q) q.answer = el.value.trim();
+    });
+    el.addEventListener('change', () => {
+      const q = parsedQuestions.find(x => x.num === Number(el.dataset.num));
+      if (q) q.answer = el.value.trim();
+    });
+  });
+  renderMath(wrap);
+}
+
+$('saveBtn').addEventListener('click', async () => {
+  const msg = $('saveMsg');
+  const missing = parsedQuestions.filter(q => !q.answer);
+  if (missing.length && !confirm(`정답이 없는 문제가 ${missing.length}개 있어요(번호: ${missing.map(q => q.num).slice(0, 15).join(', ')}${missing.length > 15 ? ' 외' : ''}). 그래도 저장할까요?`)) return;
+  $('saveBtn').disabled = true;
+  msg.textContent = '저장 중...'; msg.className = 'msg';
+  try {
+    await callPostNoCors({ action: 'savecs100', key: myKey, questions: parsedQuestions.map(q => ({ num: q.num, type: q.type, stemHtml: q.stemHtml, choices: q.choices, answer: q.answer, quickAnswer: q.quickAnswer, explanation: q.explanation })) });
+    msg.textContent = '저장 요청을 보냈어요. 몇 초 후 학생 화면에 반영돼요.'; msg.className = 'msg ok';
+  } catch (e) {
+    msg.textContent = '저장 실패: ' + e.message; msg.className = 'msg err';
+  }
+  $('saveBtn').disabled = false;
+});
+
+async function loadProgress() {
+  const msg = $('progressMsg'), area = $('progressArea');
+  msg.textContent = '불러오는 중...'; msg.className = 'msg';
+  try {
+    const data = await callGetJsonp({ action: 'cs100progress', key: myKey });
+    const students = data.students || [];
+    msg.textContent = '';
+    if (!students.length) { area.innerHTML = '<p class="hint">아직 아무도 풀지 않았어요.</p>'; return; }
+    let html = '<table class="progressTbl"><thead><tr><th style="text-align:left">이름</th><th>1일차</th><th>2일차</th><th>3일차</th><th>4일차</th></tr></thead><tbody>';
+    students.forEach(s => {
+      html += '<tr><td class="nameCell">' + escapeHtml(s.name) + '</td>' + s.days.map(d => {
+        if (!d.solved) return '<td class="cellNone">-</td>';
+        return `<td class="${d.solved === 25 ? 'cellDone' : ''}">${d.solved}/25 <span style="color:#999">(${d.correct}✓)</span></td>`;
+      }).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  } catch (e) {
+    msg.textContent = '불러오지 못했습니다: ' + e.message; msg.className = 'msg err';
+  }
+}
+$('refreshProgressBtn').addEventListener('click', loadProgress);
+</script>
+</body>
+</html>
