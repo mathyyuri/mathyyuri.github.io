@@ -37,6 +37,12 @@ label{display:block;font-size:11px;color:#777;margin:8px 0 3px}
 .chips button{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:12px;padding:5px 10px;border-radius:14px}
 .vcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
 .vcard.picked{border-color:var(--mint);box-shadow:0 0 0 2px #dff1ea}
+.pickedList{margin-top:10px;max-height:340px;overflow-y:auto}
+.pickedRow{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start}
+.pickedRow .pn{flex:0 0 auto;font-weight:700;color:var(--gold);font-size:12px;padding-top:2px}
+.pickedRow .pt{flex:1;min-width:0;font-size:12.5px;line-height:1.7}
+.pickedRow .pt .pans{color:var(--mint);font-weight:700;margin-top:2px}
+.pickedRow .prm{flex:0 0 auto;background:#fff;color:var(--pink);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
 .vhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700}
 .vprob{line-height:1.9;font-size:15px}
 .vch{margin:10px 0 0;line-height:1.9;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 18px}
@@ -116,8 +122,10 @@ summary{cursor:pointer;color:var(--gold);font-weight:700}
         <button class="sec" id="copyPicked">텍스트 복사</button>
         <button class="sec" id="printPicked">인쇄 / PDF</button>
         <button class="sec" id="hwpxPicked">한글(hwpx)로 받기</button>
+        <button class="sec" id="clearPicked">전체 비우기</button>
       </div>
-      <p class="hint">결과 카드의 "담기"를 누르면 여기 모여요. 다른 변형 결과에서 골라 담아도 유지돼요.</p>
+      <p class="hint">결과 카드의 "담기"를 누르면 여기 모여요. 다른 변형 결과에서 골라 담아도 유지돼요. 아래 목록에서 미리 보거나 하나씩 뺄 수 있어요.</p>
+      <div id="pickedList" class="pickedList"></div>
     </div>
   </div>
 
@@ -305,7 +313,42 @@ function renderMath(el) {
   if (window.renderMathInElement) try { renderMathInElement(el, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {}
 }
 function flash(t) { $('status').textContent = t; $('status').className = 'ok'; setTimeout(() => { if ($('status').textContent === t) $('status').textContent = ''; }, 2000); }
-function updatePicked() { $('pickedCount').textContent = picked.length; }
+function updatePicked() { $('pickedCount').textContent = picked.length; renderPickedList(); }
+function renderPickedList() {
+  const box = $('pickedList');
+  if (!picked.length) { box.innerHTML = ''; return; }
+  box.innerHTML = picked.map((p, i) => `
+    <div class="pickedRow" data-i="${i}">
+      <span class="pn">${i + 1}.</span>
+      <div class="pt">
+        <div>${toHtml(p.item.problem)}</div>
+        <div class="pans">정답 ${toHtml(p.item.answer)}</div>
+      </div>
+      <button type="button" class="prm">빼기</button>
+    </div>`).join('');
+  box.querySelectorAll('.prm').forEach(btn => {
+    btn.onclick = () => {
+      const i = Number(btn.closest('.pickedRow').dataset.i);
+      const removed = picked[i];
+      picked.splice(i, 1);
+      updatePicked();
+      // 지금 보이는 결과 카드 중 방금 뺀 문제가 있으면 "담기" 표시도 같이 꺼준다
+      if (removed) $('results').querySelectorAll('.vcard').forEach(c => {
+        const n = Number(c.dataset.n);
+        if (versions[cur] && versions[cur].items[n] === removed.item) c.classList.remove('picked');
+      });
+    };
+  });
+  renderMath(box);
+}
+$('clearPicked').onclick = () => {
+  if (!picked.length) return flash('담은 문제가 없어요');
+  if (!confirm('담은 문제 ' + picked.length + '개를 전부 비울까요?')) return;
+  picked = [];
+  updatePicked();
+  $('results').querySelectorAll('.vcard.picked').forEach(c => c.classList.remove('picked'));
+  flash('비웠어요');
+};
 
 /* ---------- 원본 문제 미리보기 (화면에 보이는 모양) ---------- */
 let pvT = null;
