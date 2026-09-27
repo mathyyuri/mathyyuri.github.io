@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>문제은행 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+:root {
+  --bg: #f6f9f8; --card: #ffffff; --dark: #33403d; --sage: #5b8a80; --sage-deep: #3f6b62;
+  --line: #dfe9e6; --pink: #e58ba4; --pink-deep: #c64e71; --gold: #c8a84b; --gold-deep: #a8853f;
+  --shadow: 0 10px 30px rgba(40,80,70,0.08);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; min-height: 100vh; }
+.wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 60px; }
+.hidden { display: none !important; }
+h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.25rem; margin: 0 0 4px; }
+.sub { text-align: center; font-size: 0.72rem; color: #7a9c95; letter-spacing: 1px; margin: 0 0 22px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.fieldRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.fieldRow input { flex: 1; min-width: 100px; padding: 12px 13px; border-radius: 10px; border: 1px solid #ccd; font-size: 0.95rem; font-family: inherit; }
+button { background: var(--sage-deep); color: #fff; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.86rem; }
+button:disabled { background: #c5d3cf; cursor: default; }
+button.sec { background: #fff; color: var(--dark); border: 1px solid var(--line); }
+.msg { font-size: 0.8rem; margin-top: 8px; min-height: 16px; }
+.msg.err { color: var(--pink-deep); }
+.msg.ok { color: var(--sage-deep); }
+
+.whoBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.82rem; }
+.whoBar .logoutBtn { background: none; color: #8aa; padding: 4px 8px; font-weight: 400; font-size: 0.76rem; text-decoration: underline; }
+
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filters select { flex: 1 1 140px; min-width: 0; padding: 9px 8px; border-radius: 9px; border: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 0.8rem; color: var(--dark); }
+.summaryRow { display: flex; justify-content: space-between; font-size: 0.8rem; color: #6a8a83; margin-bottom: 8px; }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.cell { background: #fff; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 0; text-align: center; font-weight: 700; font-size: 0.9rem; cursor: pointer; color: var(--dark); }
+.cell small { display: block; font-size: 0.62rem; font-weight: 400; color: #9ab; margin-top: 1px; }
+.cell.ok { background: #e9f4f0; border-color: var(--sage); color: var(--sage-deep); }
+.cell.no { background: #fdf0f3; border-color: var(--pink); color: var(--pink-deep); }
+
+.quizTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8rem; color: #7a9c95; }
+.quizBarWrap { height: 5px; background: #dde9e5; border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+.quizBar { height: 100%; background: var(--sage); transition: width .25s; }
+.metaLine { font-size: 0.72rem; color: #8aa; margin-bottom: 8px; }
+.qStem { font-size: 0.98rem; line-height: 1.8; margin-bottom: 16px; }
+.qStem img { max-width: 100%; }
+
+.choiceList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.choiceList.imgChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.choiceBtn { display: flex; align-items: center; gap: 8px; padding: 12px 13px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--dark); cursor: pointer; font-family: inherit; text-align: left; font-size: 0.9rem; }
+.choiceList.imgChoices .choiceBtn { flex-direction: column; align-items: flex-start; }
+.choiceBtn img { max-width: 100%; max-height: 110px; object-fit: contain; }
+.choiceBtn .num { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #999; }
+.choiceBtn.picked { border-color: var(--sage); background: #eaf4f0; }
+.choiceBtn.picked .num { background: var(--sage); border-color: var(--sage); color: #fff; }
+.choiceBtn:disabled { background: #fff; color: var(--dark); cursor: default; }
+.choiceBtn.picked:disabled { background: #eaf4f0; }
+.choiceBtn.right, .choiceBtn.right:disabled { background: #e9f4f0; border-color: var(--sage); }
+.choiceBtn.right .num { background: var(--sage); border-color: var(--sage); color: #fff; }
+.choiceBtn.wrong, .choiceBtn.wrong:disabled { background: #fdf0f3; border-color: var(--pink); }
+.choiceBtn.wrong .num { background: var(--pink-deep); border-color: var(--pink-deep); color: #fff; }
+.shortRow input { width: 100%; padding: 13px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 1rem; font-family: inherit; margin-bottom: 12px; }
+
+.submitRow { display: flex; gap: 8px; }
+.submitRow button { flex: 1; }
+.navRow { display: flex; gap: 8px; margin-top: 12px; }
+.navRow button { flex: 1; }
+
+.feedback { border-radius: 12px; padding: 12px 14px; margin-top: 12px; font-size: 0.88rem; font-weight: 700; }
+.feedback.ok { background: #e9f4f0; color: var(--sage-deep); border: 1px solid var(--sage); }
+.feedback.no { background: #fdf0f3; color: var(--pink-deep); border: 1px solid var(--pink); }
+.feedback .att { font-weight: 400; font-size: 0.74rem; opacity: .8; margin-left: 6px; }
+.feedback .fbBtns { display: flex; gap: 8px; margin-top: 10px; }
+.feedback .fbBtns button { flex: 1; padding: 9px 6px; font-size: 0.8rem; }
+.solBox { border-top: 1px dashed var(--line); margin-top: 14px; padding-top: 12px; }
+.solBox .ans { font-weight: 700; color: var(--sage-deep); font-size: 0.9rem; margin-bottom: 8px; }
+.solBox .expl { font-size: 0.84rem; line-height: 1.75; color: #556; }
+.solBox .expl img { max-width: 100%; }
+.solBox .expl b { color: var(--gold-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📚 문제은행</h1>
+  <p class="sub">MATHY YURI · 풀고 싶은 문제를 골라 풀어보세요</p>
+
+  <div class="card" id="loginCard">
+    <div class="fieldRow">
+      <input type="text" id="in-name" placeholder="이름" autocomplete="off">
+      <input type="password" id="in-pw" placeholder="비밀번호(4자리)" inputmode="numeric" maxlength="4" autocomplete="off">
+    </div>
+    <button type="button" id="loginBtn" style="width:100%;margin-top:10px">시작하기</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="whoBar">
+      <span><b id="whoName"></b>님</span>
+      <button type="button" class="logoutBtn" id="logoutBtn">로그아웃</button>
+    </div>
+
+    <div id="screen-list">
+      <div class="filters">
+        <select id="fSet"></select>
+        <select id="fUnit"></select>
+        <select id="fView">
+          <option value="all">전체 보기</option>
+          <option value="todo">안 푼 문제</option>
+          <option value="wrong">틀린 문제</option>
+          <option value="solved">맞힌 문제</option>
+        </select>
+      </div>
+      <div class="summaryRow"><span id="sumLeft"></span><span id="sumRight"></span></div>
+      <div class="grid" id="grid"></div>
+      <p class="msg" id="listMsg" style="text-align:center"></p>
+    </div>
+
+    <div id="screen-solve" class="hidden">
+      <div class="quizTop"><span id="solveLabel"></span><span><span id="solveIdx"></span> / <span id="solveTotal"></span></span></div>
+      <div class="quizBarWrap"><div class="quizBar" id="solveBar" style="width:0%"></div></div>
+      <div class="card">
+        <div class="metaLine" id="metaLine"></div>
+        <div class="qStem" id="qStem"></div>
+        <div id="qBody"></div>
+        <div class="submitRow"><button type="button" id="submitBtn" disabled>제출</button></div>
+        <div id="feedback"></div>
+        <div id="solBox"></div>
+        <div class="navRow">
+          <button type="button" class="sec" id="prevBtn">이전</button>
+          <button type="button" class="sec" id="nextBtn">다음</button>
+        </div>
+      </div>
+      <button type="button" class="sec" id="backBtn" style="width:100%">← 문제 목록으로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const SB_URL = 'https://eqllmvfbcdtzercliicy.supabase.co/functions/v1';
+const SB_KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV'; // 공개해도 안전한 키 (정답은 서버가 지키고 있어요)
+const LOGIN_KEY = 'bank_login_v1';
+const FILTER_KEY = 'bank_filters_v1';
+const CIR = ['①', '②', '③', '④', '⑤'];
+
+let me = null;            // {name, pw}
+let allProblems = [];     // 목록용 (지문 없음), 정렬된 상태
+let status = {};          // problemId -> {attempted, attempt_count, solved, last_answer}
+let fullCache = {};       // problemId -> 지문/보기까지 있는 문제
+let shown = [];           // 지금 필터로 보이는 문제들
+let curIdx = 0;
+let picked = '';          // 지금 고른/입력한 답
+let locked = false;       // 제출 결과를 보고 있는 중
+
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function renderMath(el) {
+  if (window.renderMathInElement) { try { renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false }); } catch (e) {} }
+}
+function show(id) { ['screen-list', 'screen-solve'].forEach(s => $(s).classList.toggle('hidden', s !== id)); }
+
+async function sbGet(fn, params) {
+  const res = await fetch(`${SB_URL}/${fn}?` + new URLSearchParams(params).toString(), { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+  return data;
+}
+async function sbPost(fn, body) {
+  const res = await fetch(`${SB_URL}/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+  return data;
+}
+
+/* ---------- 로그인 (기존 학생 로그인 그대로 사용) ---------- */
+async function doLogin(silent) {
+  const name = silent ? me.name : $('in-name').value.trim();
+  const pw = silent ? me.pw : $('in-pw').value.trim();
+  const msg = $('loginMsg');
+  if (!name || !pw) { if (!silent) { msg.textContent = '이름과 비밀번호를 입력하세요.'; msg.className = 'msg err'; } return; }
+  if (!silent) { msg.textContent = '확인 중...'; msg.className = 'msg'; }
+  try {
+    const res = await fetch(GAS_URL + '?' + new URLSearchParams({ action: 'dailyquizlogin', name, pw }).toString());
+    const json = await res.json();
+    if (!json.ok) { msg.textContent = json.error || '로그인 실패'; msg.className = 'msg err'; return; }
+    me = { name, pw };
+    try { localStorage.setItem(LOGIN_KEY, JSON.stringify({ name, pw })); } catch (e) {}
+    $('loginCard').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('whoName').textContent = name;
+    await loadList();
+  } catch (e) {
+    if (!silent) { msg.textContent = '서버 연결 실패: ' + e.message; msg.className = 'msg err'; }
+  }
+}
+$('loginBtn').addEventListener('click', () => doLogin(false));
+$('in-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(false); });
+$('logoutBtn').addEventListener('click', () => {
+  me = null; try { localStorage.removeItem(LOGIN_KEY); } catch (e) {}
+  $('app').classList.add('hidden'); $('loginCard').classList.remove('hidden');
+  $('in-name').value = ''; $('in-pw').value = '';
+});
+(function tryAutoLogin() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
+    if (cached && cached.name && cached.pw) { me = cached; doLogin(true); }
+  } catch (e) {}
+})();
+
+/* ---------- 문제 목록 ---------- */
+const setLabel = f => String(f || '').replace(/\.hwpx$/i, '');
+
+async function loadList() {
+  const msg = $('listMsg');
+  msg.textContent = '문제를 불러오는 중...'; msg.className = 'msg';
+  show('screen-list');
+  try {
+    const d = await sbGet('get-problems', { summary: '1' });
+    allProblems = d.items;
+    status = {};
+    // 내 풀이 기록은 한 번에 (200개씩)
+    for (let i = 0; i < allProblems.length; i += 200) {
+      const ids = allProblems.slice(i, i + 200).map(p => p.id).join(',');
+      const r = await sbGet('get-result', { student_name: me.name, problem_ids: ids, summary: '1' });
+      r.items.forEach(it => { status[it.problem_id] = it; });
+    }
+    msg.textContent = '';
+    buildFilters();
+    renderGrid();
+  } catch (e) {
+    msg.textContent = '불러오지 못했습니다: ' + e.message; msg.className = 'msg err';
+  }
+}
+
+function uniq(arr) { return [...new Set(arr.filter(Boolean))]; }
+function fillSelect(el, allLabel, values, cur) {
+  el.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${escapeHtml(v)}"${v === cur ? ' selected' : ''}>${escapeHtml(setLabel(v))}</option>`).join('');
+}
+function buildFilters() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '{}'); } catch (e) {}
+  fillSelect($('fSet'), '모든 묶음', uniq(allProblems.map(p => p.source_file)), saved.set);
+  fillSelect($('fUnit'), '모든 단원', uniq(allProblems.map(p => p.unit)), saved.unit);
+  if (saved.view) $('fView').value = saved.view;
+}
+['fSet', 'fUnit', 'fView'].forEach(id => $(id).addEventListener('change', () => {
+  try { localStorage.setItem(FILTER_KEY, JSON.stringify({ set: $('fSet').value, unit: $('fUnit').value, view: $('fView').value })); } catch (e) {}
+  renderGrid();
+}));
+
+function stateOf(p) {
+  const s = status[p.id];
+  if (!s || !s.attempted) return 'todo';
+  return s.solved ? 'solved' : 'wrong';
+}
+function renderGrid() {
+  const fSet = $('fSet').value, fUnit = $('fUnit').value, fView = $('fView').value;
+  const base = allProblems.filter(p => (!fSet || p.source_file === fSet) && (!fUnit || p.unit === fUnit));
+  shown = base.filter(p => fView === 'all' || stateOf(p) === (fView === 'todo' ? 'todo' : fView));
+  const solved = base.filter(p => stateOf(p) === 'solved').length;
+  const attempted = base.filter(p => stateOf(p) !== 'todo').length;
+  $('sumLeft').textContent = `전체 ${base.length}문제 · 푼 문제 ${attempted}`;
+  $('sumRight').textContent = `정답 ${solved}`;
+  $('grid').innerHTML = shown.map((p, i) => {
+    const st = stateOf(p);
+    const mark = st === 'solved' ? 'O' : st === 'wrong' ? 'X' : '';
+    return `<div class="cell ${st === 'solved' ? 'ok' : st === 'wrong' ? 'no' : ''}" data-i="${i}">${p.source_num}<small>${mark || '·'}</small></div>`;
+  }).join('') || '<p class="msg" style="grid-column:1/-1;text-align:center">해당하는 문제가 없어요.</p>';
+  $('grid').querySelectorAll('.cell').forEach(el => el.addEventListener('click', () => openProblem(Number(el.dataset.i))));
+}
+
+/* ---------- 문제 풀이 ---------- */
+async function loadFull(ids) {
+  const need = ids.filter(id => id && !fullCache[id]);
+  if (!need.length) return;
+  const d = await sbGet('get-problems', { ids: need.join(',') });
+  d.items.forEach(p => { fullCache[p.id] = p; });
+}
+
+async function openProblem(idx) {
+  curIdx = idx;
+  const p = shown[idx];
+  show('screen-solve');
+  picked = ''; locked = false;
+  $('feedback').innerHTML = ''; $('solBox').innerHTML = '';
+  $('solveLabel').textContent = setLabel(p.source_file) + ' · ' + p.source_num + '번';
+  $('solveIdx').textContent = idx + 1; $('solveTotal').textContent = shown.length;
+  $('solveBar').style.width = Math.round(((idx + 1) / shown.length) * 100) + '%';
+  $('prevBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+  $('nextBtn').style.visibility = idx === shown.length - 1 ? 'hidden' : 'visible';
+  $('metaLine').textContent = [p.unit, p.category, p.points ? p.points + '점' : ''].filter(Boolean).join(' · ');
+  $('qStem').innerHTML = '<span class="msg">불러오는 중...</span>'; $('qBody').innerHTML = '';
+  $('submitBtn').disabled = true;
+  window.scrollTo(0, 0);
+  try {
+    await loadFull([p.id]);
+    if (shown[curIdx] !== p) return; // 그 사이 다른 문제로 넘어감
+    renderProblem();
+    loadFull([shown[idx + 1] && shown[idx + 1].id, shown[idx + 2] && shown[idx + 2].id]).catch(() => {}); // 다음 문제 미리 받아두기
+  } catch (e) {
+    $('qStem').innerHTML = `<span class="msg err">불러오지 못했습니다: ${escapeHtml(e.message)}</span>`;
+  }
+}
+
+function renderProblem() {
+  const p = shown[curIdx];
+  const q = fullCache[p.id];
+  $('qStem').innerHTML = q.stem_html;
+  const body = $('qBody');
+  if (q.type === 'choice') {
+    const hasImg = (q.choices || []).some(c => /<img\b/i.test(c));
+    body.innerHTML = `<div class="choiceList${hasImg ? ' imgChoices' : ''}">${(q.choices || []).map((c, i) => {
+      const content = String(c || '').replace(/^[①②③④⑤]\s*/, '');
+      return `<button type="button" class="choiceBtn${picked === String(i + 1) ? ' picked' : ''}" data-i="${i + 1}"><span class="num">${i + 1}</span><span>${content}</span></button>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('.choiceBtn').forEach(btn => btn.addEventListener('click', () => {
+      if (locked) return;
+      picked = picked === btn.dataset.i ? '' : btn.dataset.i;
+      body.querySelectorAll('.choiceBtn').forEach(b => b.classList.toggle('picked', b.dataset.i === picked));
+      $('submitBtn').disabled = !picked;
+    }));
+  } else {
+    body.innerHTML = `<div class="shortRow"><input type="text" inputmode="decimal" id="shortInput" placeholder="정답을 입력하세요" autocomplete="off"></div>`;
+    const inp = $('shortInput');
+    inp.value = picked;
+    inp.addEventListener('input', () => { picked = inp.value.trim(); $('submitBtn').disabled = !picked || locked; });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !$('submitBtn').disabled) $('submitBtn').click(); });
+  }
+  renderMath($('qStem')); renderMath(body);
+  $('submitBtn').disabled = !picked;
+  const s = status[p.id];
+  if (s && s.attempted) $('feedback').innerHTML = `<div class="feedback ${s.solved ? 'ok' : 'no'}">${s.solved ? '이미 맞힌 문제예요 ✅' : '아직 못 맞힌 문제예요'}<span class="att">지금까지 ${s.attempt_count}번 제출</span><div class="fbBtns"><button type="button" class="sec" id="revealBtn">정답·해설 보기</button></div></div>`, bindFeedback();
+}
+
+function bindFeedback() {
+  const r = $('revealBtn'); if (r) r.addEventListener('click', reveal);
+  const a = $('retryBtn'); if (a) a.addEventListener('click', retry);
+}
+function retry() {
+  picked = ''; locked = false;
+  $('feedback').innerHTML = ''; $('solBox').innerHTML = '';
+  renderProblem();
+}
+
+$('submitBtn').addEventListener('click', async () => {
+  const p = shown[curIdx];
+  if (!picked || locked) return;
+  $('submitBtn').disabled = true; $('submitBtn').textContent = '채점 중...';
+  try {
+    const r = await sbPost('submit-answer', { problem_id: p.id, student_name: me.name, answer: picked, context: 'bank' });
+    const prev = status[p.id] || { attempted: false, attempt_count: 0, solved: false };
+    status[p.id] = { problem_id: p.id, attempted: true, attempt_count: r.attempt_number, solved: prev.solved || r.correct, last_answer: picked };
+    locked = true;
+    document.querySelectorAll('.choiceBtn').forEach(b => {
+      b.disabled = true;
+      if (b.dataset.i === picked) b.classList.add(r.correct ? 'right' : 'wrong');
+    });
+    const si = $('shortInput'); if (si) si.disabled = true;
+    $('feedback').innerHTML = r.correct
+      ? `<div class="feedback ok">정답입니다! 🎉<span class="att">${r.attempt_number}번째 제출</span><div class="fbBtns"><button type="button" class="sec" id="revealBtn">해설 보기</button></div></div>`
+      : `<div class="feedback no">아쉬워요, 오답이에요<span class="att">${r.attempt_number}번째 제출</span><div class="fbBtns"><button type="button" class="sec" id="retryBtn">다시 풀기</button><button type="button" class="sec" id="revealBtn">정답·해설 보기</button></div></div>`;
+    bindFeedback();
+  } catch (e) {
+    $('feedback').innerHTML = `<div class="feedback no">제출하지 못했어요: ${escapeHtml(e.message)}</div>`;
+    $('submitBtn').disabled = false;
+  }
+  $('submitBtn').textContent = '제출';
+  if (!locked) return;
+  $('submitBtn').disabled = true;
+});
+
+async function reveal() {
+  const p = shown[curIdx];
+  const btn = $('revealBtn'); if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+  try {
+    const d = await sbGet('get-result', { student_name: me.name, problem_id: p.id });
+    const it = d.items[0];
+    const q = fullCache[p.id] || {};
+    const ansText = it.answer == null ? '' : (q.type === 'choice' ? (CIR[Number(it.answer) - 1] || it.answer) : it.answer);
+    $('solBox').innerHTML = `<div class="solBox"><div class="ans">정답: ${escapeHtml(ansText)}</div>${it.explanation ? `<div class="expl"><b>해설</b><br>${it.explanation}</div>` : (it.quick_answer ? `<div class="expl">${it.quick_answer}</div>` : '')}</div>`;
+    renderMath($('solBox'));
+    if (btn) btn.remove();
+  } catch (e) {
+    $('solBox').innerHTML = `<p class="msg err">불러오지 못했습니다: ${escapeHtml(e.message)}</p>`;
+    if (btn) { btn.disabled = false; btn.textContent = '정답·해설 보기'; }
+  }
+}
+
+$('prevBtn').addEventListener('click', () => { if (curIdx > 0) openProblem(curIdx - 1); });
+$('nextBtn').addEventListener('click', () => { if (curIdx < shown.length - 1) openProblem(curIdx + 1); });
+$('backBtn').addEventListener('click', () => { renderGrid(); show('screen-list'); });
+</script>
+</body>
+</html>
