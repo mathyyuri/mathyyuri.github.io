@@ -2119,6 +2119,51 @@ async function hwpBodyXmlToHtml(xml, entry) {
     items.push({ raw, inner });
   }
 
+  // A picture choice list can also come as PLAIN PARAGRAPHS with the marker
+  // and its image in SEPARATE paragraphs, not glued into one paragraph and
+  // not inside a <hp:tbl> either — confirmed against a real file ("[교과서
+  // 미션] 도형의 방정식 모의3점" 92번): paragraph order is
+  // [image][①][image][②][image][③][image][④][image][⑤], each image
+  // paragraph's `.raw` is just an auto-generated "그림입니다..." caption
+  // (no marker) and each marker paragraph's `.raw` is the bare circled
+  // digit alone — so a marker paragraph is always its own 1-item "run"
+  // (the image paragraphs on both sides break hasRealChoiceMarker), never
+  // reaching the "2+" threshold below, and each fell through as an
+  // isolated stray "①"/"②"/... line with its picture on a separate line
+  // right above it. Pair up a run of 2+ consecutive [image-only,
+  // marker-only] (or [marker-only, image-only]) paragraphs into one
+  // prebuilt choiceRow — same idea as extractImageChoiceItems for a real
+  // table (hwpx-lib.js와 동일, 2026-09-28).
+  {
+    const isPureMarker = it => /^[①②③④⑤]$/.test(it.raw.trim());
+    const isPureImage = it => !hasRealChoiceMarker(it.raw) && /<img\b/i.test(it.inner);
+    const merged = [];
+    let j = 0;
+    while (j < items.length) {
+      let k = j;
+      const pairs = [];
+      while (k + 1 < items.length) {
+        const a = items[k], b = items[k + 1];
+        let markerIt = null, imgIt = null;
+        if (isPureImage(a) && isPureMarker(b)) { imgIt = a; markerIt = b; }
+        else if (isPureMarker(a) && isPureImage(b)) { markerIt = a; imgIt = b; }
+        else break;
+        pairs.push({ marker: markerIt.raw.trim(), html: imgIt.inner });
+        k += 2;
+      }
+      if (pairs.length >= 2) {
+        const gridHtml = `<div class="choiceRow imgChoiceRow" style="grid-template-columns:repeat(2,1fr)">${pairs.map(p => `<span class="choiceItem">${p.marker}${p.html}</span>`).join('')}</div>`;
+        merged.push({ raw: '', inner: gridHtml, prebuiltChoiceRow: gridHtml });
+        j = k;
+      } else {
+        merged.push(items[j]);
+        j++;
+      }
+    }
+    items.length = 0;
+    items.push(...merged);
+  }
+
   // A "①...⑤" choice list is normally one paragraph with tab characters
   // between choices, but a real file showed it can also be split across
   // SEPARATE paragraphs (line-wrap in the source document — e.g. "①②" in
