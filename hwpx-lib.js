@@ -1744,8 +1744,19 @@ async function hwpBodyXmlToHtml(xml, entry, opts) {
       while (i < items.length && hasRealChoiceMarker(items[i].raw)) i++;
       const run = items.slice(start, i);
       const combinedRaw = run.map(it => it.raw).join('');
-      const markerCount = (combinedRaw.match(/[①②③④⑤]/g) || []).length;
-      const row = markerCount >= 2 ? formatChoiceRow(run.map(it => it.inner)) : null;
+      const markers = combinedRaw.match(/[①②③④⑤]/g) || [];
+      // (가)(나)(다) 빈칸 채우기형 문제의 풀이 과정은 앞에서 유도한 식에
+      // "①"처럼 참조번호를 붙이고, 바로 뒤 문장에서 "①이 a의 값에
+      // 관계없이 항상 성립하려면..."처럼 그 번호를 다시 언급하는 경우가
+      // 있다 — 같은 원 번호가 한 문단(런) 안에서 2번 나와 markerCount>=2를
+      // 충족해버려서, 진짜 선택지가 아닌 이 문장이 formatChoiceRow에
+      // 잘못 들어가 "① 한편,"/"①이 ...x=(나)"처럼 (나)(다) 자리까지
+      // 쪼개져 버렸다(실제 파일 확인: "260921_[오답] 도방 3, 10 26_
+      // 문제지.hwpx" 135번). 진짜 5지선다 목록은 ①②③④⑤처럼 서로 다른
+      // 번호가 순서대로 나오지, 같은 번호를 두 번 쓰는 일은 없다 — 서로
+      // 다른 원 번호가 2개 이상 나올 때만 진짜 선택지 목록으로 본다.
+      const distinctMarkers = new Set(markers).size;
+      const row = markers.length >= 2 && distinctMarkers >= 2 ? formatChoiceRow(run.map(it => it.inner)) : null;
       if (row) { resolved.push({ raw: '', html: row }); continue; }
       for (const it of run) resolved.push({ raw: it.raw, html: resolveSingle(it) });
       continue;
