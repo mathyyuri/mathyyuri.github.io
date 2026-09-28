@@ -2164,6 +2164,55 @@ async function hwpBodyXmlToHtml(xml, entry) {
     items.push(...merged);
   }
 
+  // Some picture choice lists have the ①②③④⑤ label BAKED INTO the picture
+  // itself — no marker text exists anywhere in the XML for these, so
+  // neither pairing pass above can find them. hwpx-lib.js와 동일한 이유로
+  // 고침(2026-09-28, 원장님 확인: "62번" — 표 2개(각 2문항)+낱장 그림
+  // 1개로 5개 그림, 텍스트 마커 없음). 2셀 전부-이미지 표에서 시작하는
+  // 런만 인정해서(문항 앞의 지문 그림 하나만 있는 경우와 구분), 4개 이상
+  // 모이면 선택지로 묶는다.
+  function pairedImageTableCells(inner) {
+    const trs = [...inner.matchAll(/<tr>([\s\S]*?)<\/tr>/g)];
+    if (trs.length !== 1) return null;
+    const tds = [...trs[0][1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1]);
+    if (tds.length !== 2) return null;
+    const imgs = tds.map(td => {
+      const stripped = td.replace(/^\s*<p>/, '').replace(/<\/p>\s*$/, '').trim();
+      const m = stripped.match(/^(<img\b[^>]*>)$/);
+      return m ? m[1] : null;
+    });
+    return imgs.every(Boolean) ? imgs : null;
+  }
+  {
+    const isPairedImageTable = it => it.raw === '' && /^<table\b/.test(it.inner.trim()) && !!pairedImageTableCells(it.inner);
+    const isBareImagePara = it => /^그림입니다\./.test(it.raw) && /<img\b/i.test(it.inner);
+    const bareImg = it => (it.inner.match(/<img\b[^>]*>/) || [])[0];
+    const merged2 = [];
+    let j = 0;
+    while (j < items.length) {
+      const cells = isPairedImageTable(items[j]) ? pairedImageTableCells(items[j].inner) : null;
+      if (!cells) { merged2.push(items[j]); j++; continue; }
+      const collected = [...cells];
+      let k = j + 1;
+      while (k < items.length) {
+        const c2 = isPairedImageTable(items[k]) ? pairedImageTableCells(items[k].inner) : null;
+        if (c2) { collected.push(...c2); k++; continue; }
+        if (isBareImagePara(items[k]) && bareImg(items[k])) { collected.push(bareImg(items[k])); k++; continue; }
+        break;
+      }
+      if (collected.length >= 4) {
+        const gridHtml = `<div class="choiceRow imgChoiceRow" style="grid-template-columns:repeat(2,1fr)">${collected.map(h => `<span class="choiceItem">${h}</span>`).join('')}</div>`;
+        merged2.push({ raw: '', inner: gridHtml, prebuiltChoiceRow: gridHtml });
+        j = k;
+      } else {
+        merged2.push(items[j]);
+        j++;
+      }
+    }
+    items.length = 0;
+    items.push(...merged2);
+  }
+
   // A "①...⑤" choice list is normally one paragraph with tab characters
   // between choices, but a real file showed it can also be split across
   // SEPARATE paragraphs (line-wrap in the source document — e.g. "①②" in

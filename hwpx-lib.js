@@ -1728,6 +1728,64 @@ async function hwpBodyXmlToHtml(xml, entry, opts) {
     items.push(...merged);
   }
 
+  // Some picture choice lists have the ①②③④⑤ label BAKED INTO the picture
+  // itself (a cropped screenshot that already shows "① [graph]" as one
+  // image) — no marker text exists anywhere in the XML for these, so
+  // neither pairing pass above can find them. Confirmed against the same
+  // real file ("[교과서미션] 도형의 방정식 모의3점" 62번): stem text, then
+  // the stem's own single figure (a lone image paragraph), then TWO
+  // side-by-side borderless 2-cell tables (each cell just one image — a
+  // 2-up image pair with no text at all) and a trailing lone image
+  // paragraph — 5 images, zero marker characters anywhere. Detect a RUN
+  // that STARTS at a real 2-cell all-image table (never at a lone image,
+  // so the stem's own single figure — always alone, never a paired table —
+  // can't be mistaken for the first choice) and extends through further
+  // paired-image tables and/or trailing lone "그림입니다..." image
+  // paragraphs; only treat it as a choice list once 4+ images are
+  // collected (a real 객관식 always has 4 or 5), so an incidental pair of
+  // illustration images elsewhere doesn't get swept in by accident.
+  function pairedImageTableCells(inner) {
+    const trs = [...inner.matchAll(/<tr>([\s\S]*?)<\/tr>/g)];
+    if (trs.length !== 1) return null;
+    const tds = [...trs[0][1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1]);
+    if (tds.length !== 2) return null;
+    const imgs = tds.map(td => {
+      const stripped = td.replace(/^\s*<p>/, '').replace(/<\/p>\s*$/, '').trim();
+      const m = stripped.match(/^(<img\b[^>]*>)$/);
+      return m ? m[1] : null;
+    });
+    return imgs.every(Boolean) ? imgs : null;
+  }
+  {
+    const isPairedImageTable = it => it.raw === '' && /^<table\b/.test(it.inner.trim()) && !!pairedImageTableCells(it.inner);
+    const isBareImagePara = it => /^그림입니다\./.test(it.raw) && /<img\b/i.test(it.inner);
+    const bareImg = it => (it.inner.match(/<img\b[^>]*>/) || [])[0];
+    const merged2 = [];
+    let j = 0;
+    while (j < items.length) {
+      const cells = isPairedImageTable(items[j]) ? pairedImageTableCells(items[j].inner) : null;
+      if (!cells) { merged2.push(items[j]); j++; continue; }
+      const collected = [...cells];
+      let k = j + 1;
+      while (k < items.length) {
+        const c2 = isPairedImageTable(items[k]) ? pairedImageTableCells(items[k].inner) : null;
+        if (c2) { collected.push(...c2); k++; continue; }
+        if (isBareImagePara(items[k]) && bareImg(items[k])) { collected.push(bareImg(items[k])); k++; continue; }
+        break;
+      }
+      if (collected.length >= 4) {
+        const gridHtml = `<div class="choiceRow imgChoiceRow" style="grid-template-columns:repeat(2,1fr)">${collected.map(h => `<span class="choiceItem">${h}</span>`).join('')}</div>`;
+        merged2.push({ raw: '', inner: gridHtml, prebuiltChoiceRow: gridHtml });
+        j = k;
+      } else {
+        merged2.push(items[j]);
+        j++;
+      }
+    }
+    items.length = 0;
+    items.push(...merged2);
+  }
+
   // A "①...⑤" choice list is normally one paragraph with tab characters
   // between choices, but a real file showed it can also be split across
   // SEPARATE paragraphs (line-wrap in the source document — e.g. "①②" in
