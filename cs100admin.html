@@ -48,6 +48,21 @@ table.progressTbl th { color: #999; font-weight: 700; font-size: 0.76rem; }
 table.progressTbl td.nameCell { text-align: left; font-weight: 700; }
 .cellDone { color: var(--mint-deep); font-weight: 700; }
 .cellNone { color: #ccc; }
+table.itemGridTbl { border-collapse: collapse; font-size: 0.72rem; white-space: nowrap; }
+table.itemGridTbl th, table.itemGridTbl td { border: 1px solid var(--line); padding: 5px 3px; text-align: center; min-width: 24px; }
+table.itemGridTbl th.nameCol, table.itemGridTbl td.nameCell { text-align: left; font-weight: 700; min-width: 76px; padding-left: 8px; position: sticky; left: 0; background: var(--card); z-index: 1; }
+table.itemGridTbl td.cellCorrect { background: #eaf4f0; color: var(--mint-deep); font-weight: 700; }
+table.itemGridTbl td.cellWrong { background: #fbeaee; color: var(--pink-deep); font-weight: 700; }
+table.itemGridTbl td.cellEmpty { color: #ddd; }
+table.itemGridTbl td.scoreCell, table.itemGridTbl th.scoreCol { font-weight: 700; color: var(--gold-deep); position: sticky; right: 0; background: var(--card); z-index: 1; }
+table.itemGridTbl tr.itemRateRow td, table.itemGridTbl tr.itemRateRow th { background: #fdf8ee; font-size: 0.66rem; color: #999; font-weight: 700; }
+table.itemGridTbl tr.itemRateRow td.rateLow { color: var(--pink-deep); }
+.scoreBarWrap { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.scoreBarRow { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; }
+.scoreBarRow .sbName { flex: 0 0 70px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scoreBarRow .sbTrack { flex: 1; height: 14px; background: var(--line); border-radius: 7px; overflow: hidden; }
+.scoreBarRow .sbFill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-deep)); border-radius: 7px; }
+.scoreBarRow .sbScore { flex: 0 0 54px; text-align: right; font-weight: 700; color: var(--gold-deep); }
 </style>
 </head>
 <body>
@@ -82,6 +97,23 @@ table.progressTbl td.nameCell { text-align: left; font-weight: 700; }
       <button type="button" class="sec" id="refreshProgressBtn">새로고침</button>
       <div class="msg" id="progressMsg"></div>
       <div id="progressArea" style="margin-top:10px;overflow-x:auto"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. 일차별 정오표 &amp; 성적</h2>
+      <p class="hint">지금까지 제출한 학생들이 그 일차 25문제 중 어느 번호를 맞고 틀렸는지 한눈에 봅니다. 맨 아래 줄은 그 문제를 응시한 학생 기준 정답률이에요(60% 미만은 빨간색).</p>
+      <div class="fieldRow">
+        <select id="gridDaySelect" style="max-width:120px">
+          <option value="1">1일차</option>
+          <option value="2">2일차</option>
+          <option value="3">3일차</option>
+          <option value="4">4일차</option>
+        </select>
+        <button type="button" class="sec" id="refreshGridBtn">새로고침</button>
+      </div>
+      <div class="msg" id="gridMsg"></div>
+      <div id="scoreBarArea" style="margin-top:12px"></div>
+      <div id="gridArea" style="margin-top:14px;overflow-x:auto"></div>
     </div>
   </div>
 </div>
@@ -126,6 +158,7 @@ $('loginBtn').addEventListener('click', async () => {
     $('loginCard').classList.add('hidden');
     $('app').classList.remove('hidden');
     loadProgress();
+    loadItemGrid();
   } catch (e) { msg.textContent = '인증 실패: ' + e.message; msg.className = 'msg err'; }
 });
 $('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
@@ -305,6 +338,50 @@ async function loadProgress() {
   }
 }
 $('refreshProgressBtn').addEventListener('click', loadProgress);
+
+async function loadItemGrid() {
+  const msg = $('gridMsg'), area = $('gridArea'), barArea = $('scoreBarArea');
+  const day = $('gridDaySelect').value;
+  msg.textContent = '불러오는 중...'; msg.className = 'msg';
+  try {
+    const data = await callGetJsonp({ action: 'cs100itemgrid', key: myKey, day });
+    const students = data.students || [];
+    const itemStats = data.itemStats || [];
+    msg.textContent = '';
+    if (!students.length) {
+      area.innerHTML = '<p class="hint">아직 이 일차를 제출한 학생이 없어요.</p>';
+      barArea.innerHTML = '';
+      return;
+    }
+    // 성적 막대(간단한 차트) — 점수 높은 순으로 정렬
+    const maxScore = Math.max(100, ...students.map(s => s.score));
+    const sorted = [...students].sort((a, b) => b.score - a.score);
+    barArea.innerHTML = '<div class="scoreBarWrap">' + sorted.map(s => `
+      <div class="scoreBarRow">
+        <span class="sbName">${escapeHtml(s.name)}</span>
+        <span class="sbTrack"><span class="sbFill" style="width:${Math.max(2, s.score / maxScore * 100)}%"></span></span>
+        <span class="sbScore">${s.score}점</span>
+      </div>`).join('') + '</div>';
+
+    // 정오표
+    const nums = itemStats.map(it => it.num);
+    let html = '<table class="itemGridTbl"><thead><tr><th class="nameCol">이름</th>' +
+      nums.map(n => `<th>${n}</th>`).join('') + '<th class="scoreCol">점수</th></tr></thead><tbody>';
+    students.forEach(s => {
+      html += '<tr><td class="nameCell">' + escapeHtml(s.name) + '</td>' +
+        s.cells.map(c => c === 1 ? '<td class="cellCorrect">O</td>' : c === 0 ? '<td class="cellWrong">X</td>' : '<td class="cellEmpty">·</td>').join('') +
+        `<td class="scoreCell">${s.score}</td></tr>`;
+    });
+    html += '</tbody><tfoot><tr class="itemRateRow"><th class="nameCol">정답률</th>' +
+      itemStats.map(it => it.rate == null ? '<td>-</td>' : `<td class="${it.rate < 60 ? 'rateLow' : ''}">${it.rate}%</td>`).join('') +
+      '<th class="scoreCol"></th></tr></tfoot></table>';
+    area.innerHTML = html;
+  } catch (e) {
+    msg.textContent = '불러오지 못했습니다: ' + e.message; msg.className = 'msg err';
+  }
+}
+$('refreshGridBtn').addEventListener('click', loadItemGrid);
+$('gridDaySelect').addEventListener('change', loadItemGrid);
 </script>
 </body>
 </html>
