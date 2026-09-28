@@ -1494,6 +1494,19 @@ function formatChoiceRow(paraInners) {
   // columns empty) while still keeping a real 2/2/1 layout (long
   // fraction-heavy choices that don't fit 3-per-row) visually distinct
   // from a plain 3/2 — both confirmed against real files.
+  // 그림 선택지(그래프 등)는 원본에서 그림 하나가 문단 하나를 통째로
+  // 차지하는 게 보통이라(그림이 커서 한 줄에 여러 개 못 넣음) — 원래
+  // 문단 구조를 그대로 살리는 위 규칙을 그대로 쓰면 매번 "한 줄에 하나"
+  // 그리드가 된다(문단마다 항목 1개 = cols 1). 화면·인쇄에서 세로 공간을
+  // 너무 많이 차지한다는 리포트(2026-09-28, 원장님 확인: "92번") — 그림이
+  // 하나라도 있으면 원래 문단 구분은 버리고 전부 한 줄에 모아 2열 고정
+  // 그리드로 다시 채운다(순서는 그대로 유지).
+  const hasImage = rows.some(r => r.some(p => /<img\b/i.test(p)));
+  if (hasImage) {
+    const flat = rows.flat();
+    const gridHtml = `<div class="choiceRow imgChoiceRow" style="grid-template-columns:repeat(2,1fr)">${flat.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`;
+    return (prefixHtml ? `<p>${prefixHtml}</p>` : '') + gridHtml;
+  }
   const cols = Math.max(...rows.map(r => r.length));
   const rowsHtml = rows.map(parts =>
     `<div class="choiceRow" style="grid-template-columns:repeat(${cols},1fr)">${parts.map(p => `<span class="choiceItem">${p}</span>`).join('')}</div>`
