@@ -1005,7 +1005,10 @@ function imgHtmlsFromHtml(html) {
 // imgHtmlsFromHtml을 바로 쓰는 편이 낫다 — 이 함수는 blockXml만 있고
 // 아직 렌더링된 HTML이 없는 경우 전용.
 async function imgHtmlsForEditedText(text, blockXml, entry) {
-  if (!blockXml || !/\[이미지\d+\]/.test(String(text || ''))) return null;
+  // "[이미지1]" 뿐 아니라 크기 버튼이 붙인 "[이미지1@75]"도 있는지 봐야 한다 —
+  // studentnote.html의 같은 이름 함수와 동일한 이유로 고침(2026-09-28,
+  // 원장님 리포트: 크기 줄인 뒤 다시 열면 그림이 사라진 채 저장됨).
+  if (!blockXml || !/\[이미지\d+(?:@\d{1,3})?\]/.test(String(text || ''))) return null;
   const html = await hwpBodyXmlToHtml(blockXml, entry);
   return imgHtmlsFromHtml(html);
 }

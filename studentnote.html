@@ -1340,7 +1340,14 @@ function htmlPreviewToDraftText(html) {
 // 아예 없으면(그림 없는 문제, 또는 편집하며 일부러 그림 표시를 지운
 // 경우) 원본을 다시 그리는 비용 자체를 건너뛴다.
 async function imgHtmlsForEditedText(text, blockXml, entry) {
-  if (!blockXml || !/\[이미지\d+\]/.test(String(text || ''))) return null;
+  // "[이미지1]" 뿐 아니라 크기 버튼이 붙인 "[이미지1@75]"도 있는지 봐야 한다 —
+  // 이 검사가 "@퍼센트" 꼬리를 빼먹으면, 크기를 줄여 저장한 뒤 문제를 다시
+  // 열었을 때(editedRaw에 이미 "@75"가 붙어 있는 채로 여기 들어옴) 그림이
+  // 있는데도 없다고 판단해 그림을 통째로 못 불러온다 — 그러면 미리보기엔
+  // 그림 자리가 빈 글자로 남고, 그 상태로 다시 저장하면 그림 표시 자체가
+  // 사라진 채 저장돼 버린다(원장님 리포트, 2026-09-28: "크기를 줄였더니
+  // 이미지는 사라지고 이렇게 저장이 되어버렸어").
+  if (!blockXml || !/\[이미지\d+(?:@\d{1,3})?\]/.test(String(text || ''))) return null;
   const html = await hwpBodyXmlToHtml(blockXml, entry);
   return [...html.matchAll(/<img\b[^>]*>/g)].map(m => m[0]);
 }
