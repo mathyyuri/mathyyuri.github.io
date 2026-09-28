@@ -154,6 +154,13 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
    동일). 박스 안에서도 수식만 단독으로 있는 줄은 .eqLine 규칙이 가운데
    정렬해준다. */
 .hwpRectBox { display: block; max-width: 100%; box-sizing: border-box; border: 1px solid var(--gold-line); padding: 2mm 3mm; margin: 2mm 0; text-align: left; }
+/* "다음은 ~ 과정이다"류 빈칸 채우기 문제에서 문장 중간에 오는 작은 (가)/(나)
+   빈칸 표시(hwpRectBoxInline)는 큰 유도과정 박스(.hwpRectBox)와 같은 클래스를
+   같이 쓰지만 문장 안에 자연스럽게 끼어 들어가야 한다 — 이 규칙이 빠져서
+   block 스타일을 그대로 물려받아 문장 중간의 작은 빈칸까지 줄 전체를 차지하는
+   큰 박스로 깨져 나왔다(studentnote.html·오답노트생성기엔 이미 있는 규칙,
+   2026-09-28 원장님 리포트: "5번" 문제). */
+.hwpRectBoxInline { display: inline-block; max-width: none; padding: 0 2mm; margin: 0 1mm; vertical-align: middle; }
 /* 수식 줄바꿈(overflow-wrap: break-word / white-space: normal) 강제 처리는
    여기 없다 — 오답노트 수업용 슬라이드(오답노트 생성기)는 고정 크기
    화면에 overflow:hidden이 있어서 넘치는 수식이 통째로 안 보이게 잘리는

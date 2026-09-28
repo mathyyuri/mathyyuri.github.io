@@ -118,6 +118,10 @@ header h1 { font-family:var(--serif); font-size:16px; font-weight:900; margin:0;
    페이지(studentnote.html 등)와 같은 모양으로 맞추고, 안엔 글자/수식이
    가운데로 오게 한다. */
 #docHtmlLayer .hwpRectBox { display:block; max-width:100%; box-sizing:border-box; border:1px solid var(--gold-line); padding:6px 10px; margin:6px 0; text-align:center; }
+/* 문장 중간의 작은 (가)/(나) 빈칸 표시(hwpRectBoxInline)가 이 규칙 하나만 있으면
+   큰 유도과정 박스와 같은 block 스타일을 물려받아 줄 전체를 차지해버린다 —
+   studentnote.html·오답노트생성기와 같은 이유로 추가(2026-09-28). */
+#docHtmlLayer .hwpRectBoxInline { display:inline-block; max-width:none; padding:0 4px; margin:0 3px; vertical-align:middle; text-align:left; }
 #inkCanvas.eraser { cursor:cell; }
 #submitBar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--gold-line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
 #submitStatus { font-family:var(--kserif); font-size:13px; color:rgba(26,26,26,.6); }
