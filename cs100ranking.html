@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>추석특강 100제 랭킹 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdf8f5; --card: #ffffff; --dark: #3a3530; --peach: #e8935f; --peach-deep: #c9683a;
+  --line: #f0e2d8; --pink: #e58ba4; --pink-deep: #c64e71; --mint: #8ba8a1; --mint-deep: #5b8a80;
+  --shadow: 0 10px 30px rgba(120,70,40,0.08);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; }
+body { font-family: 'Poppins', 'Noto Serif KR', serif; background: var(--bg); color: var(--dark); margin: 0; padding: 0; min-height: 100vh; }
+.wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { text-align: center; font-family: 'Noto Serif KR'; font-size: 1.25rem; margin: 0 0 4px; }
+.sub { text-align: center; font-size: 0.72rem; color: #a58; letter-spacing: 1px; margin: 0 0 18px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.dayTabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.dayTab { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 4px; text-align: center; cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--dark); }
+.dayTab.active { border-color: var(--peach); background: #fdf0e6; color: var(--peach-deep); }
+.msg { font-size: 0.82rem; color: #a58; text-align: center; padding: 20px 0; }
+.msg.err { color: var(--pink-deep); }
+.rankRow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.rankRow:last-child { border-bottom: none; }
+.rankRow .rk { flex: 0 0 30px; text-align: center; font-family: 'Noto Serif KR'; font-weight: 900; font-size: 1rem; color: #b89; }
+.rankRow.top1 .rk, .rankRow.top1 .nm { color: var(--peach-deep); }
+.rankRow.top2 .rk { color: #a08360; }
+.rankRow.top3 .rk { color: #a86a3d; }
+.rankRow .medal { font-size: 1.1rem; }
+.rankRow .nm { flex: 1; font-weight: 700; font-size: 0.94rem; }
+.rankRow .barWrap { flex: 0 0 90px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.rankRow .barFill { height: 100%; background: linear-gradient(90deg, var(--peach), var(--peach-deep)); border-radius: 4px; }
+.rankRow .sc { flex: 0 0 52px; text-align: right; font-weight: 800; color: var(--peach-deep); font-size: 0.9rem; }
+.gridScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.gridTbl { border-collapse: collapse; font-size: 0.68rem; white-space: nowrap; margin-top: 4px; }
+table.gridTbl th, table.gridTbl td { border: 1px solid var(--line); padding: 4px 3px; text-align: center; min-width: 20px; }
+table.gridTbl th.nameCol, table.gridTbl td.nameCell { text-align: left; font-weight: 700; min-width: 62px; padding-left: 6px; position: sticky; left: 0; background: var(--card); z-index: 1; }
+table.gridTbl td.cellCorrect { background: #eef5f2; color: var(--mint-deep); font-weight: 700; }
+table.gridTbl td.cellWrong { background: #fdf0f3; color: var(--pink-deep); font-weight: 700; }
+table.gridTbl td.cellEmpty { color: #ddd; }
+table.gridTbl td.scoreCell, table.gridTbl th.scoreCol { font-weight: 700; color: var(--peach-deep); position: sticky; right: 0; background: var(--card); z-index: 1; }
+table.gridTbl tr.itemRateRow td, table.gridTbl tr.itemRateRow th { background: #fdf5ee; font-size: 0.6rem; color: #a58; font-weight: 700; }
+table.gridTbl tr.itemRateRow td.rateLow { color: var(--pink-deep); }
+.hint { font-size: 0.72rem; color: #a58; line-height: 1.6; margin: 0 0 10px; }
+.backLink { display: block; text-align: center; margin-top: 4px; font-size: 0.8rem; color: var(--peach-deep); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌕 추석특강 100제 랭킹</h1>
+  <p class="sub">MATHY YURI · 누구나 볼 수 있는 공개 성적 · 정오표</p>
+
+  <div class="dayTabs" id="dayTabs"></div>
+
+  <div class="card">
+    <h2 style="font-family:'Noto Serif KR';font-size:1rem;margin:0 0 4px;color:var(--peach-deep)">🏆 랭킹</h2>
+    <div id="rankMsg" class="msg">불러오는 중...</div>
+    <div id="rankList"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-family:'Noto Serif KR';font-size:1rem;margin:0 0 4px;color:var(--peach-deep)">📋 정오표</h2>
+    <p class="hint">누가 어느 번호를 맞았는지(O) 틀렸는지(X) 한눈에 봐요. 맨 아래 줄은 그 문제의 전체 정답률이에요(60% 미만은 빨간색).</p>
+    <div class="gridScroll" id="gridArea"></div>
+  </div>
+
+  <a class="backLink" href="cs100.html">← 추석특강 100제 풀러 가기</a>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+const DAY_DATES = { 1: '9/24', 2: '9/25', 3: '9/26', 4: '9/27' };
+let curDay = 1;
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+let jc = 0;
+function callGetJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const cb = 'csr_cb_' + (jc++) + '_' + Date.now();
+    const s = document.createElement('script');
+    const t = setTimeout(() => { clean(); reject(new Error('요청 시간 초과')); }, 20000);
+    function clean() { clearTimeout(t); delete window[cb]; s.remove(); }
+    window[cb] = d => { clean(); d && d.ok ? resolve(d) : reject(new Error((d && d.error) || '서버 오류')); };
+    s.src = GAS_URL + '?' + new URLSearchParams({ ...params, callback: cb }).toString();
+    s.onerror = () => { clean(); reject(new Error('스크립트 로드 실패')); };
+    document.body.appendChild(s);
+  });
+}
+
+function renderDayTabs() {
+  $('dayTabs').innerHTML = [1, 2, 3, 4].map(d => `
+    <div class="dayTab${d === curDay ? ' active' : ''}" data-day="${d}">
+      <div>${d}일차</div>
+      <div style="font-size:0.62rem;color:#b89;font-weight:400">${DAY_DATES[d]}</div>
+    </div>
+  `).join('');
+  $('dayTabs').querySelectorAll('.dayTab').forEach(el => el.addEventListener('click', () => {
+    curDay = Number(el.dataset.day);
+    renderDayTabs();
+    load();
+  }));
+}
+
+async function load() {
+  const rankMsg = $('rankMsg'), rankList = $('rankList'), gridArea = $('gridArea');
+  rankMsg.textContent = '불러오는 중...'; rankMsg.className = 'msg'; rankList.innerHTML = '';
+  gridArea.innerHTML = '';
+  try {
+    const data = await callGetJsonp({ action: 'cs100itemgrid', day: curDay });
+    const students = data.students || [];
+    const itemStats = data.itemStats || [];
+    if (!students.length) {
+      rankMsg.textContent = '아직 이 일차를 제출한 학생이 없어요.';
+      return;
+    }
+    rankMsg.textContent = '';
+    const sorted = [...students].sort((a, b) => b.score - a.score);
+    const maxScore = Math.max(100, ...sorted.map(s => s.score));
+    const medals = ['🥇', '🥈', '🥉'];
+    rankList.innerHTML = sorted.map((s, i) => `
+      <div class="rankRow${i < 3 ? ' top' + (i + 1) : ''}">
+        <span class="rk">${medals[i] ? '<span class="medal">' + medals[i] + '</span>' : i + 1}</span>
+        <span class="nm">${esc(s.name)}</span>
+        <span class="barWrap"><span class="barFill" style="width:${Math.max(2, s.score / maxScore * 100)}%"></span></span>
+        <span class="sc">${s.score}점</span>
+      </div>`).join('');
+
+    const nums = itemStats.map(it => it.num);
+    let html = '<table class="gridTbl"><thead><tr><th class="nameCol">이름</th>' +
+      nums.map(n => `<th>${n}</th>`).join('') + '<th class="scoreCol">점수</th></tr></thead><tbody>';
+    sorted.forEach(s => {
+      html += '<tr><td class="nameCell">' + esc(s.name) + '</td>' +
+        s.cells.map(c => c === 1 ? '<td class="cellCorrect">O</td>' : c === 0 ? '<td class="cellWrong">X</td>' : '<td class="cellEmpty">·</td>').join('') +
+        `<td class="scoreCell">${s.score}</td></tr>`;
+    });
+    html += '</tbody><tfoot><tr class="itemRateRow"><th class="nameCol">정답률</th>' +
+      itemStats.map(it => it.rate == null ? '<td>-</td>' : `<td class="${it.rate < 60 ? 'rateLow' : ''}">${it.rate}%</td>`).join('') +
+      '<th class="scoreCol"></th></tr></tfoot></table>';
+    gridArea.innerHTML = html;
+  } catch (e) {
+    rankMsg.textContent = '불러오지 못했습니다: ' + e.message; rankMsg.className = 'msg err';
+  }
+}
+
+renderDayTabs();
+load();
+</script>
+</body>
+</html>

@@ -230,6 +230,15 @@ table.omr td.grade small{font-family:var(--sans);font-size:8.5px;font-weight:600
 .sum-card.dailyquiz-card{border-color:var(--pink-deep)}
 .sum-card.dailyquiz-card .k,.sum-card.dailyquiz-card .n{color:var(--pink-deep)}
 .sum-card.dailyquiz-card:hover{background:var(--pink-soft)}
+/* ===== 추석특강 100제 — 일일일모와 같은 방식으로 링크 탭 하나 추가(진짜
+   카테고리가 아니라 cs100admin.html로 가는 문). 관리자 비밀번호가 걸려
+   있어 랭킹처럼 완전 공개는 아니라 다른 색(주황)으로 구분. ===== */
+.tab.cs100{background:#c9683a;color:#fff;border-radius:4px;align-self:center;padding:8px 14px;margin:0 4px;border-bottom:none;letter-spacing:.08em}
+.tab.cs100::after{content:'정오표·성적';font-family:var(--serif);font-size:7.5px;letter-spacing:.2em;color:var(--gold-soft);display:block;margin-top:1px}
+.tab.cs100.active{color:#fff;box-shadow:0 0 0 2px var(--gold)}
+.sum-card.cs100-card{border-color:#c9683a}
+.sum-card.cs100-card .k,.sum-card.cs100-card .n{color:#c9683a}
+.sum-card.cs100-card:hover{background:#fdf0e6}
 .gauge-wrap{border:1px solid var(--gold-line);border-radius:6px;padding:20px 16px 16px;margin-bottom:20px;background:linear-gradient(180deg,#fff,var(--mint-soft))}
 .gauge-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .gauge-title{font-family:var(--serif);font-weight:700;font-size:12px;letter-spacing:.06em;color:var(--mint-deep)}
@@ -482,7 +491,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       </div>
       <a class="staff-login-link" href="dailyquizvideos.html" style="margin-top:14px;font-weight:700">🎬 일일일모 풀이영상 보기</a>
       <a class="staff-login-link" href="admin.html">🔑 관리자·조교 로그인</a>
-      <a class="staff-login-link" href="cs100admin.html">🌕 추석특강 정오표·성적 보기</a>
+      <a class="staff-login-link" href="cs100ranking.html">🌕 추석특강 랭킹·정오표 보기</a>
     </div>
   </div>
   <div class="login-foot">MATHY YURI · DAECHI S+ ACADEMY</div>
@@ -568,7 +577,7 @@ footer{padding:30px 4vw;border-top:1px solid var(--gold-line);font-size:9px;lett
       <button class="back-board" onclick="show('view-public')">← 전체 현황으로</button>
       <div id="login-msg" class="login-msg"></div>
       <a class="staff-login-link" href="admin.html">🔑 관리자·조교 로그인</a>
-      <a class="staff-login-link" href="cs100admin.html">🌕 추석특강 정오표·성적 보기</a>
+      <a class="staff-login-link" href="cs100ranking.html">🌕 추석특강 랭킹·정오표 보기</a>
     </div>
   </div>
   <div class="login-foot">MATHY YURI · DAECHI S+ ACADEMY</div>
@@ -1242,6 +1251,14 @@ function buildPubTabs(){
     };
     bar.appendChild(b);
   });
+  // 추석특강 100제 — 일일일모와 같은 방식("진짜 카테고리 하나 없이, 이 탭
+  // 줄 맨 끝에 공개 랭킹 페이지로 가는 문 버튼만 하나 추가")으로 붙임. 로그인
+  // 없이 열리는 cs100ranking.html로 바로 이동(원장님 요청, 2026-09-28).
+  const csBtn=document.createElement('button');
+  csBtn.className='tab cs100';
+  csBtn.textContent='추석특강';
+  csBtn.onclick=()=>{ location.href='cs100ranking.html'; };
+  bar.appendChild(csBtn);
   const summerBtn=document.getElementById('summer-toggle-btn');
   if(pubCohort==='2'){
     summerBtn.classList.remove('hidden');
@@ -1463,6 +1480,8 @@ function renderCards(){
       html+='<button class="sum-card" onclick="jumpTab(\''+cat+'\')">'
         +'<div class="k">'+esc(cat)+'</div><div class="v">'+avg+'<small>점</small></div><div class="n">바로가기</div></button>';
     });
+    html+='<button class="sum-card cs100-card" onclick="location.href=\'cs100ranking.html\'">'
+      +'<div class="k">추석특강</div><div class="v">🌕</div><div class="n">랭킹 보기</div></button>';
     box.innerHTML=html;
     return;
   }
