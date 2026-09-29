@@ -141,7 +141,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .varBox { margin-top: 8px; border: 1.5px dashed #c9a94f; border-radius: 8px; padding: 10px 12px; background: #fffdf5; }
 .varHead { font-size: 12px; margin-bottom: 8px; } .varHead .good, .varAct .good { color: #1f8a5b; } .varHead .bad { color: #c0392b; }
 .vb { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 4px; } .vb.good { background: #e3f4ec; color: #1f8a5b; } .vb.bad { background: #fbe4e1; color: #c0392b; }
-.varBody { font-size: 14px; line-height: 1.75; } .varCh { margin: 6px 0; } .varAns { margin: 6px 0; } .varChg { color: #888; font-size: 12px; margin-top: 6px; } .varAct { margin-top: 8px; }
+.varBody { font-size: 14px; line-height: 1.75; } .varBody img { max-width: 100%; height: auto; } .varCh { margin: 6px 0; } .varAns { margin: 6px 0; } .varChg { color: #888; font-size: 12px; margin-top: 6px; } .varAct { margin-top: 8px; }
 .varRev { margin-top: 10px; padding: 8px 10px; border: 1px dashed #d8c9a3; border-radius: 8px; background: #fff; }
 .varRevT { font-size: 12px; font-weight: 700; color: #8a6d2b; margin-bottom: 6px; }
 .varRev .revIn { width: min(420px, 100%); font-size: 12px; padding: 5px 8px; border: 1px solid #d8c9a3; border-radius: 6px; margin-bottom: 4px; }
@@ -3944,10 +3944,44 @@ async function selectStudent(btn) {
 // ---- 일일일모 문제별 옵션(이 브라우저에 저장): 선지 넣기 / AI 변형 문제로 교체 ----
 // 선지는 기본으로 안 싣는다(번호 암기 방지). 선지가 있어야 풀리는 문제(예: 155번 "좌표는?")만 체크해서 싣는다.
 // 변형 문제는 학생이 정답을 외워서 오답노트가 의미를 잃는 걸 막는다 — 원본은 건드리지 않고 이 학생 노트에만 바꿔 싣는다.
-const DQ_VAR_KEY = 'sn_dq_variants_v1', DQ_CH_KEY = 'sn_dq_choices_v1';
+const DQ_VAR_KEY = 'sn_dq_variants_v1', DQ_CH_KEY = 'sn_dq_choices_v1', DQ_IMGSCALE_KEY = 'sn_dq_imgscale_v1';
 const dqLoad = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || d); } catch (e) { return JSON.parse(d); } };
 const dqSave = (k, o) => { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} };
 const dqOptKey = (name, round, num) => name + '|' + round + ':' + num;
+// 일일일모 문제 그림 크기 — 원본 hwpx가 없어(이미 HTML로 저장된 상태) 기존
+// "문제 수정" 칸의 [이미지N@%] 방식을 못 쓴다(원장님 리포트: 그림 크기를
+// 직접 못 고침). round+num별로 이 브라우저에 % 값만 저장해두고, 렌더링
+// 후 해당 그림에 바로 적용한다(학생마다 달라질 이유가 없어 전체 공용).
+const dqImgScaleKey = (round, num) => round + ':' + num;
+function dqGetImgScale(round, num) { return dqLoad(DQ_IMGSCALE_KEY, '{}')[dqImgScaleKey(round, num)] || 100; }
+function dqSetImgScale(round, num, pct) { const o = dqLoad(DQ_IMGSCALE_KEY, '{}'); o[dqImgScaleKey(round, num)] = pct; dqSave(DQ_IMGSCALE_KEY, o); }
+// .varBody 안의 그림마다 저장된 배율을 적용하고, 그 아래 25/50/75/100%
+// 조절 버튼을 붙인다 — round/num을 알아야 하므로 렌더링 직후 컨테이너
+// 기준으로 한 번에 처리한다.
+// 실제로 뽑히는 오답노트(HTML 파일)에도 미리보기에서 고른 배율을 그대로
+// 반영한다 — 안 그러면 미리보기만 작아 보이고 실제 인쇄본은 그대로 큰
+// 그림이 나가서 원장님이 조절한 의미가 없다.
+function dqApplyImgScale(html, round, num) {
+  const pct = dqGetImgScale(round, num);
+  if (pct === 100 || !html) return html;
+  return html.replace(/<img\b([^>]*)>/gi, (tag, attrs) => {
+    const cleaned = attrs.replace(/\sstyle="[^"]*"/i, '');
+    return `<img${cleaned} style="width:${pct}%;max-width:${pct}%;height:auto">`;
+  });
+}
+function dqWireImgScale(container, round, num) {
+  container.querySelectorAll('.varBody img').forEach(img => {
+    if (img.dataset.dqScaled) return; // 같은 렌더에서 중복 처리 방지
+    img.dataset.dqScaled = '1';
+    const apply = pct => { img.style.width = pct + '%'; img.style.maxWidth = pct + '%'; img.style.height = 'auto'; };
+    apply(dqGetImgScale(round, num));
+    const ctl = document.createElement('div');
+    ctl.style.cssText = 'margin:2px 0 8px;font-size:11px;color:#888;display:flex;gap:4px;align-items:center';
+    ctl.innerHTML = '<span>🖼 그림 크기</span>' + [25, 50, 75, 100].map(p => `<button type="button" data-p="${p}" style="font-size:10px;padding:1px 6px;border:1px solid #d8c9a3;border-radius:8px;background:#fff;cursor:pointer">${p}%</button>`).join('');
+    ctl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const p = Number(b.dataset.p); dqSetImgScale(round, num, p); apply(p); }));
+    img.insertAdjacentElement('afterend', ctl);
+  });
+}
 function dqRawVariant(name, round, num) { return dqLoad(DQ_VAR_KEY, '{}')[dqOptKey(name, round, num)] || null; }
 // 지금 노트에 쓸 변형 — 이미 지난 노트에 실렸던(used) 변형은 같은 문제를 또 외우게 되므로 쓰지 않는다(이번 세션에서 방금 기록된 건 예외)
 function dqGetVariant(name, round, num) {
@@ -4005,10 +4039,11 @@ function renderDqSelPreview(name, area) {
     const it = dqWrongItemsData.find(x => String(x.round) === round && String(x.num) === num); if (!it) return '';
     const hasVar = !!dqGetVariant(name, round, num), v = dqActiveVariant(name, round, num), ch = dqWantChoices(name, round, num);
     const choices = (it.choices || []).some(c => String(c || '').trim());
-    return `<div class="pvOrig"><div class="pvOrigT">${round}회차 ${num}번${v ? ' <span class="vb good">🔄 변형 문제로 교체되어 실려요</span>' : hasVar ? ' <span class="vb" style="background:#eef">원본으로 실려요(변형 있음)</span>' : ''}${ch ? ' <span class="vb good">선지 포함</span>' : ''}</div>` +
+    return `<div class="pvOrig" data-round="${round}" data-num="${num}"><div class="pvOrigT">${round}회차 ${num}번${v ? ' <span class="vb good">🔄 변형 문제로 교체되어 실려요</span>' : hasVar ? ' <span class="vb" style="background:#eef">원본으로 실려요(변형 있음)</span>' : ''}${ch ? ' <span class="vb good">선지 포함</span>' : ''}</div>` +
       `<div class="varBody">${it.stemHtml || ''}${choices ? `<div class="varCh">${it.choices.join('&nbsp;&nbsp;&nbsp;')}</div>` : ''}<div class="varAns"><b>정답</b> ${dqAnswerValueText(it)}</div></div></div>`;
   }).join('');
   renderMathIn(box);
+  box.querySelectorAll('.pvOrig[data-round]').forEach(el => dqWireImgScale(el, el.dataset.round, el.dataset.num));
 }
 function openDqVarPanel(name, btn) {
   const panel = document.getElementById('dqVarPanel'), round = btn.dataset.round, num = btn.dataset.num;
@@ -6446,6 +6481,8 @@ async function generateHtmlNote(historicalBatch) {
         let stemHtml = it.stemHtml || '';
         if (dqVar && WV) {
           stemHtml = `<p>${WV.mathHtml(dqVar.problem)}</p>` + WV.figureHtml(dqVar, it, 70);
+        } else {
+          stemHtml = dqApplyImgScale(stemHtml, round, num);
         }
         if (wantCh) {
           const chList = dqVar && WV ? dqVar.choices.map((c, i) => WV.mathHtml(/^[①-⑤]/.test(c) ? c : WV.CIR[i] + ' ' + c)) : (it.choices || []);
