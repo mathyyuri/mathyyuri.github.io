@@ -3414,7 +3414,26 @@ function detectEndnoteMarkers(xml) {
       const distHere = gap;
       let m = k;
       while (m < nextI && !isEmptySpacerPara(paras[m]) && !looksLikeNextQuestionMarker(paras, m)) m++;
-      const distNext = nextI - m;
+      // distNext is only a real "how close to the NEXT question" measurement
+      // when the walk stopped for an actual reason (hit a blank spacer, or
+      // recognized the next question's own marker) before running out of
+      // room. When it instead ran all the way to nextI — the next question's
+      // OWN endnote paragraph, the hard boundary this whole scan is capped
+      // at — that 0 is not "touches the next question", it's just "the scan
+      // window ended here"; nothing recognizable ever separated this
+      // fragment from that boundary. Leaving it as a literal 0 made
+      // distHere<=distNext fail for ANY fragment preceded by so much as one
+      // blank line, so a question's own trailing diagram — sitting right
+      // before its own endnote/answer paragraph with no blank line between
+      // them, as in documents where each question's [정답][풀이] flows
+      // directly into the next question's stem with no separating "다음
+      // 문항" marker — always lost the comparison to a false "next question"
+      // and got left out of the block entirely (confirmed against a real
+      // file: "모의기출 1. 23년~26년 도형의 방정식.hwpx" 30번's own diagram,
+      // sitting between its stem and 31번's endnote paragraph with zero gap
+      // after it, silently vanished this way). Treat that as "not actually
+      // close to the next question" instead.
+      const distNext = m < nextI ? (nextI - m) : Infinity;
       // A tabular answer-choice grid ("(가)(나)(다)(라)" columns × "①-⑤"
       // rows, common for 빈칸채우기 proof-completion questions) is a real
       // <hp:tbl> — it's ALWAYS the immediately-preceding question's own
