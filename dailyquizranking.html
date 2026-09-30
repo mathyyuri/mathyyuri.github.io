@@ -416,11 +416,18 @@ function getTier(tierScore) {
   return TIERS[TIERS.length - 1];
 }
 
+// 서버는 반 상관없이 일일일모 제출 기록이 있는 학생을 전부 돌려준다 —
+// S/S+ 대비용 프로그램이라 그 두 반만 랭킹에 실어야 하는데, 반을
+// 옮긴 학생(예: 대수연마로 이동)은 예전에 S/S+일 때 쌓인 기록이
+// 그대로 남아있어서 새 반으로 표시된 채 계속 나타났다(원장님 리포트:
+// 허이준). 현재 반 기준으로 S/S+가 아니면 전체/회차별 랭킹 둘 다에서 제외한다.
+const RANKED_CLASSES = ['S', 'S+'];
+
 async function fetchData() {
   try {
     const res = await fetch(GAS_URL + '?action=dailyquizranking&t=' + Date.now());
     const json = await res.json();
-    const list = json.ok ? (json.students || []) : [];
+    const list = json.ok ? (json.students || []).filter(item => RANKED_CLASSES.includes(String(item.class || ''))) : [];
     allData = list.map(item => {
       const total = Number(item.total || 0);
       const average = Number(item.average || 0);
@@ -568,7 +575,9 @@ async function fetchRoundData(round) {
   try {
     const res = await fetch(GAS_URL + '?action=dailyquizroundranking&round=' + round + '&t=' + Date.now());
     const json = await res.json();
-    list = json.ok ? (json.students || []) : [];
+    // 전체 랭킹과 같은 이유(RANKED_CLASSES 참고) — 반을 옮긴 학생의 예전 반
+    // 기록이 회차별 랭킹에도 그대로 섞여 나오므로 여기도 동일하게 거른다.
+    list = json.ok ? (json.students || []).filter(item => RANKED_CLASSES.includes(String(item.class || ''))) : [];
   } catch (err) {
     console.error(err);
   }
