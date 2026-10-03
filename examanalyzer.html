@@ -342,7 +342,13 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .tbl.full tr.k{cursor:pointer}
 .tbl.full tr.k:hover td{background:var(--gold-soft)}
 .mini{display:flex;align-items:center;gap:6px}
-.mini .gauge{width:80px}
+.mini .gauge{width:54px}
+.tbl.full td.ke{white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.tbl.full.d1 td{padding:3px 8px;font-size:.88em}
+.tbl.full.d1 th{padding:4px 8px}
+.tbl.full.d2 td{padding:2px 7px;font-size:.8em}
+.tbl.full.d3 td{padding:1px 6px;font-size:.72em}
+.tbl.full.d2 td.b{font-size:1em}.tbl.full.d3 td.b{font-size:.95em}
 .mini b{font-size:.9em;min-width:30px}
 
 @media (max-width:760px){.dk-sel input{width:120px}.h1.page{font-size:26px}}
@@ -393,7 +399,7 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
         <textarea id="refText" rows="4" placeholder="예) 객1 서로 같은 집합 4.0 ★ / 객9 삼각형의 무게중심 4.7 ★★ 학원 교재 / 학교 부교재 변형 [고2 05년 6월 28일 변형] ..."></textarea></label>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="refTextAdd" type="button">입력한 글 추가</button><button class="btn sec sm" id="refAdd" type="button">파일 추가 (이미지 · PDF · 텍스트)</button>
         <label class="chip"><input type="checkbox" id="refAI" checked> 분석에 반영하기</label>
-        <label class="chip"><input type="checkbox" id="refPage" checked> 분석서 맨 뒤에 첨부 페이지로 넣기</label></div>
+        <label class="chip"><input type="checkbox" id="refPage"> 분석서 맨 뒤에 원본 이미지도 붙이기</label></div>
       <input type="file" id="refFile" multiple accept="image/*,application/pdf,.pdf,.txt,.csv,.md,.json" hidden>
       <div class="refList" id="refList"></div>
     </details>
@@ -535,6 +541,33 @@ const STATE = {
 /* =====================================================================
    3. 결과 데이터 정규화
    ===================================================================== */
+/* 분석 문장에서 "타 강사/AI" 같은 작성 근거 언급을 걷어낸다 (분석서는 원장님 분석으로 보이게) */
+const MENTION = /(타\s*강사|다른\s*강사|타강사|인공지능|\bAI\b)/;
+function scrub(t){
+  t = String(t == null ? '' : t);
+  if (!MENTION.test(t)) return t;
+  t = t.replace(/\s*[\(（][^()（）]*(타\s*강사|다른\s*강사|타강사|인공지능|\bAI\b)[^()（）]*[\)）]/g, '');
+  t = t.split(/(?<=[.。!?])\s+/).filter(x => !MENTION.test(x)).join(' ');
+  return t.replace(/\s{2,}/g, ' ').trim();
+}
+/* 짧게 줄이기: 첫 문장만, 수식(\( \))을 중간에서 자르지 않음 */
+function brief(t, max){
+  t = String(t || '').trim(); if (!t) return '';
+  const m = t.match(/^[\s\S]*?[.。!?](?=\s|$)/); if (m && m[0].length < t.length) t = m[0];
+  let out = '', len = 0;
+  for (const tk of t.split(/(\\\(.*?\\\))/)) {
+    const isMath = /^\\\(.*\\\)$/.test(tk), l = isMath ? Math.min(8, tk.length - 4) : tk.length;
+    if (len + l > max) { if (!isMath) out += tk.slice(0, Math.max(0, max - len)); return out.replace(/[\s,·]+$/, '') + '…'; }
+    out += tk; len += l;
+  }
+  return out;
+}
+const rangesText = nums => {   // [1,2,3,4,6] → "1~4, 6"
+  const a = [...nums].sort((x, y) => x - y), out = []; let i = 0;
+  while (i < a.length) { let j = i; while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++; out.push(j - i >= 2 ? `${a[i]}~${a[j]}` : a.slice(i, j + 1).join(', ')); i = j + 1; }
+  return out.join(', ');
+};
+
 function normalizeData(raw){
   const d = {exam:{}, problems:[], style:{}, overall:{}};
   const ex = raw.exam || {};
@@ -549,19 +582,19 @@ function normalizeData(raw){
       difficulty: clamp(Math.round(+p.difficulty || 2), 1, 4),
       rate: clamp(isFinite(+rate) ? +rate : 0.5, 0.02, 0.98),
       sourceType: (st => SRC.some(s => s.key === st) ? st : '판단 불가')(p.sourceType === '학교 자체 출제' ? '학교' : p.sourceType),
-      sourceDetail: p.sourceDetail || '', sourceConfidence: p.sourceConfidence || '낮음',
-      variation: p.variation || '', keyIdea: p.keyIdea || '', traps: p.traps || '', killerWhy: p.killerWhy || '', prep: p.prep || '',
+      sourceDetail: scrub(p.sourceDetail), sourceConfidence: p.sourceConfidence || '낮음',
+      variation: scrub(p.variation), keyIdea: scrub(p.keyIdea), traps: scrub(p.traps), killerWhy: scrub(p.killerWhy), prep: scrub(p.prep),
       styleTags: Array.isArray(p.styleTags) ? p.styleTags : [],
     };
   }).sort((a, b) => a.num - b.num);
   const sum = d.problems.reduce((s, p) => s + p.points, 0);
   if (!d.exam.totalPoints) d.exam.totalPoints = sum;
   const st = raw.style || {};
-  d.style = {scores:{}, summary: st.summary || '', features: Array.isArray(st.features) ? st.features : []};
+  d.style = {scores:{}, summary: scrub(st.summary), features: Array.isArray(st.features) ? st.features : []};
   STYLE_AXES.forEach(ax => { d.style.scores[ax] = clamp(+((st.scores||{})[ax]) || 0, 0, 10); });
   const ov = raw.overall || {};
-  d.overall = {summary: ov.summary || '', strategy: ov.strategy || '',
-    recommendations: (ov.recommendations || []).map(r => ({title:r.title||'', detail:r.detail||'', priority: clamp(Math.round(+r.priority||2),1,3), relatedProblems: Array.isArray(r.relatedProblems)?r.relatedProblems:[]}))};
+  d.overall = {summary: scrub(ov.summary), strategy: scrub(ov.strategy),
+    recommendations: (ov.recommendations || []).map(r => ({title:scrub(r.title), detail:scrub(r.detail), priority: clamp(Math.round(+r.priority||2),1,3), relatedProblems: Array.isArray(r.relatedProblems)?r.relatedProblems:[]}))};
   if (raw.actual) d.actual = raw.actual;
   return d;
 }
@@ -679,9 +712,14 @@ function computeSims(){
   STATE.data.problems.forEach(p => {
     STATE.sims[p.num] = matchOne(p.stem + ' ' + p.choices.join(' '), 3);
     const b = STATE.sims[p.num][0];
-    if (b && b.score >= 0.5 && /부교재/.test(b.filename) && p.sourceType !== '모의고사·학평 기출') {   // 학교 부교재 자료와 일치하면 출처를 그쪽으로
-      p.sourceType = '학교 부교재';
-      p.sourceDetail = `학교 부교재 자료와 일치: ${b.filename} ${b.num}번 (유사도 ${pct(b.score)}%)` + (p._src0.d ? ' · ' + p._src0.d : '');
+    if (!b) return;
+    let t = null, label = '';
+    if (/부교재/.test(b.filename)) { if (b.score >= 0.5) { t = '학교 부교재'; label = '학교 부교재'; } }
+    else if (/모의|9모|학평|수능/.test(b.filename)) { if (b.score >= 0.62) { t = '모의고사·학평 기출'; label = '모의고사 기출'; } else if (b.score >= 0.45) { t = '기출 변형'; label = '모의고사 기출'; } }
+    else if (/기출|변형/.test(b.filename)) { if (b.score >= 0.45) { t = '기출 변형'; label = '기출'; } }
+    if (t && p.sourceType !== '모의고사·학평 기출') {
+      p.sourceType = t;
+      p.sourceDetail = `${label} 자료와 ${t === '모의고사·학평 기출' ? '일치' : '유사'}: ${b.filename} ${b.num}번 (유사도 ${pct(b.score)}%)` + (p._src0.d ? ' · ' + p._src0.d : '');
       p.sourceConfidence = b.score >= 0.62 ? '높음' : '중간';
     }
   });
@@ -1059,7 +1097,7 @@ function coverEl(){
     ]),
     H('div', {class: 'ins'}, ins.map(([k, v, c]) => H('div', {class: 'in'}, [H('i', {style: `background:${c}`}), H('span', {text: k}), H('b', {text: v})]))),
     d.overall.summary ? H('p', {class: 'cv-sum', text: d.overall.summary}) : null,
-    H('div', {class: 'cv-foot'}, [H('span', {text: '대치에스플러스학원 · mathyyuri.com'}), H('span', {text: 'AI 추정 분석 · 참고용'})]),
+    H('div', {class: 'cv-foot'}, [H('span', {text: '대치에스플러스학원 · mathyyuri.com'}), H('span', {text: '추정 분석 · 참고용'})]),
   ]);
 }
 
@@ -1136,9 +1174,9 @@ function sourceBlocks(){
     cd('출처별 예상 정답률', [H('div', {class: 'un'}, rows), H('p', {class: 'cap', text: '막대 길이 = 그 출처 문항들의 배점가중 예상 정답률. 어떤 출처가 학생들을 가장 힘들게 했는지 보여줘요.'})]),
     trs.length ? H('div', {class: 'cd'}, [H('h3', {text: '출처 근거 · 변형 방식 (상위 난도 순)'}), H('table', {class: 'tbl'}, [
       H('thead', {}, [H('tr', {}, ['번호', '출처', '근거 · 변형', '신뢰도'].map(t => H('th', {text: t})))]),
-      H('tbody', {}, trs.map(p => H('tr', {}, [H('td', {class: 'nw', text: p.num + '번'}), H('td', {}, [H('span', {class: 'dot', style: `background:${(SRC.find(s => s.key === p.sourceType) || {}).color}`}), p.sourceType]), H('td', {text: p.sourceDetail + (p.variation ? ' → ' + p.variation : '')}), H('td', {class: 'nw', text: p.sourceConfidence})]))),
+      H('tbody', {}, trs.map(p => H('tr', {}, [H('td', {class: 'nw', text: p.num + '번'}), H('td', {class: 'nw'}, [H('span', {class: 'dot', style: `background:${(SRC.find(s => s.key === p.sourceType) || {}).color}`}), p.sourceType]), H('td', {text: p.sourceDetail + (p.variation ? ' → ' + p.variation : '')}), H('td', {class: 'nw', text: p.sourceConfidence})]))),
     ])]) : null,
-    H('p', {class: 'cap', text: '※ 출처는 문제 구조·표현을 근거로 한 AI 추정입니다. 신뢰도가 낮은 항목은 참고용으로만 보세요.'}),
+    H('p', {class: 'cap', text: '※ 출처는 문제 구조·표현을 근거로 한 추정입니다. 신뢰도가 낮은 항목은 참고용으로만 보세요.'}),
   ];
 }
 
@@ -1162,8 +1200,19 @@ function predBlocks(){
     cd('예상 점수 분포', [legendEl([['1등급', 0], ['2등급', 1], ['3등급', 2], ['4등급', 3], ['5등급', 4]].map(([l, i]) => ({label: l, color: BAND[i]})).concat([{label: '실제 결과(입력 시)', color: '#C64E71'}])), H('div', {id: 'predHost'})]),
     H('div', {class: 'cuts', id: 'cutCards'}),
     cd('등급별 점수 구간', [H('div', {id: 'gradeTbl'})]),
-    H('p', {class: 'cap', text: '※ 문항별 예상 정답률로 학생 4,000명의 점수를 모의 계산한 결과예요(5등급제: 10·34·66·90%). 정답률은 AI의 추정이라 오차가 큽니다. 시험 후 실제 평균·컷을 넣고 "자동 보정"하면 학교에 맞게 조정돼요.'}),
+    H('p', {class: 'cap', text: '※ 문항별 예상 정답률로 학생 4,000명의 점수를 모의 계산한 결과예요(5등급제: 10·34·66·90%). 정답률은 추정치라 오차가 있어요.'}),
   ];
+}
+function diffTable(){
+  const P = STATE.data.problems, total = P.reduce((s, p) => s + p.points, 0) || 1;
+  const top = (arr, f, skip) => { const m = new Map(); arr.forEach(p => { const k = f(p); if (k && k !== skip) m.set(k, (m.get(k) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1])[0]; };
+  const rows = [4, 3, 2, 1].map(d => {
+    const a = P.filter(p => p.difficulty === d); if (!a.length) return null;
+    const src = top(a, p => p.sourceType, '판단 불가'), unit = top(a, p => p.unit);
+    const note = [src && `${src[0]} ${src[1]}문항`, unit && `주요 단원 ${unit[0]}`].filter(Boolean).join(' · ');
+    return H('tr', {}, [H('td', {}, [H('span', {class: 'pill t' + d, text: TIER[d].name})]), H('td', {class: 'b2', text: rangesText(a.map(p => p.num))}), H('td', {class: 'nw b2', text: pct(a.reduce((s, p) => s + p.points, 0) / total) + '%'}), H('td', {class: 'small', text: note})]);
+  }).filter(Boolean);
+  return cd('난이도별 구성표', [H('table', {class: 'tbl'}, [H('thead', {}, [H('tr', {}, ['난이도', '문항번호', '출제비율', '특이사항'].map(t => H('th', {text: t})))]), H('tbody', {}, rows)])]);
 }
 function renderPred(){
   const d = STATE.data, total = d.exam.totalPoints || 100;
@@ -1222,16 +1271,16 @@ function simBlock(p, compact){
       H('span', {class: 'lab', text: simLabel(s.score)}),
       H('span', {class: 'who', text: `${s.filename} · ${s.num}번`}),
     ])),
-    rr ? H('div', {class: 'hint', style: 'margin-top:4px', text: `AI 정밀 판정: ${rr.relation} — ${rr.reason}`}) : null,
+    rr ? H('div', {class: 'hint', style: 'margin-top:4px', text: `정밀 판정: ${rr.relation} — ${rr.reason}`}) : null,
   ]);
 }
 function killerBlock(p){
   const notes = [
-    ['WHY', '왜 킬러인가', p.killerWhy, '#C64E71'],
-    ['IDEA', '핵심 아이디어', p.keyIdea, '#3E8F79'],
-    ['TRAP', '함정', p.traps, '#A8853F'],
+    ['WHY', '왜 킬러인가', brief(p.killerWhy, 90), '#C64E71'],
+    ['IDEA', '핵심 아이디어', brief(p.keyIdea, 60), '#3E8F79'],
+    ['TRAP', '함정', brief(p.traps, 90), '#A8853F'],
     ['SOURCE', '출처 · 변형', (p.sourceType + (p.sourceDetail ? ' — ' + p.sourceDetail : '') + (p.variation ? ' → ' + p.variation : '')), '#7088B5'],
-    ['PREP', '대비법', p.prep, '#3E8F79'],
+    ['PREP', '대비법', brief(p.prep, 90), '#3E8F79'],
   ].filter(n => n[2]);
   const stem = H('div', {class: 'kb-stem'}, [
     p.stem ? H('div', {class: 'st', text: p.stem}) : null,
@@ -1277,8 +1326,8 @@ function problemRow(p){
     H('td', {class: 'num', text: num1(p.points)}),
     H('td', {}, [H('span', {class: 'pill t' + p.difficulty, text: TIER[p.difficulty].name})]),
     H('td', {}, [H('div', {class: 'mini'}, [H('div', {class: 'gauge'}, [H('i', {style: `width:${p.rate * 100}%;background:${TIERC[p.difficulty]}`})]), H('b', {text: pct(p.rate) + '%'})])]),
-    H('td', {}, [H('span', {class: 'dot', style: `background:${s.color}`}), p.sourceType.replace('교과서·EBS·시중교재', '교재·EBS').replace('모의고사·학평 기출', '모의·학평')]),
-    H('td', {class: 'small', text: (p.keyIdea || '').slice(0, 44) + ((p.keyIdea || '').length > 44 ? '…' : '')}),
+    H('td', {class: 'nw'}, [H('span', {class: 'dot', style: `background:${s.color}`}), p.sourceType.replace('교과서·EBS·시중교재', '교재·EBS').replace('모의고사·학평 기출', '모의·학평')]),
+    H('td', {class: 'small ke', text: brief(p.keyIdea, 20)}),
   ]);
   if (isKiller(p)) { tr.classList.add('k'); tr.title = '킬러 해부 페이지로 이동'; tr.addEventListener('click', () => jumpTo(p.num)); }
   return tr;
@@ -1292,7 +1341,7 @@ function buildDeck(){
 
   CUR = newPage('문항 지도');
   put(secHead('AT A GLANCE', '문항', 'Map', '한 장으로 보는 시험 구조 — 어느 번호가 어렵고, 배점은 어디에 몰렸는지'));
-  put(mapBlock()); put(diffBlock()); put(flowBlock()); put(lossBlock());
+  put(mapBlock()); put(diffBlock()); put(diffTable()); put(flowBlock()); put(lossBlock());
 
   CUR = newPage('정답률 · 단원');
   put(secHead('DIFFICULTY & UNITS', '정답률과', 'Units'));
@@ -1333,11 +1382,15 @@ function buildDeck(){
 
   CUR = newPage('문항 표');
   put(secHead('ALL PROBLEMS', '문항', 'Table'));
-  putRows(() => { const tb = H('tbody'); return {host: H('table', {class: 'tbl full'}, [H('thead', {}, [H('tr', {}, ['번호', '단원', '배점', '난이도', '예상 정답률', '출처', '핵심'].map((t, i) => H('th', {class: i === 2 ? 'num' : '', text: t})))]), tb]), rows: tb}; }, P, problemRow);
+  const mkTable = () => { const tb = H('tbody'); return {host: H('table', {class: 'tbl full'}, [H('thead', {}, [H('tr', {}, ['번호', '단원', '배점', '난이도', '정답률', '출처', '핵심'].map((t, i) => H('th', {class: i === 2 ? 'num' : '', text: t})))]), tb]), rows: tb}; };
+  if (PH >= 1100) {   // A4: 문항이 몇 개든 한 페이지에 (넘치면 점점 촘촘하게)
+    const h = mkTable(); CUR.body.append(h.host); P.forEach(p => h.rows.append(problemRow(p))); mathIn(h.host);
+    let lv = 0; while (isOver(CUR.body) && lv < 3) { lv++; h.host.classList.add('d' + lv); }
+  } else putRows(mkTable, P, problemRow);
 
   if (REFS.length && $('#refPage') && $('#refPage').checked) REFS.forEach((r, i) => {
     CUR = newPage('참고 자료');
-    put(i === 0 ? secHead('REFERENCE', '다른 강사', 'Analysis', '참고용으로 첨부한 타 강사 분석 자료 — 우리 분석이 아니에요') : H('div', {class: 'sec'}, [H('div', {class: 'eb', text: 'REFERENCE · 참고 자료'}), H('p', {text: r.name})]));
+    put(i === 0 ? secHead('REFERENCE', '참고', 'Material', '') : H('div', {class: 'sec'}, [H('div', {class: 'eb', text: 'REFERENCE'}), H('p', {text: r.name})]));
     if (r.kind === 'image') CUR.body.append(H('div', {class: 'refimg', style: `background-image:url("${r.url}")`}));
     else put(cd(r.name, [H('pre', {class: 'reftxt', text: r.text.slice(0, 2400)})]));
   });
@@ -1584,7 +1637,7 @@ function saveJson(){
 }
 function rawForSave(){
   const d = STATE.data;
-  return {exam: d.exam, style: d.style, overall: d.overall, problems: d.problems.map(p => ({num: p.num, points: p.points, format: p.format, unit: p.unit, subUnit: p.subUnit, stem: p.stem, choices: p.choices, hasFigure: p.hasFigure, difficulty: p.difficulty, expectedCorrectRate: p.rate, sourceType: p.sourceType, sourceDetail: p.sourceDetail, sourceConfidence: p.sourceConfidence, variation: p.variation, keyIdea: p.keyIdea, traps: p.traps, killerWhy: p.killerWhy, prep: p.prep, styleTags: p.styleTags}))};
+  return {exam: d.exam, style: d.style, overall: d.overall, problems: d.problems.map(p => ({num: p.num, points: p.points, format: p.format, unit: p.unit, subUnit: p.subUnit, stem: p.stem, choices: p.choices, hasFigure: p.hasFigure, difficulty: p.difficulty, expectedCorrectRate: p.rate, sourceType: (p._src0 || p).t || p.sourceType, sourceDetail: p._src0 ? p._src0.d : p.sourceDetail, sourceConfidence: p._src0 ? p._src0.c : p.sourceConfidence, variation: p.variation, keyIdea: p.keyIdea, traps: p.traps, killerWhy: p.killerWhy, prep: p.prep, styleTags: p.styleTags}))};
 }
 function setData(raw, opts){
   opts = opts || {};
@@ -1722,10 +1775,11 @@ const SYSTEM = `당신은 한국 고등학교 수학 내신 시험을 분석하�
 - unit은 한국 교육과정 용어로 구체적으로(예: 평면좌표, 직선의 방정식, 원의 방정식, 도형의 이동, 집합, 명제, 다항식, 방정식과 부등식, 함수, 수열 등). subUnit은 세부 유형.
 - sourceType: 모의고사·학평 기출 / 기출 변형 / 교과서·EBS·시중교재 / 학교 부교재 / 학교 / 판단 불가 중 하나. '학교 부교재'는 그 학교가 지정·배부한 부교재·학교 프린트 문제 또는 그 변형, '학교'는 교사가 새로 만든 문제입니다. 다른 강사의 분석 자료가 첨부되면 그 표의 주제·난이도(★)·출처 표기(예: '고2 05년 6월 28일 변형')를 적극 채택해 sourceType/sourceDetail/variation/unit/difficulty에 반영하되, 시험지의 실제 문제와 명백히 어긋나는 항목만 따르지 마세요. sourceDetail에는 그렇게 본 근거를 구체적으로(문제 구조·조건·표현의 어떤 점이 알려진 유형과 일치하는지). 특정 연도·시행월·문항번호는 정말 확신할 때만 적고 sourceConfidence를 '높음'으로 하며, 확신이 없으면 유형·패턴만 서술하고 '중간' 또는 '낮음'으로 하세요. 존재하지 않는 기출을 지어내지 마세요.
 - variation: 원형을 알아볼 수 있을 때만, 어떻게 바꿨는지(수치 변경·조건 추가·보기형 전환·그림 제거 등). 모르면 빈 문자열.
-- keyIdea(핵심 풀이 아이디어 1~2문장), traps(학생이 흔히 틀리는 지점), prep(이런 문항에 대비하는 방법 한 문장)은 모든 문항에 채우세요. killerWhy는 difficulty가 3 이상일 때 '왜 변별력이 생기는지'를, 아니면 빈 문자열.
+- keyIdea는 핵심 풀이 아이디어를 20자 안팎의 짧은 어구 하나로(예: '수직 조건 → 외접원의 지름', '내분·외분 두 경우') 쓰고, 풀이 과정·계산·수식 나열은 절대 쓰지 마세요. 수식이 꼭 필요하면 짧은 수식 하나만 \\( \\)로. traps(학생이 흔히 틀리는 지점), prep(대비법), killerWhy(difficulty가 3 이상일 때 변별력이 생기는 이유)는 각각 한 문장(45자 안팎)으로 짧게 쓰고 모든 문항에 채우세요(killerWhy는 difficulty 3 미만이면 빈 문자열).
 - styleTags: 2~4개의 짧은 유형 태그(예: 역추론, 경우나누기, 조건해석, 그래프 해석, 계산 집약, 내분·외분 두 경우).
 - style.scores: 개념확인, 계산력, 추론·조건해석, 도형·그래프해석, 서술·표현을 각각 0~10으로. style.summary는 이 시험의 스타일(난이도 배열, 출제 의도, 학교 특유의 경향)을 3~4문장으로. features는 짧은 특징 키워드 3~6개.
 - overall.summary는 시험 총평 3~4문장, overall.strategy는 이 시험을 대비하는 시간 배분·점수 전략 3~4문장. recommendations는 4~6개로 priority 1=필수, 2=권장, 3=선택이고 relatedProblems에 관련 문항 번호를 넣으세요.
+- 출력의 모든 문자열(총평·전략·출처 근거 포함)은 원장이 직접 분석한 결과로 서술하세요. 'AI', '인공지능', '타 강사', '다른 강사', '첨부 자료', '참고 표' 같이 분석의 근거 자료나 작성 주체를 드러내는 표현은 절대 쓰지 마세요. 출처·변형 근거는 문제 구조와 원형 이름(예: '운중고 파이널 1차 47번 변형', '학교 프린트 변형')만 담백하게 적으세요.
 - 모든 설명 문장은 학원 원장이 읽기 좋은 자연스러운 한국어로, 단정이 어려운 것은 '~로 보임'처럼 표현하세요.`;
 
 function costOf(model, usage){
@@ -1870,7 +1924,7 @@ $('#refFile').addEventListener('change', e => { addRefFiles([...e.target.files])
 $('#refPage').addEventListener('change', () => { if (STATE.data) renderReport(true); });
 function refContent(){
   if (!REFS.length || !$('#refAI').checked) return [];
-  const out = [{type: 'text', text: '[다른 강사의 분석 자료 — 분석에 적극 반영하세요] 아래는 다른 강사가 이 시험에 대해 만든 분석표입니다(문항번호·주제·배점·난이도 별(★)·비고(출처·변형 근거) 등). 이 표의 내용을 우리 분석서에 반영해 작성하세요.\n- 주제 → unit/subUnit, 별(★) 개수 → difficulty(★=1 기본, ★★=2 중, ★★★=3 상, ★★★★=4 킬러), 비고의 출처·변형 표기(예: "학교 부교재 변형", "모의고사 변형 [고2 05년 6월 28일 변형]") → sourceType/sourceDetail/variation으로 옮기고, sourceDetail 끝에 "(타 강사 자료 참고)"를 붙이세요.\n- 표에 있는 정보는 우선 채택하되, 시험지의 실제 문제와 명백히 어긋나면(문항 번호 불일치, 주제가 다름 등) 따르지 말고 sourceDetail에 이유를 한 줄 적으세요.\n- 표에 없는 문항·항목(정답률, 킬러 해부, 핵심 아이디어, 함정, 대비법, 스타일, 총평, 대비 전략)은 평소처럼 직접 분석해 채우세요. 표의 문장을 그대로 베끼지 말고 우리 말투로 다시 쓰세요.\n- 표에 없는 연도·시행월은 지어내지 마세요.'}];
+  const out = [{type: 'text', text: '[다른 강사의 분석 자료 — 분석에 적극 반영하세요] 아래는 다른 강사가 이 시험에 대해 만든 분석표입니다(문항번호·주제·배점·난이도 별(★)·비고(출처·변형 근거) 등). 이 표의 내용을 우리 분석서에 반영해 작성하세요.\n- 주제 → unit/subUnit, 별(★) 개수 → difficulty(★=1 기본, ★★=2 중, ★★★=3 상, ★★★★=4 킬러), 비고의 출처·변형 표기(예: "학교 부교재 변형", "모의고사 변형 [고2 05년 6월 28일 변형]") → sourceType/sourceDetail/variation으로 옮기고, 자료를 언급하는 표현은 쓰지 마세요.\n- 표에 있는 정보는 우선 채택하되, 시험지의 실제 문제와 명백히 어긋나면(문항 번호 불일치, 주제가 다름 등) 따르지 말고 sourceDetail에 이유를 한 줄 적으세요.\n- 표에 없는 문항·항목(정답률, 킬러 해부, 핵심 아이디어, 함정, 대비법, 스타일, 총평, 대비 전략)은 평소처럼 직접 분석해 채우세요. 표의 문장을 그대로 베끼지 말고 우리 말투로 다시 쓰세요.\n- 표에 없는 연도·시행월은 지어내지 마세요.'}];
   REFS.slice(0, 10).forEach(r => {
     if (r.kind === 'image') { out.push({type: 'text', text: `(참고: ${r.name})`}); out.push({type: 'image', source: {type: 'base64', media_type: 'image/jpeg', data: r.url.split(',')[1]}}); }
     else out.push({type: 'text', text: `(참고: ${r.name})\n${r.text}`});
