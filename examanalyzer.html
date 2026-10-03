@@ -906,13 +906,14 @@ function chartHist(scores, total, stats, actual){
   const plot = H('div', {class: 'hs-plot'});
   [0, .5, 1].forEach(f => plot.append(H('div', {class: 'cr-grid' + (f === 0 ? ' base' : ''), style: `bottom:${f * 100}%`}, [H('span', {text: pct(maxC / scores.length * f) + '%'})])));
   const bars = H('div', {class: 'hs-bars'});
-  counts.forEach((c, i) => {
+  [...counts.keys()].reverse().forEach(i => {   // 상위권(점수 높은 쪽)이 왼쪽에 오도록 거꾸로
+    const c = counts[i];
     const col = H('div', {class: 'hs-col'}, [H('i', {style: `height:${c / maxC * 100}%;background:${BAND[bandOf((i + .5) * bw)]}`})]);
     bindTip(col, `<b>${num1(i * bw)}~${num1((i + 1) * bw)}점</b><br><small>학생의 ${(c / scores.length * 100).toFixed(1)}%</small>`);
     bars.append(col);
   });
   plot.append(bars);
-  const X = v => clamp(v / total, 0, 1) * 100;
+  const X = v => (1 - clamp(v / total, 0, 1)) * 100;
   cuts.forEach((v, i) => plot.append(H('div', {class: 'hs-cut', style: `left:${X(v)}%`}, [H('b', {class: i % 2 ? 'lo' : '', text: `${i + 1}등급 ${num1(half(v))}`})])));
   plot.append(H('div', {class: 'hs-mean', style: `left:${X(stats.mean)}%`}));
   const ac = actual || {};
@@ -922,7 +923,7 @@ function chartHist(scores, total, stats, actual){
     bindTip(m, `<b>실제 ${nm}: ${num1(v)}점</b>`);
     plot.append(m);
   });
-  const xa = H('div', {class: 'hs-x'}, [0, 20, 40, 60, 80, 100].map(v => H('span', {style: `left:${v}%`, text: num1(total * v / 100)})));
+  const xa = H('div', {class: 'hs-x'}, [0, 20, 40, 60, 80, 100].map(v => H('span', {style: `left:${v}%`, text: num1(total * (100 - v) / 100)})));
   return H('div', {class: 'hs'}, [plot, xa]);
 }
 
