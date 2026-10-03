@@ -61,6 +61,24 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--in
 .drop{border:2px dashed var(--gold-line);border-radius:4px;padding:26px;text-align:center;color:var(--ink2);cursor:pointer;transition:.15s;background:var(--paper)}
 .drop.on{border-color:var(--gold);background:var(--gold-soft)}
 .drop b{color:var(--ink)}
+.histWrap{position:relative;display:inline-block}
+#histBtn .tri{font-size:10px;margin-left:2px;display:inline-block;transition:transform .15s}
+#histBtn.open .tri{transform:rotate(180deg)}
+#histBtn .cnt{margin-left:6px;background:var(--gold-soft);color:var(--gold-deep);border-radius:10px;padding:0 7px;font-size:11.5px;font-weight:700}
+#histBtn .cnt:empty{display:none}
+.histMenu{position:absolute;left:0;top:calc(100% + 6px);z-index:60;width:min(420px,88vw);max-height:60vh;overflow:auto;background:#fff;border:1px solid var(--gold-line);border-radius:6px;box-shadow:0 12px 32px rgba(70,52,12,.2);padding:6px}
+.histMenu[hidden]{display:none}
+.hm-row{display:flex;align-items:center;gap:6px;border-radius:4px}
+.hm-row:hover{background:var(--gold-soft)}
+.hm-row.on{background:var(--mint-soft)}
+.hm-main{flex:1;min-width:0;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.hm-main b{font-size:13px;font-family:var(--kserif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-main span{font-size:11.5px;color:var(--muted)}
+.hm-x{border:none;background:none;font-size:18px;color:var(--muted);padding:4px 10px;border-radius:4px}
+.hm-x:hover{color:var(--pink-deep);background:var(--pink-soft)}
+.hm-empty{padding:14px;font-size:12.5px;color:var(--muted)}
+.hm-clear{display:block;width:100%;margin-top:4px;border:none;border-top:1px solid var(--gold-line);background:none;padding:9px;font-size:12px;color:var(--ink2)}
+.hm-clear:hover{color:var(--pink-deep)}
 .refList{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .refItem{display:flex;align-items:center;gap:8px;border:1px solid var(--gold-line);border-radius:4px;padding:4px 8px 4px 4px;background:#fff;font-size:12px;max-width:260px}
 .refItem img{width:38px;height:38px;object-fit:cover;border-radius:3px;border:1px solid var(--gold-line)}
@@ -1541,6 +1559,7 @@ async function renderReport(keepScroll){
   root.insertBefore(bar, stageHost); if (warn) root.insertBefore(warn, bar);
   root.append(buildPredTools()); root.append(renderKit());
   syncSel(); layoutDeck(); updateNav();
+  scheduleHistSave();
   if (keepScroll) scrollTo(0, y);
 }
 window.addEventListener('resize', () => { layoutDeck(); updateNav(); });
@@ -1570,6 +1589,7 @@ function rawForSave(){
 function setData(raw, opts){
   opts = opts || {};
   STATE.data = normalizeData(raw);
+  STATE.histId = opts.histId || null; STATE.histSavedAt = opts.histSavedAt || null;
   STATE.demo = !!opts.demo; STATE.cost = opts.cost || null; STATE.rerank = {}; STATE.filter = 'all'; STATE.shift = 0;
   if (!opts.keepSrc) { STATE.tiles = null; STATE.pdfB64 = null; STATE.srcMap = raw.srcMap ? Object.fromEntries(Object.entries(raw.srcMap).map(([k, v]) => [k, {...v, imgs: [], figImg: ''}])) : null; }
   STATE.solutions = opts.solutions || raw.solutions || {};
@@ -1578,12 +1598,11 @@ function setData(raw, opts){
   ['mean', 'c1', 'c2'].forEach(k => { const v = ac[k]; STATE.actual[k] = (v != null && v !== '' && isFinite(+v)) ? +v : null; });
   $('#aMean').value = STATE.actual.mean ?? ''; $('#aC1').value = STATE.actual.c1 ?? ''; $('#aC2').value = STATE.actual.c2 ?? '';
   computeSims();
-  try { if (!opts.demo) safeLS.set(LS.last, JSON.stringify({...rawForSave(), actual: STATE.actual})); } catch(e){}
   renderReport().then(() => $('#report').scrollIntoView({behavior: 'smooth'}));
 }
 ['aMean', 'aC1', 'aC2'].forEach((id, i) => $('#' + id).addEventListener('input', e => {
   const k = ['mean', 'c1', 'c2'][i], v = e.target.value;
-  STATE.actual[k] = v === '' ? null : parseFloat(v);
+  STATE.actual[k] = v === '' ? null : parseFloat(v); scheduleHistSave();
   if (STATE.data) renderPred();
 }));
 
@@ -2101,8 +2120,78 @@ $('#jsonFile').addEventListener('change', async e => {
 
 window.__EA = {STATE, LIB, PDF, matchOne, featsOf, simulate, scoreStats, fitToActual, normalizeData, callGet, b64ToBuf, pdfToTiles};
 libReload();
-// 직전 분석 복원
-try { const last = safeLS.get(LS.last); if (last) { /* 자동 복원은 하지 않고, 버튼으로만 */ const b = H('button', {class: 'btn sec', type: 'button', text: '직전 분석 다시 열기'}); b.addEventListener('click', () => setData(JSON.parse(last))); $('#demo').after(b); } } catch(e){}
+/* ---- 지난 분석 이력 (이 브라우저에 저장) ---- */
+const HDB = {
+  open(){ return this._p || (this._p = new Promise((res, rej) => { const r = indexedDB.open('mathy_exam_history', 1); r.onupgradeneeded = () => r.result.createObjectStore('h', {keyPath: 'id'}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+  async tx(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('h', mode), st = t.objectStore('h'); const rq = fn(st); t.oncomplete = () => res(rq && rq.result); t.onerror = () => rej(t.error); }); },
+  all(){ return this.tx('readonly', st => st.getAll()); },
+  put(item){ return this.tx('readwrite', st => st.put(item)); },
+  del(id){ return this.tx('readwrite', st => st.delete(id)); },
+  clear(){ return this.tx('readwrite', st => st.clear()); },
+};
+const HIST_MAX = 40;
+let histTimer = 0;
+function scheduleHistSave(){
+  if (!STATE.data || STATE.demo) return;
+  clearTimeout(histTimer); histTimer = setTimeout(saveHistory, 1200);
+}
+async function saveHistory(){
+  if (!STATE.data || STATE.demo) return;
+  try {
+    const e = STATE.data.exam;
+    if (!STATE.histId) STATE.histId = Date.now();
+    if (!STATE.histSavedAt) STATE.histSavedAt = Date.now();
+    await HDB.put({id: STATE.histId, savedAt: STATE.histSavedAt, updatedAt: Date.now(),
+      title: [e.school, e.year && (e.year + '학년도'), e.term, [e.grade, e.subject].filter(Boolean).join(' ')].filter(Boolean).join(' ') || '이름 없는 분석',
+      n: STATE.data.problems.length, sol: solutionCount(), cost: STATE.cost || '',
+      payload: {...rawForSave(), actual: STATE.actual, solutions: STATE.solutions, srcMap: srcForSave()}});
+    const all = (await HDB.all()).sort((a, b) => b.savedAt - a.savedAt);
+    for (const x of all.slice(HIST_MAX)) await HDB.del(x.id);
+    renderHistMenu();
+  } catch(err) { /* 저장 공간이 막힌 브라우저에서는 조용히 넘어감 */ }
+}
+const fmtDate = t => { const d = new Date(t), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}.${z(d.getMonth() + 1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+async function renderHistMenu(){
+  const box = $('#histMenu'); if (!box) return;
+  let list = []; try { list = (await HDB.all()).sort((a, b) => b.savedAt - a.savedAt); } catch(e){}
+  $('#histCount').textContent = list.length ? list.length : '';
+  box.innerHTML = '';
+  if (!list.length) { box.append(H('div', {class: 'hm-empty', text: '아직 저장된 분석이 없어요. 시험을 분석하면 여기에 차곡차곡 쌓여요.'})); return; }
+  list.forEach(it => {
+    const row = H('div', {class: 'hm-row' + (STATE.histId === it.id ? ' on' : '')}, [
+      H('div', {class: 'hm-main'}, [H('b', {text: it.title}), H('span', {text: `${fmtDate(it.savedAt)} · ${it.n}문항${it.sol ? ' · 해설 ' + it.sol : ''}`})]),
+      H('button', {class: 'hm-x', type: 'button', title: '이 분석 지우기', text: '×'}),
+    ]);
+    row.querySelector('.hm-main').addEventListener('click', () => { closeHist(); setData(it.payload, {histId: it.id, histSavedAt: it.savedAt, cost: it.cost || null}); $('#runMsg').className = 'msg ok'; $('#runMsg').textContent = `"${it.title}" 분석을 열었어요.`; });
+    row.querySelector('.hm-x').addEventListener('click', async e => { e.stopPropagation(); if (!confirm(`"${it.title}" 분석을 지울까요? (되돌릴 수 없어요)`)) return; await HDB.del(it.id); if (STATE.histId === it.id) { STATE.histId = null; STATE.histSavedAt = null; } renderHistMenu(); });
+    box.append(row);
+  });
+  const clr = H('button', {class: 'hm-clear', type: 'button', text: '전체 지우기'});
+  clr.addEventListener('click', async () => { if (!confirm(`저장된 분석 ${list.length}개를 모두 지울까요? (되돌릴 수 없어요)`)) return; await HDB.clear(); STATE.histId = null; STATE.histSavedAt = null; renderHistMenu(); });
+  box.append(clr);
+}
+function closeHist(){ const m = $('#histMenu'); if (m) m.hidden = true; const b = $('#histBtn'); if (b) b.classList.remove('open'); }
+(function initHist(){
+  const wrap = H('span', {class: 'histWrap'}, [
+    H('button', {class: 'btn sec', id: 'histBtn', type: 'button'}, ['지난 분석 ', H('span', {class: 'tri', text: '▼'}), H('span', {class: 'cnt', id: 'histCount'})]),
+    H('div', {id: 'histMenu', class: 'histMenu', hidden: true}),
+  ]);
+  $('#demo').after(wrap);
+  $('#histBtn').addEventListener('click', e => { e.stopPropagation(); const m = $('#histMenu'); m.hidden = !m.hidden; $('#histBtn').classList.toggle('open', !m.hidden); if (!m.hidden) renderHistMenu(); });
+  document.addEventListener('click', e => { if (!e.target.closest('.histWrap')) closeHist(); });
+  // 예전 "직전 분석" 하나가 남아 있으면 이력으로 옮김
+  (async () => {
+    try {
+      const last = safeLS.get(LS.last);
+      if (last && !(await HDB.all()).length) {
+        const raw = JSON.parse(last), e = raw.exam || {};
+        await HDB.put({id: Date.now(), savedAt: Date.now(), updatedAt: Date.now(), title: [e.school, e.year && (e.year + '학년도'), e.term, [e.grade, e.subject].filter(Boolean).join(' ')].filter(Boolean).join(' ') || '이전 분석', n: (raw.problems || []).length, sol: 0, cost: '', payload: raw});
+      }
+      if (last) safeLS.del(LS.last);
+    } catch(e){}
+    renderHistMenu();
+  })();
+})();
 })();
 </script>
 </body>
