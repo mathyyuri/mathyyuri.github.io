@@ -61,6 +61,13 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--in
 .drop{border:2px dashed var(--gold-line);border-radius:4px;padding:26px;text-align:center;color:var(--ink2);cursor:pointer;transition:.15s;background:var(--paper)}
 .drop.on{border-color:var(--gold);background:var(--gold-soft)}
 .drop b{color:var(--ink)}
+.refList{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.refItem{display:flex;align-items:center;gap:8px;border:1px solid var(--gold-line);border-radius:4px;padding:4px 8px 4px 4px;background:#fff;font-size:12px;max-width:260px}
+.refItem img{width:38px;height:38px;object-fit:cover;border-radius:3px;border:1px solid var(--gold-line)}
+.refItem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.refItem button{border:none;background:none;font-size:16px;color:var(--muted)}
+.rp-body>.refimg{flex:1 1 0;min-height:0;background-color:#fff;background-size:contain;background-repeat:no-repeat;background-position:center;border:1px solid var(--gold-line);border-radius:3px}
+.reftxt{white-space:pre-wrap;font-family:inherit;font-size:.9em;line-height:1.7;margin:0}
 .thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px}
 .thumbs img{height:96px;border:1px solid var(--gold-line);border-radius:3px;background:#fff}
 .hint{font-size:12px;color:var(--muted)}
@@ -106,11 +113,15 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .stage{--s:1;display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 34px;background:linear-gradient(180deg,#F1EBDC,#EDE6D4);border-radius:6px}
 .pwrap{width:calc(794px * var(--s))}
 .pcap{font-size:11px;letter-spacing:.16em;color:var(--gold-deep);margin:0 0 5px 2px;font-weight:700}
-.pbox{width:calc(794px * var(--s));height:calc(1123px * var(--s));position:relative;background:var(--paper);box-shadow:0 8px 30px rgba(70,52,12,.20);overflow:hidden}
+.pbox{width:calc(794px * var(--s));height:calc(var(--ph,1123px) * var(--s));position:relative;background:var(--paper);box-shadow:0 8px 30px rgba(70,52,12,.20);overflow:hidden}
 .pbox.off{opacity:.38}
 
 /* ============ A4 페이지 (794 x 1123 px) ============ */
-.rpage{--fit:1;position:absolute;left:0;top:0;width:794px;height:1123px;transform:scale(var(--s,1));transform-origin:0 0;background:var(--paper);overflow:hidden;display:flex;flex-direction:column;padding:38px 48px 26px;font-size:calc(12.5px * var(--fit));line-height:1.55;color:var(--ink);font-family:var(--sans)}
+.rpage{--fit:1;position:absolute;left:0;top:0;width:794px;height:var(--ph,1123px);transform:scale(var(--s,1));transform-origin:0 0;background:var(--paper);overflow:hidden;display:flex;flex-direction:column;padding:38px 48px 26px;font-size:calc(12.5px * var(--fit));line-height:1.55;color:var(--ink);font-family:var(--sans)}
+.ratiosel{display:flex;align-items:center;gap:4px}
+.ratiosel .lbl{font-size:12px;font-weight:700;color:var(--gold-deep);letter-spacing:.06em;margin-right:2px}
+.ratiosel .rt{border:1px solid var(--gold-line);background:#fff;border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;color:var(--ink2)}
+.ratiosel .rt.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .bgsel{display:flex;align-items:center;gap:6px}
 .bgsel .lbl{font-size:12px;font-weight:700;color:var(--gold-deep);letter-spacing:.06em}
 .bgsel .sw{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold-line);box-shadow:inset 0 0 0 2px #fff;padding:0}
@@ -125,13 +136,13 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .rp-foot .pn{font-family:var(--serif);font-weight:700;color:var(--ink);font-size:1.15em}
 .sec .eb{font-size:.68em;letter-spacing:.34em;font-weight:700;color:var(--gold)}
 .sec h2{font-family:var(--kserif);font-weight:900;font-size:2em;margin:.12em 0 .06em;line-height:1.2;letter-spacing:-.01em}
+.sec h2.lat{font-family:var(--serif);letter-spacing:.02em}
 .sec h2 em{font-family:var(--serif);font-style:italic;font-weight:600;color:var(--mint-deep);margin-left:.1em}
 .sec p{margin:0;color:var(--ink2);font-size:.95em}
 .grp{display:flex;flex-direction:column;gap:13px}
 .cd{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:13px 16px}
 .cd.soft{background:var(--gold-soft);border-style:dashed}
-.cd h3{font-family:var(--kserif);font-size:1.08em;font-weight:700;margin:0 0 .6em;display:flex;align-items:center;gap:.5em}
-.cd h3:before{content:'';width:.5em;height:.5em;border-radius:50%;background:var(--gold);display:inline-block}
+.cd h3{font-family:var(--kserif);font-size:1.05em;font-weight:700;margin:-13px -16px .8em;padding:.55em 16px;background:rgba(168,133,63,.14);border-radius:3px 3px 0 0;display:block}
 .cap{font-size:.8em;color:var(--muted);margin:.6em 0 0}
 .txt{font-size:1em;line-height:1.8;margin:0 0 .6em;color:var(--ink)}
 .two{display:grid;grid-template-columns:1.1fr 1fr;gap:13px;align-items:stretch}
@@ -148,24 +159,29 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 /* 표지 */
 .rpage.cover{padding:0;background:var(--paper)}
 .rpage.cover .rp-body{padding:0;position:relative;display:block}
-.cv{position:relative;width:100%;height:100%;padding:44px 54px 34px;display:flex;flex-direction:column}
+.cv{position:relative;width:100%;height:100%;padding:62px 66px 54px;display:flex;flex-direction:column}
 .cv>*{position:relative;z-index:1}
-.cv-art{position:absolute!important;right:-70px;top:-50px;z-index:0!important;width:430px;height:430px}
-.cv-top{display:flex;justify-content:space-between;align-items:baseline}
-.cv-title{margin-top:84px}
-.cv-sub{font-size:.8em;letter-spacing:.3em;font-weight:700;color:var(--gold);margin-bottom:1.2em}
-.cv h1{font-family:var(--kserif);font-weight:900;font-size:4.4em;line-height:1.08;margin:0;letter-spacing:-.02em}
-.cv h1.en{font-family:var(--serif);font-weight:900;font-size:4.4em}
-.cv h1.en em{font-style:italic;font-weight:600;color:var(--mint-deep)}
-.cv-rule{width:74px;height:3px;background:var(--gold);margin:1.4em 0 0}
+.cv-frame svg{display:block}
+.cv-frame{position:absolute!important;left:0;top:0;width:794px;height:var(--ph,1123px);z-index:0!important;pointer-events:none}
+.cv-top{display:flex;flex-direction:column;align-items:center;gap:.5em;text-align:center}
+.cv-title{margin-top:96px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.cv h1{font-family:var(--kserif);font-weight:900;font-size:3.7em;line-height:1.2;margin:0;letter-spacing:-.01em}
+.cv-line{font-family:var(--kserif);font-size:1.18em;color:var(--ink2);letter-spacing:.1em;margin-top:.9em}
+.cv-rule{width:74px;height:3px;background:var(--gold);margin:1.5em 0 1.1em}
+.cv-en{font-family:var(--serif);font-weight:900;font-size:2.3em;line-height:1.1}
+.cv-en em{font-style:italic;font-weight:600;color:var(--mint-deep)}
 .stamp{display:inline-block;margin-top:1.2em;border:1.5px solid var(--pink-deep);color:var(--pink-deep);border-radius:3px;padding:.15em .8em;font-size:.8em;letter-spacing:.14em;font-weight:700;transform:rotate(-2deg)}
-.cv-hero{display:flex;align-items:center;gap:34px;margin-top:34px}
+.cv.tight{padding-top:50px;padding-bottom:44px}
+.cv.tight .cv-title{margin-top:30px}
+.cv.tight .cv-hero{margin-top:22px}
+.cv.tight .kpis{margin-top:18px}
+.cv-hero{display:flex;align-items:center;justify-content:center;gap:34px;margin-top:40px}
 .ring{position:relative;width:196px;height:196px;flex:0 0 auto}
 .ring svg{position:absolute;left:0;top:0}
 .ring-in{position:absolute;left:0;top:0;width:196px;height:196px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .ring-in small{font-size:.8em;color:var(--muted);letter-spacing:.1em}
 .ring-in b{font-family:var(--serif);font-weight:900;font-size:4em;line-height:1.05;letter-spacing:-.02em}
-.cv-cuts{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+.cv-cuts{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:0 0 380px}
 .cc{background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:12px 16px;display:flex;flex-direction:column}
 .cc small{font-size:.78em;color:var(--ink2)}
 .cc b{font-family:var(--serif);font-weight:900;font-size:3em;line-height:1.1;color:var(--gold)}
@@ -272,11 +288,12 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .kb-stem .st{white-space:pre-line}
 .kb-stem .chs{display:flex;flex-wrap:wrap;gap:3px 18px;margin-top:5px}
 .nts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.nt{border-left:3px solid var(--gold);background:var(--paper);border-radius:0 3px 3px 0;padding:5px 10px}
-.nt .lb,.sm .lb{font-size:.78em;font-weight:700;color:var(--ink2);margin-bottom:1px}
+.nt{border:1px solid var(--gold-line);background:#fff;border-radius:3px;overflow:hidden}
+.nt .lb,.sm .lb{font-size:.78em;font-weight:700;color:var(--ink2);padding:.35em .8em}
 .nt .lb b,.sm .lb b{letter-spacing:.14em;font-family:var(--serif)}
-.nt p{margin:0;font-size:.9em;line-height:1.5}
-.sm{margin-top:8px}
+.nt p{margin:0;padding:.45em .8em .55em;font-size:.9em;line-height:1.55}
+.sm{margin-top:8px;border:1px solid var(--gold-line);border-radius:3px;overflow:hidden;background:#fff}
+.sm .sb{padding:.3em .8em .4em}
 .sim{display:grid;grid-template-columns:42px 1fr 108px;gap:2px 10px;align-items:center;padding:3px 0;font-size:.9em}
 .sim .tr{height:9px;border-radius:5px;background:#F3ECDA;overflow:hidden}
 .sim .tr i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#9CCFC0,#3E8F79)}
@@ -286,9 +303,9 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .sg{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px}
 .sim.row{grid-template-columns:44px 1fr 40px;cursor:pointer}
 /* 전략 */
-.quote{border-left:4px solid var(--gold);background:#fff;border-radius:0 4px 4px 0;padding:12px 16px;border-top:1px solid var(--gold-line);border-right:1px solid var(--gold-line);border-bottom:1px solid var(--gold-line)}
-.quote b{font-size:.75em;letter-spacing:.3em;color:var(--gold)}
-.quote p{margin:.3em 0 0;font-family:var(--kserif);line-height:1.85}
+.quote{background:#fff;border-radius:4px;border:1px solid var(--gold-line);overflow:hidden}
+.quote b{display:block;font-size:.78em;letter-spacing:.3em;color:var(--gold-deep);background:rgba(168,133,63,.14);padding:.5em 1em}
+.quote p{margin:0;padding:.7em 1em .85em;font-family:var(--kserif);line-height:1.85}
 .rec{display:grid;grid-template-columns:54px 1fr;gap:12px;background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:11px 14px}
 .prio{align-self:start;text-align:center;font-size:.85em;font-weight:700;border-radius:20px;padding:.15em 0;color:#fff;background:var(--mint-deep)}
 .rec.p1 .prio{background:var(--pink-deep)}
@@ -304,8 +321,8 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
 .tbl td.b2{font-weight:700;font-family:var(--kserif)}
 .tbl td.b{font-family:var(--serif);font-weight:900;font-size:1.15em}
 .tbl td.small{font-size:.85em;color:var(--ink2)}
-.tbl.full tr[data-rn]{cursor:pointer}
-.tbl.full tr[data-rn]:hover td{background:var(--gold-soft)}
+.tbl.full tr.k{cursor:pointer}
+.tbl.full tr.k:hover td{background:var(--gold-soft)}
 .mini{display:flex;align-items:center;gap:6px}
 .mini .gauge{width:80px}
 .mini b{font-size:.9em;min-width:30px}
@@ -319,8 +336,8 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
   .pwrap{width:210mm;break-before:page;page-break-before:always}
   .pwrap:first-child{break-before:auto;page-break-before:auto}
   .pwrap.skip{display:none!important}
-  .pbox{width:210mm;height:297mm;box-shadow:none;opacity:1!important}
-  .rpage{transform:none!important;width:210mm;height:297mm}
+  .pbox{width:210mm;height:var(--phmm,297mm);box-shadow:none;opacity:1!important}
+  .rpage{transform:none!important;width:210mm;height:var(--phmm,297mm)}
   @page{size:210mm 297mm;margin:0}
 }
 </style>
@@ -350,6 +367,16 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
         <input type="text" id="memo" placeholder="예) 평균이 낮게 나오는 학교, 서술형 없음 등">
       </label>
     </div>
+    <details class="fold" id="refFold">
+      <summary>다른 강사의 분석 자료 첨부 (선택) <span class="chip" id="refChip">없음</span></summary>
+      <p class="hint" style="margin:8px 0">다른 선생님이 만든 분석표(이미지·PDF·텍스트)를 올리면, AI가 그 표의 주제·난이도(★)·출처(교재/부교재/모의고사 변형 등)를 읽어 우리 분석서에 반영해서 작성합니다. 표에 없는 정답률·킬러 해부·대비 전략은 AI가 직접 분석해요. 분석서 맨 뒤에 원본을 참고 페이지로 붙일 수도 있습니다.</p>
+      <div class="row"><button class="btn sec sm" id="refAdd" type="button">파일 추가 (이미지 · PDF · 텍스트)</button>
+        <label class="chip"><input type="checkbox" id="refAI" checked> 분석에 반영하기</label>
+        <label class="chip"><input type="checkbox" id="refPage" checked> 분석서 맨 뒤에 첨부 페이지로 넣기</label></div>
+      <input type="file" id="refFile" multiple accept="image/*,application/pdf,.pdf,.txt,.csv,.md,.json" hidden>
+      <div class="refList" id="refList"></div>
+    </details>
+
     <details class="fold">
       <summary>시험이 끝난 뒤라면: 실제 결과 입력 (예측 정확도를 높여줍니다)</summary>
       <div class="actualRow">
@@ -457,7 +484,8 @@ const SRC = [
   {key:'모의고사·학평 기출', color:'#A8853F', x:'#fff'},
   {key:'기출 변형',          color:'#D9738F', x:'#fff'},
   {key:'교과서·EBS·시중교재', color:'#3E8F79', x:'#fff'},
-  {key:'학교 자체 출제',     color:'#7088B5', x:'#fff'},
+  {key:'학교 부교재',        color:'#C98F5E', x:'#fff'},
+  {key:'학교',              color:'#7088B5', x:'#fff'},
   {key:'판단 불가',          color:'#CFC8B6', x:'#1A1A1A'},
 ];
 const STYLE_AXES = ['개념확인','계산력','추론·조건해석','도형·그래프해석','서술·표현'];
@@ -489,7 +517,8 @@ const STATE = {
 function normalizeData(raw){
   const d = {exam:{}, problems:[], style:{}, overall:{}};
   const ex = raw.exam || {};
-  d.exam = {school:ex.school||'', year:String(ex.year||''), term:ex.term||'', grade:ex.grade||'', subject:ex.subject||'', note:ex.note||'', totalPoints:+ex.totalPoints||0};
+  const cl = t => String(t == null ? '' : t).replace(/\s*[（(]\s*2022\s*개정\s*[）)]/g, '').trim();
+  d.exam = {school:cl(ex.school), year:cl(ex.year), term:cl(ex.term), grade:cl(ex.grade), subject:cl(ex.subject), note:ex.note||'', totalPoints:+ex.totalPoints||0};
   d.problems = (raw.problems || []).map((p, i) => {
     const rate = (p.expectedCorrectRate != null ? p.expectedCorrectRate : p.rate);
     return {
@@ -498,7 +527,7 @@ function normalizeData(raw){
       stem: p.stem || '', choices: Array.isArray(p.choices) ? p.choices : [], hasFigure: !!p.hasFigure,
       difficulty: clamp(Math.round(+p.difficulty || 2), 1, 4),
       rate: clamp(isFinite(+rate) ? +rate : 0.5, 0.02, 0.98),
-      sourceType: SRC.some(s => s.key === p.sourceType) ? p.sourceType : '판단 불가',
+      sourceType: (st => SRC.some(s => s.key === st) ? st : '판단 불가')(p.sourceType === '학교 자체 출제' ? '학교' : p.sourceType),
       sourceDetail: p.sourceDetail || '', sourceConfidence: p.sourceConfidence || '낮음',
       variation: p.variation || '', keyIdea: p.keyIdea || '', traps: p.traps || '', killerWhy: p.killerWhy || '', prep: p.prep || '',
       styleTags: Array.isArray(p.styleTags) ? p.styleTags : [],
@@ -620,10 +649,23 @@ function matchOne(text, top=3){
 }
 function computeSims(){
   STATE.sims = {};
-  if (!STATE.data || !LIB.N) return;
-  STATE.data.problems.forEach(p => { STATE.sims[p.num] = matchOne(p.stem + ' ' + p.choices.join(' '), 3); });
+  if (!STATE.data) return;
+  STATE.data.problems.forEach(p => {   // 라이브러리 근거로 덮어쓴 출처를 원래 값으로 되돌린 뒤 다시 계산
+    if (!p._src0) p._src0 = {t: p.sourceType, d: p.sourceDetail, c: p.sourceConfidence};
+    p.sourceType = p._src0.t; p.sourceDetail = p._src0.d; p.sourceConfidence = p._src0.c;
+  });
+  if (!LIB.N) return;
+  STATE.data.problems.forEach(p => {
+    STATE.sims[p.num] = matchOne(p.stem + ' ' + p.choices.join(' '), 3);
+    const b = STATE.sims[p.num][0];
+    if (b && b.score >= 0.5 && /부교재/.test(b.filename) && p.sourceType !== '모의고사·학평 기출') {   // 학교 부교재 자료와 일치하면 출처를 그쪽으로
+      p.sourceType = '학교 부교재';
+      p.sourceDetail = `학교 부교재 자료와 일치: ${b.filename} ${b.num}번 (유사도 ${pct(b.score)}%)` + (p._src0.d ? ' · ' + p._src0.d : '');
+      p.sourceConfidence = b.score >= 0.62 ? '높음' : '중간';
+    }
+  });
 }
-const simLabel = s => { s = Math.round(s * 100) / 100; return s >= 0.62 ? '동형 가능성 높음' : s >= 0.45 ? '유사' : s >= 0.30 ? '관련' : '낮음'; };
+const simLabel = s => { s = Math.round(s * 100) / 100; return s >= 0.62 ? '동형' : s >= 0.45 ? '유사' : s >= 0.30 ? '관련' : '낮음'; };
 
 /* IndexedDB */
 const idb = {
@@ -846,12 +888,12 @@ function ringEl(mean, total){
   const r = 78, c = 2 * Math.PI * r;
   return raw(`<div class="ring"><svg width="196" height="196" viewBox="0 0 196 196"><circle cx="98" cy="98" r="${r}" fill="none" stroke="#EFE6CF" stroke-width="13"/><circle id="heroArc" cx="98" cy="98" r="${r}" fill="none" stroke="#3E8F79" stroke-width="13" stroke-linecap="round" stroke-dasharray="${(c * clamp(mean / (total || 1), 0, 1)).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 98 98)"/><circle cx="98" cy="98" r="64" fill="none" stroke="#E6DCC6" stroke-width="1" stroke-dasharray="2 5"/></svg><div class="ring-in"><small>예상 평균</small><b id="heroMean">-</b><small>/ ${num1(total)}점</small></div></div>`);
 }
-const COVER_ART = `<svg width="430" height="430" viewBox="0 0 430 430"><circle cx="270" cy="150" r="150" fill="#7FC8B4" fill-opacity=".30"/><circle cx="190" cy="250" r="118" fill="#E58BA4" fill-opacity=".26"/><circle cx="318" cy="268" r="84" fill="#E6D08E" fill-opacity=".45"/><circle cx="270" cy="150" r="176" fill="none" stroke="#A8853F" stroke-opacity=".55" stroke-width="1.2"/><circle cx="190" cy="250" r="140" fill="none" stroke="#A8853F" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 6"/></svg>`;
+const coverFrame = () => `<svg width="794" height="${PH}" viewBox="0 0 794 ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="746" height="${PH - 48}" fill="none" stroke="#A8853F" stroke-opacity=".75" stroke-width="1.89"/></svg>`;
 
 /* =====================================================================
    7. 리포트 렌더링 — A4 비율 페이지(덱)로 나눠서 만든다
    ===================================================================== */
-const PW = 794, PH = 1123;           // A4 (96dpi)
+const PW = 794; let PH = 1123;     // A4 (96dpi) — PH는 선택한 비율에 따라 바뀜
 const BGS = [
   {key: 'cream', label: '크림', bg: '#FBF8F1'},
   {key: 'white', label: '흰색', bg: '#FFFFFF'},
@@ -860,8 +902,15 @@ const BGS = [
   {key: 'sand',  label: '샌드', bg: '#F3EADB'},
   {key: 'sky',   label: '스카이', bg: '#EDF1F8'},
 ];
+const RATIOS = [
+  {key: 'a4',  label: 'A4',          h: 1123},
+  {key: 'sq',  label: '정사각형 1:1', h: 794},
+  {key: 'p45', label: '인스타 4:5',   h: 992},
+];
+const ratioOf = k => RATIOS.find(r => r.key === k) || RATIOS[0];
+const mmOf = h => +(210 * h / 794).toFixed(2);
 const bgOf = k => (BGS.find(b => b.key === k) || BGS[0]);
-const DECK = {pages: [], stage: null, sel: new Set(), cur: 0, bg: bgOf(safeLS.get('ea_bg')).key, host: null};
+const DECK = {pages: [], stage: null, sel: new Set(), cur: 0, bg: bgOf(safeLS.get('ea_bg')).key, ratio: ratioOf(safeLS.get('ea_ratio')).key, host: null};
 let CUR = null, SEC_NO = 0;
 const unitStats = problems => {
   const m = new Map();
@@ -882,13 +931,21 @@ const killerList = () => {
   return ks;
 };
 const MATH_OPT = {delimiters: [{left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false};
-const mathIn = e => { try { if (window.renderMathInElement) renderMathInElement(e, MATH_OPT); } catch(_){} };
+const mathIn = e => {
+  try {
+    if (!window.renderMathInElement) return;
+    const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT); let n;   // 분수가 작아지지 않게 \frac → \dfrac
+    while ((n = w.nextNode())) if (n.nodeValue.indexOf('\\frac') >= 0) n.nodeValue = n.nodeValue.replace(/\\frac(?![a-zA-Z])/g, '\\dfrac');
+    renderMathInElement(e, MATH_OPT);
+  } catch(_){}
+};
 const isOver = b => b.scrollHeight > b.clientHeight + 1;
 
 /* ---- 페이지 만들기 / 내용 흘려 넣기 ---- */
 function newPage(title, kind){
   const rp = H('div', {class: 'rpage' + (kind ? ' ' + kind : ''), 'data-title': title});
   rp.style.setProperty('--paper', bgOf(DECK.bg).bg);
+  rp.style.setProperty('--ph', PH + 'px'); rp.style.setProperty('--phmm', mmOf(PH) + 'mm');
   const body = H('div', {class: 'rp-body'});
   const e = STATE.data.exam;
   if (kind === 'cover') rp.append(body);
@@ -904,8 +961,8 @@ function newPage(title, kind){
   DECK.pages.push(pg);
   return pg;
 }
-function put(el){            // 현재 페이지에 넣어 보고, 넘치면 다음 페이지로
-  CUR.body.append(el); mathIn(el);
+function put(el, hook){      // 현재 페이지에 넣어 보고, 넘치면 다음 페이지로 (hook: 넣은 직후 내용을 채우는 함수)
+  CUR.body.append(el); if (hook) hook(); mathIn(el);
   if (isOver(CUR.body) && CUR.body.children.length > 1) {
     CUR.body.removeChild(el);
     CUR = newPage(CUR.title.replace(/ \(계속\)$/, '') + ' (계속)');
@@ -925,11 +982,11 @@ function putRows(makeHost, rows, makeRow){   // 표·목록: 행 단위로 쪼�
     }
   });
 }
-function secHead(en, ko, accent, sub){
+function secHead(en, ko, accent, sub, latin){
   SEC_NO++;
   return H('div', {class: 'sec'}, [
     H('div', {class: 'eb', text: `${String(SEC_NO).padStart(2, '0')} · ${en}`}),
-    H('h2', {}, [ko + ' ', H('em', {text: accent})]),
+    H('h2', {class: latin ? 'lat' : ''}, [ko + ' ', H('em', {text: accent})]),
     sub ? H('p', {text: sub}) : null,
   ]);
 }
@@ -941,7 +998,9 @@ function coverEl(){
   const d = STATE.data, e = d.exam, P = d.problems, total = e.totalPoints || 100;
   const killers = P.filter(isKiller), hardPts = P.filter(p => p.difficulty >= 3).reduce((s, p) => s + p.points, 0);
   const srcRel = P.filter(p => p.sourceType === '모의고사·학평 기출' || p.sourceType === '기출 변형'), relPts = srcRel.reduce((s, p) => s + p.points, 0);
-  const sub = [e.school, e.year && (e.year + '학년도'), e.term].filter(Boolean).join(' · ');
+  const tm = String(e.term || ''), sm = tm.match(/[1-3]\s*학기/), sem = sm ? sm[0].replace(/\s+/g, '') : '';
+  const etype = (sem ? tm.replace(sm[0], '') : tm).trim();
+  const line = [e.year, e.grade, sem, e.subject, etype].filter(Boolean).join(' ');
   const kpi = (l, v, s, c) => H('div', {class: 'kpi', style: `border-top-color:${c}`}, [H('div', {class: 'l', text: l}), H('div', {class: 'v', text: v}), H('div', {class: 's', text: s})]);
   const ins = [];
   const lowSix = [...P].sort((a, b) => a.rate - b.rate).slice(0, 6).map(p => p.num).sort((a, b) => a - b);
@@ -953,14 +1012,14 @@ function coverEl(){
   ins.push(['앞 절반 → 뒤 절반 정답률', `${pct(rr(h1))}% → ${pct(rr(h2))}%`, '#3E8F79']);
   const simHigh = P.filter(p => (STATE.sims[p.num] || [])[0] && STATE.sims[p.num][0].score >= 0.45).length;
   if (LIB.N) ins.push(['우리 수업과 유사(45%↑)한 문항', `${simHigh}개`, '#7088B5']);
-  return H('div', {class: 'cv'}, [
-    H('div', {class: 'cv-art', html: COVER_ART}),
+  return H('div', {class: 'cv' + (PH < 1000 ? ' tight' : '')}, [
+    H('div', {class: 'cv-frame', html: coverFrame()}),
     H('div', {class: 'cv-top'}, [H('span', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]), H('span', {class: 'rp-eye', text: 'EXAM ANALYSIS REPORT'})]),
     H('div', {class: 'cv-title'}, [
-      H('div', {class: 'cv-sub', text: sub || 'EXAM'}),
-      H('h1', {text: [e.grade, e.subject].filter(Boolean).join(' ') || '시험'}),
-      H('h1', {class: 'en'}, ['시험 ', H('em', {text: 'Analysis'})]),
+      H('h1', {text: e.school || '시험 분석'}),
+      H('div', {class: 'cv-line', text: line}),
       H('div', {class: 'cv-rule'}),
+      H('div', {class: 'cv-en'}, ['시험 ', H('em', {text: 'Analysis'})]),
       STATE.demo ? H('span', {class: 'stamp', text: 'SAMPLE · 예시 화면'}) : null,
     ]),
     H('div', {class: 'cv-hero'}, [
@@ -992,7 +1051,7 @@ function mapBlock(){
     b.addEventListener('click', () => jumpTo(p.num));
     return b;
   }));
-  return cd('', [legendEl([1, 2, 3, 4].map(d => ({label: TIER[d].name, color: TIERC[d]}))), grid, H('p', {class: 'cap', text: '칸 아래쪽 가는 막대는 예상 정답률이에요. 누르면 해당 문항 분석으로 이동합니다.'})]);
+  return cd('', [legendEl([1, 2, 3, 4].map(d => ({label: TIER[d].name, color: TIERC[d]}))), grid, H('p', {class: 'cap', text: '칸 아래쪽 가는 막대는 예상 정답률이에요.'})]);
 }
 function diffBlock(){
   const P = STATE.data.problems;
@@ -1164,8 +1223,8 @@ function killerBlock(p){
       H('div', {class: 'kb-rate'}, [H('b', {text: pct(p.rate) + '%'}), H('span', {text: '예상 정답률'}), H('div', {class: 'gauge'}, [H('i', {style: `width:${p.rate * 100}%;background:${TIERC[p.difficulty]}`})])]),
     ]),
     p.stem || p.choices.length ? stem : null,
-    H('div', {class: 'nts'}, notes.map(([k, ko, v, c]) => H('div', {class: 'nt', style: `border-left-color:${c}`}, [H('div', {class: 'lb', style: `color:${c}`}, [H('b', {text: k}), ' ' + ko]), H('p', {text: v})]))),
-    LIB.N ? H('div', {class: 'sm'}, [H('div', {class: 'lb', style: 'color:#7088B5'}, [H('b', {text: 'CLASS'}), ' 수업 유사도']), simBlock(p, true)]) : null,
+    H('div', {class: 'nts'}, notes.map(([k, ko, v, c]) => H('div', {class: 'nt'}, [H('div', {class: 'lb', style: `color:${c};background:${c}22`}, [H('b', {text: k}), ' ' + ko]), H('p', {text: v})]))),
+    LIB.N ? H('div', {class: 'sm'}, [H('div', {class: 'lb', style: 'color:#7088B5;background:#7088B522'}, [H('b', {text: 'CLASS'}), ' 수업 유사도']), H('div', {class: 'sb'}, [simBlock(p, true)])]) : null,
   ]);
 }
 
@@ -1190,7 +1249,7 @@ function recBlock(r){
 
 /* ---- 문항 표 ---- */
 function problemRow(p){
-  const s = SRC.find(x => x.key === p.sourceType) || SRC[4];
+  const s = SRC.find(x => x.key === p.sourceType) || SRC[SRC.length - 1];
   const tr = H('tr', {'data-rn': p.num}, [
     H('td', {class: 'nw b', text: p.num}),
     H('td', {text: p.unit}),
@@ -1200,7 +1259,7 @@ function problemRow(p){
     H('td', {}, [H('span', {class: 'dot', style: `background:${s.color}`}), p.sourceType.replace('교과서·EBS·시중교재', '교재·EBS').replace('모의고사·학평 기출', '모의·학평')]),
     H('td', {class: 'small', text: (p.keyIdea || '').slice(0, 44) + ((p.keyIdea || '').length > 44 ? '…' : '')}),
   ]);
-  tr.addEventListener('click', () => jumpTo(p.num));
+  if (isKiller(p)) { tr.classList.add('k'); tr.title = '킬러 해부 페이지로 이동'; tr.addEventListener('click', () => jumpTo(p.num)); }
   return tr;
 }
 
@@ -1220,7 +1279,7 @@ function buildDeck(){
   put(cd('단원별 출제 비중', [chartUnits(unitStats(P).slice(0, 10)), H('p', {class: 'cap', text: '막대 = 배점 · 오른쪽 칩 = 그 단원의 배점가중 예상 정답률 (낮을수록 핑크)'})]));
 
   CUR = newPage('출처 분석');
-  put(secHead('SOURCES', '출처', 'Analysis', '모의고사·학평 기출, 변형, 교재, 학교 자체 출제의 비중'));
+  put(secHead('SOURCES', '출처', 'Analysis', '모의고사·학평 기출, 변형, 교재, 학교 부교재, 학교 출제의 비중'));
   sourceBlocks().forEach(b => b && put(b));
 
   CUR = newPage('출제 스타일');
@@ -1229,7 +1288,7 @@ function buildDeck(){
 
   CUR = newPage('예상 점수 · 등급컷');
   put(secHead('SCORE FORECAST', '예상 점수와', 'Cuts', '정답률로 시뮬레이션한 점수 분포와 5등급제 컷'));
-  predBlocks().forEach(b => put(b));
+  predBlocks().forEach(b => put(b, renderPred));
 
   CUR = newPage('킬러 해부');
   const ks = killerList();
@@ -1237,10 +1296,10 @@ function buildDeck(){
   ks.slice(1).forEach(p => put(killerBlock(p)));
 
   const ss = simSummaryBlocks();
-  if (Array.isArray(ss)) { CUR = newPage('수업 유사도'); put(secHead('CLASS MATCH', '우리 수업과의', 'Match')); ss.forEach(b => put(b)); }
+  if (Array.isArray(ss)) { CUR = newPage('수업 유사도'); put(secHead('CLASS MATCH', 'MATHY YURI CLASS', 'Match', '', true)); ss.forEach(b => put(b)); }
   else {
     CUR = newPage('수업 유사도');
-    put(secHead('CLASS MATCH', '우리 수업과의', 'Match', ss.head));
+    put(secHead('CLASS MATCH', 'MATHY YURI CLASS', 'Match', '', true));
     putRows(() => { const g = H('div', {class: 'sg'}); return {host: g, rows: g}; }, ss.rows, ({p, best}) => H('div', {class: 'sim row', onclick: () => jumpTo(p.num)}, [
       H('span', {class: 'n', text: p.num + '번'}), H('div', {class: 'tr'}, [H('i', {style: `width:${best ? clamp(best.score, 0, 1) * 100 : 0}%`})]), H('span', {class: 'lab', text: best ? `${pct(best.score)}%` : '-'})]));
     if (ss.top.length) put(cd('가장 닮은 수업 자료', [H('table', {class: 'tbl'}, [H('thead', {}, [H('tr', {}, ['번호', '유사도', '수업 자료'].map(t => H('th', {text: t})))]),
@@ -1252,18 +1311,29 @@ function buildDeck(){
   [...o.recommendations].sort((a, b) => a.priority - b.priority).forEach(r => put(recBlock(r)));
 
   CUR = newPage('문항 표');
-  put(secHead('ALL PROBLEMS', '문항', 'Table', '번호를 누르면 해당 분석으로 이동해요'));
+  put(secHead('ALL PROBLEMS', '문항', 'Table'));
   putRows(() => { const tb = H('tbody'); return {host: H('table', {class: 'tbl full'}, [H('thead', {}, [H('tr', {}, ['번호', '단원', '배점', '난이도', '예상 정답률', '출처', '핵심'].map((t, i) => H('th', {class: i === 2 ? 'num' : '', text: t})))]), tb]), rows: tb}; }, P, problemRow);
 
+  if (REFS.length && $('#refPage') && $('#refPage').checked) REFS.forEach((r, i) => {
+    CUR = newPage('참고 자료');
+    put(i === 0 ? secHead('REFERENCE', '다른 강사', 'Analysis', '참고용으로 첨부한 타 강사 분석 자료 — 우리 분석이 아니에요') : H('div', {class: 'sec'}, [H('div', {class: 'eb', text: 'REFERENCE · 참고 자료'}), H('p', {text: r.name})]));
+    if (r.kind === 'image') CUR.body.append(H('div', {class: 'refimg', style: `background-image:url("${r.url}")`}));
+    else put(cd(r.name, [H('pre', {class: 'reftxt', text: r.text.slice(0, 2400)})]));
+  });
   DECK.pages.forEach(pg => { const pn = pg.rp.querySelector('.pn'); if (pn) pn.textContent = `${pg.idx + 1} / ${DECK.pages.length}`; });
   fitPages();
   renderPred();
 }
 function fitPages(){
   DECK.pages.forEach(pg => {
+    if (pg.kind === 'cover') {   // 표지: 안 들어가면 덜 중요한 것부터 숨긴다
+      const cv = pg.body.firstElementChild, over = () => cv.scrollHeight > cv.clientHeight + 1;
+      ['.cv-sum', '.ins'].forEach(sel => { if (over()) { const e = cv.querySelector(sel); if (e) e.style.display = 'none'; } });
+      if (over()) cv.classList.add('tight');
+      return;
+    }
     let fit = 1, t = 0; pg.rp.style.setProperty('--fit', fit);
-    while (pg.kind !== 'cover' && isOver(pg.body) && fit > 0.6 && t < 14) { fit -= 0.03; pg.rp.style.setProperty('--fit', fit.toFixed(2)); t++; }
-    if (pg.rp.classList.contains('cover') && isOver(pg.body)) { while (isOver(pg.body) && fit > 0.6 && t < 14) { fit -= 0.03; pg.rp.style.setProperty('--fit', fit.toFixed(2)); t++; } }
+    while (isOver(pg.body) && fit > 0.6 && t < 14) { fit -= 0.03; pg.rp.style.setProperty('--fit', fit.toFixed(2)); t++; }
   });
 }
 
@@ -1340,7 +1410,7 @@ async function capturePage(pg){
     return await html2canvas(clone, {scale: 2, backgroundColor: bgOf(DECK.bg).bg, useCORS: true, width: PW, height: PH, windowWidth: PW + 200, windowHeight: PH, scrollX: 0, scrollY: 0});
   } finally { host.remove(); }
 }
-const fileBase = () => { const e = STATE.data.exam; return `${e.school || '시험'}_${e.year || ''}_${e.subject || ''}_분석서`.replace(/\s+/g, ''); };
+const fileBase = () => { const e = STATE.data.exam; return `${e.school || '시험'}_${e.year || ''}_${e.subject || ''}_분석서${DECK.ratio === 'a4' ? '' : '_' + ratioOf(DECK.ratio).label.split(' ')[0]}`.replace(/\s+/g, ''); };
 function download(blobOrUrl, name){
   const a = document.createElement('a'); a.href = typeof blobOrUrl === 'string' ? blobOrUrl : URL.createObjectURL(blobOrUrl); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
@@ -1353,8 +1423,8 @@ async function exportPdf(btn){
     for (let k = 0; k < idx.length; k++) {
       btn.textContent = `캡처 중... (${k + 1}/${idx.length})`;
       const c = await capturePage(DECK.pages[idx[k]]);
-      if (!pdf) pdf = new J({orientation: 'portrait', unit: 'mm', format: [210, 297]}); else pdf.addPage([210, 297], 'portrait');
-      pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      if (!pdf) pdf = new J({orientation: 'portrait', unit: 'mm', format: [210, mmOf(PH)]}); else pdf.addPage([210, mmOf(PH)], 'portrait');
+      pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, mmOf(PH), undefined, 'FAST');
     }
     pdf.save(fileBase() + (DECK.sel.size === DECK.pages.length ? '' : '_선택') + '.pdf');
     dkMsg(`PDF ${idx.length}페이지를 저장했어요.`);
@@ -1399,7 +1469,13 @@ function buildBar(){
   const sel = H('div', {class: 'dk-sel'}, [H('span', {class: 'lbl', text: '저장할 페이지'}), inp, H('span', {class: 'hint', id: 'selInfo'}),
     mkb('전체', () => { DECK.sel = new Set([...Array(n).keys()]); dkMsg(''); syncSel(); }),
     mkb('지금 페이지만', () => { DECK.sel = new Set([curIndex()]); dkMsg(''); syncSel(); })]);
+  const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '화면 비율'}), ...RATIOS.map(r => {
+    const b = H('button', {class: 'rt' + (DECK.ratio === r.key ? ' on' : ''), type: 'button', text: r.label});
+    b.addEventListener('click', () => { if (DECK.ratio === r.key) return; DECK.ratio = r.key; safeLS.set('ea_ratio', r.key); renderReport(true); });
+    return b;
+  })]);
   const act = H('div', {class: 'dk-act'}, [
+    ratioSel,
     mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'),
     mkb('선택 페이지 이미지로 저장', b => exportImages(b)),
     mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())),
@@ -1434,6 +1510,9 @@ async function ensureFonts(){
 let RENDER_TOKEN = 0;
 async function renderReport(keepScroll){
   if (!STATE.data) return;
+  PH = ratioOf(DECK.ratio).h;
+  let pgs = document.getElementById('pgSize'); if (!pgs) { pgs = document.createElement('style'); pgs.id = 'pgSize'; document.head.appendChild(pgs); }
+  pgs.textContent = '@page{size:210mm ' + mmOf(PH) + 'mm;margin:0}';
   const tok = ++RENDER_TOKEN, root = $('#report'), y = scrollY, prevN = DECK.pages.length, prevSel = DECK.sel;
   root.hidden = false;
   if (!keepScroll) root.innerHTML = '<div class="hint" style="padding:30px;text-align:center">분석서를 A4 페이지로 만드는 중...</div>';
@@ -1443,6 +1522,7 @@ async function renderReport(keepScroll){
   DECK.host = root;
   const warn = STATE.demo ? H('div', {class: 'warn noprint', text: '이것은 예시 화면입니다. 정답률·출처는 시험 결과를 알고 난 뒤 다듬은 값이며, 실제 시험 분석은 PDF를 올려 AI가 새로 추정합니다.'}) : null;
   DECK.stage = H('div', {class: 'stage'});
+  DECK.stage.style.setProperty('--ph', PH + 'px'); DECK.stage.style.setProperty('--phmm', mmOf(PH) + 'mm');
   const stageHost = H('div', {class: 'stage-host'}, [DECK.stage]);
   const build = () => {
     DECK.stage.innerHTML = '';
@@ -1618,7 +1698,7 @@ const SYSTEM = `당신은 한국 고등학교 수학 내신 시험을 분석하�
 - difficulty: 1=기본(교과서 개념·1~2단계 계산), 2=중(여러 단계 또는 개념 2개 결합), 3=상(조건 해석+개념 결합, 계산량 많음), 4=킬러(변별용: 새로운 관점·긴 경우나누기·복합 도형 조건, 보통 뒷번호·고배점).
 - expectedCorrectRate: 이 시험을 치른 학생 집단 전체의 예상 정답률(0~1 소수). 사용자가 알려준 학생 수준을 반영하고, 객관식은 찍기 효과를 감안하되 킬러는 낮게 잡으세요. 정직하고 변별력 있게 추정합니다.
 - unit은 한국 교육과정 용어로 구체적으로(예: 평면좌표, 직선의 방정식, 원의 방정식, 도형의 이동, 집합, 명제, 다항식, 방정식과 부등식, 함수, 수열 등). subUnit은 세부 유형.
-- sourceType: 모의고사·학평 기출 / 기출 변형 / 교과서·EBS·시중교재 / 학교 자체 출제 / 판단 불가 중 하나. sourceDetail에는 그렇게 본 근거를 구체적으로(문제 구조·조건·표현의 어떤 점이 알려진 유형과 일치하는지). 특정 연도·시행월·문항번호는 정말 확신할 때만 적고 sourceConfidence를 '높음'으로 하며, 확신이 없으면 유형·패턴만 서술하고 '중간' 또는 '낮음'으로 하세요. 존재하지 않는 기출을 지어내지 마세요.
+- sourceType: 모의고사·학평 기출 / 기출 변형 / 교과서·EBS·시중교재 / 학교 부교재 / 학교 / 판단 불가 중 하나. '학교 부교재'는 그 학교가 지정·배부한 부교재·학교 프린트 문제 또는 그 변형, '학교'는 교사가 새로 만든 문제입니다. 다른 강사의 분석 자료가 첨부되면 그 표의 주제·난이도(★)·출처 표기(예: '고2 05년 6월 28일 변형')를 적극 채택해 sourceType/sourceDetail/variation/unit/difficulty에 반영하되, 시험지의 실제 문제와 명백히 어긋나는 항목만 따르지 마세요. sourceDetail에는 그렇게 본 근거를 구체적으로(문제 구조·조건·표현의 어떤 점이 알려진 유형과 일치하는지). 특정 연도·시행월·문항번호는 정말 확신할 때만 적고 sourceConfidence를 '높음'으로 하며, 확신이 없으면 유형·패턴만 서술하고 '중간' 또는 '낮음'으로 하세요. 존재하지 않는 기출을 지어내지 마세요.
 - variation: 원형을 알아볼 수 있을 때만, 어떻게 바꿨는지(수치 변경·조건 추가·보기형 전환·그림 제거 등). 모르면 빈 문자열.
 - keyIdea(핵심 풀이 아이디어 1~2문장), traps(학생이 흔히 틀리는 지점), prep(이런 문항에 대비하는 방법 한 문장)은 모든 문항에 채우세요. killerWhy는 difficulty가 3 이상일 때 '왜 변별력이 생기는지'를, 아니면 빈 문자열.
 - styleTags: 2~4개의 짧은 유형 태그(예: 역추론, 경우나누기, 조건해석, 그래프 해석, 계산 집약, 내분·외분 두 경우).
@@ -1706,6 +1786,7 @@ $('#run').addEventListener('click', async () => {
         tiles.forEach(t => { content.push({type: 'text', text: `[${t.label}]`}); content.push({type: 'image', source: {type: 'base64', media_type: 'image/jpeg', data: t.b64}}); });
       }
     }
+    refContent().forEach(c => content.push(c));
     content.push({type: 'text', text: `위 시험지를 분석해 주세요.\n응시 학생 수준: ${$('#level').value}\n${$('#memo').value.trim() ? '참고 메모: ' + $('#memo').value.trim() + '\n' : ''}모든 문항을 번호순으로 빠짐없이 JSON 스키마에 맞춰 출력하세요.`});
     set(26, 'Claude가 시험지를 읽고 분석하는 중입니다 (1~4분 걸려요)...');
     const model = ms.value;
@@ -1719,6 +1800,47 @@ $('#run').addEventListener('click', async () => {
     m.className = 'msg err'; m.textContent = explainError(e);
   } finally { $('#run').disabled = false; updateRunBtn(); setTimeout(() => { bar.hidden = true; }, 1500); }
 });
+
+/* 다른 강사 분석 자료 첨부 */
+const REFS = [];
+const fileToDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
+function imgToJpeg(src, maxW){
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => { const k = Math.min(1, maxW / im.width), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.86)); }; im.onerror = () => rej(new Error('이미지를 읽지 못했어요')); im.src = src; });
+}
+function refreshRefs(){
+  const box = $('#refList'); box.innerHTML = '';
+  REFS.forEach((r, i) => {
+    const it = H('div', {class: 'refItem'}, [r.kind === 'image' ? H('img', {src: r.url, alt: ''}) : H('b', {text: 'TXT'}), H('span', {text: r.name, title: r.name}), H('button', {type: 'button', text: '×', title: '빼기'})]);
+    it.querySelector('button').addEventListener('click', () => { REFS.splice(i, 1); refreshRefs(); if (STATE.data) renderReport(true); });
+    box.append(it);
+  });
+  $('#refChip').textContent = REFS.length ? REFS.length + '개 첨부' : '없음';
+}
+async function addRefFiles(files){
+  const m = $('#runMsg');
+  for (const f of files) {
+    try {
+      if (/^image\//.test(f.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name)) REFS.push({name: f.name, kind: 'image', url: await imgToJpeg(await fileToDataUrl(f), 1800)});
+      else if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') {
+        const doc = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise, n = Math.min(doc.numPages, 8);
+        for (let i = 1; i <= n; i++) { const pg = await doc.getPage(i), vp = pg.getViewport({scale: 1.6}), cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height; await pg.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise; REFS.push({name: `${f.name} (${i}쪽)`, kind: 'image', url: cv.toDataURL('image/jpeg', 0.86)}); }
+      } else REFS.push({name: f.name, kind: 'text', text: (await f.text()).slice(0, 12000)});
+    } catch(e) { m.className = 'msg err'; m.textContent = `"${f.name}"을 읽지 못했어요: ${e.message || e}`; }
+  }
+  refreshRefs(); if (STATE.data) renderReport(true);
+}
+$('#refAdd').addEventListener('click', () => $('#refFile').click());
+$('#refFile').addEventListener('change', e => { addRefFiles([...e.target.files]); e.target.value = ''; });
+$('#refPage').addEventListener('change', () => { if (STATE.data) renderReport(true); });
+function refContent(){
+  if (!REFS.length || !$('#refAI').checked) return [];
+  const out = [{type: 'text', text: '[다른 강사의 분석 자료 — 분석에 적극 반영하세요] 아래는 다른 강사가 이 시험에 대해 만든 분석표입니다(문항번호·주제·배점·난이도 별(★)·비고(출처·변형 근거) 등). 이 표의 내용을 우리 분석서에 반영해 작성하세요.\n- 주제 → unit/subUnit, 별(★) 개수 → difficulty(★=1 기본, ★★=2 중, ★★★=3 상, ★★★★=4 킬러), 비고의 출처·변형 표기(예: "학교 부교재 변형", "모의고사 변형 [고2 05년 6월 28일 변형]") → sourceType/sourceDetail/variation으로 옮기고, sourceDetail 끝에 "(타 강사 자료 참고)"를 붙이세요.\n- 표에 있는 정보는 우선 채택하되, 시험지의 실제 문제와 명백히 어긋나면(문항 번호 불일치, 주제가 다름 등) 따르지 말고 sourceDetail에 이유를 한 줄 적으세요.\n- 표에 없는 문항·항목(정답률, 킬러 해부, 핵심 아이디어, 함정, 대비법, 스타일, 총평, 대비 전략)은 평소처럼 직접 분석해 채우세요. 표의 문장을 그대로 베끼지 말고 우리 말투로 다시 쓰세요.\n- 표에 없는 연도·시행월은 지어내지 마세요.'}];
+  REFS.slice(0, 10).forEach(r => {
+    if (r.kind === 'image') { out.push({type: 'text', text: `(참고: ${r.name})`}); out.push({type: 'image', source: {type: 'base64', media_type: 'image/jpeg', data: r.url.split(',')[1]}}); }
+    else out.push({type: 'text', text: `(참고: ${r.name})\n${r.text}`});
+  });
+  return out;
+}
 
 /* AI 정밀 비교: 킬러 문항 vs 라이브러리 후보 */
 const RERANK_SCHEMA = {type: 'object', additionalProperties: false, required: ['items'], properties: {items: {type: 'array', items: {type: 'object', additionalProperties: false, required: ['num', 'bestIndex', 'relation', 'reason'], properties: {num: {type: 'integer'}, bestIndex: {type: 'integer'}, relation: {type: 'string', enum: ['동형', '유사', '관련 낮음']}, reason: {type: 'string'}}}}}};
@@ -1744,7 +1866,7 @@ async function rerankKillers(ks, btn){
 }
 
 /* =====================================================================
-   11. 내 스타일 시험지 · 손필기 해설지 · hwpx(문제+미주)
+   11. 내 스타일 시험지 · 해설집 · hwpx(문제+미주)
    ===================================================================== */
 function solutionCount(){ return Object.keys(STATE.solutions || {}).length; }
 function kitSpec(){ return ExamKit.buildSpec(STATE.data, STATE.solutions, STATE.srcMap, {perPage: STATE.perPage}); }
@@ -1810,7 +1932,7 @@ function renderKit(){
   if (demoBtn) demoBtn.addEventListener('click', () => { STATE.solutions = demoSolutions(); renderReport(true); });
   const mkBtn = (label, fn) => { const b = H('button', {class: 'btn sec', type: 'button', text: label}); b.addEventListener('click', async () => { try { await fn(b); } catch(e){ setMsg('실패: ' + (e.message || e), 'err'); } }); return b; };
   const bProblem = mkBtn('문제지 열기 (PDF 저장)', () => ExamKit.openSheet('examsheet.html', kitSpec()));
-  const bSol = mkBtn('손필기 해설지 열기 (PDF 저장)', () => { if (!solutionCount()) { setMsg('먼저 "AI 해설 만들기"를 해주세요.', 'err'); return; } ExamKit.openSheet('examsolution.html', kitSpec()); });
+  const bSol = mkBtn('해설집 열기 (PDF 저장)', () => { if (!solutionCount()) { setMsg('먼저 "AI 해설 만들기"를 해주세요.', 'err'); return; } ExamKit.openSheet('examsolution.html', kitSpec()); });
   const bHwpx = mkBtn('hwpx 받기 (문제 + 미주 정답·해설)', async b => {
     b.disabled = true; setMsg('hwpx를 만드는 중...');
     try {
@@ -1820,7 +1942,7 @@ function renderKit(){
       setMsg(`hwpx를 받았어요.${solutionCount() ? '' : ' (해설이 없어 미주가 비어 있어요)'}${warnings.length ? ' 수식 변환 주의 ' + warnings.length + '건: ' + warnings.slice(0, 3).join(' / ') : ''} 한글에서 열어 확인해 주세요.`, warnings.length ? 'err' : 'ok');
     } finally { b.disabled = false; }
   });
-  return card('내 스타일 시험지 · 손필기 해설 만들기', '분석한 시험을 우리 학원 스타일 시험지(PDF)와 고1 교육과정 수준의 손필기 해설지(PDF), 그리고 한글에서 쓸 수 있는 hwpx(문제 + 미주 정답·해설)로 만들어 드려요.', [
+  return card('내 스타일 시험지 · 해설집 만들기', '분석한 시험을 우리 학원 스타일 시험지(PDF)와 고1 교육과정 수준의 해설집(PDF), 그리고 한글에서 쓸 수 있는 hwpx(문제 + 미주 정답·해설)로 만들어 드려요.', [
     H('div', {class: 'row', style: 'margin-bottom:10px'}, [sel, genBtn, demoBtn]), status,
     H('div', {class: 'row', style: 'margin-top:12px'}, [bProblem, bSol, bHwpx]), msg,
     H('p', {class: 'note', text: '※ 해설과 정답은 AI가 직접 풀어 만든 것이라 학생에게 주기 전에 꼭 검토하세요(정답이 파일에 있으면 대조해 "검수 필요"로 표시해요). PDF 시험지의 그림은 AI가 다시 그린 것일 수 있고, hwpx 시험지는 원본 그림을 그대로 씁니다.'}),
@@ -1846,7 +1968,7 @@ function demoSolutions(){
 function demoData(){
   const R = String.raw;
   const P = (num, points, unit, diff, rate, sourceType, sourceDetail, conf, variation, keyIdea, traps, killerWhy, prep, tags, stem, choices) => ({num, points, format:'객관식', unit, subUnit:'', stem, choices: choices || [], hasFigure:false, difficulty:diff, expectedCorrectRate:rate, sourceType, sourceDetail, sourceConfidence:conf, variation, keyIdea, traps, killerWhy, prep, styleTags:String(tags).split(',').map(t => t.trim()).filter(Boolean)});
-  const TXT = '교과서·EBS·시중교재', MOK = '모의고사·학평 기출', VAR = '기출 변형', SELF = '학교 자체 출제';
+  const TXT = '교과서·EBS·시중교재', MOK = '모의고사·학평 기출', VAR = '기출 변형', SELF = '학교';
   const STEMS = {
     8: R`두 직선 \(l_1:2x+y+2=0\), \(l_2:x-2y-4=0\)의 교점을 \(A\), 두 직선 \(l_1,l_2\)가 \(x\)축과 만나는 점을 각각 \(B,C\)라 하자. 제1사분면에 있는 점 \(P\)와 삼각형 \(ABC\)의 외접원 위의 점 \(Q\)가 다음 조건을 만족시킨다.
 (가) 점 \(Q\)는 삼각형 \(PBC\)의 무게중심이다.

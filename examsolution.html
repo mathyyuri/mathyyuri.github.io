@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>손필기 해설지 | MATHY YURI</title>
+<title>해설집 | MATHY YURI</title>
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -26,27 +26,30 @@ html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);c
 .coverPage{align-items:center;justify-content:center;text-align:center;background:var(--page)}
 .coverPage::before{content:'';position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,var(--acc),var(--gold))}
 .coverBrand{font-family:var(--kserif);font-weight:900;letter-spacing:.32em;color:var(--acc);font-size:.76rem;margin-bottom:.8em}
-.coverTitle{font-family:var(--hand);font-weight:700;font-size:calc(2.3rem * var(--fit,1));line-height:1.3;color:var(--pen);margin-bottom:.3em;transform:rotate(-1.5deg)}
-.coverSub{font-family:var(--kserif);font-size:.85rem;color:var(--ink);font-weight:700;margin-bottom:1.2em}
+.coverSchool{font-family:var(--kserif);font-weight:900;font-size:calc(2.1rem * var(--fit,1));line-height:1.3;color:var(--ink);margin:.2em 0 .45em;max-width:88%}
+.coverSub{font-family:var(--kserif);font-size:.85rem;color:var(--sub);font-weight:400;letter-spacing:.08em;margin-bottom:1.6em}
 .coverBadge{display:inline-block;border:1.4px solid var(--gold);border-radius:24px;padding:.4em 1.3em;font-size:.68rem;color:var(--sub);margin-bottom:1.4em}
 .coverNote{font-size:.62rem;color:var(--sub);line-height:1.9;max-width:80%}
 
 .quickPage{align-items:center;justify-content:flex-start;padding-top:6%}
-.quickTitle{font-family:var(--hand);font-weight:700;font-size:calc(1.9rem * var(--fit,1));color:var(--pen);margin-bottom:.5em;transform:rotate(-1deg)}
-.quickTbl{border-collapse:collapse;width:90%;margin:0 auto}
-.quickTbl th,.quickTbl td{border:1px solid #e0d4c0;padding:.28em .4em;font-size:calc(.66rem * var(--fit,1));text-align:center}
-.quickTbl th{background:#f3e9d6;font-weight:700;color:var(--acc)}
-.quickTbl td.a{font-family:var(--hand);font-size:calc(1rem * var(--fit,1));color:var(--red);font-weight:700}
+.quickTitle{font-family:var(--kserif);font-weight:900;font-size:calc(1.3rem * var(--fit,1));color:var(--ink);margin-bottom:.9em;letter-spacing:.12em}
+.quickTbl{border-collapse:collapse;width:74%;margin:0 auto;font-family:var(--sans)}
+.quickTbl th,.quickTbl td{border-bottom:1px solid #e6dcc9;padding:.32em .5em;font-size:calc(.7rem * var(--fit,1));text-align:center;color:var(--ink)}
+.quickTbl th{background:#f6efe1;font-weight:700;color:var(--acc);border-bottom:1.4px solid var(--acc)}
+.quickTbl td.n{font-weight:700;color:var(--sub);width:12%}
+.quickTbl td.a{width:38%;font-weight:500;font-size:calc(.8rem * var(--fit,1))}
+.quickTbl td.a .katex{font-size:1em}
+.quickTbl th:nth-child(2),.quickTbl td:nth-child(2){border-right:1px solid #e6dcc9}
 
 .solTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .7em;border-bottom:2px solid var(--pen);padding-bottom:.25em;margin-bottom:.5em;flex:0 0 auto}
-.solTop .exam{flex:0 0 100%;font-family:var(--kserif);font-weight:700;font-size:calc(.7rem * var(--fit,1));color:var(--acc);letter-spacing:.02em;margin-bottom:.15em}
+.solTop .exam{flex:0 0 100%;white-space:nowrap;overflow:hidden;font-family:var(--kserif);font-weight:700;font-size:calc(.7rem * var(--fit,1));color:var(--acc);letter-spacing:.02em;margin-bottom:.15em}
 .solTop .exam span{color:var(--sub);font-weight:400}
-.solTop .no{font-family:var(--hand);font-weight:700;font-size:calc(2rem * var(--fit,1));color:var(--pen);line-height:1}
+.solTop .no{font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;font-weight:900;font-size:calc(1.7rem * var(--fit,1));color:var(--pen);line-height:1.1}
 .solTop .meta{font-size:.62rem;color:var(--sub)}
 .solTop .tag{margin-left:auto;font-size:.58rem;color:var(--red);border:1px solid var(--red);border-radius:12px;padding:.05em .7em}
-.probBox{flex:0 0 auto;border:1px solid #ddd2bd;background:#fff;border-radius:6px;padding:.4em .65em;font-size:calc(.62rem * var(--fit,1));line-height:1.6;margin-bottom:.55em;overflow:hidden}
+.probBox{flex:0 0 auto;border:1px solid #d9cfba;background:#f3efe6;font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;border-radius:6px;padding:.4em .65em;font-size:calc(.62rem * var(--fit,1));line-height:1.6;margin-bottom:.55em;overflow:hidden}
 .probBox p{margin:0 0 .3em}
-.probBox .boxed{border:1px solid #666;padding:.25em .5em;margin:.2em 0;line-height:1.6}
+.probBox .boxed{background:#fff;border:1px solid #666;padding:.25em .5em;margin:.2em 0;line-height:1.6}
 .probBox .fig{float:right;max-width:34%;max-height:30mm;margin:0 0 .2em .6em}
 .probBox .fig svg{width:100%;height:auto;max-height:30mm}
 .probBox .figNote{font-size:.85em;color:#888;border:1px dashed #bbb;padding:.2em .4em}
@@ -55,7 +58,7 @@ html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);c
 .probBox .choices .ch{white-space:nowrap}
 .note{flex:1 1 auto;min-height:0;overflow:hidden;position:relative;font-family:var(--hand);font-size:calc((.62rem + 1pt) * var(--fit,1));line-height:1.95;color:var(--pen);padding:0 .6em 0 1.5em;border-left:2px solid rgba(220,90,90,.45);
   background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(1.95em - 1px),var(--line) calc(1.95em - 1px),var(--line) 1.95em)}
-.step{display:flex;gap:.45em;align-items:baseline;transform:rotate(var(--r,0deg));transform-origin:left center}
+.step{display:flex;gap:.45em;align-items:baseline;margin:.1em 0;transform:rotate(var(--r,0deg));transform-origin:left center}
 .step:nth-child(odd){--r:-.25deg}.step:nth-child(even){--r:.2deg}
 .step .n{color:var(--red);font-weight:700;flex:0 0 .9em}
 .step .t{flex:1 1 auto;min-width:0}
@@ -126,15 +129,23 @@ function build(){
   document.getElementById('wait').style.display = 'none';
   var e = SPEC.exam || {}, P = SPEC.problems || [];
   var title = [e.school, e.year && (e.year + '학년도'), e.term].filter(Boolean).join(' ');
-  document.title = (title || '시험') + ' 손필기 해설지';
+  document.title = (title || '시험') + ' 해설집';
+  var clean = function(t){ return String(t == null ? '' : t).replace(/\s*[\(（]\s*2022\s*개정\s*[\)）]/g, '').trim(); };
+  e = { school: clean(e.school), year: clean(e.year), term: clean(e.term), grade: clean(e.grade), subject: clean(e.subject) };
+  var tm = e.term, sm = tm.match(/[1-3]\s*학기/), sem = sm ? sm[0].replace(/\s+/g, '') : '', etype = (sem ? tm.replace(sm[0], '') : tm).trim();
+  var subLine = [e.year, e.grade, sem, e.subject, etype].filter(Boolean).join(' ');
   var cover = '<div class="examPage coverPage"><div class="coverBrand">MATHY YURI</div>'
-    + '<div class="coverTitle">손필기 해설</div><div class="coverSub">' + esc(title) + '<br>' + esc((e.grade || '') + ' ' + (e.subject || '')) + '</div>'
-    + '<div class="coverBadge">고1 교육과정 수준 풀이</div>'
-    + '<div class="coverNote">정답을 먼저 직접 풀어 확인한 뒤, 칠판 필기처럼 한 줄씩 풀이를 적었습니다.<br>AI가 만든 해설이니 사용 전에 한 번 검토해 주세요.</div></div>';
+    + '<div class="coverSchool">' + esc(e.school || '해설집') + '</div><div class="coverSub">' + esc(subLine) + '</div>'
+    + '<div class="coverBadge">해설집 · 고1 교육과정 수준 풀이</div></div>';
   var half = Math.ceil(P.length / 2), rowsTr = '';
+  var ansCell = function(p){
+    if (!p.hasSolution) return '-';
+    if (p.answerChoice > 0) return K.CIRC[p.answerChoice - 1];
+    return esc(K.wrapMath(p.answerText || '-'));
+  };
   for (var i = 0; i < half; i++) {
     var a = P[i], b = P[i + half];
-    var cell = function(p){ return p ? '<td>' + p.num + '</td><td class="a">' + esc(p.answer || '-') + '</td>' : '<td></td><td></td>'; };
+    var cell = function(p){ return p ? '<td class="n">' + p.num + '</td><td class="a">' + ansCell(p) + '</td>' : '<td class="n"></td><td class="a"></td>'; };
     rowsTr += '<tr>' + cell(a) + cell(b) + '</tr>';
   }
   var quick = '<div class="examPage quickPage"><div class="quickTitle">빠른 정답</div><table class="quickTbl"><tr><th>번호</th><th>정답</th><th>번호</th><th>정답</th></tr>' + rowsTr + '</table></div>';
@@ -153,8 +164,9 @@ function build(){
     return '<div class="examPage"><div class="solTop">' + examLine + '<span class="no">문제 ' + p.num + '</span><span class="meta">' + (p.points ? '배점 ' + p.points + '점' : '') + (p.unit ? ' · ' + esc(p.unit) : '') + '</span>' + (p.check ? '<span class="tag">검수 필요</span>' : '') + '</div>'
       + '<div class="probBox">' + fig + r.html + ch + '</div>'
       + '<div class="note">' + body + '</div>'
-      + '<div class="solFoot"><span>MATHY YURI · 고1 교육과정 수준 손필기 해설</span><span>' + (i + 3) + ' / ' + total + '</span></div></div>';
+      + '<div class="solFoot"><span>MATHY YURI · 해설집</span><span>' + (i + 3) + ' / ' + total + '</span></div></div>';
   }).join('');
+  pages = pages.replace(/\\frac(?![a-zA-Z])/g, '\\dfrac');   // 분수 글자가 작아지지 않게 (display 크기)
   pages += '<div class="examPage backCover"><div class="backBrand">MATHY YURI</div><div class="backNote">대치에스플러스학원<br>mathyyuri.com</div></div>';
   deckWrap.innerHTML = pages;
   if (katexReady) renderAndFit();
@@ -171,12 +183,18 @@ function overflowing(page){
   if (page.scrollHeight > page.clientHeight + 1) return true;
   return [].some.call(page.querySelectorAll('.note,.probBox'), function(c){ return c.scrollHeight > c.clientHeight + 1; });
 }
+function fitExamLines(){
+  document.querySelectorAll('.solTop .exam').forEach(function(el){
+    el.style.fontSize = ''; var k = 0, base = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && k < 12) { k++; el.style.fontSize = (base * (1 - k * 0.04)) + 'px'; }
+  });
+}
 function fitPages(){
   document.querySelectorAll('.examPage').forEach(function(page){
     var fit = 1; page.style.setProperty('--fit', fit); var t = 0;
     while (overflowing(page) && fit > 0.3 && t < 40) { fit -= 0.03; page.style.setProperty('--fit', fit); t++; }
   });
-  refreshPageList(); updateNav();
+  fitExamLines(); refreshPageList(); updateNav();
 }
 var rsT; window.addEventListener('resize', function(){ clearTimeout(rsT); rsT = setTimeout(function(){ if (SPEC && katexReady) fitPages(); }, 200); });
 function waitKatex(){ if (window.renderMathInElement) { katexReady = true; if (SPEC) renderAndFit(); } else setTimeout(waitKatex, 100); }
@@ -197,7 +215,7 @@ window.addEventListener('DOMContentLoaded', function(){
     try { return await html2canvas(el, { scale: 2, backgroundColor: '#fffdf5', useCORS: true, width: w, height: h }); }
     finally { el.style.width = ''; el.style.height = ''; }
   }
-  var fileBase = function(){ var e = (SPEC && SPEC.exam) || {}; return ((e.school || '시험') + '_' + (e.year || '') + '_' + (e.subject || '') + '_손필기해설지').replace(/\s+/g, ''); };
+  var fileBase = function(){ var e = (SPEC && SPEC.exam) || {}; return ((e.school || '시험') + '_' + (e.year || '') + '_' + (e.subject || '').replace(/\s*[（(]\s*2022\s*개정\s*[）)]/g, '') + '_해설집').replace(/\s+/g, ''); };
   document.getElementById('saveImgBtn').addEventListener('click', async function(){
     var b = this; b.disabled = true;
     try { var c = await capture(pageEls[currentIdx()]); var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = fileBase() + '_' + (currentIdx() + 1) + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
