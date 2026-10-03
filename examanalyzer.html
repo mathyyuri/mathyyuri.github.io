@@ -370,7 +370,10 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
     <details class="fold" id="refFold">
       <summary>다른 강사의 분석 자료 첨부 (선택) <span class="chip" id="refChip">없음</span></summary>
       <p class="hint" style="margin:8px 0">다른 선생님이 만든 분석표(이미지·PDF·텍스트)를 올리면, AI가 그 표의 주제·난이도(★)·출처(교재/부교재/모의고사 변형 등)를 읽어 우리 분석서에 반영해서 작성합니다. 표에 없는 정답률·킬러 해부·대비 전략은 AI가 직접 분석해요. 분석서 맨 뒤에 원본을 참고 페이지로 붙일 수도 있습니다.</p>
-      <div class="row"><button class="btn sec sm" id="refAdd" type="button">파일 추가 (이미지 · PDF · 텍스트)</button>
+      <div class="drop" id="refDrop" style="padding:16px"><b>여기에 파일을 끌어다 놓기</b> <span class="hint">이미지·PDF·텍스트 · 클릭해서 고르기 · 캡처한 이미지는 Ctrl+V로 붙여넣기도 돼요</span></div>
+      <label class="f" style="margin-top:10px">또는 분석 내용을 직접 입력/붙여넣기
+        <textarea id="refText" rows="4" placeholder="예) 객1 서로 같은 집합 4.0 ★ / 객9 삼각형의 무게중심 4.7 ★★ 학원 교재 / 학교 부교재 변형 [고2 05년 6월 28일 변형] ..."></textarea></label>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="refTextAdd" type="button">입력한 글 추가</button><button class="btn sec sm" id="refAdd" type="button">파일 추가 (이미지 · PDF · 텍스트)</button>
         <label class="chip"><input type="checkbox" id="refAI" checked> 분석에 반영하기</label>
         <label class="chip"><input type="checkbox" id="refPage" checked> 분석서 맨 뒤에 첨부 페이지로 넣기</label></div>
       <input type="file" id="refFile" multiple accept="image/*,application/pdf,.pdf,.txt,.csv,.md,.json" hidden>
@@ -1830,6 +1833,20 @@ async function addRefFiles(files){
   refreshRefs(); if (STATE.data) renderReport(true);
 }
 $('#refAdd').addEventListener('click', () => $('#refFile').click());
+const refDrop = $('#refDrop');
+refDrop.addEventListener('click', () => $('#refFile').click());
+['dragenter', 'dragover'].forEach(ev => refDrop.addEventListener(ev, e => { e.preventDefault(); refDrop.classList.add('on'); }));
+['dragleave', 'drop'].forEach(ev => refDrop.addEventListener(ev, e => { e.preventDefault(); refDrop.classList.remove('on'); }));
+refDrop.addEventListener('drop', e => { const fs = [...e.dataTransfer.files]; if (fs.length) addRefFiles(fs); });
+$('#refFold').addEventListener('paste', e => {   // 캡처한 이미지 붙여넣기 (글자 붙여넣기는 그대로 둠)
+  const fs = [...(e.clipboardData && e.clipboardData.files || [])]; if (!fs.length) return;
+  e.preventDefault(); addRefFiles(fs.map((f, i) => f.name && f.name !== 'image.png' ? f : new File([f], `붙여넣은 이미지 ${REFS.length + i + 1}.png`, {type: f.type})));
+});
+$('#refTextAdd').addEventListener('click', () => {
+  const t = $('#refText').value.trim(); if (!t) return;
+  REFS.push({name: `직접 입력 ${REFS.filter(r => r.kind === 'text').length + 1}`, kind: 'text', text: t.slice(0, 12000)});
+  $('#refText').value = ''; refreshRefs(); if (STATE.data) renderReport(true);
+});
 $('#refFile').addEventListener('change', e => { addRefFiles([...e.target.files]); e.target.value = ''; });
 $('#refPage').addEventListener('change', () => { if (STATE.data) renderReport(true); });
 function refContent(){
