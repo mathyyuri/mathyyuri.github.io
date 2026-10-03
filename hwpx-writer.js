@@ -80,9 +80,9 @@
         '<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>' +
         '<hp:outMargin left="56" right="56" top="0" bottom="0"/><hp:script>' + X(script) + '</hp:script></hp:equation>';
     }
-    // 한 줄(문단)의 내용: 글 + 수식
-    function inline(s, charId) {
-      let runs = '';
+    // 한 줄(문단)의 내용: 글 + 수식 (pre: 첫 글 앞에 끼울 개체 XML, 예: 미주)
+    function inline(s, charId, pre) {
+      let runs = pre || '';
       for (const seg of splitMath(String(s))) {
         if (seg.eq != null) runs += equation(seg.eq);
         else if (seg.t) runs += '<hp:t>' + X(seg.t) + '</hp:t>';
@@ -92,11 +92,20 @@
     const para = (inner, o) => { o = o || {}; return '<hp:p id="2147483648" paraPrIDRef="' + (o.pr || PARA) + '" styleIDRef="0" pageBreak="' + (o.pageBreak ? 1 : 0) + '" columnBreak="0" merged="0">' + inner + '</hp:p>'; };
     const blank = () => para('<hp:run charPrIDRef="' + CHAR + '"/>');
     // 여러 줄 글 → 문단들. 첫 줄 앞에 머리말(번호 등)을 붙일 수 있다
-    function lines(text, head) {
+    function lines(text, head, pre) {
       const ls = String(text || '').split(/\n/).map(x => x.replace(/\s+$/, ''));
       while (ls.length && !ls[ls.length - 1]) ls.pop();
       if (!ls.length) ls.push('');
-      return ls.map((l, i) => para(inline((i === 0 && head ? head : '') + l))).join('');
+      return ls.map((l, i) => para(inline((i === 0 && head ? head : '') + l, null, i === 0 ? pre : ''))).join('');
+    }
+    // 학교 시험지 hwpx와 같은 모양의 미주: 문제 첫 줄 앞에 붙고, 안에 [정답] / [풀이]가 들어간다
+    let enInst = 300;
+    function endNoteCtrl(n, answer, solution) {
+      const aut = '<hp:ctrl><hp:autoNum num="' + n + '" numType="ENDNOTE"><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/></hp:autoNum></hp:ctrl>';
+      const enPara = inner => '<hp:p id="4294967295" paraPrIDRef="' + PARA + '" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' + inner + '</hp:p>';
+      let sub = enPara('<hp:run charPrIDRef="' + CHAR + '">' + aut + '<hp:t> [정답] </hp:t></hp:run>' + inline(String(answer || '')));
+      if (solution) sub += blank() + lines(solution, '[풀이] ').replace(/id="2147483648"/g, 'id="4294967295"');
+      return '<hp:ctrl><hp:endNote number="' + n + '" suffixChar="41" instId="' + (enInst++) + '"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="TOP" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">' + sub + '</hp:subList></hp:endNote></hp:ctrl>';
     }
     function textLen(s) { return String(s).replace(/\$|\\\(|\\\)/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}^_]/g, '').length; }
     function choiceRows(choices) {
@@ -137,12 +146,15 @@
     let body = '';
     for (let i = 0; i < problems.length; i++) {
       const p = problems[i];
-      body += lines(p.problem, (i + 1) + '.  ');
+      const no = p.num != null ? p.num : (i + 1);
+      // opts.endnotes: 정답·풀이를 문제 뒤 페이지가 아니라 미주로 붙인다(학교 시험지 hwpx 방식, 번호는 미주 번호로 표시)
+      if (opts.endnotes) body += lines(p.problem, '', endNoteCtrl(no, p.answer, p.solution));
+      else body += lines(p.problem, no + '.  ');
       body += await figureParas(p.figure, p.figurePng);
       if (p.choices && p.choices.length) body += choiceRows(p.choices);
       body += blank() + blank();
     }
-    if (opts.withAnswers !== false) {
+    if (opts.withAnswers !== false && !opts.endnotes) {
       body += para(inline('정답 및 풀이', CHAR_BOLD), { pageBreak: true });
       body += blank();
       for (let i = 0; i < problems.length; i++) {

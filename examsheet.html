@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>시험지 (문제지) | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="examkit.js"></script>
+<style>
+:root{
+  --ink:#1a1a1a; --sub:#555; --rule:#bbb; --rule-dark:#000; --acc:#16325c; --acc-soft:#e8edf4; --red:#a3242f; --paper:#d9dde3; --page:#ffffff;
+  --gold:#8a6d3b; --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+.deckWrap{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+.examPage{--fit:1;position:relative;width:100%;max-width:70.7vh;aspect-ratio:210/297;max-height:100vh;margin:0 auto;background:var(--page);scroll-snap-align:start;overflow:hidden;padding:9mm 10mm;display:flex;flex-direction:column}
+.wait{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:15px;text-align:center;line-height:1.8}
+
+.coverPage{align-items:center;justify-content:flex-start;text-align:center;padding:0;border:7mm solid var(--acc);background:linear-gradient(180deg,#fff,#fff 60%,var(--acc-soft))}
+.coverInner{padding:6mm 8mm 0;display:flex;flex-direction:column;align-items:center;flex:1;width:100%;min-height:0}
+.coverKicker{font-size:calc(.56rem * var(--fit,1));color:var(--sub);letter-spacing:.16em;margin-bottom:.4em;margin-top:1mm}
+.coverRound{display:inline-flex;align-items:center;gap:.5em;border:1.6px solid var(--gold);border-radius:30px;padding:.28em 1.2em;margin-bottom:.7em}
+.coverRound .n{font-family:var(--kserif);font-weight:900;font-size:calc(.92rem * var(--fit,1));color:var(--acc)}
+.coverRound .t{font-size:calc(.58rem * var(--fit,1));color:var(--sub);letter-spacing:.05em}
+.coverSchool{font-family:var(--kserif);font-weight:900;font-size:calc(1.3rem * var(--fit,1));margin-bottom:.1em}
+.coverExamName{font-family:var(--kserif);font-weight:700;font-size:calc(.9rem * var(--fit,1));color:var(--acc);margin-bottom:.7em;letter-spacing:.03em}
+.coverSubjectBadge{display:inline-block;background:var(--acc);color:#fff;border-radius:6px;padding:.26em 1.2em;font-family:var(--kserif);font-weight:900;font-size:calc(.74rem * var(--fit,1));margin-bottom:.8em}
+.coverInfoTbl{border-collapse:collapse;width:86%;margin-bottom:.7em}
+.coverInfoTbl td{border:1.2px solid var(--rule-dark);padding:.24em .5em;font-size:calc(.56rem * var(--fit,1));text-align:left}
+.coverInfoTbl td.lbl{background:var(--acc-soft);font-weight:700;width:24%;text-align:center;color:var(--acc)}
+.coverBlankRow td{height:.95em}
+.coverFoot{margin-top:auto;padding-bottom:4mm;font-size:calc(.46rem * var(--fit,1));color:var(--sub)}
+.coverFoot b{color:var(--acc)}
+
+.noticePage{justify-content:flex-start}
+.noticeTitle{font-family:var(--kserif);font-weight:900;font-size:calc(.9rem * var(--fit,1));color:var(--acc);border-bottom:2px solid var(--acc);padding-bottom:.35em;margin-bottom:.6em}
+.noticeBody{font-size:calc(.66rem * var(--fit,1));line-height:1.75}
+.noticeBody ol{padding-left:1.3em;margin:0}
+.noticeBody li{margin-bottom:.5em}
+.noticeScore{margin-top:1.2em;border:1.2px solid var(--rule-dark)}
+.noticeScore table{width:100%;border-collapse:collapse}
+.noticeScore th,.noticeScore td{border:1px solid var(--rule);padding:.3em .5em;font-size:calc(.62rem * var(--fit,1));text-align:center}
+.noticeScore th{background:var(--acc-soft);color:var(--acc)}
+
+.examHeadTable{border-collapse:collapse;width:100%;font-size:.56rem;margin-bottom:.6em;flex:0 0 auto}
+.examHeadTable td{border:1px solid var(--rule-dark);padding:.28em .4em;vertical-align:middle}
+.examHeadTable .ehLabel{background:var(--acc-soft);font-weight:700;text-align:center;color:var(--acc)}
+.examHeadTable .ehSchool{font-family:var(--kserif);font-weight:900;font-size:.78rem;text-align:center;color:var(--acc)}
+.sheetTop{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.6px solid var(--rule-dark);padding-bottom:.3em;margin-bottom:.6em;font-size:.62rem;color:var(--sub);flex:0 0 auto}
+.sheetTop b{color:var(--acc);font-family:var(--kserif)}
+
+/* 객관식: 2문제(세로) 또는 4문제(2x2) */
+.mcGrid{flex:1 1 auto;min-height:0;display:grid;row-gap:5mm}
+.mcGrid.p2{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+.mcGrid.p4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;column-gap:7mm;row-gap:0}
+.mcCell{border-top:1px solid var(--rule);padding-top:calc(.5em * var(--fit,1));overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.p2 .mcCell:nth-child(1){border-top:none}
+.p4 .mcCell:nth-child(1),.p4 .mcCell:nth-child(2){border-top:none}
+.p4 .mcCell:nth-child(odd){border-right:1px solid var(--rule);padding-right:5mm}
+.p4 .mcCell:nth-child(even){padding-left:5mm}
+.mcHead{display:flex;align-items:baseline;gap:.4em;margin-bottom:calc(.25em * var(--fit,1));flex:0 0 auto}
+.mcNum{font-family:var(--kserif);font-weight:900;font-size:calc(.95rem * var(--fit,1));min-width:1.4em}
+.mcPts{margin-left:auto;font-size:calc(.56rem * var(--fit,1));color:var(--red)}
+.mcStem{font-size:calc(.66rem * var(--fit,1));line-height:1.6;flex:0 0 auto;overflow:hidden}
+.p4 .mcStem{font-size:calc(.6rem * var(--fit,1))}
+.mcStem p{margin:0 0 .35em}
+.boxed{border:1px solid var(--rule-dark);padding:.3em .55em;margin:.25em 0;font-size:.94em;line-height:1.65}
+.fig{display:block;margin:.2em auto;max-width:46%;max-height:34mm;flex:0 0 auto}
+.fig svg{width:100%;height:auto;max-height:34mm}
+.figNote{font-size:.78em;color:#888;border:1px dashed #bbb;padding:.3em .5em;margin:.25em 0;text-align:center}
+.choices{display:grid;column-gap:.5em;row-gap:.3em;margin-top:.3em;font-size:calc(.64rem * var(--fit,1));flex:0 0 auto}
+.p4 .choices{font-size:calc(.58rem * var(--fit,1))}
+.choices.c5{grid-template-columns:repeat(5,1fr)}.choices.c3{grid-template-columns:repeat(3,1fr)}.choices.c2{grid-template-columns:repeat(2,1fr)}.choices.c1{grid-template-columns:1fr}
+
+/* 서술형 */
+.essayNum{font-family:var(--kserif);font-weight:900;font-size:.95rem;flex:0 0 auto;margin-bottom:.15em}
+.essayPts{color:var(--red);font-size:.62rem;font-weight:400}
+.essayStem{font-size:calc(.76rem * var(--fit,1));line-height:1.85;margin-bottom:.6em;flex:0 0 auto}
+.essayStem p{margin:0 0 .4em}
+.essayAnsLabel{font-family:var(--kserif);font-weight:700;font-size:.66rem;color:var(--acc);border-bottom:1px solid var(--rule-dark);padding-bottom:.15em;margin-bottom:.3em;flex:0 0 auto}
+.essayArea{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.essayArea .ln{border-bottom:1px solid var(--rule);height:1.7em;flex:0 0 auto}
+.essayFinalBox{flex:0 0 auto;margin-top:.5em;display:flex;align-items:center;gap:.5em;font-size:.7rem;border-top:1.2px solid var(--rule-dark);padding-top:.4em}
+.essayFinalBox .box{flex:1 1 auto;height:1.9em;border:1.2px solid var(--rule-dark);border-radius:3px}
+
+.omrTitle{font-family:var(--kserif);font-weight:900;font-size:1rem;color:var(--acc);text-align:center;border-bottom:2px solid var(--acc);padding-bottom:.4em;margin-bottom:.8em;flex:0 0 auto}
+.omrInfoRow{display:flex;gap:1.5em;justify-content:center;font-size:.68rem;margin-bottom:1em;flex:0 0 auto}
+.omrInfoRow .f{border-bottom:1px solid var(--ink);min-width:6em;display:inline-block;text-align:center}
+.omrGrid{flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;column-gap:10mm;align-content:start}
+.omrCol table{width:100%;border-collapse:collapse}
+.omrCol td{border:1px solid var(--rule);padding:.35em;font-size:.66rem;text-align:center}
+.omrCol td.qn{background:var(--acc-soft);font-weight:700;width:14%;color:var(--acc)}
+.omrBubble{display:inline-block;width:1.3em;height:1.3em;border:1.1px solid var(--ink);border-radius:50%;margin:0 .18em}
+.backCover{align-items:center;justify-content:center;text-align:center;border:7mm solid var(--acc)}
+.backBrand{font-family:var(--kserif);font-weight:900;letter-spacing:.35em;color:var(--acc);font-size:.72rem;margin-bottom:.6em}
+.backNote{font-size:.6rem;color:var(--sub);line-height:2}
+
+.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#555}
+.exportBar{position:fixed;top:10px;right:14px;z-index:6;display:flex;gap:8px}
+.exportBar button{font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;border:none;background:var(--acc);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.exportBar button:disabled{opacity:.6;cursor:default}
+.slideNav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px}
+.navBtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--acc);color:#fff;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.navBtn:disabled{opacity:.35;cursor:default}
+.navCounter{background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:10px}
+@media print{
+  .deckWrap{height:auto;overflow:visible}
+  .examPage{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
+  .navHint,.exportBar,.slideNav,.wait{display:none}
+  @page{size:portrait;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="wait" id="wait">시험지 데이터를 기다리는 중...<br>분석기에서 "문제지 열기"를 눌러 이 창을 열어 주세요.</div>
+<div class="deckWrap" id="deckWrap"></div>
+<div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space</div>
+<div class="exportBar">
+  <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+</div>
+<div class="slideNav">
+  <button type="button" id="navPrevBtn" class="navBtn">‹</button>
+  <span id="navCounter" class="navCounter"></span>
+  <button type="button" id="navNextBtn" class="navBtn">›</button>
+</div>
+<script>
+(function(){
+var K = window.ExamKit, esc = K.esc, CIRC = K.CIRC;
+var SPEC = null, pageEls = [], katexReady = false;
+var deckWrap = document.getElementById('deckWrap');
+var STORE = 'ek_problem_spec';
+
+window.addEventListener('message', function(e){
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'data') return;
+  SPEC = e.data.spec;
+  try { localStorage.setItem(STORE, JSON.stringify(SPEC)); } catch (err) {}
+  build();
+});
+if (window.opener) { try { window.opener.postMessage({ type: 'ready' }, location.origin); } catch (e) {} }
+else { try { var s = localStorage.getItem(STORE); if (s) { SPEC = JSON.parse(s); build(); } } catch (e) {} }
+
+function isEssay(p){ return p.format === '서술형' || p.format === '단답형' || !(p.choices && p.choices.length); }
+function stemBlock(p){
+  var r = K.renderStem(p.stem);
+  var fig = K.figureHtml(p);
+  if (!fig && r.figNote) fig = '<div class="figNote">[그림] ' + esc(r.figNote) + '</div>';
+  return { html: r.html, fig: fig };
+}
+function mcCell(p, perPage){
+  var s = stemBlock(p);
+  return '<div class="mcCell"><div class="mcHead"><span class="mcNum">' + p.num + '.</span><span class="mcPts">[' + (p.points ? p.points + '점' : '') + ']</span></div>'
+    + '<div class="mcStem">' + s.html + '</div>' + s.fig + K.choicesHtml(p.choices, perPage) + '</div>';
+}
+var LINES = Array(14).join('<div class="ln"></div>');
+function essayPage(p, e){
+  var s = stemBlock(p);
+  return '<div class="examPage"><div class="sheetTop"><b>MATHY YURI</b><span>' + esc(e.subject || '') + ' &middot; 서술형</span></div>'
+    + '<div class="essayNum">' + p.num + '. <span class="essayPts">[' + (p.points ? p.points + '점' : '') + ']</span></div>'
+    + '<div class="essayStem">' + s.html + s.fig + (p.choices && p.choices.length ? K.choicesHtml(p.choices, 2) : '') + '</div>'
+    + '<div class="essayAnsLabel">풀이 과정 및 답</div><div class="essayArea">' + LINES + '</div>'
+    + '<div class="essayFinalBox">답 &nbsp;<span class="box"></span></div></div>';
+}
+function build(){
+  if (!SPEC) return;
+  document.getElementById('wait').style.display = 'none';
+  var e = SPEC.exam || {}, P = SPEC.problems || [], perPage = (SPEC.opts && SPEC.opts.perPage) === 4 ? 4 : 2;
+  var mc = P.filter(function(p){ return !isEssay(p); }), es = P.filter(isEssay);
+  var units = []; P.forEach(function(p){ if (p.unit && units.indexOf(p.unit) < 0) units.push(p.unit); });
+  var title = [e.school, e.year && (e.year + '학년도'), e.term].filter(Boolean).join(' ');
+  document.title = (title || '시험지') + ' 문제지';
+  var head = '<table class="examHeadTable"><tr><td class="ehLabel" style="width:13%">시행</td><td style="width:30%">' + esc(title) + '</td>'
+    + '<td class="ehSchool" colspan="2">' + esc((e.grade || '') + ' ' + (e.subject || '')) + '</td></tr><tr>'
+    + '<td class="ehLabel">문항</td><td>객관식 ' + mc.length + (es.length ? ' + 서술형 ' + es.length : '') + '</td>'
+    + '<td class="ehLabel" style="width:13%">과목명</td><td>' + esc(e.subject || '') + '</td></tr></table>';
+  var cover = '<div class="examPage coverPage"><div class="coverInner">'
+    + '<div class="coverKicker">' + esc(title) + '</div>'
+    + '<div class="coverRound"><span class="n">시험지</span><span class="t">MATHY YURI</span></div>'
+    + '<div class="coverSchool">' + esc(e.school || '시험') + '</div>'
+    + '<div class="coverExamName">' + esc([e.year && e.year + '학년도', e.term].filter(Boolean).join(' ')) + '</div>'
+    + '<div class="coverSubjectBadge">' + esc((e.grade || '') + ' ' + (e.subject || '')) + '</div>'
+    + '<table class="coverInfoTbl">'
+    + '<tr><td class="lbl">범위</td><td>' + esc(units.join(' · ') || '-') + '</td></tr>'
+    + '<tr><td class="lbl">문항</td><td>객관식 ' + mc.length + '문항' + (es.length ? ' + 서술형 ' + es.length + '문항' : '') + ' (배점은 문항마다 표기)</td></tr>'
+    + '<tr class="coverBlankRow"><td class="lbl">성명</td><td></td></tr><tr class="coverBlankRow"><td class="lbl">반</td><td></td></tr>'
+    + '</table></div><div class="coverFoot"><b>MATHY YURI</b> &middot; 실제 시험 문항을 재구성한 연습용 시험지입니다</div></div>';
+  var notice = '<div class="examPage noticePage">' + head + '<div class="noticeTitle">시험 안내 및 유의사항</div><div class="noticeBody"><ol>'
+    + '<li>문제지 표지에 성명, 반을 정확히 기재하시오.</li>'
+    + (mc.length ? '<li>객관식 문항은 답안지에 정답을 표기하시오.</li>' : '')
+    + (es.length ? '<li>서술형 문항은 풀이 과정과 답을 함께 쓰시오. 풀이 과정이 없는 답안은 감점될 수 있습니다.</li>' : '')
+    + '<li>계산은 문제지의 여백을 활용하시오.</li><li>시험 종료 후 문제지와 답안지를 모두 제출하시오.</li></ol></div></div>';
+  var pages = cover + notice;
+  for (var i = 0; i < mc.length; i += perPage) {
+    var grp = mc.slice(i, i + perPage);
+    pages += '<div class="examPage"><div class="sheetTop"><b>MATHY YURI</b><span>' + esc(e.subject || '') + ' &middot; 객관식 (' + grp[0].num + '~' + grp[grp.length - 1].num + '번)</span></div>'
+      + '<div class="mcGrid p' + perPage + '">' + grp.map(function(p){ return mcCell(p, perPage); }).join('') + '</div></div>';
+  }
+  es.forEach(function(p){ pages += essayPage(p, e); });
+  if (mc.length) {
+    var half = Math.ceil(mc.length / 2);
+    var rows = function(list){ return list.map(function(p){ return '<tr><td class="qn">' + p.num + '</td><td>' + CIRC.map(function(){ return '<span class="omrBubble"></span>'; }).join('') + '</td></tr>'; }).join(''); };
+    pages += '<div class="examPage"><div class="omrTitle">답안지 &middot; ' + esc(title) + '</div><div class="omrInfoRow"><span>성명 <span class="f"></span></span><span>반 <span class="f"></span></span></div>'
+      + '<div class="omrGrid"><div class="omrCol"><table>' + rows(mc.slice(0, half)) + '</table></div><div class="omrCol"><table>' + rows(mc.slice(half)) + '</table></div></div></div>';
+  }
+  pages += '<div class="examPage backCover"><div class="backBrand">MATHY YURI</div><div class="backNote">대치에스플러스학원<br>mathyyuri.com</div></div>';
+  deckWrap.innerHTML = pages;
+  if (katexReady) renderAndFit();
+}
+function refreshPageList(){ pageEls = [].slice.call(document.querySelectorAll('.examPage')); }
+function currentIdx(){ var i = pageEls.findIndex(function(s){ var r = s.getBoundingClientRect(); return r.top > -10 && r.top < window.innerHeight / 2; }); return i === -1 ? 0 : i; }
+function updateNav(){ var i = currentIdx(); document.getElementById('navPrevBtn').disabled = i <= 0; document.getElementById('navNextBtn').disabled = i >= pageEls.length - 1; document.getElementById('navCounter').textContent = pageEls.length ? (i + 1) + ' / ' + pageEls.length : ''; }
+// 칸(mcCell) 안에서 내용이 잘리는 것도 넘침으로 본다 (칸은 overflow:hidden이라 페이지 높이만 보면 못 알아챈다)
+function overflowing(page){
+  if (page.scrollHeight > page.clientHeight + 1) return true;
+  return [].some.call(page.querySelectorAll('.mcCell'), function(c){ return c.scrollHeight > c.clientHeight + 1; });
+}
+function fitPages(){
+  document.querySelectorAll('.examPage').forEach(function(page){
+    var fit = 1; page.style.setProperty('--fit', fit); var t = 0;
+    while (overflowing(page) && fit > 0.3 && t < 36) { fit -= 0.03; page.style.setProperty('--fit', fit); t++; }
+  });
+  refreshPageList(); updateNav();
+}
+function renderAndFit(){
+  renderMathInElement(document.body, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+  fitPages();
+}
+var rsT; window.addEventListener('resize', function(){ clearTimeout(rsT); rsT = setTimeout(function(){ if (SPEC && katexReady) fitPages(); }, 200); });
+function waitKatex(){ if (window.renderMathInElement) { katexReady = true; if (SPEC) renderAndFit(); } else setTimeout(waitKatex, 100); }
+window.addEventListener('DOMContentLoaded', function(){
+  waitKatex();
+  function goTo(i){ var c = Math.max(0, Math.min(pageEls.length - 1, i)); if (pageEls[c]) pageEls[c].scrollIntoView({ behavior: 'smooth' }); setTimeout(updateNav, 60); }
+  document.getElementById('navPrevBtn').addEventListener('click', function(){ goTo(currentIdx() - 1); });
+  document.getElementById('navNextBtn').addEventListener('click', function(){ goTo(currentIdx() + 1); });
+  document.addEventListener('keydown', function(ev){
+    if (['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].indexOf(ev.key) < 0) return;
+    ev.preventDefault(); goTo(currentIdx() + (ev.key === 'PageDown' || ev.key === 'ArrowRight' || ev.key === ' ' ? 1 : -1));
+  });
+  deckWrap.addEventListener('scroll', function(){ clearTimeout(window.__st); window.__st = setTimeout(updateNav, 100); });
+  async function capture(el){
+    var r = el.getBoundingClientRect(), w = Math.round(r.width), h = Math.round(r.height);
+    el.style.width = w + 'px'; el.style.height = h + 'px';
+    try { return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, width: w, height: h }); }
+    finally { el.style.width = ''; el.style.height = ''; }
+  }
+  var fileBase = function(){ var e = (SPEC && SPEC.exam) || {}; return ((e.school || '시험') + '_' + (e.year || '') + '_' + (e.subject || '') + '_문제지').replace(/\s+/g, ''); };
+  document.getElementById('saveImgBtn').addEventListener('click', async function(){
+    var b = this; b.disabled = true;
+    try { var c = await capture(pageEls[currentIdx()]); var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = fileBase() + '_' + (currentIdx() + 1) + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
+    catch (err) { alert('이미지 저장 실패: ' + err.message); } finally { b.disabled = false; }
+  });
+  document.getElementById('savePdfBtn').addEventListener('click', async function(){
+    var b = this, orig = b.textContent; b.disabled = true;
+    try {
+      var J = window.jspdf && window.jspdf.jsPDF; if (!J) throw new Error('PDF 라이브러리를 불러오지 못했어요');
+      var pdf = null;
+      for (var i = 0; i < pageEls.length; i++) {
+        b.textContent = '캡처 중... (' + (i + 1) + '/' + pageEls.length + ')';
+        var c = await capture(pageEls[i]);
+        if (!pdf) pdf = new J({ orientation: 'portrait', unit: 'mm', format: [210, 297] }); else pdf.addPage([210, 297], 'portrait');
+        pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      }
+      pdf.save(fileBase() + '.pdf');
+    } catch (err) { alert('PDF 저장 실패: ' + err.message); } finally { b.disabled = false; b.textContent = orig; }
+  });
+});
+})();
+</script>
+</body>
+</html>

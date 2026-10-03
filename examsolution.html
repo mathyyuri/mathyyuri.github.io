@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>손필기 해설지 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="examkit.js"></script>
+<style>
+:root{
+  --ink:#1c1c1c; --sub:#6b6258; --paper:#d8cfc4; --page:#fffdf5; --line:rgba(96,148,214,.26); --pen:#1d3b8b; --red:#c62828;
+  --acc:#9c4221; --gold:#b8944f; --hand:'Gaegu','Nanum Pen Script','Hi Melody',cursive; --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+.deckWrap{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+.examPage{--fit:1;position:relative;width:100%;max-width:70.7vh;aspect-ratio:210/297;max-height:100vh;margin:0 auto;background:var(--page);scroll-snap-align:start;overflow:hidden;padding:9mm 10mm 8mm;display:flex;flex-direction:column}
+.wait{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:15px;text-align:center;line-height:1.8}
+
+.coverPage{align-items:center;justify-content:center;text-align:center;background:var(--page)}
+.coverPage::before{content:'';position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,var(--acc),var(--gold))}
+.coverBrand{font-family:var(--kserif);font-weight:900;letter-spacing:.32em;color:var(--acc);font-size:.76rem;margin-bottom:.8em}
+.coverTitle{font-family:var(--hand);font-weight:700;font-size:calc(2.3rem * var(--fit,1));line-height:1.3;color:var(--pen);margin-bottom:.3em;transform:rotate(-1.5deg)}
+.coverSub{font-family:var(--kserif);font-size:.85rem;color:var(--ink);font-weight:700;margin-bottom:1.2em}
+.coverBadge{display:inline-block;border:1.4px solid var(--gold);border-radius:24px;padding:.4em 1.3em;font-size:.68rem;color:var(--sub);margin-bottom:1.4em}
+.coverNote{font-size:.62rem;color:var(--sub);line-height:1.9;max-width:80%}
+
+.quickPage{align-items:center;justify-content:flex-start;padding-top:6%}
+.quickTitle{font-family:var(--hand);font-weight:700;font-size:calc(1.9rem * var(--fit,1));color:var(--pen);margin-bottom:.5em;transform:rotate(-1deg)}
+.quickTbl{border-collapse:collapse;width:90%;margin:0 auto}
+.quickTbl th,.quickTbl td{border:1px solid #e0d4c0;padding:.28em .4em;font-size:calc(.66rem * var(--fit,1));text-align:center}
+.quickTbl th{background:#f3e9d6;font-weight:700;color:var(--acc)}
+.quickTbl td.a{font-family:var(--hand);font-size:calc(1rem * var(--fit,1));color:var(--red);font-weight:700}
+
+.solTop{display:flex;align-items:baseline;gap:.7em;border-bottom:2px solid var(--pen);padding-bottom:.25em;margin-bottom:.5em;flex:0 0 auto}
+.solTop .no{font-family:var(--hand);font-weight:700;font-size:calc(2rem * var(--fit,1));color:var(--pen);line-height:1}
+.solTop .meta{font-size:.62rem;color:var(--sub)}
+.solTop .tag{margin-left:auto;font-size:.58rem;color:var(--red);border:1px solid var(--red);border-radius:12px;padding:.05em .7em}
+.probBox{flex:0 0 auto;border:1px solid #ddd2bd;background:#fff;border-radius:6px;padding:.4em .65em;font-size:calc(.62rem * var(--fit,1));line-height:1.6;margin-bottom:.55em;overflow:hidden}
+.probBox p{margin:0 0 .3em}
+.probBox .boxed{border:1px solid #666;padding:.25em .5em;margin:.2em 0;line-height:1.6}
+.probBox .fig{float:right;max-width:34%;max-height:30mm;margin:0 0 .2em .6em}
+.probBox .fig svg{width:100%;height:auto;max-height:30mm}
+.probBox .figNote{font-size:.85em;color:#888;border:1px dashed #bbb;padding:.2em .4em}
+.probBox .choices{display:flex;flex-wrap:wrap;gap:.2em 1.1em;margin-top:.25em;clear:both}
+.probBox .choices .ch{white-space:nowrap}
+.note{flex:1 1 auto;min-height:0;overflow:hidden;position:relative;font-family:var(--hand);font-size:calc(1.12rem * var(--fit,1));line-height:1.95;color:var(--pen);padding:0 .6em 0 1.5em;border-left:2px solid rgba(220,90,90,.45);
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(1.95em - 1px),var(--line) calc(1.95em - 1px),var(--line) 1.95em)}
+.step{display:flex;gap:.45em;align-items:baseline;transform:rotate(var(--r,0deg));transform-origin:left center}
+.step:nth-child(odd){--r:-.25deg}.step:nth-child(even){--r:.2deg}
+.step .n{color:var(--red);font-weight:700;flex:0 0 1.35em}
+.step .t{flex:1 1 auto;min-width:0}
+.note .katex{font-size:1.02em;color:var(--pen)}
+.kps{margin-top:.2em}
+.kp{display:inline-block;background:#fff59d;color:#b71c1c;border-radius:4px;padding:0 .55em;margin:.1em .5em .1em 0;transform:rotate(-1deg);font-weight:700;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.kp .katex{color:#b71c1c}
+.ans{display:inline-block;margin:.35em 0 0 1.3em;font-size:1.2em;color:var(--red);font-weight:700;border:2.6px solid var(--red);border-radius:48% 52% 50% 46% / 60% 50% 55% 45%;padding:0 1em;transform:rotate(-1.4deg)}
+.ans .katex{color:var(--red)}
+.rubric{margin-top:.5em;font-size:.82em;color:var(--red);border:1.4px dashed var(--red);border-radius:8px;padding:.15em .8em}
+.rubric b{display:block}
+.check{margin-top:.4em;font-family:var(--sans);font-size:calc(.58rem * var(--fit,1));color:var(--red);background:#fdecea;border-radius:6px;padding:.25em .6em;line-height:1.5}
+.nosol{color:#999;font-size:.9em}
+.solFoot{display:flex;justify-content:space-between;font-size:.54rem;color:var(--sub);padding-top:.35em;flex:0 0 auto}
+
+.backCover{align-items:center;justify-content:center;text-align:center;border:7mm solid var(--acc)}
+.backBrand{font-family:var(--kserif);font-weight:900;letter-spacing:.35em;color:var(--acc);font-size:.72rem;margin-bottom:.6em}
+.backNote{font-size:.6rem;color:var(--sub);line-height:2}
+.navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#6b6258}
+.exportBar{position:fixed;top:10px;right:14px;z-index:6;display:flex;gap:8px}
+.exportBar button{font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;border:none;background:var(--acc);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.exportBar button:disabled{opacity:.6;cursor:default}
+.slideNav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px}
+.navBtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--acc);color:#fff;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.navBtn:disabled{opacity:.35;cursor:default}
+.navCounter{background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:10px}
+@media print{
+  .deckWrap{height:auto;overflow:visible}
+  .examPage{scroll-snap-align:none;max-height:none;box-shadow:none;page-break-after:always;max-width:none}
+  .navHint,.exportBar,.slideNav,.wait{display:none}
+  @page{size:portrait;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="wait" id="wait">해설 데이터를 기다리는 중...<br>분석기에서 "해설지 열기"를 눌러 이 창을 열어 주세요.</div>
+<div class="deckWrap" id="deckWrap"></div>
+<div class="navHint">↕ 스크롤 또는 PageUp/PageDown · ←/→ · Space</div>
+<div class="exportBar">
+  <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+</div>
+<div class="slideNav">
+  <button type="button" id="navPrevBtn" class="navBtn">‹</button>
+  <span id="navCounter" class="navCounter"></span>
+  <button type="button" id="navNextBtn" class="navBtn">›</button>
+</div>
+<script>
+(function(){
+var K = window.ExamKit, esc = K.esc;
+var SPEC = null, pageEls = [], katexReady = false;
+var deckWrap = document.getElementById('deckWrap');
+var STORE = 'ek_solution_spec';
+var CIRC9 = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+
+window.addEventListener('message', function(e){
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'data') return;
+  SPEC = e.data.spec;
+  try { localStorage.setItem(STORE, JSON.stringify(SPEC)); } catch (err) {}
+  build();
+});
+if (window.opener) { try { window.opener.postMessage({ type: 'ready' }, location.origin); } catch (e) {} }
+else { try { var s = localStorage.getItem(STORE); if (s) { SPEC = JSON.parse(s); build(); } } catch (e) {} }
+
+function build(){
+  if (!SPEC) return;
+  document.getElementById('wait').style.display = 'none';
+  var e = SPEC.exam || {}, P = SPEC.problems || [];
+  var title = [e.school, e.year && (e.year + '학년도'), e.term].filter(Boolean).join(' ');
+  document.title = (title || '시험') + ' 손필기 해설지';
+  var cover = '<div class="examPage coverPage"><div class="coverBrand">MATHY YURI</div>'
+    + '<div class="coverTitle">손필기 해설</div><div class="coverSub">' + esc(title) + '<br>' + esc((e.grade || '') + ' ' + (e.subject || '')) + '</div>'
+    + '<div class="coverBadge">고1 교육과정 수준 풀이</div>'
+    + '<div class="coverNote">정답을 먼저 직접 풀어 확인한 뒤, 칠판 필기처럼 한 줄씩 풀이를 적었습니다.<br>AI가 만든 해설이니 사용 전에 한 번 검토해 주세요.</div></div>';
+  var half = Math.ceil(P.length / 2), rowsTr = '';
+  for (var i = 0; i < half; i++) {
+    var a = P[i], b = P[i + half];
+    var cell = function(p){ return p ? '<td>' + p.num + '</td><td class="a">' + esc(p.answer || '-') + '</td>' : '<td></td><td></td>'; };
+    rowsTr += '<tr>' + cell(a) + cell(b) + '</tr>';
+  }
+  var quick = '<div class="examPage quickPage"><div class="quickTitle">빠른 정답</div><table class="quickTbl"><tr><th>번호</th><th>정답</th><th>번호</th><th>정답</th></tr>' + rowsTr + '</table></div>';
+  var total = P.length + 3;
+  var pages = cover + quick + P.map(function(p, i){
+    var r = K.renderStem(p.stem), fig = K.figureHtml(p);
+    if (!fig && r.figNote) fig = '<div class="fig figNote">[그림] ' + esc(r.figNote) + '</div>';
+    var ch = p.choices && p.choices.length ? '<div class="choices">' + p.choices.map(function(c, k){ return '<span class="ch">' + K.CIRC[k] + ' ' + esc(K.wrapMath(c)) + '</span>'; }).join('') + '</div>' : '';
+    var steps = (p.steps || []).map(function(t, k){ return '<div class="step"><span class="n">' + (CIRC9[k] || (k + 1) + '.') + '</span><span class="t">' + esc(t) + '</span></div>'; }).join('');
+    var kps = (p.keyPoints || []).length ? '<div class="kps">' + p.keyPoints.map(function(t){ return '<span class="kp">★ ' + esc(t) + '</span>'; }).join('') + '</div>' : '';
+    var rub = (p.rubric || []).length ? '<div class="rubric"><b>채점 기준</b>' + p.rubric.map(function(t){ return '<div>· ' + esc(t) + '</div>'; }).join('') + '</div>' : '';
+    var body = p.hasSolution
+      ? steps + kps + '<div><span class="ans">정답 ' + esc(p.answer || '') + '</span></div>' + rub + (p.check ? '<div class="check">검수 필요: ' + esc(p.check) + '</div>' : '')
+      : '<div class="nosol">이 문항은 해설이 아직 만들어지지 않았어요.</div>';
+    return '<div class="examPage"><div class="solTop"><span class="no">문제 ' + p.num + '</span><span class="meta">' + (p.points ? '배점 ' + p.points + '점' : '') + (p.unit ? ' · ' + esc(p.unit) : '') + '</span>' + (p.check ? '<span class="tag">검수 필요</span>' : '') + '</div>'
+      + '<div class="probBox">' + fig + r.html + ch + '</div>'
+      + '<div class="note">' + body + '</div>'
+      + '<div class="solFoot"><span>MATHY YURI · 고1 교육과정 수준 손필기 해설</span><span>' + (i + 3) + ' / ' + total + '</span></div></div>';
+  }).join('');
+  pages += '<div class="examPage backCover"><div class="backBrand">MATHY YURI</div><div class="backNote">대치에스플러스학원<br>mathyyuri.com</div></div>';
+  deckWrap.innerHTML = pages;
+  if (katexReady) renderAndFit();
+}
+function refreshPageList(){ pageEls = [].slice.call(document.querySelectorAll('.examPage')); }
+function currentIdx(){ var i = pageEls.findIndex(function(s){ var r = s.getBoundingClientRect(); return r.top > -10 && r.top < window.innerHeight / 2; }); return i === -1 ? 0 : i; }
+function updateNav(){ var i = currentIdx(); document.getElementById('navPrevBtn').disabled = i <= 0; document.getElementById('navNextBtn').disabled = i >= pageEls.length - 1; document.getElementById('navCounter').textContent = pageEls.length ? (i + 1) + ' / ' + pageEls.length : ''; }
+function renderAndFit(){
+  renderMathInElement(document.body, { delimiters: [{ left: '\\(', right: '\\)', display: false }], throwOnError: false });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitPages); else fitPages();
+}
+// 필기 영역(.note)·문제 상자는 overflow:hidden이라 페이지 높이만 보면 잘림을 못 알아챈다
+function overflowing(page){
+  if (page.scrollHeight > page.clientHeight + 1) return true;
+  return [].some.call(page.querySelectorAll('.note,.probBox'), function(c){ return c.scrollHeight > c.clientHeight + 1; });
+}
+function fitPages(){
+  document.querySelectorAll('.examPage').forEach(function(page){
+    var fit = 1; page.style.setProperty('--fit', fit); var t = 0;
+    while (overflowing(page) && fit > 0.3 && t < 40) { fit -= 0.03; page.style.setProperty('--fit', fit); t++; }
+  });
+  refreshPageList(); updateNav();
+}
+var rsT; window.addEventListener('resize', function(){ clearTimeout(rsT); rsT = setTimeout(function(){ if (SPEC && katexReady) fitPages(); }, 200); });
+function waitKatex(){ if (window.renderMathInElement) { katexReady = true; if (SPEC) renderAndFit(); } else setTimeout(waitKatex, 100); }
+window.addEventListener('DOMContentLoaded', function(){
+  waitKatex();
+  function goTo(i){ var c = Math.max(0, Math.min(pageEls.length - 1, i)); if (pageEls[c]) pageEls[c].scrollIntoView({ behavior: 'smooth' }); setTimeout(updateNav, 60); }
+  document.getElementById('navPrevBtn').addEventListener('click', function(){ goTo(currentIdx() - 1); });
+  document.getElementById('navNextBtn').addEventListener('click', function(){ goTo(currentIdx() + 1); });
+  document.addEventListener('keydown', function(ev){
+    if (['PageDown', 'PageUp', 'ArrowRight', 'ArrowLeft', ' '].indexOf(ev.key) < 0) return;
+    ev.preventDefault(); goTo(currentIdx() + (ev.key === 'PageDown' || ev.key === 'ArrowRight' || ev.key === ' ' ? 1 : -1));
+  });
+  deckWrap.addEventListener('scroll', function(){ clearTimeout(window.__st); window.__st = setTimeout(updateNav, 100); });
+  async function capture(el){
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    var r = el.getBoundingClientRect(), w = Math.round(r.width), h = Math.round(r.height);
+    el.style.width = w + 'px'; el.style.height = h + 'px';
+    try { return await html2canvas(el, { scale: 2, backgroundColor: '#fffdf5', useCORS: true, width: w, height: h }); }
+    finally { el.style.width = ''; el.style.height = ''; }
+  }
+  var fileBase = function(){ var e = (SPEC && SPEC.exam) || {}; return ((e.school || '시험') + '_' + (e.year || '') + '_' + (e.subject || '') + '_손필기해설지').replace(/\s+/g, ''); };
+  document.getElementById('saveImgBtn').addEventListener('click', async function(){
+    var b = this; b.disabled = true;
+    try { var c = await capture(pageEls[currentIdx()]); var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = fileBase() + '_' + (currentIdx() + 1) + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
+    catch (err) { alert('이미지 저장 실패: ' + err.message); } finally { b.disabled = false; }
+  });
+  document.getElementById('savePdfBtn').addEventListener('click', async function(){
+    var b = this, orig = b.textContent; b.disabled = true;
+    try {
+      var J = window.jspdf && window.jspdf.jsPDF; if (!J) throw new Error('PDF 라이브러리를 불러오지 못했어요');
+      var pdf = null;
+      for (var i = 0; i < pageEls.length; i++) {
+        b.textContent = '캡처 중... (' + (i + 1) + '/' + pageEls.length + ')';
+        var c = await capture(pageEls[i]);
+        if (!pdf) pdf = new J({ orientation: 'portrait', unit: 'mm', format: [210, 297] }); else pdf.addPage([210, 297], 'portrait');
+        pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      }
+      pdf.save(fileBase() + '.pdf');
+    } catch (err) { alert('PDF 저장 실패: ' + err.message); } finally { b.disabled = false; b.textContent = orig; }
+  });
+});
+})();
+</script>
+</body>
+</html>
