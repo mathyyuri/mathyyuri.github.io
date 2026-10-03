@@ -13,7 +13,7 @@
 <script src="examkit.js"></script>
 <style>
 :root{
-  --ink:#1c1c1c; --sub:#6b6258; --paper:#d8cfc4; --page:#fffdf5; --line:rgba(96,148,214,.26); --pen:#1d3b8b; --red:#c62828;
+  --ink:#1c1c1c; --sub:#6b6258; --paper:#d8cfc4; --page:#fffdf5; --line:rgba(86,140,210,.34); --pen:#1d3b8b; --red:#c62828;
   --acc:#9c4221; --gold:#b8944f; --hand:'Gaegu','Nanum Pen Script','Hi Melody',cursive; --kserif:'Noto Serif KR',serif; --sans:'Noto Sans KR',sans-serif;
 }
 *{box-sizing:border-box}
@@ -44,10 +44,10 @@ html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);c
 .solTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .7em;border-bottom:2px solid var(--pen);padding-bottom:.25em;margin-bottom:.5em;flex:0 0 auto}
 .solTop .exam{flex:0 0 100%;white-space:nowrap;overflow:hidden;font-family:var(--kserif);font-weight:700;font-size:calc(.7rem * var(--fit,1));color:var(--acc);letter-spacing:.02em;margin-bottom:.15em}
 .solTop .exam span{color:var(--sub);font-weight:400}
-.solTop .no{font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;font-weight:900;font-size:calc(1.7rem * var(--fit,1));color:var(--pen);line-height:1.1}
+.solTop .no{font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;font-weight:900;font-size:calc(1.05rem * var(--fit,1));color:var(--pen);line-height:1.2}
 .solTop .meta{font-size:.62rem;color:var(--sub)}
 .solTop .tag{margin-left:auto;font-size:.58rem;color:var(--red);border:1px solid var(--red);border-radius:12px;padding:.05em .7em}
-.probBox{flex:0 0 auto;border:1px solid #d9cfba;background:#f3efe6;font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;border-radius:6px;padding:.4em .65em;font-size:calc(.62rem * var(--fit,1));line-height:1.6;margin-bottom:.55em;overflow:hidden}
+.probBox{flex:0 0 auto;border:1px solid #d9cfba;background:#f3efe6;font-family:'Batang','BatangChe','바탕','Noto Serif KR',serif;border-radius:6px;padding:.4em .65em;font-size:calc(.62rem * var(--fit,1));line-height:1.6;margin-bottom:1.3em;overflow:hidden}
 .probBox p{margin:0 0 .3em}
 .probBox .boxed{background:#fff;border:1px solid #666;padding:.25em .5em;margin:.2em 0;line-height:1.6}
 .probBox .fig{float:right;max-width:34%;max-height:30mm;margin:0 0 .2em .6em}
@@ -56,8 +56,11 @@ html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);c
 .probBox .choices{display:grid;column-gap:.6em;row-gap:.25em;margin-top:.3em;clear:both}
 .probBox .choices.c5{grid-template-columns:repeat(5,1fr)}.probBox .choices.c3{grid-template-columns:repeat(3,1fr)}.probBox .choices.c2{grid-template-columns:repeat(2,1fr)}.probBox .choices.c1{grid-template-columns:1fr}
 .probBox .choices .ch{white-space:nowrap}
-.note{flex:1 1 auto;min-height:0;overflow:hidden;position:relative;font-family:var(--hand);font-size:calc((.62rem + 1pt) * var(--fit,1));line-height:1.95;color:var(--pen);padding:0 .6em 0 1.5em;border-left:2px solid rgba(220,90,90,.45);
-  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(1.95em - 1px),var(--line) calc(1.95em - 1px),var(--line) 1.95em)}
+.note{background-color:#FFF8D6;border:1px solid #EBDCA0;border-left:none;border-radius:6px 6px 0 0;box-shadow:0 2px 8px rgba(120,90,20,.10);flex:1 1 auto;min-height:0;overflow:hidden;position:relative;font-family:var(--hand);font-size:calc((.62rem + 1pt) * var(--fit,1));line-height:1.95;color:var(--pen);padding:0 .6em 0 1.5em;border-left:2px solid rgba(220,90,90,.55);
+  }
+.note .rules{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none}
+.note .rules i{display:block;height:1.95em;box-sizing:border-box;border-bottom:1px solid var(--line)}
+.note>*:not(.rules){position:relative}
 .step{display:flex;gap:.45em;align-items:baseline;margin:.1em 0;transform:rotate(var(--r,0deg));transform-origin:left center}
 .step:nth-child(odd){--r:-.25deg}.step:nth-child(even){--r:.2deg}
 .step .n{color:var(--red);font-weight:700;flex:0 0 .9em}
@@ -65,6 +68,9 @@ html,body{margin:0;height:100%;background:var(--paper);font-family:var(--sans);c
 .note .katex{font-size:1em;color:var(--pen)}
 .probBox .katex{font-size:1em}
 .kps{margin-top:.2em}
+.tipbox{margin-top:.5em;font-family:var(--sans);font-size:calc(.62rem * var(--fit,1));line-height:1.6;color:#1b5e20;background:#e8f5e9;border:1px dashed #66bb6a;border-radius:6px;padding:.3em .7em}
+.tipbox b{letter-spacing:.14em;margin-right:.4em}
+.tipbox .katex{font-size:1em}
 .kp{display:inline-block;background:#fff59d;color:#b71c1c;border-radius:4px;padding:0 .55em;margin:.1em .5em .1em 0;transform:rotate(-1deg);font-weight:700;box-shadow:0 1px 0 rgba(0,0,0,.08)}
 .kp .katex{color:#b71c1c}
 .ans{display:inline-block;margin:.35em 0 0 1.3em;font-size:1.2em;color:var(--red);font-weight:700;border:2.6px solid var(--red);border-radius:48% 52% 50% 46% / 60% 50% 55% 45%;padding:.25em 1em .3em;line-height:1.5;transform:rotate(-1.4deg)}
@@ -133,7 +139,7 @@ function build(){
   var clean = function(t){ return String(t == null ? '' : t).replace(/\s*[\(（]\s*2022\s*개정\s*[\)）]/g, '').trim(); };
   e = { school: clean(e.school), year: clean(e.year), term: clean(e.term), grade: clean(e.grade), subject: clean(e.subject) };
   var tm = e.term, sm = tm.match(/[1-3]\s*학기/), sem = sm ? sm[0].replace(/\s+/g, '') : '', etype = (sem ? tm.replace(sm[0], '') : tm).trim();
-  var subLine = [e.year, e.grade, sem, e.subject, etype].filter(Boolean).join(' ');
+  var subLine = [e.year, e.grade, sem, e.subject, /기말|2차/.test(etype) ? '기말고사' : (/중간|1차/.test(etype) ? '중간고사' : etype)].filter(Boolean).join(' ');
   var cover = '<div class="examPage coverPage"><div class="coverBrand">MATHY YURI</div>'
     + '<div class="coverSchool">' + esc(e.school || '해설집') + '</div><div class="coverSub">' + esc(subLine) + '</div>'
     + '<div class="coverBadge">해설집 · 고1 교육과정 수준 풀이</div></div>';
@@ -150,20 +156,23 @@ function build(){
   }
   var quick = '<div class="examPage quickPage"><div class="quickTitle">빠른 정답</div><table class="quickTbl"><tr><th>번호</th><th>정답</th><th>번호</th><th>정답</th></tr>' + rowsTr + '</table></div>';
   var total = P.length + 3;
-  var examLine = '<div class="exam">' + [e.school, e.year && (e.year + '학년도'), e.term].filter(Boolean).map(esc).join(' · ') + ((e.grade || e.subject) ? ' <span>· ' + esc([e.grade, e.subject].filter(Boolean).join(' ')) + '</span>' : '') + '</div>';
+  var gradeTxt = String(e.grade || '').replace(/^고\s*([1-3])$/, '$1학년'), typeTxt = /기말|2차/.test(etype) ? '기말고사' : (/중간|1차/.test(etype) ? '중간고사' : etype);
+  var headLine = [e.school, e.year && (e.year + '년'), gradeTxt, sem, typeTxt].filter(Boolean).join(' ');
+  var examLine = '<div class="exam">' + esc(headLine) + '</div>';
   var pages = cover + quick + P.map(function(p, i){
     var r = K.renderStem(p.stem), fig = K.figureHtml(p);
     if (!fig && r.figNote) fig = '<div class="fig figNote">[그림] ' + esc(r.figNote) + '</div>';
     var ch = K.choicesHtml(p.choices, 2);
     var steps = (p.steps || []).map(function(t, k){ return '<div class="step"><span class="n">' + '-' + '</span><span class="t">' + esc(t) + '</span></div>'; }).join('');
     var kps = (p.keyPoints || []).length ? '<div class="kps">' + p.keyPoints.map(function(t){ return '<span class="kp">★ ' + esc(t) + '</span>'; }).join('') + '</div>' : '';
+    var tip = p.tip ? '<div class="tipbox"><b>TIP</b> ' + esc(p.tip) + '</div>' : '';
     var rub = (p.rubric || []).length ? '<div class="rubric"><b>채점 기준</b>' + p.rubric.map(function(t){ return '<div>· ' + esc(t) + '</div>'; }).join('') + '</div>' : '';
     var body = p.hasSolution
-      ? steps + kps + '<div><span class="ans">정답 ' + esc(p.answer || '') + '</span></div>' + rub + (p.check ? '<div class="check">검수 필요: ' + esc(p.check) + '</div>' : '')
+      ? steps + kps + '<div><span class="ans">정답 ' + esc(p.answer || '') + '</span></div>' + tip + rub + (p.check ? '<div class="check">검수 필요: ' + esc(p.check) + '</div>' : '')
       : '<div class="nosol">이 문항은 해설이 아직 만들어지지 않았어요.</div>';
     return '<div class="examPage"><div class="solTop">' + examLine + '<span class="no">문제 ' + p.num + '</span><span class="meta">' + (p.points ? '배점 ' + p.points + '점' : '') + (p.unit ? ' · ' + esc(p.unit) : '') + '</span>' + (p.check ? '<span class="tag">검수 필요</span>' : '') + '</div>'
       + '<div class="probBox">' + fig + r.html + ch + '</div>'
-      + '<div class="note">' + body + '</div>'
+      + '<div class="note"><div class="rules">' + new Array(70).join('<i></i>') + '</div>' + body + '</div>'
       + '<div class="solFoot"><span>MATHY YURI · 해설집</span><span>' + (i + 3) + ' / ' + total + '</span></div></div>';
   }).join('');
   pages = pages.replace(/\\frac(?![a-zA-Z])/g, '\\dfrac');   // 분수 글자가 작아지지 않게 (display 크기)

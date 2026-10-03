@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연간 플래너 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --paper:#FBF8F1; --ink:#1A1A1A; --ink2:#5B574D; --muted:#948C78;
+  --gold:#A8853F; --gold-deep:#7A5F25; --gold-soft:rgba(168,133,63,.12); --gold-line:#E6DCC6;
+  --mint:#7FC8B4; --mint-deep:#3E8F79; --mint-soft:#E4F3EE;
+  --pink:#E58BA4; --pink-deep:#C64E71; --pink-soft:#FBE8EE;
+  --peri:#7088B5; --sand:#C98F5E;
+  --sans:'Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif; --kserif:'Noto Serif KR',serif; --serif:'Playfair Display','Noto Serif KR',serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;color:var(--ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px 80px}
+.topbar{display:flex;align-items:flex-end;gap:14px;padding:20px 18px 14px;max-width:1180px;margin:0 auto;border-bottom:1px solid var(--gold-line);flex-wrap:wrap}
+.brand{font-family:var(--serif);font-weight:900;letter-spacing:.06em;font-size:22px;line-height:1}
+.brand em{font-style:italic;font-weight:600;color:var(--gold)}
+.eyebrow-s{font-size:9px;letter-spacing:.38em;font-weight:700;color:var(--gold);margin-bottom:6px}
+.sp{flex:1}
+h1.page{font-family:var(--serif);font-weight:900;font-size:32px;margin:20px 0 2px}
+h1.page em{font-style:italic;font-weight:600;color:var(--mint-deep)}
+.lead{color:var(--ink2);font-size:13.5px;margin:0 0 14px;font-family:var(--kserif)}
+.btn{background:var(--ink);color:var(--paper);border:1px solid var(--ink);border-radius:3px;padding:9px 16px;font-size:13px;font-weight:700;letter-spacing:.04em}
+.btn:hover{background:var(--mint-deep);border-color:var(--mint-deep)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--gold-line)}
+.btn.sec:hover{background:var(--gold-soft);border-color:var(--gold)}
+.btn.pri{background:linear-gradient(135deg,#d8b96a,#c8a84b 55%,#a8853f);border:none;color:#fff;box-shadow:0 6px 16px rgba(168,133,63,.32)}
+.btn.sm{padding:6px 12px;font-size:12.5px}
+input[type=text],input[type=month],select,textarea{background:#fff;border:1px solid var(--gold-line);border-radius:3px;padding:7px 9px;font-size:13.5px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2)}
+.hint{font-size:12px;color:var(--muted)}
+.msg{font-size:13px;margin:6px 0 0}.msg.err{color:var(--pink-deep)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold-line);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--ink2);background:#fff}
+.tip{position:fixed;z-index:80}
+
+/* 플랜 도구줄 */
+.planbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 6px}
+.planbar select{min-width:240px;font-weight:700;font-family:var(--kserif)}
+.dk-bar{position:sticky;top:0;z-index:40;background:rgba(251,248,241,.97);border-bottom:1px solid var(--gold-line);padding:10px 0 8px;margin:0 0 12px}
+.dk-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.dk-nav{display:flex;align-items:center;gap:8px}
+.dk-nav .navb{width:34px;height:34px;border-radius:50%;border:1px solid var(--gold-line);background:#fff;font-size:20px;line-height:1}
+.dk-nav .navb:hover{background:var(--ink);color:var(--paper)}
+.dk-nav .cnt{font-family:var(--serif);font-weight:700;font-size:15px;min-width:56px;text-align:center}
+.lbl{font-size:12px;font-weight:700;color:var(--gold-deep);letter-spacing:.06em}
+.dk-sel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dk-sel input{width:150px;padding:6px 9px;font-size:13px}
+.dk-chips{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0 2px}
+.pc{min-width:30px;height:26px;border-radius:13px;border:1px solid var(--gold-line);background:#fff;font-size:12px;font-weight:700;color:var(--muted);padding:0 8px}
+.pc.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold-deep)}
+.pc.cur{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dk-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.ratiosel,.bgsel{display:flex;align-items:center;gap:4px}
+.rt{border:1px solid var(--gold-line);background:#fff;border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;color:var(--ink2)}
+.rt.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.sw{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold-line);box-shadow:inset 0 0 0 2px #fff;padding:0}
+.sw.on{border-color:var(--ink);box-shadow:inset 0 0 0 2px #fff,0 0 0 2px var(--gold)}
+.saved{font-size:12px;color:var(--mint-deep);margin-left:6px}
+
+/* 무대 */
+.stage-host{width:100%}
+.stage{--s:1;--pw:794px;--ph:1123px;display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 34px;background:linear-gradient(180deg,#F1EBDC,#EDE6D4);border-radius:6px}
+.pwrap{width:calc(var(--pw) * var(--s))}
+.pcap{font-size:11px;letter-spacing:.16em;color:var(--gold-deep);margin:0 0 5px 2px;font-weight:700}
+.pbox{width:calc(var(--pw) * var(--s));height:calc(var(--ph) * var(--s));position:relative;background:var(--paper);box-shadow:0 8px 30px rgba(70,52,12,.2);overflow:hidden}
+.pbox.off{opacity:.38}
+
+/* 페이지 */
+.rpage{--fit:1;position:absolute;left:0;top:0;width:var(--pw);height:var(--ph);transform:scale(var(--s,1));transform-origin:0 0;background:var(--paper);overflow:hidden;display:flex;flex-direction:column;padding:34px 42px 24px;font-size:calc(12.5px * var(--fit));line-height:1.5;color:var(--ink);font-family:var(--sans)}
+.rp-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:1px solid var(--gold-line);flex:0 0 auto}
+.rp-brand{font-family:var(--serif);font-weight:900;font-size:1.15em;letter-spacing:.06em}
+.rp-brand em{font-style:italic;font-weight:600;color:var(--gold)}
+.rp-eye{font-size:.68em;letter-spacing:.34em;font-weight:700;color:var(--gold)}
+.rp-body{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:14px 0 8px}
+.rp-foot{display:flex;justify-content:space-between;align-items:baseline;padding-top:7px;border-top:1px solid var(--gold-line);font-size:.72em;color:var(--muted);letter-spacing:.06em;flex:0 0 auto}
+.rp-foot .pn{font-family:var(--serif);font-weight:700;color:var(--ink);font-size:1.15em}
+.sec .eb{font-size:.68em;letter-spacing:.34em;font-weight:700;color:var(--gold)}
+.sec h2{font-family:var(--kserif);font-weight:900;font-size:1.9em;margin:.1em 0 .05em;line-height:1.2}
+.sec h2 em{font-family:var(--serif);font-style:italic;font-weight:600;color:var(--mint-deep);margin-left:.1em}
+.sec p{margin:0;color:var(--ink2);font-size:.95em}
+.cd{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden}
+.cd .ch{font-family:var(--kserif);font-weight:700;font-size:1em;padding:.45em .9em;background:rgba(168,133,63,.14)}
+.cd .cb{padding:.6em .9em}
+
+/* 편집 가능 글자 */
+.ed{outline:none;min-height:1.2em;white-space:pre-wrap;word-break:keep-all;border-radius:2px}
+.ed:hover{background:rgba(168,133,63,.09)}
+.ed:focus{background:#FFFBE8;box-shadow:0 0 0 1.5px rgba(168,133,63,.5)}
+.ed:empty:before{content:attr(data-ph);color:#C9BFA5;font-weight:400}
+.cap .ed:hover,.cap .ed:focus{background:none;box-shadow:none}
+.cap .ed:empty:before{content:''}
+.cap .ctl{display:none!important}
+.ctl{font-family:var(--sans)}
+.xbtn{border:none;background:none;color:var(--muted);font-size:14px;line-height:1;padding:0 4px;opacity:0;transition:.15s}
+li:hover>.xbtn,tr:hover .xbtn,.row:hover>.xbtn{opacity:1}
+.xbtn:hover{color:var(--pink-deep)}
+.addbtn{border:1px dashed var(--gold-line);background:none;color:var(--muted);border-radius:3px;font-size:.85em;padding:.1em .7em;margin-top:.3em}
+.addbtn:hover{border-color:var(--gold);color:var(--gold-deep)}
+ul.bl{list-style:none;margin:0;padding:0}
+ul.bl li{display:flex;align-items:flex-start;gap:.45em;padding:.12em 0}
+ul.bl li:before{content:'';flex:0 0 auto;width:.42em;height:.42em;border-radius:50%;background:var(--gold);margin-top:.55em}
+ul.bl li .ed{flex:1}
+
+/* 표지 */
+.rpage.cover{padding:0}
+.rpage.cover .rp-body{padding:0;display:block;overflow:visible}
+.cv{position:relative;width:100%;height:100%;padding:56px 60px 46px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.cv-frame{position:absolute;left:0;top:0;pointer-events:none}
+.cv-frame svg{display:block}
+.cv>*{position:relative}
+.cv .cv-frame{position:absolute}
+.cv-yr{font-family:var(--serif);font-weight:900;font-size:4.4em;line-height:1;letter-spacing:-.01em;margin-top:auto}
+.cv-yr em{font-style:italic;font-weight:600;color:var(--mint-deep)}
+.cv-plan{font-family:var(--kserif);font-weight:900;font-size:2.3em;line-height:1.25;margin-top:.5em}
+.cv-line{font-family:var(--kserif);font-size:1.15em;color:var(--ink2);letter-spacing:.08em;margin-top:.7em}
+.cv-rule{width:74px;height:3px;background:var(--gold);margin:1.2em 0}
+.cv-tag{font-size:1em;color:var(--ink2);max-width:80%}
+.cv-months{display:flex;gap:6px;margin-top:2em;margin-bottom:auto}
+.cv-months span{width:2.3em;height:2.3em;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:.95em}
+.cv-foot{display:flex;justify-content:space-between;width:100%;border-top:1px solid var(--gold-line);padding-top:9px;font-size:.72em;letter-spacing:.14em;color:var(--gold)}
+
+/* 로드맵 */
+.rm{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:1px solid var(--gold-line);border-radius:4px;background:#fff;overflow:hidden}
+.rm-h{display:grid;grid-template-columns:var(--lw,110px) repeat(var(--n,12),1fr);background:rgba(168,133,63,.14);font-family:var(--serif);font-weight:700;font-size:.95em;text-align:center}
+.rm-h div{padding:.5em 0;border-left:1px solid var(--gold-line)}
+.rm-h .yr{display:block;font-family:var(--sans);font-size:.62em;color:var(--gold);letter-spacing:.06em;line-height:1}
+.rm-h div:first-child{border-left:none;font-family:var(--kserif);font-size:.85em}
+.rm-t{display:grid;grid-template-columns:var(--lw,110px) 1fr;border-top:1px solid var(--gold-line);flex:1 1 0;min-height:0}
+.rm-l{display:flex;align-items:center;justify-content:center;text-align:center;padding:.3em .5em;font-family:var(--kserif);font-weight:700;font-size:.9em;background:var(--paper);border-right:1px solid var(--gold-line)}
+.rm-g{position:relative;display:grid;grid-template-columns:repeat(var(--n,12),1fr);align-content:stretch;background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(100%/var(--n,12) - 1px),var(--gold-line) calc(100%/var(--n,12) - 1px),var(--gold-line) calc(100%/var(--n,12)))}
+.rm-b{align-self:center;min-height:3em;margin:3px 2px;border-radius:5px;padding:.2em .5em;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:.85em;line-height:1.25;min-width:0;overflow:hidden}
+
+/* 연간 계획표 */
+.yg{flex:1 1 auto;min-height:0;display:grid;gap:8px}
+.yg.p{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr)}
+.yg.l{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr)}
+.mc{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.mc-h{display:flex;align-items:baseline;gap:.4em;padding:.35em .7em;background:rgba(168,133,63,.14)}
+.mc-h b{font-family:var(--serif);font-weight:900;font-size:1.5em;line-height:1}
+.mc-h small{font-size:.72em;color:var(--muted);letter-spacing:.06em}
+.mc-h .mx{margin-left:auto;font-size:.7em}
+.mc-b{padding:.4em .7em .5em;flex:1;min-height:0;overflow:hidden}
+.mc-th{font-family:var(--kserif);font-weight:700;font-size:1em;line-height:1.3;margin-bottom:.25em}
+.mc-goal{margin:.35em 0 0;font-size:.82em;color:var(--mint-deep);font-weight:700;border-top:1px dashed var(--gold-line);padding-top:.3em}
+.mc-goal:before{content:'목표 · ';color:var(--muted);font-weight:500}
+.cap .mc-goal:empty{display:none}
+.mc-ex{margin:.3em 0 0;font-size:.82em;color:var(--pink-deep);font-weight:700}
+.mc-ex:before{content:'● ';font-size:.8em}
+
+/* 월간 */
+.mh{display:flex;align-items:flex-end;gap:.9em;flex:0 0 auto;border-bottom:2px solid var(--ink);padding-bottom:.4em}
+.mh-m{font-family:var(--serif);font-weight:900;font-size:3.3em;line-height:.95}
+.mh-m small{font-size:.26em;color:var(--gold);letter-spacing:.14em;display:block;margin-bottom:.2em;font-family:var(--sans);font-weight:700}
+.mh-t{flex:1;min-width:0}
+.mh-th{font-family:var(--kserif);font-weight:900;font-size:1.5em;line-height:1.25}
+.mh-g{font-size:.92em;color:var(--ink2)}
+.cap .mh-ex:empty{display:none}
+.mh-ex{min-width:6em;text-align:center;font-size:.82em;font-weight:700;color:var(--pink-deep);background:var(--pink-soft);border-radius:20px;padding:.15em .8em;white-space:nowrap}
+.mb{flex:1 1 auto;min-height:0;display:grid;gap:12px}
+.mb.p{grid-template-columns:1fr 1fr;grid-template-rows:1.4fr 1fr .5fr}
+.mb.p .cal,.mb.p .wk{grid-column:1/3}
+.mb.l{grid-template-columns:1.5fr 1fr;grid-template-rows:1.1fr .8fr .7fr}
+.mb.l .cal{grid-column:1;grid-row:1/4}
+.mb.l .wk{grid-column:2;grid-row:1}
+.mb.l .sch{grid-column:2;grid-row:2}
+.mb.l .memo{grid-column:2;grid-row:3}
+.cal{display:flex;flex-direction:column;min-height:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff;overflow:hidden}
+.cal-h{display:grid;grid-template-columns:repeat(7,1fr);background:rgba(168,133,63,.14);text-align:center;font-size:.8em;font-weight:700}
+.cal-h div{padding:.3em 0}.cal-h div:first-child{color:var(--pink-deep)}.cal-h div:last-child{color:var(--peri)}
+.cal-g{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr)}
+.dc{border-top:1px solid #EFE8D6;border-left:1px solid #EFE8D6;padding:.15em .3em .2em;display:flex;flex-direction:column;min-height:0;overflow:hidden;font-size:.82em}
+.dc:nth-child(7n+1){border-left:none}
+.dc .dn{font-family:var(--serif);font-weight:700;font-size:1.05em;line-height:1.2}
+.dc.sun .dn{color:var(--pink-deep)}.dc.sat .dn{color:var(--peri)}
+.dc.out{background:#FAF7F0}
+.dc .ed{font-size:.9em;line-height:1.3;flex:1;min-height:1em}
+.ex-b{font-size:.74em;font-weight:700;border-radius:3px;padding:0 .35em;margin:.08em 0 .1em;line-height:1.4;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-lg{display:flex;gap:.9em;padding:.3em .7em;border-top:1px solid #EFE8D6;font-size:.78em;color:var(--ink2)}
+.cal-lg i{display:inline-block;width:.8em;height:.8em;border-radius:2px;margin-right:.35em;vertical-align:-.1em}
+.wt.ext{table-layout:fixed;height:auto;flex:none}
+.wt.ext th:first-child{width:14%}.wt.ext th:last-child{width:17%}
+.wt.ext td:nth-child(n){width:auto}
+.wt.ext td{padding:.95em .4em!important}
+.wt.ext th{text-align:center}.wt.ext td{text-align:center;padding:.5em .4em;font-size:.95em;vertical-align:middle}
+.wt.ext td.sn{font-family:var(--kserif);font-size:1.02em;white-space:nowrap;text-align:left}
+.cl .row{display:flex;gap:.6em;align-items:baseline;padding:.15em 0;border-bottom:1px solid #F3ECDA}
+.cl .cl-l{width:11em;font-weight:700}.cl .cl-d{flex:1}
+.wk{display:flex;flex-direction:column;min-height:0}
+.wt{width:100%;flex:1 1 auto;height:100%;border-collapse:collapse;font-size:.95em}
+.wt td:nth-child(2){width:50%}.wt td:nth-child(3){width:34%}
+.wt th{white-space:nowrap}
+.wt th{background:rgba(168,133,63,.14);padding:.4em .6em;font-size:.82em;letter-spacing:.06em;text-align:left;border-bottom:1.4px solid var(--gold)}
+.wt td{border-bottom:1px solid #EFE8D6;padding:.35em .6em;vertical-align:top}
+.wt td.wl{width:3.2em;font-family:var(--serif);font-weight:700;white-space:nowrap}
+.wt td.ck{width:2em;text-align:center}
+.ckb{border:1.5px solid var(--gold);width:1.1em;height:1.1em;border-radius:3px;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.9em;color:var(--mint-deep);padding:0;line-height:1}
+.ckb.on{background:var(--mint-soft)}
+.side{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.side .ch{font-family:var(--kserif);font-weight:700;padding:.4em .8em;background:rgba(168,133,63,.14);font-size:.95em}
+.side .cb{padding:.5em .8em;flex:1;min-height:0;overflow:hidden}
+.side.memo .ed{min-height:5em;height:100%}
+
+/* 모달 */
+.modal{position:fixed;inset:0;background:rgba(26,26,26,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal[hidden]{display:none}
+.mdl{background:#fff;border-radius:6px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.mdl h3{font-family:var(--kserif);margin:0 0 10px}
+.mdl .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mdl table{width:100%;border-collapse:collapse;font-size:13px}
+.mdl th{text-align:left;font-size:12px;color:var(--gold-deep);padding:4px}
+.mdl td{padding:3px}
+.mdl td input,.mdl td select{width:100%;padding:5px 6px;font-size:12.5px}
+.mdl .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+@media (max-width:760px){.mdl .grid{grid-template-columns:1fr}}
+@media print{
+  html,body{background:#fff!important}
+  .noprint,.topbar,.dk-bar,.pcap,h1.page,.lead,.planbar,.modal{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .stage{display:block;background:none;padding:0;border-radius:0;--s:1}
+  .pwrap{width:var(--pw);break-before:page;page-break-before:always}
+  .pwrap:first-child{break-before:auto;page-break-before:auto}
+  .pwrap.skip{display:none!important}
+  .pbox{box-shadow:none;opacity:1!important}
+  .rpage{transform:none!important}
+  .ctl{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="topbar noprint">
+  <div><div class="eyebrow-s">PLANNER</div><span class="brand">MATHY <em>YURI</em></span></div>
+  <span class="sp"></span>
+  <span class="hint" id="savedMsg"></span>
+</div>
+<div class="wrap">
+  <h1 class="page noprint">연간 <em>Planner</em></h1>
+  <p class="lead noprint">학교·지역별로 커리큘럼과 연간·월간 계획을 세우고, 페이지 위에서 바로 고쳐 쓰고, 여백없는 PDF·이미지로 뽑아요.</p>
+  <div class="planbar noprint" id="planbar"></div>
+  <div id="deck"></div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="mdl" id="mdl"></div></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function H(tag, attrs, kids){
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) { const v = attrs[k]; if (v == null || v === false) continue;
+    if (k === 'text') e.textContent = v; else if (k === 'html') e.innerHTML = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); }
+  (kids || []).forEach(c => { if (c == null) return; e.append(c.nodeType ? c : document.createTextNode(String(c))); });
+  return e;
+}
+const safeLS = {get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }};
+
+/* ---------------- 상수 ---------------- */
+const COLORS = [['민트', '#3E8F79'], ['연민트', '#7FC8B4'], ['골드', '#A8853F'], ['연골드', '#E6D08E'], ['핑크', '#E58BA4'], ['딥핑크', '#C64E71'], ['블루', '#7088B5'], ['테라코타', '#C98F5E']];
+const LIGHT = new Set(['#7FC8B4', '#E6D08E', '#E58BA4']);
+const textOn = c => LIGHT.has(c) ? '#1A1A1A' : '#FFFFFF';
+const RATIOS = [
+  {key: 'a4p', label: 'A4 세로', w: 794, h: 1123, o: 'p'},
+  {key: 'a4l', label: 'A4 가로', w: 1123, h: 794, o: 'l'},
+  {key: 'sq',  label: '정사각형 1:1', w: 794, h: 794, o: 'l'},
+  {key: 'p45', label: '인스타 4:5', w: 794, h: 992, o: 'p'},
+];
+const ratioOf = k => RATIOS.find(r => r.key === k) || RATIOS[0];
+const BGS = [
+  {key: 'cream', label: '크림', bg: '#FBF8F1'}, {key: 'white', label: '흰색', bg: '#FFFFFF'}, {key: 'mint', label: '민트 미스트', bg: '#EEF6F2'},
+  {key: 'rose', label: '로즈 블러쉬', bg: '#FBEFF2'}, {key: 'sand', label: '샌드', bg: '#F3EADB'}, {key: 'sky', label: '스카이', bg: '#EDF1F8'},
+];
+const bgOf = k => BGS.find(b => b.key === k) || BGS[0];
+const LSK = 'mathy_planner_v1';
+
+/* ---------------- 데이터 · 초안 ---------------- */
+const uid = () => Math.random().toString(36).slice(2, 9);
+const weeksFrom = (arr) => arr.map((c, i) => ({label: (i + 1) + '주', content: c, hw: '', done: false}));
+function mkMonths(spec){
+  return spec.map(([theme, bullets, exam, goal, weeks]) => ({
+    theme, bullets, exam: exam || '', goal: goal || '', memo: '',
+    schedule: [], weeks: weeksFrom(weeks || [bullets[0] || '', bullets[1] || '', bullets[2] || '', '월말 테스트 · 오답 정리']),
+  }));
+}
+function seedYongin(){
+  return {
+    id: uid(), name: '용인 예비고1 연간 플랜', region: '용인', schools: ['보라고', '신갈고', '서천고'], grade: '예비고1', startYm: '2026-11',
+    tagline: '개념 1회독 → 내신 완성 → 공통수학2 선행까지, 한 해의 흐름을 한 장에', note: '초안입니다. 월별 내용은 페이지에서 바로 고쳐 쓰세요.',
+    bars: [
+      {track: '교과 진도', label: '다항식', s: 0, e: 1, color: '#3E8F79'},
+      {track: '교과 진도', label: '방정식과 부등식', s: 2, e: 3, color: '#7FC8B4'},
+      {track: '교과 진도', label: '공통수학1 내신 심화', s: 4, e: 5, color: '#A8853F'},
+      {track: '교과 진도', label: '경우의 수 · 행렬', s: 6, e: 7, color: '#E6D08E'},
+      {track: '교과 진도', label: '도형의 방정식', s: 8, e: 10, color: '#7088B5'},
+      {track: '교과 진도', label: '집합·명제', s: 11, e: 11, color: '#C98F5E'},
+      {track: '교과 진도', label: '함수', s: 12, e: 13, color: '#E58BA4'},
+      {track: '내신 · 시험', label: '1학기 중간', s: 5, e: 5, color: '#C64E71'},
+      {track: '내신 · 시험', label: '1학기 기말', s: 7, e: 7, color: '#C64E71'},
+      {track: '내신 · 시험', label: '2학기 중간', s: 10, e: 11, color: '#C64E71'},
+      {track: '내신 · 시험', label: '2학기 기말', s: 12, e: 13, color: '#C64E71'},
+      {track: '모의 · 평가', label: '레벨테스트', s: 0, e: 0, color: '#E58BA4'},
+      {track: '모의 · 평가', label: '3월 학평', s: 4, e: 4, color: '#E58BA4'},
+      {track: '모의 · 평가', label: '6월 학평', s: 7, e: 7, color: '#E58BA4'},
+      {track: '모의 · 평가', label: '9월 학평', s: 10, e: 10, color: '#E58BA4'},
+      {track: '모의 · 평가', label: '11월 학평', s: 12, e: 12, color: '#E58BA4'},
+      {track: '방학 특강', label: '겨울방학 특강', s: 2, e: 3, color: '#E6D08E'},
+      {track: '방학 특강', label: '여름방학 특강', s: 8, e: 9, color: '#E6D08E'},
+    ],
+    months: mkMonths([
+      ['오리엔테이션 · 다항식', ['레벨테스트 · 학습 습관 진단', '다항식의 연산 · 항등식', '나머지정리 · 인수분해'], '', '개념 1회독 + 계산 정확도 확립', ['레벨테스트 · 오리엔테이션', '다항식의 연산', '항등식과 나머지정리', '인수분해 · 주간 테스트']],
+      ['다항식 완성', ['나머지정리 · 인수정리 심화', '다항식 유형 총정리', '월말 테스트 + 오답 정리'], '', '다항식 단원 완전 정복', ['나머지정리 심화', '인수분해 · 항등식 응용', '다항식 총정리', '월말 테스트 · 오답노트']],
+      ['방정식과 부등식 ①', ['복소수', '이차방정식 · 판별식', '근과 계수의 관계'], '겨울방학 특강 시작', '', ['복소수', '이차방정식', '판별식 · 근과 계수', '주간 테스트']],
+      ['방정식과 부등식 ②', ['이차함수와 이차방정식', '여러 가지 방정식 · 부등식', '겨울방학 총정리 테스트'], '', '공통수학1 선행 1회독 완료', null],
+      ['공통수학1 내신 시작', ['학교 진도 연계 · 내신 심화', '3월 학력평가 대비', '서술형 답안 쓰기 훈련'], '3월 학력평가(고1)', '', null],
+      ['1학기 중간고사 대비', ['학교별 기출 분석 · 변형 풀이', '시험 4주 전 집중 대비 주간', '킬러 문항 정리'], '1학기 중간고사 (학교별 일정 입력)', '학교별 기출 3회 + 변형 2회', null],
+      ['경우의 수 · 행렬', ['합의 법칙 · 곱의 법칙', '순열 · 조합', '행렬의 연산'], '', '', null],
+      ['1학기 기말고사 대비', ['기출 · 변형 총정리', '서술형 집중', '6월 학력평가'], '6월 학평 · 1학기 기말고사', '', null],
+      ['공통수학2 선행 시작', ['도형의 방정식: 평면좌표', '직선의 방정식', '여름방학 특강 시작'], '여름방학 시작', '', null],
+      ['도형의 방정식', ['원의 방정식', '도형의 이동', '여름방학 특강 총정리'], '', '공통수학2 도형의 방정식 1회독', null],
+      ['2학기 중간 대비', ['도형의 방정식 심화', '9월 학평 · 기출 변형', '시험 4주 전 집중 대비'], '9월 학력평가', '', null],
+      ['2학기 중간고사 · 집합과 명제', ['2학기 중간고사 실전', '집합 · 명제 선행', '함수 개념 안내'], '2학기 중간고사 (학교별 일정 입력)', '', null],
+      ['2학기 기말 대비 · 함수', ['함수와 그래프', '기말 기출 · 변형 총정리', '11월 학력평가'], '11월 학력평가', '', null],
+      ['2학기 기말고사 · 한 해 마무리', ['2학기 기말고사 실전', '1년 성과 점검 · 성적 분석', '다음 학년 커리큘럼 안내'], '2학기 기말고사 (학교별 일정 입력)', '1년 커리큘럼 완주', null],
+    ]),
+  };
+}
+function seedBundang(){
+  return {
+    id: uid(), name: '분당 연간 플랜 (초안)', region: '분당', schools: [], grade: '예비고1', startYm: '2026-11',
+    tagline: '심화·서술형 중심으로 한 걸음 빠르게', note: '학교 이름과 월별 내용을 분당 학교 일정에 맞게 고쳐 쓰세요.',
+    bars: [
+      {track: '교과 진도', label: '다항식 · 복소수', s: 0, e: 1, color: '#3E8F79'},
+      {track: '교과 진도', label: '방정식과 부등식', s: 2, e: 3, color: '#7FC8B4'},
+      {track: '교과 진도', label: '내신 심화 · 서술형', s: 4, e: 5, color: '#A8853F'},
+      {track: '교과 진도', label: '경우의 수 · 행렬', s: 6, e: 6, color: '#E6D08E'},
+      {track: '교과 진도', label: '도형의 방정식 (심화)', s: 7, e: 9, color: '#7088B5'},
+      {track: '교과 진도', label: '집합·명제 · 함수', s: 10, e: 13, color: '#C98F5E'},
+      {track: '내신 · 시험', label: '1학기 중간', s: 5, e: 5, color: '#C64E71'},
+      {track: '내신 · 시험', label: '1학기 기말', s: 7, e: 7, color: '#C64E71'},
+      {track: '내신 · 시험', label: '2학기 중간', s: 10, e: 11, color: '#C64E71'},
+      {track: '내신 · 시험', label: '2학기 기말', s: 12, e: 13, color: '#C64E71'},
+      {track: '모의 · 평가', label: '레벨테스트', s: 0, e: 0, color: '#E58BA4'},
+      {track: '모의 · 평가', label: '3·6·9·11월 학평', s: 4, e: 4, color: '#E58BA4'},
+      {track: '방학 특강', label: '겨울방학 심화 특강', s: 2, e: 3, color: '#E6D08E'},
+      {track: '방학 특강', label: '여름방학 심화 특강', s: 8, e: 9, color: '#E6D08E'},
+    ],
+    months: mkMonths([
+      ['오리엔테이션 · 다항식', ['레벨테스트 · 반 편성', '다항식의 연산 · 항등식', '나머지정리 · 인수분해'], '', '선행 속도 확보 + 심화 기본기', null],
+      ['다항식 · 복소수', ['다항식 심화 유형', '복소수의 연산', '월말 심화 테스트'], '', '', null],
+      ['방정식과 부등식 ①', ['이차방정식 · 판별식', '근과 계수의 관계', '이차함수 그래프 해석'], '겨울방학 심화 특강 시작', '', null],
+      ['방정식과 부등식 ②', ['여러 가지 방정식', '부등식 · 절댓값', '겨울방학 총정리 테스트'], '', '공통수학1 선행 + 심화 1회독', null],
+      ['내신 심화 시작', ['학교 진도 연계', '서술형 쓰기 훈련', '3월 학력평가 대비'], '3월 학력평가(고1)', '', null],
+      ['1학기 중간고사 대비', ['학교별 기출 · 변형 분석', '서술형 집중 대비', '킬러 문항 정리'], '1학기 중간고사 (학교별 일정 입력)', '', null],
+      ['경우의 수 · 행렬', ['경우의 수 · 순열 · 조합', '행렬의 연산', '1학기 기말 대비 시작'], '', '', null],
+      ['1학기 기말 대비 · 도형의 방정식', ['기출 · 변형 총정리', '도형의 방정식 선행 시작', '6월 학력평가'], '6월 학평 · 1학기 기말고사', '', null],
+      ['도형의 방정식 ①', ['평면좌표 · 직선의 방정식', '원의 방정식', '여름방학 심화 특강'], '여름방학 시작', '', null],
+      ['도형의 방정식 ②', ['도형의 이동', '도형의 방정식 심화 유형', '여름방학 총정리'], '', '공통수학2 도형의 방정식 심화 완료', null],
+      ['집합과 명제 · 2학기 중간 대비', ['집합 · 명제', '2학기 중간 기출 분석', '9월 학력평가'], '9월 학력평가', '', null],
+      ['2학기 중간고사 · 함수', ['2학기 중간고사 실전', '함수 선행', '함수 개념 정리'], '2학기 중간고사 (학교별 일정 입력)', '', null],
+      ['2학기 기말 대비', ['함수와 그래프 심화', '기말 기출 · 변형 분석', '11월 학력평가'], '11월 학력평가', '', null],
+      ['2학기 기말고사 · 한 해 마무리', ['2학기 기말고사 실전', '1년 성과 점검 · 성적 분석', '다음 학년 커리큘럼 안내'], '2학기 기말고사 (학교별 일정 입력)', '', null],
+    ]),
+  };
+}
+function seedBlank(){
+  const b = seedYongin(); b.id = uid(); b.name = '새 플랜'; b.region = ''; b.schools = []; b.tagline = ''; b.note = '';
+  b.bars = []; b.months.forEach(m => { m.theme = ''; m.bullets = []; m.exam = ''; m.goal = ''; m.weeks = weeksFrom(['', '', '', '']); });
+  return b;
+}
+let DB = {plans: [], cur: null};
+
+function load(){
+  try { const j = JSON.parse(safeLS.get(LSK) || 'null'); if (j && j.plans && j.plans.length) { DB = j; return; } } catch(e){}
+  DB = {plans: [seedYongin(), seedBundang()], cur: null}; DB.cur = DB.plans[0].id; save(true);
+}
+let saveT = 0;
+function save(now){
+  clearTimeout(saveT);
+  const go = () => { safeLS.set(LSK, JSON.stringify(DB)); const m = $('#savedMsg'); if (m) { m.textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}); } };
+  if (now) go(); else saveT = setTimeout(go, 350);
+}
+const cur = () => DB.plans.find(p => p.id === DB.cur) || DB.plans[0];
+const nOf = p => p.months.length;
+const monthInfo = (p, i) => { const [y, m] = p.startYm.split('-').map(Number); const t = (m - 1) + i; return {y: y + Math.floor(t / 12), m: (t % 12) + 1}; };
+const periodText = p => { const a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1); return `${a.y}.${String(a.m).padStart(2, '0')} – ${b.y}.${String(b.m).padStart(2, '0')}`; };
+const SEASON = m => (m >= 3 && m <= 5) ? '#7FC8B4' : (m >= 6 && m <= 8) ? '#E6D08E' : (m >= 9 && m <= 11) ? '#E58BA4' : '#7088B5';
+
+/* ---------------- 편집 가능 부품 ---------------- */
+let FIT_T = 0;
+function ed(obj, key, ph, cls){
+  const e = H('div', {class: 'ed ' + (cls || ''), contenteditable: 'true', spellcheck: 'false', 'data-ph': ph || ''});
+  e.textContent = obj[key] || '';
+  e.addEventListener('input', () => { obj[key] = e.innerText.replace(/\n$/, ''); save(); refit(e); });
+  e.addEventListener('paste', ev => { ev.preventDefault(); const t = (ev.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, t); });
+  return e;
+}
+function refit(el){ clearTimeout(FIT_T); FIT_T = setTimeout(() => { const pg = el.closest('.rpage'); if (pg) fitPage(pg); }, 250); }
+function bulletList(arr, ph){
+  const ul = H('ul', {class: 'bl'});
+  const draw = () => {
+    ul.innerHTML = '';
+    arr.forEach((_, i) => {
+      const li = H('li', {}, [ed(arr, i, ph), H('button', {class: 'xbtn ctl', type: 'button', text: '×', title: '지우기', onclick: () => { arr.splice(i, 1); save(); draw(); const pg = ul.closest('.rpage'); if (pg) fitPage(pg); }})]);
+      ul.append(li);
+    });
+    ul.append(H('button', {class: 'addbtn ctl', type: 'button', text: '+ 추가', onclick: () => { arr.push(''); save(); draw(); const last = $$('.ed', ul).pop(); if (last) last.focus(); }}));
+  };
+  draw(); return ul;
+}
+
+/* ---------------- 페이지 만들기 ---------------- */
+const D = {pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeLS.get('pl_bg')).key, sel: new Set(), cur: 0, stage: null, host: null};
+let PW = 794, PH = 1123, ORI = 'p';
+const mmW = () => +(PW * 210 / 794).toFixed(2), mmH = () => +(PH * 210 / 794).toFixed(2);
+
+function newPage(title, kind){
+  const p = cur();
+  const rp = H('div', {class: 'rpage' + (kind ? ' ' + kind : '')});
+  rp.style.setProperty('--paper', bgOf(D.bg).bg); rp.style.setProperty('--pw', PW + 'px'); rp.style.setProperty('--ph', PH + 'px');
+  const body = H('div', {class: 'rp-body'});
+  if (kind === 'cover') rp.append(body);
+  else rp.append(H('div', {class: 'rp-head'}, [H('span', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]), H('span', {class: 'rp-eye', text: 'ANNUAL PLANNER'})]), body,
+    H('div', {class: 'rp-foot'}, [H('span', {text: [p.region, p.name].filter(Boolean).join(' · ')}), H('span', {class: 'pn'})]));
+  const idx = D.pages.length, pbox = H('div', {class: 'pbox'}, [rp]);
+  const wrap = H('div', {class: 'pwrap'}, [H('div', {class: 'pcap', text: `${idx + 1} · ${title}`}), pbox]);
+  D.stage.append(wrap);
+  const pg = {box: wrap, pbox, rp, body, title, idx, kind}; D.pages.push(pg); return pg;
+}
+const secHead = (en, ko, accent, sub) => H('div', {class: 'sec'}, [H('div', {class: 'eb', text: en}), H('h2', {}, [ko + ' ', H('em', {text: accent})]), sub ? H('p', {text: sub}) : null]);
+
+function coverPage(p){
+  const pg = newPage('표지', 'cover'), a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1);
+  const frame = H('div', {class: 'cv-frame', html: `<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="${PW - 48}" height="${PH - 48}" fill="none" stroke="#A8853F" stroke-opacity=".75" stroke-width="1.89"/></svg>`});
+  const sch = H('div', {class: 'cv-line'});
+  sch.textContent = [p.region, (p.schools || []).join(' · ')].filter(Boolean).join('  |  ');
+  const months = H('div', {class: 'cv-months'}, Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); return H('span', {text: mi.m, style: `background:${SEASON(mi.m)};color:${textOn(SEASON(mi.m))}`}); }));
+  pg.body.append(H('div', {class: 'cv'}, [frame,
+    H('div', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]),
+    H('div', {class: 'cv-yr'}, [`${a.y}–${String(b.y).slice(2)} `, H('em', {text: 'Planner'})]),
+    ed(p, 'name', '플랜 이름', 'cv-plan'),
+    sch, H('div', {class: 'cv-rule'}),
+    H('div', {class: 'cv-line', text: `${p.grade || ''} · ${periodText(p)}`}),
+    ed(p, 'tagline', '한 줄 소개', 'cv-tag'), months,
+    H('div', {class: 'cv-foot'}, [H('span', {text: '대치에스플러스학원 · mathyyuri.com'}), H('span', {text: nOf(p) + ' MONTHS CURRICULUM'})]),
+  ]));
+  return pg;
+}
+
+function roadmapPage(p){
+  const pg = newPage('커리큘럼 로드맵');
+  pg.body.append(secHead('CURRICULUM ROADMAP', '커리큘럼', 'Roadmap', '한 해 동안의 진도와 시험·평가 흐름'));
+  const tracks = []; p.bars.forEach(b => { if (!tracks.includes(b.track)) tracks.push(b.track); });
+  const N = nOf(p), rm = H('div', {class: 'rm', style: `--n:${N}`});
+  const hd = H('div', {class: 'rm-h'}, [H('div', {text: '트랙'}), ...Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); return H('div', {}, [mi.m + '월', (i === 0 || mi.m === 1) ? H('small', {class: 'yr', text: mi.y}) : null]); })]);
+  rm.append(hd);
+  if (!tracks.length) rm.append(H('div', {class: 'rm-t'}, [H('div', {class: 'rm-l', text: ''}), H('div', {class: 'rm-g'}, [H('div', {class: 'rm-b ctl', style: 'grid-column:1/-1;color:#948C78', text: '위의 "로드맵 편집" 버튼으로 진도 막대를 추가하세요'})])]));
+  tracks.forEach(t => {
+    const bars = p.bars.filter(b => b.track === t).sort((a, b) => a.s - b.s), lanes = [];
+    bars.forEach(b => { let li = lanes.findIndex(end => end < b.s); if (li < 0) { li = lanes.length; lanes.push(-1); } lanes[li] = b.e; b._lane = li; });
+    const g = H('div', {class: 'rm-g', style: `grid-template-rows:repeat(${Math.max(1, lanes.length)},1fr)`});
+    bars.forEach(b => g.append(H('div', {class: 'rm-b', style: `grid-column:${clamp(b.s, 0, N - 1) + 1} / ${clamp(b.e, 0, N - 1) + 2};grid-row:${b._lane + 1};background:${b.color};color:${textOn(b.color)}`, text: b.label})));
+    rm.append(H('div', {class: 'rm-t', style: `flex-grow:${Math.max(1, lanes.length)}`}, [H('div', {class: 'rm-l', text: t}), g]));
+  });
+  pg.body.append(rm);
+  if (p.note !== undefined) pg.body.append(ed(p, 'note', '메모 (예: 학교별 시험 일정은 확정되면 입력)', ''));
+  return pg;
+}
+
+function yearPage(p){
+  const pg = newPage('연간 계획표');
+  pg.body.append(secHead('YEAR PLAN', '연간', 'Plan', '월별 주제와 핵심 내용, 학교 시험·평가 일정'));
+  const n = nOf(p), cols = ORI === 'p' ? 3 : (PW > PH * 1.2 ? 5 : 4), grid = H('div', {class: 'yg', style: `grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${Math.ceil(n / cols)},1fr)`});
+  p.months.forEach((m, i) => {
+    const mi = monthInfo(p, i);
+    grid.append(H('div', {class: 'mc'}, [
+      H('div', {class: 'mc-h', style: `border-left:5px solid ${SEASON(mi.m)}`}, [H('b', {text: mi.m + '월'}), H('small', {text: mi.y})]),
+      H('div', {class: 'mc-b'}, [ed(m, 'theme', '월 주제', 'mc-th'), bulletList(m.bullets, '핵심 내용'), ed(m, 'exam', '시험·평가 일정', 'mc-ex'), ed(m, 'goal', '월 목표', 'mc-goal')]),
+    ]));
+  });
+  pg.body.append(grid); return pg;
+}
+
+/* ---------------- 학교별 시험 일정 · 달력 ---------------- */
+const EXAM_COLS = [['m1', '1학기 중간'], ['f1', '1학기 기말'], ['m2', '2학기 중간'], ['f2', '2학기 기말']];
+const SCHOOL_COLORS = ['#C64E71', '#3E8F79', '#7088B5', '#A8853F', '#C98F5E', '#7FC8B4'];
+const COMMON_COLOR = '#948C78';
+const shortSchool = s => String(s).replace(/고등학교$/, '').replace(/고$/, '') || s;
+function ensurePlan(p){
+  p.exams = p.exams || {}; p.schools = p.schools || [];
+  p.common = p.common || [{label: '3월 학력평가', date: ''}, {label: '6월 학력평가', date: ''}, {label: '9월 학력평가', date: ''}, {label: '겨울방학', date: ''}, {label: '여름방학', date: ''}];
+  p.months.forEach(m => { m.days = m.days || {}; m.schedule = m.schedule || []; m.weeks = m.weeks || []; });
+  return p;
+}
+/* "4/22~4/26", "4월 22일 ~ 24일", "4/22, 4/24", "4/22~26", "2027.12.10~12.14" 같은 글에서 날짜를 뽑는다.
+   pref: 같은 달이 두 번 나오는 긴 플랜(예: 11~12월이 두 번)에서 어느 쪽 해로 볼지 — 'first' | 'last' (글에 연도를 쓰면 그 해로) */
+function parseDates(text, p, pref){
+  const t = String(text || ''), re = /(?:(20\d{2})\s*[\/.\-년]\s*)?(\d{1,2})\s*(?:[\/.]|월)\s*(\d{1,2})\s*일?/g, found = []; let m;
+  while ((m = re.exec(t))) found.push({y: m[1] ? +m[1] : 0, m: +m[2], d: +m[3], i: m.index, end: re.lastIndex});
+  const N = p.months.length;
+  const yearOf = mm => { let hit = null; for (let i = 0; i < N; i++) { const mi = monthInfo(p, i); if (mi.m === mm) { hit = mi.y; if (pref !== 'last') return hit; } } return hit; };
+  const out = [];
+  const push = (mm, dd, y) => { const yy = y || yearOf(mm); if (yy && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) out.push({y: yy, m: mm, d: dd}); };
+  for (let k = 0; k < found.length; k++) {
+    const a = found[k], b = found[k + 1], rest = t.slice(a.end), ya = a.y || yearOf(a.m);
+    const same = rest.match(/^\s*[~\-–—]\s*(\d{1,2})(?!\s*[\/.월\d])/);
+    if (same) { for (let d = a.d; d <= Math.min(31, +same[1]); d++) push(a.m, d, ya); continue; }
+    if (b && /^\s*[~\-–—]\s*$/.test(t.slice(a.end, b.i))) {
+      let yb = b.y || yearOf(b.m); if (ya && yb && yb < ya) yb = ya; if (ya && yb && yb === ya && b.m < a.m) yb = ya + 1;
+      if (ya && yb) { const s = new Date(ya, a.m - 1, a.d), e = new Date(yb, b.m - 1, b.d); for (let c = new Date(s), n = 0; c <= e && n < 45; c.setDate(c.getDate() + 1), n++) push(c.getMonth() + 1, c.getDate(), c.getFullYear()); }
+      k++; continue;
+    }
+    push(a.m, a.d, ya);
+  }
+  return out;
+}
+function examBadges(p){   // {'y-m': {day: [{text,color}]}}
+  const map = {};
+  const add = (list, text, color, pref) => parseDates(list, p, pref).forEach(x => { const k = x.y + '-' + x.m; ((map[k] = map[k] || {})[x.d] = (map[k][x.d] || [])).push({text, color}); });
+  p.schools.forEach((s, si) => { const ex = p.exams[s] || {}; EXAM_COLS.forEach(([key, label]) => { if (ex[key]) add(ex[key], `${shortSchool(s)} ${label.replace('1학기 ', '').replace('2학기 ', '')}`, SCHOOL_COLORS[si % SCHOOL_COLORS.length], key === 'f2' ? 'last' : 'first'); }); });
+  p.common.forEach(c => { if (c.date) add(c.date, c.label.replace('학력평가', '학평'), COMMON_COLOR); });
+  return map;
+}
+
+function examPage(p){
+  ensurePlan(p);
+  const pg = newPage('학교별 시험 일정');
+  pg.body.append(secHead('SCHOOL EXAM SCHEDULE', '학교별 시험', 'Schedule', '날짜를 적으면 월별 달력에 학교 색으로 자동 표시돼요 (예: 4/22~4/26)'));
+  const schools = p.schools;
+  const tbody = H('tbody');
+  if (!schools.length) tbody.append(H('tr', {}, [H('td', {colspan: 6, class: 'ctl', style: 'color:#948C78;text-align:center;padding:1.2em', text: '위의 "플랜 설정"에서 학교를 입력하면 이 표가 만들어져요 (예: 보라고, 신갈고, 서천고)'})]));
+  schools.forEach((s, si) => {
+    const ex = (p.exams[s] = p.exams[s] || {});
+    tbody.append(H('tr', {}, [H('td', {class: 'sn', style: `border-left:5px solid ${SCHOOL_COLORS[si % SCHOOL_COLORS.length]}`}, [H('b', {text: s})]),
+      ...EXAM_COLS.map(([k]) => H('td', {}, [ed(ex, k, '예) 4/22~4/26')])), H('td', {}, [ed(ex, 'memo', '메모')])]));
+  });
+  pg.body.append(H('div', {class: 'cd'}, [H('div', {class: 'ch', text: '학교별 정기시험'}), H('table', {class: 'wt ext'}, [H('thead', {}, [H('tr', {}, [H('th', {text: '학교'}), ...EXAM_COLS.map(([, l]) => H('th', {text: l})), H('th', {text: '메모'})])]), tbody])]));
+  const cl = H('div', {class: 'cl'});
+  const drawC = () => {
+    cl.innerHTML = '';
+    p.common.forEach((c, i) => cl.append(H('div', {class: 'row'}, [ed(c, 'label', '일정 이름', 'cl-l'), ed(c, 'date', '날짜 (예: 3/26)', 'cl-d'), H('button', {class: 'xbtn ctl', type: 'button', text: '×', onclick: () => { p.common.splice(i, 1); save(); drawC(); }})])));
+    cl.append(H('button', {class: 'addbtn ctl', type: 'button', text: '+ 일정 추가', onclick: () => { p.common.push({label: '', date: ''}); save(); drawC(); const e = $$('.cl-l', cl).pop(); if (e) e.focus(); }}));
+  };
+  drawC();
+  pg.body.append(H('div', {class: 'cd'}, [H('div', {class: 'ch', text: '공통 일정 (학평 · 방학 등)'}), H('div', {class: 'cb'}, [cl])]));
+  return pg;
+}
+
+function calendarBlock(p, i){
+  const m = p.months[i], mi = monthInfo(p, i), first = new Date(mi.y, mi.m - 1, 1).getDay(), days = new Date(mi.y, mi.m, 0).getDate();
+  const rows = Math.ceil((first + days) / 7), badges = (examBadges(p)[mi.y + '-' + mi.m]) || {};
+  const head = H('div', {class: 'cal-h'}, ['일', '월', '화', '수', '목', '금', '토'].map(d => H('div', {text: d})));
+  const grid = H('div', {class: 'cal-g', style: `grid-template-rows:repeat(${rows},1fr)`});
+  for (let c = 0; c < rows * 7; c++) {
+    const day = c - first + 1, wd = c % 7;
+    if (day < 1 || day > days) { grid.append(H('div', {class: 'dc out'})); continue; }
+    const cell = H('div', {class: 'dc' + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '')}, [H('div', {class: 'dn', text: day})]);
+    (badges[day] || []).forEach(b => cell.append(H('div', {class: 'ex-b', style: `background:${b.color}`, text: b.text})));
+    cell.append(ed(m.days, String(day), ''));
+    grid.append(cell);
+  }
+  const legend = H('div', {class: 'cal-lg'}, [...p.schools.map((s, si) => H('span', {}, [H('i', {style: `background:${SCHOOL_COLORS[si % SCHOOL_COLORS.length]}`}), shortSchool(s)])), (p.common.some(c => c.date) ? H('span', {}, [H('i', {style: `background:${COMMON_COLOR}`}), '공통']) : null)]);
+  return H('div', {class: 'cal'}, [head, grid, p.schools.length ? legend : null]);
+}
+
+function monthPage(p, i){
+  ensurePlan(p);
+  const m = p.months[i], mi = monthInfo(p, i);
+  const pg = newPage(`${mi.y}년 ${mi.m}월 계획`);
+  pg.body.append(H('div', {class: 'mh'}, [
+    H('div', {class: 'mh-m'}, [H('small', {text: `${mi.y} · MONTHLY`}), mi.m + '월']),
+    H('div', {class: 'mh-t'}, [ed(m, 'theme', '이 달의 주제', 'mh-th'), ed(m, 'goal', '이 달의 목표', 'mh-g')]),
+    ed(m, 'exam', '시험·평가', 'mh-ex'),
+  ]));
+  const body = H('div', {class: 'mb ' + (ORI === 'l' ? 'l' : 'p')});
+  const tbody = H('tbody');
+  const drawWeeks = () => {
+    tbody.innerHTML = '';
+    m.weeks.forEach((w, wi) => {
+      const ck = H('button', {class: 'ckb' + (w.done ? ' on' : ''), type: 'button', text: w.done ? '✓' : '', onclick: () => { w.done = !w.done; ck.className = 'ckb' + (w.done ? ' on' : ''); ck.textContent = w.done ? '✓' : ''; save(); }});
+      tbody.append(H('tr', {}, [H('td', {class: 'wl'}, [ed(w, 'label', '주')]), H('td', {}, [ed(w, 'content', '수업 내용')]), H('td', {}, [ed(w, 'hw', '과제 · 테스트')]),
+        H('td', {class: 'ck'}, [ck]), H('td', {class: 'ctl', style: 'width:1.6em'}, [H('button', {class: 'xbtn', type: 'button', text: '×', title: '이 주 지우기', onclick: () => { m.weeks.splice(wi, 1); save(); render(true); }})])]));
+    });
+  };
+  drawWeeks();
+  const wk = H('div', {class: 'wk'}, [H('table', {class: 'wt'}, [H('thead', {}, [H('tr', {}, [H('th', {text: '주'}), H('th', {text: '수업 내용'}), H('th', {text: '과제 · 테스트'}), H('th', {text: '완료'}), H('th', {class: 'ctl'})])]), tbody]),
+    H('button', {class: 'addbtn ctl', type: 'button', style: 'align-self:flex-start', text: '+ 주 추가', onclick: () => { m.weeks.push({label: (m.weeks.length + 1) + '주', content: '', hw: '', done: false}); save(); render(true); }})]);
+  const sch = H('div', {class: 'side sch'}, [H('div', {class: 'ch', text: '일정 · 시험'}), H('div', {class: 'cb'}, [bulletList(m.schedule, '날짜 · 일정')])]);
+  const memo = H('div', {class: 'side memo'}, [H('div', {class: 'ch', text: '메모'}), H('div', {class: 'cb'}, [ed(m, 'memo', '메모', '')])]);
+  body.append(calendarBlock(p, i), wk, sch, memo);
+  pg.body.append(body); return pg;
+}
+
+function fitPage(rp){
+  let fit = 1, t = 0; rp.style.setProperty('--fit', 1);
+  const body = $('.rp-body', rp) || rp, over = () => (body.scrollHeight > body.clientHeight + 1) || $$('.mc-b, .side .cb', rp).some(c => c.scrollHeight > c.clientHeight + 1) || (rp.classList.contains('cover') && $('.cv', rp).scrollHeight > $('.cv', rp).clientHeight + 1);
+  while (over() && fit > 0.55 && t < 16) { fit -= 0.03; rp.style.setProperty('--fit', fit.toFixed(2)); t++; }
+}
+
+/* ---------------- 화면 구성 ---------------- */
+function render(keep){
+  const p = cur(); if (!p) return;
+  const r = ratioOf(D.ratio); PW = r.w; PH = r.h; ORI = r.o;
+  const y = scrollY;
+  let pgs = $('#pgSize'); if (!pgs) { pgs = document.createElement('style'); pgs.id = 'pgSize'; document.head.appendChild(pgs); }
+  pgs.textContent = `@page{size:${mmW()}mm ${mmH()}mm;margin:0}`;
+  const host = $('#deck'); host.innerHTML = '';
+  D.host = host; D.pages = [];
+  D.stage = H('div', {class: 'stage'});
+  D.stage.style.setProperty('--pw', PW + 'px'); D.stage.style.setProperty('--ph', PH + 'px');
+  host.append(H('div', {class: 'stage-host'}, [D.stage]));
+  ensurePlan(p); coverPage(p); roadmapPage(p); yearPage(p); examPage(p); for (let i = 0; i < nOf(p); i++) monthPage(p, i);
+  D.pages.forEach(pg => { const pn = $('.pn', pg.rp); if (pn) pn.textContent = `${pg.idx + 1} / ${D.pages.length}`; });
+  host.insertBefore(buildBar(), host.firstChild);
+  layout();
+  const fitAll = () => D.pages.forEach(pg => fitPage(pg.rp));
+  fitAll(); (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { fitAll(); updateNav(); });
+  if (!D.sel.size || D.sel.size > D.pages.length || ![...D.sel].every(i => i < D.pages.length)) D.sel = new Set(D.pages.map((_, i) => i));
+  syncSel(); updateNav(); renderPlanBar();
+  if (keep) scrollTo(0, y);
+}
+function layout(){
+  if (!D.stage) return;
+  const availW = Math.max(240, D.stage.parentElement.clientWidth - 4);
+  const s = clamp(Math.min(availW / PW, (innerHeight - 150) / PH), 0.3, 1);
+  D.stage.style.setProperty('--s', s.toFixed(4));
+}
+function curIndex(){
+  let best = 0, bd = 1e9; const mid = innerHeight / 2;
+  D.pages.forEach((pg, i) => { const r = pg.pbox.getBoundingClientRect(), d = Math.abs((r.top + r.bottom) / 2 - mid); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+function updateNav(){
+  if (!D.pages.length) return; D.cur = curIndex();
+  const c = $('#dkCount'); if (c) c.textContent = `${D.cur + 1} / ${D.pages.length}`;
+  $$('#dkChips .pc').forEach((b, i) => b.classList.toggle('cur', i === D.cur));
+}
+function goPage(i){
+  i = clamp(i, 0, D.pages.length - 1); const pg = D.pages[i]; if (!pg) return;
+  const r = pg.pbox.getBoundingClientRect(), bar = $('.dk-bar');
+  scrollTo({top: scrollY + r.top - (bar ? bar.offsetHeight : 0) - 12, behavior: 'smooth'}); setTimeout(updateNav, 350);
+}
+function parseRange(str, n){
+  const s = String(str || '').replace(/[~∼～]/g, '-').replace(/[،、，]/g, ',').trim();
+  if (!s) return {set: new Set([...Array(n).keys()])};
+  const set = new Set();
+  for (const part of s.split(/[,\s]+/).filter(Boolean)) {
+    const m = part.match(/^(\d+)(?:-(\d+))?$/); if (!m) return {error: `"${part}"은(는) 이해할 수 없어요. 예) 1-5, 8`};
+    let a = +m[1], b = m[2] ? +m[2] : a; if (a > b) [a, b] = [b, a];
+    if (a < 1 || b > n) return {error: `페이지는 1~${n} 사이여야 해요.`};
+    for (let i = a; i <= b; i++) set.add(i - 1);
+  }
+  return {set};
+}
+function rangeText(set, n){
+  if (set.size === n) return '';
+  const a = [...set].sort((x, y) => x - y), out = []; let i = 0;
+  while (i < a.length) { let j = i; while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++; out.push(j > i ? `${a[i] + 1}-${a[j] + 1}` : `${a[i] + 1}`); i = j + 1; }
+  return out.join(', ');
+}
+function syncSel(fromInput){
+  const n = D.pages.length, all = D.sel.size === n;
+  if (!fromInput) { const inp = $('#rangeIn'); if (inp) inp.value = rangeText(D.sel, n); }
+  $$('#dkChips .pc').forEach((b, i) => b.classList.toggle('on', D.sel.has(i)));
+  D.pages.forEach((pg, i) => pg.pbox.classList.toggle('off', !all && !D.sel.has(i)));
+  const info = $('#selInfo'); if (info) info.textContent = all ? `전체 ${n}페이지` : `선택 ${D.sel.size}/${n}페이지`;
+}
+const selIdx = () => [...D.sel].sort((a, b) => a - b);
+const dkMsg = (t, err) => { const m = $('#dkMsg'); if (m) { m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); } };
+
+/* ---------------- 저장 (PDF / 이미지) ---------------- */
+async function capturePage(pg){
+  if (!window.html2canvas) throw new Error('이미지 라이브러리를 불러오지 못했어요. 새로고침 후 다시 해 주세요.');
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  const host = H('div', {style: `position:absolute;left:-12000px;top:0;width:${PW}px;height:${PH}px;overflow:hidden;pointer-events:none`});
+  const clone = pg.rp.cloneNode(true); clone.classList.add('cap'); clone.style.transform = 'none'; clone.style.left = '0'; clone.style.top = '0';
+  $$('[contenteditable]', clone).forEach(e => e.removeAttribute('contenteditable'));
+  $$('.mh-ex, .mc-ex, .mc-goal', clone).forEach(e => { if (!e.textContent.trim()) e.remove(); });   // 비어 있는 배지·목표 칸은 이미지에서 뺀다
+  host.append(clone); document.body.append(host);
+  try { await new Promise(r => setTimeout(r, 80)); return await html2canvas(clone, {scale: 2, backgroundColor: bgOf(D.bg).bg, useCORS: true, width: PW, height: PH, windowWidth: PW + 200, windowHeight: PH, scrollX: 0, scrollY: 0}); }
+  finally { host.remove(); }
+}
+const fileBase = () => { const p = cur(); return `${p.name || '플래너'}_${({a4p: 'A4세로', a4l: 'A4가로', sq: '정사각형', p45: '인스타'})[D.ratio]}`.replace(/\s+/g, ''); };
+function download(blobOrUrl, name){ const a = document.createElement('a'); a.href = typeof blobOrUrl === 'string' ? blobOrUrl : URL.createObjectURL(blobOrUrl); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+async function exportPdf(btn){
+  const idx = selIdx(); if (!idx.length) { dkMsg('저장할 페이지를 골라 주세요.', true); return; }
+  const J = window.jspdf && window.jspdf.jsPDF; if (!J) { dkMsg('PDF 라이브러리를 불러오지 못했어요. 새로고침 후 다시 해 주세요.', true); return; }
+  const orig = btn.textContent; btn.disabled = true; let pdf = null; const fmt = [mmW(), mmH()], orient = PW > PH ? 'landscape' : 'portrait';
+  try {
+    for (let k = 0; k < idx.length; k++) {
+      btn.textContent = `캡처 중... (${k + 1}/${idx.length})`; const c = await capturePage(D.pages[idx[k]]);
+      if (!pdf) pdf = new J({orientation: orient, unit: 'mm', format: fmt}); else pdf.addPage(fmt, orient);
+      pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, mmW(), mmH(), undefined, 'FAST');
+    }
+    pdf.save(fileBase() + (D.sel.size === D.pages.length ? '' : '_선택') + '.pdf'); dkMsg(`PDF ${idx.length}페이지를 저장했어요.`);
+  } catch(e){ dkMsg('PDF 저장 실패: ' + (e.message || e), true); } finally { btn.disabled = false; btn.textContent = orig; }
+}
+async function exportImages(btn, only){
+  const idx = only != null ? [only] : selIdx(); if (!idx.length) { dkMsg('저장할 페이지를 골라 주세요.', true); return; }
+  const orig = btn.textContent; btn.disabled = true;
+  try {
+    const files = [];
+    for (let k = 0; k < idx.length; k++) { btn.textContent = `캡처 중... (${k + 1}/${idx.length})`; const c = await capturePage(D.pages[idx[k]]); files.push({name: `${fileBase()}_p${String(idx[k] + 1).padStart(2, '0')}.png`, data: c.toDataURL('image/png')}); }
+    if (files.length === 1) download(files[0].data, files[0].name);
+    else { if (!window.JSZip) throw new Error('압축 라이브러리를 불러오지 못했어요.'); const zip = new JSZip(); files.forEach(f => zip.file(f.name, f.data.split(',')[1], {base64: true})); download(await zip.generateAsync({type: 'blob'}), fileBase() + '_이미지.zip'); }
+    dkMsg(files.length === 1 ? '이미지 1장을 저장했어요.' : `이미지 ${files.length}장을 ZIP 하나로 저장했어요.`);
+  } catch(e){ dkMsg('이미지 저장 실패: ' + (e.message || e), true); } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+function buildBar(){
+  const n = D.pages.length;
+  const mkb = (t, fn, cls) => { const b = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); b.addEventListener('click', () => fn(b)); return b; };
+  const nav = H('div', {class: 'dk-nav'}, [H('button', {class: 'navb', type: 'button', text: '‹', onclick: () => goPage(curIndex() - 1)}), H('span', {class: 'cnt', id: 'dkCount'}), H('button', {class: 'navb', type: 'button', text: '›', onclick: () => goPage(curIndex() + 1)})]);
+  const inp = H('input', {type: 'text', id: 'rangeIn', placeholder: '전체 (예: 1-5, 8)', autocomplete: 'off', size: 14});
+  inp.addEventListener('input', () => { const r = parseRange(inp.value, n); if (r.error) { dkMsg(r.error, true); return; } dkMsg(''); D.sel = r.set; syncSel(true); });
+  const sel = H('div', {class: 'dk-sel'}, [H('span', {class: 'lbl', text: '저장할 페이지'}), inp, H('span', {class: 'hint', id: 'selInfo'}), mkb('전체', () => { D.sel = new Set([...Array(n).keys()]); syncSel(); }), mkb('지금 페이지만', () => { D.sel = new Set([curIndex()]); syncSel(); })]);
+  const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
+  const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print())]);
+  const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
+  return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
+}
+
+/* ---------------- 플랜 도구 · 모달 ---------------- */
+function renderPlanBar(){
+  const bar = $('#planbar'); bar.innerHTML = '';
+  const sel = H('select', {}, DB.plans.map(p => H('option', {value: p.id, text: [p.region, p.name].filter(Boolean).join(' · ')})));
+  sel.value = DB.cur; sel.addEventListener('change', () => { DB.cur = sel.value; save(true); D.sel = new Set(); render(); });
+  const b = (t, fn, cls) => { const x = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); x.addEventListener('click', fn); return x; };
+  bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = JSON.parse(JSON.stringify(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
+    b('플랜 설정', openSettings), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
+    b('내보내기(JSON)', () => download(new Blob([JSON.stringify(cur(), null, 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
+    b('가져오기', () => $('#impFile').click()));
+  bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
+}
+function openModal(node){ const m = $('#mdl'); m.innerHTML = ''; m.append(node); $('#modal').hidden = false; }
+function closeModal(){ $('#modal').hidden = true; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+function openNew(){
+  const name = H('input', {type: 'text', value: '', placeholder: '예) 분당 예비고1 연간 플랜'});
+  const pre = H('select', {}, [H('option', {value: 'y', text: '용인 (보라고·신갈고·서천고) 초안'}), H('option', {value: 'b', text: '분당 초안'}), H('option', {value: 'x', text: '빈 플랜'})]);
+  openModal(H('div', {}, [H('h3', {text: '새 플랜 만들기'}), H('label', {class: 'f'}, ['처음 내용', pre]), H('label', {class: 'f', style: 'margin-top:10px'}, ['플랜 이름', name]),
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '만들기', onclick: () => { const p = pre.value === 'y' ? seedYongin() : pre.value === 'b' ? seedBundang() : seedBlank(); if (name.value.trim()) p.name = name.value.trim(); DB.plans.push(p); DB.cur = p.id; save(true); closeModal(); D.sel = new Set(); render(); openSettings(); }})])]));
+}
+function openSettings(){
+  const p = cur();
+  const f = {name: H('input', {type: 'text', value: p.name}), region: H('input', {type: 'text', value: p.region, placeholder: '예) 용인 / 분당'}), schools: H('input', {type: 'text', value: (p.schools || []).join(', '), placeholder: '예) 보라고, 신갈고, 서천고'}), grade: H('input', {type: 'text', value: p.grade}), start: H('input', {type: 'month', value: p.startYm}), n: H('input', {type: 'number', min: 6, max: 24, value: nOf(p)})};
+  const row = (l, el) => H('label', {class: 'f'}, [l, el]);
+  openModal(H('div', {}, [H('h3', {text: '플랜 설정'}), H('div', {class: 'grid'}, [row('플랜 이름', f.name), row('지역', f.region), row('학교 (쉼표로 구분)', f.schools), row('대상 (학년)', f.grade), row('시작 월', f.start), row('기간 (개월 수, 예: 14 = 다음 해 12월까지)', f.n)]),
+    H('p', {class: 'hint', text: '시작 월을 바꾸면 월 이름과 학년도 표시가 따라서 바뀌고, 월별 내용은 그대로 남아요.'}),
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '저장', onclick: () => { p.name = f.name.value.trim() || p.name; p.region = f.region.value.trim(); p.schools = f.schools.value.split(/[,，]/).map(s => s.trim()).filter(Boolean); p.grade = f.grade.value.trim(); if (f.start.value) p.startYm = f.start.value; const nn = clamp(parseInt(f.n.value, 10) || nOf(p), 6, 24); while (p.months.length < nn) p.months.push({theme: '', bullets: [], exam: '', goal: '', memo: '', schedule: [], days: {}, weeks: weeksFrom(['', '', '', ''])}); if (p.months.length > nn) { if (!confirm(`기간을 ${nn}개월로 줄이면 뒤쪽 ${p.months.length - nn}개월의 내용이 지워져요. 계속할까요?`)) return; p.months.length = nn; p.bars.forEach(b => { b.s = Math.min(b.s, nn - 1); b.e = Math.min(b.e, nn - 1); }); } save(true); closeModal(); render(true); }})])]));
+}
+function openRoadmap(){
+  const p = cur(); const bars = p.bars.map(b => ({...b}));
+  const months = Array.from({length: nOf(p)}, (_, i) => monthInfo(p, i).m + '월');
+  const tb = H('tbody');
+  const draw = () => {
+    tb.innerHTML = '';
+    bars.forEach((b, i) => {
+      const mSel = (k) => { const s = H('select', {}, months.map((m, j) => H('option', {value: j, text: m}))); s.value = b[k]; s.addEventListener('change', () => { b[k] = +s.value; if (b.e < b.s) { if (k === 's') b.e = b.s; else b.s = b.e; draw(); } }); return s; };
+      const col = H('select', {}, COLORS.map(([n, c]) => H('option', {value: c, text: n}))); col.value = b.color; col.addEventListener('change', () => { b.color = col.value; col.style.background = b.color; }); col.style.background = b.color;
+      const tr = H('input', {type: 'text', value: b.track, list: 'trList'}); tr.addEventListener('input', () => b.track = tr.value);
+      const lb = H('input', {type: 'text', value: b.label}); lb.addEventListener('input', () => b.label = lb.value);
+      tb.append(H('tr', {}, [H('td', {}, [tr]), H('td', {}, [lb]), H('td', {style: 'width:84px'}, [mSel('s')]), H('td', {style: 'width:84px'}, [mSel('e')]), H('td', {style: 'width:92px'}, [col]), H('td', {style: 'width:30px'}, [H('button', {class: 'xbtn', style: 'opacity:1', type: 'button', text: '×', onclick: () => { bars.splice(i, 1); draw(); }})])]));
+    });
+  };
+  draw();
+  const tracks = [...new Set(bars.map(b => b.track))];
+  openModal(H('div', {}, [H('h3', {text: '로드맵 편집'}), H('p', {class: 'hint', text: '같은 "트랙" 이름끼리 한 줄에 모여요. 시작~끝 월을 고르면 막대 길이가 정해집니다.'}),
+    H('datalist', {id: 'trList'}, tracks.map(t => H('option', {value: t}))),
+    H('table', {}, [H('thead', {}, [H('tr', {}, ['트랙', '이름', '시작', '끝', '색', ''].map(t => H('th', {text: t})))]), tb]),
+    H('button', {class: 'btn sec sm', type: 'button', style: 'margin-top:8px', text: '+ 막대 추가', onclick: () => { bars.push({track: tracks[0] || '교과 진도', label: '새 항목', s: 0, e: 0, color: '#3E8F79'}); draw(); }}),
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '적용', onclick: () => { p.bars = bars; save(true); closeModal(); render(true); }})])]));
+}
+
+window.addEventListener('resize', () => { layout(); updateNav(); });
+let _sc = 0; window.addEventListener('scroll', () => { if (_sc) return; _sc = requestAnimationFrame(() => { _sc = 0; updateNav(); }); }, {passive: true});
+document.addEventListener('keydown', e => {
+  if (!D.pages.length) return; const t = e.target; if (t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return;
+  if (!['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp'].includes(e.key)) return; e.preventDefault(); goPage(curIndex() + (e.key === 'ArrowRight' || e.key === 'PageDown' ? 1 : -1));
+});
+window.addEventListener('beforeprint', () => D.pages.forEach((pg, i) => pg.box.classList.toggle('skip', !D.sel.has(i))));
+window.addEventListener('afterprint', () => D.pages.forEach(pg => pg.box.classList.remove('skip')));
+
+load(); render();
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => render(true));
+window.__PL = {DB: () => DB, D, render, cur};
+})();
+</script>
+</body>
+</html>

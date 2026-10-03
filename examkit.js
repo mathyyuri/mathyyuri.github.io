@@ -116,11 +116,11 @@
   const SOL_SCHEMA = {
     type: 'object', additionalProperties: false, required: ['problems'],
     properties: { problems: { type: 'array', items: { type: 'object', additionalProperties: false,
-      required: ['num', 'answerChoice', 'answerText', 'steps', 'keyPoints', 'rubric', 'figureSvg', 'check'],
+      required: ['num', 'answerChoice', 'answerText', 'steps', 'keyPoints', 'tip', 'rubric', 'figureSvg', 'check'],
       properties: {
         num: { type: 'integer' }, answerChoice: { type: 'integer' }, answerText: { type: 'string' },
         steps: { type: 'array', items: { type: 'string' } }, keyPoints: { type: 'array', items: { type: 'string' } },
-        rubric: { type: 'array', items: { type: 'string' } }, figureSvg: { type: 'string' }, check: { type: 'string' },
+        tip: { type: 'string' }, rubric: { type: 'array', items: { type: 'string' } }, figureSvg: { type: 'string' }, check: { type: 'string' },
       } } } },
   };
   const SOL_SYSTEM = `당신은 한국 고등학교 1학년 수학을 가르치는 20년 경력의 학원 원장입니다. 시험 문항의 정답을 구하고, 학생이 칠판 필기를 보듯 이해할 수 있는 "손필기 해설"을 만듭니다.
@@ -133,6 +133,8 @@
 [고1 교육과정 수준 — 반드시 지킬 것]
 - 풀이는 해당 시험 범위 단원과 그 선수 개념(중학 수학 포함)만 사용합니다. 공통수학1·2 수준: 다항식, 방정식과 부등식, 경우의 수, 도형의 방정식(좌표, 직선, 원, 도형의 이동), 집합과 명제, 함수.
 - 쓰지 말 것: 벡터, 삼각함수(sin·cos·tan)와 코사인법칙·사인법칙, 신발끈(좌표 넓이) 공식·행렬식, 미분·적분, 매개변수 표현(cosθ,sinθ로 점 놓기), 극한, 로피탈, 라그랑주 승수법 등 고2 이상 개념. 넓이는 밑변×높이와 점과 직선 사이의 거리로, 각은 닮음·이등분선 정리·기울기로 처리하세요.
+- 풀이(steps)는 처음부터 끝까지 고1 교육과정 안의 방법으로만 완성하세요. 신발끈 공식처럼 쉬운 교육과정 밖 풀이가 있더라도 steps에는 쓰지 말고, 교육과정 안의 풀이(좌표로 밑변·높이 잡기, 점과 직선 사이의 거리 등)를 쓰세요.
+- tip: 교육과정 밖의 더 빠른 방법(신발끈 공식, 벡터, 삼각함수 등)이 정말 유용할 때만 한두 줄로 소개하세요. 형식은 "신발끈 공식을 쓰면 ... (고2 이후 내용)"처럼 어떤 개념인지 밝히고, 수식은 \\( \\)로 쓰되 짧게. 해당이 없으면 빈 문자열.
 - 쓸 수 있는 도구 예: 기울기, 두 점 사이 거리, 점과 직선 사이의 거리, 내분점·외분점·무게중심, 피타고라스, 닮음, 각의 이등분선 정리, 중점·대칭이동 공식, 근과 계수의 관계, 판별식, 완전제곱식, 집합 연산·벤다이어그램·경우 나누기.
 - 경우를 놓치기 쉬운 문제(내분/외분, ±, 사분면 조건)는 반드시 모든 경우를 확인하고 해설에 적으세요.
 
@@ -170,7 +172,7 @@
         stem: src ? src.stemText : p.stem,
         choices: (src ? src.choices : p.choices) || [],
         figureImg: src && src.figImg || '', figureSvg: sanitizeSvg(sol.figureSvg), figNote: st.figNote, hasFigure: p.hasFigure || !!(src && src.imgs && src.imgs.length),
-        answerChoice: sol.answerChoice || 0, answerText: sol.answerText || '', steps: sol.steps || [], keyPoints: sol.keyPoints || [], rubric: sol.rubric || [], check: sol.check || '',
+        answerChoice: sol.answerChoice || 0, answerText: sol.answerText || '', steps: sol.steps || [], keyPoints: sol.keyPoints || [], tip: sol.tip || '', rubric: sol.rubric || [], check: sol.check || '',
         hasSolution: !!(sol.steps && sol.steps.length),
       };
       q.answer = q.hasSolution ? answerDisplay(q) : '';
@@ -187,7 +189,7 @@
       if (!p.figureImg && !p.figureSvg && p.figNote) stem += '\n[그림: ' + p.figNote + ']';
       return {
         num: p.num, problem: stem, figure: p.figureSvg || '', figurePng: p.figureImg || '',
-        choices: (p.choices || []).map(wrapMath), answer: p.answer || '', solution: (p.steps || []).join('\n'),
+        choices: (p.choices || []).map(wrapMath), answer: p.answer || '', solution: (p.steps || []).join('\n') + (p.tip ? '\nTIP (고2 이후 내용): ' + p.tip : ''),
       };
     });
     const e = spec.exam || {};
