@@ -222,6 +222,8 @@ ul.bl li .ed{flex:1}
 .fmt .fb:hover{background:var(--gold-soft)}
 .fmt .fb.cs{min-width:20px;width:20px;height:20px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.14)}
 .fmt input[type=color]{width:26px;height:26px;padding:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff}
+.pub-on{color:var(--mint-deep)}
+.pub[hidden],.pub-on[hidden]{display:none}
 .pub{margin-left:12px;font-size:11px;letter-spacing:0;color:var(--ink2);font-weight:500;cursor:pointer}
 .rm-l{flex-direction:column;gap:.3em}
 .rm-nm{font-family:var(--kserif);font-weight:700;font-size:.9em;text-align:center;width:100%}
@@ -564,7 +566,7 @@ function newPage(title, kind, key){
   const idx = D.pages.length, pbox = H('div', {class: 'pbox'}, [rp]);
   key = key || ('pg' + idx); p.pub = p.pub || {};
   const pubCk = H('input', {type: 'checkbox'}); pubCk.checked = !!p.pub[key]; pubCk.addEventListener('change', () => { p.pub[key] = pubCk.checked; save(); updatePubCount(); });
-  const wrap = H('div', {class: 'pwrap'}, [H('div', {class: 'pcap'}, [`${idx + 1} · ${title}`, H('label', {class: 'pub ctl', title: '체크한 페이지만 사이트에 공개할 수 있어요'}, [pubCk, ' 공개'])]), pbox]);
+  const wrap = H('div', {class: 'pwrap'}, [H('div', {class: 'pcap'}, [`${idx + 1} · ${title}`, H('label', {class: 'pub ctl', title: '체크한 페이지만 사이트에 공개할 수 있어요'}, [pubCk, ' 공개', H('b', {class: 'pub-on', hidden: true, text: ' · ✓ 사이트에 올라가 있어요'})])]), pbox]);
   D.stage.append(wrap);
   const pg = {box: wrap, pbox, rp, body, title, idx, kind, key}; D.pages.push(pg); return pg;
 }
@@ -802,7 +804,7 @@ function render(keep){
   const fitAll = () => D.pages.forEach(pg => fitPage(pg.rp));
   fitAll(); (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { fitAll(); updateNav(); });
   if (!D.sel.size || D.sel.size > D.pages.length || ![...D.sel].every(i => i < D.pages.length)) D.sel = new Set(D.pages.map((_, i) => i));
-  syncSel(); updateNav(); renderPlanBar(); updatePubCount();
+  syncSel(); updateNav(); renderPlanBar(); updatePubCount(); loadPublished();
   if (keep) scrollTo(0, y);
 }
 function updatePubCount(){ const p = cur(), n = D.pages.filter(pg => p.pub && p.pub[pg.key]).length, el = $('#pubCnt'); if (el) el.textContent = n ? `공개 선택 ${n}쪽` : ''; }
@@ -856,7 +858,7 @@ const selIdx = () => [...D.sel].sort((a, b) => a - b);
 const dkMsg = (t, err) => { const m = $('#dkMsg'); if (m) { m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); } };
 
 /* ---------------- 저장 (PDF / 이미지) ---------------- */
-async function capturePage(pg){
+async function capturePage(pg, scale){
   if (!window.html2canvas) throw new Error('이미지 라이브러리를 불러오지 못했어요. 새로고침 후 다시 해 주세요.');
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const host = H('div', {style: `position:absolute;left:-12000px;top:0;width:${PW}px;height:${PH}px;overflow:hidden;pointer-events:none`});
@@ -864,7 +866,7 @@ async function capturePage(pg){
   $$('[contenteditable]', clone).forEach(e => e.removeAttribute('contenteditable'));
   $$('.mh-ex, .mc-ex, .mc-goal', clone).forEach(e => { if (!e.textContent.trim()) e.remove(); });   // 비어 있는 배지·목표 칸은 이미지에서 뺀다
   host.append(clone); document.body.append(host);
-  try { await new Promise(r => setTimeout(r, 80)); return await html2canvas(clone, {scale: 2, backgroundColor: bgOf(D.bg).bg, useCORS: true, width: PW, height: PH, windowWidth: PW + 200, windowHeight: PH, scrollX: 0, scrollY: 0}); }
+  try { await new Promise(r => setTimeout(r, 80)); return await html2canvas(clone, {scale: scale || 2, backgroundColor: bgOf(D.bg).bg, useCORS: true, width: PW, height: PH, windowWidth: PW + 200, windowHeight: PH, scrollX: 0, scrollY: 0}); }
   finally { host.remove(); }
 }
 const fileBase = () => { const p = cur(); return `${p.name || '플래너'}_${({a4p: 'A4세로', a4l: 'A4가로', sq: '정사각형', p45: '인스타'})[D.ratio]}`.replace(/\s+/g, ''); };
@@ -903,7 +905,7 @@ function buildBar(){
   const sel = H('div', {class: 'dk-sel'}, [H('span', {class: 'lbl', text: '저장할 페이지'}), inp, H('span', {class: 'hint', id: 'selInfo'}), mkb('전체', () => { D.sel = new Set([...Array(n).keys()]); syncSel(); }), mkb('지금 페이지만', () => { D.sel = new Set([curIndex()]); syncSel(); })]);
   const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
   const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
-  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('공개용 내보내기', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
   return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
 }
@@ -962,10 +964,15 @@ function openRoadmap(){
 
 /* ---------------- 나이스(NEIS) 학사일정 불러오기 ---------------- */
 const NEIS = 'https://open.neis.go.kr/hub/';
-const neisKey = () => (safeLS.get('pl_neis_key') || '').trim();
+const neisKey = () => (safeLS.get('pl_neis_key') || '').replace(/\s+/g, '');
 async function neisJson(path, params){
   const q = new URLSearchParams({Type: 'json', ...params}); const k = neisKey(); if (k) q.set('KEY', k);
-  const r = await fetch(NEIS + path + '?' + q); if (!r.ok) throw new Error('나이스 서버 응답 오류 ' + r.status); return r.json();
+  const r = await fetch(NEIS + path + '?' + q); if (!r.ok) throw new Error('나이스 서버 응답 오류 ' + r.status);
+  const j = await r.json(), c = j.RESULT && j.RESULT.CODE;
+  if (c === 'ERROR-290' || c === 'ERROR-300') throw new Error(`나이스가 인증키를 받아주지 않아요 (${k.length}자 입력됨). 인증키는 영문·숫자 32자예요. 나이스 "마이페이지"의 인증키를 그대로 복사해서 다시 붙여 넣어 주세요.`);
+  if (c === 'ERROR-337' || c === 'INFO-300') throw new Error('오늘 나이스 조회 한도를 넘었어요. 내일 다시 시도해 주세요.');
+  if (c && /^ERROR/.test(c)) throw new Error('나이스 오류: ' + (j.RESULT.MESSAGE || c));
+  return j;
 }
 const neisRows = (j, name) => (j[name] && j[name][1] && j[name][1].row) || [];
 async function neisFindSchool(p, name){
@@ -1061,7 +1068,7 @@ function openNeis(){
   const out = H('div', {class: 'msg', style: 'white-space:pre-line;margin-top:10px'});
   const run = H('button', {class: 'btn', type: 'button', text: '불러오기'});
   run.addEventListener('click', async () => {
-    safeLS.set('pl_neis_key', key.value.trim()); run.disabled = true; out.className = 'msg'; out.textContent = '나이스에서 학사일정을 읽는 중...';
+    safeLS.set('pl_neis_key', key.value.replace(/\s+/g, '')); run.disabled = true; out.className = 'msg'; out.textContent = '나이스에서 학사일정을 읽는 중...';
     try { const log = await runNeis(p, {estimate: est.checked}); out.className = 'msg ok'; out.textContent = log.join('\n'); render(true); }
     catch(e){ out.className = 'msg err'; out.textContent = '실패: ' + (e.message || e); }
     run.disabled = false;
@@ -1077,6 +1084,46 @@ async function autoNeis(){
   const p = cur(); if (!p || !neisKey() || !p.schools || !p.schools.length) return;
   if (p.neisAt && Date.now() - p.neisAt < 864e5) return;
   try { await runNeis(p, {estimate: true}); render(true); const m = $('#savedMsg'); if (m) m.textContent = '학사일정 자동 갱신됨'; } catch(e){}
+}
+
+/* ---------------- 사이트에 공개하기 (Supabase) ---------------- */
+const SB = 'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/', SBK = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';   // 읽기 전용 공개 키
+async function sbRpc(fn, body){
+  const r = await fetch(SB + 'rpc/' + fn, {method: 'POST', headers: {apikey: SBK, 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (r.ok) return;
+  const t = await r.text();
+  if (/forbidden/.test(t)) throw new Error('공개 비밀번호가 맞지 않아요.');
+  if (/PGRST202|Could not find the function/.test(t)) throw new Error('공개용 저장소가 아직 없어요. Supabase에서 안내드린 SQL을 한 번 실행해 주세요.');
+  throw new Error(`저장 실패 (${r.status}) ${t.slice(0, 120)}`);
+}
+async function sbSelect(q){ const r = await fetch(SB + q, {headers: {apikey: SBK}}); if (!r.ok) throw new Error('읽기 실패 ' + r.status); return r.json(); }
+let PUBLISHED = {};   // planId → Set(page_key)
+async function loadPublished(){
+  const p = cur(); if (!p) return;
+  try { PUBLISHED[p.id] = new Set((await sbSelect(`planner_pages?plan_id=eq.${encodeURIComponent(p.id)}&select=page_key`)).map(x => x.page_key)); } catch(e){ return; }
+  D.pages.forEach(pg => { const l = pg.box.querySelector('.pub-on'); if (l) l.hidden = !PUBLISHED[p.id].has(pg.key); });
+}
+async function publishSite(btn){
+  const p = cur(), keys = D.pages.filter(pg => p.pub && p.pub[pg.key]);
+  let existing = [];
+  try { existing = (await sbSelect(`planner_pages?plan_id=eq.${encodeURIComponent(p.id)}&select=page_key`)).map(x => x.page_key); } catch(e){}
+  if (!keys.length && !existing.length) { dkMsg('공개할 페이지가 없어요. 각 페이지 위쪽의 "공개" 칸을 체크해 주세요.', true); return; }
+  if (!keys.length && !confirm('체크된 페이지가 없어서, 사이트에 올라가 있는 이 플랜의 페이지를 모두 내려요. 계속할까요?')) return;
+  let pw = safeLS.get('pl_teacher_key') || prompt('공개 비밀번호(원장님 키)를 입력하세요'); if (!pw) return;
+  const orig = btn.textContent; btn.disabled = true;
+  try {
+    const plan = {id: p.id, name: p.name, region: p.region, meta: {w: PW, h: PH, grade: p.grade, period: periodText(p), schools: p.schools, updated: new Date().toISOString().slice(0, 10)}};
+    for (let k = 0; k < keys.length; k++) {
+      btn.textContent = `올리는 중... (${k + 1}/${keys.length})`;
+      const c = await capturePage(keys[k], 1.5);
+      await sbRpc('planner_publish_page', {p_key: pw, p_plan: plan, p_page: {key: keys[k].key, title: keys[k].title, idx: keys[k].idx, image: c.toDataURL('image/jpeg', 0.85)}});
+    }
+    const drop = existing.filter(k => !keys.some(pg => pg.key === k));
+    if (drop.length) await sbRpc('planner_unpublish', {p_key: pw, p_plan: p.id, p_keys: drop});
+    safeLS.set('pl_teacher_key', pw); await loadPublished();
+    dkMsg(`${keys.length}페이지를 사이트에 올렸어요${drop.length ? ` · ${drop.length}페이지는 내렸어요` : ''}. mathyyuri.com/planner-view.html 에서 확인하세요.`);
+  } catch(e){ if (/비밀번호/.test(e.message)) safeLS.set('pl_teacher_key', ''); dkMsg('공개 실패: ' + (e.message || e), true); }
+  finally { btn.disabled = false; btn.textContent = orig; }
 }
 
 window.addEventListener('resize', () => { layout(); updateNav(); });

@@ -44,20 +44,23 @@ h1 em{font-style:italic;font-weight:600;color:var(--mint-deep)}
 <script>
 (async function(){
   const $ = s => document.querySelector(s);
-  const get = async u => { const r = await fetch(u + '?v=' + Date.now()); if (!r.ok) throw new Error(u); return r.json(); };
+  const SB = 'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/', KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
+  const sb = async q => { const r = await fetch(SB + q, {headers: {apikey: KEY}}); if (!r.ok) throw new Error('read ' + r.status); return r.json(); };
   let plans = [];
-  try {
-    const ids = await get('planner-public/index.json');
-    plans = (await Promise.all(ids.map(async id => { try { const m = await get(`planner-public/${id}/manifest.json`); m._dir = `planner-public/${id}/`; return m; } catch(e){ return null; } }))).filter(Boolean);
-  } catch(e){}
+  try { plans = await sb('planner_plans?select=id,name,region,meta,updated_at&order=updated_at.desc'); } catch(e){}
   if (!plans.length) { $('#pages').innerHTML = '<div class="empty">아직 공개된 플래너가 없어요. 곧 올라올 예정입니다.</div>'; return; }
-  const show = i => {
-    const m = plans[i];
+  const cache = {};
+  const show = async i => {
+    const m = plans[i], mt = m.meta || {};
     [...$('#tabs').children].forEach((t, k) => t.classList.toggle('on', k === i));
-    $('#meta').textContent = [m.region, (m.schools || []).join(' · '), m.grade, m.period, m.updated && ('업데이트 ' + m.updated)].filter(Boolean).join('  ·  ');
-    const box = $('#pages'); box.innerHTML = '';
-    box.style.setProperty('--mw', m.w > m.h ? '1100px' : '860px');
-    m.pages.forEach(p => { const d = document.createElement('div'); d.className = 'pg'; d.innerHTML = `<h3></h3><img alt="">`; d.querySelector('h3').textContent = p.title; const im = d.querySelector('img'); im.src = m._dir + p.file; im.alt = p.title; im.addEventListener('click', () => { $('#zimg').src = im.src; $('#zoom').hidden = false; }); box.append(d); });
+    $('#meta').textContent = [m.region, (mt.schools || []).join(' · '), mt.grade, mt.period, mt.updated && ('업데이트 ' + mt.updated)].filter(Boolean).join('  ·  ');
+    const box = $('#pages'); box.innerHTML = '<div class="empty">불러오는 중...</div>';
+    box.style.setProperty('--mw', mt.w > mt.h ? '1100px' : '860px');
+    try { cache[m.id] = cache[m.id] || await sb('planner_pages?plan_id=eq.' + encodeURIComponent(m.id) + '&select=page_key,title,idx,image&order=idx'); }
+    catch(e){ box.innerHTML = '<div class="empty">페이지를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</div>'; return; }
+    box.innerHTML = '';
+    if (!cache[m.id].length) { box.innerHTML = '<div class="empty">공개된 페이지가 없어요.</div>'; return; }
+    cache[m.id].forEach(p => { const d = document.createElement('div'); d.className = 'pg'; d.innerHTML = '<h3></h3><img alt="">'; d.querySelector('h3').textContent = p.title; const im = d.querySelector('img'); im.src = p.image; im.alt = p.title; im.addEventListener('click', () => { $('#zimg').src = im.src; $('#zoom').hidden = false; }); box.append(d); });
   };
   $('#tabs').innerHTML = ''; plans.forEach((m, i) => { const b = document.createElement('button'); b.className = 'tab'; b.textContent = [m.region, m.name].filter(Boolean).join(' · '); b.addEventListener('click', () => show(i)); $('#tabs').append(b); });
   $('#zoom').addEventListener('click', () => { $('#zoom').hidden = true; });
