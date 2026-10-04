@@ -73,8 +73,10 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--in
 
 /* 무대 */
 .stage-host{width:100%}
-.stage{--s:1;--pw:794px;--ph:1123px;display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 34px;background:linear-gradient(180deg,#F1EBDC,#EDE6D4);border-radius:6px}
+.stage{--s:1;--pw:794px;--ph:1123px;width:max-content;min-width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 34px;background:linear-gradient(180deg,#F1EBDC,#EDE6D4);border-radius:6px}
 .pwrap{width:calc(var(--pw) * var(--s))}
+body.zoomed .wrap{max-width:none}
+.zoomsel{display:inline-flex;align-items:center;gap:4px}.zoomsel .zl{min-width:3.4em;text-align:center;font-weight:700;font-size:13px}
 .pcap{font-size:11px;letter-spacing:.16em;color:var(--gold-deep);margin:0 0 5px 2px;font-weight:700}
 .pbox{width:calc(var(--pw) * var(--s));height:calc(var(--ph) * var(--s));position:relative;background:var(--paper);box-shadow:0 8px 30px rgba(70,52,12,.2);overflow:hidden}
 .pbox.off{opacity:.38}
@@ -268,7 +270,7 @@ ul.bl li .ed{flex:1}
   html,body{background:#fff!important}
   .noprint,.topbar,.dk-bar,.pcap,h1.page,.lead,.planbar,.modal{display:none!important}
   .wrap{max-width:none;padding:0}
-  .stage{display:block;background:none;padding:0;border-radius:0;--s:1}
+  .stage{display:block;background:none;padding:0;border-radius:0;--s:1;width:auto;min-width:0}
   .pwrap{width:var(--pw);break-before:page;page-break-before:always}
   .pwrap:first-child{break-before:auto;page-break-before:auto}
   .pwrap.skip{display:none!important}
@@ -560,7 +562,7 @@ function bulletList(arr, ph){
 }
 
 /* ---------------- 페이지 만들기 ---------------- */
-const D = {pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeLS.get('pl_bg')).key, sel: new Set(), cur: 0, stage: null, host: null};
+const D = {pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeLS.get('pl_bg')).key, sel: new Set(), cur: 0, stage: null, host: null, zoom: clamp(parseFloat(safeLS.get('pl_zoom')) || 1, 1, 3)};
 let PW = 794, PH = 1123, ORI = 'p';
 const mmW = () => +(PW * 210 / 794).toFixed(2), mmH = () => +(PH * 210 / 794).toFixed(2);
 
@@ -859,10 +861,19 @@ function render(keep){
 function updatePubCount(){ const p = cur(), n = D.pages.filter(pg => p.pub && p.pub[pg.key]).length, el = $('#pubCnt'); if (el) el.textContent = n ? `공개 선택 ${n}쪽` : ''; }
 function layout(){
   if (!D.stage) return;
-  const availW = Math.max(240, D.stage.parentElement.clientWidth - 4);
-  const s = clamp(Math.min(availW / PW, (innerHeight - 150) / PH), 0.3, 1);
+  const availW = Math.max(240, Math.min(innerWidth - 40, 1180 - 36) - 4);
+  const base = clamp(Math.min(availW / PW, (innerHeight - 150) / PH), 0.3, 1), s = clamp(base * D.zoom, 0.3, 3.5);
   D.stage.style.setProperty('--s', s.toFixed(4));
+  document.body.classList.toggle('zoomed', D.zoom > 1);
+  const zl = $('#zoomLbl'); if (zl) zl.textContent = Math.round(s * 100) + '%';
 }
+const ZOOMS = [1, 1.25, 1.5, 2, 2.5, 3];
+function setZoom(z){
+  const i = D.pages.length ? curIndex() : 0; D.zoom = z; safeLS.set('pl_zoom', String(z)); layout();
+  const pg = D.pages[i]; if (pg) { const bar = $('.dk-bar'); scrollTo({top: scrollY + pg.pbox.getBoundingClientRect().top - (bar ? bar.offsetHeight : 0) - 12}); }
+  updateNav();
+}
+function stepZoom(d){ let k = ZOOMS.findIndex(z => Math.abs(z - D.zoom) < 0.01); if (k < 0) k = 0; setZoom(ZOOMS[clamp(k + d, 0, ZOOMS.length - 1)]); }
 function curIndex(){
   let best = 0, bd = 1e9; const mid = innerHeight / 2;
   D.pages.forEach((pg, i) => { const r = pg.pbox.getBoundingClientRect(), d = Math.abs((r.top + r.bottom) / 2 - mid); if (d < bd) { bd = d; best = i; } });
@@ -954,7 +965,8 @@ function buildBar(){
   const sel = H('div', {class: 'dk-sel'}, [H('span', {class: 'lbl', text: '저장할 페이지'}), inp, H('span', {class: 'hint', id: 'selInfo'}), mkb('전체', () => { D.sel = new Set([...Array(n).keys()]); syncSel(); }), mkb('지금 페이지만', () => { D.sel = new Set([curIndex()]); syncSel(); })]);
   const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
   const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
-  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
+  const zoomSel = H('div', {class: 'zoomsel'}, [H('span', {class: 'lbl', text: '확대'}), mkb('−', () => stepZoom(-1)), H('span', {class: 'zl', id: 'zoomLbl'}), mkb('＋', () => stepZoom(1)), mkb('화면에 맞춤', () => setZoom(1))]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
   return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
 }
