@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>연간 플래너 | MATHY YURI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -214,6 +214,33 @@ ul.bl li .ed{flex:1}
 .side .cb{padding:.5em .8em;flex:1;min-height:0;overflow:hidden}
 .side.memo .ed{min-height:5em;height:100%}
 
+/* 서식 도구 · 막대 · 자유 상자 */
+.fmt{position:fixed;z-index:90;display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:min(580px,94vw);background:#fff;border:1px solid var(--gold-line);border-radius:8px;box-shadow:0 8px 24px rgba(70,52,12,.25);padding:5px 7px}
+.fmt[hidden]{display:none}
+.fmt select{padding:3px 5px;font-size:12px}
+.fmt .fb{border:1px solid var(--gold-line);background:#fff;border-radius:4px;min-width:26px;height:26px;font-size:12px;font-weight:700;padding:0 6px}
+.fmt .fb:hover{background:var(--gold-soft)}
+.fmt .fb.cs{min-width:20px;width:20px;height:20px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.14)}
+.fmt input[type=color]{width:26px;height:26px;padding:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff}
+.pub{margin-left:12px;font-size:11px;letter-spacing:0;color:var(--ink2);font-weight:500;cursor:pointer}
+.rm-l{flex-direction:column;gap:.3em}
+.rm-nm{font-family:var(--kserif);font-weight:700;font-size:.9em;text-align:center;width:100%}
+.rl-act{display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;transition:.15s}
+.rm-t:hover .rl-act{opacity:1}
+.rm-b{position:relative;padding:.2em .5em}
+.rm-bl{flex:1;text-align:center;min-width:0;min-height:1em}
+.bh{position:absolute;top:0;bottom:0;width:.8em;cursor:ew-resize;opacity:0;background:rgba(0,0,0,.2)}
+.bh.hl{left:0;border-radius:5px 0 0 5px}.bh.hr{right:0;border-radius:0 5px 5px 0}
+.bh.mv{left:.85em;width:1em;cursor:grab;background:none;font-style:normal;text-align:center;display:flex;align-items:center;justify-content:center;font-size:.9em}
+.rm-b:hover .bh,.rm-b.sel .bh{opacity:.9}
+.rm-b.sel{outline:2px solid #1A1A1A;outline-offset:1px;z-index:3}
+.fl{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:6}
+.fbox{position:absolute;pointer-events:auto;border-radius:4px;display:flex;flex-direction:column;min-width:0;min-height:0;box-sizing:border-box}
+.fb-t{flex:1;padding:.35em .55em;overflow:hidden;min-height:0}
+.fb-bar{position:absolute;top:-1.8em;left:0;display:flex;gap:3px;background:#fff;border:1px solid var(--gold-line);border-radius:4px;padding:1px 4px;opacity:0;transition:.12s;font-size:12px}
+.fbox:hover .fb-bar,.fbox:focus-within .fb-bar{opacity:1}
+.fb-mv{cursor:grab;padding:0 3px}.fb-b{border:none;background:none;padding:0 3px;font-size:12px}
+.fb-rs{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,#A8853F 50%);border-radius:0 0 4px 0}
 /* 모달 */
 .modal{position:fixed;inset:0;background:rgba(26,26,26,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
 .modal[hidden]{display:none}
@@ -403,13 +430,110 @@ const SEASON = m => (m >= 3 && m <= 5) ? '#7FC8B4' : (m >= 6 && m <= 8) ? '#E6D0
 
 /* ---------------- 편집 가능 부품 ---------------- */
 let FIT_T = 0;
+/* ---------------- 글자 서식 (글꼴·크기·색·굵게·정렬) ---------------- */
+const FONTS = {sans: "'Noto Sans KR',sans-serif", serif: "'Noto Serif KR',serif", hand: "'Gaegu','Noto Sans KR',cursive", disp: "'Playfair Display','Noto Serif KR',serif"};
+const FCOLORS = ['#1A1A1A', '#5B574D', '#A8853F', '#3E8F79', '#C64E71', '#7088B5', '#FFFFFF'];
+function applyStyle(e, st){
+  st = st || {};
+  e.style.fontFamily = st.f ? FONTS[st.f] : ''; e.style.fontSize = st.s ? st.s + 'em' : ''; e.style.color = st.c || '';
+  e.style.fontWeight = st.b === 1 ? '900' : (st.b === 0 ? '400' : ''); e.style.textAlign = st.a || '';
+}
 function ed(obj, key, ph, cls){
   const e = H('div', {class: 'ed ' + (cls || ''), contenteditable: 'true', spellcheck: 'false', 'data-ph': ph || ''});
   e.textContent = obj[key] || '';
+  e._ref = {obj, key}; applyStyle(e, obj._st && obj._st[key]);
   e.addEventListener('input', () => { obj[key] = e.innerText.replace(/\n$/, ''); save(); refit(e); });
   e.addEventListener('paste', ev => { ev.preventDefault(); const t = (ev.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, t); });
   return e;
 }
+const FMT = {bar: null, tgt: null, t: 0};
+function setStyle(patch){
+  const el = FMT.tgt; if (!el || !el._ref) return;
+  const {obj, key} = el._ref; obj._st = obj._st || {};
+  const st = obj._st[key] = Object.assign({}, obj._st[key] || {}, patch);
+  Object.keys(st).forEach(k => { if (st[k] == null) delete st[k]; });
+  applyStyle(el, st); save(); refit(el); placeFmt();
+}
+function placeFmt(){
+  const bar = FMT.bar, el = FMT.tgt; if (!bar || !el || !el.isConnected) return;
+  const r = el.getBoundingClientRect(), bw = bar.offsetWidth, bh = bar.offsetHeight, top = $('.dk-bar') ? $('.dk-bar').getBoundingClientRect().bottom : 0;
+  let y = r.top - bh - 8; if (y < top + 4) y = r.bottom + 8;
+  bar.style.left = clamp(r.left, 8, innerWidth - bw - 8) + 'px'; bar.style.top = clamp(y, 4, innerHeight - bh - 4) + 'px';
+}
+function initFmt(){
+  const mk = (t, title, fn, cls) => { const b = H('button', {type: 'button', class: 'fb ' + (cls || ''), title, text: t}); b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', fn); return b; };
+  const sel = H('select', {title: '글꼴'}, [['', '글꼴'], ['sans', '고딕'], ['serif', '명조'], ['hand', '손글씨'], ['disp', '영문 세리프']].map(([v, t]) => H('option', {value: v, text: t})));
+  sel.addEventListener('change', () => setStyle({f: sel.value || null}));
+  const cur = () => (FMT.tgt && FMT.tgt._ref.obj._st && FMT.tgt._ref.obj._st[FMT.tgt._ref.key]) || {};
+  const bar = H('div', {id: 'fmt', class: 'fmt noprint', hidden: true}, [
+    sel,
+    mk('A−', '작게', () => setStyle({s: Math.max(0.5, +((cur().s || 1) - 0.1).toFixed(2))})), mk('A+', '크게', () => setStyle({s: Math.min(3, +((cur().s || 1) + 0.1).toFixed(2))})),
+    ...FCOLORS.map(c => { const b = mk('', '글자색', () => setStyle({c}), 'cs'); b.style.background = c; return b; }),
+    (() => { const i = H('input', {type: 'color', title: '다른 색', value: '#1A1A1A'}); i.addEventListener('input', () => setStyle({c: i.value})); return i; })(),
+    mk('B', '굵게', () => setStyle({b: cur().b === 1 ? 0 : 1}), 'bd'),
+    mk('⟸', '왼쪽', () => setStyle({a: 'left'})), mk('⟺', '가운데', () => setStyle({a: 'center'})), mk('⟹', '오른쪽', () => setStyle({a: 'right'})),
+    mk('↺', '서식 지우기', () => { const el = FMT.tgt; if (el && el._ref.obj._st) { delete el._ref.obj._st[el._ref.key]; applyStyle(el, null); save(); refit(el); } }),
+  ]);
+  FMT.bar = bar; document.body.append(bar);
+  document.addEventListener('focusin', e => {
+    const t = e.target; if (!(t && t.classList && t.classList.contains('ed') && t._ref && t.closest('.rpage') && !t.closest('.cap'))) return;
+    clearTimeout(FMT.t); FMT.tgt = t; const st = (t._ref.obj._st && t._ref.obj._st[t._ref.key]) || {}; sel.value = st.f || ''; bar.hidden = false; placeFmt();
+  });
+  document.addEventListener('focusout', () => { clearTimeout(FMT.t); FMT.t = setTimeout(() => { const a = document.activeElement; if (bar.matches(':hover') || bar.contains(a) || (a && a.classList && a.classList.contains('ed'))) return; bar.hidden = true; }, 220); });
+  window.addEventListener('scroll', () => { if (!bar.hidden) placeFmt(); }, {passive: true});
+}
+
+/* ---------------- 자유 텍스트 상자 ---------------- */
+const BOX_BGS = ['#FFFFFF', '#FFF8D6', '#E4F3EE', '#FBE8EE', '#E8EDF6', 'transparent'];
+function freeLayer(pg){
+  const p = cur(); p.free = p.free || {}; const list = (p.free[pg.key] = p.free[pg.key] || []);
+  const layer = H('div', {class: 'fl'});
+  list.forEach((b, i) => layer.append(boxEl(b, i, list, pg)));
+  pg.rp.append(layer);
+}
+function boxEl(b, i, list, pg){
+  const el = H('div', {class: 'fbox'});
+  const paint = () => { el.style.cssText = `left:${b.x * 100}%;top:${b.y * 100}%;width:${b.w * 100}%;height:${b.h * 100}%;background:${b.bg};border:${b.bg === 'transparent' ? '1px dashed rgba(168,133,63,.45)' : '1px solid #E6DCC6'}`; };
+  paint();
+  const pageRect = () => pg.rp.getBoundingClientRect();
+  const drag = (kind) => ev => {
+    ev.preventDefault(); const r = pageRect(), sx = ev.clientX, sy = ev.clientY, o = {x: b.x, y: b.y, w: b.w, h: b.h};
+    const mv = e => { const dx = (e.clientX - sx) / r.width, dy = (e.clientY - sy) / r.height;
+      if (kind === 'mv') { b.x = clamp(o.x + dx, 0, 1 - b.w); b.y = clamp(o.y + dy, 0, 1 - b.h); } else { b.w = clamp(o.w + dx, 0.06, 1 - b.x); b.h = clamp(o.h + dy, 0.03, 1 - b.y); } paint(); };
+    const up = () => { window.removeEventListener('pointermove', mv); save(); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up, {once: true});
+  };
+  const mvh = H('span', {class: 'fb-mv', title: '끌어서 옮기기', text: '✥'}); mvh.addEventListener('pointerdown', drag('mv'));
+  const bg = H('button', {type: 'button', class: 'fb-b', title: '배경색 바꾸기', text: '🎨', onclick: () => { b.bg = BOX_BGS[(BOX_BGS.indexOf(b.bg) + 1) % BOX_BGS.length]; paint(); save(); }});
+  const del = H('button', {type: 'button', class: 'fb-b', title: '상자 지우기', text: '×', onclick: () => { list.splice(i, 1); save(); render(true); }});
+  const rs = H('i', {class: 'fb-rs ctl', title: '끌어서 크기 바꾸기'}); rs.addEventListener('pointerdown', drag('rs'));
+  el.append(H('div', {class: 'fb-bar ctl'}, [mvh, bg, del]), ed(b, 'text', '글을 쓰세요', 'fb-t'), rs);
+  return el;
+}
+function addBox(idx){
+  const pg = D.pages[idx], p = cur(); if (!pg) return; p.free = p.free || {}; (p.free[pg.key] = p.free[pg.key] || []).push({x: 0.12, y: 0.22, w: 0.34, h: 0.14, text: '', bg: '#FFF8D6'});
+  save(true); render(true);
+}
+
+/* ---------------- 페이지 공개 표시 · 공개용 내보내기 ---------------- */
+async function exportPublic(btn){
+  const p = cur(), keys = D.pages.filter(pg => p.pub && p.pub[pg.key]);
+  if (!keys.length) { dkMsg('공개할 페이지가 없어요. 각 페이지 위쪽의 "공개" 칸을 체크해 주세요.', true); return; }
+  if (!window.JSZip) { dkMsg('압축 라이브러리를 불러오지 못했어요.', true); return; }
+  const orig = btn.textContent; btn.disabled = true;
+  try {
+    const zip = new JSZip(), pages = [];
+    for (let k = 0; k < keys.length; k++) {
+      btn.textContent = `캡처 중... (${k + 1}/${keys.length})`; const c = await capturePage(keys[k]);
+      const file = `p${String(keys[k].idx + 1).padStart(2, '0')}.jpg`; zip.file(file, c.toDataURL('image/jpeg', 0.92).split(',')[1], {base64: true});
+      pages.push({key: keys[k].key, title: keys[k].title, file});
+    }
+    zip.file('manifest.json', JSON.stringify({id: p.id, name: p.name, region: p.region, schools: p.schools, grade: p.grade, period: periodText(p), w: PW, h: PH, updated: new Date().toISOString().slice(0, 10), pages}, null, 1));
+    download(await zip.generateAsync({type: 'blob'}), `공개용_${fileBase()}.zip`);
+    dkMsg(`공개용 ${keys.length}페이지를 ZIP으로 만들었어요. 이 파일을 보내 주시면 사이트에 올려 드려요.`);
+  } catch(e){ dkMsg('내보내기 실패: ' + (e.message || e), true); } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
 function refit(el){ clearTimeout(FIT_T); FIT_T = setTimeout(() => { const pg = el.closest('.rpage'); if (pg) fitPage(pg); }, 250); }
 function bulletList(arr, ph){
   const ul = H('ul', {class: 'bl'});
@@ -429,7 +553,7 @@ const D = {pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeL
 let PW = 794, PH = 1123, ORI = 'p';
 const mmW = () => +(PW * 210 / 794).toFixed(2), mmH = () => +(PH * 210 / 794).toFixed(2);
 
-function newPage(title, kind){
+function newPage(title, kind, key){
   const p = cur();
   const rp = H('div', {class: 'rpage' + (kind ? ' ' + kind : '')});
   rp.style.setProperty('--paper', bgOf(D.bg).bg); rp.style.setProperty('--pw', PW + 'px'); rp.style.setProperty('--ph', PH + 'px');
@@ -438,14 +562,16 @@ function newPage(title, kind){
   else rp.append(H('div', {class: 'rp-head'}, [H('span', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]), H('span', {class: 'rp-eye', text: 'ANNUAL PLANNER'})]), body,
     H('div', {class: 'rp-foot'}, [H('span', {text: [p.region, p.name].filter(Boolean).join(' · ')}), H('span', {class: 'pn'})]));
   const idx = D.pages.length, pbox = H('div', {class: 'pbox'}, [rp]);
-  const wrap = H('div', {class: 'pwrap'}, [H('div', {class: 'pcap', text: `${idx + 1} · ${title}`}), pbox]);
+  key = key || ('pg' + idx); p.pub = p.pub || {};
+  const pubCk = H('input', {type: 'checkbox'}); pubCk.checked = !!p.pub[key]; pubCk.addEventListener('change', () => { p.pub[key] = pubCk.checked; save(); updatePubCount(); });
+  const wrap = H('div', {class: 'pwrap'}, [H('div', {class: 'pcap'}, [`${idx + 1} · ${title}`, H('label', {class: 'pub ctl', title: '체크한 페이지만 사이트에 공개할 수 있어요'}, [pubCk, ' 공개'])]), pbox]);
   D.stage.append(wrap);
-  const pg = {box: wrap, pbox, rp, body, title, idx, kind}; D.pages.push(pg); return pg;
+  const pg = {box: wrap, pbox, rp, body, title, idx, kind, key}; D.pages.push(pg); return pg;
 }
 const secHead = (en, ko, accent, sub) => H('div', {class: 'sec'}, [H('div', {class: 'eb', text: en}), H('h2', {}, [ko + ' ', H('em', {text: accent})]), sub ? H('p', {text: sub}) : null]);
 
 function coverPage(p){
-  const pg = newPage('표지', 'cover'), a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1);
+  const pg = newPage('표지', 'cover', 'cover'), a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1);
   const frame = H('div', {class: 'cv-frame', html: `<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="${PW - 48}" height="${PH - 48}" fill="none" stroke="#A8853F" stroke-opacity=".75" stroke-width="1.89"/></svg>`});
   const sch = H('div', {class: 'cv-line'});
   sch.textContent = [p.region, (p.schools || []).join(' · ')].filter(Boolean).join('  |  ');
@@ -462,28 +588,72 @@ function coverPage(p){
   return pg;
 }
 
+/* ---------------- 로드맵: 페이지에서 바로 편집 ---------------- */
+const BTB = {bar: null, bi: -1, el: null};
+function initBtb(){
+  const bar = H('div', {id: 'btb', class: 'fmt noprint', hidden: true}, [
+    H('span', {class: 'lbl', text: '막대 색'}),
+    ...COLORS.map(([n, c]) => { const b = H('button', {type: 'button', class: 'fb cs', title: n}); b.style.background = c; b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', () => { const bb = cur().bars[BTB.bi]; if (!bb) return; bb.color = c; if (BTB.el) { BTB.el.style.background = c; BTB.el.style.color = textOn(c); } save(); }); return b; }),
+    H('button', {type: 'button', class: 'fb', text: '복제', title: '같은 막대 하나 더', onclick: () => { const p = cur(), b = p.bars[BTB.bi]; if (!b) return; p.bars.push({...b, label: b.label + ' (복사)', _st: undefined}); save(true); render(true); }}),
+    H('button', {type: 'button', class: 'fb', text: '삭제', title: '이 막대 지우기', onclick: () => { const p = cur(); if (BTB.bi < 0) return; p.bars.splice(BTB.bi, 1); BTB.bi = -1; bar.hidden = true; save(true); render(true); }}),
+  ]);
+  BTB.bar = bar; document.body.append(bar);
+  document.addEventListener('mousedown', e => { if (e.target.closest && (e.target.closest('.rm-b') || e.target.closest('#btb'))) return; bar.hidden = true; $$('.rm-b.sel').forEach(x => x.classList.remove('sel')); });
+}
+function selectBar(bi, el){
+  $$('.rm-b.sel').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); BTB.bi = bi; BTB.el = el;
+  const tb = BTB.bar; tb.hidden = false; const r = el.getBoundingClientRect();
+  tb.style.left = clamp(r.left, 8, innerWidth - tb.offsetWidth - 8) + 'px'; tb.style.top = clamp(r.bottom + 8, 4, innerHeight - tb.offsetHeight - 4) + 'px';
+}
+function startDrag(ev, kind, b, g, N, el){
+  ev.preventDefault(); ev.stopPropagation();
+  const p = cur(), r = g.getBoundingClientRect(), cw = r.width / N, idxAt = x => clamp(Math.floor((x - r.left) / cw), 0, N - 1);
+  const s0 = b.s, e0 = b.e, len = e0 - s0, i0 = idxAt(ev.clientX), grids = $$('.rm-g', g.closest('.rpage'));
+  const move = e => {
+    const i = idxAt(e.clientX);
+    if (kind === 'l') { b.s = Math.min(i, e0); b.e = e0; } else if (kind === 'r') { b.e = Math.max(i, s0); b.s = s0; }
+    else { b.s = clamp(s0 + (i - i0), 0, N - 1 - len); b.e = b.s + len; const gy = grids.findIndex(gg => { const rr = gg.getBoundingClientRect(); return e.clientY >= rr.top && e.clientY <= rr.bottom; }); if (gy >= 0) b.track = p.trackOrder[gy]; }
+    el.style.gridColumn = `${b.s + 1} / ${b.e + 2}`;
+  };
+  const up = () => { window.removeEventListener('pointermove', move); save(true); render(true); };
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up, {once: true});
+}
+function barEl(p, b, bi, lane, N, g){
+  const el = H('div', {class: 'rm-b', 'data-bi': bi, style: `grid-column:${clamp(b.s, 0, N - 1) + 1} / ${clamp(b.e, 0, N - 1) + 2};grid-row:${lane + 1};background:${b.color};color:${textOn(b.color)}`});
+  const hl = H('i', {class: 'bh hl ctl', title: '끌어서 시작 달 바꾸기'}), hr = H('i', {class: 'bh hr ctl', title: '끌어서 끝 달 바꾸기'}), mv = H('i', {class: 'bh mv ctl', title: '끌어서 옮기기 (다른 줄로도)', text: '⠿'});
+  hl.addEventListener('pointerdown', e => startDrag(e, 'l', b, g, N, el)); hr.addEventListener('pointerdown', e => startDrag(e, 'r', b, g, N, el)); mv.addEventListener('pointerdown', e => startDrag(e, 'm', b, g, N, el));
+  const lb = ed(b, 'label', '이름', 'rm-bl');
+  lb.addEventListener('focus', () => selectBar(bi, el)); el.addEventListener('mousedown', () => selectBar(bi, el));
+  el.append(hl, mv, lb, hr); return el;
+}
 function roadmapPage(p){
-  const pg = newPage('커리큘럼 로드맵');
-  pg.body.append(secHead('CURRICULUM ROADMAP', '커리큘럼', 'Roadmap', '한 해 동안의 진도와 시험·평가 흐름'));
-  const tracks = []; p.bars.forEach(b => { if (!tracks.includes(b.track)) tracks.push(b.track); });
+  ensurePlan(p);
+  const pg = newPage('커리큘럼 로드맵', '', 'roadmap');
+  pg.body.append(secHead('CURRICULUM ROADMAP', '커리큘럼', 'Roadmap', '막대를 눌러 글을 고치고, 끌어서 옮기거나 길이를 바꾸세요 · 빈 칸을 두 번 누르면 막대가 추가돼요'));
   const N = nOf(p), rm = H('div', {class: 'rm', style: `--n:${N}`});
-  const hd = H('div', {class: 'rm-h'}, [H('div', {text: '트랙'}), ...Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); return H('div', {}, [mi.m + '월', (i === 0 || mi.m === 1) ? H('small', {class: 'yr', text: mi.y}) : null]); })]);
-  rm.append(hd);
-  if (!tracks.length) rm.append(H('div', {class: 'rm-t'}, [H('div', {class: 'rm-l', text: ''}), H('div', {class: 'rm-g'}, [H('div', {class: 'rm-b ctl', style: 'grid-column:1/-1;color:#948C78', text: '위의 "로드맵 편집" 버튼으로 진도 막대를 추가하세요'})])]));
-  tracks.forEach(t => {
-    const bars = p.bars.filter(b => b.track === t).sort((a, b) => a.s - b.s), lanes = [];
-    bars.forEach(b => { let li = lanes.findIndex(end => end < b.s); if (li < 0) { li = lanes.length; lanes.push(-1); } lanes[li] = b.e; b._lane = li; });
+  rm.append(H('div', {class: 'rm-h'}, [H('div', {text: '트랙'}), ...Array.from({length: N}, (_, i) => { const mi = monthInfo(p, i); return H('div', {}, [mi.m + '월', (i === 0 || mi.m === 1) ? H('small', {class: 'yr', text: mi.y}) : null]); })]));
+  p.trackOrder.forEach((t, ti) => {
+    const bars = p.bars.map((b, bi) => ({b, bi})).filter(x => x.b.track === t).sort((a, c) => a.b.s - c.b.s), lanes = [];
+    bars.forEach(x => { let li = lanes.findIndex(end => end < x.b.s); if (li < 0) { li = lanes.length; lanes.push(-1); } lanes[li] = x.b.e; x.lane = li; });
     const g = H('div', {class: 'rm-g', style: `grid-template-rows:repeat(${Math.max(1, lanes.length)},1fr)`});
-    bars.forEach(b => g.append(H('div', {class: 'rm-b', style: `grid-column:${clamp(b.s, 0, N - 1) + 1} / ${clamp(b.e, 0, N - 1) + 2};grid-row:${b._lane + 1};background:${b.color};color:${textOn(b.color)}`, text: b.label})));
-    rm.append(H('div', {class: 'rm-t', style: `flex-grow:${Math.max(1, lanes.length)}`}, [H('div', {class: 'rm-l', text: t}), g]));
+    g.addEventListener('dblclick', e => { if (e.target !== g) return; const r = g.getBoundingClientRect(), i = clamp(Math.floor((e.clientX - r.left) / (r.width / N)), 0, N - 1); p.bars.push({track: t, label: '새 항목', s: i, e: i, color: '#7FC8B4'}); save(true); render(true); });
+    bars.forEach(({b, bi, lane}) => g.append(barEl(p, b, bi, lane, N, g)));
+    const nm = H('div', {class: 'ed rm-nm', contenteditable: 'true', spellcheck: 'false', 'data-ph': '트랙 이름'}); nm.textContent = t;
+    nm.addEventListener('blur', () => { const v = nm.innerText.trim(); if (!v || v === t || p.trackOrder.includes(v)) { nm.textContent = t; return; } p.bars.forEach(b => { if (b.track === t) b.track = v; }); p.trackOrder[ti] = v; save(true); render(true); });
+    const act = H('div', {class: 'rl-act ctl'}, [
+      H('button', {type: 'button', class: 'addbtn', text: '+ 막대', onclick: () => { const used = new Set(); p.bars.filter(b => b.track === t).forEach(b => { for (let i = b.s; i <= b.e; i++) used.add(i); }); let i = 0; while (used.has(i) && i < N - 1) i++; p.bars.push({track: t, label: '새 항목', s: i, e: i, color: '#7FC8B4'}); save(true); render(true); }}),
+      H('button', {type: 'button', class: 'xbtn', style: 'opacity:1', text: '× 줄 지우기', onclick: () => { if (!confirm(`"${t}" 줄과 그 안의 막대를 모두 지울까요?`)) return; p.bars = p.bars.filter(b => b.track !== t); p.trackOrder.splice(ti, 1); save(true); render(true); }}),
+    ]);
+    rm.append(H('div', {class: 'rm-t', style: `flex-grow:${Math.max(1, lanes.length)}`}, [H('div', {class: 'rm-l'}, [nm, act]), g]));
   });
   pg.body.append(rm);
-  if (p.note !== undefined) pg.body.append(ed(p, 'note', '메모 (예: 학교별 시험 일정은 확정되면 입력)', ''));
+  pg.body.append(H('button', {type: 'button', class: 'addbtn ctl', style: 'align-self:flex-start', text: '+ 줄(트랙) 추가', onclick: () => { const t = '새 트랙 ' + (p.trackOrder.length + 1); p.trackOrder.push(t); p.bars.push({track: t, label: '새 항목', s: 0, e: 1, color: '#7FC8B4'}); save(true); render(true); }}));
+  if (p.note !== undefined) pg.body.append(ed(p, 'note', '메모', ''));
   return pg;
 }
 
 function yearPage(p){
-  const pg = newPage('연간 계획표');
+  const pg = newPage('연간 계획표', '', 'year');
   pg.body.append(secHead('YEAR PLAN', '연간', 'Plan', '월별 주제와 핵심 내용, 학교 시험·평가 일정'));
   const n = nOf(p), cols = ORI === 'p' ? 3 : (PW > PH * 1.2 ? 5 : 4), grid = H('div', {class: 'yg', style: `grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${Math.ceil(n / cols)},1fr)`});
   p.months.forEach((m, i) => {
@@ -502,7 +672,8 @@ const SCHOOL_COLORS = ['#C64E71', '#3E8F79', '#7088B5', '#A8853F', '#C98F5E', '#
 const COMMON_COLOR = '#948C78';
 const shortSchool = s => String(s).replace(/고등학교$/, '').replace(/고$/, '') || s;
 function ensurePlan(p){
-  p.exams = p.exams || {}; p.schools = p.schools || [];
+  p.exams = p.exams || {}; p.schools = p.schools || []; p.pub = p.pub || {}; p.free = p.free || {};
+  p.trackOrder = (p.trackOrder || []).filter(Boolean); (p.bars || []).forEach(b => { if (!p.trackOrder.includes(b.track)) p.trackOrder.push(b.track); });
   p.common = p.common || [{label: '3월 학력평가', date: ''}, {label: '6월 학력평가', date: ''}, {label: '9월 학력평가', date: ''}, {label: '겨울방학', date: ''}, {label: '여름방학', date: ''}];
   p.months.forEach(m => { m.days = m.days || {}; m.schedule = m.schedule || []; m.weeks = m.weeks || []; });
   return p;
@@ -539,7 +710,7 @@ function examBadges(p){   // {'y-m': {day: [{text,color}]}}
 
 function examPage(p){
   ensurePlan(p);
-  const pg = newPage('학교별 시험 일정');
+  const pg = newPage('학교별 시험 일정', '', 'exam');
   pg.body.append(secHead('SCHOOL EXAM SCHEDULE', '학교별 시험', 'Schedule', '날짜를 적으면 월별 달력에 학교 색으로 자동 표시돼요 (예: 4/22~4/26)'));
   const schools = p.schools;
   const tbody = H('tbody');
@@ -581,7 +752,7 @@ function calendarBlock(p, i){
 function monthPage(p, i){
   ensurePlan(p);
   const m = p.months[i], mi = monthInfo(p, i);
-  const pg = newPage(`${mi.y}년 ${mi.m}월 계획`);
+  const pg = newPage(`${mi.y}년 ${mi.m}월 계획`, '', 'm' + i);
   pg.body.append(H('div', {class: 'mh'}, [
     H('div', {class: 'mh-m'}, [H('small', {text: `${mi.y} · MONTHLY`}), mi.m + '월']),
     H('div', {class: 'mh-t'}, [ed(m, 'theme', '이 달의 주제', 'mh-th'), ed(m, 'goal', '이 달의 목표', 'mh-g')]),
@@ -625,15 +796,16 @@ function render(keep){
   D.stage.style.setProperty('--pw', PW + 'px'); D.stage.style.setProperty('--ph', PH + 'px');
   host.append(H('div', {class: 'stage-host'}, [D.stage]));
   ensurePlan(p); coverPage(p); roadmapPage(p); yearPage(p); examPage(p); for (let i = 0; i < nOf(p); i++) monthPage(p, i);
-  D.pages.forEach(pg => { const pn = $('.pn', pg.rp); if (pn) pn.textContent = `${pg.idx + 1} / ${D.pages.length}`; });
+  D.pages.forEach(pg => { const pn = $('.pn', pg.rp); if (pn) pn.textContent = `${pg.idx + 1} / ${D.pages.length}`; freeLayer(pg); });
   host.insertBefore(buildBar(), host.firstChild);
   layout();
   const fitAll = () => D.pages.forEach(pg => fitPage(pg.rp));
   fitAll(); (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { fitAll(); updateNav(); });
   if (!D.sel.size || D.sel.size > D.pages.length || ![...D.sel].every(i => i < D.pages.length)) D.sel = new Set(D.pages.map((_, i) => i));
-  syncSel(); updateNav(); renderPlanBar();
+  syncSel(); updateNav(); renderPlanBar(); updatePubCount();
   if (keep) scrollTo(0, y);
 }
+function updatePubCount(){ const p = cur(), n = D.pages.filter(pg => p.pub && p.pub[pg.key]).length, el = $('#pubCnt'); if (el) el.textContent = n ? `공개 선택 ${n}쪽` : ''; }
 function layout(){
   if (!D.stage) return;
   const availW = Math.max(240, D.stage.parentElement.clientWidth - 4);
@@ -731,7 +903,7 @@ function buildBar(){
   const sel = H('div', {class: 'dk-sel'}, [H('span', {class: 'lbl', text: '저장할 페이지'}), inp, H('span', {class: 'hint', id: 'selInfo'}), mkb('전체', () => { D.sel = new Set([...Array(n).keys()]); syncSel(); }), mkb('지금 페이지만', () => { D.sel = new Set([curIndex()]); syncSel(); })]);
   const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
   const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
-  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print())]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('공개용 내보내기', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
   return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
 }
@@ -743,7 +915,7 @@ function renderPlanBar(){
   sel.value = DB.cur; sel.addEventListener('change', () => { DB.cur = sel.value; save(true); D.sel = new Set(); render(); });
   const b = (t, fn, cls) => { const x = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); x.addEventListener('click', fn); return x; };
   bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = JSON.parse(JSON.stringify(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
-    b('플랜 설정', openSettings), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
+    b('플랜 설정', openSettings), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
     b('내보내기(JSON)', () => download(new Blob([JSON.stringify(cur(), null, 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
     b('가져오기', () => $('#impFile').click()));
   bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
@@ -788,6 +960,125 @@ function openRoadmap(){
     H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '적용', onclick: () => { p.bars = bars; save(true); closeModal(); render(true); }})])]));
 }
 
+/* ---------------- 나이스(NEIS) 학사일정 불러오기 ---------------- */
+const NEIS = 'https://open.neis.go.kr/hub/';
+const neisKey = () => (safeLS.get('pl_neis_key') || '').trim();
+async function neisJson(path, params){
+  const q = new URLSearchParams({Type: 'json', ...params}); const k = neisKey(); if (k) q.set('KEY', k);
+  const r = await fetch(NEIS + path + '?' + q); if (!r.ok) throw new Error('나이스 서버 응답 오류 ' + r.status); return r.json();
+}
+const neisRows = (j, name) => (j[name] && j[name][1] && j[name][1].row) || [];
+async function neisFindSchool(p, name){
+  p.neis = p.neis || {};
+  const hit = p.neis[name]; if (hit && hit.code) return hit;
+  for (const nm of [name, name.replace(/고$/, '고등학교')]) {
+    const rows = neisRows(await neisJson('schoolInfo', {SCHUL_NM: nm, pSize: '50'}), 'schoolInfo'); if (!rows.length) continue;
+    const pick = rows.find(r => p.region && (r.ORG_RDNMA || '').includes(p.region)) || rows[0];
+    return (p.neis[name] = {code: pick.SD_SCHUL_CODE, atpt: pick.ATPT_OFCDC_SC_CODE, name: pick.SCHUL_NM, addr: pick.ORG_RDNMA, many: rows.length > 1 && !rows.some(r => p.region && (r.ORG_RDNMA || '').includes(p.region))});
+  }
+  return null;
+}
+async function neisSchedule(sc, from, to){
+  const j = await neisJson('SchoolSchedule', {ATPT_OFCDC_SC_CODE: sc.atpt, SD_SCHUL_CODE: sc.code, AA_FROM_YMD: from, AA_TO_YMD: to, pIndex: '1', pSize: '1000'});
+  if (!j.SchoolSchedule) { const c = j.RESULT && j.RESULT.CODE; if (c === 'INFO-200') return []; throw new Error((j.RESULT && j.RESULT.MESSAGE) || '학사일정을 읽지 못했어요'); }
+  return neisRows(j, 'SchoolSchedule').filter(x => x.ONE_GRADE_EVENT_YN !== 'N');
+}
+const ymd = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+const ymdDate = s => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+function examKeyOf(n, m){
+  if (/확인|이의|정정|성적|채점|통지|안내|신청/.test(n)) return null;
+  if (!/정기시험|지필|고사|중간|기말/.test(n)) return null;
+  const sem = /2학기/.test(n) ? 2 : /1학기/.test(n) ? 1 : ((m >= 8 || m <= 2) ? 2 : 1);
+  const ord = /1차|중간|1회/.test(n) ? 1 : /2차|기말|2회/.test(n) ? 2 : ((m === 4 || m === 5 || m === 10 || m === 11) ? 1 : 2);
+  return (ord === 1 ? 'm' : 'f') + sem;
+}
+function groupRanges(dates){   // ['20260423',...] → ['4/23~4/28', ...]  (주말·공휴일 사이는 한 묶음)
+  const a = [...new Set(dates)].sort(), out = []; let s = null, e = null;
+  const fmt = d => `${+d.slice(4, 6)}/${+d.slice(6, 8)}`;
+  a.forEach(d => { if (!s) { s = e = d; return; } if ((ymdDate(d) - ymdDate(e)) / 864e5 <= 4) e = d; else { out.push(s === e ? fmt(s) : `${fmt(s)}~${fmt(e)}`); s = e = d; } });
+  if (s) out.push(s === e ? fmt(s) : `${fmt(s)}~${fmt(e)}`);
+  return out.join(', ');
+}
+const shiftYear = (s, n) => (+s.slice(0, 4) + n) + s.slice(4);
+async function runNeis(p, opts){
+  opts = opts || {}; const log = [];
+  if (!neisKey()) throw new Error('나이스 인증키를 먼저 입력해 주세요.');
+  if (!p.schools.length) throw new Error('플랜 설정에서 학교를 먼저 입력해 주세요.');
+  const first = monthInfo(p, 0), last = monthInfo(p, nOf(p) - 1);
+  const planFrom = new Date(first.y, first.m - 1, 1), planTo = new Date(last.y, last.m, 0);
+  let exFrom = new Date(planFrom.getFullYear(), 2, 1); if (exFrom < planFrom) exFrom = new Date(planFrom.getFullYear() + 1, 2, 1);   // 시험은 이 플랜의 첫 3월부터
+  const prevFrom = new Date(planFrom.getFullYear() - 1, planFrom.getMonth(), 1);
+  const rows = [];
+  const commons = new Map();   // label → {date, est}
+  p.exams = p.exams || {}; p.common = p.common || [];
+  for (const name of p.schools) {
+    const sc = await neisFindSchool(p, name);
+    if (!sc) { log.push(`${name}: 나이스에서 학교를 찾지 못했어요 (학교 이름을 "신갈고등학교"처럼 정식 이름으로 적어 보세요)`); continue; }
+    const ev = await neisSchedule(sc, ymd(prevFrom), ymd(planTo));
+    const inCur = e => { const d = ymdDate(e.AA_YMD); return d >= exFrom && d <= planTo; };
+    const inPrev = e => { const d = ymdDate(e.AA_YMD); return d >= new Date(exFrom.getFullYear() - 1, 2, 1) && d < new Date(exFrom.getFullYear(), 2, 1); };
+    const byKey = {};
+    ev.forEach(e => { const k = examKeyOf(e.EVENT_NM, +e.AA_YMD.slice(4, 6)); if (!k) return; (byKey[k] = byKey[k] || {cur: [], prev: []}); if (inCur(e)) byKey[k].cur.push(e.AA_YMD); else if (inPrev(e)) byKey[k].prev.push(e.AA_YMD); });
+    const ex = (p.exams[name] = p.exams[name] || {}); ex._auto = ex._auto || {};
+    const found = [];
+    EXAM_COLS.forEach(([k, label]) => {
+      const g = byKey[k]; if (!g) return;
+      let text = '', est = false;
+      if (g.cur.length) text = groupRanges(g.cur); else if (g.prev.length && opts.estimate !== false) { text = groupRanges(g.prev.map(d => shiftYear(d, 1))); est = true; }
+      if (!text) return;
+      const val = (est ? '예상 ' : '') + text;
+      if (!ex[k] || ex[k] === ex._auto[k]) { ex[k] = val; ex._auto[k] = val; found.push(`${label} ${val}`); }
+      else found.push(`${label} (직접 입력한 값을 유지)`);
+    });
+    log.push(`${sc.name}${sc.many ? ' (이름이 같은 학교가 여러 곳이라 첫 번째를 골랐어요)' : ''}: ` + (found.length ? found.join(' · ') : '시험 일정이 아직 올라와 있지 않아요'));
+    // 공통 일정: 학평·방학
+    const take = (list, fn) => { const cur = list.filter(e => { const d = ymdDate(e.AA_YMD); return d >= planFrom && d <= planTo; }); return cur.length ? {dates: cur.map(fn), est: false} : {dates: list.filter(e => { const d = ymdDate(e.AA_YMD); return d >= prevFrom && d < planFrom; }).map(e => shiftYear(fn(e), 1)), est: true}; };
+    ev.filter(e => /학력평가/.test(e.EVENT_NM) && !/수능|모의/.test(e.EVENT_NM)).forEach(e => {
+      const d = ymdDate(e.AA_YMD), inPlan = d >= planFrom && d <= planTo, shifted = inPlan ? e.AA_YMD : shiftYear(e.AA_YMD, 1), sd = ymdDate(shifted);
+      if (sd < planFrom || sd > planTo) return; if (!inPlan && opts.estimate === false) return;
+      const label = `${+shifted.slice(4, 6)}월 학력평가`, c = commons.get(label); if (!c || (c.est && inPlan)) commons.set(label, {date: `${+shifted.slice(4, 6)}/${+shifted.slice(6, 8)}`, est: !inPlan});
+    });
+    [['여름방학', e => /방학/.test(e.EVENT_NM) && !/식$/.test(e.EVENT_NM) && /하계|여름|^방학$/.test(e.EVENT_NM) && +e.AA_YMD.slice(4, 6) >= 7 && +e.AA_YMD.slice(4, 6) <= 8],
+     ['겨울방학', e => /방학/.test(e.EVENT_NM) && !/식$/.test(e.EVENT_NM) && (/동계|겨울/.test(e.EVENT_NM) || +e.AA_YMD.slice(4, 6) >= 12 || +e.AA_YMD.slice(4, 6) <= 2)]].forEach(([label, test]) => {
+      const list = ev.filter(test); if (!list.length) return;
+      const t = take(list, e => e.AA_YMD); if (!t.dates.length) return; if (t.est && opts.estimate === false) return;
+      if (!commons.has(label) || (commons.get(label).est && !t.est)) commons.set(label, {date: groupRanges(t.dates), est: t.est});
+    });
+  }
+  commons.forEach((v, label) => {
+    const val = (v.est ? '예상 ' : '') + v.date;
+    let it = p.common.find(c => c.label === label && (!c.date || c.auto)); if (!it) { it = {label, date: ''}; p.common.push(it); }
+    if (!it.date || it.auto) { it.date = val; it.auto = true; }
+  });
+  p.neisAt = Date.now(); save(true);
+  log.push(`공통 일정: ${[...commons.entries()].map(([l, v]) => `${l} ${v.est ? '예상 ' : ''}${v.date}`).join(' · ') || '불러온 것이 없어요'}`);
+  return log;
+}
+function openNeis(){
+  const p = cur(); ensurePlan(p);
+  const key = H('input', {type: 'password', value: neisKey(), placeholder: '나이스 인증키 (이 브라우저에만 저장돼요)', autocomplete: 'off'});
+  const est = H('input', {type: 'checkbox'}); est.checked = true;
+  const out = H('div', {class: 'msg', style: 'white-space:pre-line;margin-top:10px'});
+  const run = H('button', {class: 'btn', type: 'button', text: '불러오기'});
+  run.addEventListener('click', async () => {
+    safeLS.set('pl_neis_key', key.value.trim()); run.disabled = true; out.className = 'msg'; out.textContent = '나이스에서 학사일정을 읽는 중...';
+    try { const log = await runNeis(p, {estimate: est.checked}); out.className = 'msg ok'; out.textContent = log.join('\n'); render(true); }
+    catch(e){ out.className = 'msg err'; out.textContent = '실패: ' + (e.message || e); }
+    run.disabled = false;
+  });
+  openModal(H('div', {}, [H('h3', {text: '학사일정 불러오기 (나이스)'}),
+    H('p', {class: 'hint', text: `플랜의 학교(${p.schools.join(', ') || '없음'})를 나이스 학사일정에서 찾아 중간·기말 시험, 학력평가, 방학을 학교별 시험 일정 칸과 달력에 채워요. 직접 고친 칸은 덮어쓰지 않아요.`}),
+    H('label', {class: 'f'}, ['나이스 인증키', key]),
+    H('label', {class: 'chip', style: 'margin-top:10px'}, [est, ' 올해 일정이 아직 없으면 작년 같은 시기 일정을 "예상"으로 넣기']),
+    H('div', {class: 'acts', style: 'justify-content:flex-start'}, [run, H('button', {class: 'btn sec', type: 'button', text: '닫기', onclick: closeModal})]), out,
+    p.neisAt ? H('p', {class: 'hint', text: '마지막으로 불러온 때: ' + new Date(p.neisAt).toLocaleString('ko-KR')}) : null]));
+}
+async function autoNeis(){
+  const p = cur(); if (!p || !neisKey() || !p.schools || !p.schools.length) return;
+  if (p.neisAt && Date.now() - p.neisAt < 864e5) return;
+  try { await runNeis(p, {estimate: true}); render(true); const m = $('#savedMsg'); if (m) m.textContent = '학사일정 자동 갱신됨'; } catch(e){}
+}
+
 window.addEventListener('resize', () => { layout(); updateNav(); });
 let _sc = 0; window.addEventListener('scroll', () => { if (_sc) return; _sc = requestAnimationFrame(() => { _sc = 0; updateNav(); }); }, {passive: true});
 document.addEventListener('keydown', e => {
@@ -797,7 +1088,7 @@ document.addEventListener('keydown', e => {
 window.addEventListener('beforeprint', () => D.pages.forEach((pg, i) => pg.box.classList.toggle('skip', !D.sel.has(i))));
 window.addEventListener('afterprint', () => D.pages.forEach(pg => pg.box.classList.remove('skip')));
 
-load(); render();
+initFmt(); initBtb(); load(); render(); autoNeis();
 (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => render(true));
 window.__PL = {DB: () => DB, D, render, cur};
 })();

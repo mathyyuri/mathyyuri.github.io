@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연간 플래너 | MATHY YURI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#FBF8F1;--ink:#1A1A1A;--gold:#A8853F;--gold-line:#E6DCC6;--mint-deep:#3E8F79;--sans:'Noto Sans KR',sans-serif;--kserif:'Noto Serif KR',serif;--serif:'Playfair Display','Noto Serif KR',serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.top{padding:22px 4vw 16px;border-bottom:1px solid var(--gold-line);display:flex;align-items:flex-end;gap:12px}
+.brand{font-family:var(--serif);font-weight:900;font-size:clamp(18px,3vw,26px);letter-spacing:.04em;line-height:1}
+.brand span{font-style:italic;font-weight:600;color:var(--gold)}
+.eyebrow{font-size:9px;letter-spacing:.38em;font-weight:700;color:var(--gold);margin-bottom:7px}
+.sp{flex:1}
+.back{font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--ink);text-decoration:none;border:1px solid var(--gold-line);background:#fff;padding:8px 14px;border-radius:3px}
+.back:hover{background:var(--ink);color:var(--cream)}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(28px,6vw,52px);margin:26px 4vw 4px;letter-spacing:-.01em}
+h1 em{font-style:italic;font-weight:600;color:var(--mint-deep)}
+.sub{margin:0 4vw 16px;color:#5B574D;font-family:var(--kserif);font-size:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;padding:0 4vw 12px}
+.tab{border:1px solid var(--gold-line);background:#fff;border-radius:999px;padding:8px 18px;font-size:13px;font-weight:700;font-family:var(--kserif);cursor:pointer}
+.tab.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.meta{padding:0 4vw 10px;font-size:12px;color:#948C78}
+.pages{display:flex;flex-direction:column;align-items:center;gap:22px;padding:10px 4vw 60px}
+.pg{width:100%;max-width:var(--mw,860px)}
+.pg h3{margin:0 0 6px;font-size:11px;letter-spacing:.16em;color:#7A5F25}
+.pg img{display:block;width:100%;height:auto;box-shadow:0 8px 28px rgba(70,52,12,.18);background:#fff;cursor:zoom-in}
+.empty{padding:50px 4vw;color:#948C78;font-family:var(--kserif)}
+.zoom{position:fixed;inset:0;background:rgba(20,16,8,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}
+.zoom[hidden]{display:none}
+.zoom img{max-width:100%;max-height:100%;object-fit:contain;background:#fff}
+</style>
+</head>
+<body>
+<div class="top"><div><div class="eyebrow">PLANNER</div><div class="brand">MATHY <span>YURI</span></div></div><span class="sp"></span><a class="back" href="index.html">← 돌아가기</a></div>
+<h1>연간 <em>Planner</em></h1>
+<p class="sub">대치에스플러스학원 · 공개된 커리큘럼과 연간 계획</p>
+<div class="tabs" id="tabs"></div>
+<div class="meta" id="meta"></div>
+<div class="pages" id="pages"></div>
+<div class="zoom" id="zoom" hidden><img id="zimg" alt=""></div>
+<script>
+(async function(){
+  const $ = s => document.querySelector(s);
+  const get = async u => { const r = await fetch(u + '?v=' + Date.now()); if (!r.ok) throw new Error(u); return r.json(); };
+  let plans = [];
+  try {
+    const ids = await get('planner-public/index.json');
+    plans = (await Promise.all(ids.map(async id => { try { const m = await get(`planner-public/${id}/manifest.json`); m._dir = `planner-public/${id}/`; return m; } catch(e){ return null; } }))).filter(Boolean);
+  } catch(e){}
+  if (!plans.length) { $('#pages').innerHTML = '<div class="empty">아직 공개된 플래너가 없어요. 곧 올라올 예정입니다.</div>'; return; }
+  const show = i => {
+    const m = plans[i];
+    [...$('#tabs').children].forEach((t, k) => t.classList.toggle('on', k === i));
+    $('#meta').textContent = [m.region, (m.schools || []).join(' · '), m.grade, m.period, m.updated && ('업데이트 ' + m.updated)].filter(Boolean).join('  ·  ');
+    const box = $('#pages'); box.innerHTML = '';
+    box.style.setProperty('--mw', m.w > m.h ? '1100px' : '860px');
+    m.pages.forEach(p => { const d = document.createElement('div'); d.className = 'pg'; d.innerHTML = `<h3></h3><img alt="">`; d.querySelector('h3').textContent = p.title; const im = d.querySelector('img'); im.src = m._dir + p.file; im.alt = p.title; im.addEventListener('click', () => { $('#zimg').src = im.src; $('#zoom').hidden = false; }); box.append(d); });
+  };
+  $('#tabs').innerHTML = ''; plans.forEach((m, i) => { const b = document.createElement('button'); b.className = 'tab'; b.textContent = [m.region, m.name].filter(Boolean).join(' · '); b.addEventListener('click', () => show(i)); $('#tabs').append(b); });
+  $('#zoom').addEventListener('click', () => { $('#zoom').hidden = true; });
+  show(0);
+})();
+</script>
+</body>
+</html>
