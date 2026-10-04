@@ -680,7 +680,7 @@ function yearPage(p){
 }
 
 /* ---------------- 학교별 시험 일정 · 달력 ---------------- */
-const EXAM_COLS = [['m1', '1학기 중간'], ['f1', '1학기 기말'], ['m2', '2학기 중간'], ['f2', '2학기 기말']];
+const EXAM_COLS = [['e2', '올해 2학기 기말'], ['m1', '1학기 중간'], ['f1', '1학기 기말'], ['m2', '2학기 중간'], ['f2', '2학기 기말']];
 const SCHOOL_COLORS = ['#C64E71', '#3E8F79', '#7088B5', '#A8853F', '#C98F5E', '#7FC8B4'];
 const COMMON_COLOR = '#948C78';
 const shortSchool = s => String(s).replace(/고등학교$/, '').replace(/고$/, '') || s;
@@ -1100,6 +1100,10 @@ async function runNeis(p, opts){
     const inPrev = e => { const d = ymdDate(e.AA_YMD); return d >= new Date(exFrom.getFullYear() - 1, 2, 1) && d < new Date(exFrom.getFullYear(), 2, 1); };
     const byKey = {};
     ev.forEach(e => { const k = examKeyOf(e.EVENT_NM, +e.AA_YMD.slice(4, 6)); if (!k) return; (byKey[k] = byKey[k] || {cur: [], prev: []}); if (inCur(e)) byKey[k].cur.push(e.AA_YMD); else if (inPrev(e)) byKey[k].prev.push(e.AA_YMD); });
+    // 플랜 초반(올해 11~1월)의 2학기 기말: 올해 일정이 있으면 그대로, 없으면 작년 같은 시기 일정을 연도 붙여서
+    byKey.e2 = {cur: [], prev: []};
+    ev.forEach(e => { if (examKeyOf(e.EVENT_NM, +e.AA_YMD.slice(4, 6)) !== 'f2') return; const d = ymdDate(e.AA_YMD);
+      if (d >= planFrom && d < exFrom) byKey.e2.cur.push(e.AA_YMD); else if (d >= prevFrom && d < new Date(exFrom.getFullYear() - 1, 2, 1)) byKey.e2.prev.push(e.AA_YMD); });
     const ex = (p.exams[name] = p.exams[name] || {}); ex._auto = ex._auto || {};
     const found = [];
     EXAM_COLS.forEach(([k, label]) => {
