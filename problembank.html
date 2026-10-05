@@ -190,6 +190,9 @@ label { display: block; font-weight: 700; margin-bottom: 6px; font-family: var(-
 .tagRows { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
 .tagRow { display: flex; flex-direction: column; gap: 8px; font-size: 13px; padding: 12px; border: 1px solid var(--gold-line); border-radius: 8px; background: #fff; }
 .tagRowHead { display: flex; align-items: center; gap: 8px; }
+.tagRow.noAns { border-color: var(--pink-deep, #C64E71); box-shadow: 0 0 0 2px rgba(198,78,113,.25); }
+.noAnsBadge { font-size: 11px; font-weight: 700; color: #fff; background: var(--pink-deep, #C64E71); border-radius: 10px; padding: 2px 8px; }
+.noAnsLink { background: none; border: none; color: var(--pink-deep, #C64E71); font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0 3px; font-size: inherit; }
 .tagRowNum { font-family: var(--kserif); font-weight: 700; color: var(--gold); flex: 0 0 auto; font-size: 15px; }
 .tagFormatBadge { font-family: var(--kserif); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); }
 .tagFormatBadge.empty { background: rgba(26,26,26,.06); color: rgba(26,26,26,.4); }
@@ -1522,6 +1525,8 @@ function wireAutoFillAnswers(box, nums, entry, questionData) {
     const msgEl = autoFillRow.querySelector('.autoFillMsg');
     msgEl.textContent = '찾는 중...';
     let filled = 0;
+    const found = new Set();
+    box.querySelectorAll('.tagRow.noAns').forEach(r => { r.classList.remove('noAns'); r.querySelector('.noAnsBadge')?.remove(); });
     for (const num of nums) {
       try {
         const fullBodyXml = extractEndnoteFullBodyXml(entry.markers.get(num).blockXml);
@@ -1543,12 +1548,36 @@ function wireAutoFillAnswers(box, nums, entry, questionData) {
         if (qd) qd.answer = answer;
         const input = box.querySelector(`.tagRow[data-num="${num}"] .tagAnswerInput`);
         if (input) { input.value = answer; input.dispatchEvent(new Event('input')); }
-        filled++;
+        filled++; found.add(String(num));
       } catch (e) {}
     }
-    msgEl.textContent = filled
-      ? `${filled}개 문제에서 정답을 찾아 채웠습니다 — 내용을 확인하고 저장하세요.`
-      : '이 파일에서는 [정답]/[풀이] 표시를 찾지 못했습니다. 직접 입력해주세요.';
+    // 못 채운 번호 — 자동으로 못 찾았고, 입력칸도 비어 있는 문제(직접 입력해야 하는 문제)를 표시한다.
+    const missing = nums.filter(num => {
+      if (found.has(String(num))) return false;
+      const input = box.querySelector(`.tagRow[data-num="${num}"] .tagAnswerInput`);
+      return !(input && input.value.trim());
+    });
+    missing.forEach(num => {
+      const row = box.querySelector(`.tagRow[data-num="${num}"]`); if (!row) return;
+      row.classList.add('noAns');
+      const head = row.querySelector('.tagRowHead');
+      if (head && !head.querySelector('.noAnsBadge')) { const b = document.createElement('span'); b.className = 'noAnsBadge'; b.textContent = '정답 못 찾음'; head.appendChild(b); }
+    });
+    msgEl.innerHTML = '';
+    const head = document.createElement('span');
+    head.textContent = filled ? `${filled}개 문제에서 정답을 찾아 채웠습니다 — 내용을 확인하고 저장하세요.` : '이 파일에서는 [정답]/[풀이] 표시를 찾지 못했습니다. 직접 입력해주세요.';
+    msgEl.appendChild(head);
+    if (missing.length) {
+      const m2 = document.createElement('div');
+      m2.style.cssText = 'margin-top:6px;line-height:1.9';
+      m2.append(`⚠ 정답을 못 찾은 문제 ${missing.length}개 (눌러서 이동): `);
+      missing.forEach(num => {
+        const a = document.createElement('button'); a.type = 'button'; a.className = 'noAnsLink'; a.textContent = num + '번';
+        a.addEventListener('click', () => box.querySelector(`.tagRow[data-num="${num}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        m2.appendChild(a);
+      });
+      msgEl.appendChild(m2);
+    }
     ev.target.disabled = false;
   });
 }

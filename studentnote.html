@@ -4866,8 +4866,9 @@ document.getElementById('togglePreviewBtn').addEventListener('click', (e) => {
   checkedPreviewList.classList.toggle('hidden', previewCollapsed);
   e.target.textContent = previewCollapsed ? '보이기' : '숨기기';
 });
-let previewReqId = 0;
+let previewReqId = 0, suppressPreview = false;
 async function refreshCheckedPreview() {
+  if (suppressPreview) return;   // 미리보기에서 문제 하나만 뺄 때는 전체를 다시 그리지 않는다
   const checked = [...document.querySelectorAll('.qChk:checked')].map(chk => ({
     mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num,
   }));
@@ -4884,10 +4885,11 @@ async function refreshCheckedPreview() {
   }
   checkedPreviewList.innerHTML = checked.map((c, i) => {
     const fileId = lookupMissionFileId(missionFileId, c.mission, c.category);
-    return `<div class="chPrevItem" data-idx="${i}" data-file-id="${fileId || ''}" data-num="${escapeHtml(c.num)}" data-mission="${escapeHtml(c.mission)}">
+    return `<div class="chPrevItem" data-idx="${i}" data-file-id="${fileId || ''}" data-num="${escapeHtml(c.num)}" data-mission="${escapeHtml(c.mission)}" data-category="${escapeHtml(c.category || '')}">
       <div class="chPrevHead"><span class="chPrevNum">${escapeHtml(c.num)}번</span><span class="chPrevSrc">${escapeHtml(c.mission)}</span>
       <label class="chPrevNoCh" title="오답노트(HTML)에서 이 문제의 선지를 빼고, 빠른정답에 번호+실제 답을 싣습니다"><input type="checkbox" class="chPrevNoChoice"${noChoiceSet().has(noChoiceKey(fileId, c.num)) ? ' checked' : ''}> 선지 빼기</label>
-      <button type="button" class="selectAllBtn chPrevEditBtn">✏️ 수정</button></div>
+      <button type="button" class="selectAllBtn chPrevEditBtn">✏️ 수정</button>
+      <button type="button" class="selectAllBtn chPrevDelBtn" title="이 문제를 오답노트에서 뺍니다 (위쪽 체크도 함께 해제돼요)">🗑 빼기</button></div>
       <div class="chPrevBody">${fileId ? '불러오는 중...' : '<span class="hint">시험지 파일을 찾지 못했습니다.</span>'}</div>
     </div>`;
   }).join('');
@@ -4896,6 +4898,14 @@ async function refreshCheckedPreview() {
     cb.checked ? set.add(key) : set.delete(key); dqSave(NOCH_KEY, [...set]);
     const raw = chPrevRawHtml.get(key), bodyEl = item.querySelector('.chPrevBody');
     if (raw != null) { bodyEl.innerHTML = cb.checked ? stripChoices(raw) : raw; renderMathIn(bodyEl); }
+  }));
+  checkedPreviewList.querySelectorAll('.chPrevDelBtn').forEach(btn => btn.addEventListener('click', () => {
+    const item = btn.closest('.chPrevItem');
+    const chk = [...document.querySelectorAll('.qChk:checked')].find(c => c.dataset.mission === item.dataset.mission && (c.dataset.category || '') === item.dataset.category && c.dataset.num === item.dataset.num);
+    if (chk) { chk.checked = false; suppressPreview = true; try { updateCounter(); } finally { suppressPreview = false; } }
+    item.remove();
+    const left = checkedPreviewList.querySelectorAll('.chPrevItem').length;
+    checkedPreviewCount.textContent = left; checkedPreviewBox.style.display = left ? '' : 'none';
   }));
   checkedPreviewList.querySelectorAll('.chPrevEditBtn').forEach(btn => {
     btn.addEventListener('click', () => toggleChPrevEdit(btn.closest('.chPrevItem')));
@@ -6615,11 +6625,37 @@ function pastBatches() {
   for (const h of noteHistory) {
     const key = h.at instanceof Date ? h.at.getTime() : String(h.at);
     if (!byAt.has(key)) byAt.set(key, { at: h.at, items: [] });
-    byAt.get(key).items.push({ mission: h.mission, num: String(h.num), round: h.round });
+    byAt.get(key).items.push({ mission: h.mission, num: String(h.num), round: h.round, result: h.result, category: h.category });
   }
   return [...byAt.values()]
     .sort((a, b) => new Date(a.at) - new Date(b.at))
     .map((b, i) => ({ noteRound: i + 1, at: b.at, items: b.items }));
+}
+
+// 일일일모 문항이 "채점 끝남(오답)"으로 기록돼 채점 목록에서 사라진 회차를 다시 채점 대기로 되돌린다.
+// (예전 버전은 일일일모를 오답노트에 담을 때 바로 오답으로 확정해서 채점 목록에 안 떴다.)
+async function revivePastBatch(b, btn) {
+  const name = currentStudent && currentStudent.name; if (!name) return;
+  const dq = b.items.filter(x => x.category === '일일일모');
+  const done = dq.filter(x => x.result);
+  const NL = String.fromCharCode(10);
+  if (!dq.length) { alert(`${b.noteRound}회차에는 일일일모 문항 기록이 없어요.` + NL + '(오답노트를 만들 때 일일일모 기록이 저장되지 않은 경우예요.)'); return; }
+  if (!done.length) { alert(`${b.noteRound}회차의 일일일모 ${dq.length}문항은 이미 채점 대기 상태예요. 위의 "지난 오답노트 채점"에서 확인해 보세요.`); return; }
+  if (!confirm(`${name} 학생의 ${b.noteRound}회차 일일일모 ${done.length}문항을 채점 대기로 되살립니다.` + NL + '(지금 기록된 정오 결과는 비워지고, "지난 오답노트 채점"에서 다시 O/X를 매기게 돼요.)' + NL + '계속할까요?')) return;
+  btn.disabled = true; btn.textContent = '되살리는 중...';
+  try {
+    await callPostNoCors(DASHBOARD_URL, { action: 'resetnoteresults', key: TEACHER_KEY, name, at: new Date(b.at).toISOString(), category: '일일일모' });
+    await new Promise(r => setTimeout(r, 1800));
+    const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name, key: TEACHER_KEY });
+    noteHistory = historyData.history;
+    renderMissionBlocks(); updateCounter();
+    await refreshGrading(name);
+    const left = pastBatches().find(x => String(x.at) === String(b.at) || new Date(x.at).getTime() === new Date(b.at).getTime());
+    const still = left ? left.items.filter(x => x.category === '일일일모' && x.result).length : 0;
+    if (still < done.length) log(`${b.noteRound}회차 일일일모 ${done.length - still}문항을 채점 대기로 되살렸어요. 위의 "지난 오답노트 채점"을 확인해 주세요.`, 'ok');
+    else log('아직 되살려지지 않았어요. 서버(구글 앱스스크립트) 새 버전 배포가 필요해요.', 'err');
+    renderPastBatches();
+  } catch (e) { log('되살리기 실패: ' + (e.message || e), 'err'); btn.disabled = false; btn.textContent = '↩ 일일일모 채점 대기로 되살리기'; }
 }
 
 function renderPastBatches() {
@@ -6636,10 +6672,12 @@ function renderPastBatches() {
       <div class="btnRow">
         <button type="button" class="pastHwpxBtn">한글로 다시 받기</button>
         <button type="button" class="pastHtmlBtn">HTML로 다시 받기</button>
+        <button type="button" class="pastReviveBtn" title="일일일모 문항이 채점 목록에서 사라진 회차를 다시 채점 대기로 되돌립니다">↩ 일일일모 채점 대기로 되살리기</button>
       </div>
     `;
     row.querySelector('.pastHwpxBtn').addEventListener('click', () => generateHwpxNote(b));
     row.querySelector('.pastHtmlBtn').addEventListener('click', () => generateHtmlNote(b));
+    row.querySelector('.pastReviveBtn').addEventListener('click', () => revivePastBatch(b, row.querySelector('.pastReviveBtn')));
     pastBatchesEl.appendChild(row);
   }
 }
