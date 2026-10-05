@@ -4252,99 +4252,123 @@ function nextGradeValue(v) { return v === 1 ? 2 : v === 2 ? 3 : 1; }
 // 아님/사진에서 확인 불가"처럼 아예 답이 없는 경우가 있어 −(없음)을 더 둔다.
 function nextHwGradeValue(v) { return v === 1 ? 2 : v === 2 ? 3 : v === 3 ? 0 : 1; }
 
+// 오답노트가 몇 번째인지(표지 번호 기준: 9/6 이후 만든 순서)와 날짜를 한 줄로.
+function noteLabelOf(at) {
+  const t = new Date(at), d = `${t.getMonth() + 1}/${t.getDate()}`;
+  if (t >= MIDTERM_SEASON_START) {
+    const ats = [...new Set(noteHistory.filter(h => h.at && new Date(h.at) >= MIDTERM_SEASON_START).map(h => String(h.at)))].sort((x, y) => new Date(x) - new Date(y));
+    const i = ats.indexOf(String(at));
+    if (i >= 0) return `${i + 1}번째 오답노트 (${d})`;
+  }
+  return `${d} 오답노트`;
+}
+
 function renderGradingRounds(rounds) {
   if (!rounds.length) { gradingBox.style.display = 'none'; gradingRoundsEl.innerHTML = ''; return; }
   gradingBox.style.display = '';
   gradingRoundsEl.innerHTML = '';
-  // 시도 회차(발행 회차)는 그룹핑 기준에서 빼고, 오답노트가 실제로 만들어진
-  // 순서 그대로 쭉 이어서 채점한다. 처음엔 이 순서를 missionGroups(지금
-  // 이 순간의 살아있는 오답 목록)로 다시 계산했는데, missionGroups는 그새
-  // 새로 틀린 문제가 늘거나 이미 고친 문제가 빠지면 바뀌는 값이라 그
-  // 노트가 실제 인쇄됐던 시점의 순서와 달라질 수 있었다(실제 신고받은
-  // 문제). rounds 자체가 이미 정확한 순서다 — handleUngraded가 오답노트이력
-  // 시트를 위에서 아래로(=기록된 순서, 곧 노트가 만들어진 순서 그대로)
-  // 훑어서 만든 값이라, 여기서 다시 정렬하지 말고 그대로 믿고 쓰면 된다.
-  // 개념미션/진도미션처럼 서로 다른 카테고리가 같은 미션명(예: "3주차:
-  // 항등식과 나머지 정리")을 우연히 같이 쓰는 경우가 실제로 있어서, 묶을
-  // 때는 미션명+카테고리를 같이 키로 쓴다(안 그러면 두 카테고리 문항이
-  // 한 줄에 섞이고 채점 저장 카테고리까지 잘못됨 — missionGroups를 만들
-  // 때도 같은 이유로 이렇게 한다).
-  const byMission = new Map();
+
+  // "직전 회차"(가장 최근에 만든 오답노트)만 먼저 보여준다 — 예전 회차 문항이 한꺼번에 쌓여 있으면 너무 많아
+  // 지금 채점할 것을 찾기 어렵다는 요청. 이전 회차에 채점 안 한 문항이 남아 있으면 개수만 알려주고,
+  // 버튼을 눌렀을 때만 펼쳐서(그때만 화면에 올라오므로 "전체 저장"에도 그때만 포함된다) 채점할 수 있다.
+  const atOf = new Map();
+  noteHistory.forEach(h => atOf.set(`${h.mission}||${h.category || ''}||${h.num}||${h.round}`, String(h.at)));
+  let latestAt = '';
+  noteHistory.forEach(h => { if (h.at && (!latestAt || new Date(h.at) > new Date(latestAt))) latestAt = String(h.at); });
+  const mainRounds = [], olderByAt = new Map();
+  let olderTotal = 0;
   for (const r of rounds) {
-    const key = `${r.mission}||${r.category || ''}`;
-    if (!byMission.has(key)) byMission.set(key, { mission: r.mission, category: r.category, items: [] });
-    const group = byMission.get(key);
-    // round는 이제 그룹 전체가 아니라 문항마다 따로 붙어 온다(handleUngraded
-    // 참고 — 같은 미션 안에서도 문항별로 몇 번째로 틀렸는지가 다를 수
-    // 있어서). 백엔드가 이미 미션+카테고리 하나당 항목 하나로 묶어서
-    // 주므로 여기서 또 나눌 필요는 없지만, 혹시 같은 키가 둘 이상 와도
-    // 안전하게 합쳐지도록 그대로 둔다.
-    for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num, rowIndex: it.rowIndex, attempt: it.attempt });
+    const mainItems = [];
+    for (const it of r.items) {
+      const at = atOf.get(`${r.mission}||${r.category || ''}||${it.num}||${it.round}`);
+      if (!at || !latestAt || at === latestAt) { mainItems.push(it); continue; }
+      olderTotal++;
+      if (!olderByAt.has(at)) olderByAt.set(at, new Map());
+      const g = olderByAt.get(at);
+      const key = `${r.mission}||${r.category || ''}`;
+      if (!g.has(key)) g.set(key, { mission: r.mission, category: r.category, items: [] });
+      g.get(key).items.push(it);
+    }
+    if (mainItems.length) mainRounds.push({ ...r, items: mainItems });
   }
 
-  // "요약 N"(오답노트 요약표 안에서의 순서)은 예전엔 여기서도 다시 매겨서
-  // 보여줬는데, 그 번호는 missionGroups(지금 이 순간의 살아있는 오답
-  // 목록 — 그새 새로 틀린 문제가 늘거나 이미 고쳐진 문제가 빠지면 순서가
-  // 바뀐다)를 기준으로 그때그때 새로 계산하는 값이라, 그 노트가 실제
-  // 인쇄됐던 시점의 요약표 번호와 항상 같다는 보장이 없다 — 실제로 두
-  // 번호가 어긋나서 채점이 헷갈린다는 신고를 받고 아예 없앴다. 문항
-  // 번호(굵게)+회차+미션만으로 채점 대상은 이미 정확히 특정되므로
-  // 없어도 채점에는 지장이 없다.
-  // 일일일모 문항은 오답노트 생성 코드(generateHtmlNote)가 항상 기존
-  // 문제들 뒤에 붙여서 문서 맨 아래에 배치하는데, HISTORY_SHEET 행 순서는
-  // "그 학생의 일일일모 노트를 언제 만들었는지"에 따라 달라질 수 있어서
-  // (예: 일일일모 노트를 먼저 만든 적이 있으면 그 행이 더 위에 남아있음)
-  // 위 for-of가 그대로 믿는 "기록 순서"만으로는 일일일모 그룹이 채점
-  // 화면 맨 위로 올라올 수 있다 — 실제 인쇄물과 채점 화면 순서가 어긋나서
-  // 채점하기 불편하다는 신고(2026-09-12). 문서 배치 규칙과 똑같이 일일일모
-  // 그룹은 항상 맨 뒤로 — 나머지 그룹끼리의 상대 순서(기록 순서)는 그대로 둔다.
-  const sortedGroups = [...byMission.values()].sort((a, b) => (a.category === '일일일모') - (b.category === '일일일모'));
-  for (const group of sortedGroups) {
-    const div = document.createElement('div');
-    div.className = 'gradingRow';
-    div.innerHTML = `
-      <div class="gradingRowLabel">${group.mission}${group.category ? ` <span class="gradingRowCat">[${group.category}]</span>` : ''}</div>
-      <div class="gradingRowToggles">
-        ${group.items.map(it => `
-          <span class="gradeItem">
-            <span class="gradeNum">${it.num}번<small>(${it.attempt || it.round}차 시도)</small></span>
-            <button type="button" class="gradeToggle O" data-value="1"
-              data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}" data-row="${it.rowIndex || ''}">O</button>
-          </span>`).join('')}
-      </div>
-      <button type="button" class="gradeAllBtn">전체 O</button>
-    `;
-    div.querySelectorAll('.gradeToggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const next = nextGradeValue(Number(btn.dataset.value));
-        btn.dataset.value = String(next);
-        btn.textContent = GRADE_TOGGLE_LABEL[next];
-        btn.className = 'gradeToggle ' + GRADE_TOGGLE_CLASS[next];
-      });
-    });
-    div.querySelector('.gradeAllBtn').addEventListener('click', () => {
+  // 미션+카테고리로 묶어서 한 줄씩 그린다(개념미션/진도미션처럼 같은 미션명을 쓰는 다른 카테고리가 섞이지 않게).
+  // 일일일모 그룹은 인쇄물과 같게 항상 맨 뒤로, 나머지는 기록된 순서(=노트가 만들어진 순서) 그대로.
+  function drawGroups(target, roundsList) {
+    const byMission = new Map();
+    for (const r of roundsList) {
+      const key = `${r.mission}||${r.category || ''}`;
+      if (!byMission.has(key)) byMission.set(key, { mission: r.mission, category: r.category, items: [] });
+      const group = byMission.get(key);
+      for (const it of r.items) group.items.push({ mission: r.mission, category: r.category, round: it.round, num: it.num, rowIndex: it.rowIndex, attempt: it.attempt });
+    }
+    const sortedGroups = [...byMission.values()].sort((x, y) => (x.category === '일일일모') - (y.category === '일일일모'));
+    for (const group of sortedGroups) {
+      const div = document.createElement('div');
+      div.className = 'gradingRow';
+      div.innerHTML = `
+        <div class="gradingRowLabel">${group.mission}${group.category ? ` <span class="gradingRowCat">[${group.category}]</span>` : ''}</div>
+        <div class="gradingRowToggles">
+          ${group.items.map(it => `
+            <span class="gradeItem">
+              <span class="gradeNum">${it.num}번<small>(${it.attempt || it.round}차 시도)</small></span>
+              <button type="button" class="gradeToggle O" data-value="1"
+                data-mission="${it.mission}" data-category="${it.category || ''}" data-round="${it.round}" data-num="${it.num}" data-row="${it.rowIndex || ''}">O</button>
+            </span>`).join('')}
+        </div>
+        <button type="button" class="gradeAllBtn">전체 O</button>
+      `;
       div.querySelectorAll('.gradeToggle').forEach(btn => {
-        btn.dataset.value = '1';
-        btn.textContent = 'O';
-        btn.className = 'gradeToggle O';
+        btn.addEventListener('click', () => {
+          const next = nextGradeValue(Number(btn.dataset.value));
+          btn.dataset.value = String(next);
+          btn.textContent = GRADE_TOGGLE_LABEL[next];
+          btn.className = 'gradeToggle ' + GRADE_TOGGLE_CLASS[next];
+        });
       });
-    });
-    gradingRoundsEl.appendChild(div);
+      div.querySelector('.gradeAllBtn').addEventListener('click', () => {
+        div.querySelectorAll('.gradeToggle').forEach(btn => {
+          btn.dataset.value = '1';
+          btn.textContent = 'O';
+          btn.className = 'gradeToggle O';
+        });
+      });
+      target.appendChild(div);
+    }
   }
+
+  const nMain = mainRounds.reduce((sum, r) => sum + r.items.length, 0);
+  const head = document.createElement('p');
+  head.style.cssText = 'margin:0 0 8px;font-weight:700';
+  head.textContent = latestAt ? `직전 회차: ${noteLabelOf(latestAt)}` + (nMain ? ` — 채점 대기 ${nMain}문항` : ' — 모두 채점했어요 ✓') : '';
+  if (latestAt) gradingRoundsEl.appendChild(head);
+  drawGroups(gradingRoundsEl, mainRounds);
+
+  if (olderTotal) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:12px 0;padding:10px 12px;border:1px dashed var(--gold-line);border-radius:6px;background:#FFFCF3';
+    const batches = [...olderByAt.entries()].sort((x, y) => new Date(y[0]) - new Date(x[0]));
+    const sumTxt = batches.map(([at, g]) => `${noteLabelOf(at)} ${[...g.values()].reduce((n, v) => n + v.items.length, 0)}문항`).join(' · ');
+    box.innerHTML = `<div class="hint" style="margin-bottom:6px">⚠ 이전 회차에 채점 안 한 문항이 <b>${olderTotal}개</b> 남아 있어요: ${sumTxt}</div><button type="button" class="selectAllBtn olderBtn">이전 회차도 펼쳐서 채점하기</button><div class="olderBody"></div>`;
+    box.querySelector('.olderBtn').addEventListener('click', ev => {
+      ev.target.remove();
+      const body = box.querySelector('.olderBody');
+      for (const [at, g] of batches) {
+        const h = document.createElement('p'); h.style.cssText = 'margin:10px 0 4px;font-weight:700'; h.textContent = noteLabelOf(at); body.appendChild(h);
+        drawGroups(body, [...g.values()]);
+      }
+    });
+    gradingRoundsEl.appendChild(box);
+  }
+
   const footer = document.createElement('div');
   footer.className = 'gradingFooter';
   footer.innerHTML = `<button type="button" id="saveAllGradesBtn">전체 저장</button><span class="hint gradeStatus"></span>`;
   footer.querySelector('#saveAllGradesBtn').addEventListener('click', async (ev) => {
+    // 화면에 올라와 있는 문항(직전 회차 + 펼친 이전 회차)만 저장한다.
+    // row(시트 행 번호)를 같이 보내 서버가 그 행을 바로 채점하게 한다 — 미션명+번호+회차로 다시 찾으면
+    // 이름을 바꾼 미션에서 엉뚱한 옛 행이 채점되는 일이 있었다.
     const buttons = gradingRoundsEl.querySelectorAll('.gradeToggle');
-    // row(시트 행 번호, handleUngraded가 주는 rowIndex)를 같이 보내서
-    // 서버가 미션명+번호+회차로 다시 찾지 않고 그 행을 바로 채점하게
-    // 한다 — 미션 이름을 바꾸면(예: "2025 보라고 중간 기출" →
-    // "2025 보라고") 예전 행과 새로 만든 오답노트의 행이 미션명+번호+
-    // 회차까지 우연히 완전히 똑같아지는 경우가 실제로 있었다(원장님
-    // 리포트: 이다현 학생 채점이 저장이 안 됨 — 확인해보니 저장 자체는
-    // 됐는데 몇 달 전 8월에 채점해둔 엉뚱한 행이 덮어써지고 있었음).
-    // row가 있으면 그 행으로 바로, 없으면(옛 캐시된 페이지가 아직 안
-    // 새로고침된 경우 등) 예전 방식으로 대조.
     const updates = [...buttons].map(b => ({
       mission: b.dataset.mission, category: b.dataset.category, num: b.dataset.num, round: b.dataset.round, result: b.dataset.value,
       row: b.dataset.row || '',
@@ -4364,7 +4388,7 @@ function renderGradingRounds(rounds) {
       ev.target.disabled = false;
     }
   });
-  gradingRoundsEl.appendChild(footer);
+  if (nMain || document.querySelector('.olderBtn')) gradingRoundsEl.appendChild(footer);
 }
 
 // Same classification problembank.html uses to group files by type — a
