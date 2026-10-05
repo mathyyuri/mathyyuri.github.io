@@ -997,7 +997,8 @@ function clinicMissionIsNew(name) {
   return d >= MIDTERM_START_DATE;
 }
 function testMissionIsNew(name) {
-  return /^M\./i.test(String(name || '').trim());
+  const n = String(name || '').trim();
+  return /^M\./i.test(n) || n.indexOf('동형모의고사') !== -1; // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
 }
 function retryMissionIsNew(name) {
   return /^중간\s*오답노트/.test(String(name || '').trim());
