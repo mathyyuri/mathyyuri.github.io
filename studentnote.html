@@ -5514,12 +5514,16 @@ function mmToPxRatio() {
 
 // 블록들을 실제 렌더링해서 높이를 잰 뒤 2단(또는 1단) 페이지 단위로 채워 넣는다.
 // 화면에 실제로 붙여서 재는 방식이라 수식(KaTeX)까지 렌더링된 진짜 높이를 기준으로 한다.
-function paginateBlocks(blocksHtml, columns) {
+function paginateBlocks(blocksHtml, columns, splitTall) {
   if (!blocksHtml.length) return [];
   const ratio = mmToPxRatio();
   const colWidthMm = columns === 2 ? (MB_PAGE_W_MM - MB_CONTENT_SIDE_MM * 2 - MB_COL_GAP_MM) / 2 : (MB_PAGE_W_MM - MB_CONTENT_SIDE_MM * 2);
-  const colHeightMm = MB_PAGE_H_MM - MB_CONTENT_TOP_MM - MB_CONTENT_BOTTOM_MM;
-  const colWidthPx = colWidthMm * ratio;
+  // 정답·해설 페이지(buildPlainPageHtml)는 본문이 제목줄 아래 32mm(.mbQBodyLabeled)에서 시작한다 —
+  // 문제 페이지의 24mm로 재면 칸 높이를 8mm 넉넉하게 잡아 맨 아래 내용이 페이지 밖으로 밀려난다.
+  const colHeightMm = MB_PAGE_H_MM - 32 - MB_CONTENT_BOTTOM_MM;
+  // 2열 페이지의 오른쪽 칸은 왼쪽 구분선+안쪽 여백(.mbQCol padding-left = MB_COL_GAP_MM)만큼 더 좁다 —
+  // 안 빼고 재면 오른쪽 칸 글이 더 많이 줄바꿈돼 예상보다 길어지고 페이지 밖으로 넘친다.
+  const colWidthPx = (colWidthMm - (columns === 2 ? MB_COL_GAP_MM : 0)) * ratio;
   const colHeightPx = colHeightMm * ratio;
 
   const stage = document.createElement('div');
@@ -5527,10 +5531,11 @@ function paginateBlocks(blocksHtml, columns) {
   document.body.appendChild(stage);
   // 실제 노트 CSS와 같은 규칙을 측정에도 적용해야 한다 — 안 그러면 작게 줄여 싣는 빠른정답 그림을 원래 크기로 재서 페이지 아래를 불필요하게 비워둔다
   const measureCss = document.createElement('style');
-  measureCss.textContent = '.ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}.ansBlock .choiceRow{display:inline-grid;vertical-align:middle}';
+  // 실제 노트 CSS(buildHtmlDocument)의 글자 크기·줄간격·여백을 그대로 — 안 맞추면 브라우저 기본값(문단 위아래 12px 등)으로 재서 높이가 어긋난다
+  measureCss.textContent = '.mbQBlock p{margin:0 0 2mm;font-size:12px;line-height:1.65}.mbQNum{font-weight:800;margin-right:1.5mm}.explNum{font-weight:800;font-size:12px;margin-bottom:1.5mm}.ansBlock{font-size:12px;line-height:1.7}.mbQBlock img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid #ccc}.mbQBlock table{border-collapse:collapse;margin:2mm 0}.mbQBlock td{border:1px solid #ccc;padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap}.choiceRow{display:grid;row-gap:2mm;column-gap:4mm;margin:2mm 0}.choiceItem{font-size:12px;min-width:0;overflow-wrap:break-word}.hwpBogi{border:1.3px solid #000;padding:4mm 5mm;margin:3mm 0}.hwpBogi p{margin:0 0 1.5mm}.ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}.ansBlock .choiceRow{display:inline-grid;vertical-align:middle}';
   document.head.appendChild(measureCss);
 
-  const heights = blocksHtml.map(html => {
+  const measure = (html) => {
     stage.innerHTML = html;
     if (window.renderMathInElement) {
       try {
@@ -5538,24 +5543,75 @@ function paginateBlocks(blocksHtml, columns) {
       } catch (e) { /* ignore render errors during measurement */ }
     }
     return stage.getBoundingClientRect().height;
-  });
-  stage.remove(); measureCss.remove();
+  };
+  const heights = blocksHtml.map(measure);
 
   const GAP_PX = 8 * ratio; // 블록 사이 여백(대략 8mm)
   const pages = [];
   let page = Array.from({ length: columns }, () => []);
   let colIdx = 0, colH = 0;
+  const nextCol = () => {
+    colIdx++; colH = 0;
+    if (colIdx >= columns) { pages.push(page); page = Array.from({ length: columns }, () => []); colIdx = 0; }
+  };
   for (let i = 0; i < blocksHtml.length; i++) {
     const h = heights[i] + GAP_PX;
-    if (colH > 0 && colH + h > colHeightPx) {
-      colIdx++; colH = 0;
-      if (colIdx >= columns) { pages.push(page); page = Array.from({ length: columns }, () => []); colIdx = 0; }
+    // 한 칸(한 페이지)보다 긴 블록(예: 긴 풀이 해설)은 통째로 넣으면 페이지 아래로 넘쳐 PDF에서 잘린다 —
+    // 줄/문단 단위로 쪼개서 다음 페이지에 이어서 보여준다("(계속)" 표시).
+    if (splitTall && h > colHeightPx) {
+      const full = colHeightPx * 0.97 - GAP_PX;
+      let pieces = splitTallBlock(blocksHtml[i], colHeightPx - colH - GAP_PX, full, measure);
+      if (!pieces) { if (colH > 0) nextCol(); pieces = splitTallBlock(blocksHtml[i], full, full, measure); }
+      pieces.forEach((pc, k) => {
+        if (k > 0) nextCol();
+        page[colIdx].push(pc);
+        colH += measure(pc) + GAP_PX;
+      });
+      continue;
     }
+    if (colH > 0 && colH + h > colHeightPx) nextCol();
     page[colIdx].push(blocksHtml[i]);
     colH += h;
   }
   if (page.some(c => c.length)) pages.push(page);
+  stage.remove(); measureCss.remove();
   return pages;
+}
+// 블록 하나(<div class="mbQBlock"><div class="explNum">…</div>본문</div>)를 줄(<br> 단위)·문단(블록 요소) 단위로
+// 쪼갠다. 첫 조각은 availFirst 안에, 나머지는 각각 availFull 안에 들어가게 채운다. 첫 조각에 제목+첫 줄조차
+// 안 들어가면 null(호출쪽이 다음 칸에서 다시 시도).
+function splitTallBlock(html, availFirst, availFull, measure) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const root = tmp.firstElementChild;
+  if (!root) return [html];
+  const head = [...root.children].find(el => el.classList.contains('explNum'));
+  const label = head ? head.textContent.replace(/\s*\(계속\)\s*$/, '') : '';
+  const units = []; let run = '';
+  const flush = () => { if (run.trim()) units.push(run); run = ''; };
+  const BLOCK = /^(P|DIV|TABLE|UL|OL|FIGURE|IMG|SVG|H\d|BLOCKQUOTE)$/;
+  [...root.childNodes].forEach(n => {
+    if (n === head) return;
+    if (n.nodeType === 3) { run += escapeHtml(n.nodeValue); return; }
+    if (n.nodeType !== 1) return;
+    if (n.tagName === 'BR') { run += '<br>'; flush(); return; }
+    if (BLOCK.test(n.tagName)) { flush(); units.push(n.outerHTML); return; }
+    run += n.outerHTML;
+  });
+  flush();
+  if (!units.length) return [html];
+  const mk = (isFirst, us) => `<div class="${root.className}">` + (head ? `<div class="explNum">${escapeHtml(label)}${isFirst ? '' : ' (계속)'}</div>` : '') + us.join('') + '</div>';
+  const pieces = []; let cur = [], isFirst = true, avail = availFirst;
+  for (const u of units) {
+    if (!cur.length) {
+      if (isFirst && availFirst < availFull && measure(mk(true, [u])) > availFirst) return null;
+      cur.push(u); continue;
+    }
+    if (measure(mk(isFirst, cur.concat(u))) > avail) {
+      pieces.push(mk(isFirst, cur)); cur = [u]; isFirst = false; avail = availFull;
+    } else cur.push(u);
+  }
+  pieces.push(mk(isFirst, cur));
+  return pieces;
 }
 // 문제 페이지 전용 — 참고 PDF처럼 한 다단에 정확히 문제 하나만 배치한다
 // (짧은 문제도 다단을 꽉 채우지 않고 그대로 비워둠, 여러 개를 욱여넣지 않음).
@@ -5890,7 +5946,7 @@ function buildPlainPageHtml(pageNum, sectionLabel, colsBlocks, info) {
   const colsHtml = colsBlocks.map(col => `<div class="mbQCol">${col.join('')}</div>`).join('');
   // 동형모의고사 해설은 풀이가 길어서(여러 줄 수식) 한 칸 폭으로는 넘친다 — 1열 페이지(상세 해설)는
   // 높이를 "전체 폭" 기준으로 재서 나누므로, 실제 폭도 전체로 맞춘다(.mbQBodyOne).
-  const oneCol = colsBlocks.length === 1 && colsBlocks[0].some(h => h.includes('mbMock'));
+  const oneCol = colsBlocks.length === 1;
   return `${mbSheetOpen(pageNum)}
     ${head}${foot}
     <div class="mbSectionLabel">${escapeHtml(sectionLabel)}</div>
@@ -6414,6 +6470,12 @@ function dqCleanQuickAnswer(qa) {
   return qa.replace(/^\s*\[정답\]\s*[①②③④⑤]?\s*/, '').trim();
 }
 
+// 동형모의고사 해설은 <br>로 줄을 나눈 한 덩어리 글이다 — 한글 시험지 해설과 같은 모양(<p>, 12px)으로 줄마다
+// 문단으로 바꿔야 글자 크기가 맞고, 긴 해설을 페이지 단위로 쪼갤 때(splitTallBlock)도 줄 단위로 끊긴다.
+function mockExplToParagraphs(html) {
+  return String(html || '').split(/<br\s*\/?>/i).map(l => l.trim()).filter(Boolean).map(l => `<p>${l}</p>`).join('');
+}
+
 async function generateHtmlNote(historicalBatch) {
   logEl.innerHTML = '';
   genHtmlBtn.disabled = true;
@@ -6514,7 +6576,7 @@ async function generateHtmlNote(historicalBatch) {
       answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>${answerHtml}</div>`);
 
       const explXml = mockIt ? '' : extractEndnoteFullBodyXml(marker.blockXml);
-      const explHtml = mockIt ? (mockIt.explanationHtml || '') : explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
+      const explHtml = mockIt ? mockExplToParagraphs(mockIt.explanationHtml) : explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
       explanationBlocks.push(`<div class="mbQBlock${mockIt ? ' mbMock' : ''}"><div class="explNum">${qNum}번 해설</div>${explHtml}</div>`);
       qNum++;
     }
@@ -6597,7 +6659,7 @@ async function generateHtmlNote(historicalBatch) {
       pageNum++;
     });
 
-    const explanationPages = paginateBlocks(explanationBlocks, 1);
+    const explanationPages = paginateBlocks(explanationBlocks, 1, true);
     explanationPages.forEach((cols, i) => {
       pagesHtml.push(buildPlainPageHtml(pageNum, i === 0 ? '상세 해설' : '상세 해설 (계속)', cols, info));
       pageNum++;
