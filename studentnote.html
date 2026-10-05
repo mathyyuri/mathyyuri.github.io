@@ -4948,8 +4948,9 @@ async function refreshCheckedPreview() {
       if (myReq !== previewReqId) return;
       const marker = parsed.markers.get(num) || parsed.markers.get(Number(num));
       const editedRaw = parsed.editedRawByNum.get(String(num));
+      const mockIt = parsed.isMock ? parsed.mockByNum.get(String(num)) : null;
       const imgHtmls = editedRaw && marker ? await imgHtmlsForEditedText(editedRaw, marker.blockXml, parsed) : null;
-      const html = editedRaw ? renderEditedText(editedRaw, imgHtmls)
+      const html = mockIt ? mockIt.stemHtml : editedRaw ? renderEditedText(editedRaw, imgHtmls)
         : marker ? await hwpBodyXmlToHtml(marker.blockXml, parsed) : '<span class="hint">이 번호를 찾지 못했습니다.</span>';
       chPrevRawHtml.set(noChoiceKey(fileId, num), html);
       bodyEl.innerHTML = noChoiceSet().has(noChoiceKey(fileId, num)) ? stripChoices(html) : html;
@@ -4968,6 +4969,7 @@ async function toggleChPrevEdit(item) {
   const num = item.dataset.num;
   const bodyEl = item.querySelector('.chPrevBody');
   const parsed = loadedFileCache.get(fileId);
+  if (parsed && parsed.isMock) { alert('동형모의고사 문항은 여기서 고칠 수 없어요. 바탕화면의 해설지/문제지 HTML에서 ✏️ 수정하기로 고쳐 주세요.'); return; }
   const editedRaw = parsed && parsed.editedRawByNum.get(String(num));
   const marker = parsed && (parsed.markers.get(num) || parsed.markers.get(Number(num)));
   // editedRaw가 아직 없는(원본 hwpx 그대로인) 문제는 편집칸을 처음 열 때만
@@ -5076,6 +5078,21 @@ async function getParsedFile(fileId, filename) {
   if (loadedFileCache.has(fileId)) return loadedFileCache.get(fileId);
   const json = await callGetJsonp(DASHBOARD_URL, { action: 'download', id: fileId });
   const zipData = await JSZip.loadAsync(base64ToArrayBuffer(json.file.data));
+  // 보라고 동형모의고사처럼 "문제 내용이 Contents/mock.json 에 직접 들어 있는" 가상 시험지는
+  // 한글(hwpx) 문단 해석 없이 그 내용을 그대로 쓴다. markers 는 비어 있고 mockByNum 에 문항별
+  // {stemHtml, answerHtml, explanationHtml} 이 있다. (HTML 오답노트 전용 — 한글로 만들기는 지원 안 함)
+  const mockZipEntry = zipData.file('Contents/mock.json');
+  if (mockZipEntry) {
+    const mock = JSON.parse(await mockZipEntry.async('string'));
+    const mp = {
+      zipData, isMock: true, filename, markers: new Map(), manifestItems: {}, sectionOrder: [], borderFills: new Map(),
+      mockByNum: new Map((mock.items || []).map(it => [String(it.num), it])),
+      editedRawByNum: new Map(),
+      sourceByNum: new Map((mock.items || []).map(it => [String(it.num), mock.title || filename])),
+    };
+    loadedFileCache.set(fileId, mp);
+    return mp;
+  }
   const parsed = await parseHwpx(zipData);
   parsed.filename = filename;
   // 문제은행(problembank.html)의 "문제 수정"에서 저장한 editedRaw가 있으면
@@ -5162,7 +5179,8 @@ async function generateHwpxNote(historicalBatch) {
     const neededFileIds = [...new Set(checked.map(c => lookupMissionFileId(missionFileId, c.mission, c.category)))];
     for (const fid of neededFileIds) {
       const f = bankFiles.find(b => b.id === fid);
-      await getParsedFile(fid, f.filename);
+      const pf = await getParsedFile(fid, f.filename);
+      if (pf.isMock) throw new Error('"' + f.filename + '"은 동형모의고사(가상 시험지)라서 "한글로 만들기"는 안 됩니다. HTML 오답노트로 만들어 주세요.');
     }
 
     log('서식(바탕쪽) 파일을 찾는 중...');
@@ -5870,10 +5888,13 @@ async function buildBackcoverPageHtml(pageNum, theme) {
 function buildPlainPageHtml(pageNum, sectionLabel, colsBlocks, info) {
   const { head, foot } = mbHeadFootHtml(pageNum, info);
   const colsHtml = colsBlocks.map(col => `<div class="mbQCol">${col.join('')}</div>`).join('');
+  // 동형모의고사 해설은 풀이가 길어서(여러 줄 수식) 한 칸 폭으로는 넘친다 — 1열 페이지(상세 해설)는
+  // 높이를 "전체 폭" 기준으로 재서 나누므로, 실제 폭도 전체로 맞춘다(.mbQBodyOne).
+  const oneCol = colsBlocks.length === 1 && colsBlocks[0].some(h => h.includes('mbMock'));
   return `${mbSheetOpen(pageNum)}
     ${head}${foot}
     <div class="mbSectionLabel">${escapeHtml(sectionLabel)}</div>
-    <div class="mbQBody mbQBodyLabeled">${colsHtml}</div>
+    <div class="mbQBody mbQBodyLabeled${oneCol ? ' mbQBodyOne' : ''}">${colsHtml}</div>
   </section>`;
 }
 
@@ -5957,6 +5978,7 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .mbFoot.footRight{text-align:right}
 .mbQBody{position:absolute;top:${MB_CONTENT_TOP_MM}mm;left:${MB_CONTENT_SIDE_MM}mm;right:${MB_CONTENT_SIDE_MM}mm;bottom:${MB_CONTENT_BOTTOM_MM}mm;display:grid;grid-template-columns:1fr 1fr;column-gap:${MB_COL_GAP_MM}mm}
 .mbQBodyLabeled{top:32mm}
+.mbQBodyOne{grid-template-columns:1fr}
 .mbSectionLabel{position:absolute;top:${MB_CONTENT_TOP_MM}mm;left:${MB_CONTENT_SIDE_MM}mm;font-family:var(--kserif);font-weight:900;font-size:15px;color:var(--mb-navy)}
 .mbQCol{border-left:1px solid var(--mb-line);padding-left:${MB_COL_GAP_MM}mm;min-width:0}
 .mbQCol:first-child{border-left:none;padding-left:0}
@@ -6469,12 +6491,13 @@ async function generateHtmlNote(historicalBatch) {
     for (const { mission, category, num, round } of checked) {
       const fileId = lookupMissionFileId(missionFileId, mission, category);
       const entry = loadedFileCache.get(fileId);
+      const mockIt = entry.isMock ? entry.mockByNum.get(String(num)) : null;
       const marker = entry.markers.get(num);
-      if (!marker) continue;
+      if (!marker && !mockIt) continue;
       const sourceLabel = (entry.sourceByNum && entry.sourceByNum.get(String(num))) || entry.filename.replace(/\.hwpx$/i, '');
       const editedRaw = entry.editedRawByNum && entry.editedRawByNum.get(String(num));
-      const editedImgHtmls = editedRaw ? await imgHtmlsForEditedText(editedRaw, marker.blockXml, entry) : null;
-      let bodyHtml = editedRaw ? renderEditedText(editedRaw, editedImgHtmls) : await hwpBodyXmlToHtml(marker.blockXml, entry);
+      const editedImgHtmls = editedRaw && marker ? await imgHtmlsForEditedText(editedRaw, marker.blockXml, entry) : null;
+      let bodyHtml = mockIt ? mockIt.stemHtml : editedRaw ? renderEditedText(editedRaw, editedImgHtmls) : await hwpBodyXmlToHtml(marker.blockXml, entry);
       bodyHtml = regroupImageChoices(bodyHtml);
       const dropChoices = noChoiceSet().has(noChoiceKey(fileId, num));
       const choiceMap = dropChoices ? extractChoiceMap(bodyHtml) : null;
@@ -6485,14 +6508,14 @@ async function generateHtmlNote(historicalBatch) {
         qNum,
       });
 
-      const answerXml = extractQuickAnswerXml(marker.blockXml);
-      let answerHtml = answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '(정답 인식 실패)';
+      const answerXml = mockIt ? '' : extractQuickAnswerXml(marker.blockXml);
+      let answerHtml = mockIt ? (mockIt.answerHtml || '(정답 없음)') : answerXml ? await hwpFragmentRunsToHtml(answerXml, entry) : '(정답 인식 실패)';
       if (dropChoices && answerXml) answerHtml = enrichAnswerWithChoice(answerHtml, choiceMap);
       answerBlocks.push(`<div class="mbQBlock ansBlock"><b class="mbQNum">${qNum}번</b>${answerHtml}</div>`);
 
-      const explXml = extractEndnoteFullBodyXml(marker.blockXml);
-      const explHtml = explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
-      explanationBlocks.push(`<div class="mbQBlock"><div class="explNum">${qNum}번 해설</div>${explHtml}</div>`);
+      const explXml = mockIt ? '' : extractEndnoteFullBodyXml(marker.blockXml);
+      const explHtml = mockIt ? (mockIt.explanationHtml || '') : explXml ? await hwpBodyXmlToHtml(explXml, entry) : '';
+      explanationBlocks.push(`<div class="mbQBlock${mockIt ? ' mbMock' : ''}"><div class="explNum">${qNum}번 해설</div>${explHtml}</div>`);
       qNum++;
     }
 
@@ -7056,6 +7079,10 @@ async function loadHwNumStart(div, sub) {
 // "정답 자동 채우기" 버튼과 완전히 같은 추출 로직.
 async function extractEmbeddedAnswer(entry, num) {
   try {
+    if (entry.isMock) {
+      const it = entry.mockByNum.get(String(num));
+      return it ? String(it.answerHtml || '').replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').replace(/\s+/g, ' ').trim() : '';
+    }
     const marker = entry.markers.get(num);
     if (!marker) return '';
     const fullBodyXml = extractEndnoteFullBodyXml(marker.blockXml);
