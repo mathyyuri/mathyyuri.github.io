@@ -6658,6 +6658,62 @@ async function revivePastBatch(b, btn) {
   } catch (e) { log('되살리기 실패: ' + (e.message || e), 'err'); btn.disabled = false; btn.textContent = '↩ 일일일모 채점 대기로 되살리기'; }
 }
 
+// 오답노트를 만들 때 일일일모 문항이 이력에 기록되지 않은 회차에, 일일일모 문항을 직접 골라 다시 기록한다.
+// (인쇄된 오답노트에 실린 일일일모 번호를 체크 → 같은 시각(=같은 회차)으로 기록돼서 "지난 오답노트 채점"에 뜬다.)
+function addDqToBatch(b, btn) {
+  const name = currentStudent && currentStudent.name; if (!name) return;
+  if (!dqWrongItemsData.length) { alert('이 학생의 일일일모 오답 목록을 아직 불러오지 못했어요. 학생을 다시 선택해 주세요.'); return; }
+  const inBatch = new Set(b.items.filter(x => x.category === '일일일모').map(x => `${parseInt(x.mission, 10)}:${x.num}`));
+  const lastResult = new Map();   // 다른 회차에 이미 기록된 문항의 가장 최근 정오
+  noteHistory.filter(h => h.category === '일일일모').forEach(h => { const k = `${parseInt(h.mission, 10)}:${h.num}`; const old = lastResult.get(k); if (!old || h.round > old.round) lastResult.set(k, h); });
+  const byRound = new Map();
+  dqWrongItemsData.forEach(it => { if (!byRound.has(it.round)) byRound.set(it.round, []); byRound.get(it.round).push(it); });
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(20,16,8,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:8px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)';
+  box.innerHTML = `<h3 style="margin:0 0 6px">${b.noteRound}회차에 일일일모 문항 추가 기록</h3>
+    <p class="hint">${escapeHtml(name)} 학생의 이 오답노트(${b.noteRound}회차)에 실렸던 일일일모 문항을 체크하세요. 체크한 문항이 "지난 오답노트 채점"에 채점 대기로 올라와요. (이미 이 회차에 있는 문항은 체크할 수 없어요.)</p>
+    <div class="dqAddList"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button type="button" class="dqAddOk">선택한 문항 기록</button><button type="button" class="dqAddCancel">닫기</button><span class="hint dqAddCnt"></span></div>`;
+  const list = box.querySelector('.dqAddList');
+  [...byRound.keys()].sort((x, y) => x - y).forEach(r => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:6px 0;border-bottom:1px solid #eee';
+    row.innerHTML = `<b style="display:inline-block;min-width:4.2em">${r}회차</b>` + byRound.get(r).sort((x, y) => x.num - y.num).map(it => {
+      const k = `${r}:${it.num}`, done = inBatch.has(k), prev = lastResult.get(k);
+      const tag = done ? ' (이 회차에 있음)' : (prev ? ` <small style="color:#999">(앞서 ${prev.result === 1 ? 'O' : prev.result === 2 ? 'X' : '대기'})</small>` : '');
+      return `<label style="display:inline-block;margin:2px 10px 2px 0;white-space:nowrap"><input type="checkbox" class="dqAddChk" data-round="${r}" data-num="${it.num}"${done ? ' checked disabled' : ''}> ${it.num}번${tag}</label>`;
+    }).join('');
+    list.appendChild(row);
+  });
+  const cnt = box.querySelector('.dqAddCnt');
+  const upd = () => { cnt.textContent = `${box.querySelectorAll('.dqAddChk:checked:not(:disabled)').length}문항 선택됨`; };
+  box.addEventListener('change', upd); upd();
+  ov.appendChild(box); document.body.appendChild(ov);
+  const close = () => ov.remove();
+  box.querySelector('.dqAddCancel').addEventListener('click', close);
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  box.querySelector('.dqAddOk').addEventListener('click', async () => {
+    const items = [...box.querySelectorAll('.dqAddChk:checked:not(:disabled)')].map(c => ({ mission: `${c.dataset.round}회차`, category: '일일일모', num: Number(c.dataset.num) }));
+    if (!items.length) { alert('추가할 문항을 체크해 주세요.'); return; }
+    const NL = String.fromCharCode(10);
+    if (!confirm(`${b.noteRound}회차에 일일일모 ${items.length}문항을 기록합니다.` + NL + '기록하면 "지난 오답노트 채점"에 채점 대기로 올라와요. 계속할까요?')) return;
+    box.querySelector('.dqAddOk').disabled = true; cnt.textContent = '기록 중...';
+    try {
+      await callPostNoCors(DASHBOARD_URL, { action: 'lognote', key: TEACHER_KEY, name, at: new Date(b.at).toISOString(), items });
+      await new Promise(r => setTimeout(r, 1800));
+      const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name, key: TEACHER_KEY });
+      noteHistory = historyData.history;
+      renderMissionBlocks(); updateCounter();
+      await refreshGrading(name);
+      renderPastBatches();
+      close();
+      log(`${b.noteRound}회차에 일일일모 ${items.length}문항을 기록했어요. 위의 "지난 오답노트 채점"을 확인해 주세요.`, 'ok');
+    } catch (e) { cnt.textContent = '실패: ' + (e.message || e); box.querySelector('.dqAddOk').disabled = false; }
+  });
+}
+
 function renderPastBatches() {
   const batches = pastBatches();
   if (!batches.length) { pastBatchesBox.style.display = 'none'; pastBatchesEl.innerHTML = ''; return; }
@@ -6673,11 +6729,13 @@ function renderPastBatches() {
         <button type="button" class="pastHwpxBtn">한글로 다시 받기</button>
         <button type="button" class="pastHtmlBtn">HTML로 다시 받기</button>
         <button type="button" class="pastReviveBtn" title="일일일모 문항이 채점 목록에서 사라진 회차를 다시 채점 대기로 되돌립니다">↩ 일일일모 채점 대기로 되살리기</button>
+        <button type="button" class="pastAddDqBtn" title="이 회차의 오답노트에 실렸던 일일일모 문항을 직접 골라 다시 기록합니다">＋ 일일일모 문항 추가 기록</button>
       </div>
     `;
     row.querySelector('.pastHwpxBtn').addEventListener('click', () => generateHwpxNote(b));
     row.querySelector('.pastHtmlBtn').addEventListener('click', () => generateHtmlNote(b));
     row.querySelector('.pastReviveBtn').addEventListener('click', () => revivePastBatch(b, row.querySelector('.pastReviveBtn')));
+    row.querySelector('.pastAddDqBtn').addEventListener('click', () => addDqToBatch(b, row.querySelector('.pastAddDqBtn')));
     pastBatchesEl.appendChild(row);
   }
 }
