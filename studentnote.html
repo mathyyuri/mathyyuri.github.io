@@ -342,6 +342,8 @@ button:disabled { opacity: 0.4; cursor: default; }
       <label id="hideCiteRow" style="flex-basis:100%;margin:0 0 4px;font-size:13px;font-weight:normal"><input type="checkbox" id="hideCiteChk" checked> 출력본에서 <b>일일일모 출처(회차·번호) 숨기기</b> <span class="hint">— 일일일모는 출처를 보고 답을 찾아볼 수 있어서 가려요(다른 문제는 그대로 표시)</span></label>
       <button id="genBtn" disabled>오답노트 생성 (한글)</button>
       <button id="genHtmlBtn" disabled>오답노트 생성 (HTML)</button>
+      <button id="genSetBtn" disabled title="체크한 서술형 SET 문제를 '문제 → 모범 풀이 → 채점기준표' 순서로 한 쌍씩 묶은 개별 해설집(HTML)으로 만듭니다. 오답노트 번호·이력에는 기록되지 않습니다.">서술형 해설집 (HTML)</button>
+      <button id="pickSetWrongBtn" type="button" title="이 학생의 '서술형 SET' 미션에서 현재 오답(2)인 문제를 전부 체크합니다">서술형 SET 오답 전부 선택</button>
       <span id="unitTally" style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;"></span>
     </div>
     <div id="log"></div>
@@ -365,6 +367,8 @@ const pastBatchesEl = document.getElementById('pastBatchesList');
 const missionBlocksEl = document.getElementById('missionBlocks');
 const genBtn = document.getElementById('genBtn');
 const genHtmlBtn = document.getElementById('genHtmlBtn');
+const genSetBtn = document.getElementById('genSetBtn');
+const pickSetWrongBtn = document.getElementById('pickSetWrongBtn');
 const counterBadge = document.getElementById('counterBadge');
 
 function log(msg, cls) {
@@ -4513,6 +4517,14 @@ function resolveFileForMission(missionName, category, clsOverride) {
     candidates = candidates.filter(f => typeOfFilename(f.filename) === filenameType);
     if (!candidates.length) return null;
   }
+  // "서술형 SET0"과 "모의고사 서술형 SET0"처럼 한 이름이 다른 이름의 일부일 때, 단어가 전부 들어있다는 이유만으로
+  // 둘 다 후보가 되어 첫 번째가 뽑히면 엉뚱한 파일이 연결된다 — "[분류]"와 확장자를 뗀 파일명이 미션명과 똑같은
+  // 파일이 있으면 그것만 남긴다.
+  if (candidates.length > 1) {
+    const bare = (f) => norm(f.filename.replace(/^\s*\[[^\]]*\]\s*/, '').replace(/\.hwpx?$/i, ''));
+    const exactOnes = candidates.filter(f => bare(f) === target);
+    if (exactOnes.length) candidates = exactOnes;
+  }
   // Same mission name can have a different file per class (e.g. "1차시
   // 과제미션"의 S+반용/S반용 파일이 따로 있는 경우) — among filename
   // matches, prefer the one whose name also contains this student's own
@@ -4855,6 +4867,7 @@ function updateCounter() {
   counterBadge.textContent = `${n}문제 선택됨` + (dqChecked ? ` (일일일모 ${dqChecked}개 포함)` : '');
   genBtn.disabled = n === 0;
   genHtmlBtn.disabled = n === 0;
+  genSetBtn.disabled = ![...document.querySelectorAll('.qChk:checked')].some(c => isSetMission(c.dataset.mission));
   // 여러 미션에 걸쳐 체크하는 동안 단원별로 몇 개씩 쌓였는지 바로바로
   // 보여줘서 "이 단원은 아직 부족하다"를 판단하기 쉽게 — 원장님 요청.
   const unitTallyEl = document.getElementById('unitTally');
@@ -5532,7 +5545,7 @@ function paginateBlocks(blocksHtml, columns, splitTall) {
   // 실제 노트 CSS와 같은 규칙을 측정에도 적용해야 한다 — 안 그러면 작게 줄여 싣는 빠른정답 그림을 원래 크기로 재서 페이지 아래를 불필요하게 비워둔다
   const measureCss = document.createElement('style');
   // 실제 노트 CSS(buildHtmlDocument)의 글자 크기·줄간격·여백을 그대로 — 안 맞추면 브라우저 기본값(문단 위아래 12px 등)으로 재서 높이가 어긋난다
-  measureCss.textContent = '.mbQBlock p{margin:0 0 2mm;font-size:12px;line-height:1.65}.mbQNum{font-weight:800;margin-right:1.5mm}.explNum{font-weight:800;font-size:12px;margin-bottom:1.5mm}.ansBlock{font-size:12px;line-height:1.7}.mbQBlock img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid #ccc}.mbQBlock table{border-collapse:collapse;margin:2mm 0}.mbQBlock td{border:1px solid #ccc;padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap}.choiceRow{display:grid;row-gap:2mm;column-gap:4mm;margin:2mm 0}.choiceItem{font-size:12px;min-width:0;overflow-wrap:break-word}.hwpBogi{border:1.3px solid #000;padding:4mm 5mm;margin:3mm 0}.hwpBogi p{margin:0 0 1.5mm}.ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}.ansBlock .choiceRow{display:inline-grid;vertical-align:middle}';
+  measureCss.textContent = '.mbQBlock p{margin:0 0 2mm;font-size:12px;line-height:1.65}.mbQNum{font-weight:800;margin-right:1.5mm}.explNum{font-weight:800;font-size:12px;margin-bottom:1.5mm}.ansBlock{font-size:12px;line-height:1.7}.mbQBlock img{max-width:100%;height:auto;display:block;margin:3mm auto;border:1px solid #ccc}.mbQBlock table{border-collapse:collapse;margin:2mm 0}.mbQBlock td{border:1px solid #ccc;padding:0.5mm 1.2mm;font-size:9.5px;white-space:nowrap}.choiceRow{display:grid;row-gap:2mm;column-gap:4mm;margin:2mm 0}.choiceItem{font-size:12px;min-width:0;overflow-wrap:break-word}.f{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 .1em;line-height:1.1;font-size:1.02em}.f b{font-weight:inherit;padding:0 .09em;display:block}.f b:first-child{border-bottom:1.5px solid currentColor}.r i{font-style:normal;border-top:1.5px solid currentColor}.sg{border-top:1.4px solid currentColor}.bd{font-weight:700}.mbQBlock p.finalAns{font-weight:700;margin:1mm 0 2mm}.mbQBlock img.setFig{max-height:62mm;width:auto}.rubricBox{border:1px solid #b8944f;padding:2mm 3mm;margin:2mm 0 0}.rubricBox .rTitle{font-weight:800;font-size:11px;margin-bottom:1mm}.mbQBlock .rubricBox table{width:100%;margin:0}.mbQBlock .rubricBox td{border:none;border-bottom:1px solid #e4d5b0;font-size:11px;white-space:normal;text-align:left;padding:.6mm 1mm}.setBlock{padding-bottom:3mm}.hwpBogi{border:1.3px solid #000;padding:4mm 5mm;margin:3mm 0}.hwpBogi p{margin:0 0 1.5mm}.ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}.ansBlock .choiceRow{display:inline-grid;vertical-align:middle}';
   document.head.appendChild(measureCss);
 
   const measure = (html) => {
@@ -5584,7 +5597,9 @@ function splitTallBlock(html, availFirst, availFull, measure) {
   const tmp = document.createElement('div'); tmp.innerHTML = html;
   const root = tmp.firstElementChild;
   if (!root) return [html];
-  const head = [...root.children].find(el => el.classList.contains('explNum'));
+  // 첫 번째 자식이 제목줄(해설 번호 .explNum 또는 출처 막대 .mbCite)이면 이어지는 조각마다 "(계속)"을 붙여 다시 단다.
+  const first = root.firstElementChild;
+  const head = first && (first.classList.contains('explNum') || first.classList.contains('mbCite')) ? first : null;
   const label = head ? head.textContent.replace(/\s*\(계속\)\s*$/, '') : '';
   const units = []; let run = '';
   const flush = () => { if (run.trim()) units.push(run); run = ''; };
@@ -5599,7 +5614,7 @@ function splitTallBlock(html, availFirst, availFull, measure) {
   });
   flush();
   if (!units.length) return [html];
-  const mk = (isFirst, us) => `<div class="${root.className}">` + (head ? `<div class="explNum">${escapeHtml(label)}${isFirst ? '' : ' (계속)'}</div>` : '') + us.join('') + '</div>';
+  const mk = (isFirst, us) => `<div class="${root.className}">` + (head ? `<div class="${head.className}">${escapeHtml(label)}${isFirst ? '' : ' (계속)'}</div>` : '') + us.join('') + '</div>';
   const pieces = []; let cur = [], isFirst = true, avail = availFirst;
   for (const u of units) {
     if (!cur.length) {
@@ -5722,7 +5737,7 @@ function paginateQuestionsWithOverflow(questionParts, columns) {
 function mbHeadFootHtml(pageNum, info) {
   const isOdd = pageNum % 2 === 1;
   const head = isOdd
-    ? `<div class="mbHead headRight">대치수학 ${escapeHtml(info.cohort)}기 ${escapeHtml(info.className)} ${escapeHtml(info.studentName)} ${info.noteRound}회</div>`
+    ? `<div class="mbHead headRight">대치수학 ${escapeHtml(info.cohort)}기 ${escapeHtml(info.className)} ${escapeHtml(info.studentName)} ${escapeHtml(info.roundText || (info.noteRound + '회'))}</div>`
     : `<div class="mbHead headLeft">대치에스플러스 학원</div>`;
   const foot = isOdd
     ? `<div class="mbFoot footRight">${pageNum}</div>`
@@ -5743,7 +5758,7 @@ const MB_STEP_ICONS = {
   grow: '<svg viewBox="0 0 24 24" width="20" height="20"><polyline points="4,18 10,11 14,15 21,6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,6 21,6 21,12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 };
 function buildCoverPageHtml(info) {
-  const roundLabel = String(info.noteRound).padStart(2, '0');
+  const roundLabel = info.sideRound != null ? String(info.sideRound) : String(info.noteRound).padStart(2, '0');
   const sideText = `대치수학${info.cohort}기 ${info.className}반 ${info.studentName}`;
   return `${mbSheetOpen(1)}
     <div class="coverSide">
@@ -5753,9 +5768,9 @@ function buildCoverPageHtml(info) {
     </div>
     <div class="coverBadge">MEN<br>BOOK</div>
     <div class="coverMain">
-      <div class="coverEyebrow">MIDTERM 2026 · 중간고사 대비</div>
+      <div class="coverEyebrow">${escapeHtml(info.eyebrow || 'MIDTERM 2026 · 중간고사 대비')}</div>
       <div class="coverWordmark"><span class="men">MEN</span><br><span class="book">BOOK</span></div>
-      <div class="coverSub">— Math Error Notebook —</div>
+      <div class="coverSub">${escapeHtml(info.subTitle || '— Math Error Notebook —')}</div>
       <div class="coverTagline">&ldquo;Mistakes Become Mastery.&rdquo;</div>
       <div class="coverSteps">
         <div class="cStep"><div class="cStepIcon">${MB_STEP_ICONS.analyze}</div><div class="cStepLabel">ANALYZE<small>분석</small></div></div>
@@ -6073,6 +6088,24 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 .ansBlock img{width:auto !important;height:auto !important;max-width:34mm !important;max-height:26mm !important;object-fit:contain;vertical-align:middle}
 .ansBlock .choiceRow{display:inline-grid;vertical-align:middle}
 .explNum{font-weight:800;color:var(--mb-navy);font-size:12px;margin-bottom:1.5mm}
+/* 서술형 SET(모범답안 원본의 분수·근호·밑줄·강조 서식) */
+.f{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 .1em;line-height:1.1;font-size:1.02em}
+.f b{font-weight:inherit;padding:0 .09em;display:block}
+.f b:first-child{border-bottom:1.5px solid currentColor}
+.r{white-space:nowrap}
+.r i{font-style:normal;border-top:1.5px solid currentColor;padding:0 .1em .01em;margin-left:.02em}
+.sg{border-top:1.4px solid currentColor;padding:0 .03em}
+.hl{background:#fff2a3;padding:0 .16em;border-radius:2px}
+.bd{color:#a3242f;font-weight:700}
+.mbQBlock p.finalAns{color:#a3242f;font-weight:700;margin:1mm 0 2mm}
+.mbQBlock img.setFig{max-height:62mm;width:auto}
+.rubricBox{background:#f5ecd9;border:1px solid #b8944f;border-radius:4px;padding:2mm 3mm;margin:2mm 0 0}
+.rubricBox .rTitle{font-weight:800;color:var(--mb-navy);font-size:11px;margin-bottom:1mm}
+.mbQBlock .rubricBox table{width:100%;margin:0}
+.mbQBlock .rubricBox td{border:none;border-bottom:1px solid #e4d5b0;font-size:11px;white-space:normal;text-align:left;padding:.6mm 1mm}
+.mbQBlock .rubricBox td.pct{text-align:right;font-weight:700;color:#a3242f;white-space:nowrap;width:12mm}
+.mbQBlock .rubricBox tr:last-child td{border-bottom:none}
+.setBlock{border-bottom:1px dashed var(--mb-line);padding-bottom:3mm}
 .eqFallback{font-family:monospace;font-size:11px;color:#B23A3A;background:rgba(178,58,58,.08);padding:1px 4px;border-radius:2px}
 /* 3열 그리드 — ①②③이 1행, ④가 ①아래, ⑤가 ②아래로 자동 배치됨 */
 .choiceRow{display:grid;grid-template-columns:repeat(3,1fr);row-gap:2mm;column-gap:4mm;margin:2mm 0}
@@ -6473,6 +6506,7 @@ function dqCleanQuickAnswer(qa) {
 // 동형모의고사 해설은 <br>로 줄을 나눈 한 덩어리 글이다 — 한글 시험지 해설과 같은 모양(<p>, 12px)으로 줄마다
 // 문단으로 바꿔야 글자 크기가 맞고, 긴 해설을 페이지 단위로 쪼갤 때(splitTallBlock)도 줄 단위로 끊긴다.
 function mockExplToParagraphs(html) {
+  if (/<p[\s>]/.test(String(html || ''))) return String(html);
   return String(html || '').split(/<br\s*\/?>/i).map(l => l.trim()).filter(Boolean).map(l => `<p>${l}</p>`).join('');
 }
 
@@ -6724,6 +6758,121 @@ async function generateHtmlNote(historicalBatch) {
   }
 }
 genHtmlBtn.addEventListener('click', () => generateHtmlNote());
+// ---------- 서술형 해설집 ----------
+// "서술형 SET0", "모의고사 서술형 SET1" 처럼 이름에 SET 번호가 붙은 서술형 시험(TEST 시트)만 해설집 대상.
+function isSetMission(name) { return /서술형\s*SET\s*\d+/i.test(String(name || '')); }
+
+// 그 학생의 서술형 SET 미션에서 지금 오답(status 2)인 문제를 전부 체크한다(이미 고친 3번은 제외).
+function pickSetWrong() {
+  let n = 0;
+  document.querySelectorAll('.qChk').forEach(chk => {
+    if (!isSetMission(chk.dataset.mission)) return;
+    const st = chk.closest('label');
+    const wrongNow = st && st.classList.contains('status2');
+    chk.checked = !!wrongNow;
+    if (wrongNow) n++;
+  });
+  updateCounter();
+  log(n ? `서술형 SET 오답 ${n}문제를 선택했어요.` : '이 학생은 서술형 SET에서 지금 오답인 문제가 없어요.');
+}
+
+// 문제 → 모범 풀이(단계별) → 정답 → 채점기준표를 한 덩어리(블록)로 묶어, 쪽이 넘어가면 이어서 보여준다.
+async function generateSetBook() {
+  logEl.innerHTML = '';
+  genSetBtn.disabled = true;
+  try {
+    const checked = [...document.querySelectorAll('.qChk:checked')].filter(c => isSetMission(c.dataset.mission))
+      .map(chk => ({ mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num }));
+    if (!checked.length) throw new Error('체크한 서술형 SET 문제가 없습니다. "서술형 SET 오답 전부 선택"을 눌러 보세요.');
+    const studentName = currentStudent.name;
+    const missionFileId = new Map(missionGroups.map(g => [missionKey(g.mission, g.category), g.selectedFileId]));
+    for (const c of checked) {
+      if (!lookupMissionFileId(missionFileId, c.mission, c.category)) {
+        const guess = resolveFileForMission(c.mission, c.category);
+        if (guess) missionFileId.set(missionKey(c.mission, c.category), guess.file.id);
+      }
+    }
+    const missing = checked.filter(c => !lookupMissionFileId(missionFileId, c.mission, c.category));
+    if (missing.length) throw new Error('시험지 파일이 선택 안 된 미션이 있습니다: ' + [...new Set(missing.map(m => m.mission))].join(', '));
+
+    log('서술형 SET 파일을 불러오는 중... (처음엔 시간이 걸릴 수 있어요)');
+    const needed = [...new Set(checked.map(c => lookupMissionFileId(missionFileId, c.mission, c.category)))];
+    for (const fid of needed) {
+      const f = bankFiles.find(b => b.id === fid);
+      const pf = await getParsedFile(fid, f.filename);
+      if (!pf.isMock) throw new Error('"' + f.filename + '"은 서술형 SET용 파일이 아닙니다. 미션 옆 파일 선택을 확인해 주세요.');
+      log(`  ✓ ${f.filename}`);
+    }
+
+    // 시험(SET) 순서대로, 그 안에서는 문제 번호 순서대로
+    const order = (m) => { const mm = String(m).match(/(\d+)\s*$/); return (m.indexOf('모의고사') !== -1 ? 1000 : 0) + (mm ? Number(mm[1]) : 0); };
+    checked.sort((a, b) => order(a.mission) - order(b.mission) || Number(a.num) - Number(b.num));
+
+    log('해설집을 만드는 중...');
+    const blocks = [];
+    const summaryRows = [];
+    let n = 1;
+    for (const c of checked) {
+      const entry = loadedFileCache.get(lookupMissionFileId(missionFileId, c.mission, c.category));
+      const it = entry && entry.mockByNum.get(String(c.num));
+      if (!it) continue;
+      const cite = [c.mission, `문제 ${c.num}`, it.src, it.group].filter(Boolean).join(' · ');
+      const stem = it.stemHtml.includes('<p>') ? it.stemHtml.replace('<p>', `<p><span class="mbQNum">${n}.</span>`) : `<p><span class="mbQNum">${n}.</span>${it.stemHtml}</p>`;
+      blocks.push(`<div class="mbQBlock mbMock setBlock"><div class="mbCite">${escapeHtml(cite)}</div>${stem}<div class="explNum">모범 풀이</div>${it.explanationHtml}</div>`);
+      summaryRows.push({ n, mission: c.mission, num: c.num, src: it.src || '', group: it.group || '' });
+      n++;
+    }
+    if (!blocks.length) throw new Error('해설을 찾지 못했습니다.');
+
+    const info = {
+      cohort: currentStudent.cohort, className: currentStudent.class, studentName,
+      sideRound: 'SET', eyebrow: 'MIDTERM 2026 · 서술형 대비', subTitle: '— 서술형 오답 해설집 —', roundText: '서술형 해설집',
+    };
+    const theme = themeFor(currentStudent.cohort, currentStudent.class);
+    const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 서술형 해설집`;
+
+    const rowsHtml = summaryRows.map(r => `<tr><td>${r.n}</td><td>${escapeHtml(r.mission)}</td><td>${escapeHtml(r.num)}번</td><td>${escapeHtml(r.src)}</td><td>${escapeHtml(r.group)}</td></tr>`).join('');
+    const summaryPage = `${mbSheetOpen(2, true)}
+    <div class="sumWrap">
+      <div class="sumBanner">
+        <div class="sumBannerIcon">◎</div>
+        <div class="sumBannerMid"><div class="sumBannerTitle"><span class="men">MAN</span> <span class="book">BOOK</span></div><div class="sumBannerSub">서술형 오답 해설집</div></div>
+        <div class="sumBannerYear">${new Date().getFullYear()}</div>
+      </div>
+      <div class="sumVol">VOL. ${escapeHtml(studentName)}</div>
+      <div class="sumCredit">MATHY YURI &nbsp;|&nbsp; DAECHI S+ ACADEMY</div>
+      <h1 class="sumTitle">${escapeHtml(studentName)}의 서술형 해설집 (${summaryRows.length}문제)</h1>
+      <table class="sumTbl"><thead><tr><th>순번</th><th>시험</th><th>문제번호</th><th>출처</th><th>유형</th></tr></thead>
+        <tbody>${rowsHtml}</tbody></table>
+    </div>
+  </section>`;
+
+    log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
+    const pagesHtml = [buildCoverPageHtml(info), summaryPage];
+    let pageNum = 3;
+    const pages = paginateBlocks(blocks, 1, true);
+    pages.forEach((cols, i) => {
+      pagesHtml.push(buildPlainPageHtml(pageNum, i === 0 ? '문제와 모범 풀이' : '문제와 모범 풀이 (계속)', cols, info));
+      pageNum++;
+    });
+    pagesHtml.push(await buildBackcoverPageHtml(pageNum, theme));
+
+    const html = buildHtmlDocument({ titleText, pagesHtml, theme });
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${studentName}_서술형해설집.html`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    log(`완료! ${studentName}_서술형해설집.html (${summaryRows.length}문제, ${pages.length}쪽) 이 다운로드되었습니다. (오답노트 이력에는 기록하지 않았어요)`);
+  } catch (e) {
+    log('오류: ' + (e && e.message ? e.message : e), 'err');
+  } finally {
+    updateCounter();
+  }
+}
+genSetBtn.addEventListener('click', () => generateSetBook());
+pickSetWrongBtn.addEventListener('click', () => pickSetWrong());
+
 
 // ---------- 지난 회차 다시 받기 ----------
 // noteHistory의 각 행은 "이 문제가 몇 번째로 나왔는지"(문항별 반복 횟수)를

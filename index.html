@@ -998,7 +998,7 @@ function clinicMissionIsNew(name) {
 }
 function testMissionIsNew(name) {
   const n = String(name || '').trim();
-  return /^M\./i.test(n) || /동형\s*모의고사/.test(n); // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
+  return /^M\./i.test(n) || /동형\s*모의고사|서술형\s*SET/i.test(n); // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
 }
 function retryMissionIsNew(name) {
   return /^중간\s*오답노트/.test(String(name || '').trim());

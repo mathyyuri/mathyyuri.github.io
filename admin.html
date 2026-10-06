@@ -603,7 +603,7 @@ function clinicMissionIsNew(name) {
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return d >= MIDTERM_START_DATE;
 }
-function testMissionIsNew(name) { const n = String(name || '').trim(); return /^M\./i.test(n) || /동형\s*모의고사/.test(n); } // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
+function testMissionIsNew(name) { const n = String(name || '').trim(); return /^M\./i.test(n) || /동형\s*모의고사|서술형\s*SET/i.test(n); } // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
 function splitMissionIsNew(category, name) {
   if (category === '클리닉') return clinicMissionIsNew(name);
   if (category === 'TEST') return testMissionIsNew(name);
