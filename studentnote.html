@@ -5969,6 +5969,8 @@ function buildPlainPageHtml(pageNum, sectionLabel, colsBlocks, info) {
   </section>`;
 }
 
+// 수식이 줄 중간에서 끊기지 않게 하는 보조 코드(mathfix.js 와 동일) — 이 앱이 만드는 독립 HTML 문서에 그대로 넣는다.
+const MATHFIX_SRC = "(function () {\n  if (window.__mathfix) return; window.__mathfix = true;\n  var st = document.createElement('style'); st.id = 'mathfixCss';\n  st.textContent = '.katex,.katex .katex-html{white-space:nowrap}.katex.mwrap,.katex.mwrap .katex-html{white-space:normal}';\n  (document.head || document.documentElement).appendChild(st);\n  var timer = 0;\n  function blockOf(el) {\n    var c = el.parentElement;\n    while (c && c !== document.body) { var d = getComputedStyle(c).display; if (d !== 'inline' && d !== 'contents') break; c = c.parentElement; }\n    return c;\n  }\n  function fix() {\n    try {\n      var ks = document.querySelectorAll('.katex'), i, k, info = [];\n      for (i = 0; i < ks.length; i++) ks[i].classList.remove('mwrap');\n      for (i = 0; i < ks.length; i++) {          // 읽기만 모아서 한 번에(레이아웃 재계산 최소화)\n        k = ks[i]; var c = blockOf(k); if (!c) continue;\n        var cs = getComputedStyle(c), avail = c.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);\n        if (avail > 20 && k.getBoundingClientRect().width > avail + 1) info.push(k);\n      }\n      for (i = 0; i < info.length; i++) info[i].classList.add('mwrap');\n    } catch (e) { /* 보조 기능이라 실패해도 조용히 */ }\n  }\n  function later() { clearTimeout(timer); timer = setTimeout(fix, 60); }\n  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (ms[i].addedNodes.length) { later(); return; } }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}\n  window.addEventListener('resize', later);\n  window.addEventListener('load', later);\n  window.mathfix = fix;\n  later();\n})();\n";
 function buildHtmlDocument({ titleText, pagesHtml, theme }) {
   const t = theme || CLASS_THEMES['2||S'];
   // 표지(맨 첫 페이지)만 혼자, 그 다음부터는 책처럼 2페이지씩 펼쳐서 보임.
@@ -6411,6 +6413,7 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 <\/script>
+<script>${MATHFIX_SRC}<\/script>
 </body>
 </html>`;
 }
@@ -7400,5 +7403,6 @@ function loadHwPhotos(div) {
 
 init();
 </script>
+<script src="mathfix.js?v=1"></script>
 </body>
 </html>
