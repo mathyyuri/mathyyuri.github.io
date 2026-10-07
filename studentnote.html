@@ -5137,6 +5137,9 @@ async function getParsedFile(fileId, filename) {
 async function generateHwpxNote(historicalBatch) {
   logEl.innerHTML = '';
   genBtn.disabled = true;
+  // 이력 기록 전에 중간에 실패하면(예: 한글로 만들기가 가상 시험지라 거부됨) 선점해 둔 "이미 기록됨" 표시를 되돌린다 —
+  // 안 그러면 다음에 HTML로 다시 만들 때 "이미 기록됨"으로 보고 이력을 아예 안 남겼다.
+  let myBatchKey = null, myPrevLogged = null;
   try {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
       mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
@@ -5171,7 +5174,7 @@ async function generateHwpxNote(historicalBatch) {
     const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
     const noteRound = historicalBatch ? historicalBatch.noteRound
       : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
-    if (!reuseRound) lastLoggedBatch = { key: batchKey, noteRound };
+    if (!reuseRound) { myPrevLogged = lastLoggedBatch; myBatchKey = batchKey; lastLoggedBatch = { key: batchKey, noteRound }; }
 
     const studentName = currentStudent.name;
     const examName = document.getElementById('examName').value.trim();
@@ -5471,6 +5474,7 @@ async function generateHwpxNote(historicalBatch) {
         items: checked.map(c => ({ mission: c.mission, category: c.category, num: c.num })),
       });
       lastLoggedBatch = { key: batchKey, noteRound };
+      myBatchKey = null;
       // refresh history/grading so round badges + the new ungraded round show up right away
       try {
         const historyData = await callGetJsonp(DASHBOARD_URL, { action: 'notehistory', name: studentName, key: TEACHER_KEY });
@@ -5484,6 +5488,7 @@ async function generateHwpxNote(historicalBatch) {
 
     log('완료! 다운로드된 파일을 한글에서 열어 확인해주세요.', 'ok');
   } catch (e) {
+    if (myBatchKey && lastLoggedBatch && lastLoggedBatch.key === myBatchKey) lastLoggedBatch = myPrevLogged;
     console.error(e);
     log('오류: ' + e.message, 'err');
   } finally {
@@ -6516,6 +6521,9 @@ function mockExplToParagraphs(html) {
 async function generateHtmlNote(historicalBatch) {
   logEl.innerHTML = '';
   genHtmlBtn.disabled = true;
+  // 이력 기록 전에 중간에 실패하면(예: 한글로 만들기가 가상 시험지라 거부됨) 선점해 둔 "이미 기록됨" 표시를 되돌린다 —
+  // 안 그러면 다음에 HTML로 다시 만들 때 "이미 기록됨"으로 보고 이력을 아예 안 남겼다.
+  let myBatchKey = null, myPrevLogged = null;
   try {
     const checked = historicalBatch ? historicalBatch.items : [...document.querySelectorAll('.qChk:checked')].map(chk => ({
       mission: chk.dataset.mission, category: chk.dataset.category, num: chk.dataset.num, round: chk.dataset.round,
@@ -6542,7 +6550,7 @@ async function generateHtmlNote(historicalBatch) {
     const reuseRound = !!historicalBatch || (lastLoggedBatch && lastLoggedBatch.key === batchKey);
     const noteRound = historicalBatch ? historicalBatch.noteRound
       : (reuseRound ? lastLoggedBatch.noteRound : computeNextNoteRound());
-    if (!reuseRound) lastLoggedBatch = { key: batchKey, noteRound };
+    if (!reuseRound) { myPrevLogged = lastLoggedBatch; myBatchKey = batchKey; lastLoggedBatch = { key: batchKey, noteRound }; }
 
     const studentName = currentStudent.name;
 
@@ -6747,6 +6755,7 @@ async function generateHtmlNote(historicalBatch) {
         await callPostNoCors(DASHBOARD_URL, {
           action: 'lognote', key: TEACHER_KEY, name: studentName, at: batchAt, items,
         });
+        myBatchKey = null;
         if (needHwpxLog) lastLoggedBatch = { key: batchKey, noteRound };
         if (needDqLog) newDqItems.forEach(c => { loggedDqKeys.add(`${c.round}:${c.num}`); if (dqActiveVariant(studentName, c.round, c.num)) dqMarkVariantUsed(studentName, c.round, c.num); });
       }
@@ -6754,6 +6763,7 @@ async function generateHtmlNote(historicalBatch) {
 
     log('완료! HTML 파일이 다운로드되었습니다. (A4 인쇄/PDF 저장 시 페이지가 그대로 나뉩니다)', 'ok');
   } catch (e) {
+    if (myBatchKey && lastLoggedBatch && lastLoggedBatch.key === myBatchKey) lastLoggedBatch = myPrevLogged;
     console.error(e);
     log('오류: ' + e.message, 'err');
   } finally {

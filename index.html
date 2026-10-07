@@ -644,7 +644,7 @@ const SHEETS = ['진도미션','과제미션','오답미션','TEST','9모대비'
    2기: 진도·과제·오답·TEST·9모대비·S+ BLACK·대수연마 / 3기: 개념·진도·과제·오답·TEST
    반 칩: 2기 = S+, S / 3기 = PRISM (명단에 다른 반명이 있으면 자동 추가) */
 const COHORT_SHEETS = {
-  '2': ['진도미션','과제미션','오답미션','TEST','기출','9모대비','S+ BLACK','대수연마 1000제'],
+  '2': ['진도미션','과제미션','오답미션','TEST','동형모의고사','서술형','기출','9모대비','S+ BLACK','대수연마 1000제'],
   '3': ['개념미션','진도미션','과제미션','오답미션','TEST']
 };
 const COHORT_CLASSES = { '2':['S+','S'], '3':['PRISM'] };
@@ -710,7 +710,7 @@ function tabListFor(c){
   }
   return ['종합'].concat(dyn);
 }
-const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','기출':'PAST EXAM','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
+const SHEET_EN = {'개념미션':'CONCEPT','진도미션':'PROGRESS','과제미션':'HOMEWORK','오답미션':'RETRY','TEST':'TEST','동형모의고사':'MOCK EXAM','서술형':'ESSAY SET','기출':'PAST EXAM','9모대비':'MOCK 9','S+ BLACK':'BLACK','대수연마 1000제':'ALGEBRA 1000'};
 // 9월부터(중간고사 대비) 등록을 그만두는 학생 — 닉네임 기준(대부분 실명을
 // 그대로 닉네임으로 씀). SUMMER 보기(8월까지)에서는 계속 보이고, 중간고사
 // 대비(9월부터, 기본 화면)에는 안 보이게 catRowsFor에서 걸러진다. 나중에
@@ -989,7 +989,7 @@ const MIDTERM_START_DATE = new Date(2026, 8, 2); // 2026-09-02 — 이 날짜부
 const COHORT2_SUMMER_ONLY_CATS = ['진도미션', '과제미션', '9모대비', '개념미션', 'S+ BLACK', '대수연마 1000제'];
 const COHORT2_SPLIT_CATS = ['클리닉', 'TEST', '오답미션']; // 메인/SUMMER 둘 다에 나타나되, 미션명 기준으로 갈라서 보여줌
 // 메인(중간고사 대비) 탭 순서 — 실제 존재하는 카테고리만 이 순서대로 보여줌.
-const COHORT2_MAIN_ORDER = ['오답미션', '교과서미션', '변형미션', 'S+ 기출미션', 'TEST', '기출', '클리닉'];
+const COHORT2_MAIN_ORDER = ['오답미션', '교과서미션', '변형미션', 'S+ 기출미션', 'TEST', '동형모의고사', '서술형', '기출', '클리닉'];
 function clinicMissionIsNew(name) {
   const m = String(name || '').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
   if (!m) return true; // 날짜 형식이 아니면 새로 등록된 걸로 보고 안전하게 보여줌
@@ -999,6 +999,59 @@ function clinicMissionIsNew(name) {
 function testMissionIsNew(name) {
   const n = String(name || '').trim();
   return /^M\./i.test(n) || /동형\s*모의고사|서술형\s*SET/i.test(n); // 보라고 동형모의고사 N회도 중간고사 대비라 보여줌
+}
+/* ---- TEST 시트 안의 미션을 이름으로 나눠 별도 탭으로 보여준다 (원장님 요청 2026-10-07) ----
+   TEST 탭에는 M.TAT 등 일반 TEST만, "동형모의고사"가 들어간 시험은 동형모의고사 탭, "서술형 SET"이 들어간 시험은 서술형 탭.
+   구글시트의 TEST 시트는 그대로 두고(성적은 지금처럼 TEST에 입력), 화면에서만 나눈다. 기존 기록도 그대로 옮겨 보인다. */
+const VIRTUAL_CATS = [
+  { name: '동형모의고사', re: /동형\s*모의고사/ },
+  { name: '서술형', re: /서술형\s*SET/i },
+];
+function virtualCatOf(mission) {
+  const m = String(mission || '');
+  for (const v of VIRTUAL_CATS) if (v.re.test(m)) return v.name;
+  return null;
+}
+// 카테고리 → 행 배열(.mission) 형태(공개 데이터, 개인 기록)
+function splitVirtualRows(byCat) {
+  const out = Object.assign({}, byCat || {});
+  const test = out['TEST'];
+  if (!Array.isArray(test)) return out;
+  const keep = [];
+  VIRTUAL_CATS.forEach(v => { out[v.name] = (out[v.name] || []).slice(); });
+  test.forEach(r => { const v = virtualCatOf(r.mission); if (v) out[v].push(r); else keep.push(r); });
+  out['TEST'] = keep;
+  return out;
+}
+// 카테고리 → { 미션명: 값, __classOk.. } 형태(반 평균): 미션 단위 값만 새 카테고리로 옮긴다
+function splitVirtualAvg(avgMap) {
+  const out = Object.assign({}, avgMap || {});
+  const t = out['TEST'];
+  if (!t || typeof t !== 'object') return out;
+  const nt = Object.assign({}, t);
+  VIRTUAL_CATS.forEach(v => { out[v.name] = out[v.name] || {}; });
+  Object.keys(t).forEach(m => {
+    if (m.indexOf('__') === 0) return;
+    const v = virtualCatOf(m);
+    if (v) { out[v] = Object.assign({}, out[v]); out[v][m] = t[m]; delete nt[m]; }
+  });
+  if (t.__itemAcc && typeof t.__itemAcc === 'object') {
+    const keepAcc = {};
+    Object.keys(t.__itemAcc).forEach(m => {
+      const v = virtualCatOf(m);
+      if (v) { out[v] = Object.assign({}, out[v]); out[v].__itemAcc = Object.assign({}, out[v].__itemAcc, { [m]: t.__itemAcc[m] }); } else keepAcc[m] = t.__itemAcc[m];
+    });
+    nt.__itemAcc = keepAcc;
+  }
+  out['TEST'] = nt;
+  return out;
+}
+// 서버가 준 카테고리 목록에 동형모의고사/서술형이 없어도(시트를 아직 안 만든 경우) 탭은 항상 보이게 — TEST 바로 뒤에 끼워 넣는다.
+function ensureVirtualCatTabs() {
+  const list = (COHORT_SHEETS['2'] || []).slice();
+  const at = list.indexOf('TEST');
+  VIRTUAL_CATS.slice().reverse().forEach(v => { if (list.indexOf(v.name) === -1) list.splice(at === -1 ? list.length : at + 1, 0, v.name); });
+  COHORT_SHEETS['2'] = list;
 }
 function retryMissionIsNew(name) {
   return /^중간\s*오답노트/.test(String(name || '').trim());
@@ -1216,7 +1269,7 @@ async function loadPublic(){
   try{
     const res = await fetch(GAS_URL+'?action=public');
     const json = await res.json();
-    if(json.ok){publicData = json.data;publicResources = json.resources||{};}
+    if(json.ok){publicData = json.data;Object.keys(publicData||{}).forEach(c=>{ if(c==='2') publicData[c]=splitVirtualRows(publicData[c]); });publicResources = json.resources||{};}
   }catch(e){}
 }
 async function enterBoard(){
@@ -2452,7 +2505,8 @@ function toggleMeSummerView(){
   renderPersonal();
 }
 function renderPersonal(){
-  const s=me.student, rawRec=me.records, avgMap=me.classAvg||{};
+  const s=me.student, avgMap0=me.classAvg||{};
+  const rawRec=(me.student.cohort==='2')?splitVirtualRows(me.records):me.records, avgMap=(me.student.cohort==='2')?splitVirtualAvg(avgMap0):avgMap0;
   const rec=filterRecordsForMode(rawRec,s.cohort,meShowSummer,s.name);
   document.getElementById('me-nick').textContent=s.name;
   const coh=COHORT_LABELS[s.cohort]||null;
@@ -2977,11 +3031,13 @@ async function loadCategories(){
       if(json.byCohort[c] && json.byCohort[c].length) COHORT_SHEETS[c]=json.byCohort[c];
     });
     if(json.enLabels) Object.assign(SHEET_EN, json.enLabels);
+    ensureVirtualCatTabs();
     buildPubTabs();
   }catch(e){}
 }
 
 /* ---------- 시작: 랜딩이 메인, 데이터는 백그라운드 로드 ---------- */
+ensureVirtualCatTabs();
 buildPubTabs();
 const dataPromise = loadPublic();
 loadCategories();
