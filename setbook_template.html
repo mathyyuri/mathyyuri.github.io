@@ -97,6 +97,11 @@ table.rTbl tr:last-child td{border-bottom:none}
 .coverStudent .nm{font-family:var(--kserif);font-weight:900;font-size:1.5rem;color:var(--ink);border-bottom:2px solid var(--gold);padding:0 .35em .08em}
 .memoPage .memoTitle{font-family:var(--kserif);font-weight:900;font-size:.9rem;color:var(--acc);letter-spacing:.3em;margin:.2em 0 .6em}
 .memoPage .memoLines{flex:1 1 auto;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(2.1em - 1px),var(--rule) calc(2.1em - 1px),var(--rule) 2.1em);background-size:100% 2.1em;font-size:.78rem}
+.tocCols{display:flex;justify-content:center;gap:1.4em;width:100%}
+.tocCols .tocTbl{width:62%}
+.tocCols.two{padding:0 4%}
+.tocCols.two .tocTbl{width:50%;font-size:calc(.62rem * var(--fit,1))}
+.tocCols.two .tocTbl td.tocSrc{white-space:nowrap}
 .qStemText img{display:block;max-width:60%;max-height:34%;margin:.4em auto 0}
 </style>
 </head>
@@ -138,10 +143,17 @@ var front = '<div class="examPage coverPage front">'
   + '<div class="coverStudent"><span class="who">' + esc(STUDENT.cohort) + '기 ' + esc(STUDENT.cls) + '반</span><span class="nm">' + esc(STUDENT.name) + '</span></div>'
   + '<div class="coverNote">내가 틀린 서술형 ' + PROBLEMS.length + '문항의 모범답안과 단계별 채점기준표<br>고1 교육과정 풀이법 기준</div>'
   + '</div>';
+var tocRow = function(p,i){ return '<tr><td class="tocNo">' + (i+1) + '</td><td class="tocSrc">' + esc(p.setName) + ' &middot; ' + esc(p.num) + '번' + (p.src ? ' &middot; ' + esc(p.src) : '') + '</td></tr>'; };
+var tocCols = PROBLEMS.length > 20 ? 2 : 1;           // 20문제를 넘으면 2열(한 쪽에 다 보이게)
+var tocHalf = tocCols === 2 ? Math.ceil(PROBLEMS.length / 2) : PROBLEMS.length;
+var tocHtml = '<div class="tocCols' + (tocCols === 2 ? ' two' : '') + '">'
+  + '<table class="tocTbl">' + PROBLEMS.slice(0, tocHalf).map(function(p,i){ return tocRow(p,i); }).join('') + '</table>'
+  + (tocCols === 2 ? '<table class="tocTbl">' + PROBLEMS.slice(tocHalf).map(function(p,i){ return tocRow(p,i + tocHalf); }).join('') + '</table>' : '')
+  + '</div>';
 var toc = '<div class="examPage dividerPage tocPage">'
   + '<div class="dividerLabel">CONTENTS</div>'
   + '<div class="dividerTitle" style="margin-bottom:.6em">문제 목차</div>'
-  + '<table class="tocTbl">' + PROBLEMS.map(function(p,i){ return '<tr><td class="tocNo">' + (i+1) + '</td><td class="tocSrc">' + esc(p.setName) + ' &middot; ' + esc(p.num) + '번' + (p.src ? ' &middot; ' + esc(p.src) : '') + '</td></tr>'; }).join('') + '</table>'
+  + tocHtml
   + '</div>';
 var divider = '<div class="examPage dividerPage">'
   + '<div class="dividerLabel">PART.</div>'
