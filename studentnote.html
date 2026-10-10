@@ -5995,6 +5995,7 @@ function buildHtmlDocument({ titleText, pagesHtml, theme }) {
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
 <style>
 :root{
   --mb-cream:${t.cream}; --mb-cream2:${t.cream2}; --mb-navy:${t.navy}; --mb-teal:${t.teal}; --mb-teal-deep:${t.tealDeep};
@@ -6034,7 +6035,11 @@ body{margin:0;background:#ddd6c8;font-family:var(--sans);color:var(--mb-ink);-we
 @media print{.navBtn{display:none}}
 .navHint{position:fixed;bottom:10px;right:14px;font-size:12px;color:#7a7264;z-index:5}
 @media print{.navHint{display:none}}
-.exportBar{position:fixed;top:16px;right:16px;z-index:999;display:flex;gap:8px}
+.exportBar{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.exportRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#rangeInp{width:170px;padding:9px 10px;border:1px solid #b9ad94;border-radius:6px;font-family:var(--sans);font-size:13px;background:#fff;color:#1A1A1A;box-shadow:0 3px 12px rgba(0,0,0,.18)}
+.exportHint{font-size:11px;color:#5a5448;background:rgba(255,255,255,.88);padding:2px 8px;border-radius:4px}
+.exportBar button.sub{background:var(--mb-teal-deep)}
 .exportBar button{background:var(--mb-navy);color:#fff;border:none;padding:11px 20px;border-radius:6px;font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.28);letter-spacing:.02em}
 .exportBar button:hover:not(:disabled){background:var(--mb-teal-deep)}
 .exportBar button:disabled{opacity:.6;cursor:default}
@@ -6243,9 +6248,18 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 </head>
 <body>
 <div class="exportBar">
-  <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
-  <button type="button" id="saveCurrentPdfBtn">현재까지 PDF로 저장</button>
-  <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+  <div class="exportRow">
+    <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
+    <button type="button" id="saveCurrentPdfBtn">현재까지 PDF로 저장</button>
+    <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+  </div>
+  <div class="exportRow">
+    <input type="text" id="rangeInp" placeholder="쪽 지정 예: 1-5, 8" autocomplete="off">
+    <button type="button" id="rangeFillBtn" class="sub">지금 펼침</button>
+    <button type="button" id="saveRangePdfBtn" class="sub">지정 쪽 여백없는 PDF</button>
+    <button type="button" id="saveRangeImgBtn" class="sub">지정 쪽 이미지(ZIP)</button>
+  </div>
+  <div class="exportHint" id="rangeHint"></div>
 </div>
 <div class="mbBook">
 ${spreadsHtml}
@@ -6415,6 +6429,84 @@ window.addEventListener('DOMContentLoaded', function () {
   });
   if (savePdfBtn) savePdfBtn.addEventListener('click', function () {
     buildAndSavePdf(mbPages, savePdfBtn, '');
+  });
+
+  // ---- 쪽 지정 저장 (예: 1-5, 8 → 1~5쪽과 8쪽만) — 표지가 1쪽, 각 쪽 아래 번호와 같다 ----
+  var rangeInp = document.getElementById('rangeInp');
+  var rangeHint = document.getElementById('rangeHint');
+  if (rangeHint) rangeHint.textContent = '총 ' + mbPages.length + '쪽 · 표지=1쪽 · 쉼표(,)와 하이픈(-)으로 지정';
+  // "1-5, 8" → [1,2,3,4,5,8] (오름차순, 중복 제거). 잘못된 입력이면 null.
+  function parseRange(text) {
+    var cleaned = String(text).split('~').join('-').split('～').join('-').split(' ').join('');
+    if (!cleaned) return null;
+    var seen = {}, out = [], parts = cleaned.split(',');
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i]; if (!p) continue;
+      var ab = p.split('-'), a, b;
+      if (ab.length === 1) { a = b = parseInt(ab[0], 10); }
+      else if (ab.length === 2) { a = parseInt(ab[0], 10); b = parseInt(ab[1], 10); }
+      else return null;
+      if (isNaN(a) || isNaN(b)) return null;
+      if (a > b) { var t = a; a = b; b = t; }
+      if (a < 1 || b > mbPages.length) return null;
+      for (var n = a; n <= b; n++) { if (!seen[n]) { seen[n] = 1; out.push(n); } }
+    }
+    out.sort(function (x, y) { return x - y; });
+    return out.length ? out : null;
+  }
+  function pickRangePages() {
+    var nums = parseRange(rangeInp ? rangeInp.value : '');
+    if (!nums) {
+      alert('저장할 쪽을 입력해 주세요. 예: 1-5, 8\\n(이 노트는 총 ' + mbPages.length + '쪽, 표지가 1쪽입니다)');
+      if (rangeInp) rangeInp.focus();
+      return null;
+    }
+    return nums;
+  }
+  var rangeFillBtn = document.getElementById('rangeFillBtn');
+  var saveRangePdfBtn = document.getElementById('saveRangePdfBtn');
+  var saveRangeImgBtn = document.getElementById('saveRangeImgBtn');
+  if (rangeFillBtn) rangeFillBtn.addEventListener('click', function () {
+    var sp = mbSpreads[currentSpreadIdx()]; if (!sp) return;
+    var nums = [...sp.querySelectorAll('.mbSheet')].map(function (el) { return mbPages.indexOf(el) + 1; });
+    rangeInp.value = nums.length > 1 ? nums[0] + '-' + nums[nums.length - 1] : String(nums[0]);
+  });
+  if (saveRangePdfBtn) saveRangePdfBtn.addEventListener('click', function () {
+    var nums = pickRangePages(); if (!nums) return;
+    var label = String(rangeInp.value).split(' ').join('').split(',').join('_');
+    buildAndSavePdf(nums.map(function (n) { return mbPages[n - 1]; }), saveRangePdfBtn, '_' + label + '쪽');
+  });
+  function downloadBlob(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  function canvasToBlob(canvas) { return new Promise(function (res) { canvas.toBlob(res, 'image/png'); }); }
+  if (saveRangeImgBtn) saveRangeImgBtn.addEventListener('click', async function () {
+    var nums = pickRangePages(); if (!nums) return;
+    saveRangeImgBtn.disabled = true;
+    var orig = saveRangeImgBtn.textContent;
+    try {
+      var useZip = nums.length > 1;
+      if (useZip && !window.JSZip) throw new Error('ZIP 라이브러리를 불러오지 못했습니다');
+      var zip = useZip ? new JSZip() : null;
+      for (var i = 0; i < nums.length; i++) {
+        saveRangeImgBtn.textContent = '캡처 중... (' + (i + 1) + '/' + nums.length + ')';
+        var blob = await canvasToBlob(await captureSheet(mbPages[nums[i] - 1]));
+        var fname = exportFileBase + '_' + String(nums[i]).padStart(2, '0') + '쪽.png';
+        if (zip) zip.file(fname, blob); else downloadBlob(blob, fname);
+      }
+      if (zip) {
+        saveRangeImgBtn.textContent = '압축 중...';
+        downloadBlob(await zip.generateAsync({ type: 'blob' }), exportFileBase + '_지정쪽.zip');
+      }
+    } catch (e) {
+      alert('이미지 저장 실패: ' + e.message);
+    } finally {
+      saveRangeImgBtn.disabled = false;
+      saveRangeImgBtn.textContent = orig;
+    }
   });
 });
 <\/script>
