@@ -6822,61 +6822,45 @@ async function generateSetBook() {
     checked.sort((a, b) => order(a.mission) - order(b.mission) || Number(a.num) - Number(b.num));
 
     log('해설집을 만드는 중...');
-    const blocks = [];
-    const summaryRows = [];
-    let n = 1;
+    // 원래 쓰던 서술형 모범답안 디자인(setbook_template.html)에 이 학생이 틀린 문제만 넣는다.
+    // 앞표지에 학생 이름, 전체 쪽수는 4의 배수(MEMO 쪽으로 채움).
+    const problems = [];
     for (const c of checked) {
       const entry = loadedFileCache.get(lookupMissionFileId(missionFileId, c.mission, c.category));
       const it = entry && entry.mockByNum.get(String(c.num));
       if (!it) continue;
-      const cite = [c.mission, `문제 ${c.num}`, it.src, it.group].filter(Boolean).join(' · ');
-      const stem = it.stemHtml.includes('<p>') ? it.stemHtml.replace('<p>', `<p><span class="mbQNum">${n}.</span>`) : `<p><span class="mbQNum">${n}.</span>${it.stemHtml}</p>`;
-      blocks.push(`<div class="mbQBlock mbMock setBlock"><div class="mbCite">${escapeHtml(cite)}</div>${stem}<div class="explNum">모범 풀이</div>${it.explanationHtml}</div>`);
-      summaryRows.push({ n, mission: c.mission, num: c.num, src: it.src || '', group: it.group || '' });
-      n++;
+      const steps = [...String(it.explanationHtml || '').matchAll(/<p class="step">([\s\S]*?)<\/p>/g)].map(m => m[1]);
+      if (!steps.length) steps.push(String(it.explanationHtml || ''));
+      const stem = String(it.stemHtml || '').replace(/<p[^>]*>/g, '').replace(/<\/p>/g, '<br>').replace(/(<br>)+$/, '');
+      problems.push({
+        setName: c.mission, num: String(c.num), src: it.src || '',
+        stem, sol: steps, ans: String(it.answerHtml || ''),
+        rubric: Array.isArray(it.rubric) ? it.rubric : [],
+      });
     }
-    if (!blocks.length) throw new Error('해설을 찾지 못했습니다.');
+    if (!problems.length) throw new Error('해설을 찾지 못했습니다.');
 
-    const info = {
-      cohort: currentStudent.cohort, className: currentStudent.class, studentName,
-      sideRound: 'SET', eyebrow: 'MIDTERM 2026 · 서술형 대비', subTitle: '— 서술형 오답 해설집 —', roundText: '서술형 해설집',
-    };
-    const theme = themeFor(currentStudent.cohort, currentStudent.class);
-    const titleText = `대치수학 ${currentStudent.cohort}기 ${currentStudent.class}반 ${studentName}의 서술형 해설집`;
-
-    const rowsHtml = summaryRows.map(r => `<tr><td>${r.n}</td><td>${escapeHtml(r.mission)}</td><td>${escapeHtml(r.num)}번</td><td>${escapeHtml(r.src)}</td><td>${escapeHtml(r.group)}</td></tr>`).join('');
-    const summaryPage = `${mbSheetOpen(2, true)}
-    <div class="sumWrap">
-      <div class="sumBanner">
-        <div class="sumBannerIcon">◎</div>
-        <div class="sumBannerMid"><div class="sumBannerTitle"><span class="men">MAN</span> <span class="book">BOOK</span></div><div class="sumBannerSub">서술형 오답 해설집</div></div>
-        <div class="sumBannerYear">${new Date().getFullYear()}</div>
-      </div>
-      <div class="sumVol">VOL. ${escapeHtml(studentName)}</div>
-      <div class="sumCredit">MATHY YURI &nbsp;|&nbsp; DAECHI S+ ACADEMY</div>
-      <h1 class="sumTitle">${escapeHtml(studentName)}의 서술형 해설집 (${summaryRows.length}문제)</h1>
-      <table class="sumTbl"><thead><tr><th>순번</th><th>시험</th><th>문제번호</th><th>출처</th><th>유형</th></tr></thead>
-        <tbody>${rowsHtml}</tbody></table>
-    </div>
-  </section>`;
-
-    log('페이지를 배치하는 중 (실제 렌더링 높이 기준)...');
-    const pagesHtml = [buildCoverPageHtml(info), summaryPage];
-    let pageNum = 3;
-    const pages = paginateBlocks(blocks, 1, true);
-    pages.forEach((cols, i) => {
-      pagesHtml.push(buildPlainPageHtml(pageNum, i === 0 ? '문제와 모범 풀이' : '문제와 모범 풀이 (계속)', cols, info));
-      pageNum++;
-    });
-    pagesHtml.push(await buildBackcoverPageHtml(pageNum, theme));
-
-    const html = buildHtmlDocument({ titleText, pagesHtml, theme });
+    log('해설집 디자인(틀)을 불러오는 중...');
+    let tpl;
+    try {
+      const r = await fetch('setbook_template.html?v=' + Date.now());
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      tpl = await r.text();
+    } catch (err) {
+      throw new Error('setbook_template.html 을 불러오지 못했습니다(사이트에 이 파일이 올라가 있어야 해요): ' + err.message);
+    }
+    const safeJson = (o) => JSON.stringify(o).replace(/<\//g, '<\/').replace(/\u2028/g, '\u2028').replace(/\u2029/g, '\u2029');
+    // 주의: String.replace 의 두 번째 인자에 문자열을 넣으면 $& 같은 패턴이 해석되므로 함수로 넘긴다.
+    const html = tpl
+      .replace('__PROBLEMS__', () => safeJson(problems))
+      .replace('__STUDENT__', () => safeJson({ name: studentName, cls: currentStudent.class, cohort: currentStudent.cohort }));
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `${studentName}_서술형해설집.html`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    log(`완료! ${studentName}_서술형해설집.html (${summaryRows.length}문제, ${pages.length}쪽) 이 다운로드되었습니다. (오답노트 이력에는 기록하지 않았어요)`);
+    const padN = (4 - (problems.length % 4)) % 4;
+    log(`완료! ${studentName}_서술형해설집.html (${problems.length}문제, 총 ${problems.length + padN + 4}쪽 = 4의 배수) 이 다운로드되었습니다. (오답노트 이력에는 기록하지 않았어요)`);
   } catch (e) {
     log('오류: ' + (e && e.message ? e.message : e), 'err');
   } finally {
