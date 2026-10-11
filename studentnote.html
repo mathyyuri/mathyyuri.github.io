@@ -6242,7 +6242,10 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 @media print{
   body{background:#fff}
   .mbBook{padding:0}
-  .mbSheet{box-shadow:none;margin:0;page-break-after:always}
+  .mbSheet{box-shadow:none;margin:0;page-break-after:always;min-height:296.6mm}
+  .mbSheet.mbFixedH{height:296.6mm}
+  .mbSheet.noPrint{display:none!important}
+  .mbSheet.lastPrint{page-break-after:auto}
 }
 </style>
 </head>
@@ -6252,11 +6255,13 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
     <button type="button" id="saveImgBtn">지금 화면 이미지로 저장</button>
     <button type="button" id="saveCurrentPdfBtn">현재까지 PDF로 저장</button>
     <button type="button" id="savePdfBtn">여백없는 PDF로 저장</button>
+    <button type="button" id="fastPdfBtn" title="인쇄 창에서 대상을 'PDF로 저장'으로 고르세요. 글자가 살아 있는 가벼운 PDF가 몇 초 만에 만들어집니다.">⚡ 빠른 PDF (전체)</button>
   </div>
   <div class="exportRow">
     <input type="text" id="rangeInp" placeholder="쪽 지정 예: 1-5, 8" autocomplete="off">
     <button type="button" id="rangeFillBtn" class="sub">지금 펼침</button>
     <button type="button" id="saveRangePdfBtn" class="sub">지정 쪽 여백없는 PDF</button>
+    <button type="button" id="fastRangePdfBtn" class="sub" title="인쇄 창에서 대상을 'PDF로 저장'으로 고르세요.">⚡ 지정 쪽 빠른 PDF</button>
     <button type="button" id="saveRangeImgBtn" class="sub">지정 쪽 이미지(ZIP)</button>
   </div>
   <div class="exportHint" id="rangeHint"></div>
@@ -6475,6 +6480,30 @@ window.addEventListener('DOMContentLoaded', function () {
     var nums = pickRangePages(); if (!nums) return;
     var label = String(rangeInp.value).split(' ').join('').split(',').join('_');
     buildAndSavePdf(nums.map(function (n) { return mbPages[n - 1]; }), saveRangePdfBtn, '_' + label + '쪽');
+  });
+  // ---- 빠른 PDF: 쪽을 그림으로 찍지 않고 브라우저 인쇄(PDF로 저장)를 그대로 쓴다. 글자가 살아 있고 몇 초면 끝난다. ----
+  // 고르지 않은 쪽은 인쇄할 때만 숨기고(noPrint), 인쇄가 끝나면 원래대로 되돌린다.
+  function fastPrint(nums) {
+    var keep = null;
+    if (nums) { keep = {}; nums.forEach(function (n) { keep[n] = 1; }); }
+    var lastIdx = nums ? nums[nums.length - 1] : mbPages.length;
+    mbPages.forEach(function (el, i) {
+      el.classList.toggle('noPrint', !!keep && !keep[i + 1]);
+      el.classList.toggle('lastPrint', i + 1 === lastIdx);
+    });
+    var done = function () {
+      mbPages.forEach(function (el) { el.classList.remove('noPrint'); el.classList.remove('lastPrint'); });
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    window.print();
+  }
+  var fastPdfBtn = document.getElementById('fastPdfBtn');
+  var fastRangePdfBtn = document.getElementById('fastRangePdfBtn');
+  if (fastPdfBtn) fastPdfBtn.addEventListener('click', function () { fastPrint(null); });
+  if (fastRangePdfBtn) fastRangePdfBtn.addEventListener('click', function () {
+    var nums = pickRangePages(); if (!nums) return;
+    fastPrint(nums);
   });
   function downloadBlob(blob, name) {
     var a = document.createElement('a');
