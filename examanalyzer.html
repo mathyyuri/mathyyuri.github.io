@@ -437,7 +437,12 @@ details.fold>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--i
       <div class="hint" style="margin-top:6px">키는 console.anthropic.com에서 발급합니다. 시험지 1회 분석 비용은 보통 수백 원 수준(모델·페이지 수에 따라 다름)이고, 분석 후 실제 사용 토큰으로 비용을 보여줍니다.</div>
     </details>
 
-    <div class="row" style="margin-top:16px">
+    <div class="row" style="margin-top:16px;align-items:flex-end">
+      <label class="f" style="flex:1;min-width:200px">학교명 (분석서 표지에 들어갑니다)<input type="text" id="inSchool" placeholder="예: 신갈고등학교" autocomplete="off"></label>
+      <label class="f" style="flex:1;min-width:200px">시험명 (선택)<input type="text" id="inTerm" placeholder="예: 2학기 1차 정기시험" autocomplete="off"></label>
+    </div>
+    <div class="hint" style="margin-top:4px">비워 두면 시험지에 적힌 이름을 읽어 오고, 없으면 "시험 분석"으로 나옵니다. 분석이 끝난 뒤에도 결과 위쪽의 "시험 정보 수정"에서 바꿀 수 있어요.</div>
+    <div class="row" style="margin-top:12px">
       <button class="btn" id="run" type="button" disabled>시험 분석하기</button>
       <button class="btn sec" id="demo" type="button">예시 보기 (신갈고 2026-2 중간)</button>
       <button class="btn sec" id="loadJson" type="button">분석 JSON 불러오기</button>
@@ -571,7 +576,7 @@ const rangesText = nums => {   // [1,2,3,4,6] → "1~4, 6"
 function normalizeData(raw){
   const d = {exam:{}, problems:[], style:{}, overall:{}};
   const ex = raw.exam || {};
-  const cl = t => String(t == null ? '' : t).replace(/\s*[（(]\s*2022\s*개정\s*[）)]/g, '').trim();
+  const cl = t => { const s = String(t == null ? '' : t).replace(/\s*[（(]\s*2022\s*개정\s*[）)]/g, '').trim(); return /판단\s*불가|미기재|알\s*수\s*없|불명|확인\s*불가/.test(s) ? '' : s; };
   d.exam = {school:cl(ex.school), year:cl(ex.year), term:cl(ex.term), grade:cl(ex.grade), subject:cl(ex.subject), note:ex.note||'', totalPoints:+ex.totalPoints||0};
   d.problems = (raw.problems || []).map((p, i) => {
     const rate = (p.expectedCorrectRate != null ? p.expectedCorrectRate : p.rate);
@@ -775,18 +780,50 @@ async function callGet(params){
 const LIB_VER = 2;
 const htmlToText = html => { const d = document.createElement('div'); d.innerHTML = String(html).replace(/<img[^>]*>/gi, ' [그림] ').replace(/<\/(p|div)>/gi, ' '); return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
 const catOf = fn => { const m = fn.match(/^\[([^\]]+)\]/); return m ? m[1] : '공통'; };
+/* 직접 만든 동형모의고사·서술형 SET: 교재목록에 문항 데이터가 비어 있고 문제 내용은 hwpx 안의 Contents/mock.json 에 있다 */
+const isMockFile = f => /동형\s*모의고사|서술형\s*SET/.test(f.filename || '');
+const MOCK_CAT = '직접 제작(동형·서술형)';
+const libCatOf = f => isMockFile(f) ? MOCK_CAT : catOf(f.filename);
+const hasQ = f => { let q = []; try { q = JSON.parse(f.questionData || '[]'); } catch(e){} return q.length > 0; };
 const b64ToBuf = b64 => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
+/* 파일 하나를 내려받아 문항 행으로 바꾼다. 가상 시험지(mock.json)면 그 안의 문항을, 아니면 hwpx 본문에서 문항을 읽는다. */
+async function importLibFile(f){
+  const json = await callGet({action: 'download', id: f.id});
+  const zip = await JSZip.loadAsync(b64ToBuf(json.file.data));
+  const rows = [];
+  const mj = zip.file('Contents/mock.json');
+  if (mj) {
+    const mock = JSON.parse(await mj.async('string'));
+    const items = Array.isArray(mock) ? mock : (mock.items || mock.problems || []);
+    items.forEach((it, k) => {
+      const text = htmlToText(it.stemHtml || it.stem || '');
+      const n = Number(it.num != null ? it.num : k + 1);
+      if (text.length > 15) rows.push({key: f.id + '#' + n, fileId: f.id, filename: f.filename.replace(/\.hwpx?$/i, ''), num: n, text: text.slice(0, 1200)});
+    });
+    return rows;
+  }
+  if (typeof parseHwpx !== 'function') throw new Error('hwpx-lib.js 없음');
+  const entry = await parseHwpx(zip);
+  for (const [n, m] of entry.markers) {
+    // 해설(정답·풀이)이 섞인 원문 대신, 사이트가 문제 미리보기에 쓰는 변환 결과(지문+선택지, 수식은 LaTeX)를 쓴다
+    let text = '';
+    try { text = htmlToText(await hwpBodyXmlToHtml(m.blockXml, entry)); }
+    catch(err) { text = ''; }
+    if (text.length > 15) rows.push({key: f.id + '#' + n, fileId: f.id, filename: f.filename.replace(/\.hwpx?$/i, ''), num: Number(n), text: text.slice(0, 1200)});
+  }
+  return rows;
+}
 let libFiles = [], libStopFlag = false;
 $('#libList').addEventListener('click', async () => {
   const msg = $('#libMsg'); msg.className = 'msg'; msg.textContent = '목록 불러오는 중...';
   try {
     const {files} = await callGet({action: 'list'});
-    libFiles = (files || []).filter(f => { let q = []; try { q = JSON.parse(f.questionData || '[]'); } catch(e){} return q.length > 0; });
+    libFiles = (files || []).filter(f => hasQ(f) || isMockFile(f));
     const meta = await idb.all('meta'); const done = new Set(meta.map(m => m.id + '|' + m.uploadedAt + '|' + (m.ver || 1)));
     const groups = new Map();
-    libFiles.forEach(f => { const c = catOf(f.filename); if (!groups.has(c)) groups.set(c, {n: 0, todo: 0}); const g = groups.get(c); g.n++; if (!done.has(f.id + '|' + f.uploadedAt + '|' + LIB_VER)) g.todo++; });
+    libFiles.forEach(f => { const c = libCatOf(f); if (!groups.has(c)) groups.set(c, {n: 0, todo: 0}); const g = groups.get(c); g.n++; if (!done.has(f.id + '|' + f.uploadedAt + '|' + LIB_VER)) g.todo++; });
     const box = $('#libCats'); box.innerHTML = '';
-    const skip = new Set(['PRISM', 'TEST']);
+    const skip = new Set(['PRISM', 'TEST']);   // 직접 제작 묶음은 기본으로 체크된다
     [...groups.entries()].sort((a, b) => b[1].n - a[1].n).forEach(([c, g]) => {
       const lab = H('label', {}, [H('input', {type: 'checkbox', 'data-cat': c, checked: !skip.has(c) && g.todo > 0}), `${c} (${g.n}개${g.todo ? '' : ' · 완료'}${g.todo && g.todo !== g.n ? ' · 새로 ' + g.todo : ''})`]);
       box.append(lab);
@@ -801,7 +838,7 @@ $('#libSync').addEventListener('click', async () => {
   if (typeof parseHwpx !== 'function') { $('#libMsg').className = 'msg err'; $('#libMsg').textContent = 'hwpx-lib.js를 불러오지 못했어요 (사이트 폴더에서 열어야 합니다).'; return; }
   const cats = new Set([...document.querySelectorAll('#libCats input:checked')].map(i => i.dataset.cat));
   const meta = await idb.all('meta'); const done = new Set(meta.map(m => m.id + '|' + m.uploadedAt + '|' + (m.ver || 1)));
-  const todo = libFiles.filter(f => cats.has(catOf(f.filename)) && !done.has(f.id + '|' + f.uploadedAt + '|' + LIB_VER));
+  const todo = libFiles.filter(f => cats.has(libCatOf(f)) && !done.has(f.id + '|' + f.uploadedAt + '|' + LIB_VER));
   const msg = $('#libMsg'), bar = $('#libBar'); libStopFlag = false;
   if (!todo.length) { msg.className = 'msg ok'; msg.textContent = '새로 가져올 파일이 없어요.'; return; }
   $('#libSync').disabled = true; $('#libStop').hidden = false; bar.hidden = false;
@@ -812,17 +849,7 @@ $('#libSync').addEventListener('click', async () => {
     msg.className = 'msg'; msg.textContent = `(${i + 1}/${todo.length}) ${f.filename} 가져오는 중...`;
     bar.firstElementChild.style.width = (i / todo.length * 100) + '%';
     try {
-      const json = await callGet({action: 'download', id: f.id});
-      const zip = await JSZip.loadAsync(b64ToBuf(json.file.data));
-      const entry = await parseHwpx(zip);
-      const rows = [];
-      for (const [n, m] of entry.markers) {
-        // 해설(정답·풀이)이 섞인 원문 대신, 사이트가 문제 미리보기에 쓰는 변환 결과(지문+선택지, 수식은 LaTeX)를 쓴다
-        let text = '';
-        try { text = htmlToText(await hwpBodyXmlToHtml(m.blockXml, entry)); }
-        catch(err) { text = ''; }
-        if (text.length > 15) rows.push({key: f.id + '#' + n, fileId: f.id, filename: f.filename.replace(/\.hwpx?$/i, ''), num: Number(n), text: text.slice(0, 1200)});
-      }
+      const rows = await importLibFile(f);
       await idb.putMany('problems', rows);
       await idb.putMany('meta', [{id: f.id, uploadedAt: f.uploadedAt, n: rows.length, ver: LIB_VER}]);
       ok++;
@@ -1169,7 +1196,7 @@ function sourceBlocks(){
     const a = P.filter(p => p.sourceType === s.key), pts = a.reduce((x, p) => x + p.points, 0), r = a.reduce((x, p) => x + p.points * p.rate, 0) / (pts || 1);
     return H('div', {class: 'un-row'}, [H('span', {class: 'un-l', text: s.key}), H('div', {class: 'un-tr'}, [H('i', {style: `width:${r * 100}%;background:${s.color}`})]), H('span', {class: 'un-n', text: `${a.length}문항 · ${num1(pts)}점`}), H('span', {class: 'un-r ' + (r < .3 ? 'lo' : r < .6 ? 'mid' : 'hi'), text: pct(r) + '%'})]);
   });
-  const trs = P.filter(p => p.sourceType !== '교과서·EBS·시중교재' && p.sourceDetail).sort((a, b) => b.difficulty - a.difficulty || a.num - b.num).slice(0, 8);
+  const trs = P.filter(p => p.sourceType !== '교과서·EBS·시중교재' && p.sourceDetail && p.sourceConfidence !== '낮음').sort((a, b) => b.difficulty - a.difficulty || a.num - b.num).slice(0, 8);
   return [
     cd('출처 구성', [legendEl(SRC.map(s => ({label: s.key, color: s.color}))), chartStack([{label: '문항 수', parts, fmt: v => v + '개'}, {label: '배점', parts: ptsParts, fmt: v => num1(v) + '점'}])]),
     cd('출처별 예상 정답률', [H('div', {class: 'un'}, rows), H('p', {class: 'cap', text: '막대 길이 = 그 출처 문항들의 배점가중 예상 정답률. 어떤 출처가 학생들을 가장 힘들게 했는지 보여줘요.'})]),
@@ -1177,7 +1204,7 @@ function sourceBlocks(){
       H('thead', {}, [H('tr', {}, ['번호', '출처', '근거 · 변형', '신뢰도'].map(t => H('th', {text: t})))]),
       H('tbody', {}, trs.map(p => H('tr', {}, [H('td', {class: 'nw', text: p.num + '번'}), H('td', {class: 'nw'}, [H('span', {class: 'dot', style: `background:${(SRC.find(s => s.key === p.sourceType) || {}).color}`}), p.sourceType]), H('td', {text: p.sourceDetail + (p.variation ? ' → ' + p.variation : '')}), H('td', {class: 'nw', text: p.sourceConfidence})]))),
     ])]) : null,
-    H('p', {class: 'cap', text: '※ 출처는 문제 구조·표현을 근거로 한 추정입니다. 신뢰도가 낮은 항목은 참고용으로만 보세요.'}),
+    H('p', {class: 'cap', text: '※ 출처는 문제 구조·표현을 근거로 한 추정입니다. 신뢰도가 "낮음"인 항목은 이 표에서 뺐습니다.'}),
   ];
 }
 
@@ -1280,7 +1307,7 @@ function killerBlock(p){
     ['WHY', '왜 킬러인가', brief(p.killerWhy, 90), '#C64E71'],
     ['IDEA', '핵심 아이디어', brief(p.keyIdea, 60), '#3E8F79'],
     ['TRAP', '함정', brief(p.traps, 90), '#A8853F'],
-    ['SOURCE', '출처 · 변형', (p.sourceType + (p.sourceDetail ? ' — ' + p.sourceDetail : '') + (p.variation ? ' → ' + p.variation : '')), '#7088B5'],
+    ['SOURCE', '출처 · 변형', (p.sourceType === '판단 불가' ? '' : p.sourceType + (p.sourceDetail && p.sourceConfidence !== '낮음' ? ' — ' + p.sourceDetail : '') + (p.variation && p.sourceConfidence !== '낮음' ? ' → ' + p.variation : '')), '#7088B5'],
     ['PREP', '대비법', brief(p.prep, 90), '#3E8F79'],
   ].filter(n => n[2]);
   const stem = H('div', {class: 'kb-stem'}, [
@@ -1555,6 +1582,7 @@ function buildBar(){
     mkb('선택 페이지 이미지로 저장', b => exportImages(b)),
     mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())),
     mkb('인쇄', () => window.print()),
+    mkb('✏️ 글자 편집', b => toggleEdit(b)),
     H('div', {class: 'bgsel', title: '바탕 색'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => {
       const sw = H('button', {class: 'sw' + (DECK.bg === b.key ? ' on' : ''), type: 'button', title: b.label, 'data-bg': b.key, style: `background:${b.bg}`});
       sw.addEventListener('click', () => {
@@ -1583,8 +1611,30 @@ async function ensureFonts(){
   try { await Promise.race([Promise.all(specs.map(s => document.fonts.load(s, '가나다라마 시험 분석 1234 ABC abc'))), t]); } catch(_){}
 }
 let RENDER_TOKEN = 0;
+/* 시험 정보(학교명 등) 수정 + 글자 편집 모드 */
+function buildInfoEditor(){
+  const e = STATE.data.exam;
+  const fields = [['school', '학교명'], ['year', '학년도'], ['term', '시험명'], ['grade', '학년'], ['subject', '과목']];
+  const wrap = H('details', {class: 'fold noprint infoEd'}, [H('summary', {text: '시험 정보 수정 (학교명·시험명 등 — 바꾸면 분석서 표지·머리글에 바로 반영돼요)'})]);
+  wrap.append(H('div', {class: 'row', style: 'margin-top:10px'}, fields.map(([k, lb]) => {
+    const inp = H('input', {type: 'text', value: e[k] || '', placeholder: lb, autocomplete: 'off'});
+    inp.addEventListener('change', () => { STATE.data.exam[k] = inp.value.trim(); scheduleHistSave(); renderReport(true); });
+    return H('label', {class: 'f', style: 'flex:1;min-width:130px'}, [lb, inp]);
+  })));
+  if (!e.school) wrap.open = true;
+  return wrap;
+}
+function toggleEdit(b){
+  if (!document.getElementById('editCss')) { const s = document.createElement('style'); s.id = 'editCss'; s.textContent = '.stage.editing{outline:2px dashed #C79B63;outline-offset:6px}.stage.editing *{cursor:text}.stage.editing [contenteditable]:focus{outline:none}'; document.head.appendChild(s); }
+  DECK.editing = !DECK.editing;
+  DECK.stage.setAttribute('contenteditable', DECK.editing ? 'true' : 'false'); DECK.stage.spellcheck = false;
+  DECK.stage.classList.toggle('editing', DECK.editing);
+  b.textContent = DECK.editing ? '✏️ 편집 끝내기' : '✏️ 글자 편집';
+  dkMsg(DECK.editing ? '분석서의 글자를 눌러 바로 고칠 수 있어요. 고친 내용은 PDF·이미지 저장에 그대로 들어가요. (화면 비율을 바꾸거나 정보 수정을 누르면 처음 글로 돌아가니, 저장 직전에 고치세요.)' : '');
+}
 async function renderReport(keepScroll){
   if (!STATE.data) return;
+  DECK.editing = false;
   PH = ratioOf(DECK.ratio).h;
   let pgs = document.getElementById('pgSize'); if (!pgs) { pgs = document.createElement('style'); pgs.id = 'pgSize'; document.head.appendChild(pgs); }
   pgs.textContent = '@page{size:210mm ' + mmOf(PH) + 'mm;margin:0}';
@@ -1611,6 +1661,7 @@ async function renderReport(keepScroll){
   DECK.sel = (prevN === DECK.pages.length && prevSel && prevSel.size) ? prevSel : new Set([...Array(DECK.pages.length).keys()]);
   const bar = buildBar();
   root.insertBefore(bar, stageHost); if (warn) root.insertBefore(warn, bar);
+  root.insertBefore(buildInfoEditor(), stageHost);
   root.append(buildPredTools()); root.append(renderKit());
   syncSel(); layoutDeck(); updateNav();
   scheduleHistSave();
@@ -1869,9 +1920,11 @@ $('#run').addEventListener('click', async () => {
     const model = ms.value;
     const {json, usage} = await callClaude({system: SYSTEM, content, schema: SCHEMA, model, onText: n => set(Math.min(94, 26 + n / 300), `분석 결과를 받는 중... (${n.toLocaleString()}자)`)});
     json.actual = {mean: STATE.actual.mean, c1: STATE.actual.c1, c2: STATE.actual.c2};
+    { const sc = $('#inSchool').value.trim(), tm = $('#inTerm').value.trim(); json.exam = json.exam || {}; if (sc) json.exam.school = sc; if (tm) json.exam.term = tm; }   // 직접 적은 학교명·시험명이 우선
     set(100, '완료!');
     STATE.srcMap = srcMap; STATE.tiles = tilesKeep; STATE.pdfB64 = pdfKeep;
     setData(json, {cost: costOf(model, usage), keepSrc: true});
+    $('#inSchool').value = ''; $('#inTerm').value = '';   // 다음 시험에 이전 학교명이 따라가지 않도록 비운다
     m.className = 'msg ok'; m.textContent = `분석 완료 · ${json.problems.length}문항`;
   } catch(e){
     m.className = 'msg err'; m.textContent = explainError(e);
@@ -2174,7 +2227,32 @@ $('#jsonFile').addEventListener('change', async e => {
 });
 
 window.__EA = {STATE, LIB, PDF, matchOne, featsOf, simulate, scoreStats, fitToActual, normalizeData, callGet, b64ToBuf, pdfToTiles};
-libReload();
+/* 직접 만든 동형모의고사·서술형 SET은 새 파일이 올라오면 페이지를 열 때 자동으로 라이브러리에 넣는다 */
+async function autoSyncMocks(){
+  const msg = $('#libMsg');
+  try {
+    if (typeof JSZip === 'undefined') return;
+    const {files} = await callGet({action: 'list'});
+    const mocks = (files || []).filter(isMockFile);
+    const meta = await idb.all('meta'); const done = new Set(meta.map(m => m.id + '|' + m.uploadedAt + '|' + (m.ver || 1)));
+    const todo = mocks.filter(f => !done.has(f.id + '|' + f.uploadedAt + '|' + LIB_VER));
+    if (!todo.length) return;
+    let ok = 0;
+    for (let i = 0; i < todo.length; i++) {
+      msg.className = 'msg'; msg.textContent = `직접 만든 모의고사 자동 추가 중... (${i + 1}/${todo.length}) ${todo[i].filename}`;
+      try {
+        const rows = await importLibFile(todo[i]);
+        await idb.putMany('problems', rows);
+        await idb.putMany('meta', [{id: todo[i].id, uploadedAt: todo[i].uploadedAt, n: rows.length, ver: LIB_VER}]);
+        ok++;
+      } catch(e){ console.warn('auto sync fail', todo[i].filename, e); }
+    }
+    await libReload();
+    msg.className = 'msg ok'; msg.textContent = `직접 만든 동형모의고사·서술형 ${ok}개를 라이브러리에 자동으로 추가했어요.`;
+    if (STATE.data) renderReport(true);
+  } catch(e){ console.warn('auto sync skip', e); }
+}
+libReload().then(() => setTimeout(autoSyncMocks, 600));
 /* ---- 지난 분석 이력 (이 브라우저에 저장) ---- */
 const HDB = {
   open(){ return this._p || (this._p = new Promise((res, rej) => { const r = indexedDB.open('mathy_exam_history', 1); r.onupgradeneeded = () => r.result.createObjectStore('h', {keyPath: 'id'}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
