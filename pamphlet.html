@@ -301,7 +301,7 @@ function save(){shareSave();if(window.Hist)Hist.touch();try{localStorage.setItem
 var $=function(s){return document.querySelector(s)};
 var DEF_PH=[
  {n:'브릿지 과정',sub:'12/2 대개강 · 8회차 + 12/30 반편성고사',s:'2026-12-02',e:'2026-12-31',c:'#C79B63',t:'12월 2일(수) 대개강. 중등 핵심을 공통수학1·2와 연결해 정리하고, 12월 30일 반편성고사로 마무리합니다.'},
- {n:'공통수학1 8주 완성 (정규)',sub:'정규반 전원 · 15회차',s:'2027-01-04',e:'2027-02-26',c:'#3E8F79',x:'월·수 수업 15회(15회차 3/3) · MATHY FRIDAY 7회 (2/5 휴강 제외)',t:''},
+ {n:'공통수학1 8주 완성 (정규)',sub:'정규반 전원 · 15회차',s:'2027-01-04',e:'2027-02-26',c:'#3E8F79',x:'월·수 수업 15회 · MATHY FRIDAY 7회 (2/5 휴강 제외)',t:''},
  {n:'공통수학2 특강',sub:'18회차 · 월·수·금 2~4시 · S필수 A선택',s:'2027-01-11',e:'2027-02-26',c:'#E0872B',sp:1,x:'월·수·금 특강 18회 (2/5 · 2/8 · 2/10 휴강 제외)',t:''},
  {n:'1학기 중간고사 내신 대비',sub:'3/1 ~ 4/28 · 약 8주',s:'2027-03-01',e:'2027-04-28',c:'#D0587A',t:'학교별 기출 분석과 변형 문제로 첫 시험을 대비합니다. (시험 기간은 올해 기준 예시 · 변경될 수 있음)'},
  {n:'6모 대비 + 기말 대비',sub:'4/29 ~ 5월',s:'2027-04-29',e:'2027-05-23',c:'#6C86B8',t:'학평(6월)을 대비하며 기말 범위를 미리 정리합니다.'},
@@ -318,10 +318,11 @@ var PANEX=[[EXK[0]],[EXK[1]],[EXK[2],EXK[3]]];
 function exTable(rows){return'<div class="sth">보갈천 학교 시험<small>올해 일정 기준 예시 · 확정되면 변경될 수 있어요</small></div><table class="st"><thead><tr><th></th>'+SCH.map(function(s,si){return'<th style="background:'+SCOL[si]+'">'+s+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(k){return'<tr><td class="l">'+k[1]+'</td>'+SCH.map(function(s){return'<td class="e" contenteditable="true" spellcheck="false" data-s="'+s+'" data-k="'+k[0]+'">'+esc(ST.ex[s][k[0]]||'')+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'}
 var DEF_PY=[{d:'2027-03-24',n:'3월'},{d:'2027-06-02',n:'6월'},{d:'2027-08-25',n:'8월'},{d:'2027-10-19',n:'10월'}];
 /* 공휴일(월력요항 기준, 2027 노동절·제헌절 공휴일 포함) — 휴강 여부는 칸에서 끌 수 있음 */
-var DEF_HOL=[['2026-12-25','성탄절'],['2027-01-01','신정'],['2027-02-05','설 연휴'],['2027-02-06','설 연휴'],['2027-02-07','설날'],['2027-02-08','설 연휴'],['2027-02-09','설 대체공휴일'],['2027-02-10','설 연휴 휴강'],
+var DEF_HOL=[['2026-12-25','성탄절'],['2027-01-01','신정'],['2027-02-05','설 연휴'],['2027-02-06','설 연휴'],['2027-02-07','설날'],['2027-02-08','설 연휴'],['2027-02-09','설 대체공휴일'],
  ['2027-03-01','삼일절'],['2027-05-01','노동절'],['2027-05-03','노동절 대체'],['2027-05-05','어린이날'],['2027-05-13','부처님오신날'],['2027-06-06','현충일'],
  ['2027-07-17','제헌절'],['2027-07-19','제헌절 대체'],['2027-08-15','광복절'],['2027-08-16','광복절 대체'],['2027-09-14','추석 연휴'],['2027-09-15','추석'],['2027-09-16','추석 연휴'],
  ['2027-10-03','개천절'],['2027-10-04','개천절 대체'],['2027-10-09','한글날'],['2027-10-11','한글날 대체'],['2027-12-25','성탄절'],['2027-12-27','성탄절 대체']].map(function(a){return{d:a[0],n:a[1],off:true}});
+DEF_HOL.push({d:'2027-02-10',n:'공수2 특강 휴강',off:true,spo:1});
 ST.ph=ST.ph||DEF_PH;if(ST.ph[0]&&ST.ph[0].sub==='중등과 고등을 잇는 4주'&&ST.ph[0].s==='2026-12-01')ST.ph[0]=JSON.parse(JSON.stringify(DEF_PH[0]));ST.ev=ST.ev||[{d:'2026-12-30',n:'반편성고사'}]; if(!ST.ph2){var _k=ST.ph.findIndex(function(p){return p&&p.n==='공통수학1 + 공통수학2 특강'});if(_k>=0)ST.ph.splice(_k,1,JSON.parse(JSON.stringify(DEF_PH[1])),JSON.parse(JSON.stringify(DEF_PH[2])));ST.ph2=1}
 if(!ST.ev2){ST.ev=ST.ev||[];[['2027-01-04','공수1 개강'],['2027-01-11','공수2 특강 개강'],['2027-01-29','승급시험'],['2027-02-26','반편성고사']].forEach(function(a){if(!ST.ev.some(function(x){return x.d===a[0]}))ST.ev.push({d:a[0],n:a[1]})});ST.ev.sort(function(a,b){return(a.d||'9999')<(b.d||'9999')?-1:1});ST.ev2=1}
 if(!ST.ph3){ST.ph.forEach(function(p){if(!p)return;var d;
@@ -334,6 +335,8 @@ if(!ST.ev4){ST.ev=ST.ev||[];[['2027-02-03','설연휴 과제 배부'],['2027-02-
 if(!ST.ev5){var RN={'2027-01-04':['공통수학1 개강','공수1 개강'],'2027-01-11':['공통수학2 특강 개강','공수2 특강 개강'],'2027-01-29':['S반 승급시험','승급시험'],'2027-02-26':['내신 반편성고사','반편성고사'],'2027-02-03':['설연휴 특별과제 배부','설연휴 과제 배부'],'2027-02-12':['REHEARSAL 모의고사 60제','REHEARSAL 모의'],'2027-02-20':['신갈고 진단평가(25년 일정)','신갈고 진단평가(25년)']};(ST.ev||[]).forEach(function(x){var r=RN[x.d];if(r&&x.n===r[0])x.n=r[1]});ST.ev5=1}
 if(!ST.ph5){ST.ph.forEach(function(p){if(p&&p.n==='공통수학2 특강'){p.sp=1;if(p.c==='#2F7F9F')p.c='#E0872B'}});ST.ph5=1}
 if(!ST.ph4){ST.ph.forEach(function(p){if(!p)return;if(p.n==='공통수학1 8주 완성 (정규)'){p.sub=DEF_PH[1].sub;p.t=''}else if(p.n==='공통수학2 특강'){p.sub=DEF_PH[2].sub;p.t=''}});ST.ph4=1}
+if(!ST.ph6){ST.ph.forEach(function(p){if(p&&p.n==='공통수학1 8주 완성 (정규)'&&/15회차 3\/3/.test(p.x||''))p.x=DEF_PH[1].x});ST.ph6=1}
+if(!ST.hol4&&ST.hol){var _h=ST.hol.filter(function(h){return h.d==='2027-02-10'})[0];if(_h){_h.n='공수2 특강 휴강';_h.spo=1}else ST.hol.push({d:'2027-02-10',n:'공수2 특강 휴강',off:true,spo:1});ST.hol4=1}
 if(!ST.hol3&&ST.hol){if(!ST.hol.some(function(h){return h.d==='2027-02-10'}))ST.hol.push({d:'2027-02-10',n:'설 연휴 휴강',off:true});ST.hol3=1}
  ST.ex=ST.ex||{}; ST.py=ST.py||DEF_PY; ST.hol=ST.hol||DEF_HOL; ST.imgs=ST.imgs||[]; ST.theme=ST.theme||{name:'navy',c:null}; ST.font=ST.font||{h:0,b:8}; ST.paper=ST.paper||'a3'; ST.kit=ST.kit||{};
 SCH.forEach(function(s){ST.ex[s]=ST.ex[s]||{}});
@@ -374,16 +377,16 @@ var SN={'공통수학1 8주 완성 (정규)':'공통수학1 8주 완성(정규)'
 function examsOn(){var map={};SCH.forEach(function(s,si){EXK.forEach(function(k){parseRange(ST.ex[s][k[0]],k[0]).forEach(function(d){(map[key(d)]=map[key(d)]||[]).push(si)})})});return map}
 function holMap(){var m={};ST.hol.forEach(function(h){if(h.d&&/^\d{4}-\d{1,2}-\d{1,2}$/.test(h.d))m[key(P(h.d))]=h});return m}
 var EVK={};var WD=['월','화','수','목','금','토','일'],HW=['일','월','화','수','목','금','토'];
-function cnt(p,hm){var c=0,f=0,off=0;for(var d=P(p.s),e=P(p.e);d<=e;d.setDate(d.getDate()+1)){var w=d.getDay(),h=hm[key(d)],o=h&&h.off!==false;if(w===1||w===3){if(o)off++;else c++}else if(w===5){if(o)off++;else f++}}return{c:c,f:f,off:off}}
+function cnt(p,hm){var c=0,f=0,off=0;for(var d=P(p.s),e=P(p.e);d<=e;d.setDate(d.getDate()+1)){var w=d.getDay(),h=hm[key(d)],o=h&&h.off!==false&&!h.spo;if(w===1||w===3){if(o)off++;else c++}else if(w===5){if(o)off++;else f++}}return{c:c,f:f,off:off}}
 function offs(hm){var out=[];for(var d=new Date(2026,11,1);d<=new Date(2027,11,31);d.setDate(d.getDate()+1)){var h=hm[key(d)];if(!h||h.off===false)continue;var w=d.getDay();if((w===1||w===3||w===5)&&phaseOf(d))out.push({d:new Date(d),h:h})}return out}
 function monthHtml(y,m,exm,pyk,hm){
  var first=new Date(y,m-1,1),last=new Date(y,m,0).getDate(),off=(first.getDay()+6)%7,rows=Math.ceil((off+last)/7);
  var names=[];ST.ph.forEach(function(p){var a=P(p.s),b=P(p.e);if(a<=new Date(y,m,0)&&b>=first){var nm=p.sn||SN[p.n]||p.n;if(names.indexOf(nm)<0)names.push(nm)}});
  var h='<div class="mo"><div class="mh"><b>'+m+'월</b><small>'+y+'</small><em>'+names.join(' · ')+'</em></div><table class="cl"><thead><tr>'+WD.map(function(w,i){return'<th'+(i===0||i===2?' class="cw"':'')+'>'+w+'</th>'}).join('')+'</tr></thead><tbody>';
  for(var r=0;r<rows;r++){h+='<tr>';for(var c=0;c<7;c++){var dn=r*7+c-off+1;if(dn<1||dn>last){h+='<td></td>';continue}
-   var d=new Date(y,m-1,dn),ph=phaseOf(d),k=key(d),cls='',style='',inner='<b>'+dn+'</b>',hd=hm[k],ho=hd&&hd.off!==false;
+   var d=new Date(y,m-1,dn),ph=phaseOf(d),k=key(d),cls='',style='',inner='<b>'+dn+'</b>',hd=hm[k],ho=hd&&hd.off!==false&&!hd.spo;
    if(c>=5)cls+=' wkd';
-   if(hd)cls+=' hol';
+   if(hd&&!hd.spo)cls+=' hol';
    if(ph&&(c===0||c===2)){cls+=' cd';style='background:'+mix(ph.c,.74)+';--c:'+ph.c;if(ho)inner+='<span class="hk">휴</span>'}
    else if(ph&&c===4){style='--c:'+ph.c;inner+=ho?'<span class="hk">휴</span>':'<span class="cn"></span>'}
    var sp=spOf(d,hm);
