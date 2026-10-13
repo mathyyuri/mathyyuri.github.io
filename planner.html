@@ -379,6 +379,27 @@ return{mount:mount,apply:apply,fmtNum:fmtNum}
 })();
 </script>
 <script>
+window.Move=(function(){
+ var cfg={},on=false,selEl=null,drag=null;
+ function pp(pg){var s=pg.getBoundingClientRect().width/pg.offsetWidth;return cfg.unit==='mm'?s*3.7795:s}
+ function keyOf(el){var pg=el.closest(cfg.page);if(!pg)return null;return cfg.pkey(pg)+'#'+[].indexOf.call(pg.querySelectorAll(cfg.sel),el)}
+ function put(el,o){el.style.position='relative';el.style.left=o[0]+cfg.unit;el.style.top=o[1]+cfg.unit;el.dataset.mvd='1'}
+ function apply(){if(!cfg.get)return;var st=cfg.get();document.querySelectorAll(cfg.page).forEach(function(pg){var k0=cfg.pkey(pg);[].forEach.call(pg.querySelectorAll(cfg.sel),function(el,i){var o=st[k0+'#'+i];
+  if(o)put(el,o);else if(el.dataset.mvd){el.style.left='';el.style.top='';el.style.position='';delete el.dataset.mvd}})})}
+ function mark(){document.querySelectorAll('.mvsel').forEach(function(x){x.classList.remove('mvsel')});if(selEl)selEl.classList.add('mvsel')}
+ function init(c){cfg=c;var s=document.createElement('style');s.textContent='.mvmode :is('+c.sel+'){outline:2px dashed #3a7bd5!important;outline-offset:-2px;cursor:move}.mvmode .mvsel{outline-color:#e23!important;background-image:linear-gradient(rgba(58,123,213,.08),rgba(58,123,213,.08))}.mvmode .ed,.mvmode td[contenteditable]{pointer-events:none}.cap :is('+c.sel+'){outline:none!important}.cap .mvsel{background-image:none!important}';document.head.appendChild(s);
+  document.addEventListener('pointerdown',function(e){if(!on)return;var el=e.target.closest&&e.target.closest(c.sel);if(!el||!el.closest(c.page))return;e.preventDefault();var k=keyOf(el),st=c.get();selEl=el;mark();
+   drag={el:el,k:k,x:e.clientX,y:e.clientY,o:(st[k]||[0,0]).slice(),p:pp(el.closest(c.page))}},true);
+  document.addEventListener('pointermove',function(e){if(!drag)return;var q=c.unit==='mm'?2:1,r=function(v){return Math.round(v*q)/q},o=[r(drag.o[0]+(e.clientX-drag.x)/drag.p),r(drag.o[1]+(e.clientY-drag.y)/drag.p)];c.get()[drag.k]=o;put(drag.el,o)});
+  document.addEventListener('pointerup',function(){if(drag){drag=null;c.save()}});
+  document.addEventListener('keydown',function(e){if(!on||!selEl)return;var t=e.target;if(t.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(t.tagName))return;var st=c.unit==='mm'?.5:1,d={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key];if(!d)return;e.preventDefault();
+   var k=keyOf(selEl),m=c.get(),o=(m[k]||[0,0]).slice();o=[o[0]+d[0],o[1]+d[1]];m[k]=o;put(selEl,o);c.save()})}
+ function toggle(btn){on=!on;document.body.classList.toggle('mvmode',on);if(!on){selEl=null;mark()}if(btn){btn.classList.toggle('on',on);btn.textContent=on?'박스 위치 조절 끝내기':'박스 위치 조절'}}
+ function reset(){if(!confirm('옮긴 박스를 모두 처음 자리로 되돌릴까요?'))return;var st=cfg.get();Object.keys(st).forEach(function(k){delete st[k]});apply();cfg.save()}
+ return{init:init,apply:apply,toggle:toggle,reset:reset}
+})();
+</script>
+<script>
 (function(){
 'use strict';
 const $ = (s, r=document) => r.querySelector(s);
@@ -1065,7 +1086,7 @@ function render(keep){
   const fitAll = () => D.pages.forEach(pg => fitPage(pg.rp));
   fitAll(); (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { fitAll(); updateNav(); });
   if (!D.sel.size || D.sel.size > D.pages.length || ![...D.sel].every(i => i < D.pages.length)) D.sel = new Set(D.pages.map((_, i) => i));
-  syncSel(); updateNav(); renderPlanBar(); updatePubCount(); loadPublished(); if (window.Kit) Kit.apply();
+  syncSel(); updateNav(); renderPlanBar(); updatePubCount(); loadPublished(); if (window.Kit) Kit.apply(); if (window.Move) Move.apply();
   if (keep) scrollTo(0, y);
 }
 function updatePubCount(){ const p = cur(), n = D.pages.filter(pg => p.pub && p.pub[pg.key]).length, el = $('#pubCnt'); if (el) el.textContent = n ? `공개 선택 ${n}쪽` : ''; }
@@ -1176,7 +1197,7 @@ function buildBar(){
   const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
   const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
   const zoomSel = H('div', {class: 'zoomsel'}, [H('span', {class: 'lbl', text: '확대'}), mkb('−', () => stepZoom(-1)), H('span', {class: 'zl', id: 'zoomLbl'}), mkb('＋', () => stepZoom(1)), mkb('화면에 맞춤', () => setZoom(1))]);
-  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('🖼 이미지 넣기 (지금 페이지)', () => addImage(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('🖼 이미지 넣기 (지금 페이지)', () => addImage(curIndex())), mkb(document.body.classList.contains('mvmode') ? '박스 위치 조절 끝내기' : '박스 위치 조절', b => Move.toggle(b)), mkb('위치 처음대로', () => Move.reset()), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
   return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'}), dsgEl()]);
 }
@@ -1548,7 +1569,9 @@ document.addEventListener('keydown', e => {
 window.addEventListener('beforeprint', () => D.pages.forEach((pg, i) => pg.box.classList.toggle('skip', !D.sel.has(i))));
 window.addEventListener('afterprint', () => D.pages.forEach(pg => pg.box.classList.remove('skip')));
 
-initFmt(); initBtb(); load(); render(); autoNeis();
+initFmt(); initBtb(); load();
+Move.init({sel: '.cd,.mc,.side,.cal,.rm,.sec,.mh', page: '.rpage', pkey: pg => [...document.querySelectorAll('.rpage')].indexOf(pg), unit: 'px', get: () => (cur().mv = cur().mv || {}), save: () => save(true)});
+render(); autoNeis();
 (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => render(true));
 window.__PL = {DB: () => DB, D, render, cur};
 })();

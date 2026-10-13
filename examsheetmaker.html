@@ -81,14 +81,14 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
    둥근 모서리 + 옅은 그림자를 로고 칸 안쪽에 별도로 줌(표 테두리 자체는
    그대로 두고, 그 안에 카드 하나 더 넣는 방식). */
 .examHeadTable .ehLogo .logoCard{margin:1.5mm;padding:2mm;border-radius:3mm;background:var(--accent-soft);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.examHeadTable .ehLogo .wordmarkText{font-family:var(--serif);font-style:italic;font-weight:900;font-size:16px;color:var(--accent);line-height:1.25}
-.examHeadTable .ehLogo img{max-width:100%;max-height:16mm;display:block;margin:0 auto}
+.examHeadTable .ehLogo .wordmarkText{font-family:var(--serif);font-style:italic;font-weight:900;font-size:calc(16px*var(--logoS,1));color:var(--accent);line-height:1.25}
+.examHeadTable .ehLogo img{max-width:100%;max-height:calc(16mm*var(--logoS,1));display:block;margin:0 auto}
 .examSimpleHead{margin-top:8mm;padding-bottom:2mm;border-bottom:1.4px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
 /* "명조 두껍게" 요청 — 한글 명조체(Noto Serif KR) + 굵게. 문제 번호(아래
    .examQNum)와는 반대로 페이지 상단 쪽수는 두꺼워야 함. */
 .examSimpleHead .pageNo{font-family:var(--kserif);font-size:20px;font-weight:900}
 .examSimpleHead .wordmark{font-family:var(--serif);font-style:italic;font-weight:900;color:var(--accent)}
-.examSimpleHead .wordmark img{max-height:9mm;display:block}
+.examSimpleHead .wordmark img{max-height:calc(9mm*var(--logoS,1));display:block}
 /* top은 페이지 1(표 머리말)과 이후 페이지(간단 머리말)의 높이가 달라서
    고정할 수 없다 — JS가 페이지를 그릴 때 style.top으로 직접 넣어준다.
    bottom을 고정해서 칸이 항상 페이지 맨 아래까지 닿게 한다(구분선이
@@ -200,6 +200,9 @@ header a{font-size:12px;color:var(--gold);text-decoration:none}
     <input type="text" id="fQCountLabel" placeholder="자동 계산됨(수정 가능)">
     <label>로고/서명 이미지 (없으면 "Mathy Yuri" 글자로 표시)</label>
     <input type="file" id="logoFile" accept="image/*">
+    <label>로고 크기 <span id="logoSizeVal">100%</span></label>
+    <input type="range" id="logoSize" min="40" max="160" step="5" value="100">
+    <div style="display:flex;gap:6px;margin:4px 0 8px"><button type="button" id="logoPrevBtn" class="secondary">↶ 이전 로고로</button><button type="button" id="logoDefBtn" class="secondary">기본(글자 로고)로</button></div>
     <label>포인트 색깔</label>
     <select id="accentSelect">
       <option value="mint">민트</option>
@@ -266,8 +269,22 @@ document.getElementById('logoFile').addEventListener('change', (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => { logoDataUrl = reader.result; renderHeadFootOnly(); };
+  reader.onload = () => { logoPrevUrl = logoDataUrl; logoDataUrl = reader.result; renderHeadFootOnly(); };
   reader.readAsDataURL(file);
+});
+// 로고 크기 · 되돌리기
+let logoPrevUrl; // 방금 바꾸기 전 로고(undefined = 아직 없음, null = 글자 로고였음)
+document.getElementById('logoSize').addEventListener('input', (ev) => {
+  const v = +ev.target.value; document.documentElement.style.setProperty('--logoS', v / 100);
+  document.getElementById('logoSizeVal').textContent = v + '%';
+});
+document.getElementById('logoPrevBtn').addEventListener('click', () => {
+  if (logoPrevUrl === undefined) { alert('되돌릴 이전 로고가 없어요.'); return; }
+  const cur = logoDataUrl; logoDataUrl = logoPrevUrl; logoPrevUrl = cur; renderHeadFootOnly();
+});
+document.getElementById('logoDefBtn').addEventListener('click', () => {
+  if (logoDataUrl) logoPrevUrl = logoDataUrl; logoDataUrl = null;
+  const r = document.getElementById('logoSize'); r.value = 100; r.dispatchEvent(new Event('input')); renderHeadFootOnly();
 });
 
 // ---------- 포인트 색깔 ----------
