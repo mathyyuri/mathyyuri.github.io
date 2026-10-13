@@ -101,10 +101,11 @@ var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'�
  note:'※ 문제지 표지에 안내된 필적확인문구를 아래 「필적확인란」에 정자로 반드시 기재하여야 합니다.',
  inst:'※ 답안지 작성(표기)은 반드시 검은색 컴퓨터용 사인펜만을 사용하고, 연필 또는 샤프 등의 필기구를 절대 사용하지 마십시오.',
  sa:'단답형 답란<br>표 기 방 법',sa1:'십진법에 의하되, 반드시 자리에 맞추어 표기',sa2:'정답이 한 자리인 경우 일의 자리에만 표기하거나, 십의 자리에 0을 표기하고 일의 자리에 표기',
- mon:'감독관<br>확인',mon2:'서 명<br>또는 날인',mon3:'반, 번호 등의 표기가 정확한지 반드시 확인 후 서명 또는 날인',foot:'연습용 답안지',exam:'',
+ mon:'감독관<br>확인',mon2:'서 명<br>또는 날인',mon3:'반, 번호 등의 표기가 정확한지 반드시 확인 후 서명 또는 날인',foot:'MATHY YURI SYSTEM',exam:'',
  idl:'수 험 번 호',idl1:'학교',idl2:'반',idl3:'생일 (월·일)',idm:'월',idd:'일',nmt:'성 명',nmn:'세 글자 이름은 ①②③ 칸에 왼쪽부터 한 글자씩 크고 또렷하게 써 주세요 (④⑤ 칸은 이름이 네 글자 이상일 때만)'};
 var C=Object.assign({},DEF,ST.cfg||{});C.off=C.off||{};
 if(!C.v3){if(C.nd===2)C.nd=4;if(C.idl3==='번호')C.idl3=DEF.idl3;if(/^한 칸에 한 글자씩/.test(C.nmn||''))C.nmn=DEF.nmn;C.v3=1}
+if(C.foot==='연습용 답안지')C.foot=DEF.foot;
 var KEYV=ST.key||{};KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
 function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}if(window.Hist)Hist.touch()}
 function list(s){return String(s||'').split(/[,\n]+/).map(function(x){return x.trim()}).filter(Boolean).slice(0,10)}
@@ -113,9 +114,9 @@ var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];
 function layout(c){
  var off=c.off||{},O=function(g){return off[g]||[0,0]};
  var L={mc:[],sa:[],fr:[],grp:{}},R=Math.max(3,c.rows|0||9),n1=c.n1|0,n2=c.n2|0;
- var rp=9.2,hdr=8,bw=40,gap=3,bx0=96,nb=n1>0?Math.ceil(n1/R):0;
+ var rp=9.2,hdr=8,bw=41,gap=3,bx0=96,nb=n1>0?Math.ceil(n1/R):0;
  for(var b=0;b<nb;b++){var o=O('mc'+b),x0=bx0+b*(bw+gap)+o[0],y0=14+o[1],cnt=Math.min(R,n1-b*R),fh=hdr+cnt*rp+2;L.fr.push({k:'mc',x:x0,y:y0,w:bw,h:fh,g:'mc'+b});L.grp['mc'+b]=[x0,y0,bw,fh];
-  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=y0+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.4+k*6.4);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4,x0:x0,bw:bw,rp:rp,last:r===cnt-1})}
+  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=y0+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.8+k*6.1);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4,x0:x0,bw:bw,rp:rp,last:r===cnt-1})}
   if(b===nb-1&&cnt<R){var on=O('notice'),bx=bx0+b*(bw+gap),ny=14+hdr+cnt*rp+5;if(14+hdr+R*rp-ny>=24){var nh=Math.min(40,14+hdr+R*rp-ny);L.notice={x:bx+on[0],y:ny+on[1],w:bw,h:nh};L.grp.notice=[bx+on[0],ny+on[1],bw,nh]}}}
  var xs0=bx0+nb*(bw+gap),pitch=18.2,top=Math.max(0,Math.min(n2,Math.floor((283-xs0+.8)/pitch))),bot=Math.min(n2-top,Math.floor((283-96)/pitch));
  var st=O('sat'),sb=O('sab'),sx=function(x,y,q){L.fr.push({k:'sa',x:x,y:y,w:17.4,h:76,q:q});var d=[];for(var i=0;i<3;i++){var ys=[];for(var j=0;j<10;j++)ys.push(y+13+6*(j+.5));d.push({x:x+3.3+i*5.4,ys:ys})}L.sa.push({q:q,cols:d,r:2.0})};
@@ -127,10 +128,10 @@ function layout(c){
  var nx1=bot>0?bxs-3:283,no=O('nm');if(nx1-96>30){L.nm={x:96+no[0],y:118+no[1],w:nx1-96,h:76};L.grp.nm=[96+no[0],118+no[1],nx1-96,76]}
  var io=O('id'),B={x:14+io[0],y:93+io[1],w:78,h:82};L.idBox=B;L.grp.id=[B.x,B.y,B.w,B.h];
  var sc=list(c.schools),cl=list(c.classes),nd=Math.max(0,c.nd|0),pS=Math.min(6.6,58/Math.max(1,sc.length)),pC=Math.min(6.6,58/Math.max(1,cl.length));
- L.sch={x:B.x,w:34,opts:sc.map(function(n,i){return{name:n,x:B.x+4.5,y:B.y+13+pS*(i+.5)}}),r:1.9};
- L.cls={x:B.x+34,w:20,opts:cl.map(function(n,i){return{name:n,x:B.x+34+4.5,y:B.y+13+pC*(i+.5)}}),r:1.9};
- var nw=24,ncw=nd?Math.min(11,nw/nd):0;L.num={x:B.x+54,w:nd*ncw,cw:ncw,cols:[]};
- for(var k=0;k<nd;k++){var ys=[];for(var m=0;m<10;m++)ys.push(B.y+19+5.4*(m+.5));L.num.cols.push({x:B.x+54+ncw*(k+.5),ys:ys,r:1.8})}
+ L.sch={x:B.x,w:26,opts:sc.map(function(n,i){return{name:n,x:B.x+4.5,y:B.y+13+pS*(i+.5)}}),r:1.9};
+ L.cls={x:B.x+26,w:24,opts:cl.map(function(n,i){return{name:n,x:B.x+26+5,y:B.y+13+pC*(i+.5)}}),r:1.9};
+ var nw=28,ncw=nd?Math.min(11,nw/nd):0;L.num={x:B.x+50,w:nd*ncw,cw:ncw,cols:[]};
+ for(var k=0;k<nd;k++){var ys=[];for(var m=0;m<10;m++)ys.push(B.y+19+5.4*(m+.5));L.num.cols.push({x:B.x+50+ncw*(k+.5),ys:ys,r:1.8})}
  return L}
 window.OMR_layout=layout;
 /* ================= 답안지 그리기 ================= */
@@ -156,9 +157,9 @@ function sheet(){
  h+=G('sn',sn);
  h+=G('hand',el('fr',14,76,78,14)+el('ln',14+15,76,.35,14)+T('hand',C.hand,14,76,15,14,'font-size:6.6pt;line-height:1.25',true));
  var B=L.idBox,id=el('fr',B.x,B.y,B.w,B.h)+el('hd',B.x,B.y,B.w,7)+T('idl',C.idl,B.x,B.y,B.w,7,'color:#fff;font-size:8.5pt;letter-spacing:.2em');
- id+=T('idl1',C.idl1,B.x,B.y+7.4,34,4.6,'font-size:5.6pt')+T('idl2',C.idl2,B.x+34,B.y+7.4,20,4.6,'font-size:5.6pt')+(L.num.w>0?T('idl3',C.idl3,B.x+54,B.y+7.4,L.num.w,4.6,'font-size:5.6pt'):'');
- id+=el('ln',B.x+34,B.y+7,.3,B.h-8)+el('ln',B.x+54,B.y+7,.3,B.h-8);
- if(L.num.cols.length===4){id+=T('idm',C.idm,B.x+54,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+T('idd',C.idd,B.x+54+L.num.cw*2,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+el('ln',B.x+54+L.num.cw*2,B.y+19,.25,B.h-20)}
+ id+=T('idl1',C.idl1,B.x,B.y+7.4,26,4.6,'font-size:5.6pt')+T('idl2',C.idl2,B.x+26,B.y+7.4,24,4.6,'font-size:5.6pt')+(L.num.w>0?T('idl3',C.idl3,B.x+50,B.y+7.4,L.num.w,4.6,'font-size:5.6pt'):'');
+ id+=el('ln',B.x+26,B.y+7,.3,B.h-8)+el('ln',B.x+50,B.y+7,.3,B.h-8);
+ if(L.num.cols.length===4){id+=T('idm',C.idm,B.x+50,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+T('idd',C.idd,B.x+50+L.num.cw*2,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+el('ln',B.x+50+L.num.cw*2,B.y+19,.25,B.h-20)}
  L.sch.opts.forEach(function(o){id+=bub(o.x,o.y,L.sch.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.sch.w-9)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
  L.cls.opts.forEach(function(o){id+=bub(o.x,o.y,L.cls.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.cls.w-8)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
  L.num.cols.forEach(function(c){id+=el('fr2',c.x-L.num.cw/2+.6,B.y+12.4,L.num.cw-1.2,6);for(var m=0;m<10;m++)id+=bub(c.x,c.ys[m],c.r,m)});
