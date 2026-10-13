@@ -12,7 +12,7 @@
 :root{
   color-scheme: light;
   --paper:#FBF8F1; --ink:#1A1A1A; --ink2:#5B574D; --muted:#948C78;
-  --gold:#A8853F; --gold-deep:#7A5F25; --gold-soft:rgba(168,133,63,.12); --gold-h:rgba(168,133,63,.14); --gold-line:#E6DCC6;
+  --gold:#A8853F; --gold-deep:#7A5F25; --gold-soft:rgba(168,133,63,.12); --gold-h:rgba(168,133,63,.14); --gold-t:#F5F0E8; --gold-l:#E6DCC6; --gold-line:#E6DCC6;
   --mint:#7FC8B4; --mint-deep:#3E8F79; --mint-soft:#E4F3EE;
   --pink:#E58BA4; --pink-deep:#C64E71; --pink-soft:#FBE8EE;
   --peri:#7088B5; --sand:#C98F5E;
@@ -261,6 +261,10 @@ ul.bl li .ed{flex:1}
 .dz{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
 .dz input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff}
 .dz .lb{font-size:12px;color:var(--ink2)}
+.cv-months span{--nb:2.3em;--nf:.95em}
+.dsg{max-height:30vh;overflow:auto;border-top:1px solid var(--gold-line);margin-top:8px;padding:8px 2px 4px}
+.dsg[hidden]{display:none}
+.dsg .kit{margin-top:6px;padding-top:6px;border-top:1px dashed var(--gold-line)}
 /* 모달 */
 .modal{position:fixed;inset:0;background:rgba(26,26,26,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
 .modal[hidden]{display:none}
@@ -303,6 +307,77 @@ ul.bl li .ed{flex:1}
 <input type="file" id="imgFile" accept="image/*" hidden>
 <div class="modal" id="modal" hidden><div class="mdl" id="mdl"></div></div>
 
+<script>
+window.Kit=(function(){
+var BS=[['','기본(원래대로)'],['line','선 테두리'],['tint','전체 음영'],['shadow','그림자'],['edge','한쪽 모서리 강조'],['top','윗선 강조'],['emboss','입체감'],['grad','그라데이션 음영'],['double','이중 테두리'],['flat','아래선만']];
+var NS=[['','기본(원래대로)'],['circle','채운 원'],['ring','테두리 원'],['soft','연한 원'],['square','사각형'],['rsq','둥근 사각형'],['diamond','마름모'],['hex','육각형'],['tag','알약'],['plain','숫자만'],['under','밑줄']];
+var BR=[['0','각지게'],['1.2','보통'],['2.8','둥글게'],['5','아주 둥글게']];
+var NC=[['accent','포인트색'],['dark','진한색'],['gold','금색']];
+var SZ=[['.8','작게'],['1','보통'],['1.25','크게'],['1.5','아주 크게']];
+var NFM=[['','1 2 3'],['01','01 02 03'],['c','① ② ③'],['r','Ⅰ Ⅱ Ⅲ'],['A','A B C'],['.','1. 2. 3.']];
+var cfg={box:'',num:'',fmt:'',imp:false,state:{},onChange:null,host:null};
+function fmtNum(n,f){var C='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳',R=['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ'];
+ if(f==='01')return(n<10?'0':'')+n;if(f==='c')return n<=20?C.charAt(n-1):String(n);if(f==='r')return n<=12?R[n-1]:String(n);if(f==='A')return n<=26?String.fromCharCode(64+n):String(n);if(f==='.')return n+'.';return String(n)}
+function css(){
+ var B=cfg.box,N=cfg.num,I=cfg.imp?' !important':'',o='';
+ if(B){var S=function(s){return'html[data-bs="'+s+'"] :is('+B+')'},R='border-radius:var(--bxr,1.2mm)'+I+';';
+  o+=':is('+B+'){--bxc:var(--c,var(--gold));--bxt:var(--ct,var(--gold-t,#f4eddc));--bxl:var(--cl,var(--gold-l,#e6dcc6))}';
+  o+=S('line')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('tint')+'{background:var(--bxt)'+I+';border:.3mm solid transparent'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('shadow')+'{background:#fff'+I+';border:.2mm solid transparent'+I+';box-shadow:0 1.2mm 3.4mm rgba(20,20,40,.2),0 .2mm .7mm rgba(20,20,40,.14)'+I+';'+R+'}';
+  o+=S('edge')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';border-left:1.8mm solid var(--bxc)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('top')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';border-top:1.6mm solid var(--bxc)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('emboss')+'{background:linear-gradient(180deg,#fff 0%,var(--bxt) 100%)'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:inset 0 .5mm 0 rgba(255,255,255,.95),0 .7mm 0 var(--bxl),0 1.7mm 2.8mm rgba(20,20,40,.17)'+I+';'+R+'}';
+  o+=S('grad')+'{background:linear-gradient(135deg,var(--bxt) 0%,#fff 88%)'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('double')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:inset 0 0 0 1mm #fff,inset 0 0 0 1.3mm var(--bxl)'+I+';'+R+'}';
+  o+=S('flat')+'{background:transparent'+I+';border:0'+I+';border-bottom:.35mm solid var(--bxl)'+I+';box-shadow:none'+I+';border-radius:0'+I+'}'}
+ if(N){var T=function(s){return'html[data-ns="'+s+'"] :is('+N+')'},A='html[data-ns] :is('+N+')';
+  o+=':is('+N+'){--nclr:var(--c,var(--gold));--nt:var(--ct,var(--gold-t,#f4eddc))}';
+  o+='html[data-nc="dark"] :is('+N+'){--nclr:var(--navy,var(--ink,#0b1a31));--nt:#e6e9ef}html[data-nc="gold"] :is('+N+'){--nclr:var(--gold);--nt:var(--gold-t,#f4eddc)}';
+  o+=A+'{width:calc(var(--nb,8mm) * var(--ns,1))'+I+';height:calc(var(--nb,8mm) * var(--ns,1))'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1))'+I+';display:inline-flex'+I+';align-items:center'+I+';justify-content:center'+I+';flex:0 0 auto'+I+';box-sizing:border-box'+I+';line-height:1'+I+';font-weight:900'+I+';clip-path:none'+I+';border:0'+I+';border-bottom:0'+I+';padding:0'+I+';box-shadow:none'+I+'}';
+  var F='color:var(--nfg,#fff)'+I+';';
+  o+=T('circle')+'{border-radius:50%'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('ring')+'{border-radius:50%'+I+';background:transparent'+I+';border:.55mm solid var(--nclr)'+I+';color:var(--nclr)'+I+'}';
+  o+=T('soft')+'{border-radius:50%'+I+';background:var(--nt)'+I+';color:var(--nclr)'+I+'}';
+  o+=T('square')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('rsq')+'{border-radius:28%'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('diamond')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * .82)'+I+'}';
+  o+=T('hex')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%)'+I+'}';
+  o+=T('tag')+'{width:auto'+I+';min-width:calc(var(--nb,8mm) * var(--ns,1) * 1.5)'+I+';height:calc(var(--nb,8mm) * var(--ns,1) * .78)'+I+';padding:0 2mm'+I+';border-radius:99mm'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('plain')+'{width:auto'+I+';height:auto'+I+';border-radius:0'+I+';background:transparent'+I+';color:var(--nclr)'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * 1.7)'+I+'}';
+  o+=T('under')+'{width:auto'+I+';min-width:calc(var(--nb,8mm) * var(--ns,1) * .9)'+I+';height:auto'+I+';border-radius:0'+I+';background:transparent'+I+';color:var(--nclr)'+I+';border-bottom:.6mm solid var(--nclr)'+I+';padding-bottom:.6mm'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * 1.25)'+I+'}'}
+ return o}
+var UI_CSS='.kit{font-size:12px;color:#333}.kit .kr{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}.kit .kl{flex:0 0 76px;font-weight:700;color:#13264A;padding-top:6px}.kit .kg{display:flex;gap:5px;flex-wrap:wrap;flex:1}'+
+ '.kit .kb{border:1.5px solid #d4d8e2;background:#fff;border-radius:7px;padding:5px 6px 4px;font-size:11px;cursor:pointer;min-width:62px;text-align:center;font-family:inherit;color:#333}.kit .kb.on{border-color:#3a7bd5;box-shadow:0 0 0 2px rgba(58,123,213,.25);font-weight:700}'+
+ '.kit i.kp{display:block;width:38px;height:22px;margin:0 auto 4px;background:#fff;border:1px solid #cfd3dc;border-radius:3px}.kit i.kp-line{border:1px solid #C79B63}.kit i.kp-tint{background:#f3e9d6;border-color:transparent}.kit i.kp-shadow{border-color:transparent;box-shadow:0 2px 6px rgba(0,0,0,.35)}'+
+ '.kit i.kp-edge{border:1px solid #e0d2b4;border-left:5px solid #C79B63}.kit i.kp-top{border:1px solid #e0d2b4;border-top:5px solid #C79B63}.kit i.kp-emboss{background:linear-gradient(180deg,#fff,#f3e9d6);border:1px solid #e0d2b4;box-shadow:inset 0 1px 0 #fff,0 2px 0 #e0d2b4,0 4px 6px rgba(0,0,0,.2)}'+
+ '.kit i.kp-grad{background:linear-gradient(135deg,#ecd9b3,#fff);border:1px solid #e0d2b4}.kit i.kp-double{border:1px solid #C79B63;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #C79B63}.kit i.kp-flat{border:0;border-bottom:2px solid #C79B63;background:none;border-radius:0}.kit i.kp-def{border:1px dashed #aab}'+
+ '.kit i.kq{display:flex;align-items:center;justify-content:center;width:24px;height:24px;margin:0 auto 4px;font-style:normal;font-weight:900;font-size:12px;color:#fff;background:#C79B63}.kit i.kq-def{background:none;border:1px dashed #aab;color:#889}.kit i.kq-circle{border-radius:50%}.kit i.kq-ring{border-radius:50%;background:none;border:2px solid #C79B63;color:#C79B63}.kit i.kq-soft{border-radius:50%;background:#f3e9d6;color:#C79B63}'+
+ '.kit i.kq-square{border-radius:0}.kit i.kq-rsq{border-radius:7px}.kit i.kq-diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);font-size:10px}.kit i.kq-hex{clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%)}.kit i.kq-tag{width:34px;height:18px;border-radius:9px}.kit i.kq-plain{background:none;color:#C79B63;font-size:17px}.kit i.kq-under{background:none;color:#C79B63;border-bottom:2px solid #C79B63;width:22px;height:20px}'+
+ '.kit select{padding:4px 6px;border:1px solid #c9ced9;border-radius:5px;font-size:12px;background:#fff}.kit .kn{margin-top:2px;font-size:11px;color:#778}';
+function mount(el,o){
+ for(var k in o)cfg[k]=o[k];cfg.host=el;
+ var st=document.getElementById('kitcss');if(!st){st=document.createElement('style');st.id='kitcss';document.head.appendChild(st)}st.textContent=css()+UI_CSS;
+ var b=function(arr,key,pre){return arr.map(function(a){return'<button type="button" class="kb" data-k="'+key+'" data-v="'+a[0]+'">'+(pre?'<i class="'+pre+' '+pre+'-'+(a[0]||'def')+'">'+(pre==='kq'?'1':'')+'</i>':'')+a[1]+'</button>'}).join('')};
+ var sel=function(arr,key){return'<select data-k="'+key+'">'+arr.map(function(a){return'<option value="'+a[0]+'">'+a[1]+'</option>'}).join('')+'</select>'};
+ el.innerHTML='<div class="kit"><div class="kr"><span class="kl">박스 스타일</span><div class="kg">'+b(BS,'bs','kp')+'</div></div>'+
+  '<div class="kr"><span class="kl">박스 모서리</span>'+sel(BR,'br')+'<span class="kn">박스 모양(둥글기)을 고릅니다</span></div>'+
+  '<div class="kr"><span class="kl">번호 모양</span><div class="kg">'+b(NS,'ns','kq')+'</div></div>'+
+  '<div class="kr"><span class="kl">번호 세부</span>색 '+sel(NC,'nc')+' 크기 '+sel(SZ,'nsz')+(cfg.fmt?' 형식 '+sel(NFM,'nf'):'')+'</div></div>';
+ el.querySelectorAll('button.kb').forEach(function(x){x.addEventListener('click',function(){cfg.state[x.dataset.k]=x.dataset.v;apply();if(cfg.onChange)cfg.onChange()})});
+ el.querySelectorAll('select').forEach(function(x){x.addEventListener('change',function(){cfg.state[x.dataset.k]=x.value;apply();if(cfg.onChange)cfg.onChange()})});
+ apply()}
+function apply(){
+ var s=cfg.state||{},h=document.documentElement;
+ [['bs','data-bs'],['ns','data-ns']].forEach(function(p){if(s[p[0]])h.setAttribute(p[1],s[p[0]]);else h.removeAttribute(p[1])});
+ if(s.nc&&s.nc!=='accent')h.setAttribute('data-nc',s.nc);else h.removeAttribute('data-nc');
+ h.style.setProperty('--bxr',(s.br||'1.2')+'mm');h.style.setProperty('--ns',s.nsz||'1');
+ if(cfg.fmt)document.querySelectorAll(cfg.fmt).forEach(function(e){var n=+e.getAttribute('data-n');if(n)e.textContent=fmtNum(n,s.nf||'')});
+ if(cfg.host){cfg.host.querySelectorAll('button.kb').forEach(function(x){x.classList.toggle('on',(s[x.dataset.k]||'')===x.dataset.v)});
+  cfg.host.querySelectorAll('select').forEach(function(x){var v=s[x.dataset.k];x.value=v==null||v===''?(x.dataset.k==='br'?'1.2':x.dataset.k==='nsz'?'1':x.dataset.k==='nc'?'accent':''):v})}}
+return{mount:mount,apply:apply,fmtNum:fmtNum}
+})();
+</script>
 <script>
 (function(){
 'use strict';
@@ -597,7 +672,7 @@ function lookVars(p){
   const t = p.theme || {}, v = {}, f = p.fonts || {};
   if (t.c || (t.k && t.k !== 'base') || t.seas) {
     const c = themeColors(p);
-    Object.assign(v, {'--gold': c.g, '--gold-deep': mixHex(c.g, '#000000', .3), '--gold-soft': rgbaOf(c.g, .12), '--gold-h': rgbaOf(c.g, .14), '--gold-line': mixHex(c.g, '#FFFFFF', .72),
+    Object.assign(v, {'--gold-t': mixHex(c.g, '#FFFFFF', .88), '--gold-l': mixHex(c.g, '#FFFFFF', .6), '--gold': c.g, '--gold-deep': mixHex(c.g, '#000000', .3), '--gold-soft': rgbaOf(c.g, .12), '--gold-h': rgbaOf(c.g, .14), '--gold-line': mixHex(c.g, '#FFFFFF', .72),
       '--mint-deep': c.a, '--mint-soft': mixHex(c.a, '#FFFFFF', .88), '--mint': mixHex(c.a, '#FFFFFF', .45), '--pink-deep': c.b, '--pink-soft': mixHex(c.b, '#FFFFFF', .88), '--pink': mixHex(c.b, '#FFFFFF', .4)});
   }
   if (f.h && FONTS[f.h]) { v['--kserif'] = FONTS[f.h]; v['--serif'] = FONTS[f.h]; }
@@ -695,7 +770,7 @@ function bulletList(arr, ph){
 }
 
 /* ---------------- 페이지 만들기 ---------------- */
-const D = {pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeLS.get('pl_bg')).key, sel: new Set(), cur: 0, stage: null, host: null, zoom: clamp(parseFloat(safeLS.get('pl_zoom')) || 1, 1, 3)};
+const D = {dsgOpen: safeLS.get('pl_dsg') === '1', pages: [], ratio: ratioOf(safeLS.get('pl_ratio')).key, bg: bgOf(safeLS.get('pl_bg')).key, sel: new Set(), cur: 0, stage: null, host: null, zoom: clamp(parseFloat(safeLS.get('pl_zoom')) || 1, 1, 3)};
 let PW = 794, PH = 1123, ORI = 'p';
 const mmW = () => +(PW * 210 / 794).toFixed(2), mmH = () => +(PH * 210 / 794).toFixed(2);
 
@@ -721,7 +796,7 @@ function coverPage(p){
   const frame = H('div', {class: 'cv-frame', html: `<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="${PW - 48}" height="${PH - 48}" fill="none" stroke="${themeColors(p).g}" stroke-opacity=".75" stroke-width="1.89"/></svg>`});
   const sch = H('div', {class: 'cv-line'});
   sch.textContent = [p.region, (p.schools || []).join(' · ')].filter(Boolean).join('  |  ');
-  const months = H('div', {class: 'cv-months'}, Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); return H('span', {text: mi.m, style: `background:${SEASON(mi.m)};color:${textOn(SEASON(mi.m))}`}); }));
+  const months = H('div', {class: 'cv-months'}, Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); const sc = SEASON(mi.m), st = textOn(sc); return H('span', {text: mi.m, style: `background:${sc};color:${st};--c:${sc};--nfg:${st};--ct:${mixHex(sc, '#FFFFFF', .85)}`}); }));
   pg.body.append(H('div', {class: 'cv'}, [frame,
     H('div', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]),
     H('div', {class: 'cv-yr'}, [`${a.y}–${String(b.y).slice(2)} `, H('em', {text: 'Planner'})]),
@@ -990,7 +1065,7 @@ function render(keep){
   const fitAll = () => D.pages.forEach(pg => fitPage(pg.rp));
   fitAll(); (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { fitAll(); updateNav(); });
   if (!D.sel.size || D.sel.size > D.pages.length || ![...D.sel].every(i => i < D.pages.length)) D.sel = new Set(D.pages.map((_, i) => i));
-  syncSel(); updateNav(); renderPlanBar(); updatePubCount(); loadPublished();
+  syncSel(); updateNav(); renderPlanBar(); updatePubCount(); loadPublished(); if (window.Kit) Kit.apply();
   if (keep) scrollTo(0, y);
 }
 function updatePubCount(){ const p = cur(), n = D.pages.filter(pg => p.pub && p.pub[pg.key]).length, el = $('#pubCnt'); if (el) el.textContent = n ? `공개 선택 ${n}쪽` : ''; }
@@ -1103,7 +1178,7 @@ function buildBar(){
   const zoomSel = H('div', {class: 'zoomsel'}, [H('span', {class: 'lbl', text: '확대'}), mkb('−', () => stepZoom(-1)), H('span', {class: 'zl', id: 'zoomLbl'}), mkb('＋', () => stepZoom(1)), mkb('화면에 맞춤', () => setZoom(1))]);
   const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('🖼 이미지 넣기 (지금 페이지)', () => addImage(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
-  return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
+  return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'}), dsgEl()]);
 }
 
 /* ---------------- 플랜 도구 · 모달 ---------------- */
@@ -1113,7 +1188,7 @@ function renderPlanBar(){
   sel.value = DB.cur; sel.addEventListener('change', () => { DB.cur = sel.value; save(true); D.sel = new Set(); render(); });
   const b = (t, fn, cls) => { const x = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); x.addEventListener('click', fn); return x; };
   bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = deser(ser(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
-    b('플랜 설정', openSettings), b('디자인 (색·글꼴)', openDesign, 'pri'), b('달 관리 (지우기)', openMonths), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
+    b('플랜 설정', openSettings), b('디자인 (색·글꼴·박스·번호)', toggleDesign, 'pri'), b('달 관리 (지우기)', openMonths), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
     b('내보내기(JSON)', () => download(new Blob([ser(cur(), 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
     b('가져오기', () => $('#impFile').click()));
   bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = deser(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
@@ -1152,23 +1227,39 @@ function openMonths(){
   openModal(H('div', {}, [H('h3', {text: '달 관리 — 지우기 · 추가'}), H('p', {class: 'hint', text: '지운 달은 월간 페이지, 연간 계획표, 로드맵에서 함께 빠져요. 가운데 달을 지워도 나머지 달의 이름(월)은 그대로 유지돼요.'}), list,
     H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '+ 맨 뒤에 달 추가', onclick: () => { if (p.months.length >= 24) { alert('최대 24개월까지예요.'); return; } p.months.push({theme: '', bullets: [], exam: '', goal: '', memo: '', schedule: [], days: {}, weeks: weeksFrom(['', '', '', ''])}); save(true); render(true); draw(); }}), H('button', {class: 'btn', type: 'button', text: '닫기', onclick: closeModal})])]));
 }
-function openDesign(){
-  const p = cur(); p.theme = p.theme || {}; p.fonts = p.fonts || {};
+function toggleDesign(){
+  D.dsgOpen = !D.dsgOpen; safeLS.set('pl_dsg', D.dsgOpen ? '1' : '0');
+  const e = $('#dsg'); if (e) e.hidden = !D.dsgOpen;
+  if (D.dsgOpen) { const bar = $('.dk-bar'); if (bar) scrollTo({top: scrollY + bar.getBoundingClientRect().top - 4}); }
+}
+function sharedKit(set){   // 박스·번호 모양은 팜플렛·안내문과 같이 쓰도록 사이트 공용 저장소(bro_design_v1)에 둔다
+  let g = {}; try { g = JSON.parse(localStorage.getItem('bro_design_v1') || '{}') || {}; } catch(e){}
+  if (set !== undefined) { g.kit = set; g.updated = Date.now(); try { localStorage.setItem('bro_design_v1', JSON.stringify(g)); } catch(e){} return set; }
+  g.kit = g.kit || {}; return g.kit;
+}
+function dsgEl(){   // 위쪽 고정 막대 안에 들어가는 디자인 상자 (색 · 글꼴 · 박스 · 번호) — 스크롤해도 가려지지 않는다
+  const p = cur(); p.theme = p.theme || {}; p.fonts = p.fonts || {}; p.design = p.design || {};
   const tc = themeColors(p), apply = () => { save(true); render(true); };
   const presets = H('div', {class: 'dz'}, THEMES.map(t => H('button', {type: 'button', class: 'btn sec sm', style: `background:linear-gradient(90deg,${t.g} 0 33%,${t.a} 33% 66%,${t.b} 66% 100%);color:#fff;text-shadow:0 0 3px #000b;border:2px solid #fff;box-shadow:0 0 0 1px #E6DCC6`, text: t.n,
-    onclick: () => { p.theme = {k: t.k}; apply(); openDesign(); }})));
+    onclick: () => { p.theme = {k: t.k}; apply(); }})));
   const mkc = v => H('input', {type: 'color', value: v});
   const cg = mkc(tc.g), ca = mkc(tc.a), cb = mkc(tc.b), ss = tc.s.map(mkc);
   const custom = () => { p.theme = {k: p.theme.k, c: {g: cg.value, a: ca.value, b: cb.value}, seas: p.theme.seas}; apply(); };
   [cg, ca, cb].forEach(x => x.addEventListener('change', custom));
   ss.forEach(x => x.addEventListener('change', () => { p.theme = Object.assign({}, p.theme, {seas: ss.map(y => y.value)}); apply(); }));
   const fsel = (key) => { const s = H('select', {}, [H('option', {value: '', text: '(기본)'}), ...Object.keys(FONTS).map(k => H('option', {value: k, text: FONT_LABELS[k] || k, style: `font-family:${FONTS[k]}`}))]); s.value = p.fonts[key] || ''; s.addEventListener('change', () => { p.fonts[key] = s.value || null; apply(); }); return s; };
-  openModal(H('div', {}, [H('h3', {text: '디자인 — 전체 색과 글꼴'}), H('p', {class: 'hint', text: '이 플랜 전체(표지·로드맵·연간·월간)에 적용돼요. 누르면 바로 바뀝니다. 바탕색은 위쪽 "바탕" 동그라미에서 고르세요.'}),
-    H('div', {class: 'lbl', text: '색 조합'}), presets,
-    H('div', {class: 'lbl', text: '직접 고르기'}), H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '포인트색(선·제목바)'}), cg, H('span', {class: 'lb', text: '포인트2(강조 제목)'}), ca, H('span', {class: 'lb', text: '포인트3(시험·일요일)'}), cb]),
-    H('div', {class: 'lbl', text: '계절색 (월 이름 띠·표지 동그라미)'}), H('div', {class: 'dz'}, ['봄(3~5월)', '여름(6~8월)', '가을(9~11월)', '겨울(12~2월)'].flatMap((t, i) => [H('span', {class: 'lb', text: t}), ss[i]])),
-    H('div', {class: 'lbl', text: '글꼴'}), H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '제목 글꼴'}), fsel('h'), H('span', {class: 'lb', text: '본문 글꼴'}), fsel('b')]),
-    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '기본으로 되돌리기', onclick: () => { p.theme = {}; p.fonts = {}; apply(); openDesign(); }}), H('button', {class: 'btn', type: 'button', text: '닫기', onclick: closeModal})])]));
+  const kitHost = H('div', {});
+  const el = H('div', {id: 'dsg', class: 'dsg', hidden: !D.dsgOpen}, [
+    H('div', {class: 'lbl', text: '디자인 — 이 플랜 전체에 바로 적용 (스크롤해도 위에 고정)'}),
+    H('div', {class: 'lbl', style: 'margin-top:6px', text: '색 조합'}), presets,
+    H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '포인트색(선·제목바)'}), cg, H('span', {class: 'lb', text: '포인트2'}), ca, H('span', {class: 'lb', text: '포인트3'}), cb,
+      ...['봄', '여름', '가을', '겨울'].flatMap((t, i) => [H('span', {class: 'lb', text: t}), ss[i]])]),
+    H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '제목 글꼴'}), fsel('h'), H('span', {class: 'lb', text: '본문 글꼴'}), fsel('b'),
+      H('button', {class: 'btn sec sm', type: 'button', text: '기본으로 되돌리기', onclick: () => { p.theme = {}; p.fonts = {}; sharedKit({}); apply(); }})]),
+    kitHost]);
+  const shared = sharedKit();
+  Kit.mount(kitHost, {box: '.cd,.mc,.side,.cal,.rm', num: '.cv-months span', fmt: '', imp: true, state: shared, onChange: () => sharedKit(shared)});
+  return el;
 }
 function openRoadmap(){
   const p = cur(); const bars = p.bars.map(b => ({...b}));

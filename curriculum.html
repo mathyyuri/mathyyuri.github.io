@@ -1,0 +1,529 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>예비 고1 커리큘럼 안내문</title><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@400;700;900&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Song+Myung&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"><style>
+:root{--navy:#0B1A31;--navy2:#13264A;--gold:#C79B63;--goldd:#8F6A3A;--gold1:#E8CD9C;--ivory:#FBF8F1;--ink:#0E1B33;--sub:#5A6580;--od:#cfd7e8;
+ --fh:"Noto Serif KR","Batang",serif;--fb:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;--ui:#0B1A31;--ui2:#13264A;--uig:#C79B63}
+*{box-sizing:border-box}html,body{margin:0;background:#e3e6ec;font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#0E1B33}
+.bar{position:sticky;top:0;z-index:30;background:var(--ui);color:#fff;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.bar b{margin-right:6px}.bar button,.bar input,.bar select{border:0;border-radius:6px;padding:6px 11px;font-size:13px;font-weight:700;font-family:inherit}
+.bar button{background:var(--uig);color:var(--ui);cursor:pointer}.bar button.g{background:#e7ebf3}.bar input[type=text]{font-weight:400;width:170px;padding:5px 8px}
+.fmt{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #2a3d63;padding-top:7px;font-size:12px}
+.fmt button{padding:4px 9px;font-size:12px}.fmt input[type=number]{width:56px;padding:4px 5px;font-weight:500}.fmt input[type=color]{width:34px;height:26px;padding:0;border:0;background:none;cursor:pointer}
+.fmt select{padding:5px 6px;font-weight:500;max-width:150px}.fmt .sq{padding:4px 7px;border:1px solid #fff5}.fmt .lbl{color:#cfd7e8}
+.wrap{max-width:1000px;margin:0 auto;padding:12px 12px 40px}
+.panel{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
+.panel h3{margin:0 0 4px;font-size:15px;color:var(--ui2)}.panel .hint{margin:0 0 8px;font-size:12px;color:#5A6580;line-height:1.6}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12px}
+table.set{border-collapse:collapse;font-size:12px}.set td,.set th{border:1px solid #d9dde6;padding:3px 5px}.set th{background:var(--ui2);color:#fff;font-weight:700}
+.set input[type=text]{border:1px solid #d9dde6;border-radius:4px;padding:3px 5px;font-size:12px;font-family:inherit}.set input[type=color]{width:34px;height:22px;border:0;padding:0;background:none}
+.row select{padding:4px 6px;border:1px solid #c9ced9;border-radius:5px;font-size:12px}
+button.b{border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer;background:var(--ui2);color:#fff}button.b.o{background:var(--uig);color:var(--ui)}button.b.g{background:#e7ebf3;color:var(--ui2)}
+button.sw{border:2px solid #fff;box-shadow:0 0 0 1px #c9ced9;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#fff;text-shadow:0 0 3px #000a}button.sw.on{box-shadow:0 0 0 2px #3a7bd5}
+.stage{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:6px;--s:1}
+.pw{width:calc(210mm * var(--s));height:calc(297mm * var(--s));position:relative;box-shadow:0 6px 24px rgba(0,0,0,.25);background:var(--ivory)}
+.pg{position:absolute;left:0;top:0;width:210mm;height:297mm;display:flex;flex-direction:column;gap:2.7mm;padding:10.5mm 14mm 8mm;background:var(--ivory);color:var(--ink);transform:scale(var(--s));transform-origin:0 0;overflow:hidden;font-family:var(--fb)}
+.cap .pg,.pg.cap{transform:none!important}.cap{box-shadow:none!important}.cap .ctl{display:none!important}
+.ed{outline:1px dashed rgba(58,123,213,.35);outline-offset:2px;border-radius:2px;cursor:text;min-width:1em}.ed:hover{background:rgba(58,123,213,.08)}.ed:focus{outline:2px solid #3a7bd5;background:rgba(58,123,213,.12)}
+.cap .ed,.cap .lg{outline:none!important;background:none!important}
+.fr{position:absolute;left:5mm;right:5mm;top:5mm;bottom:5mm;border:1px solid var(--gold);pointer-events:none}
+.top{display:flex;justify-content:space-between;align-items:center}
+.lg{position:relative;display:inline-block}.lg-def{display:flex;align-items:center;gap:calc(3mm*var(--lgs,1))}.lg-ic{display:block;height:calc(9mm*var(--lgs,1));width:auto}.lg-bar{display:block;height:calc(7.4mm*var(--lgs,1));border-left:1px solid var(--navy2);opacity:.8}
+.lg-tx{text-align:left}.lg-ko{font-size:calc(11pt*var(--lgs,1));font-weight:800;letter-spacing:-.4px;line-height:1.15;color:var(--navy2)}.lg-en{font-family:"Cinzel","Noto Serif KR",serif;font-size:calc(5.2pt*var(--lgs,1));letter-spacing:.3em;margin-top:.7mm;color:var(--goldd)}
+.lg-img{display:block;height:calc(12mm*var(--lgs,1));max-width:calc(80mm*var(--lgs,1));width:auto}.lg-img[hidden]{display:none}
+.bar button:disabled{opacity:.4;cursor:default}
+.kick{font-family:"Cinzel","Noto Serif KR",serif;font-size:7.2pt;letter-spacing:.28em;color:#fff;background:var(--c);padding:1.6mm 3.6mm;border-radius:10mm;font-weight:600}
+.no{font-family:var(--fh);font-weight:900;font-size:11pt;color:var(--c);margin-right:3mm}
+.hero{margin-top:1mm}.hero .ttl{font-family:var(--fh);font-size:28pt;font-weight:900;line-height:1.22;color:var(--navy);letter-spacing:-.6px}
+.hero .sub{margin-top:1.4mm;font-size:12pt;font-weight:700;color:var(--c);line-height:1.5}
+.hero .rule{width:20mm;height:1.4mm;background:var(--c);margin-top:2.2mm;border-radius:1mm}
+.intro{font-size:10.4pt;line-height:1.75;color:var(--ink)}
+.info{display:grid;grid-template-columns:1.1fr 1.25fr 1.2fr 1.25fr;gap:2.4mm}
+.ib{background:#fff;border:.35mm solid rgba(199,155,99,.45);border-top:1.3mm solid var(--c);border-radius:1.2mm;padding:1.5mm 2.4mm}
+.ib small{display:block;font-size:6.6pt;letter-spacing:.06em;color:var(--sub);font-weight:700}.ib div{margin-top:.5mm;font-size:9.6pt;font-weight:700;color:var(--navy);line-height:1.4}
+.sh{display:flex;align-items:center;gap:2.4mm;margin-top:.6mm;font-family:"Cinzel","Noto Serif KR",serif;font-size:7.6pt;letter-spacing:.24em;color:var(--goldd);font-weight:600}.sh:after{content:"";flex:1;border-top:.3mm solid rgba(199,155,99,.6)}
+.sh .addb{order:3}.sh:after{order:2}.sh b{order:1;font-family:var(--fh);font-size:9.6pt;letter-spacing:0;color:var(--navy);font-weight:900}
+.pts{display:grid;grid-template-columns:1fr 1fr;gap:3.4mm 4.6mm}.pt{display:flex;gap:2.6mm;position:relative}
+.pn{--nb:6.4mm;--nf:9pt;flex:0 0 6.4mm;height:6.4mm;border-radius:50%;background:var(--c);color:#fff;font-weight:900;font-size:9pt;display:flex;align-items:center;justify-content:center;font-family:var(--fh);margin-top:.4mm}
+.pt b{display:block;font-size:10.4pt;color:var(--navy);line-height:1.3}.pt span.d{display:block;margin-top:.4mm;font-size:9.2pt;line-height:1.5;color:var(--ink)}
+table.wk{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;border:.3mm solid rgba(199,155,99,.55)}
+.wk th{background:var(--navy);color:#fff;font-size:7.8pt;font-weight:700;padding:1.3mm 2mm;text-align:left}
+.wk td{border-top:.3mm solid rgba(199,155,99,.35);padding:.9mm 2mm;vertical-align:middle;font-size:8.6pt;line-height:1.3;position:relative}
+.pg.r3 .wk td{padding:5.4mm 2mm}.pg.r3 .wk td b{font-size:11pt}.pg.r3 .wk td span.d{font-size:9.6pt}.pg.r3 .wk td.w{font-size:13pt}.pg.r4 .wk td{padding:4mm 2mm}.pg.r4 .wk td b{font-size:9.8pt}.pg.r4 .wk td span.d{font-size:8.8pt}.pg.r4 .wk td.w{font-size:11.5pt}.pg.r6 .wk td{padding:1.5mm 2mm}.pg.r4 .intro,.pg.r6 .intro{font-size:9.6pt}
+.wk td.w{font-family:var(--fh);font-weight:900;color:var(--c);font-size:10pt}.wk td.dt{font-size:8pt;color:var(--sub);font-weight:500;line-height:1.35}
+.wk td b{display:block;color:var(--navy);font-size:8.8pt}.wk td span.d{color:var(--ink);font-size:7.9pt}
+.pill{display:inline-block;background:var(--c);color:#fff;border-radius:3mm;padding:.5mm 2.4mm;font-size:7.4pt;font-weight:700}
+.ops{display:grid;grid-template-columns:repeat(3,1fr);gap:2.6mm}
+.ob{background:#fff;border:.35mm solid rgba(199,155,99,.45);border-radius:1.4mm;padding:1.8mm 2.6mm}.ob b{display:block;font-size:8.8pt;color:var(--navy);margin-bottom:.8mm}.ob b:before{content:"";display:inline-block;width:2.2mm;height:2.2mm;background:var(--c);border-radius:50%;margin-right:1.6mm;vertical-align:.1mm}
+.ob span.d{display:block;font-size:7.9pt;line-height:1.45;color:var(--ink)}
+.ex{background:var(--navy);color:#fff;border-radius:1.6mm;padding:2mm 3.2mm;display:flex;gap:4mm}
+.ex .xh{flex:0 0 22mm;font-family:var(--fh);font-weight:900;font-size:9.4pt;color:var(--gold1);line-height:1.4}
+.ex .xt{flex:1;font-size:8.4pt;line-height:1.5}.ex .xt .n{display:block;margin-top:.8mm;color:var(--od);font-size:7.8pt}
+.cl{text-align:center;font-family:var(--fh);font-size:12.4pt;font-weight:700;color:var(--navy);margin-top:auto;padding:4.4mm 6mm;border-top:.5mm solid var(--c);border-bottom:.5mm solid var(--c);line-height:1.6}
+.bk .ob{padding:2.6mm 3.2mm}.bk .ob b{font-size:10pt}.bk .ob span.d{font-size:8.9pt;line-height:1.55}.sysg{display:grid;grid-template-columns:1fr 1fr;gap:2.6mm}.bkn{font-family:var(--fh);font-weight:900;font-size:10.5pt;color:var(--navy)}
+.mts{display:grid;grid-template-columns:1fr 1fr;gap:2.6mm 4.4mm}
+table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;border:.3mm solid rgba(199,155,99,.55)}.sc td{border-top:.3mm solid rgba(199,155,99,.35);padding:1.8mm 2.4mm;font-size:9pt;line-height:1.5;vertical-align:middle;position:relative}.sc tr:first-child td{border-top:0}.sc td.k{background:var(--ct,#f4eddc);color:var(--navy);font-weight:800;width:27mm;font-size:8.8pt}
+.lt{background:#fff;border:.35mm solid rgba(199,155,99,.45);border-radius:1.4mm;padding:3.4mm 4.4mm;font-size:9.6pt;line-height:1.8;color:var(--ink)}.lt .sg{text-align:right;margin-top:1.6mm;font-family:var(--fh);font-weight:700;color:var(--navy);font-size:9.6pt}
+.ft{display:flex;justify-content:space-between;border-top:.35mm solid var(--gold);padding-top:1.8mm;font-size:7.2pt;color:var(--sub);letter-spacing:.04em}
+.ovf{position:absolute;left:50%;top:6mm;transform:translateX(-50%);background:#d6336c;color:#fff;font:700 11px "Malgun Gothic",sans-serif;padding:3px 10px;border-radius:12px;z-index:9}
+.xb{border:0;background:none;color:#c33;font-size:13px;line-height:1;cursor:pointer;padding:0 3px;position:absolute;opacity:0}
+.pt:hover .xb,.wk tr:hover .xb,.sc tr:hover .xb,.ob:hover .xb{opacity:1}.sc td.act{width:7mm;padding:0;text-align:center}.sc td.act .xb{position:static}.ob .xb{right:1mm;top:.5mm}.pt .xb{right:-2mm;top:-1mm}.wk td.act{width:7mm;padding:0;text-align:center}.wk td.act .xb{position:static}
+.addb{border:1px dashed rgba(199,155,99,.8);background:none;color:var(--goldd);border-radius:3px;font-size:9px;line-height:1.2;padding:0 8px;cursor:pointer;font-family:inherit;letter-spacing:0}
+.pim{position:absolute;z-index:4;cursor:move;touch-action:none}.pim img{width:100%;height:100%;display:block;object-fit:fill;pointer-events:none;-webkit-user-drag:none}
+.pim:hover,.pim.sel{outline:2px dashed #3a7bd5}
+.pim .x{position:absolute;right:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#d6336c;color:#fff;font:700 11px/18px sans-serif;text-align:center;cursor:pointer;display:none}
+.pim .rz{position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:3px;background:#3a7bd5;cursor:nwse-resize;display:none}
+.pim:hover .x,.pim:hover .rz,.pim.sel .x,.pim.sel .rz{display:block}
+.cap .pim{outline:none!important}.cap .pim .x,.cap .pim .rz{display:none!important}
+@page{size:210mm 297mm;margin:0}
+
+.dock{position:sticky;top:var(--barh,48px);z-index:25;max-height:38vh;overflow:auto;border:1px solid #c9ced9}
+.dock .dh{display:flex;justify-content:space-between;align-items:center;gap:8px}.dock .dh h3{margin:0}
+.dock.col .dbody{display:none}.dock.col{max-height:none}
+
+.lgtb{position:absolute;left:0;top:-8mm;display:flex;gap:2px;opacity:0;z-index:20;white-space:nowrap;transition:opacity .12s}.lg:hover .lgtb,.lgtb:hover{opacity:1}
+.lgtb button{border:0;border-radius:4px;background:#3a7bd5;color:#fff;font:600 10px "Malgun Gothic",sans-serif;padding:3px 7px;cursor:pointer}.lgtb button.o{background:#667}
+.cap .lgtb{display:none!important}
+
+@media print{html,body{background:#fff}.bar,.panel,.ctl{display:none!important}.stage{display:block;margin:0;--s:1!important}.pw{box-shadow:none;page-break-after:always;break-after:page}.pg{transform:none}.pim .x,.pim .rz{display:none!important}.pim{outline:none!important}}
+</style></head><body><div class="bar"><b>📄 예비 고1 과정별 커리큘럼 안내문 (과정마다 A4 앞뒤 2쪽 · 9과정 18쪽)</b><input id="rng" type="text" placeholder="쪽 지정(비우면 전체) 예: 1-3, 8"><button type="button" id="pdfBtn">PDF 저장 (여백없음)</button><button type="button" id="pngBtn" class="g">쪽별 이미지(PNG)</button><button type="button" class="g" onclick="addImg()">🖼 이미지 넣기 (지금 보이는 쪽)</button><button type="button" id="undoBtn" class="g">↶ 되돌리기</button><button type="button" id="redoBtn" class="g">↷ 다시</button><button type="button" class="g" onclick="resetAll()">처음 상태로</button><input type="file" id="imgf" accept="image/*" hidden><div class="fmt" id="fmt"><b>글자 서식</b><span class="lbl">고칠 글자를 드래그로 선택 → 누르세요 (선택 없이 칸만 눌러도 칸 전체에 적용)</span><span class="lbl">색</span><input type="color" id="fColor" value="#C79B63"><button class="sq" data-c="#FFFFFF" style="background:#fff;color:#000">흰</button><button class="sq" data-c="gold">포인트색</button><button class="sq" data-c="dark" style="background:#223;color:#fff">진한색</button><button class="sq" data-c="#D6336C" style="background:#D6336C;color:#fff">빨강</button><span class="lbl">크기</span><button type="button" id="fMinus">A−</button><input type="number" id="fSize" min="4" max="80" step="0.5" value="10"><button type="button" id="fPlus">A＋</button><span class="lbl">글꼴</span><select id="fFont"></select><button type="button" id="fBold"><b>B</b></button><button type="button" id="fClr" class="g">서식 지우기</button></div></div><div class="wrap"><div class="panel dock" id="dock"><div class="dh"><h3>① 디자인 — 색 · 글꼴 · 박스 · 번호 (스크롤해도 위에 고정)</h3><button class="b g" type="button" id="dkTog">▲ 접기</button></div><div class="dbody"><p class="hint">누르면 안내문 전체에 바로 적용됩니다(과정별 포인트 색은 아래 ②에서). 박스·번호는 "기본"을 누르면 원래 모양으로 돌아옵니다.</p><div class="row" id="swRow"></div><div class="row">직접 고르기 — 진한색(제목·표 머리) <input type="color" id="cD"> 포인트색(선·강조) <input type="color" id="cA"> 바탕색 <input type="color" id="cP"> <button class="b g" type="button" onclick="resetTheme()">기본 색·글꼴로</button></div><div class="row">제목 글꼴 <select id="fH"></select> 본문 글꼴 <select id="fB"></select></div><div id="kitMount"></div></div></div><div class="panel"><h3>② 과정 목록 — 이름·기간·색·순서, 추가/삭제</h3><p class="hint">시작일·끝일은 "주차별 기간"과 "휴강 안내"를 자동으로 채울 때 쓰입니다(YYYY-MM-DD). 날짜를 바꾼 뒤 아래 버튼으로 다시 채우세요. 안내문 안의 글은 쪽에서 직접 눌러 고칩니다. 지금 내용은 지난해 안내문과 교재 구성을 바탕으로 쓴 <b>초안</b>입니다.</p><div class="row"><button class="b o" type="button" onclick="recalc('dates')">주차별 기간 다시 채우기</button><button class="b o" type="button" onclick="recalc('hol')">휴강 안내·수업 횟수 다시 계산</button><button class="b g" type="button" onclick="addCourse()">+ 과정 추가</button></div><div class="row" style="align-items:flex-start"><table class="set" id="cT"></table></div></div><div class="panel"><h3>③ 팜플렛·플래너 연동용 핵심 내용</h3><p class="hint">과정명·기간·한 줄 소개·CLASS POINT·주차별 내용·시험 일정이 이 브라우저에 글자만 자동 저장됩니다(키 <code>bro_courses_v1</code>). 다음 단계에서 팜플렛과 플래너가 이것을 읽어 가도록 연결합니다. 필요하면 파일로도 내려받을 수 있어요.</p><div class="row"><button class="b o" type="button" onclick="exportJson()">핵심 내용 내보내기(JSON)</button></div></div><div class="stage"></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE="예비고1_커리큘럼_안내문";</script><script>
+window.Kit=(function(){
+var BS=[['','기본(원래대로)'],['line','선 테두리'],['tint','전체 음영'],['shadow','그림자'],['edge','한쪽 모서리 강조'],['top','윗선 강조'],['emboss','입체감'],['grad','그라데이션 음영'],['double','이중 테두리'],['flat','아래선만']];
+var NS=[['','기본(원래대로)'],['circle','채운 원'],['ring','테두리 원'],['soft','연한 원'],['square','사각형'],['rsq','둥근 사각형'],['diamond','마름모'],['hex','육각형'],['tag','알약'],['plain','숫자만'],['under','밑줄']];
+var BR=[['0','각지게'],['1.2','보통'],['2.8','둥글게'],['5','아주 둥글게']];
+var NC=[['accent','포인트색'],['dark','진한색'],['gold','금색']];
+var SZ=[['.8','작게'],['1','보통'],['1.25','크게'],['1.5','아주 크게']];
+var NFM=[['','1 2 3'],['01','01 02 03'],['c','① ② ③'],['r','Ⅰ Ⅱ Ⅲ'],['A','A B C'],['.','1. 2. 3.']];
+var cfg={box:'',num:'',fmt:'',imp:false,state:{},onChange:null,host:null};
+function fmtNum(n,f){var C='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳',R=['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ'];
+ if(f==='01')return(n<10?'0':'')+n;if(f==='c')return n<=20?C.charAt(n-1):String(n);if(f==='r')return n<=12?R[n-1]:String(n);if(f==='A')return n<=26?String.fromCharCode(64+n):String(n);if(f==='.')return n+'.';return String(n)}
+function css(){
+ var B=cfg.box,N=cfg.num,I=cfg.imp?' !important':'',o='';
+ if(B){var S=function(s){return'html[data-bs="'+s+'"] :is('+B+')'},R='border-radius:var(--bxr,1.2mm)'+I+';';
+  o+=':is('+B+'){--bxc:var(--c,var(--gold));--bxt:var(--ct,var(--gold-t,#f4eddc));--bxl:var(--cl,var(--gold-l,#e6dcc6))}';
+  o+=S('line')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('tint')+'{background:var(--bxt)'+I+';border:.3mm solid transparent'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('shadow')+'{background:#fff'+I+';border:.2mm solid transparent'+I+';box-shadow:0 1.2mm 3.4mm rgba(20,20,40,.2),0 .2mm .7mm rgba(20,20,40,.14)'+I+';'+R+'}';
+  o+=S('edge')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';border-left:1.8mm solid var(--bxc)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('top')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';border-top:1.6mm solid var(--bxc)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('emboss')+'{background:linear-gradient(180deg,#fff 0%,var(--bxt) 100%)'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:inset 0 .5mm 0 rgba(255,255,255,.95),0 .7mm 0 var(--bxl),0 1.7mm 2.8mm rgba(20,20,40,.17)'+I+';'+R+'}';
+  o+=S('grad')+'{background:linear-gradient(135deg,var(--bxt) 0%,#fff 88%)'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:none'+I+';'+R+'}';
+  o+=S('double')+'{background:#fff'+I+';border:.3mm solid var(--bxl)'+I+';box-shadow:inset 0 0 0 1mm #fff,inset 0 0 0 1.3mm var(--bxl)'+I+';'+R+'}';
+  o+=S('flat')+'{background:transparent'+I+';border:0'+I+';border-bottom:.35mm solid var(--bxl)'+I+';box-shadow:none'+I+';border-radius:0'+I+'}'}
+ if(N){var T=function(s){return'html[data-ns="'+s+'"] :is('+N+')'},A='html[data-ns] :is('+N+')';
+  o+=':is('+N+'){--nclr:var(--c,var(--gold));--nt:var(--ct,var(--gold-t,#f4eddc))}';
+  o+='html[data-nc="dark"] :is('+N+'){--nclr:var(--navy,var(--ink,#0b1a31));--nt:#e6e9ef}html[data-nc="gold"] :is('+N+'){--nclr:var(--gold);--nt:var(--gold-t,#f4eddc)}';
+  o+=A+'{width:calc(var(--nb,8mm) * var(--ns,1))'+I+';height:calc(var(--nb,8mm) * var(--ns,1))'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1))'+I+';display:inline-flex'+I+';align-items:center'+I+';justify-content:center'+I+';flex:0 0 auto'+I+';box-sizing:border-box'+I+';line-height:1'+I+';font-weight:900'+I+';clip-path:none'+I+';border:0'+I+';border-bottom:0'+I+';padding:0'+I+';box-shadow:none'+I+'}';
+  var F='color:var(--nfg,#fff)'+I+';';
+  o+=T('circle')+'{border-radius:50%'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('ring')+'{border-radius:50%'+I+';background:transparent'+I+';border:.55mm solid var(--nclr)'+I+';color:var(--nclr)'+I+'}';
+  o+=T('soft')+'{border-radius:50%'+I+';background:var(--nt)'+I+';color:var(--nclr)'+I+'}';
+  o+=T('square')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('rsq')+'{border-radius:28%'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('diamond')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * .82)'+I+'}';
+  o+=T('hex')+'{border-radius:0'+I+';background:var(--nclr)'+I+';'+F+'clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%)'+I+'}';
+  o+=T('tag')+'{width:auto'+I+';min-width:calc(var(--nb,8mm) * var(--ns,1) * 1.5)'+I+';height:calc(var(--nb,8mm) * var(--ns,1) * .78)'+I+';padding:0 2mm'+I+';border-radius:99mm'+I+';background:var(--nclr)'+I+';'+F+'}';
+  o+=T('plain')+'{width:auto'+I+';height:auto'+I+';border-radius:0'+I+';background:transparent'+I+';color:var(--nclr)'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * 1.7)'+I+'}';
+  o+=T('under')+'{width:auto'+I+';min-width:calc(var(--nb,8mm) * var(--ns,1) * .9)'+I+';height:auto'+I+';border-radius:0'+I+';background:transparent'+I+';color:var(--nclr)'+I+';border-bottom:.6mm solid var(--nclr)'+I+';padding-bottom:.6mm'+I+';font-size:calc(var(--nf,10pt) * var(--ns,1) * 1.25)'+I+'}'}
+ return o}
+var UI_CSS='.kit{font-size:12px;color:#333}.kit .kr{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}.kit .kl{flex:0 0 76px;font-weight:700;color:#13264A;padding-top:6px}.kit .kg{display:flex;gap:5px;flex-wrap:wrap;flex:1}'+
+ '.kit .kb{border:1.5px solid #d4d8e2;background:#fff;border-radius:7px;padding:5px 6px 4px;font-size:11px;cursor:pointer;min-width:62px;text-align:center;font-family:inherit;color:#333}.kit .kb.on{border-color:#3a7bd5;box-shadow:0 0 0 2px rgba(58,123,213,.25);font-weight:700}'+
+ '.kit i.kp{display:block;width:38px;height:22px;margin:0 auto 4px;background:#fff;border:1px solid #cfd3dc;border-radius:3px}.kit i.kp-line{border:1px solid #C79B63}.kit i.kp-tint{background:#f3e9d6;border-color:transparent}.kit i.kp-shadow{border-color:transparent;box-shadow:0 2px 6px rgba(0,0,0,.35)}'+
+ '.kit i.kp-edge{border:1px solid #e0d2b4;border-left:5px solid #C79B63}.kit i.kp-top{border:1px solid #e0d2b4;border-top:5px solid #C79B63}.kit i.kp-emboss{background:linear-gradient(180deg,#fff,#f3e9d6);border:1px solid #e0d2b4;box-shadow:inset 0 1px 0 #fff,0 2px 0 #e0d2b4,0 4px 6px rgba(0,0,0,.2)}'+
+ '.kit i.kp-grad{background:linear-gradient(135deg,#ecd9b3,#fff);border:1px solid #e0d2b4}.kit i.kp-double{border:1px solid #C79B63;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #C79B63}.kit i.kp-flat{border:0;border-bottom:2px solid #C79B63;background:none;border-radius:0}.kit i.kp-def{border:1px dashed #aab}'+
+ '.kit i.kq{display:flex;align-items:center;justify-content:center;width:24px;height:24px;margin:0 auto 4px;font-style:normal;font-weight:900;font-size:12px;color:#fff;background:#C79B63}.kit i.kq-def{background:none;border:1px dashed #aab;color:#889}.kit i.kq-circle{border-radius:50%}.kit i.kq-ring{border-radius:50%;background:none;border:2px solid #C79B63;color:#C79B63}.kit i.kq-soft{border-radius:50%;background:#f3e9d6;color:#C79B63}'+
+ '.kit i.kq-square{border-radius:0}.kit i.kq-rsq{border-radius:7px}.kit i.kq-diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);font-size:10px}.kit i.kq-hex{clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%)}.kit i.kq-tag{width:34px;height:18px;border-radius:9px}.kit i.kq-plain{background:none;color:#C79B63;font-size:17px}.kit i.kq-under{background:none;color:#C79B63;border-bottom:2px solid #C79B63;width:22px;height:20px}'+
+ '.kit select{padding:4px 6px;border:1px solid #c9ced9;border-radius:5px;font-size:12px;background:#fff}.kit .kn{margin-top:2px;font-size:11px;color:#778}';
+function mount(el,o){
+ for(var k in o)cfg[k]=o[k];cfg.host=el;
+ var st=document.getElementById('kitcss');if(!st){st=document.createElement('style');st.id='kitcss';document.head.appendChild(st)}st.textContent=css()+UI_CSS;
+ var b=function(arr,key,pre){return arr.map(function(a){return'<button type="button" class="kb" data-k="'+key+'" data-v="'+a[0]+'">'+(pre?'<i class="'+pre+' '+pre+'-'+(a[0]||'def')+'">'+(pre==='kq'?'1':'')+'</i>':'')+a[1]+'</button>'}).join('')};
+ var sel=function(arr,key){return'<select data-k="'+key+'">'+arr.map(function(a){return'<option value="'+a[0]+'">'+a[1]+'</option>'}).join('')+'</select>'};
+ el.innerHTML='<div class="kit"><div class="kr"><span class="kl">박스 스타일</span><div class="kg">'+b(BS,'bs','kp')+'</div></div>'+
+  '<div class="kr"><span class="kl">박스 모서리</span>'+sel(BR,'br')+'<span class="kn">박스 모양(둥글기)을 고릅니다</span></div>'+
+  '<div class="kr"><span class="kl">번호 모양</span><div class="kg">'+b(NS,'ns','kq')+'</div></div>'+
+  '<div class="kr"><span class="kl">번호 세부</span>색 '+sel(NC,'nc')+' 크기 '+sel(SZ,'nsz')+(cfg.fmt?' 형식 '+sel(NFM,'nf'):'')+'</div></div>';
+ el.querySelectorAll('button.kb').forEach(function(x){x.addEventListener('click',function(){cfg.state[x.dataset.k]=x.dataset.v;apply();if(cfg.onChange)cfg.onChange()})});
+ el.querySelectorAll('select').forEach(function(x){x.addEventListener('change',function(){cfg.state[x.dataset.k]=x.value;apply();if(cfg.onChange)cfg.onChange()})});
+ apply()}
+function apply(){
+ var s=cfg.state||{},h=document.documentElement;
+ [['bs','data-bs'],['ns','data-ns']].forEach(function(p){if(s[p[0]])h.setAttribute(p[1],s[p[0]]);else h.removeAttribute(p[1])});
+ if(s.nc&&s.nc!=='accent')h.setAttribute('data-nc',s.nc);else h.removeAttribute('data-nc');
+ h.style.setProperty('--bxr',(s.br||'1.2')+'mm');h.style.setProperty('--ns',s.nsz||'1');
+ if(cfg.fmt)document.querySelectorAll(cfg.fmt).forEach(function(e){var n=+e.getAttribute('data-n');if(n)e.textContent=fmtNum(n,s.nf||'')});
+ if(cfg.host){cfg.host.querySelectorAll('button.kb').forEach(function(x){x.classList.toggle('on',(s[x.dataset.k]||'')===x.dataset.v)});
+  cfg.host.querySelectorAll('select').forEach(function(x){var v=s[x.dataset.k];x.value=v==null||v===''?(x.dataset.k==='br'?'1.2':x.dataset.k==='nsz'?'1':x.dataset.k==='nc'?'accent':''):v})}}
+return{mount:mount,apply:apply,fmtNum:fmtNum}
+})();
+
+window.Logo=(function(){
+ var K='bro_logo',KS='bro_logo_s',KP='bro_logo_prev',cb=null;
+ function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
+ function s(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);return true}catch(e){alert('로고를 저장할 공간이 부족해요. 더 작은 이미지를 써 주세요.');return false}}
+ function apply(){var src=g(K),sc=parseFloat(g(KS))||1;document.documentElement.style.setProperty('--lgs',sc);
+  document.querySelectorAll('.lg').forEach(function(b){var img=b.querySelector('.lg-img'),def=b.querySelector('.lg-def');if(!img||!def)return;
+   if(src){img.src=src;img.hidden=false;def.style.display='none'}else{img.hidden=true;img.removeAttribute('src');def.style.display=''}})}
+ function done(){apply();if(cb)cb()}
+ function init(onChange){cb=onChange;
+  document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-lg]');if(!t)return;var a=t.dataset.lg,box=t.closest('.lg');
+   if(a==='pick'){var f=box.querySelector('input[type=file]');if(f){f.value='';f.click()}}
+   else if(a==='plus'||a==='minus'){var sc=parseFloat(g(KS))||1;sc=Math.max(.4,Math.min(3.5,+(sc+(a==='plus'?.15:-.15)).toFixed(2)));s(KS,sc===1?null:String(sc));done()}
+   else if(a==='def'){var cur=g(K);if(cur)s(KP,cur);s(K,null);s(KS,null);done()}
+   else if(a==='prev'){var p=g(KP);if(p==null){alert('되돌릴 이전 로고가 없어요.');return}var c=g(K)||'';if(p==='')s(K,null);else s(K,p);s(KP,c);done()}});
+  document.addEventListener('change',function(e){var f=e.target;if(!(f&&f.type==='file'&&f.closest&&f.closest('.lg')))return;var file=f.files&&f.files[0];if(!file)return;var rd=new FileReader();
+   rd.onload=function(){var im=new Image();im.onload=function(){var png=file.type==='image/png',k=Math.min(1,900/Math.max(im.width,im.height)),w=Math.round(im.width*k),h=Math.round(im.height*k),c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');
+     if(!png){x.fillStyle='#fff';x.fillRect(0,0,w,h)}x.drawImage(im,0,0,w,h);var src=png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.9);
+     s(KP,g(K)||'');if(s(K,src))done()};im.src=rd.result};rd.readAsDataURL(file)})}
+ function snap(){return[g(K),g(KS),g(KP)]}
+ function restore(a){s(K,a[0]);s(KS,a[1]);s(KP,a[2]);apply()}
+ return{init:init,apply:apply,snap:snap,restore:restore}
+})();
+
+window.Hist=(function(){
+ var H=[],I=-1,T=0,lock=false,cfg={};
+ function upd(){var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.disabled=I<=0;if(r)r.disabled=I>=H.length-1}
+ function push(){if(lock)return;var s=cfg.snap();if(H[I]===s)return;H=H.slice(0,I+1);H.push(s);if(H.length>15)H.shift();I=H.length-1;upd()}
+ function touch(){if(lock)return;clearTimeout(T);T=setTimeout(push,600)}
+ function go(d){clearTimeout(T);push();var j=I+d;if(j<0||j>=H.length)return;I=j;lock=true;try{cfg.restore(H[I])}finally{lock=false}upd()}
+ function init(c){cfg=c;push();var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.addEventListener('click',function(){go(-1)});if(r)r.addEventListener('click',function(){go(1)});upd()}
+ return{init:init,touch:touch}
+})();
+</script><script>
+(function(){
+var KEY='bro_flyers_v1', ST={};
+try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+var SHK='bro_design_v1';
+try{var _g=JSON.parse(localStorage.getItem(SHK)||'null');if(_g){if(_g.theme)ST.theme=_g.theme;if(_g.font)ST.font=_g.font;if(_g.kit)ST.kit=_g.kit}}catch(e){}
+function shareSave(){try{localStorage.setItem(SHK,JSON.stringify({theme:ST.theme,font:ST.font,kit:ST.kit,updated:Date.now()}))}catch(e){}}
+var FR=[[/금요 서바이벌 클리닉/g,'MATHY FRIDAY'],[/금요일 클리닉/g,'MATHY FRIDAY'],[/금요 클리닉/g,'MATHY FRIDAY'],[/금 클리닉/g,'MATHY FRIDAY'],[/수업 → 클리닉 → 점검/g,'수업 → MATHY FRIDAY → 점검'],[/수업 · 클리닉 · 일일일모/g,'수업 · MATHY FRIDAY · 일일일모']];
+function frFix(o){if(typeof o==='string'){FR.forEach(function(p){o=o.replace(p[0],p[1])});return o}if(Array.isArray(o)){for(var i=0;i<o.length;i++)o[i]=frFix(o[i]);return o}if(o&&typeof o==='object'){for(var k in o)o[k]=frFix(o[k]);return o}return o}
+var warned=false;
+var $=function(s){return document.querySelector(s)};
+function plain(h){var d=document.createElement('div');d.innerHTML=h==null?'':h;return d.textContent.replace(/\s+/g,' ').trim()}
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function mirror(){ /* 팜플렛·플래너가 읽어 갈 핵심 내용(글자만) */
+ try{localStorage.setItem('bro_courses_v1',JSON.stringify({v:1,updated:new Date().toISOString(),courses:ST.courses.map(function(c){return{id:c.id,no:c.no,name:plain(c.name),period:plain(c.period),tag:plain(c.tag),color:c.c,s:c.s,e:c.e,intro:plain(c.intro),
+  points:c.points.map(function(p){return{h:plain(p.h),d:plain(p.d)}}),weeks:c.weeks.map(function(w){return{w:plain(w.w),date:plain(w.date),t:plain(w.t),d:plain(w.d),tag:plain(w.tag)}}),exam:plain(c.exam),note:plain(c.note),sessions:plain(c.sess),mats:(c.mats||[]).map(function(p){return{h:plain(p.h),d:plain(p.d)}}),sched:(c.sched||[]).map(function(r){return{k:plain(r.k),v:plain(r.v)}}),parent:plain(c.parent)}})}))}catch(e){}}
+function save(){shareSave();if(window.Hist)Hist.touch();try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){if(!warned){warned=true;alert('브라우저 저장 공간이 가득 찼어요. 이미지를 지우거나 더 작게 넣어 주세요. (지금 화면은 그대로이니 PDF로 먼저 저장해 두세요)')}}mirror()}
+/* ---- 공휴일(팜플렛에 입력된 것이 있으면 그것을, 없으면 월력요항 기준 기본값) ---- */
+var DEF_HOL=[['2026-12-25','성탄절'],['2027-01-01','신정'],['2027-02-06','설 연휴'],['2027-02-07','설날'],['2027-02-08','설 연휴'],['2027-02-09','설 대체공휴일'],
+ ['2027-03-01','삼일절'],['2027-05-01','노동절'],['2027-05-03','노동절 대체'],['2027-05-05','어린이날'],['2027-05-13','부처님오신날'],['2027-06-06','현충일'],
+ ['2027-07-17','제헌절'],['2027-07-19','제헌절 대체'],['2027-08-15','광복절'],['2027-08-16','광복절 대체'],['2027-09-14','추석 연휴'],['2027-09-15','추석'],['2027-09-16','추석 연휴'],
+ ['2027-10-03','개천절'],['2027-10-04','개천절 대체'],['2027-10-09','한글날'],['2027-10-11','한글날 대체'],['2027-12-25','성탄절'],['2027-12-27','성탄절 대체']].map(function(a){return{d:a[0],n:a[1],off:true}});
+function holidays(){var h=DEF_HOL;try{var p=JSON.parse(localStorage.getItem('bro_pamphlet_v1')||'null');if(p&&p.hol&&p.hol.length)h=p.hol}catch(e){}var m={};h.forEach(function(x){if(x.d&&x.off!==false)m[key(P(x.d))]=x.n});return m}
+function P(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
+function key(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function addD(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
+function f2(d){return(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'.'+(d.getDate()<10?'0':'')+d.getDate()}
+var HW=['일','월','화','수','목','금','토'];
+function weekDates(c){var acc=0,s=P(c.s),e=P(c.e);c.weeks.forEach(function(w){var span=w.span||1,a=addD(s,7*acc),b=addD(a,7*span-1);if(b>e)b=e;w.date=f2(a)+' – '+f2(b);acc+=span})}
+function holNote(c){var hm=holidays(),out=[];for(var d=P(c.s),e=P(c.e);d<=e;d.setDate(d.getDate()+1)){var w=d.getDay(),n=hm[key(d)];if(n&&(w===1||w===3||w===5))out.push((d.getMonth()+1)+'/'+d.getDate()+'('+HW[w]+') '+n)}return out.length?'휴강 안내 · '+out.join(' · ')+' (보강은 별도 안내)':'휴강 안내 · 이 기간에는 공휴일 휴강이 없습니다'}
+function sessions(c){var hm=holidays(),a=0,b=0,off=0;for(var d=P(c.s),e=P(c.e);d<=e;d.setDate(d.getDate()+1)){var w=d.getDay(),o=!!hm[key(d)];if(w===1||w===3){if(o)off++;else a++}else if(w===5){if(o)off++;else b++}}return '월·수 수업 '+a+'회 · MATHY FRIDAY '+b+'회'+(off?' (휴강 '+off+'회 제외)':'')}
+/* ---- 기본 내용 (지난해 안내문·교재 구성을 바탕으로 쓴 초안 — 모두 고칠 수 있어요) ---- */
+var OPS=function(x){return[{h:'월·수 수업',d:'개념 설명 → 유형 적용 → 미션 확인 순서로 진행하고, 그날의 진도 미션은 그날 안에 마무리합니다.'},{h:'MATHY FRIDAY',d:'오답 정리 · 질문 · 미션 클리어. 개별 오답 미션을 끝까지 클리어해야 한 주가 마무리됩니다.'},x||{h:'일일일모 · 성적표',d:'하루 한 회 온라인으로 풀고 바로 채점합니다. OMR 성적표로 약한 단원을 확인하고 바로 보완합니다.'}]};
+var W=function(span,w,t,d,tag){return{span:span,w:w,date:'',t:t,d:d,tag:tag}};
+var PT=function(h,d){return{h:h,d:d}};
+var DEF=[
+{id:'bridge',no:'01',c:'#C79B63',kick:'BRIDGE PROGRAM',name:'BRIDGE 과정',tag:'중등에서 고등으로, 가장 안전하게 건너는 4주',s:'2026-12-07',e:'2026-12-31',period:'2026년 12월 · 4주',who:'예비 고1 (중3 기말 이후)',
+ intro:'중3 기말고사가 끝나는 순간, 고등 수학은 이미 시작됩니다. BRIDGE는 중등 핵심 개념을 고등 수학의 언어로 다시 연결해, 1월 공통수학1을 흔들림 없이 시작하게 만드는 4주 과정입니다.',
+ points:[PT('중등 → 고등, 연결에 집중','고등 수학의 뼈대가 되는 중등 내용만 골라 고등 방식으로 다시 정리합니다.'),PT('계산과 서술 습관','계산 정확도와 풀이를 쓰는 습관을 첫 4주에 만듭니다.'),PT('주차별 미션 클리어','매주 진도·클리닉·오답 미션을 클리어하며 학습 루틴을 몸에 익힙니다.'),PT('월말평가로 현재 위치 확인','4주 학습을 점검하는 평가로 위치를 파악하고 1월 학습 방향을 세웁니다.')],
+ weeks:[W(1,'W.1','수학의 언어','수와 식 · 인수분해 · 식의 계산을 고등 방식으로 정리','개념'),W(1,'W.2','이차의 세계','이차방정식 · 이차함수의 식과 그래프','개념'),W(1,'W.3','도형의 변신','좌표평면 위의 점 · 직선 · 원, 도형의 이동 맛보기','연결'),W(1,'W.4','함수의 확장','함수의 개념과 그래프 · 월말평가 · 1월 준비','평가')],
+ ops:OPS({h:'월말평가 · 성적표',d:'4주차 월말평가(단답형)로 중등 핵심 이해도를 점검하고, 결과를 성적표로 확인합니다.'}),
+ exam:'BRIDGE 월말평가 — 4주차 (날짜 확정 후 입력) · 60분 · 단답형 · 중등 핵심 + 공통수학 일부',cl:'중등과 고등 사이의 다리, 가장 단단하게 놓겠습니다.'},
+{id:'winter',no:'02',c:'#3E8F79',kick:'WINTER · COMMON MATH 1+2',name:'공통수학1 + 공통수학2 특강',tag:'8주의 몰입, 고등 수학의 판도를 바꾸는 골든타임',s:'2027-01-04',e:'2027-02-28',period:'2027년 1월 ~ 2월 · 8주',who:'예비 고1',
+ intro:'3월 첫 시험 전에 공통수학1을 한 바퀴 끝내고, 공통수학2의 흐름까지 미리 잡는 겨울방학 정규 과정입니다. 1월의 몰입이 3월 내신의 승기로 이어집니다.',
+ points:[PT('공통수학1 정복 커리큘럼','다항식부터 경우의 수까지, 8주 동안 공통수학1 전체를 한 번에 완주합니다.'),PT('3-Mission Clear','진도 · 클리닉 · 오답, 세 가지 미션을 클리어해야 하루가 끝납니다.'),PT('공통수학2 맛보기','마지막 주에 도형의 방정식을 미리 만나 학습 흐름을 파악합니다.'),PT('월말평가','월말평가로 위치를 점검하고 3월 내신 대비 방향을 정합니다.')],
+ weeks:[W(1,'1주','다항식','다항식의 연산 · 항등식 · 나머지정리','개념'),W(1,'2주','인수분해와 복소수','인수분해 · 복소수의 연산','개념'),W(1,'3주','이차방정식','이차방정식 · 판별식 · 근과 계수의 관계','개념'),W(1,'4주','이차함수','이차함수와 그래프 · 이차방정식과의 관계','월말평가'),W(1,'5주','여러 가지 방정식','삼차·사차방정식 · 연립방정식','유형'),W(1,'6주','여러 가지 부등식','이차부등식 · 연립부등식 · 그래프 이용','유형'),W(1,'7주','경우의 수','합·곱의 법칙 · 순열과 조합','유형'),W(1,'8주','행렬 · 공통수학2 맛보기','행렬의 연산 · 도형의 방정식 첫걸음','월말평가')],
+ ops:OPS(),exam:'월말평가 — 1월 말 · 2월 말 (날짜 확정 후 입력) · 3월 학력평가 3/24(수) 예정안',cl:'1월의 몰입이 3월 내신의 승기로 이어집니다.'},
+{id:'mid1',no:'03',c:'#D0587A',kick:'MIDTERM · 1학기 중간고사',name:'3월 내신대비',tag:'시험에 나오는 문제를 우선순위로, 점수가 나오는 실력을 만듭니다',s:'2027-03-01',e:'2027-04-18',period:'2027년 3월 ~ 4월 중순 · 7주',who:'고1 (보라고 · 신갈고 · 서천고)',
+ intro:'첫 시험은 출제 스타일이 낯선 만큼 준비가 점수를 가릅니다. 보라고·신갈고·서천고의 기출을 2개년 비교한 분석을 바탕으로, 학교별 출제 경향에 맞춰 7주 동안 완성합니다.',
+ points:[PT('학교별 기출 분석','같은 틀이 다시 나오는 곳과 킬러 유형을 짚은 내신 기출 분석집으로 대비합니다.'),PT('일일일모 450제','하루 한 회씩 30회 · 450문제를 온라인으로 풀고 바로 채점합니다.'),PT('MATHY FRIDAY','오답 정리 · 질문 · 미션 클리어로 매주 틀린 문제를 끝까지 잡습니다.'),PT('서술형 · 수행평가','채점 기준에 맞춘 서술 훈련으로 감점을 줄입니다.')],
+ weeks:[W(1,'1주','진도 연계 개념 정리','학교 진도에 맞춘 개념 정리 · 교과서 기본 문제','개념'),W(1,'2주','교과서 + 변형','교과서 전 문항과 변형 문제로 유형 정복','유형'),W(1,'3주','학교별 기출 ①','학교별 기출 분석과 풀이 (2개년 비교)','기출'),W(1,'4주','모의고사 ① + 오답','모의고사 실전 · 오답 미션','실전'),W(1,'5주','서술형 집중','채점 기준에 맞춘 서술 훈련 · 수행평가 점검','서술형'),W(1,'6주','실전 모의 · 변형','학교별 변형 문제 · 실전 모의고사','실전'),W(1,'7주','파이널','오답 총정리 · 개별 질의응답 · 시험 직전 점검','마무리')],
+ ops:OPS(),exam:'1학기 중간고사 — 보라고 / 신갈고 / 서천고 (학교별 일정 확정 후 입력) · 3월 학력평가 3/24(수) 예정안',cl:'시험에 나오는 문제를 우선순위로, 점수가 나오는 실력을 만듭니다.'},
+{id:'mock6',no:'04',c:'#6C86B8',kick:'MOCK · 6월 학력평가',name:'5월 6모 대비',tag:'내신이 끝나도 흐름은 끊기지 않게, 학평 감각을 먼저 잡습니다',s:'2027-04-19',e:'2027-05-23',period:'2027년 4월 말 ~ 5월 · 5주',who:'고1',
+ intro:'중간고사 직후부터 6월 2일 학력평가까지, 모의기출 중심으로 수능형 문제 구조와 시간 관리를 익힙니다. 동시에 1학기 기말 범위를 미리 정리해 두어 6월 내신으로 매끄럽게 이어집니다.',
+ points:[PT('학평 구조 분석','학력평가의 문항 구성과 난이도 분포를 파악하고 점수 구간별 전략을 세웁니다.'),PT('모의기출 일일일모','하루 한 회 모의기출로 수능형 문제에 익숙해집니다.'),PT('시간 관리 훈련','제한 시간 안에 푸는 실전 훈련으로 푸는 순서와 속도를 몸에 익힙니다.'),PT('약점 보완 + 기말 준비','틀린 유형을 보완하고 기말 범위를 앞서 정리합니다.')],
+ weeks:[W(1,'1주','중간 오답 + 학평 구조','중간고사 오답 정리 · 학평 문항 구조 분석','분석'),W(1,'2주','단원별 모의기출','공통수학1 단원별 모의기출 · 일일일모 시작','기출'),W(1,'3주','실전 모의고사 ①','시간 제한 실전 · 성적표 분석','실전'),W(1,'4주','실전 모의고사 ② + 약점 보완','약점 단원 집중 보완 · 서술형 점검','실전'),W(1,'5주','학평 직전 점검','핵심 유형 총점검 · 기말 범위 준비','마무리')],
+ ops:OPS({h:'OMR 성적표 · 예상 등급',d:'모의고사마다 OMR로 자동 채점해 정오표 · 영역별 성취도 · 예상 등급 · 보완 단원을 한 장으로 받아봅니다.'}),exam:'6월 학력평가 — 2027.6.2(수) (예정안)',cl:'학평은 연습할수록 쉬워지는 시험입니다.'},
+{id:'final1',no:'05',c:'#8B2A46',kick:'FINAL · 1학기 기말고사',name:'6월 내신대비',tag:'6주 집중, 기출과 서술형으로 기말의 마지막 1점까지',s:'2027-05-24',e:'2027-07-04',period:'2027년 5월 말 ~ 7월 초 · 6주',who:'고1 (보라고 · 신갈고 · 서천고)',
+ intro:'기말고사까지 6주. 중간고사에서 확인한 약점을 보완하고, 학교별 기출과 서술형을 집중적으로 훈련합니다. 차수별 TEST로 매주 내 위치를 점검합니다.',
+ points:[PT('기말 범위 완성','학교 진도에 맞춰 범위 개념과 유형을 빠짐없이 정리합니다.'),PT('학교별 기출 분석','학교별 출제 경향을 반영한 기출과 변형 문제로 대비합니다.'),PT('서술형 집중 훈련','채점 기준에 맞춰 쓰는 서술형 훈련을 차수별로 진행합니다.'),PT('차수별 TEST','매주 TEST와 오답 미션으로 약점이 사라질 때까지 추적합니다.')],
+ weeks:[W(1,'1주','범위 개념 총정리','기말 범위 개념 · 교과서 문제','개념'),W(1,'2주','유형 정복','교과서 + 변형 · 단원별 TEST','유형'),W(1,'3주','학교별 기출','학교별 기출 분석 · 2개년 비교','기출'),W(1,'4주','서술형 집중','서술형 TEST · 채점 기준 훈련','서술형'),W(1,'5주','실전 모의 + 오답','실전 모의고사 · 오답 미션','실전'),W(1,'6주','파이널','최종 점검 · 개별 질의응답','마무리')],
+ ops:OPS(),exam:'1학기 기말고사 — 보라고 / 신갈고 / 서천고 (학교별 일정 확정 후 입력)',cl:'6주, 기출과 서술형으로 기말의 마지막 1점까지.'},
+{id:'summer',no:'06',c:'#E58B3D',kick:'SUMMER · 3 WEEKS',name:'여름방학 3주 특강',tag:'고1 여름방학, 공통수학2와 대수를 완주하는 3주',s:'2027-07-05',e:'2027-07-23',period:'2027년 7월 · 3주',who:'고1',
+ intro:'기말고사 직후 3주, 공통수학2 진도와 대수 연산 마스터를 한 번에 잡는 방학 특강입니다. 쏟아붓기만 하는 방학이 아니라, 배운 것을 내 것으로 소화하며 끝까지 완주하는 3주를 설계했습니다.',
+ points:[PT('공통수학2 진도 선행','도형의 방정식을 시작으로 공통수학2를 방학 중에 앞서 학습합니다.'),PT('대수 연산 마스터','지수 · 로그 · 삼각함수 연산을 미션으로 매일 훈련합니다.'),PT('소화 시간 확보','진도만 빼지 않습니다. 배운 것을 내 것으로 만드는 소화 시간을 설계했습니다.'),PT('주간 TEST · 완주 점검','주마다 TEST로 점검하고 3주를 끝까지 완주합니다.')],
+ weeks:[W(1,'1주','공통수학2 시작 + 대수 ①','평면좌표 · 직선의 방정식 / 대수 연산: 지수와 로그','선행'),W(1,'2주','공통수학2 + 대수 ②','원의 방정식 · 도형의 이동 / 대수 연산: 지수·로그함수','선행'),W(1,'3주','총정리 + 대수 ③','집합과 명제 맛보기 · 3주 총정리 TEST / 삼각함수 첫걸음','평가')],
+ ops:OPS({h:'대수 연산 미션',d:'대수 연산을 매일 일정량 미션으로 부여해 속도와 정확도를 함께 높입니다.'}),exam:'주간 TEST — 매주 1회 · 3주차 총정리 평가 (날짜 확정 후 입력)',cl:'3주를 끝까지 완주하면, 2학기가 달라집니다.'},
+{id:'mock9',no:'07',c:'#2F8FA3',kick:'MOCK · 8월 학력평가',name:'9모 대비',tag:'학평의 점수가 아니라 약점을 찾아내는 3주',s:'2027-08-09',e:'2027-08-29',period:'2027년 8월 · 3주',who:'고1',
+ intro:'개학 직전 3주, 공통수학1과 공통수학2 범위를 모의기출로 점검하며 학력평가에 대비합니다. 시험이 끝난 바로 다음 주부터는 공통수학2 중간고사 범위로 이어집니다.',
+ points:[PT('전범위 약점 진단','공통수학1·2 전범위를 모의기출로 점검해 약점 단원을 찾아냅니다.'),PT('실전 모의고사','제한 시간 실전 모의고사로 푸는 순서와 시간 배분을 익힙니다.'),PT('성적표 · 예상 등급','OMR 자동 채점 성적표로 영역별 성취도와 예상 등급을 확인합니다.'),PT('중간고사로 자연스럽게','학평 직후 공통수학2 중간 범위로 바로 이어갑니다.')],
+ weeks:[W(1,'1주','전범위 약점 진단','공통수학1·2 단원별 모의기출 · 약점 진단','진단'),W(1,'2주','실전 모의고사','실전 모의고사 ① ② · 시간 관리 훈련','실전'),W(1,'3주','학평 직전 점검','핵심 유형 총점검 · 학평 응시 · 오답 정리','마무리')],
+ ops:OPS({h:'OMR 성적표 · 예상 등급',d:'모의고사마다 OMR로 자동 채점해 정오표 · 영역별 성취도 · 예상 등급 · 보완 단원을 한 장으로 받아봅니다.'}),exam:'8월 학력평가 — 2027.8.25(수) (예정안)',cl:'점수가 아니라 약점을 찾아내는 시험, 학평.'},
+{id:'mid2',no:'08',c:'#8A6BB5',kick:'MIDTERM · 2학기 중간고사',name:'2학기 중간 내신대비',tag:'도형의 방정식, 세 번 반복하면 완성됩니다',s:'2027-08-30',e:'2027-10-17',period:'2027년 8월 말 ~ 10월 중순 · 7주',who:'고1 (보라고 · 신갈고 · 서천고)',
+ intro:'도형의 방정식 단원을 1회독(개념) → 2회독(기출 병행) → 3회독(속도)까지 세 번 반복한 뒤, 서술형과 기출로 실전 감각을 완성합니다. 연휴에도 이어지는 미션으로 공백 없이 달립니다.',
+ points:[PT('검증된 3회독 시스템','1회독 개념 → 2회독 기출 병행 → 3회독 속도·정확도로 세 번 반복해 완성합니다.'),PT('MATHY FRIDAY','개별 오답 미션을 끝까지 클리어해야 하원하는 MATHY FRIDAY입니다.'),PT('일일일모 450제','하루 한 회 온라인 풀이로 실전 감각을 매일 유지합니다.'),PT('연휴 미션','추석 연휴에는 내신 빈출 모의고사 미션으로 취약 유형을 보완합니다.')],
+ weeks:[W(1,'1주','평면좌표 · 직선의 방정식','두 점 사이의 거리 · 내분점 · 직선의 방정식','1회독'),W(1,'2주','원의 방정식','원의 방정식 · 원과 직선의 위치 관계','1회독'),W(1,'3주','도형의 이동','평행이동 · 대칭이동 · 집합의 뜻과 연산','1회독'),W(1,'4주','전범위 2회독','평면좌표 ~ 도형의 이동 기출 병행 반복','2회독'),W(1,'5주','전범위 3회독','풀이 속도 · 정확도 훈련 · 연휴 미션','3회독'),W(1,'6주','서술형 + 모의기출','채점 기준에 맞춘 서술형 · 오답 미션','실전'),W(1,'7주','최종 점검','시험 직전 파이널 클리닉 · 개별 질의응답','마무리')],
+ ops:OPS(),exam:'2학기 중간고사 — 보라고 / 신갈고 / 서천고 (학교별 일정 확정 후 입력) · 10월 학력평가 10/19(화) 예정안',cl:'세 번 반복하면, 시험장에서 손이 먼저 움직입니다.'},
+{id:'final2',no:'09',c:'#1B3566',kick:'FINAL · 2학기 기말고사',name:'2학기 기말 내신대비',tag:'한 해의 마무리, 기말 총정리로 2학년을 준비합니다',s:'2027-10-25',e:'2027-12-12',period:'2027년 10월 말 ~ 12월 중순 · 7주',who:'고1 (보라고 · 신갈고 · 서천고)',
+ intro:'공통수학2 후반부(집합과 명제, 함수와 그래프)를 중심으로 7주 동안 기말 범위를 완성합니다. 기말고사가 끝나면 12월 중순부터 2학년 과정으로 곧바로 이어집니다.',
+ points:[PT('기말 범위 완성','집합과 명제, 함수와 그래프를 개념부터 유형까지 차례로 완성합니다.'),PT('전범위 총정리','도형의 방정식까지 포함한 한 학기 전범위를 총정리합니다.'),PT('서술형 · 기출 분석','학교별 기출과 서술형 TEST로 마지막까지 감점을 줄입니다.'),PT('2학년으로 연결','기말 직후 2학년 과정으로 이어지는 학습 계획을 안내합니다.')],
+ weeks:[W(1,'1주','집합과 명제 ①','집합의 뜻과 연산 · 명제와 조건','개념'),W(1,'2주','집합과 명제 ②','명제의 증명 · 절대부등식','개념'),W(1,'3주','함수와 그래프 ①','함수 · 합성함수와 역함수','개념'),W(1,'4주','함수와 그래프 ② + 전범위','유리함수 · 무리함수 · 전범위 총정리','유형'),W(1,'5주','학교별 기출 + 서술형','학교별 기출 분석 · 서술형 TEST','기출'),W(1,'6주','실전 모의 + 오답','실전 모의고사 · 오답 미션','실전'),W(1,'7주','파이널','최종 점검 · 개별 질의응답','마무리')],
+ ops:OPS(),exam:'2학기 기말고사 — 12월 중순 (학교별 일정 확정 후 입력) · 기말 완료 후 2학년 과정 시작 12/20 ~',cl:'한 해의 마지막까지, 끝까지 풀어내겠습니다.'}
+];
+var SYS=function(){return[{h:'일일일모',d:'하루 한 회 온라인으로 풀고 바로 채점합니다. 확실 · 애매 · 모름 체크로 약한 곳을 찾습니다.'},{h:'오답노트',d:'틀린 문제가 자동으로 모이고, 같은 유형을 다시 풀어 내 것으로 만듭니다.'},{h:'OMR 성적표',d:'정오표 · 영역별 성취도 · 예상 등급 · 보완 단원 · 강점과 약점을 한 장으로 받아봅니다.'},{h:'미션 클리어',d:'진도 · 클리닉 · 오답 미션을 클리어해야 한 주가 마무리됩니다.'}]};
+var SG='대치에스플러스학원 원장 전유리';
+var EXTRA={
+bridge:{mats:[PT('BRIDGE 주차별 교재','W.1 수학의 언어 · W.2 이차의 세계 · W.3 도형의 변신 · W.4 함수의 확장, 주차별 자체 제작 교재'),PT('중등 핵심 정리 자료','고등 과정에 꼭 필요한 중등 내용만 모은 정리 자료'),PT('월말평가 대비 자료','BRIDGE 교재 복습과 기본 공식(인수분해 · 근의 공식 · 도형 성질) 점검'),PT('개별 오답 미션','틀린 문제를 모아 학생별 오답 미션으로 제공')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 12월 7일(월) 개강 예정 (시간은 개강 안내에서 공지)'},{k:'평가 이후',v:'결과 공지 → 1월 학습 방향 안내 → 1월 4일(월) 공통수학1 + 공통수학2 특강 개강 예정'}],
+ parent:'중3 기말고사를 마치고 고등 수학을 준비하는 4주는 아이들에게 가장 중요한 시간입니다. 진도를 빨리 나가는 것보다 중등에서 고등으로 건너가는 다리를 단단히 놓는 데 집중하겠습니다. 월말평가 결과는 성적표로 자세히 안내드리겠습니다.'},
+winter:{exam:'월말평가 — 1월 말 · 2월 말 (날짜 확정 후 입력)',mats:[PT('공통수학1 진도 교재','8주 커리큘럼에 맞춘 단원별 진도 미션 교재'),PT('클리닉 미션 교재','교과서 기반 기본 ~ 발전 문제를 클리닉 시간에 스스로 완수'),PT('개별 오답 미션','매 수업에서 발생한 개별 오답을 학생별로 추적'),PT('월말평가 시험지','월말평가로 위치를 점검하고 3월 대비 방향을 설정')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 1월 4일(월) 개강 예정'},{k:'학력평가',v:'3월 학력평가 — 2027.3.24(수) (예정안)'},{k:'이후 일정',v:'3월 1일부터 1학기 중간고사 내신대비 7주 과정으로 이어집니다'}],
+ parent:'1월의 8주는 3월 내신의 승패를 가르는 골든타임입니다. 공통수학1을 한 바퀴 끝내 두면 3월 첫 시험을 훨씬 여유 있게 맞이할 수 있습니다. 매일의 미션과 월말평가로 아이들의 위치를 꼼꼼히 확인해 알려드리겠습니다.'},
+mid1:{exam:'1학기 중간고사 — 보라고 / 신갈고 / 서천고 (학교별 일정 확정 후 입력)',mats:[PT('학교별 기출 분석집','보라고 · 신갈고 · 서천고 2개년 기출을 비교 분석한 자료'),PT('일일일모 450제','하루 한 회 · 30회 · 총 450문제 온라인 풀이'),PT('교과서 + 변형 교재','교과서 전 문항과 변형 문제로 유형 정복'),PT('서술형 · 수행평가 자료','채점 기준에 맞춘 서술 훈련과 수행평가 점검')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 3월 1일(월) 시작 (삼일절 휴강)'},{k:'학력평가',v:'3월 학력평가 — 2027.3.24(수) (예정안)'},{k:'시험 이후',v:'4월 19일부터 6월 학력평가 · 기말 대비 과정으로 이어집니다'}],
+ parent:'첫 시험은 출제 스타일이 낯선 만큼 준비한 만큼 결과가 나옵니다. 학교별 기출을 분석해 시험에 나오는 문제를 우선순위로 훈련시키겠습니다. 매주 MATHY FRIDAY에서 틀린 문제를 끝까지 잡아내겠습니다.'},
+mock6:{mats:[PT('학평 기출 · 모의기출','학력평가 기출과 모의기출을 단원별로 정리한 자료'),PT('일일일모 (모의기출)','하루 한 회 모의기출로 수능형 문제에 익숙해지기'),PT('실전 모의고사 + OMR','시간 제한 실전 모의고사와 OMR 자동 채점'),PT('약점 단원 보완 자료','성적표에서 확인한 약점 단원 집중 보완')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 4월 19일(월) 시작 (5/3 · 5/5 휴강)'},{k:'시험 이후',v:'5월 24일부터 1학기 기말 집중 6주 과정으로 이어집니다'}],
+ parent:'학력평가는 내신과 달리 처음 보는 유형을 제한 시간 안에 풀어내는 시험입니다. 연습할수록 분명히 쉬워집니다. 모의고사 때마다 OMR 성적표로 위치와 약점을 정확히 알려드리겠습니다.'},
+final1:{mats:[PT('학교별 기출 · 변형','학교별 출제 경향을 반영한 기출과 변형 문제'),PT('차수별 TEST','매주 TEST로 위치를 점검하고 오답 미션으로 연결'),PT('서술형 TEST','채점 기준에 맞춰 쓰는 서술형 차수별 훈련'),PT('실전 모의고사','시험 직전 실전 모의고사와 오답 총정리')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 5월 24일(월) 시작'},{k:'시험 이후',v:'7월 5일부터 여름방학 3주 특강으로 이어집니다'}],
+ parent:'기말고사는 중간고사에서 확인한 약점을 얼마나 보완했는지가 점수로 나타나는 시험입니다. 6주 동안 기출과 서술형을 집중 훈련해 마지막 1점까지 챙기겠습니다. 시험 직전 개별 질의응답으로 마무리하겠습니다.'},
+summer:{mats:[PT('공통수학2 특강 교재','방학 중 공통수학2를 앞서 학습하는 단원별 교재'),PT('대수 연산 교재 · 미션북','지수 · 로그 · 삼각함수 연산을 미션으로 훈련'),PT('주간 TEST · 성적표','주마다 TEST로 점검하고 성적표로 확인'),PT('학습 플래너','3주 학습을 스스로 기록하고 점검하는 플래너')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 7월 5일(월) 시작 (7/19 휴강)'},{k:'방학 이후',v:'8월 9일부터 8월 학력평가(9모) 대비로 이어집니다'}],
+ parent:'고1 여름방학은 입시의 첫 단추를 끼우는 시간입니다. 진도만 빼는 방학이 아니라 배운 것을 소화하는 시간까지 설계했습니다. 3주를 끝까지 완주하는 경험이 2학기의 자신감이 됩니다.'},
+mock9:{mats:[PT('모의기출 모음','공통수학1 · 2 단원별 모의기출 정리'),PT('실전 모의고사 + OMR','제한 시간 실전과 자동 채점'),PT('성적표 · 예상 등급','영역별 성취도와 예상 등급 확인'),PT('약점 보완 자료','성적표에서 확인한 약점 단원 집중 보완')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 8월 9일(월) 시작 (8/16 휴강)'},{k:'시험 이후',v:'8월 30일부터 2학기 중간고사 내신대비 7주 과정으로 이어집니다'}],
+ parent:'학력평가는 점수 자체보다 약점을 찾아내는 데 의미가 있습니다. 시험 결과로 어느 단원을 보완해야 하는지 정확히 짚고, 바로 다음 주부터 시작되는 2학기 중간고사 대비로 이어가겠습니다.'},
+mid2:{exam:'2학기 중간고사 — 보라고 / 신갈고 / 서천고 (학교별 일정 확정 후 입력)',mats:[PT('1~3회독 교재','교과서 전 문항 + 변형 문제를 1회독 · 2회독 · 3회독으로 반복'),PT('모의기출 (도형의 방정식)','연도별 모의기출로 실전 감각 유지'),PT('일일일모 450제','하루 한 회 · 30회 · 총 450문제'),PT('서술형 대비 SET','채점 기준에 맞춘 서술형 SET 훈련')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 8월 30일(월) 시작 (9/15 · 10/4 · 10/11 휴강)'},{k:'학력평가',v:'10월 학력평가 — 2027.10.19(화) (예정안)'},{k:'연휴 미션',v:'추석 연휴(9/14~9/16)에는 내신 빈출 모의고사 미션을 하루 1회씩 진행합니다'},{k:'시험 이후',v:'10월 25일부터 2학기 기말고사 내신대비 7주 과정으로 이어집니다'}],
+ parent:'도형의 방정식은 세 번 반복하면 시험장에서 손이 먼저 움직입니다. 연휴에도 이어지는 미션과 매주 MATHY FRIDAY으로 공백 없이 달리겠습니다. 아이가 스스로 설명할 수 있을 때까지 오답을 함께 잡아내겠습니다.'},
+final2:{mats:[PT('기말 범위 교재','집합과 명제, 함수와 그래프 단원별 교재'),PT('학교별 기출','학교별 출제 경향을 반영한 기출 분석'),PT('서술형 SET','서술형 TEST와 모범답안 해설'),PT('전범위 총정리 자료','도형의 방정식까지 포함한 한 학기 전범위 총정리')],
+ sched:[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY · 10월 25일(월) 시작'},{k:'학기 마무리',v:'기말고사 완료 후 12월 20일부터 2학년 과정이 시작됩니다'}],
+ parent:'한 해의 마지막 시험까지 끝까지 풀어내는 힘이 2학년의 출발선을 바꿉니다. 기말 총정리와 서술형 훈련으로 마지막까지 점수를 챙기고, 기말 직후 2학년 과정으로 자연스럽게 이어가겠습니다.'}
+};
+function fillExtra(c,fresh){var x=EXTRA[c.id]||{};if(!c.mats)c.mats=JSON.parse(JSON.stringify(x.mats||[PT('교재','교재를 입력하세요.')]));if(!c.sched)c.sched=JSON.parse(JSON.stringify(x.sched||[{k:'수업 일정',v:'월·수 수업 / MATHY FRIDAY'}]));if(c.parent==null)c.parent=x.parent||'학부모님께 드리는 글을 입력하세요.';if(!c.sys)c.sys=SYS();if(c.sign==null)c.sign=SG;if(fresh&&x.exam)c.exam=x.exam}
+if(!ST.mf&&ST.courses){frFix(ST.courses);ST.mf=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
+(function seed(){ if(ST.courses&&ST.courses.length){ST.courses.forEach(function(c){fillExtra(c,false)});return}
+ ST.courses=JSON.parse(JSON.stringify(DEF));ST.courses.forEach(function(c){weekDates(c);c.note=holNote(c);c.sess=sessions(c);c.cls='월·수 수업 / MATHY FRIDAY';fillExtra(c,true)});
+ ST.imgs=ST.imgs||[];ST.theme=ST.theme||{name:'navy',c:null};ST.font=ST.font||{h:0,b:8};save()})();
+ST.imgs=ST.imgs||[];ST.theme=ST.theme||{name:'navy',c:null};ST.font=ST.font||{h:0,b:8};ST.kit=ST.kit||{};
+function byId(id){return ST.courses.filter(function(c){return c.id===id})[0]}
+/* ---- 테마 · 글꼴 ---- */
+function hx(c){var n=parseInt(c.slice(1),16);return[n>>16,(n>>8)&255,n&255]}
+function rgb(a){return'#'+a.map(function(v){v=Math.max(0,Math.min(255,Math.round(v)));return(v<16?'0':'')+v.toString(16)}).join('')}
+function mixc(c,t,w){var a=hx(c),b=hx(t);return rgb([a[0]+(b[0]-a[0])*w,a[1]+(b[1]-a[1])*w,a[2]+(b[2]-a[2])*w])}
+function mix(c,w){return mixc(c,'#ffffff',w)}
+var THEMES=[['navy','네이비·로즈골드','#0B1A31','#C79B63','#FBF8F1'],['wine','딥와인·골드','#3A0E1E','#D9A441','#FCF8F2'],['forest','포레스트·샴페인','#0F2E26','#D2B16A','#FAF8F0'],['royal','로열블루·앰버','#0A2A66','#F2B134','#F7F9FD'],['char','차콜·실버','#1E2128','#B8BFCC','#F6F7F9'],['plum','플럼·핑크','#2E1448','#E0A3C8','#FBF7FB'],['black','블랙·코랄','#141414','#FF6B57','#FFFFFF'],['teal','딥틸·오렌지','#0C3B43','#F2A65A','#F6FBFB'],['sky','스카이블루·옐로','#1F4E8C','#FFB400','#F4F9FF']];
+function themeOf(){var c=ST.theme.c;if(c)return c;for(var i=0;i<THEMES.length;i++)if(THEMES[i][0]===ST.theme.name)return{d:THEMES[i][2],a:THEMES[i][3],p:THEMES[i][4]};return{d:THEMES[0][2],a:THEMES[0][3],p:THEMES[0][4]}}
+function applyTheme(){var t=themeOf(),r=document.documentElement.style;
+ r.setProperty('--navy',t.d);r.setProperty('--navy2',mix(t.d,.13));r.setProperty('--gold',t.a);r.setProperty('--goldd',mixc(t.a,'#000000',.36));r.setProperty('--gold1',mix(t.a,.5));
+ r.setProperty('--gold-t',mix(t.a,.88));r.setProperty('--gold-l',mix(t.a,.6));r.setProperty('--ivory',t.p);r.setProperty('--ink',mixc(t.d,'#000000',.2));r.setProperty('--sub',mix(t.d,.42));r.setProperty('--od',mix(t.d,.8));
+ var a=$('#cD');if(a){a.value=t.d;$('#cA').value=t.a;$('#cP').value=t.p}
+ document.querySelectorAll('button.sw').forEach(function(b){b.classList.toggle('on',!ST.theme.c&&b.dataset.t===ST.theme.name)})}
+var FN=[['Noto Serif KR','Noto Serif KR (명조)','serif'],['Nanum Myeongjo','나눔명조','serif'],['Gowun Batang','고운바탕','serif'],['Hahmlet','함렛','serif'],['Song Myung','송명','serif'],['Black Han Sans','블랙한산스(굵은 제목)','sans-serif'],['Do Hyeon','도현','sans-serif'],['Jua','주아(둥근 글씨)','sans-serif'],['Noto Sans KR','Noto Sans KR (고딕)','sans-serif'],['Nanum Gothic','나눔고딕','sans-serif'],['Gowun Dodum','고운돋움','sans-serif'],['IBM Plex Sans KR','IBM Plex Sans KR','sans-serif'],['Malgun Gothic','맑은 고딕','sans-serif']];
+function fam(i){var f=FN[i]||FN[0];return'"'+f[0]+'",'+(f[0]==='Noto Serif KR'?'"Batang",':'')+(f[0]==='Noto Sans KR'||f[0]==='Malgun Gothic'?'"Malgun Gothic","맑은 고딕",':'')+f[2]}
+function applyFont(){var r=document.documentElement.style;r.setProperty('--fh',fam(ST.font.h));r.setProperty('--fb',fam(ST.font.b));var h=$('#fH');if(h){h.value=ST.font.h;$('#fB').value=ST.font.b}}
+function fontOpts(first){return(first?'<option value="">글꼴…</option>':'')+FN.map(function(f,i){return'<option value="'+i+'" style="font-family:\''+f[0]+'\'">'+f[1]+'</option>'}).join('')}
+/* ---- 쪽 그리기 ---- */
+function ED(c,f,i,s,cls,html){var a=' data-c="'+c.id+'" data-f="'+f+'"'+(i!=null?' data-i="'+i+'"':'')+(s?' data-s="'+s+'"':'');return'<span class="ed '+(cls||'')+'" contenteditable="true" spellcheck="false"'+a+'>'+html+'</span>'}
+var ICON='data:image/png;base64,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';
+function logoHtml(){return'<div class="lg"><div class="lg-def"><img class="lg-ic" alt="" src="'+ICON+'"><span class="lg-bar"></span><div class="lg-tx"><div class="lg-ko">대치에스플러스학원</div><div class="lg-en">DAECHI S+ ACADEMY</div></div></div><img class="lg-img" alt="학원 로고" hidden><div class="lgtb ctl"><button type="button" data-lg="pick">로고 바꾸기</button><button type="button" data-lg="minus" title="작게">−</button><button type="button" data-lg="plus" title="크게">＋</button><button type="button" class="o" data-lg="prev" title="방금 바꾸기 전 로고로">↶ 이전 로고</button><button type="button" class="o" data-lg="def" title="처음 로고와 크기로">기본 로고로</button></div><input type="file" accept="image/*" hidden></div>'}
+function topHtml(c,right){return'<div class="fr"></div><div class="top">'+logoHtml()+'<div style="display:flex;align-items:center"><span class="no">'+c.no+'</span>'+right+'</div></div>'}
+function footHtml(c,n){return'<div class="ft"><span>대치에스플러스학원 · '+'<span class="ed" contenteditable="true" spellcheck="false" data-c="'+c.id+'" data-f="foot">'+(c.foot==null?'문의 · 상담 000-0000-0000':c.foot)+'</span></span><span>'+n+' / 2 · mathyyuri.com</span></div>'}
+function XB(act,c,i,t){return'<button type="button" class="xb ctl" data-act="'+act+'" data-c="'+c.id+'" data-i="'+i+'" title="'+t+'">×</button>'}
+function frontHtml(c){
+ var n=c.weeks.length,cls=n<=3?'r3':n<=4?'r4':n<=6?'r6':'';
+ var h='<div class="pw" data-id="'+c.id+'" data-pk="'+c.id+':a"><div class="pg '+cls+'" style="--c:'+c.c+';--ct:'+mix(c.c,.88)+';--cl:'+mix(c.c,.6)+'">'+topHtml(c,'<span class="kick ed" contenteditable="true" spellcheck="false" data-c="'+c.id+'" data-f="kick">'+c.kick+'</span>');
+ h+='<div class="hero"><div class="ttl">'+ED(c,'name',null,null,'',c.name)+'</div><div class="sub">'+ED(c,'tag',null,null,'',c.tag)+'</div><div class="rule"></div></div>';
+ h+='<div class="intro">'+ED(c,'intro',null,null,'',c.intro)+'</div>';
+ h+='<div class="info"><div class="ib"><small>대상</small><div>'+ED(c,'who',null,null,'',c.who)+'</div></div><div class="ib"><small>진행 기간</small><div>'+ED(c,'period',null,null,'',c.period)+'</div></div><div class="ib"><small>수업</small><div>'+ED(c,'cls',null,null,'',c.cls)+'</div></div><div class="ib"><small>총 수업 횟수</small><div>'+ED(c,'sess',null,null,'',c.sess)+'</div></div></div>';
+ h+='<div class="sh"><b>CLASS POINT</b>'+(c.points.length<6?'<button type="button" class="addb ctl" data-act="addpt" data-c="'+c.id+'">+ 포인트 추가</button>':'')+'</div><div class="pts">'+c.points.map(function(p,i){return'<div class="pt"><span class="pn" data-n="'+(i+1)+'">'+(i+1)+'</span><div><b>'+ED(c,'points',i,'h','',p.h)+'</b><span class="d">'+ED(c,'points',i,'d','',p.d)+'</span></div>'+XB('delpt',c,i,'이 항목 지우기')+'</div>'}).join('')+'</div>';
+ h+='<div class="sh"><b>주차별 커리큘럼</b>'+(n<10?'<button type="button" class="addb ctl" data-act="addwk" data-c="'+c.id+'">+ 주 추가</button>':'')+'</div><table class="wk"><colgroup><col style="width:15mm"><col style="width:27mm"><col><col style="width:19mm"><col style="width:7mm"></colgroup><thead><tr><th>주차</th><th>기간</th><th>학습 내용</th><th>단계</th><th class="ctl"></th></tr></thead><tbody>'+
+  c.weeks.map(function(w,i){return'<tr><td class="w">'+ED(c,'weeks',i,'w','',w.w)+'</td><td class="dt">'+ED(c,'weeks',i,'date','',w.date)+'</td><td><b>'+ED(c,'weeks',i,'t','',w.t)+'</b><span class="d">'+ED(c,'weeks',i,'d','',w.d)+'</span></td><td><span class="pill">'+ED(c,'weeks',i,'tag','',w.tag)+'</span></td><td class="act ctl"><button type="button" class="xb" data-act="delwk" data-c="'+c.id+'" data-i="'+i+'" title="이 주 지우기">×</button></td></tr>'}).join('')+'</tbody></table>';
+ h+='<div class="cl">'+ED(c,'cl',null,null,'',c.cl)+'</div>'+footHtml(c,1);
+ return h+'</div></div>'}
+function backHtml(c){
+ var h='<div class="pw" data-id="'+c.id+'" data-pk="'+c.id+':b"><div class="pg bk" style="--c:'+c.c+';--ct:'+mix(c.c,.88)+';--cl:'+mix(c.c,.6)+'">'+topHtml(c,'<span class="bkn">'+plain(c.name)+'</span>');
+ h+='<div class="sh"><b>운영 안내</b></div><div class="ops">'+c.ops.map(function(o,i){return'<div class="ob"><b>'+ED(c,'ops',i,'h','',o.h)+'</b><span class="d">'+ED(c,'ops',i,'d','',o.d)+'</span></div>'}).join('')+'</div>';
+ h+='<div class="sh"><b>학습 관리 시스템</b>'+(c.sys.length<6?'<button type="button" class="addb ctl" data-act="addsy" data-c="'+c.id+'">+ 추가</button>':'')+'</div><div class="sysg">'+c.sys.map(function(o,i){return'<div class="ob"><b>'+ED(c,'sys',i,'h','',o.h)+'</b><span class="d">'+ED(c,'sys',i,'d','',o.d)+'</span>'+XB('delsy',c,i,'이 칸 지우기')+'</div>'}).join('')+'</div>';
+ h+='<div class="sh"><b>교재 · 자료</b>'+(c.mats.length<8?'<button type="button" class="addb ctl" data-act="addmt" data-c="'+c.id+'">+ 추가</button>':'')+'</div><div class="mts">'+c.mats.map(function(p,i){return'<div class="pt"><span class="pn" data-n="'+(i+1)+'">'+(i+1)+'</span><div><b>'+ED(c,'mats',i,'h','',p.h)+'</b><span class="d">'+ED(c,'mats',i,'d','',p.d)+'</span></div>'+XB('delmt',c,i,'이 항목 지우기')+'</div>'}).join('')+'</div>';
+ h+='<div class="sh"><b>시험 · 평가 · 일정</b><button type="button" class="addb ctl" data-act="addsc" data-c="'+c.id+'">+ 줄 추가</button></div><table class="sc"><colgroup><col style="width:27mm"><col><col style="width:7mm"></colgroup><tbody>'+
+  '<tr><td class="k">시험 · 평가</td><td>'+ED(c,'exam',null,null,'',c.exam)+'</td><td class="act ctl"></td></tr>'+
+  c.sched.map(function(r,i){return'<tr><td class="k">'+ED(c,'sched',i,'k','',r.k)+'</td><td>'+ED(c,'sched',i,'v','',r.v)+'</td><td class="act ctl"><button type="button" class="xb" data-act="delsc" data-c="'+c.id+'" data-i="'+i+'" title="이 줄 지우기">×</button></td></tr>'}).join('')+
+  '<tr><td class="k">휴강 · 보강</td><td>'+ED(c,'note',null,null,'',c.note)+'</td><td class="act ctl"></td></tr></tbody></table>';
+ h+='<div class="sh"><b>학부모님께</b></div><div class="lt">'+ED(c,'parent',null,null,'',c.parent)+'<div class="sg">'+ED(c,'sign',null,null,'',c.sign)+'</div></div>';
+ h+='<div style="margin-top:auto"></div>'+footHtml(c,2);
+ return h+'</div></div>'}
+function pagesHtml(c){return frontHtml(c)+backHtml(c)}
+function render(){
+ var st=$('.stage');st.innerHTML=ST.courses.map(pagesHtml).join('');
+ imgRender();logos();fit();if(window.Kit)Kit.apply();
+ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(check);setTimeout(check,400)}
+function check(){document.querySelectorAll('.stage .pg').forEach(function(pg){var old=pg.querySelector('.ovf');if(old)old.remove();if(pg.scrollHeight>pg.clientHeight+2){var b=document.createElement('div');b.className='ovf ctl';b.textContent='⚠ 내용이 넘쳐요 — 글을 줄이거나 항목을 지워 주세요';pg.appendChild(b)}})}
+/* ---- 입력 반영 ---- */
+function ref(el){var c=byId(el.dataset.c);if(!c)return null;var f=el.dataset.f,i=el.dataset.i,s=el.dataset.s;if(i==null)return{o:c,k:f};if(s==null)return{o:c[f],k:+i};return{o:c[f][+i],k:s}}
+document.addEventListener('input',function(e){var el=e.target;
+ if(el.classList&&el.classList.contains('ed')&&el.dataset.c){var r=ref(el);if(r){r.o[r.k]=el.innerHTML;save()}return}
+ var t=el.closest&&el.closest('#cT');if(t&&el.dataset.f){var c=ST.courses[+el.closest('tr').dataset.i];c[el.dataset.f]=el.value;
+  if(el.dataset.f==='s'||el.dataset.f==='e'||el.dataset.f==='c'||el.dataset.f==='no')save(),keepScroll(render);
+  else if(el.dataset.f==='name'||el.dataset.f==='period'){save();keepScroll(render)}}});
+document.addEventListener('paste',function(e){var el=e.target;if(el.classList&&el.classList.contains('ed')){e.preventDefault();var t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)}});
+document.addEventListener('keydown',function(e){var el=e.target;if(e.key==='Enter'&&el.classList&&el.classList.contains('ed')){e.preventDefault();el.blur()}
+ if((e.key==='Delete'||e.key==='Backspace')&&selImg&&!(el.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(el.tagName))){ST.imgs=ST.imgs.filter(function(x){return x.id!==selImg});selImg=null;save();imgRender()}});
+function keepScroll(fn){var y=scrollY;fn();scrollTo(0,y)}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('button[data-act]');if(!b)return;var c=byId(b.dataset.c),i=+b.dataset.i,a=b.dataset.act;
+ if(a==='delpt'){c.points.splice(i,1)}else if(a==='addpt'){c.points.push(PT('새 포인트','내용을 입력하세요.'))}
+ else if(a==='delmt'){c.mats.splice(i,1)}else if(a==='addmt'){c.mats.push(PT('새 항목','내용을 입력하세요.'))}else if(a==='delsy'){c.sys.splice(i,1)}else if(a==='addsy'){c.sys.push(PT('새 항목','내용을 입력하세요.'))}else if(a==='delsc'){c.sched.splice(i,1)}else if(a==='addsc'){c.sched.push({k:'새 항목',v:'내용을 입력하세요.'})}
+ else if(a==='delwk'){c.weeks.splice(i,1);weekDates(c)}else if(a==='addwk'){c.weeks.push(W(1,(c.weeks.length+1)+'주','새 주차','학습 내용을 입력하세요.','유형'));weekDates(c)}
+ else return;save();keepScroll(render)});
+/* ---- 설정 패널 ---- */
+function buildSettings(){
+ var h='<tr><th>쪽 · 순서</th><th>번호</th><th>과정 이름</th><th>진행 기간(표시)</th><th>시작일</th><th>끝일</th><th>색</th><th></th></tr>';
+ ST.courses.forEach(function(c,i){h+='<tr data-i="'+i+'"><td style="white-space:nowrap;font-size:11px;color:#667">'+(2*i+1)+'~'+(2*i+2)+'쪽 <button class="b g" type="button" data-mv="-1">↑</button><button class="b g" type="button" data-mv="1">↓</button></td><td><input type="text" data-f="no" value="'+esc(c.no)+'" style="width:34px"></td><td><input type="text" data-f="name" value="'+esc(plain(c.name))+'" style="width:190px"></td><td><input type="text" data-f="period" value="'+esc(plain(c.period))+'" style="width:190px"></td><td><input type="text" data-f="s" value="'+c.s+'" style="width:86px"></td><td><input type="text" data-f="e" value="'+c.e+'" style="width:86px"></td><td><input type="color" data-f="c" value="'+c.c+'"></td><td><button class="b g" type="button" data-del="'+i+'">삭제</button></td></tr>'});
+ $('#cT').innerHTML=h}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('button');if(!b)return;
+ if(b.dataset.mv){var i=+b.closest('tr').dataset.i,j=i+(+b.dataset.mv);if(j<0||j>=ST.courses.length)return;var t=ST.courses[i];ST.courses[i]=ST.courses[j];ST.courses[j]=t;save();buildSettings();keepScroll(render)}
+ else if(b.dataset.del!=null){var k=+b.dataset.del;if(ST.courses.length<2)return;if(!confirm('"'+plain(ST.courses[k].name)+'" 안내문을 지울까요? (되돌릴 수 없어요)'))return;ST.courses.splice(k,1);save();buildSettings();keepScroll(render)}});
+window.addCourse=function(){var n=ST.courses.length+1;var c=JSON.parse(JSON.stringify(DEF[2]));c.id='c'+Date.now();c.no=(n<10?'0':'')+n;c.name='새 과정';c.tag='한 줄 소개를 입력하세요';c.kick='NEW PROGRAM';c.c='#7A8AA6';c.period='기간을 입력하세요';c.weeks.forEach(function(w,i){w.t='주제';w.d='학습 내용을 입력하세요'});weekDates(c);c.note=holNote(c);c.sess=sessions(c);c.cls='월·수 수업 / MATHY FRIDAY';ST.courses.push(c);save();buildSettings();keepScroll(render)};
+window.recalc=function(which){ST.courses.forEach(function(c){if(which==='dates')weekDates(c);else if(which==='hol'){c.note=holNote(c);c.sess=sessions(c)}});save();keepScroll(render)};
+window.exportJson=function(){var raw=localStorage.getItem('bro_courses_v1')||'{}',a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download='커리큘럼_핵심내용.json';document.body.appendChild(a);a.click();a.remove()};
+window.resetAll=function(){if(confirm('글자·색·글꼴·이미지를 모두 처음 상태로 되돌릴까요? (지금까지 고친 내용이 사라져요)')){try{localStorage.removeItem(KEY);localStorage.removeItem('bro_logo')}catch(e){}location.reload()}};
+window.resetTheme=function(){ST.theme={name:'navy',c:null};ST.font={h:0,b:8};save();applyTheme();applyFont()};
+function buildLook(){
+ $('#swRow').innerHTML=THEMES.map(function(t){return'<button type="button" class="sw" data-t="'+t[0]+'" style="background:linear-gradient(90deg,'+t[2]+' 0 55%,'+t[3]+' 55% 100%)">'+t[1]+'</button>'}).join('');
+ $('#fH').innerHTML=fontOpts(false);$('#fB').innerHTML=fontOpts(false);$('#fFont').innerHTML=fontOpts(true);
+ $('#swRow').addEventListener('click',function(e){var b=e.target.closest('button.sw');if(!b)return;ST.theme={name:b.dataset.t,c:null};save();applyTheme()});
+ ['cD','cA','cP'].forEach(function(id){$('#'+id).addEventListener('input',function(){ST.theme={name:ST.theme.name,c:{d:$('#cD').value,a:$('#cA').value,p:$('#cP').value}};save();applyTheme()})});
+ $('#fH').addEventListener('change',function(){ST.font.h=+this.value;save();applyFont()});$('#fB').addEventListener('change',function(){ST.font.b=+this.value;save();applyFont()})}
+/* ---- 부분 글자 서식 ---- */
+var lastR=null,lastEd=null;
+document.addEventListener('selectionchange',function(){var s=getSelection();if(!s.rangeCount)return;var r=s.getRangeAt(0),n=r.commonAncestorContainer,el=n.nodeType===1?n:n.parentElement;
+ if(el&&el.closest&&el.closest('.ed')&&!el.closest('#fmt')){lastR=r.cloneRange();lastEd=el.closest('.ed');var px=parseFloat(getComputedStyle(el).fontSize);if(px){var f=$('#fSize');if(f&&document.activeElement!==f)f.value=Math.round(px*0.75*2)/2}}});
+function withSel(fn){if(!lastEd||!document.body.contains(lastEd)){alert('먼저 고칠 글자를 클릭하거나 드래그해서 선택해 주세요. (파란 점선 글씨만 고칠 수 있어요)');return}
+ lastEd.focus();var s=getSelection(),r=lastR;s.removeAllRanges();if(!r||r.collapsed){r=document.createRange();r.selectNodeContents(lastEd)}s.addRange(r);
+ try{document.execCommand('styleWithCSS',false,true)}catch(e){}fn();
+ lastEd.dispatchEvent(new Event('input',{bubbles:true}));if(s.rangeCount)lastR=s.getRangeAt(0).cloneRange()}
+function setSize(pt){withSel(function(){document.execCommand('fontSize',false,'7');lastEd.querySelectorAll('font[size="7"],span').forEach(function(n){
+  if(n.tagName==='FONT'){var sp=document.createElement('span');sp.style.fontSize=pt+'pt';while(n.firstChild)sp.appendChild(n.firstChild);n.replaceWith(sp)}else if(n.style&&n.style.fontSize==='xxx-large')n.style.fontSize=pt+'pt'})})}
+function setupFmt(){
+ var f=$('#fmt');f.addEventListener('mousedown',function(e){if(!/SELECT|INPUT/.test(e.target.tagName))e.preventDefault()});
+ f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.c){var c=b.dataset.c;if(c==='gold')c=getComputedStyle(document.documentElement).getPropertyValue('--gold').trim();if(c==='dark')c=getComputedStyle(document.documentElement).getPropertyValue('--navy').trim();withSel(function(){document.execCommand('foreColor',false,c)})}
+  else if(b.id==='fBold')withSel(function(){document.execCommand('bold')});
+  else if(b.id==='fClr')withSel(function(){document.execCommand('removeFormat');lastEd.querySelectorAll('[style]').forEach(function(n){n.removeAttribute('style')})});
+  else if(b.id==='fPlus'||b.id==='fMinus'){var v=parseFloat($('#fSize').value)||10;v=Math.max(4,Math.min(80,v+(b.id==='fPlus'?1:-1)));$('#fSize').value=v;setSize(v)}});
+ $('#fColor').addEventListener('change',function(){var c=this.value;withSel(function(){document.execCommand('foreColor',false,c)})});
+ $('#fSize').addEventListener('change',function(){var v=parseFloat(this.value);if(v>=4&&v<=80)setSize(v)});
+ $('#fFont').addEventListener('change',function(){var i=this.value;if(i==='')return;var nm=FN[+i][0];this.value='';withSel(function(){document.execCommand('fontName',false,nm)})})}
+/* ---- 이미지 ---- */
+var selImg=null;
+function imgRender(){document.querySelectorAll('.pim').forEach(function(e){e.remove()});
+ ST.imgs.forEach(function(im){var pk=im.c.indexOf(':')>0?im.c:im.c+':a',pg=document.querySelector('.pw[data-pk="'+pk+'"] .pg');if(!pg)return;var d=document.createElement('div');d.className='pim'+(im.id===selImg?' sel':'');d.dataset.id=im.id;
+  d.style.left=im.x+'mm';d.style.top=im.y+'mm';d.style.width=im.w+'mm';d.style.height=im.h+'mm';
+  var i=document.createElement('img');i.alt='';i.src=im.src;d.appendChild(i);d.insertAdjacentHTML('beforeend','<b class="x" title="삭제">✕</b><i class="rz" title="크기 조절"></i>');pg.appendChild(d)})}
+function curPage(){var pws=[].slice.call(document.querySelectorAll('.pw')),mid=innerHeight/2,best=null,bd=1e9;pws.forEach(function(p){var r=p.getBoundingClientRect(),d=Math.abs((r.top+r.bottom)/2-mid);if(d<bd){bd=d;best=p}});return best&&best.dataset.pk}
+window.addImg=function(){var f=$('#imgf');f.dataset.c=curPage()||(ST.courses[0].id+':a');f.value='';f.click()};
+function setupImg(){
+ $('#imgf').addEventListener('change',function(){var file=this.files&&this.files[0],cid=this.dataset.c;if(!file)return;var rd=new FileReader();
+  rd.onload=function(){var im=new Image();im.onload=function(){var png=file.type==='image/png',mx=png?1100:1500,k=Math.min(1,mx/Math.max(im.width,im.height)),w=Math.round(im.width*k),h=Math.round(im.height*k),c=document.createElement('canvas');c.width=w;c.height=h;var g=c.getContext('2d');
+    if(!png){g.fillStyle='#fff';g.fillRect(0,0,w,h)}g.drawImage(im,0,0,w,h);var src=png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.86);
+    var mw=70,mh=mw*h/w;if(mh>110){mh=110;mw=mh*w/h}
+    var o={id:Date.now(),c:cid,x:Math.round((210-mw)/2),y:Math.round((297-mh)/2),w:Math.round(mw*10)/10,h:Math.round(mh*10)/10,src:src};ST.imgs.push(o);selImg=o.id;save();imgRender()};im.src=rd.result};rd.readAsDataURL(file)});
+ var drag=null;
+ document.addEventListener('pointerdown',function(e){var t=e.target,box=t.closest&&t.closest('.pim');
+  if(!box){if(selImg&&!(t.closest&&t.closest('#fmt'))){selImg=null;document.querySelectorAll('.pim.sel').forEach(function(x){x.classList.remove('sel')})}return}
+  var im=ST.imgs.filter(function(x){return x.id==box.dataset.id})[0];if(!im)return;
+  if(t.classList.contains('x')){ST.imgs=ST.imgs.filter(function(x){return x!==im});selImg=null;save();imgRender();return}
+  selImg=im.id;document.querySelectorAll('.pim.sel').forEach(function(x){x.classList.remove('sel')});box.classList.add('sel');
+  var pg=box.closest('.pg'),sc=pg.getBoundingClientRect().width/pg.offsetWidth;
+  drag={im:im,box:box,mode:t.classList.contains('rz')?'rz':'mv',x0:e.clientX,y0:e.clientY,ix:im.x,iy:im.y,iw:im.w,ih:im.h,k:sc*3.7795};box.setPointerCapture(e.pointerId);e.preventDefault()});
+ document.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x0)/drag.k,dy=(e.clientY-drag.y0)/drag.k,im=drag.im;
+  if(drag.mode==='mv'){im.x=Math.round((drag.ix+dx)*10)/10;im.y=Math.round((drag.iy+dy)*10)/10;drag.box.style.left=im.x+'mm';drag.box.style.top=im.y+'mm'}
+  else{var w=Math.max(8,drag.iw+dx);im.w=Math.round(w*10)/10;im.h=Math.round(w*drag.ih/drag.iw*10)/10;drag.box.style.width=im.w+'mm';drag.box.style.height=im.h+'mm'}});
+ document.addEventListener('pointerup',function(){if(drag){save();drag=null}})}
+/* ---- 로고 ---- */
+function logos(){Logo.apply()}
+function fit(){var q=location.search.match(/shot=(\d+)/);if(q){document.querySelector('.bar').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.style.display='none'});document.querySelector('.wrap').style.padding='0';document.querySelectorAll('.pw').forEach(function(e,i){e.style.display=(i==q[1])?'block':'none'});document.querySelector('.stage').style.setProperty('--s','1');document.body.style.margin='0';return}
+ var w=document.querySelector('.wrap').clientWidth-24,s=Math.min(1,w/(210*3.7795));document.querySelector('.stage').style.setProperty('--s',s.toFixed(4))}
+window.addEventListener('resize',fit);
+buildLook();applyTheme();applyFont();buildSettings();render();setupFmt();setupImg();
+Kit.mount($('#kitMount'),{box:'.ib,.ob,.lt',num:'.pn',fmt:'.pn',imp:false,state:ST.kit,onChange:save});
+Logo.init(function(){Hist.touch()});
+function restoreAll(str){var o=JSON.parse(str);ST=o.st;Logo.restore(o.lg);try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}shareSave();mirror();applyTheme();applyFont();buildSettings();Kit.mount($('#kitMount'),{box:'.ib,.ob,.lt',num:'.pn',fmt:'.pn',imp:false,state:ST.kit,onChange:save});render()}
+Hist.init({snap:function(){return JSON.stringify({st:ST,lg:Logo.snap()})},restore:restoreAll});
+mirror();
+})();
+</script><script>
+(function(){
+ var bar=document.querySelector('.bar'),dk=document.getElementById('dock'),tg=document.getElementById('dkTog');
+ function setH(){if(bar)document.documentElement.style.setProperty('--barh',bar.offsetHeight+'px')}
+ setH();window.addEventListener('resize',setH);if(window.ResizeObserver&&bar)new ResizeObserver(setH).observe(bar);
+ if(!dk||!tg)return;
+ try{if(localStorage.getItem('bro_dock_col')==='1'){dk.classList.add('col');tg.textContent='▼ 펴기'}}catch(e){}
+ tg.addEventListener('click',function(){var c=dk.classList.toggle('col');tg.textContent=c?'▼ 펴기':'▲ 접기';try{localStorage.setItem('bro_dock_col',c?'1':'0')}catch(e){}});
+})();
+</script><script>/* 여백없는 PDF — 쪽마다 화면 그대로 그림으로 찍어서 한 장씩 붙이는 방식(html2canvas + jsPDF).
+   브라우저 인쇄와 달리 HTML에서 보던 모양 그대로 나온다. 쪽 지정(예: 1-4, 7) 가능. */
+(function () {
+  var W = window.PDF_W || 257, H = window.PDF_H || 364;   // 용지(mm): 기본 B4, 성적표는 A4(210x297)
+  function pagesList() { return [].slice.call(document.querySelectorAll('.stage .pg')); }
+  function parse(t, n) {
+    var c = String(t).split('~').join('-').split(' ').join(''); if (!c) return null;
+    var seen = {}, out = [], ps = c.split(',');
+    for (var i = 0; i < ps.length; i++) {
+      var p = ps[i]; if (!p) continue;
+      var ab = p.split('-'), a, b;
+      if (ab.length === 1) { a = b = parseInt(ab[0], 10); } else if (ab.length === 2) { a = parseInt(ab[0], 10); b = parseInt(ab[1], 10); } else return null;
+      if (isNaN(a) || isNaN(b)) return null; if (a > b) { var x = a; a = b; b = x; }
+      if (a < 1 || b > n) return null;
+      for (var k = a; k <= b; k++) { if (!seen[k]) { seen[k] = 1; out.push(k); } }
+    }
+    out.sort(function (x, y) { return x - y; }); return out.length ? out : null;
+  }
+  function selection() {
+    var n = pagesList().length, v = (document.getElementById('rng') || { value: '' }).value.trim();
+    if (!v) { var all = []; for (var i = 1; i <= n; i++) all.push(i); return all; }
+    var s = parse(v, n); if (!s) { alert('쪽 지정이 올바르지 않아요. 예: 1-4, 7  (표지가 1쪽, 총 ' + n + '쪽)'); return null; }
+    return s;
+  }
+  async function capture(pg) {
+    var host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:-12000px;top:0;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden';
+    var clone = pg.cloneNode(true); clone.classList.add('cap'); clone.style.position = 'relative';
+    host.appendChild(clone); document.body.appendChild(host);
+    try {
+      await new Promise(function (r) { setTimeout(r, 120); });
+      var rc = host.getBoundingClientRect();
+      return await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, width: Math.round(rc.width), height: Math.round(rc.height), logging: false });
+    } finally { host.remove(); }
+  }
+  async function run(btn, kind) {
+    var PW = window.PDF_PW || W, PH = window.PDF_PH || H;   // PDF 용지(레이아웃 크기와 다를 때: 그림을 용지에 맞춰 늘림)
+    var nums = selection(); if (!nums) return;
+    var orig = btn.textContent; btn.disabled = true;
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      var pdf = null, J = window.jspdf && window.jspdf.jsPDF;
+      if (kind === 'pdf' && !J) throw new Error('PDF 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      if (!window.html2canvas) throw new Error('캡처 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      for (var i = 0; i < nums.length; i++) {
+        btn.textContent = '찍는 중... (' + (i + 1) + '/' + nums.length + ')';
+        var c = await capture(pagesList()[nums[i] - 1]);
+        if (kind === 'pdf') {
+          if (!pdf) pdf = new J({ orientation: PW > PH ? 'landscape' : 'portrait', unit: 'mm', format: [PW, PH] }); else pdf.addPage([PW, PH], PW > PH ? 'landscape' : 'portrait');
+          pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
+        } else {
+          var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (window.PDFBASE || 'mo10') + '_' + nums[i] + '쪽.png';
+          document.body.appendChild(a); a.click(); a.remove(); await new Promise(function (r) { setTimeout(r, 250); });
+        }
+      }
+      if (kind === 'pdf') pdf.save((window.PDFBASE || 'mo10') + '.pdf');
+    } catch (e) { alert('저장 실패: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = orig; }
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (t && t.id === 'pdfBtn') run(t, 'pdf');
+    else if (t && t.id === 'pngBtn') run(t, 'png');
+  });
+})();
+</script></body></html>
