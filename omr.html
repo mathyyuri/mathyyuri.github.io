@@ -1,8 +1,10 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OMR 답안지 · 자동채점</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet"><style>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OMR 답안지 · 자동채점</title><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@400;700;900&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Song+Myung&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"><style>
 *{box-sizing:border-box}html,body{margin:0;background:#e3e6ec;font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#1b2233}
 .bar{position:sticky;top:0;z-index:30;background:#0B1A31;color:#fff;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 .bar b{margin-right:6px}.bar button,.bar input,.bar select{border:0;border-radius:6px;padding:6px 11px;font-size:13px;font-weight:700;font-family:inherit}
-.bar button{background:#C79B63;color:#0B1A31;cursor:pointer}.bar button.g{background:#e7ebf3}.bar button.on{background:#fff;box-shadow:0 0 0 2px #C79B63 inset}.bar button:disabled{opacity:.4}
+.bar button{background:#C79B63;color:#0B1A31;cursor:pointer}.bar button.g{background:#e7ebf3}.bar button.on{background:#fff;box-shadow:0 0 0 2px #C79B63 inset}.bar button:disabled{opacity:.4;cursor:default}
+.fmt{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #2a3d63;padding-top:7px;font-size:12px}
+.fmt button{padding:4px 9px;font-size:12px}.fmt input[type=number]{width:56px;padding:4px 5px;font-weight:500}.fmt input[type=color]{width:34px;height:26px;padding:0;border:0;background:none;cursor:pointer}.fmt select{padding:5px 6px;font-weight:500;max-width:150px}.fmt .sq{padding:4px 7px;border:1px solid #fff5}.fmt .lbl{color:#cfd7e8}
 .wrap{max-width:1180px;margin:0 auto;padding:12px 12px 50px}
 .panel{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
 .panel h3{margin:0 0 6px;font-size:15px;color:#13264A}.hint{font-size:12px;color:#5A6580;line-height:1.7;margin:0 0 8px}
@@ -14,19 +16,30 @@ button.b{border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:1
 .pw{width:calc(297mm*var(--s));height:calc(210mm*var(--s));position:relative;box-shadow:0 6px 24px rgba(0,0,0,.25);background:#fff}
 .pg{position:absolute;left:0;top:0;width:297mm;height:210mm;background:#fff;transform:scale(var(--s));transform-origin:0 0;overflow:hidden;color:var(--pc);font-family:"Noto Sans KR","Malgun Gothic",sans-serif}
 .cap .pg,.pg.cap{transform:none!important}.cap{box-shadow:none!important}
-.pg *{position:absolute;box-sizing:border-box}
+.pg *{position:absolute;box-sizing:border-box}.pg i{font-style:normal}
 .pg .fid{background:#000}
-.pg .ed{position:absolute;outline:1px dashed rgba(58,123,213,.4);outline-offset:1px;cursor:text;white-space:nowrap}.pg .ed:focus{outline:2px solid #3a7bd5;background:rgba(58,123,213,.1)}.cap .ed{outline:none!important;background:none!important}
-.pg .fr{border:.35mm solid var(--pc);border-radius:1mm}
-.pg .fr2{border:.35mm solid var(--pc)}
-.pg .tx{white-space:nowrap;line-height:1;display:flex;align-items:center;justify-content:center;font-size:7pt;font-weight:700}
-.pg .tl{justify-content:flex-start}
-.pg .bb{border:.28mm solid var(--pc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6pt;font-weight:700;line-height:1;font-style:normal}
+.pg .grp{left:0;top:0;width:297mm;height:210mm;pointer-events:none}.pg .grp *{pointer-events:auto}
+.pg .ed{outline:1px dashed rgba(58,123,213,.4);outline-offset:1px;cursor:text;white-space:nowrap}.pg .ed:focus{outline:2px solid #3a7bd5;background:rgba(58,123,213,.1)}.cap .ed{outline:none!important;background:none!important}
+.pg .ed.st{position:static}
+.pg .fr{border:.35mm solid var(--pc);border-radius:1mm}.pg .fr2{border:.35mm solid var(--pc)}
+.pg .dot{border:.3mm dashed var(--pc);border-radius:.6mm;opacity:.9}
+.pg .tx{white-space:nowrap;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7pt;font-weight:700}
+.pg .tx.wr,.pg .tx.wr .ed{white-space:normal}
+.pg .tl{justify-content:flex-start;text-align:left}
+.pg .bb{border:.28mm solid var(--pc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6pt;font-weight:700;line-height:1}
 .pg .bb.fill{background:#111;color:#111;border-color:#111}
-.pg .bar1{background:var(--pc);opacity:.85}
-.pg .ln{background:var(--pc)}
-.pg .hd{background:var(--pc);color:#fff}
-.pg .big{font-weight:900}
+.pg .bar1{background:var(--pc);opacity:.85}.pg .ln{background:var(--pc)}.pg .hd{background:var(--pc);color:#fff}.pg .big{font-weight:900}
+.pg .gh{display:none;border:.4mm dashed #1d6fe0;background:rgba(58,123,213,.1);cursor:move;z-index:20;color:#1d6fe0;font-size:6pt;font-weight:700;align-items:flex-start;justify-content:flex-start;padding:.6mm 1mm}
+.pg .gh.sel{background:rgba(58,123,213,.25)}.pg.moving .gh{display:flex}.cap .gh{display:none!important}
+.lg{position:relative;display:inline-block}.lg-def{display:flex;align-items:center;gap:calc(3mm*var(--lgs,1))}.lg-ic{display:block;height:calc(8mm*var(--lgs,1));width:auto}.lg-bar{display:block;height:calc(6.6mm*var(--lgs,1));border-left:1px solid #13264A;opacity:.8}
+.lg-tx{text-align:left}.lg-ko{font-size:calc(9.5pt*var(--lgs,1));font-weight:800;letter-spacing:-.4px;line-height:1.15;color:#13264A}.lg-en{font-family:"Cinzel",serif;font-size:calc(4.6pt*var(--lgs,1));letter-spacing:.3em;margin-top:.5mm;color:#8F6A3A}
+.lg-img{display:block;height:calc(9mm*var(--lgs,1));max-width:calc(60mm*var(--lgs,1));width:auto}.lg-img[hidden]{display:none}
+.pg .lgbox,.pg .lgbox *{position:static}.pg .lgbox{position:absolute}.pg .lgbox .lg{position:relative}.pg .lgbox .lgtb{position:absolute}
+
+.lgtb{position:absolute;left:0;top:-8mm;display:flex;gap:2px;opacity:0;z-index:20;white-space:nowrap;transition:opacity .12s}.lg:hover .lgtb,.lgtb:hover{opacity:1}
+.lgtb button{border:0;border-radius:4px;background:#3a7bd5;color:#fff;font:600 10px "Malgun Gothic",sans-serif;padding:3px 7px;cursor:pointer}.lgtb button.o{background:#667}
+.cap .lgtb{display:none!important}
+
 .tabs button{background:#e7ebf3}
 #readPanel{display:none}
 .res{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;margin:10px 0;padding:10px;border:1px solid #dfe3ea;border-radius:8px}
@@ -36,87 +49,144 @@ button.b{border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:1
 .keyg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:4px 8px}.keyg label{display:flex;gap:4px;align-items:center;font-size:12px}.keyg input{width:38px;padding:2px 4px;border:1px solid #c9ced9;border-radius:4px}
 .warn{color:#c33;font-weight:700}.okc{color:#1a7a50;font-weight:700}
 @page{size:297mm 210mm;margin:0}
-@media print{html,body{background:#fff}.bar,.panel,#readPanel{display:none!important}.stage{margin:0;--s:1!important}.pw{box-shadow:none}.pg{transform:none}.pg .ed{outline:none}}
-</style></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">아래 답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>. 문항 수·수험번호 자리 수·색은 여기서 바꿉니다. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요(위쪽 PDF 저장 버튼으로 만든 PDF를 100%로 인쇄하면 됩니다).</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>수험번호: 학교(학원) <input type="number" id="sd" min="0" max="8"> 자리 · 반 <input type="number" id="cd" min="0" max="4"> 자리 · 번호 <input type="number" id="nd" min="0" max="4"> 자리</label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" id="resetCfg">처음 모양으로</button></div></div><div class="panel" id="readPanel"><h3>사진·스캔으로 자동 채점</h3><p class="hint">① 아래에 정답과 배점을 넣고 → ② 학생 답안지 사진(또는 스캔 이미지)을 올리면 됩니다. 네 모서리의 검은 네모가 모두 사진에 나오게 찍어 주세요(좌상단은 네모 2개). 사진이 약간 기울어져도, 돌아가 있어도 읽어요. 읽은 결과는 칸에서 바로 고칠 수 있고, 헷갈린 칸은 <span class="warn">복수/?</span>로 표시됩니다.</p><div class="row"><b>정답·배점</b> <button class="b g" type="button" onclick="allPts()">배점 한 번에 채우기</button></div><div class="row"><textarea id="keyTxt" rows="3" cols="60" placeholder="정답을 한 번에 붙여넣기: 공백·줄바꿈으로 구분(예: 3 5 2 1 …) 또는 줄마다 번호,정답,배점"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button></div><div class="keyg" id="keyg"></div><div class="row" style="margin-top:10px"><b>답안지 사진</b> <input type="file" id="fileIn" accept="image/*" multiple> <button class="b g" type="button" id="clearRes">결과 지우기</button> <button class="b o" type="button" onclick="exportCsv()">결과 CSV로 저장</button> <span id="readMsg"></span></div><div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
+@media print{html,body{background:#fff}.bar,.panel,#readPanel{display:none!important}.stage{margin:0;--s:1!important}.pw{box-shadow:none}.pg{transform:none}.pg .ed{outline:none}.pg .gh,.lgtb{display:none!important}}
+</style></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button><button type="button" id="mvBtn" class="g" onclick="toggleMove()">박스 위치 조절</button><button type="button" id="undoBtn" class="g">↶ 되돌리기</button><button type="button" id="redoBtn" class="g">↷ 다시</button><div class="fmt" id="fmt"><b>글자 서식</b><span class="lbl">고칠 글자를 드래그로 선택 → 누르세요 (선택 없이 칸만 눌러도 칸 전체에 적용)</span><span class="lbl">색</span><input type="color" id="fColor" value="#B8334F"><button class="sq" data-c="#FFFFFF" style="background:#fff;color:#000">흰</button><button class="sq" data-c="#000000" style="background:#000;color:#fff">검정</button><button class="sq" data-c="#D6336C" style="background:#D6336C;color:#fff">빨강</button><span class="lbl">크기</span><button type="button" id="fMinus">A−</button><input type="number" id="fSize" min="3" max="80" step="0.5" value="7"><button type="button" id="fPlus">A＋</button><span class="lbl">글꼴</span><select id="fFont"></select><button type="button" id="fBold"><b>B</b></button><button type="button" id="fClr" class="g">서식 지우기</button></div></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>(위쪽 "글자 서식"으로 색·크기·글꼴도 바꿀 수 있어요). 아래에서 문항 수·학교/반 목록·색을 바꿉니다. <b>박스 위치 조절</b>: 위쪽 버튼을 누르면 박스마다 파란 손잡이가 생겨요 — 끌어서 옮기거나, 눌러 두고 화살표 키로 0.5mm씩 옮기세요. 채점기도 같은 위치를 쓰니, <b>인쇄한 뒤에는 위치·문항 수를 바꾸지 마세요</b>. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요. 학원 로고는 답안지 위쪽(제목 아래)에 마우스를 올리면 바꾸기·크기 버튼이 나와요.</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>번호 자리 수 <input type="number" id="nd" min="0" max="4"></label><label>이름 점선 칸 수 <input type="number" id="nameN" min="0" max="8"></label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" onclick="resetOff()">박스 위치 처음대로</button><button class="b g" type="button" id="resetCfg">전체 처음 모양으로</button></div><div class="row"><label>학교 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="schools" style="width:420px"></label></div><div class="row"><label>반 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="classes" style="width:420px"></label></div></div><div class="panel" id="readPanel"><h3>사진·스캔으로 자동 채점</h3><p class="hint">① 아래에 정답과 배점을 넣고 → ② 학생 답안지 사진(또는 스캔 이미지)을 올리면 됩니다. 네 모서리의 검은 네모가 모두 사진에 나오게 찍어 주세요(좌상단은 네모 2개). 사진이 약간 기울어져도, 돌아가 있어도 읽어요. 학교·반·번호도 칸에서 읽어 함께 보여줍니다. 읽은 결과는 칸에서 바로 고칠 수 있고, 헷갈린 칸은 <span class="warn">복수/?</span>로 표시됩니다.</p><div class="row"><b>정답·배점</b> <button class="b g" type="button" onclick="allPts()">배점 한 번에 채우기</button></div><div class="row"><textarea id="keyTxt" rows="3" cols="60" placeholder="정답을 한 번에 붙여넣기: 공백·줄바꿈으로 구분(예: 3 5 2 1 …) 또는 줄마다 번호,정답,배점"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button></div><div class="keyg" id="keyg"></div><div class="row" style="margin-top:10px"><b>답안지 사진</b> <input type="file" id="fileIn" accept="image/*" multiple> <button class="b g" type="button" id="clearRes">결과 지우기</button> <button class="b o" type="button" onclick="exportCsv()">결과 CSV로 저장</button></div><div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
+window.Logo=(function(){
+ var K='bro_logo',KS='bro_logo_s',KP='bro_logo_prev',cb=null;
+ function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
+ function s(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);return true}catch(e){alert('로고를 저장할 공간이 부족해요. 더 작은 이미지를 써 주세요.');return false}}
+ function apply(){var src=g(K),sc=parseFloat(g(KS))||1;document.documentElement.style.setProperty('--lgs',sc);
+  document.querySelectorAll('.lg').forEach(function(b){var img=b.querySelector('.lg-img'),def=b.querySelector('.lg-def');if(!img||!def)return;
+   if(src){img.src=src;img.hidden=false;def.style.display='none'}else{img.hidden=true;img.removeAttribute('src');def.style.display=''}})}
+ function done(){apply();if(cb)cb()}
+ function init(onChange){cb=onChange;
+  document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-lg]');if(!t)return;var a=t.dataset.lg,box=t.closest('.lg');
+   if(a==='pick'){var f=box.querySelector('input[type=file]');if(f){f.value='';f.click()}}
+   else if(a==='plus'||a==='minus'){var sc=parseFloat(g(KS))||1;sc=Math.max(.4,Math.min(3.5,+(sc+(a==='plus'?.15:-.15)).toFixed(2)));s(KS,sc===1?null:String(sc));done()}
+   else if(a==='def'){var cur=g(K);if(cur)s(KP,cur);s(K,null);s(KS,null);done()}
+   else if(a==='prev'){var p=g(KP);if(p==null){alert('되돌릴 이전 로고가 없어요.');return}var c=g(K)||'';if(p==='')s(K,null);else s(K,p);s(KP,c);done()}});
+  document.addEventListener('change',function(e){var f=e.target;if(!(f&&f.type==='file'&&f.closest&&f.closest('.lg')))return;var file=f.files&&f.files[0];if(!file)return;var rd=new FileReader();
+   rd.onload=function(){var im=new Image();im.onload=function(){var png=file.type==='image/png',k=Math.min(1,900/Math.max(im.width,im.height)),w=Math.round(im.width*k),h=Math.round(im.height*k),c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');
+     if(!png){x.fillStyle='#fff';x.fillRect(0,0,w,h)}x.drawImage(im,0,0,w,h);var src=png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.9);
+     s(KP,g(K)||'');if(s(K,src))done()};im.src=rd.result};rd.readAsDataURL(file)})}
+ function snap(){return[g(K),g(KS),g(KP)]}
+ function restore(a){s(K,a[0]);s(KS,a[1]);s(KP,a[2]);apply()}
+ return{init:init,apply:apply,snap:snap,restore:restore}
+})();
+
+window.Hist=(function(){
+ var H=[],I=-1,T=0,lock=false,cfg={};
+ function upd(){var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.disabled=I<=0;if(r)r.disabled=I>=H.length-1}
+ function push(){if(lock)return;var s=cfg.snap();if(H[I]===s)return;H=H.slice(0,I+1);H.push(s);if(H.length>15)H.shift();I=H.length-1;upd()}
+ function touch(){if(lock)return;clearTimeout(T);T=setTimeout(push,600)}
+ function go(d){clearTimeout(T);push();var j=I+d;if(j<0||j>=H.length)return;I=j;lock=true;try{cfg.restore(H[I])}finally{lock=false}upd()}
+ function init(c){cfg=c;push();var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.addEventListener('click',function(){go(-1)});if(r)r.addEventListener('click',function(){go(1)});upd()}
+ return{init:init,touch:touch}
+})();
+</script><script>
 (function(){
-var KEY='bro_omr_v1',ST={};try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+var KEY='bro_omr_v2',ST={};try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 var $=function(s){return document.querySelector(s)};
-var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'수 학 영 역',school:'학교(학원)',name:'성  명',hand:'필 적<br>확인란',
- n1:21,n2:9,rows:9,sd:4,cd:2,nd:2,color:'#B8334F',
+var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'수학영역',school:'학교',cls:'반',name:'성 명',hand:'필 적<br>확인란',
+ n1:21,n2:9,rows:9,nd:2,nameN:5,color:'#B8334F',schools:'보라고,신갈고,서천고,성지고,보라중,나곡중,상갈중,외부생',classes:'S+,A+,S,A,B,외부생',off:{},
  note:'※ 문제지 표지에 안내된 필적확인문구를 아래 「필적확인란」에 정자로 반드시 기재하여야 합니다.',
  inst:'※ 답안지 작성(표기)은 반드시 검은색 컴퓨터용 사인펜만을 사용하고, 연필 또는 샤프 등의 필기구를 절대 사용하지 마십시오.',
  sa:'단답형 답란<br>표 기 방 법',sa1:'십진법에 의하되, 반드시 자리에 맞추어 표기',sa2:'정답이 한 자리인 경우 일의 자리에만 표기하거나, 십의 자리에 0을 표기하고 일의 자리에 표기',
  mon:'감독관<br>확인',mon2:'서 명<br>또는 날인',mon3:'반, 번호 등의 표기가 정확한지 반드시 확인 후 서명 또는 날인',foot:'연습용 답안지',exam:'',
- idl:'수 험 번 호',idl2:['학교(학원)번호','반','번호']};
-var C=Object.assign({},DEF,ST.cfg||{});
-var KEYV=ST.key||{};   // {a:{1:'3',...},p:{1:3,...}}
-KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}}
+ idl:'수 험 번 호',idl1:'학교',idl2:'반',idl3:'번호',nmt:'성 명',nmn:'한 칸에 한 글자씩, 점선 안에 크고 또렷하게 써 주세요'};
+var C=Object.assign({},DEF,ST.cfg||{});C.off=C.off||{};
+var KEYV=ST.key||{};KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}if(window.Hist)Hist.touch()}
+function list(s){return String(s||'').split(/[,\n]+/).map(function(x){return x.trim()}).filter(Boolean).slice(0,10)}
 /* ================= 칸 위치 계산 (단위: mm) ================= */
-var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];   // 좌상단은 2개(방향 표시)
+var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];
 function layout(c){
- var L={mc:[],sa:[],id:[],fr:[]},R=Math.max(3,c.rows|0||9),n1=c.n1|0,n2=c.n2|0;
+ var off=c.off||{},O=function(g){return off[g]||[0,0]};
+ var L={mc:[],sa:[],fr:[],grp:{}},R=Math.max(3,c.rows|0||9),n1=c.n1|0,n2=c.n2|0;
  var rp=9.2,hdr=8,bw=40,gap=3,bx0=96,nb=n1>0?Math.ceil(n1/R):0;
- for(var b=0;b<nb;b++){var x0=bx0+b*(bw+gap),cnt=Math.min(R,n1-b*R);L.fr.push({k:'mc',x:x0,y:14,w:bw,h:hdr+cnt*rp+2});
-  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=14+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.4+k*6.4);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4})}
-  if(b===nb-1&&cnt<R){var ny=14+hdr+cnt*rp+5;if(14+hdr+R*rp-ny>=24)L.notice={x:x0,y:ny,w:bw,h:Math.min(40,14+hdr+R*rp-ny)}}}
+ for(var b=0;b<nb;b++){var o=O('mc'+b),x0=bx0+b*(bw+gap)+o[0],y0=14+o[1],cnt=Math.min(R,n1-b*R),fh=hdr+cnt*rp+2;L.fr.push({k:'mc',x:x0,y:y0,w:bw,h:fh,g:'mc'+b});L.grp['mc'+b]=[x0,y0,bw,fh];
+  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=y0+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.4+k*6.4);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4,x0:x0,bw:bw,rp:rp,last:r===cnt-1})}
+  if(b===nb-1&&cnt<R){var on=O('notice'),bx=bx0+b*(bw+gap),ny=14+hdr+cnt*rp+5;if(14+hdr+R*rp-ny>=24){var nh=Math.min(40,14+hdr+R*rp-ny);L.notice={x:bx+on[0],y:ny+on[1],w:bw,h:nh};L.grp.notice=[bx+on[0],ny+on[1],bw,nh]}}}
  var xs0=bx0+nb*(bw+gap),pitch=18.2,top=Math.max(0,Math.min(n2,Math.floor((283-xs0+.8)/pitch))),bot=Math.min(n2-top,Math.floor((283-96)/pitch));
- var sx=function(x,y,q){L.fr.push({k:'sa',x:x,y:y,w:17.4,h:76,q:q});var d=[];for(var i=0;i<3;i++){var ys=[];for(var j=0;j<10;j++)ys.push(y+13+6*(j+.5));d.push({x:x+3.3+i*5.4,ys:ys})}L.sa.push({q:q,cols:d,r:2.0})};
- for(var i=0;i<top;i++)sx(xs0+i*pitch,14,n1+i+1);
- for(var j=0;j<bot;j++)sx(283-bot*pitch+.8+j*pitch,118,n1+top+j+1);
- L.saTopN=top;L.saBotN=bot;L.saBotX=283-bot*pitch+.8;
- /* 수험번호 */
- var sd=c.sd|0,cd=c.cd|0,nd=c.nd|0,nc=sd+cd+nd,cw=Math.min(8.6,74/Math.max(1,nc)),ix0=14+(78-cw*nc)/2;
- L.idBox={x:14,y:93,w:78,h:82};L.idCw=cw;L.idX0=ix0;L.idGroups=[sd,cd,nd];
- for(var k=0;k<nc;k++){var ys=[];for(var m=0;m<10;m++)ys.push(93+7+5+6+5.4*(m+.5));L.id.push({x:ix0+cw*(k+.5),ys:ys,r:1.8})}
+ var st=O('sat'),sb=O('sab'),sx=function(x,y,q){L.fr.push({k:'sa',x:x,y:y,w:17.4,h:76,q:q});var d=[];for(var i=0;i<3;i++){var ys=[];for(var j=0;j<10;j++)ys.push(y+13+6*(j+.5));d.push({x:x+3.3+i*5.4,ys:ys})}L.sa.push({q:q,cols:d,r:2.0})};
+ for(var i=0;i<top;i++)sx(xs0+i*pitch+st[0],14+st[1],n1+i+1);
+ if(top>0)L.grp.sat=[xs0+st[0],14+st[1],top*pitch-.8,76];
+ var bxs=283-bot*pitch+.8;
+ for(var j=0;j<bot;j++)sx(bxs+j*pitch+sb[0],118+sb[1],n1+top+j+1);
+ if(bot>0)L.grp.sab=[bxs+sb[0],118+sb[1],bot*pitch-.8,76];
+ var nx1=bot>0?bxs-3:283,no=O('nm');if(nx1-96>30){L.nm={x:96+no[0],y:118+no[1],w:nx1-96,h:76};L.grp.nm=[96+no[0],118+no[1],nx1-96,76]}
+ var io=O('id'),B={x:14+io[0],y:93+io[1],w:78,h:82};L.idBox=B;L.grp.id=[B.x,B.y,B.w,B.h];
+ var sc=list(c.schools),cl=list(c.classes),nd=Math.max(0,c.nd|0),pS=Math.min(6.6,58/Math.max(1,sc.length)),pC=Math.min(6.6,58/Math.max(1,cl.length));
+ L.sch={x:B.x,w:34,opts:sc.map(function(n,i){return{name:n,x:B.x+4.5,y:B.y+13+pS*(i+.5)}}),r:1.9};
+ L.cls={x:B.x+34,w:20,opts:cl.map(function(n,i){return{name:n,x:B.x+34+4.5,y:B.y+13+pC*(i+.5)}}),r:1.9};
+ var nw=24,ncw=nd?Math.min(11,nw/nd):0;L.num={x:B.x+54,w:nd*ncw,cw:ncw,cols:[]};
+ for(var k=0;k<nd;k++){var ys=[];for(var m=0;m<10;m++)ys.push(B.y+19+5.4*(m+.5));L.num.cols.push({x:B.x+54+ncw*(k+.5),ys:ys,r:1.8})}
  return L}
 window.OMR_layout=layout;
 /* ================= 답안지 그리기 ================= */
 function E(k,html,st,cls){return'<span class="ed '+(cls||'')+'" contenteditable="true" spellcheck="false" data-k="'+k+'" style="'+(st||'')+'">'+html+'</span>'}
 function el(cls,x,y,w,h,html,st){return'<i class="'+cls+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+(html||'')+'</i>'}
+function T(k,html,x,y,w,h,st,wrap){return'<i class="tx'+(wrap?' wr':'')+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+E(k,html,'','st')+'</i>'}
 function bub(cx,cy,r,t,fill){return'<i class="bb'+(fill?' fill':'')+'" style="left:'+(cx-r)+'mm;top:'+(cy-r)+'mm;width:'+2*r+'mm;height:'+2*r+'mm">'+t+'</i>'}
+var GN={title:'제목',logo:'로고',per:'교시·영역',sn:'학교·성명',hand:'필적확인',mon:'감독관',inst:'안내문',notice:'단답형 안내',nm:'성명 큰 칸',id:'수험번호',sat:'단답형(위)',sab:'단답형(아래)'};
+var BASE={title:[14,10,78,12],logo:[14,22,50,9],per:[14,31,78,14],sn:[14,49,78,26],hand:[14,76,78,14],mon:[14,178,78,18],inst:[148,3,138,7]};
+function G(g,html){var o=C.off[g]||[0,0];return'<div class="grp" data-grp="'+g+'" style="left:'+o[0]+'mm;top:'+o[1]+'mm">'+html+'</div>'}
+var selG=null,moving=false;
 function sheet(){
- var L=layout(C),h='';
+ var L=layout(C),h='',gh='';
  FID.forEach(function(f){h+=el('fid',f.x-3,f.y-3,6,6)});
  for(var i=0;i<12;i++)h+=el('bar1',32+i*9,3.6,1.8,4.2);
- /* 왼쪽 */
- h+=E('title',C.title,'left:14mm;top:15mm;font-size:10.5pt;font-weight:800');
- if(C.exam!==undefined)h+=E('exam',C.exam,'left:14mm;top:11mm;font-size:6.6pt;font-weight:500');
- h+='<i class="bb" style="left:14mm;top:31mm;width:13mm;height:13mm;border-width:.6mm"></i>'+E('per',C.per,'left:17.3mm;top:32.6mm;font-size:20pt;font-weight:900')+E('perl','교시','left:29mm;top:37.4mm;font-size:7pt;font-weight:700')+E('subj',C.subj,'left:42mm;top:32mm;font-size:21pt;font-weight:900;letter-spacing:.06em');
- h+=el('fr',14,49,78,16)+el('ln',14+15,49,.35,16)+el('ln',14,57,78,.35)+E('school',C.school,'left:15.2mm;top:51.6mm;font-size:7pt;font-weight:700')+E('name',C.name,'left:15.2mm;top:59.6mm;font-size:7pt;font-weight:700');
- h+=E('note',C.note,'left:14mm;top:67mm;font-size:5.3pt;font-weight:500;white-space:normal;width:78mm;line-height:1.35');
- h+=el('fr',14,76,78,14)+el('ln',14+15,76,.35,14)+E('hand',C.hand,'left:15.2mm;top:79.5mm;font-size:6.6pt;font-weight:700;white-space:normal;line-height:1.2');
- /* 수험번호 */
- var B=L.idBox;h+=el('fr',B.x,B.y,B.w,B.h)+el('hd',B.x,B.y,B.w,7)+'<i class="tx" style="left:'+B.x+'mm;top:'+B.y+'mm;width:'+B.w+'mm;height:7mm;color:#fff;font-size:8.5pt;letter-spacing:.2em">'+E('idl',C.idl,'position:static;outline:none;color:#fff')+'</i>';
- var cx=L.idX0,g=0,gl=C.idl2;for(var gi=0;gi<3;gi++){var w=L.idGroups[gi]*L.idCw;if(w>0){h+='<i class="tx" style="left:'+cx+'mm;top:'+(B.y+7.5)+'mm;width:'+w+'mm;height:4.5mm;font-size:5.4pt">'+E('idl2_'+gi,gl[gi],'position:static;outline:none')+'</i>';h+=el('ln',cx,B.y+7,.3,B.h-8)}cx+=w}
- h+=el('ln',cx,B.y+7,.3,B.h-8);
- L.id.forEach(function(c,k){h+=el('fr2',c.x-L.idCw/2+.5,B.y+12.2,L.idCw-1,6);for(var m=0;m<10;m++)h+=bub(c.x,c.ys[m],c.r,m)});
- /* 감독관 */
- h+=el('fr',14,178,78,18)+el('ln',14+14,178,.35,18)+el('ln',14+30,178,.35,18)+E('mon',C.mon,'left:15mm;top:182mm;font-size:6.6pt;font-weight:800;white-space:normal;line-height:1.25;text-align:center;width:12mm')+E('mon2',C.mon2,'left:43.6mm;top:182.5mm;font-size:5.8pt;font-weight:700;white-space:normal;text-align:center;line-height:1.25;width:14mm')+E('mon3',C.mon3,'left:60mm;top:181mm;font-size:5.4pt;font-weight:600;white-space:normal;width:31mm;line-height:1.4');
- /* 안내문(오른쪽 위) */
- h+=E('inst',C.inst,'left:150mm;top:5.2mm;font-size:5pt;font-weight:600;white-space:normal;width:134mm;line-height:1.3;text-align:right');
- /* 객관식 */
+ h+=G('title',E('title',C.title,'left:14mm;top:15mm;font-size:10.5pt;font-weight:800')+E('exam',C.exam||'','left:14mm;top:11mm;font-size:6.6pt;font-weight:500'));
+ h+=G('logo','<i class="lgbox" style="left:14mm;top:22mm;width:50mm;height:9mm"><div class="lg"><div class="lg-def"><img class="lg-ic" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAU8AAAFoCAYAAADXZHl8AAAs6UlEQVR4nO2dC4xVZZqu37awKlYshFihECIRhUjEhkgG1Mhoj2bI0C1pcrTtNGdwNMO0fTTNjH3G2Gc80WiPHY09rceJ9thxoo596HjBY8cLBuMFA/GCwYBiIIBlygBCMIBlihRS5ORzv8tebmvXvq29/9v7JCu7gKpdP2uv9a7v/67f6Z3xlxBCCFEfJ9T5/UIIISSeQgjRGLI8hRCiASSeQgjRABJPIYRoAImnEEI0gMRTCCEaQOIphBANIPEUQogGkHgKIUQDSDyFEKIBJJ5CCNEA4xr5ISEiMBaOO1yHiACJpwiNkwD0AOgG0MXX7OjhMb7s7+3o4JFxlK/HAIzwa3sd5jEI4CCAA7mvD/HPRxz8v4VnSDyFz0wCMBfAHAAzAUwH0AtgIkXSrt9OimheGIsmE1UTzn0A+gEM5I6PAOyUqKbFd1rQz/NEXvDdfFq/X/QvEEmI5iIAC3nMhr+YeG4FsBnAFr5+6HpRIjzxPBnAUl7wvRTPtwA8C+CzIn+RiJbzAXwfwGIA8xEOZp1uArARwJsA1gH4xPWiRDjbdhPNJbzwbVtlLOB2ywT03YJ/n4iHcwBcCOBSWp328A2JDop9dsyliJqYSkQjZFzBjny7aC7JCSfor5rDv18P4FU+oWWJphvx7mNQx15n8bCt+bkApiB8MgG17fy2nI/0I/pMbUc2BGCv64UKP7btZwO4FcCyKt83yKfxO9zSr5WjPQnBXEyLch6AM+kTn4D0sCj/53w1/+gaAE8A2O96YcKd5Wk3wuQavq+HW7NLGaF8GsDjcrJHyxkArgWwnO6b1OnMuSSm8KFiVvc9AHY5Xptw6PO0C6MeZgC4iaknDygyHx1nAfgZgOvKXDnim1zHbfy98o+mKZ6DucTjeh3t1zFX7xEAbxS4JuE2an41gGu4RRdjY/cAuAt7TycrLfE8QF9Oo1zD7ctaBpTMH6RtTHgR85n0a17K7AtRG/aAuZHnbh3vgY94XymwFLl47ucHXUSUEoxObuFFZCkfrwD4soB1imI5m7m9lzLVSNvz5riER7abG+Q98ByAVQC+KOAzEx76PK32tyim8bic6R6rGZVUxZI//BWAlRRPUTxZrf4U3gezGFiSJRphS7pmtu1jMYuBpRsAnNei3yHqQ8LZfm7kPXCqg98tAm4M0pkLLNn25WXXC0qYH9JHLYuz/Zh4ZoGl7Q5+v2iReLYjqnoNK5YW0xeUVXGoTVhrOZ2+uKyE0nYDov1YPvUtucDSesYE1J80YPE8oY31yPN4ZH5WE88PGGCyi0mpHsVG0JfTypRg+sNiHnb9v87eEWaNSkQDFM+sz6KLJ/EFPMDaebuQ/gvAYQfria066G4GK4SfTOCDbRHTxP636wWlQpHimXX3ds2lLAO09TykBiRN+9cknGHlie4A8JjrxaTACQULcSu7edfDdN74djEpOt8Yfwvg+oI/F9F6AbXUsYt0osOyPIcbLM9sFVPoWF9Ih/oW+kYVXKpej76UN6EPOwlRH/NYI2+7rheVExpObbs1N/C5YuMAxXMrBdVKQZVwXOI05tIuD7ARsRi9Um8P0/rukvvK736eNrvo90wlCgET+ifZzUkd7ktNWUL57ER9PMTuVsJTn+eXnlqeleimWKxkOk7K/J2EM2qsuORHrhcRG0WXZ9oM7NBYnnhg6Tw+QETcrGQTF+FphZFNEAyRFRwNsT7XCmxfAqMR/o7/96zgQMSLBU7vB/AwgKdcLyYGQqptbzXZaJAs+LWPbfE2U1SfQTzYiOg7aHGLdFjEw2aN/cr1YkJH4jl2K7AZFNQfs1Hz/ZFULd2prXrS3MH4xL+5XkjIFO3zjBXLGf0FI5ahn7O/kXAKXs+WniYapGghCNXnWWsN8fXc6lqHoRCZJOEUOYNAgUKPtu0hRtvrwTrb30bn+1v0h+5mZ5tP4DcX8WaxTjxCgEUR5tu/T6fDvXj6VJ7ZKnpYvri0rLJqG+cs2biQD+EXP6efy6xnITI6WMq5iJ3IrMhF1Igsz+KCS30sA10A4F8BvA0/+CkDXUJUYjEF1MT0dzpNtSGfZ/Fczo5O1gvTNSflxjYIMRYmnFezzFrUQOiRY5+rlnwo+8xGlghRC9ZQXNMCakQVRq3jRuaGrmNgaYCBpeE2VS6dw+ohIephssZ714aS5NtT0ZEPLA0zUv8cgD+0sCenZQWo7FLUS+wZM96Kpy+d5H0OLGUpT4v5+usWJMGbxXlFwe8r0sBSl0QNyOfpjh76RS0aXqTFKeEUjbLOwzQ7b9G23S197LXYwY7fzdbNL5HFKRrkEEcXixqReLpnHhPYL+RokG0cn/B5nSNCrE5Z1UOikZLqZ3m0ygefMVot/QE2Ug8Oiacf9DK9yY7MChji7Pm7arRILTB1WYvXKeJiDft7trLd4ol0JVlF3rmj/LuVN/fTaHiH7R+D6Fwm8fSTCTx+yXEh/1jDE9227ArYiVp5FcDNbUhLWgng7jGuzSkcVmfsBPA0gEcBbIfnKGDkP3bx/bcq37NMW3ZRB/0s2W21cJ4G4Mo6Huoz2PYxiEwRiWcY3DBGtdL/AHCtZqzXxVDONZKicFozkD+14XfNzFmVtTKB7ifX1XlV0bY9DKyb/W8Ykd9MJ/9M+jmv0pz1r/MTy/vJDjEgYdVdn/LrQwzGjdAiMrfIRGY+TKb/2W7g8WUPpHyebqisBfBgm4QTPK+NuJLm8Pr2Om1K4hkOi3mYAIA3eepklVpv0l82XHazjrCy60idu7EuCmdH7v16WfdtvVy/zy1maLPb7wGwC/7TS1+o10g8w0OiWeJJ+u02FHx+j1NsywV3L32ETzEivCJXeus7j3LoW7unwQ438bN5q99LJJ4iRJ5vkXDWylNs/D0SQG7tqzxXLsZoD+XcI9Eh8RQhMcJO/Q87FM6MP9GyOsjpqh0eC+d7jn7/MAW0J8apFGoMIkJgG/2b6znq5GP4wUsAtlKkrBfmXPpFfQgsreaIaVfC2cxAyJEmt/xtQZan8JlnWQXziseBDhv89588TqR4LmF62RSHbo2bPTlnHQ38zCCPpMRTYiyK4l4evk8lzfMlg0rvs+zwQQeBj30BRdUrcZDpZF6jJHnhq8UZmnCW8xjFs92YP/gNhM1gCAUMEk/hGwMUgJCFM+N++h7b+dCxfM7QGQ4hYCTxFD5xiF2kXkAcfELf4618KLSSh9lIJoaHThBIPIVPEfWbI5wbbr7HX7GM1pLVW4GV7v6Dh52IOhr8Oavw6oTnKMAjfOBZWk6xWJyj8TbTmj6lhVgU5ha4CXFpTCcF1GtkeQofLM7YhTPjCwbCivJLjtCvGptx1uVp0cE3kHgK1zyfiHBm7KfgFSGg93oeWe9oUAQ7QtgVSzyF696SLyb4EXzIIFIzVqO1J7wdftPVoHgG4fOUeAqXWPXQa4l+BPs5+M9EsB4GmJGwgm4An+ls8OdMcOXzFGIMX6c1502Zz5hIb9NSa8G+7xYA/6vOHqWiBcjyFK7IatZTZwOnpNbCI20YD1x0pdBIAz83FEJtu8RTuGAtxdP3bWe7sPzPdVW+Z2MDW3zXHGhQBAdzExO8peiI1jGEyUZevDsATAMwlR1xJnOeiiiOPRTOl3VSv2Y7t+O3VGiu3M/ovNczfSo0KfmcM6HqIUnxDJEhzsGxyOfhsn87mWNQlwU0ciEUq1N8e/v+E7azyx7eE3PnLKTter5GfaTBn1M/zwA4QKuzXDjBbeVjtExvoYiK5qzOVzwsI/SFw2UieRIjz6G6N3oabMnXHcIMo6J9nuMCtTwt8jsWH9IyTT063Cyb2A1e1MaRgIUT7KxvI53rZSqbSiclnt6XVI3RfLWW2uT7a3Dsi8ps9miEhmgtJ9EF0QhT6CY7BR5TtKXofWJrk2t+gU5wc+pfCGAmneETA35wtBNrjCH85FRew0MNWrsncKtt99M8AEsBXN/EepYzcLTK8Rymtomn9yVVFfwyvZzLXQvv8gCfjBO5zZgNYCGftvVGF1Pp1VnNPSLayySK1Pe4Te7mLmw3/dMHK5RLjuOfx1Fwu3kfjefr9ALWZu/5zzRUtuYyebLfmQWihrjOg/y78gBVtr4OivEAYxhN+91leZY+8Ml1iGe5g/8wt6Ib+JQ0v97Kgi6gmNjdhobAor5t9W2jWIdTaAj4wuyC1zPIoKXdq0/5Ip4nBLp17WzQqT0att25j+fhpgLfN5asBitHFH5gKXjXIT166FKYyGvyNR8CRkG0kapAlk9XFA+yXZh8fH/G+6TnhDiRAZkQjZ2iuKSJgNZXhCp2RdPRghSTu7mFX8htxyxu5b3PX3OY0SDagwU75+tkwwT0vEYDUhLPEo1UQdTCy7kyxEkU0FnMf1uYWOmn940eEsKuvzNdL8ID5vHwQjxDrW0fblP/xv25zt9/Q9/LZQBmIH68n8OdUErSlEAzY1pBw8n44wKw3tqBi7W/xIYP2/j0m0pndhe39n38cyx4X6ucCBOYYSJK9LGHRd25rdq2u7WYLdfsI26jpjPftJdCOpM+mVic+iE/XGPiaMA7xFaQJfY7Fc/jukEa4suyxPvTuZWYT8szFse+xNOffFurkhN/vi6tbV7dyPL0j094HOSWIhbxjMWCDp3jdBUNsHdt6uymAVM36iTvr1X0LlOdYqnKCbHvQaxs5LUl0HgutsTT/w82FvFMNb/VR2xno/aK+Ooh0nCLRImn3/RH5J+KKXMgBlZztEeq7OFAvYYbhMjn6e+2HawFj6WssegSWNEclnN8O+d2XcYquLweHGR6Wb6D0jHm6w4xaj/Mr7P0uiwNalqBeaS2+3qzLEsgW2fWXWmI/9aV614/PtcuMv/gtu99i6N3nmlmYRJP/4klubyPOx0LWAg/sE5i/8ZjUi6olwnSCP8u61txrEzEvhylU1M3iz6uZMemZtw1q9iA3BqRN8IJudzpjOEKI3fqRuLpP7GIZy+tAHVW8tcSLaKnwxF+xpngWU/ORtjSpHCCD+pChHI05PP0H19dCvViwqkm0WnxXBPX7/omhbPlSDz9J5ZqkMz/JNJhK/MoG8F8sV4j8fQf8zHFQDe37iIdhpq4fr1vYSjx9N+6i6mhhipa0qKniYCR9+4qiWcAH1JEWLMTkQ59TeT3el9UIfEsIQFtD5ZLeFabfpdwz1SJZ/z4LJ4xNdSYz4RskQYTY77uZXn6LZyx0cuhWxe7XojwnhF4jpLk/Q8YxcblbHbSzwYVIl6OxRwoleVZ+oB9fsr5vLZmZobbIeLmaBPXvPcpehJP/wXK57U1E4VdwrGvQox2zR9LTTxDvdF9/qBiqW0v51IAi1wvQnjJsRC05ISERKgSvn9IDc1XCYTFAM52vQjhHUcDuC+1bSc+f1CHEC+XMIAkRHmwKLmAkc8iNNaafV73gYi37sZSAOe7XoRoCR0xn1eJp/98Hrl4LgSwDMAZrhcivBn61xXCwEDlefrPYOTiaVzL1webmSkjvKPbQUORtqFUpTDEM2a/Z3azrARwq6qPoqKzie2+9wMDJZ6lDAGfswRsrMGnSAPbvt8G4IeuFyKc72w7fP8MtG0Pg1jGD9ea/9nJm6ep6YYiaIbgORLPMGh0lEHIQaQhpqu84Hoxou0CuCcEg0HiGQbWSCM1suojm7/9hEYWB8nBBn9uE4Bt8ByJZwmf8zzBC8mOWUhPQGdxK2/TFNcB+Nj1okTNDPCoZ/yKddtaC+BD38+zAkb+C2c2hXAj0sRuvBUAHgWwBsBvAfyV60WJmidg2vz1WrGt+ioATyMAJJ5hCOh+Wl71XIgxYlbojQDuU0Q+CA7zuq21ku4RAI8D2IsAkHiGwys8vO9z2AbmMC9UTUX85xUAz9YQIHqUwhlMkYTEMxx2cdtq/iBR8oOaFXq6TobXvAvgYQBPjhJ9P0o/9v0A/iMEP2ceBYzC4mUAM9iNyPsKjDZwHRsrm2WjYJK/vEC//YscP93NyrmP+PcmsMEh8QwPszyvpOUlSl2ZljKqaxkJOwG8A+CtkLaACfBxbJkS2raHuX03cRDfjspbatP1AH4P4C4AP9FJEq1ClmeYpB51r0YnrdHJLPP8g+sFifiQeIbJB8yJM3+fqMwFfO1m/uAXOlnCV/H0uTtRTGxlCZvNABLVBXQ66+Wzsr8Blg5a0EKCKrwQT9+TzWPhOCuOJJ61YRb6ch75BtP7WAXzJiP25k8WoiYknuGyPtF69yLo4dHHhPsrACxg6efbrhcnwkDR9nB5HcBqVRwVxlUAbgDw3eLeUsSMxDNcvmQ5m1VmiGJYzrLPi3VCRTUUbQ+b7Sxtm0zLSTSPdXCay4qlTayCOZDzkZq/WQiJZwTsYu2wRZOnuF5MJMznkdVff87XjxioW8tDQpow2rbHU/NerXONaDzhvpcPpoVsRvLvHFSnrk4JI/GMh+dcLyAhZlBErRT0fNeLEW6QeMbDS7I+20oPo/MWYPoRgFPa++uFaxQwKtU+ez8jukasoez3AExwvZBE6OCs+QWspd9Cv2g/c3BVvRQxEs+4+BO7Cd3Kem7Rvm38DAqpcYjiuZnVS+o1GiESz9I5iMXyNO7JpdzYDS3azwTW1F/A3NHn2ZjEHm4iEiSe8XE8J6CyQN3TzRxci9gbEtBIkHjGK6CP0PI0C1S459Jc6tNTjtciCkDiGS/7GUCaxfxE4YeATmdQ7x22FtzBEb0iMCSecbOB1UdTedMK90xnfuj1bI3Xzwj9FjZ7ec31AkVtKM8zfh4D8ABnYwv/ckXnMM3J/NP3Afgn3ZdhIPFMA7M+JaD+M4eVSzZSWXiOxDMNDlM8H2BnIOH3FFCrXPp71wsRYyOfZ1oCeg/9bGbZzHa9IFER+2zuBDCPEwM2MbCkLk4eoQFw6TVQ/ncOQDMB1Qwkf+nLBZayWUtWtfQWgBcB7HW9wNSR5Zkmlqj9KZv8ZkPRhN9C2seUs6tZrWQumHddLyxlJJ7p8jYb/BoS0HCwJPtr+PW/yAJ1hwJGafMex3jYLCQRFiagvwBwquuFpIrEs0TK8+Zt63czU2QsMCHC4Z8BPMh+oqe5XkxqSDyBY64/BA/YywTtLFl7p+sFiZqxpiNPchfx/5jidJLOX+uReMrvm+cTAL+iL035oGHRx4ffQ3wAqrN9i5F4loipn2cRPMVorgjzWr6JifayQFuIxLN0sSnr4NuYL00TOcO9pm+gH1u+0BZRtGiMBHqhWfqH+CafAfglt+9LNBM+OGxU8h2sVlrDOfPWplAUhCzP0gOkq6gTGhnbAfwMwF8AWMT5SFblIsIaUPef7O36cwCTXC8qFmR5li4wiWf1aLwdL7M8cGWuM7rwn06W4i5i5ybL7X3f9aJCR76+uEYPt4P8DB4JaFh05May3KJtfHNIPEtIPBsT0M+ZHiPCYgX7GpgbRiNAGkTiKZoRUOv08ypH7J7LLaEIAwsGngngCQDPuF5MiChgJJrhQ7a4++8ALgJwCbeDG3Vag6lOWg3g/wL4a9eLCQ2JZym9KsQUK9/4AsAbAH7NmmvliIbDMgaRzne9kJDQtl20gjfoRx6voFIwzGIWhe0iRA1IPEWreI3iOQTgcp3mYCzQV5kXKqog8RStDiptY3WLzeOZAWAyq1+6deq95E6ORH6cVWaiAhJP0Y4qJTsyH3sPJ0TO4liJRfxa+NOd6V5u4a1D092uF+QrChgpSb6dHGde4fvs3PSPTJl5vq2rELUwnXmgVtIpRkGWp/Bha29+0WEAV7hejPgWN3LgnLbwZcjyFD7wMlNlHuZceeGXBWoCKsqQ5Sl8Sm+yiqV1TLY/l77RrHGL+UpVRuuGW7g7sBxeQSSeOg8+YZ2b/sDjRAC9/PtuRuktWr+AgSaVgrY/Cj8XwCMAXmrz7/YSiafwlS/LZpLvArABwGMAfgDgWvlInZRzWsrZT5nHmzQSTxEiL3Ab2c0+laJ9zGCD7NdSP+kKGIlQeY1D6lRD78YC/SESp2jLUzPQRbst0P5cBdNMJnlbWagxQZVMLeM6AO+UuVaSQtt2EUNbPDvyFUxdjMz3snppHoNMdohiWAzgNs6IT3KwnGYYiRgrmDL25qqZrN3alWx+YbX1ohjrs4P5uW+ndkJleYpUsJt7AMBBjqGw5G/RPCv42p+aBaqAkUiJvQwy3cspoKIYlqWY9SDLU6TGYY4O2ZRLtj+T1UwKMDVGN4DvA3gSwBEkgsRTpMoGHtkOrC/Xa3RmLsik7X1tXMrDMiCSQOIpRCnQtJfHezwhJwNYwpxGjVeuTi+tz2TEUz5PISoPtPsjuz1ZV3UNCazOYgA/SuWCkuUpRPVKJisF3U0LVF3vKzM9F3239LCokXgKUVua0xYOR7uA/tAzWeetWUzfZBF9xl3sjhUtEk8hauMImzbbkflEp1NIFzEBv1Mn8yums/qoPxeUiw75PEuoya5oxCf6Plvk2bC02wHs02n8GrPKlyNiJJ5CNM9nTLy3aZMHdEK/xrIVTkOkSDxLyPIURWzr/4MiulWn8yssZ/ZCRIp8nkIUx17O+dlYVr2U8siQ+QCeQYRIPIUonnxg6SQGlK5JNNn+QgCTYmwaom27EK3fzv+JQSVLdUrR8lyKCJF4llD1iGg1n7BaKTW6OajPhvZFhcSzhMRTtAOzQB9M8FQvAnADgIsREUX7PDsCFc5h14sQyfAvLPdMraP9YubBbmVqV/DI8iyJp13MQrSrn+hNAP6CSeRrEjrt18TUNLlo8Qwxem9WpyxP4SKtyWq/b0xsfPIiRIIsz5LlKZ+ncMV2JtZbZ/sUmMe+AMEj8SzNmpd4Cpe8kZCAzoylO3/R4hliwEgIH0hlC9/JqqvgCdFHKUTMFmg/o9I2Ez1WpiMCZHmWHiCymIVPyfS3cxJlrExDBMjnKYS/8+Vj9YFOBXAqAkepSkL4u4W3cs5tiNPynIXAkeUphL9Yl/pbIxTQGTG06VN5ZgmlKrWX8wEsoPUxgX9nQZId7IX5bpvX4zNPcZjaoxH55nuZ73kegPcQKBLPUp6naA9ncVDa5WwWPBrrmK6zKsYekE2kMS2MLAK/gA/KYMVT23bRLr7Lzjo3jiGcxiX8Hvve0/XxfM2qyHZIc9jr066LIJF4inZcY9bL8RcUxL4aAwrXUURtiy9KASQTUERmfS5AoBS9bQ816T4WX5IvWBrKbB7zOIrBvq6HPoqnWSfrAWyhTzRlf+gjAC6LqJVdZn0+F6KLJlSxE37yA3bNycTSuog3y8LcNv8ogLUAnmYkOjVeA/CvAG6r0YIPgfm8ViSeARKTH8kl/5Pb8uktrou2YNOlFObfIT1+x2t2eRXfcSjMZbMQezAEhSzPEhLQ5vhb+jTbtZ3s5u9LNa3p93Q1zWLaT8h0hFquqYBRSTiVrtTcVn2lAz/cDPpET0OarImofHMqAkSWZ0k4zZcm6uN8Bi+WNRAMKoplTCB/gsnkKfEx5wHF0Jm9DwEiy1OWZ72Ypfdbps7c6VA4M65gB6L/A+AUpIVlH8RAL4ATERiyPEvI8qydX3OQl2+s5PVsQatUGEAcTKQf24bjBYMsT1me9QaGfBTOjOsB/BDpsCeSya/dBaW1tRWJZwlF26tzDq0731mZ0PZ9gJ3nQ6db4iliFs47mdDsO5YDegeAkxA/nwHYjDjEczwCQ5anqMbFAB4EsDSgU7WSjYTPRvzEkK7UmWtNGAwSzxKqba+cjnQ3Ox2Fxgpay2cnIJ6WshQ64xEYEk8/mMSt8VmepWxcDeAChMsVPGJmGyutQqcbgSHxdM8p7Dx0CROel1BIXfPdwLbqlbgscv/nXvo9Q09b6kZgKM/TfWnmVNYoz2a+2yD/bPW+bzrMfVsUSeuz+Xw4bUC8bGXLviBrxInEU9RNT05As4t/NjvNTOdYig/bfF7PoMUWy/mdE7l4buOxOGD/fTcCQ5ZnKcfTZZ5nF2/wyTnxnEbhnMbSNfv3t9u4psXsyRkLwY+5rcInLNXc5kG5bDMR96CQePpBBwUyTy/9oJ38nEba1H7tfPaJDC51ZAxmMhi3C/Gyg0eo4jkOgRHcgiMks3pH2251cMbLUZbhDbVhC7+ADWoRmXjOjVw8d/IIlQ4EhkYP+1OaWemz6GTQY5gHWiigp9NVEGR/xTGYTovMRnh8gbi37vtCbfEWGrI8w4j69zBiPMwn9ERG4o+3qMY4OOd9FbKu67Mi7zxvde67AxXPDgSGxNP9h9ZB67daW7w+Cug4+kPNQnyn4K2ouQU+5xH6eIdypnH7HrN47qblGSLjkPiCfdkCx5pvOi1nifbyeKfASPxuJlvvi1A8pzJv1RLmjyBODjBPOEQ6kbh4uk44b9Ty63CcqtRRx2cxNZfeNJ6vXezs3izHme7SH3DUthK9TAfr4wiLGBkMuL9nNwJDlqc/7bhqvXg6KAB5/2QmwK8V1GhiG0f8xkRP7oiVfFAxNLoBnBxSQK9o8Qzxgxvn2N/S6E1t338mL7pOimc3xc/qnRvlMN9jTyTlmXm6eAj/6GYgNFnxDNHn6Xrbnl00jayhk37Q7AHQzW39Pm7fjuW2c/1snlsLb7LZRGzi6To4GPu13AyZCyoYJJ7uqSc16GgF53omclka00E+yDpy4rmDolhLdP5jtjmzMs2YcF2KG/suqhk6Q/N7KmDkviVgVx2RxuExLIy+XB5oFjTIfKGDDJh0UIAtoboab/J9grqgq3As0KBmCpZnV2gulVCfUrFd7LV+Dh1VSjl7aVkN5XygmZh2UTiOstKm2hZ+PQ9rTRcDWS5tzJZn9rAUbUDi6Qe1XvBdNbxPZsXmxTP7ubzV9QqA/WO81xeRiecgk/9DzYOshZCrw0ZC2xUULZ4S49aer3qtiszv2UGH/LSyFKdnq1ig6xhostrw0NnNDAJ7jZWegMVzuIYqO6+Q2MXlpxqp8CTPLNJeBpSyvFLbzv9xjPfbSAGNQTz7mb9adD8An8g+31DFcwgBIfF0S+bvLOpzyLboo/n1unLb+F5+fQjABwDer/B+R7h1Xxxos4k8H0Qypncs+gIuqx0KTTw1AM4tmUVYVF1vN7duE3Nb80xQs6+z3zuD4ymsf2e1qLtZn6FbnW/VkecaIieyaCLUh9wQU+yCQeLpR3pGkX6qbnaBzwtoVoFUzrns1DTWbPMPGVwKeTrjZlrQMXMuW+6F6vMcDKm6yJB4uqWjhfltnWW176MxgQ1ArNnyWJjl+SrCZVPkVif4OYY8q+kgAkPi6ZYsQb7DYUBqFsXzvDG+Zzutz50Bj+aNmdNyzZ5D5RACQ+LplnwOpiv66Pe0oW+nVrE+zf8ZGnsSEM+ZFM6Qh/YdRGBIPN0yzpOKkHkUT5vWWYlPAhXPTbScUxDP0Bs5B4XE0y31lGa2EnMdXMBZ7eeM8X0WdNmCsAhR8OvhJApnyM2rRySeImSm0fdpVmgl3g8sar0lgjSrWieDhsyQtu0i9C44s3mcMsb3vB5IMrNtA58AsAHxi2foW/bhQK6pb6Btu3t8Es9e3ojmQ6vEq+zK5Hvk9l4AjyN+ZkZQPntU4hkuMbcpq5dqKS+WL7nacx/VbwH8usa+paET+pY9yKYghixP95bfiIeWzFiWJyieT8JPVgH4DdLA8jvnInwGZXmGict0IR+b82Z176eP8T1H6E/0rerIzuejEc9lLyf0KHvGUIjDI2V5ug3a+OooP7OGIMQb7Ac66JnV+TLSYWbAtex5Pg+xVaDE0+3slKwN10igEdy1HrV5s7Skh10vos1Uc6+EwiACROL55zZurixPH0dD9HE7aD61sdjOjkWusa36PyWQlpRnUgQpShk2Kjs4JJ5uR54O5Wbr+MbsGnp9gt3ZXVqb1wC4FsBrSIsL2Y81BgYQIBLPEq627V8y5cfHJ+8slmxWsz63OGxwfDOAx5Aep7IPgVWFhc4eAB8hQCSe7hN0BzwdStZLy/N7Vb5vg6MSyAcAvIQ0uSKiqaabHe9eGkbiWWqF5TLhu5+Hj/0M59PCGatZCJi21E4sMPQg0uRHdFPMjsRw2Rhqy0AfOvqkLp4f5axP3/ox9lA8t3EcRyUeog9ueQtvsgMc4raWZZep5HLmOYvCae6UGFjPrlfBpSkZEk/3s1Myv6ev5Y7m+7yMF/nbFb7HLv7bGXizLWWjDFCot9Eaz/zB2QPuY6TNUk4yRSS+ztdD7nol8fSjsmHEw1zPPAvpY9s4hpWwiwJqQreijvfu57btAwafUmhe3KiLbQni4XXuIoLdQUg8S9bSyQ6tzxO5XXeVa1oLE2h9msg9U6Xf529oza+o8n/aRLHMRNMCB/tbsPaYrM6xOv2HxAFu2SvtZIJA4glM5tb0XUefwVz+ft/bil1Cv+wBlmZWwqzGu7gFX8KgUyaigxTJjXzdyi16UCNnHXAKfZ2xsDWwptptEc9jCI8p3Ja6EM8zaNEtZGpQCNYPOBP+uTG28GZB3sfa97l8MHRQeHdSMGMfBVykcN4B4HLEw2buUoJGluefRWFzm6tUvkvLbGmV0Re+uTiWAZhKa/lp+jorYQGe1IM8zXA6hdOqqGJiKyKgaPEMVYxtS/ozWn9buT0dpLU0nn8/gRZXD0Wki0GeIVrcR3Plnl382aO5SHGWiN9N4bmQQRhr/xbi+ZpOq/1xhy6P2C3OO1uY/uWSbYiAUMWuFVzFcrfN9Ndl4tlD0ezl6wQKamdOPIdrEM+s+UcPhWde4O3E7Fxdnfu/Bu3895AbIhXOPQB2IALGRdaVvVku4LGHzTrGUewya1N8E3uQ/DiXZiUBLYa/pnjGyAcA9iICJJ6jM4WHqE1Ar8i5OFJqRtwKLgJwa8TX31uIhHGRdCcS7vt/LuPrNEbZFU2vP9/XzuFNkdStj8YAk+OjQOIpiqKHmQPn0p/7XMJdjxrhNgA3Ru4eWhVyOWY52raLopnBYx6PZ6s0FRHAT2lxWrAxVh7lxNUgm4CMhsRTtIoLuP2cy3zQ1THdOAUHh1ZGLpyrAdwP4D1EhPI8Rau38lflRHR1bDdQk+3lFjG/OFYfJ9gV65EYP3dZnqIdzOYxj36vPyR82s9hGtJVgZTkNssaAC8gQsYV3DIr9DxP0VoWs0Cgjw2UU2sIYhMv746sTr0a1nYuSoocw2HCqYolUY1Z9PFdl+CpuiEx4dwTU2pSK8XThFOWp6iFaRSSnyd0un4C4HqkxeuxVBONRpGWokULJZ6iVqazY5BZoi+yOfLeCBPfzc/7fXZGSsHHWe7vjJZxBb+Xtu2i3tLO63nsoYCuZWrT3kA7IS2gYM7mA2Ku51MCWsUqFkpEiyxP4Vs/gcspPqHlBV7ECPoiWtMps5bjoQ8jYooUz6w1mRDNkjX//W0gHcd/wPZ8Jp6ps5YPvnY2Fo9CPNUYRBQtoI9UmZnkkjNoaV7B19Q5wBLMKPM6y9G2XfguoOY7fIVD43ZUmG9/lN38B1tQAnoim3Vkx0T6Mq0ByhxOBLC8VYGvmn6YvzoJig4YyfIURTOfByiOWUf+PEM8TFg/ZeuzAzwO5f49T9bxPy+MPexJ2sPIeDY9oJf/3pmbIiC+zSux+zlbJZ7m75TPU7SSrKt/rWSCOsivs473HWXCWe/7im9j2RKvIiGUWiRippsJ+aL1vAhge0onusgKo5Hck10IkQ5bmNeZFEVanjZBUuIpRFo8SuGMPjWp1eJphxAiDX7JLlFJUuS23dJFJJ5CpMFvUhbOosVziAIqhIibfaz+SpoixVPbdiHS4N5AG7d4LZ4KGAkRf4DobteLiC1g9CVL5IQQcSbBW5+B210vJNYkeVmeQsSHlbjenPjgvpZu24UQcfKAhPPbSDyFEGPxKsVTtFA8JcRCxMVb9HEmH1lvx+hhIUQcPMnZUr42onaOOskLIcq5ixVEn+nUtMfyzHojCiHCtjglnG0WTzWUFSJsNnJ4myzOGpDlKYQwngdwI4ANOh1uZhgpaCREWKwHsBrAQwCOuF5MquJppZmqMBIiHNYAuBXAu64Xkvq2vdJkQyGEfwzQvynh9EA8s7GvIgyGeANZ3bJIi0NsK/eS64WETJHb9i8A7Czw/URrGGDJ3SYAu5le1gdgLoBF/FrE+8C0wNCzAP7oejGhU3RXpU2cpDen4PcVxXT/Nh/XcwDW8mFXzsUArgVwjU54VKzhZ/4mgLddLyYWihZP+3BekXh6xSBvnDW0OMbK4XsjZ5He0sY1itb14HwYwH8B2KWT7Ld4fkHLZiqAK2pMXRrhdiKL1HfwaHZtozVmHlf2O3xmpCx7Ifv/jLBr/1H+H7pZoFDOUQrh69yqbajjMzR/2EwAVxXw/xDuhPMBHof1IfgvnuD8ZnvfjwAsADAdQBdveLOCPqfDOv96NCcO7cgXzcS5XKg7yl7z5ycvuPk1lq81E7yROtK7Rvj10bLX0d4jE89hrsPEcwKAiTkRHaRvczPz+OrtivMZI7H22c2v82eFe7bR4rRDwtkivtM74y9b9d4nAZgFYArFc4RCOcSbO/9qQnC8LAOgWQEdTXgqiV+5eJZ/f/nPlL8XKliIta6zXETzX4/2/8nOVXa+TDTH53oLDDHzwUajNMNFAFbQAlXfAv/ZSReN7f4USQ9YPEU8nAfgAgBLACx2vRgxagT9TQrnhzo/7UHiKerhLAA3AbhOp80LzDXzIAez7Xe9mNRohc9TxMsuBpNsC7/c9WISZw+F854yN45oExJPUS/bGUwyP/Uy+UKdYFkUq9jMQ8LpCImnaIR3uWW0SP73AMwDMDuA9K/Qg0EWRX8HwDqNx3CPfJ6iCE6neM5lddmFTHMSjQeBbPjaBxTNHTyU6O4REk9RNKewRv5KJdk3xLpcCe37RX84oji0bRdFY0nZTzGgcRDAj5nEL2qbH/QEy2jly/QciadoFRtYFLGb+aGqVBq7acsTFE+NwQgEiadoJe/zWEc/6Lxc1Vnq01atum5rLgBkDXVUShkQ8nmKdnMye4aacE4GMI3BJWtEMoNBp5ii9oeYmbCD0XJ77adLw4JBmhsUKLI8Rbv5ItdLNB8QmUThXAjgElqqnYF+PEcZKd/C5izb+FpvgxbhMRJP4QtWXvgyt7GbmQg+n4I6Wss9HxmgUG6jcNr/4T3XixKtQeIpfMP8fs9QQM1Hei5zSGdye++bkPZzK57Px9zJSiwRMfJ5Ct85gaI5jU22+/g6jUdvTlArGQOVGmxX6smKURpPD9NPuY8W5m6+7uHrQJUu/SIyZHkK3znOyppdFXrGTqgQtS+fGlCpgXX2911lDa9HynrODjH1yv6sHEwh8RRBY5FqRatF8HPbhRAiGSSeQgjRABJPIYRoAImnEEI0gMRTCCEaQOIphBANIPEUQogGkHgKIUQDSDyFEKIBJJ5CCNEAEk8hhGgAiacQQjSAxFMIIVA//x9Qls5l+A5tjQAAAABJRU5ErkJggg=="><span class="lg-bar"></span><div class="lg-tx"><div class="lg-ko">대치에스플러스학원</div><div class="lg-en">DAECHI S+ ACADEMY</div></div></div><img class="lg-img" alt="학원 로고" hidden><div class="lgtb ctl"><button type="button" data-lg="pick">로고 바꾸기</button><button type="button" data-lg="minus" title="작게">−</button><button type="button" data-lg="plus" title="크게">＋</button><button type="button" class="o" data-lg="prev" title="방금 바꾸기 전 로고로">↶ 이전 로고</button><button type="button" class="o" data-lg="def" title="처음 로고와 크기로">기본 로고로</button></div><input type="file" accept="image/*" hidden></div></i>');
+ h+=G('per','<i class="bb" style="left:14mm;top:31mm;width:13mm;height:13mm;border-width:.6mm"></i>'+T('per',C.per,14,31,13,13,'font-size:20pt;font-weight:900')+T('perl','교시',27.5,35,8,6,'font-size:7pt')+T('subj',C.subj,37,31,55,13,'font-size:21pt;font-weight:900;letter-spacing:.08em'));
+ var nn=Math.max(0,C.nameN|0),sn=el('fr',14,49,78,16)+el('ln',14+15,49,.35,16)+el('ln',14,57,78,.35)+T('school',C.school,14,49,15,8,'font-size:7pt')+T('name',C.name,14,57,15,8,'font-size:7pt');
+ if(nn){var cw=Math.min(11,(78-15-3)/nn);for(var u=0;u<nn;u++)sn+=el('dot',29+1.5+u*cw,58,cw-1,6)}
+ sn+=T('note',C.note,14,66.4,78,8,'font-size:5.3pt;font-weight:500;line-height:1.35',true);
+ h+=G('sn',sn);
+ h+=G('hand',el('fr',14,76,78,14)+el('ln',14+15,76,.35,14)+T('hand',C.hand,14,76,15,14,'font-size:6.6pt;line-height:1.25',true));
+ var B=L.idBox,id=el('fr',B.x,B.y,B.w,B.h)+el('hd',B.x,B.y,B.w,7)+T('idl',C.idl,B.x,B.y,B.w,7,'color:#fff;font-size:8.5pt;letter-spacing:.2em');
+ id+=T('idl1',C.idl1,B.x,B.y+7.4,34,4.6,'font-size:5.6pt')+T('idl2',C.idl2,B.x+34,B.y+7.4,20,4.6,'font-size:5.6pt')+(L.num.w>0?T('idl3',C.idl3,B.x+54,B.y+7.4,L.num.w,4.6,'font-size:5.6pt'):'');
+ id+=el('ln',B.x+34,B.y+7,.3,B.h-8)+el('ln',B.x+54,B.y+7,.3,B.h-8);
+ L.sch.opts.forEach(function(o){id+=bub(o.x,o.y,L.sch.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.sch.w-9)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
+ L.cls.opts.forEach(function(o){id+=bub(o.x,o.y,L.cls.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.cls.w-8)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
+ L.num.cols.forEach(function(c){id+=el('fr2',c.x-L.num.cw/2+.6,B.y+12.4,L.num.cw-1.2,6);for(var m=0;m<10;m++)id+=bub(c.x,c.ys[m],c.r,m)});
+ h+=id;
+ h+=G('mon',el('fr',14,178,78,18)+el('ln',14+14,178,.35,18)+el('ln',14+30,178,.35,18)+T('mon',C.mon,14,178,14,18,'font-size:6.6pt;font-weight:800;line-height:1.25',true)+T('mon2',C.mon2,44,178,14,18,'font-size:5.8pt;line-height:1.25',true)+T('mon3',C.mon3,60,178,31,18,'font-size:5.4pt;font-weight:600;line-height:1.4',true));
+ h+=G('inst',E('inst',C.inst,'left:148mm;top:5.2mm;font-size:5pt;font-weight:600;white-space:normal;width:136mm;line-height:1.3;text-align:right'));
  L.fr.forEach(function(f){if(f.k==='mc'){h+=el('fr',f.x,f.y,f.w,f.h)+el('hd',f.x,f.y,f.w,8)+'<i class="tx" style="left:'+f.x+'mm;top:'+f.y+'mm;width:8mm;height:8mm;color:#fff;font-size:6pt">문번</i><i class="tx" style="left:'+(f.x+8)+'mm;top:'+f.y+'mm;width:'+(f.w-8)+'mm;height:8mm;color:#fff;font-size:8pt;letter-spacing:.5em">답 란</i>'}
   else{h+=el('fr',f.x,f.y,f.w,f.h)+'<i class="tx big" style="left:'+f.x+'mm;top:'+(f.y+.8)+'mm;width:'+f.w+'mm;height:5mm;font-size:8pt">'+f.q+'번</i><i class="tx" style="left:'+f.x+'mm;top:'+(f.y+7)+'mm;width:'+f.w+'mm;height:4mm;font-size:5.4pt;letter-spacing:.3em">백 십 일</i>'+el('ln',f.x,f.y+12,f.w,.3);for(var s=1;s<3;s++)h+=el('ln',f.x+3.3+s*5.4-2.7,f.y+12,.25,f.h-12)}});
- L.mc.forEach(function(r){h+='<i class="tx big" style="left:'+(r.nx-3.5)+'mm;top:'+(r.y-3)+'mm;width:7mm;height:6mm;font-size:'+(r.q%5===0?9.5:8.2)+'pt;'+(r.q%5===0?'font-weight:900':'font-weight:500')+'">'+r.q+'</i>';r.xs.forEach(function(x,k){h+=bub(x,r.y,r.r,k+1)});if(r.q%5===0&&r.q<C.n1)h+=el('ln',r.xs[0]-9.4,r.y+4.6,39.4,.3)});
+ L.mc.forEach(function(r){var five=r.q%5===0;h+='<i class="tx" style="left:'+(r.nx-3.5)+'mm;top:'+(r.y-3)+'mm;width:7mm;height:6mm;font-size:'+(five?9.5:8.2)+'pt;font-weight:'+(five?900:500)+'">'+r.q+'</i>';r.xs.forEach(function(x,k){h+=bub(x,r.y,r.r,k+1)});
+  if(five&&!r.last&&r.q<C.n1)h+=el('ln',r.x0,r.y+r.rp/2-.15,r.bw,.3)});
  L.sa.forEach(function(s){s.cols.forEach(function(c){for(var j=0;j<10;j++)h+=bub(c.x,c.ys[j],s.r,j)})});
- if(L.notice){var n=L.notice;h+=el('fr',n.x,n.y,n.w,n.h)+E('sa',C.sa,'left:'+(n.x+1)+'mm;top:'+(n.y+1.4)+'mm;width:'+(n.w-2)+'mm;font-size:7.4pt;font-weight:900;white-space:normal;text-align:center;line-height:1.25')+E('sa1','· '+C.sa1,'left:'+(n.x+1.6)+'mm;top:'+(n.y+12.5)+'mm;width:'+(n.w-3.2)+'mm;font-size:5.2pt;white-space:normal;line-height:1.35;font-weight:500')+E('sa2','· '+C.sa2,'left:'+(n.x+1.6)+'mm;top:'+(n.y+22)+'mm;width:'+(n.w-3.2)+'mm;font-size:5.2pt;white-space:normal;line-height:1.35;font-weight:500')}
- /* 성명(쓰는 칸) — 아래 가운데 */
- var nx0=96,nx1=L.saBotN>0?L.saBotX-3:283;if(nx1-nx0>30){h+=el('fr',nx0,118,nx1-nx0,76)+el('hd',nx0,118,nx1-nx0,8)+'<i class="tx" style="left:'+nx0+'mm;top:118mm;width:'+(nx1-nx0)+'mm;height:8mm;color:#fff;font-size:9pt;letter-spacing:.9em">성 명</i>'+E('nmnote','(한글로 크게 써 주세요)','left:'+(nx0+2)+'mm;top:128mm;font-size:6pt;font-weight:500')}
+ if(L.notice){var n=L.notice;h+=el('fr',n.x,n.y,n.w,n.h)+T('sa',C.sa,n.x+1,n.y+1.4,n.w-2,10,'font-size:7.4pt;font-weight:900;line-height:1.25',true)+'<i class="tx tl wr" style="left:'+(n.x+1.6)+'mm;top:'+(n.y+12.5)+'mm;width:'+(n.w-3.2)+'mm;height:9mm;font-size:5.2pt;font-weight:500;line-height:1.35;align-items:flex-start">· '+E('sa1',C.sa1,'','st')+'</i><i class="tx tl wr" style="left:'+(n.x+1.6)+'mm;top:'+(n.y+22)+'mm;width:'+(n.w-3.2)+'mm;height:12mm;font-size:5.2pt;font-weight:500;line-height:1.35;align-items:flex-start">· '+E('sa2',C.sa2,'','st')+'</i>'}
+ if(L.nm){var m=L.nm,mh=el('fr',m.x,m.y,m.w,m.h)+el('hd',m.x,m.y,m.w,8)+T('nmt',C.nmt,m.x,m.y,m.w,8,'color:#fff;font-size:9pt;letter-spacing:.8em');
+  if(nn){var gw=Math.min(24,(m.w-8)/nn),gx=m.x+(m.w-gw*nn)/2;for(var v=0;v<nn;v++)mh+=el('dot',gx+v*gw+1,m.y+16,gw-2,Math.min(26,gw*1.15))}
+  mh+=T('nmn',C.nmn,m.x+2,m.y+m.h-12,m.w-4,9,'font-size:6pt;font-weight:500',true);h+=mh}
  h+=E('foot',C.foot,'left:250mm;top:200.6mm;font-size:5.4pt;font-weight:500');
- return h}
-function renderSheet(){var pg=$('#pg');pg.innerHTML=sheet();pg.style.setProperty('--pc',C.color);fit();
- pg.querySelectorAll('.ed').forEach(function(e){var k=e.dataset.k;e.addEventListener('input',function(){var v=e.innerHTML;if(k==='sa1'||k==='sa2')v=v.replace(/^·\s*/,'');if(/^idl2_/.test(k)){C.idl2[+k.slice(5)]=v}else C[k]=v;save()});e.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();e.blur()}})})}
+ var gl={};Object.keys(BASE).forEach(function(g){var o=C.off[g]||[0,0],b=BASE[g];gl[g]=[b[0]+o[0],b[1]+o[1],b[2],b[3]]});Object.keys(L.grp).forEach(function(g){gl[g]=L.grp[g]});
+ Object.keys(gl).forEach(function(g){var b=gl[g],nm=GN[g]||(g.indexOf('mc')===0?'객관식 '+(+g.slice(2)+1)+'칸':g);gh+='<i class="gh'+(g===selG?' sel':'')+'" data-g="'+g+'" style="left:'+b[0]+'mm;top:'+b[1]+'mm;width:'+b[2]+'mm;height:'+b[3]+'mm">'+nm+'</i>'});
+ return h+gh}
+function renderSheet(){var pg=$('#pg');pg.innerHTML=sheet();pg.style.setProperty('--pc',C.color);pg.classList.toggle('moving',moving);fit();Logo.apply();
+ pg.querySelectorAll('.ed').forEach(function(e){var k=e.dataset.k;e.addEventListener('input',function(){C[k]=e.innerHTML;save()});e.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();e.blur()}})})}
 function fit(){var w=document.querySelector('.wrap').clientWidth-24,s=Math.min(1,w/(297*3.7795));$('.stage').style.setProperty('--s',s.toFixed(4))}
 window.addEventListener('resize',fit);
+/* ===== 박스 위치 이동 ===== */
+var drag=null,raf=0;
+function moveBy(g,dx,dy){var o=C.off[g]||[0,0];C.off[g]=[Math.round((o[0]+dx)*2)/2,Math.round((o[1]+dy)*2)/2];save();renderSheet()}
+document.addEventListener('pointerdown',function(e){var h=e.target.closest&&e.target.closest('.gh');if(!h)return;selG=h.dataset.g;var pg=$('#pg'),sc=pg.getBoundingClientRect().width/297;drag={g:selG,x:e.clientX,y:e.clientY,o:(C.off[selG]||[0,0]).slice(),k:sc};e.preventDefault();renderSheet()});
+document.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/drag.k,dy=(e.clientY-drag.y)/drag.k;C.off[drag.g]=[Math.round((drag.o[0]+dx)*2)/2,Math.round((drag.o[1]+dy)*2)/2];if(!raf)raf=requestAnimationFrame(function(){raf=0;renderSheet()})});
+document.addEventListener('pointerup',function(){if(drag){drag=null;save();renderSheet()}});
+document.addEventListener('keydown',function(e){if(!moving||!selG)return;var t=e.target;if(t.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(t.tagName))return;var d={ArrowLeft:[-.5,0],ArrowRight:[.5,0],ArrowUp:[0,-.5],ArrowDown:[0,.5]}[e.key];if(d){e.preventDefault();moveBy(selG,d[0],d[1])}});
+window.toggleMove=function(){moving=!moving;$('#mvBtn').classList.toggle('on',moving);$('#mvBtn').textContent=moving?'박스 위치 조절 끝내기':'박스 위치 조절';renderSheet()};
+window.resetOff=function(){if(confirm('모든 박스 위치를 처음 자리로 되돌릴까요?')){C.off={};selG=null;save();renderSheet()}};
 /* ================= 설정 ================= */
 function bindSet(){
- [['n1','n1'],['n2','n2'],['rows','rows'],['sd','sd'],['cd','cd'],['nd','nd']].forEach(function(p){var i=$('#'+p[0]);i.value=C[p[1]];i.addEventListener('change',function(){var v=Math.max(0,parseInt(i.value,10)||0);if(p[0]==='n1')v=Math.min(v,45);if(p[0]==='n2')v=Math.min(v,19);if(p[0]==='rows')v=Math.max(3,Math.min(10,v));if(p[0]==='n1'||p[0]==='n2'){var tot=(p[0]==='n1'?v:C.n1)+(p[0]==='n2'?v:C.n2);if(tot>45){alert('문항은 모두 합쳐 45개까지 만들 수 있어요.');i.value=C[p[1]];return}}C[p[1]]=v;i.value=v;save();renderSheet();buildKey()})});
- var pc=$('#pcolor');pc.value=C.color;pc.addEventListener('input',function(){C.color=pc.value;save();$('#pg').style.setProperty('--pc',C.color)});
- $('#resetCfg').addEventListener('click',function(){if(confirm('답안지 글자와 문항 수를 처음 모양으로 되돌릴까요?')){C=Object.assign({},DEF);save();location.reload()}});
-}
-/* ================= 탭 ================= */
-function tab(n){$('#makePanel').style.display=n===1?'':'none';$('#stageWrap').style.display=n===1?'':'none';$('#readPanel').style.display=n===2?'block':'none';$('#t1').classList.toggle('on',n===1);$('#t2').classList.toggle('on',n===2);$('#pdfBtn').style.display=$('#pngBtn').style.display=$('#rng').style.display=n===1?'':'none';if(n===1)fit()}
+ [['n1','n1'],['n2','n2'],['rows','rows'],['nd','nd'],['nameN','nameN']].forEach(function(p){var i=$('#'+p[0]);i.value=C[p[1]];if(i._b)return;i._b=1;i.addEventListener('change',function(){var v=Math.max(0,parseInt(i.value,10)||0);if(p[0]==='n1')v=Math.min(v,45);if(p[0]==='n2')v=Math.min(v,19);if(p[0]==='rows')v=Math.max(3,Math.min(10,v));if(p[0]==='nd')v=Math.min(v,4);if(p[0]==='nameN')v=Math.min(v,8);
+  if(p[0]==='n1'||p[0]==='n2'){var tot=(p[0]==='n1'?v:C.n1)+(p[0]==='n2'?v:C.n2);if(tot>45){alert('문항은 모두 합쳐 45개까지 만들 수 있어요.');i.value=C[p[1]];return}}C[p[1]]=v;i.value=v;save();renderSheet();buildKey()})});
+ ['schools','classes'].forEach(function(k){var i=$('#'+k);i.value=C[k];if(i._b)return;i._b=1;i.addEventListener('change',function(){C[k]=list(i.value).join(',');i.value=C[k];save();renderSheet()})});
+ var pc=$('#pcolor');pc.value=C.color;if(!pc._b){pc._b=1;pc.addEventListener('input',function(){C.color=pc.value;save();$('#pg').style.setProperty('--pc',C.color)})}
+ var rc=$('#resetCfg');if(!rc._b){rc._b=1;rc.addEventListener('click',function(){if(confirm('답안지 글자와 문항 수·위치를 처음 모양으로 되돌릴까요?')){C=Object.assign({},DEF);C.off={};save();renderSheet();bindSet();buildKey()}})}}
+function tab(n){$('#makePanel').style.display=n===1?'':'none';$('#stageWrap').style.display=n===1?'':'none';$('#readPanel').style.display=n===2?'block':'none';$('#t1').classList.toggle('on',n===1);$('#t2').classList.toggle('on',n===2);['pdfBtn','pngBtn','rng','mvBtn','fmt'].forEach(function(id){var e=$('#'+id);if(e)e.style.display=n===1?'':'none'});if(n===1)fit()}
 /* ================= 정답 입력 ================= */
 function buildKey(){var h='';for(var q=1;q<=C.n1+C.n2;q++){var sa=q>C.n1;h+='<label><b style="width:2.2em;text-align:right">'+q+'.</b><input data-a="'+q+'" value="'+(KEYV.a[q]==null?'':KEYV.a[q])+'" placeholder="'+(sa?'0~999':'1~5')+'"> <input data-p="'+q+'" value="'+(KEYV.p[q]==null?'':KEYV.p[q])+'" placeholder="점" style="width:30px"></label>'}$('#keyg').innerHTML=h;
  $('#keyg').querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){if(i.dataset.a)KEYV.a[i.dataset.a]=i.value.trim();else KEYV.p[i.dataset.p]=i.value.trim();save()})})}
@@ -147,53 +217,77 @@ function solve(A,b){var n=b.length;for(var i=0;i<n;i++){var p=i;for(var r=i+1;r<
  var x=new Array(n);for(i=n-1;i>=0;i--){var s=b[i];for(c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/A[i][i]}return x}
 function homog(src,dst){var A=[],b=[];for(var i=0;i<4;i++){var x=src[i][0],y=src[i][1],u=dst[i][0],v=dst[i][1];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v)}var h=solve(A,b);h.push(1);return h}
 function mapp(H,x,y){var w=H[6]*x+H[7]*y+1;return[(H[0]*x+H[1]*y+H[2])/w,(H[3]*x+H[4]*y+H[5])/w]}
-/* 읽기: 한 장 */
 function readSheet(canvas){
  var w=canvas.width,h=canvas.height,g=toGray(canvas),pl=paperLevel(g),n=new Uint8Array(w*h);for(var i=0;i<g.length;i++){var v=g[i]*255/pl;n[i]=v>255?255:v}
- var f=findFid(n,w,h);/* f: 화면 기준 좌상, 우상, 우하, 좌하 */
- var cx=0,cy=0;f.forEach(function(p){cx+=p.x/4;cy+=p.y/4});
- var ord=f.map(function(p,i){return{p:p,a:Math.atan2(p.y-cy,p.x-cx)}}).sort(function(a,b){return a.a-b.a}).map(function(o){return o.p});/* 시계 방향(화면) */
+ var f=findFid(n,w,h),cx=0,cy=0;f.forEach(function(p){cx+=p.x/4;cy+=p.y/4});
+ var ord=f.map(function(p){return{p:p,a:Math.atan2(p.y-cy,p.x-cx)}}).sort(function(a,b){return a.a-b.a}).map(function(o){return o.p});
  var mi=ord.findIndex(function(p){return p.pair});if(mi<0)mi=0;
- var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);/* 시트의 좌상, 우상, 우하, 좌하 */
+ var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);
  var sheetPts=[[9,14.5],[288,9],[288,201],[9,201]],H=homog(sheetPts,rot.map(function(p){return[p.x,p.y]}));
  var L=layout(C),sc=Math.hypot(mapp(H,10,0)[0]-mapp(H,0,0)[0],mapp(H,10,0)[1]-mapp(H,0,0)[1])/10;
  function samp(x,y,r){var p=mapp(H,x,y),rr=r*sc*.62,x0=Math.max(0,Math.floor(p[0]-rr)),x1=Math.min(w-1,Math.ceil(p[0]+rr)),y0=Math.max(0,Math.floor(p[1]-rr)),y1=Math.min(h-1,Math.ceil(p[1]+rr)),s=0,c=0;
   for(var yy=y0;yy<=y1;yy++)for(var xx=x0;xx<=x1;xx++){var dx=xx-p[0],dy=yy-p[1];if(dx*dx+dy*dy<=rr*rr){s+=n[yy*w+xx];c++}}return{v:c?s/c:255,px:p[0],py:p[1]}}
  var all=[],mc=L.mc.map(function(r){var vs=r.xs.map(function(x){var s=samp(x,r.y,r.r);all.push(s.v);return s});return{q:r.q,vs:vs}});
  var sa=L.sa.map(function(s){return{q:s.q,cols:s.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,s.r);all.push(t.v);return t})})}});
- var idc=L.id.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})});
+ var sch=L.sch.opts.map(function(o){var t=samp(o.x,o.y,L.sch.r);all.push(t.v);return t}),cls=L.cls.opts.map(function(o){var t=samp(o.x,o.y,L.cls.r);all.push(t.v);return t});
+ var num=L.num.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})});
  all.sort(function(a,b){return a-b});var base=all[Math.floor(all.length*.6)],thr=Math.max(22,base*.2);
  function pick(vs){var d=vs.map(function(s){return base-s.v}),idx=[];for(var i=0;i<d.length;i++)if(d[i]>thr)idx.push(i);if(!idx.length)return{i:-1,flag:''};idx.sort(function(a,b){return d[b]-d[a]});if(idx.length===1)return{i:idx[0],flag:''};if(d[idx[0]]-d[idx[1]]>.5*d[idx[0]])return{i:idx[0],flag:'?'};return{i:-2,flag:'복수'}}
  var ans=[];mc.forEach(function(r){var p=pick(r.vs);ans.push({q:r.q,t:'mc',v:p.i>=0?String(p.i+1):'',flag:p.i===-2?'복수':p.flag,pts:r.vs})});
  sa.forEach(function(s){var ds=s.cols.map(function(c){return pick(c)}),bad=ds.some(function(d){return d.i===-2}),any=ds.some(function(d){return d.i>=0});var v='';if(any&&!bad)v=String(ds.reduce(function(a,d){return a*10+(d.i>=0?d.i:0)},0));ans.push({q:s.q,t:'sa',v:v,flag:bad?'복수':'',pts:[].concat.apply([],s.cols)})});
- var id=idc.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'});
+ var sl=list(C.schools),cl=list(C.classes),ps=pick(sch),pc=pick(cls);
+ var id={school:ps.i>=0?sl[ps.i]:(ps.i===-2?'(복수)':'?'),cls:pc.i>=0?cl[pc.i]:(pc.i===-2?'(복수)':'?'),num:num.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'}).join('')};
  return{ans:ans,id:id,H:H,sc:sc,base:base,thr:thr,layout:L,sheet:rot,w:w,h:h}}
 /* ================= 채점 화면 ================= */
 var RES=[];
 function gradeOne(a){var key=KEYV.a[a.q],pt=parseFloat(KEYV.p[a.q]);if(isNaN(pt))pt=0;if(key==null||key==='')return{s:'',sc:0};if(a.v==='')return{s:'un',sc:0};return String(a.v)===String(key).trim()?{s:'ok',sc:pt}:{s:'no',sc:0}}
 function drawPrev(cv,im,r){var c=cv,k=Math.min(1,430/im.width);c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);x.lineWidth=2;
  r.sheet.forEach(function(p){x.strokeStyle='#e22';x.strokeRect(p.x*k-6,p.y*k-6,12,12)});
- r.ans.forEach(function(a){var g=a.t==='mc'?a.pts:a.pts;g.forEach(function(s,i){var on=false;if(a.t==='mc')on=a.v!==''&&i===parseInt(a.v,10)-1;x.beginPath();x.arc(s.px*k,s.py*k,Math.max(1.5,r.sc*k*.9),0,7);x.strokeStyle=on?'#0a8':'rgba(0,0,0,0)';x.stroke()})})}
-function resHtml(i){var o=RES[i],r=o.r,tot=0,mx=0,h='<table><tr><th>번호</th><th>학생 답</th><th>정답</th><th>배점</th><th>점수</th></tr>';
+ r.ans.forEach(function(a){a.pts.forEach(function(s,i){var on=a.t==='mc'&&a.v!==''&&i===parseInt(a.v,10)-1;x.beginPath();x.arc(s.px*k,s.py*k,Math.max(1.5,r.sc*k*.9),0,7);x.strokeStyle=on?'#0a8':'rgba(0,0,0,0)';x.stroke()})})}
+function idTxt(id){return id.school+' · '+id.cls+' · '+(id.num||'-')+'번'}
+function resHtml(i){var o=RES[i],tot=0,mx=0,h='<table><tr><th>번호</th><th>학생 답</th><th>정답</th><th>배점</th><th>점수</th></tr>';
  o.ans.forEach(function(a){var g=gradeOne(a),pt=parseFloat(KEYV.p[a.q])||0;tot+=g.sc;mx+=pt;h+='<tr><td>'+a.q+'</td><td class="'+g.s+'">'+(a.t==='mc'?'<select data-i="'+i+'" data-q="'+a.q+'"><option value="">—</option>'+[1,2,3,4,5].map(function(v){return'<option'+(String(v)===a.v?' selected':'')+'>'+v+'</option>'}).join('')+'</select>':'<input data-i="'+i+'" data-q="'+a.q+'" value="'+a.v+'" style="width:40px">')+(a.flag?' <span class="warn">'+a.flag+'</span>':'')+'</td><td>'+(KEYV.a[a.q]==null?'':KEYV.a[a.q])+'</td><td>'+(pt||'')+'</td><td>'+(g.s==='ok'?g.sc:g.s?0:'')+'</td></tr>'});
  o.tot=tot;o.mx=mx;return h+'</table>'}
-function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML='<b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 수험번호 읽음: <b>'+o.idtxt+'</b>';
+function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML='<b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 읽은 정보: <b>'+o.idtxt+'</b>';
  d.querySelectorAll('select,input').forEach(function(s){s.addEventListener('change',function(){var a=o.ans.filter(function(x){return String(x.q)===s.dataset.q})[0];a.v=s.value;a.flag='';showRes(i);saveRes()})})}
-function saveRes(){try{localStorage.setItem('bro_omr_results_v1',JSON.stringify({cfg:{n1:C.n1,n2:C.n2},key:KEYV,students:RES.map(function(o){return{file:o.file,id:o.idtxt,answers:o.ans.map(function(a){return a.v}),score:o.tot,max:o.mx}})}))}catch(e){}}
-async function runFiles(files){var box=$('#resBox');$('#readMsg').textContent='';for(var f of files){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><canvas></canvas><div class="warn" style="font-size:12px;margin-top:4px">읽는 중...</div></div><div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
+function saveRes(){try{localStorage.setItem('bro_omr_results_v1',JSON.stringify({cfg:{n1:C.n1,n2:C.n2},key:KEYV,students:RES.filter(function(o){return !o.err}).map(function(o){return{file:o.file,school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),score:o.tot,max:o.mx}})}))}catch(e){}}
+async function runFiles(files){var box=$('#resBox');for(var f of files){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><canvas></canvas><div class="warn" style="font-size:12px;margin-top:4px">읽는 중...</div></div><div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
   try{var im=await loadImg(f),cv=document.createElement('canvas'),k=Math.min(1,2400/Math.max(im.width,im.height));cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
-   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,idtxt:r.id.join('')});var o=RES[i];o.idtxt=idFmt(r.id);drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i)}
-  catch(e){RES.push({file:f.name,r:null,ans:[],idtxt:'',tot:0,mx:0,err:1});div.innerHTML='<div class="warn">'+f.name+' — '+e.message+'</div>'}}
+   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,id:r.id,idtxt:idTxt(r.id)});drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i)}
+  catch(e){RES.push({file:f.name,r:null,ans:[],id:{},idtxt:'',tot:0,mx:0,err:1});div.innerHTML='<div class="warn">'+f.name+' — '+e.message+'</div>'}}
  saveRes()}
-function idFmt(id){var c=C,a=id.slice(0,c.sd).join(''),b=id.slice(c.sd,c.sd+c.cd).join(''),d=id.slice(c.sd+c.cd).join('');return a+'-'+b+'-'+d}
-window.exportCsv=function(){var rows=[['파일','수험번호','점수','만점'].concat(Array.from({length:C.n1+C.n2},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.idtxt,o.tot,o.mx].concat(o.ans.map(function(a){return a.v})))});
+window.exportCsv=function(){var rows=[['파일','학교','반','번호','점수','만점'].concat(Array.from({length:C.n1+C.n2},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx].concat(o.ans.map(function(a){return a.v})))});
  var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='OMR_채점결과.csv';document.body.appendChild(a);a.click();a.remove()};
 window.OMR_test=function(canvas){return readSheet(canvas)};
+/* ================= 부분 글자 서식 ================= */
+var FN=[['Noto Serif KR','Noto Serif KR (명조)'],['Nanum Myeongjo','나눔명조'],['Gowun Batang','고운바탕'],['Hahmlet','함렛'],['Song Myung','송명'],['Black Han Sans','블랙한산스(굵은 제목)'],['Do Hyeon','도현'],['Jua','주아(둥근 글씨)'],['Noto Sans KR','Noto Sans KR (고딕)'],['Nanum Gothic','나눔고딕'],['Gowun Dodum','고운돋움'],['IBM Plex Sans KR','IBM Plex Sans KR'],['Malgun Gothic','맑은 고딕']];
+var lastR=null,lastEd=null;
+document.addEventListener('selectionchange',function(){var s=getSelection();if(!s.rangeCount)return;var r=s.getRangeAt(0),n=r.commonAncestorContainer,el=n.nodeType===1?n:n.parentElement;
+ if(el&&el.closest&&el.closest('.ed')&&!el.closest('#fmt')){lastR=r.cloneRange();lastEd=el.closest('.ed');var px=parseFloat(getComputedStyle(el).fontSize);if(px){var f=$('#fSize');if(f&&document.activeElement!==f)f.value=Math.round(px*0.75*2)/2}}});
+function withSel(fn){if(!lastEd||!document.body.contains(lastEd)){alert('먼저 고칠 글자를 클릭하거나 드래그해서 선택해 주세요. (파란 점선 글씨만 고칠 수 있어요)');return}
+ lastEd.focus();var s=getSelection(),r=lastR;s.removeAllRanges();if(!r||r.collapsed){r=document.createRange();r.selectNodeContents(lastEd)}s.addRange(r);
+ try{document.execCommand('styleWithCSS',false,true)}catch(e){}fn();
+ lastEd.dispatchEvent(new Event('input',{bubbles:true}));if(s.rangeCount)lastR=s.getRangeAt(0).cloneRange()}
+function setSize(pt){withSel(function(){document.execCommand('fontSize',false,'7');lastEd.querySelectorAll('font[size="7"],span').forEach(function(n){
+  if(n.tagName==='FONT'){var sp=document.createElement('span');sp.style.fontSize=pt+'pt';while(n.firstChild)sp.appendChild(n.firstChild);n.replaceWith(sp)}else if(n.style&&n.style.fontSize==='xxx-large')n.style.fontSize=pt+'pt'})})}
+function setupFmt(){
+ $('#fFont').innerHTML='<option value="">글꼴…</option>'+FN.map(function(f,i){return'<option value="'+i+'" style="font-family:\''+f[0]+'\'">'+f[1]+'</option>'}).join('');
+ var f=$('#fmt');f.addEventListener('mousedown',function(e){if(!/SELECT|INPUT/.test(e.target.tagName))e.preventDefault()});
+ f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.c){withSel(function(){document.execCommand('foreColor',false,b.dataset.c)})}
+  else if(b.id==='fBold')withSel(function(){document.execCommand('bold')});
+  else if(b.id==='fClr')withSel(function(){document.execCommand('removeFormat');lastEd.querySelectorAll('[style]').forEach(function(n){n.removeAttribute('style')})});
+  else if(b.id==='fPlus'||b.id==='fMinus'){var v=parseFloat($('#fSize').value)||10;v=Math.max(3,Math.min(80,v+(b.id==='fPlus'?1:-1)));$('#fSize').value=v;setSize(v)}});
+ $('#fColor').addEventListener('change',function(){var c=this.value;withSel(function(){document.execCommand('foreColor',false,c)})});
+ $('#fSize').addEventListener('change',function(){var v=parseFloat(this.value);if(v>=3&&v<=80)setSize(v)});
+ $('#fFont').addEventListener('change',function(){var i=this.value;if(i==='')return;var nm=FN[+i][0];this.value='';withSel(function(){document.execCommand('fontName',false,nm)})})}
 /* ================= 시작 ================= */
 window.tab=tab;window.pasteKey=pasteKey;window.allPts=allPts;
-bindSet();renderSheet();buildKey();
+bindSet();Logo.init(function(){Hist.touch()});renderSheet();buildKey();setupFmt();
 $('#fileIn').addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
 $('#clearRes').addEventListener('click',function(){RES=[];$('#resBox').innerHTML='';saveRes()});
+function restoreAll(str){var o=JSON.parse(str);C=Object.assign({},DEF,o.c);C.off=C.off||{};KEYV=o.k||{a:{},p:{}};Logo.restore(o.lg);try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}bindSet();renderSheet();buildKey()}
+Hist.init({snap:function(){return JSON.stringify({c:C,k:KEYV,lg:Logo.snap()})},restore:restoreAll});
 })();
 </script><script>/* 여백없는 PDF — 쪽마다 화면 그대로 그림으로 찍어서 한 장씩 붙이는 방식(html2canvas + jsPDF).
    브라우저 인쇄와 달리 HTML에서 보던 모양 그대로 나온다. 쪽 지정(예: 1-4, 7) 가능. */
