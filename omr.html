@@ -140,8 +140,8 @@ function el(cls,x,y,w,h,html,st){return'<i class="'+cls+'" style="left:'+x+'mm;t
 function T(k,html,x,y,w,h,st,wrap){return'<i class="tx'+(wrap?' wr':'')+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+E(k,html,'','st')+'</i>'}
 function tintC(){var n=parseInt(C.color.slice(1),16);return'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+',.09)'}
 function bub(cx,cy,r,t,fill){return'<i class="bb'+(fill?' fill':'')+'" style="left:'+(cx-r)+'mm;top:'+(cy-r)+'mm;width:'+2*r+'mm;height:'+2*r+'mm">'+t+'</i>'}
-var GN={title:'제목',logo:'로고',per:'교시·영역',sn:'학교·성명',hand:'필적확인',mon:'감독관',inst:'안내문',notice:'단답형 안내',nm:'성명 큰 칸',id:'수험번호',sat:'단답형(위)',sab:'단답형(아래)'};
-var BASE={title:[14,20,78,10],logo:[14,10,50,9],per:[14,31,78,14],sn:[14,49,78,26],hand:[14,76,78,14],mon:[14,178,78,18],inst:[148,3,138,7]};
+var GN={title:'제목',logo:'로고',per:'교시·영역',sn:'학교·성명',hand:'필적확인',mon:'감독관',inst:'안내문',foot:'하단 문구',notice:'단답형 안내',nm:'성명 큰 칸',id:'수험번호',sat:'단답형(위)',sab:'단답형(아래)'};
+var BASE={title:[14,20,78,10],logo:[14,10,50,9],per:[14,31,78,14],sn:[14,49,78,26],hand:[14,76,78,14],mon:[14,178,78,18],inst:[148,3,138,7],foot:[246,199,40,6]};
 function G(g,html){var o=C.off[g]||[0,0];return'<div class="grp" data-grp="'+g+'" style="left:'+o[0]+'mm;top:'+o[1]+'mm">'+html+'</div>'}
 var selG=null,moving=false;
 function sheet(){
@@ -175,7 +175,7 @@ function sheet(){
  if(L.nm){var m=L.nm,mh=el('fr',m.x,m.y,m.w,m.h)+el('hd',m.x,m.y,m.w,8)+T('nmt',C.nmt,m.x,m.y,m.w,8,'color:#fff;font-size:9pt;letter-spacing:.8em');
   if(nn){var gw=Math.min(24,(m.w-8)/nn),gx=m.x+(m.w-gw*nn)/2,CN=['①','②','③','④','⑤','⑥','⑦','⑧'];for(var v=0;v<nn;v++){var chh=Math.min(26,gw*1.15);mh+=el(v<3?'dot main':'dot',gx+v*gw+1,m.y+14,gw-2,chh,'',v<3?'background:'+tintC():'')+'<i class="tx" style="left:'+(gx+v*gw+1)+'mm;top:'+(m.y+14+chh+.8)+'mm;width:'+(gw-2)+'mm;height:4mm;font-size:'+(v<3?8:6.4)+'pt;font-weight:'+(v<3?900:500)+';opacity:'+(v<3?1:.7)+'">'+CN[v]+'</i>'}}
   mh+=T('nmn',C.nmn,m.x+2,m.y+m.h-12,m.w-4,9,'font-size:6pt;font-weight:500',true);h+=mh}
- h+=E('foot',C.foot,'left:250mm;top:200.6mm;font-size:5.4pt;font-weight:500');
+ h+=G('foot',E('foot',C.foot,'left:250mm;top:200.6mm;font-size:5.4pt;font-weight:500'));
  var gl={};Object.keys(BASE).forEach(function(g){var o=C.off[g]||[0,0],b=BASE[g];gl[g]=[b[0]+o[0],b[1]+o[1],b[2],b[3]]});Object.keys(L.grp).forEach(function(g){gl[g]=L.grp[g]});
  Object.keys(gl).forEach(function(g){var b=gl[g],nm=GN[g]||(g.indexOf('mc')===0?'객관식 '+(+g.slice(2)+1)+'칸':g);gh+='<i class="gh'+(g===selG?' sel':'')+'" data-g="'+g+'" style="left:'+b[0]+'mm;top:'+b[1]+'mm;width:'+b[2]+'mm;height:'+b[3]+'mm">'+nm+'</i>'});
  return h+gh}
