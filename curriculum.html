@@ -286,7 +286,7 @@ var DEF=[
   {span:1,w:'7주',date:'13·14회차<br>2/22(월)·2/24(수)',t:'순열과 조합',d:'조건별 순열 · 조합의 성질 · 도형/분할 문제 응용',tag:'2/19(금) 클리닉 · 2/26(금) 반편성고사'},
   {span:1,w:'8주',date:'15회차<br>3/3(수)',t:'총정리 · 실전 모의고사',d:'공통수학1 전 범위 핵심 총정리 · 실전 모의고사 피드백',tag:'3/1 삼일절 휴강 후 진행'}],
  ops:OPS({h:'승급시험 · 반편성고사',d:'1월 29일 승급시험, 2월 26일 반편성고사를 금요일 클리닉 시간에 진행하고 결과를 성적표로 확인합니다.'}),exam:'승급시험 1/29 · REHEARSAL 모의고사 2/12 · 반편성고사 2/26 (모두 금요일 클리닉 시간)',cl:'정규 수업의 힘으로, 3월 첫 시험의 출발선을 앞서 놓습니다.'},
-{id:'math2',no:'03',c:'#2F7F9F',kick:'COMMON MATH 2 · 특강',name:'공통수학2 특강',tag:'방학 중 공통수학2를 미리, 6주 18회차의 몰입 특강',s:'2027-01-11',e:'2027-02-26',period:'2027년 1월 11일(월) 개강 · 6주 18회차',who:'예비 고1 (S반 배정자 필수 · A반 배정자 선택)',cls:'월·수·금 오후 2~4시 (특강)',fixedDates:true,fixedSess:true,wsl:0,tagh:'테스트 · 클리닉',tagw:34,datew:36,
+{id:'math2',no:'03',c:'#E0872B',kick:'COMMON MATH 2 · 특강',name:'공통수학2 특강',tag:'방학 중 공통수학2를 미리, 6주 18회차의 몰입 특강',s:'2027-01-11',e:'2027-02-26',period:'2027년 1월 11일(월) 개강 · 6주 18회차',who:'예비 고1 (S반 배정자 필수 · A반 배정자 선택)',cls:'월·수·금 오후 2~4시 (특강)',fixedDates:true,fixedSess:true,wsl:0,tagh:'테스트 · 클리닉',tagw:34,datew:36,
  sess:'18회차 (1월 9회 + 2월 9회) · 2/5 · 2/8 · 2/10 휴강',
  note:'휴강 안내 · 2/5(금) · 2/8(월) · 2/10(수) 휴강 (보강은 별도 안내)',
  intro:'방학 중 월·수·금 오후 2~4시에 진행되는 공통수학2 특강입니다. 1월 11일(월) 개강해 6주 18회차 동안 도형의 방정식 · 집합 · 함수 · 명제와 절대부등식을 한 번에 학습하고, 단원별 총정리 테스트로 점검합니다. S반 배정자는 필수, A반 배정자는 선택 과정입니다.',
@@ -410,6 +410,7 @@ if(!ST.mw4&&ST.courses){ST.courses.forEach(function(c){if(!c||c.id!=='math1')ret
  ST.mw4=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
 if(!ST.mw5&&ST.courses){ST.courses.forEach(function(c){if(c&&c.id==='math1'&&c.sched)c.sched.forEach(function(r){if(plain0(r.k)==='REHEARSAL'&&plain0(r.v).indexOf('2월 12일(금) 클리닉 시간')===0&&plain0(r.v).indexOf('2/12로 설정')<0)r.v=EXTRA.math1.sched[2].v})});ST.mw5=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
 if(!ST.mw6&&ST.courses){ST.courses.forEach(function(c){if(!c||c.id!=='math1')return;(c.sched||[]).forEach(function(r){if(plain0(r.k)==='수업 일정'&&plain0(r.v).indexOf('월·수 오후 6~10시')===0&&plain0(r.v).indexOf('(1/4·6')>0)r.v=EXTRA.math1.sched[0].v});if(c.exam&&plain0(c.exam)==='승급시험(1/29) · REHEARSAL 국영수 모의고사(2/12) · 반편성고사(2/26) — 모두 금요일 클리닉 시간')c.exam=EXTRA.math1.exam});ST.mw6=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
+if(!ST.mw7&&ST.courses){ST.courses.forEach(function(c){if(c&&c.id==='math2'&&c.c==='#2F7F9F')c.c='#E0872B'});ST.mw7=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
 (function seed(){ if(ST.courses&&ST.courses.length){if(!ST.mt44){ST.courses.forEach(function(c){if(c&&c.id==='bridge'&&c.tagw===36)c.tagw=44});ST.mt44=1}if(ST.mb1==='replace'){var bi=ST.courses.findIndex(function(c){return c===null});var nb=JSON.parse(JSON.stringify(DEF[0]));weekDates(nb);nb.note=holNote(nb);nb.cls='월·수 수업 / MATHY FRIDAY';fillExtra(nb,true);ST.courses[bi]=nb;ST.mb1=1;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}ST.courses.forEach(function(c){fillExtra(c,false)});return}
  ST.courses=JSON.parse(JSON.stringify(DEF));ST.courses.forEach(function(c){weekDates(c);c.note=c.note||holNote(c);if(!c.sess||!c.fixedSess)c.sess=sessions(c);c.cls=c.cls||'월·수 수업 / MATHY FRIDAY';fillExtra(c,true)});
  ST.imgs=ST.imgs||[];ST.theme=ST.theme||{name:'navy',c:null};ST.font=ST.font||{h:0,b:8};save()})();

@@ -54,21 +54,21 @@ button.sw{border:2px solid #fff;box-shadow:0 0 0 1px #c9ced9;border-radius:6px;p
 .pn.cal{padding:11.538mm 6.462mm 6.923mm}
 .pnh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.4px solid var(--gold);padding-bottom:1.846mm;margin-bottom:2.769mm}
 .pnh b{font-family:var(--fh);font-size:13.385pt;color:var(--navy2);font-weight:900}.pnh span{font-size:8.538pt;color:var(--goldd);font-weight:700;letter-spacing:.04em}
-.mo{margin-bottom:2.192mm}.mh{display:flex;align-items:baseline;gap:2.308mm;margin-bottom:0.923mm}.mh b{font-family:var(--fh);font-size:14.538pt;color:var(--navy2);font-weight:900}.mh small{font-size:7.846pt;color:var(--sub)}.mh em{font-style:normal;margin-left:auto;font-size:7.615pt;font-weight:700;color:var(--goldd);text-align:right;line-height:1.2}
+.mo{margin-bottom:2.192mm}.mh{display:flex;align-items:baseline;gap:2.308mm;margin-bottom:0.923mm}.mh b{font-family:var(--fh);font-size:14.538pt;color:var(--navy2);font-weight:900}.mh small{font-size:7.846pt;color:var(--sub)}.mh em{font-style:normal;margin-left:auto;font-size:7.615pt;font-weight:700;color:var(--goldd);text-align:right;line-height:1.2;white-space:nowrap}
 table.cl{border-collapse:collapse;width:100%;table-layout:fixed}.cl th{font-size:7.385pt;font-weight:700;color:var(--sub);padding:0.462mm 0;height:4.154mm}.cl th.cw{color:var(--navy2)}
 .cl td{position:relative;height:5.885mm;padding:0;border:.4px solid #e4dfd0;font-size:7.962pt;vertical-align:top;background:transparent}
 .cl td b{position:absolute;left:1.038mm;top:0.231mm;font-weight:700;line-height:1;color:#7b8190}.cl td.cd b{color:var(--c);font-weight:900}.cl td.wkd b{color:#b9b4a5;font-weight:500}
 .cl td.hol b{color:#D6336C!important;font-weight:900}
 .cl td .cn{position:absolute;right:0.808mm;top:1.038mm;width:1.731mm;height:1.731mm;border-radius:50%;background:var(--c)}
 .cl td .ex{position:absolute;left:0;right:0;bottom:0;height:1.327mm;display:flex}.cl td .ex i{flex:1}
-.cl td .pe2{position:absolute;right:0.692mm;bottom:1.615mm;font-size:7.154pt;color:#D6336C;line-height:1}
+.cl td .pe2{position:absolute;right:0.692mm;bottom:0.173mm;font-size:6.462pt;color:#4B3FC8;line-height:1}
 .cl td .pe{position:absolute;right:0.577mm;top:0.115mm;font-size:7.846pt;color:var(--navy);line-height:1}
 .cl td .hk{position:absolute;right:0.462mm;top:0.692mm;background:#D6336C;color:#fff;font-size:5.308pt;font-weight:900;line-height:1;padding:0.404mm 0.635mm;border-radius:0.577mm;letter-spacing:0}
 .pc{border-radius:2.538mm;padding:2.769mm 3.462mm;margin-top:2.538mm;border-left:2.308mm solid var(--c);background:#fff;box-shadow:0 0 0 .4px #e4dfd0}.pc.cp{padding:1.154mm 3.462mm;margin-top:1.5mm}.pc.cp small{margin:0}
 .pc b{display:block;font-size:10.154pt;color:var(--navy2)}.pc small{display:block;font-size:7.846pt;color:var(--goldd);font-weight:700;margin:0.231mm 0 0.692mm}.pc span{display:block;font-size:9pt;line-height:1.5;color:var(--ink)}
 .pc em.cnt{display:block;font-style:normal;font-size:7.615pt;color:var(--sub);margin-top:0.692mm}
 .lgd{display:flex;flex-wrap:wrap;gap:0.923mm 2.769mm;font-size:7.615pt;color:var(--sub);margin-top:1.846mm;line-height:1.5}.lgd i{display:inline-block;width:3.462mm;height:2.538mm;vertical-align:-0.346mm;margin-right:0.923mm;border-radius:0.462mm}
-.lgd .hc{background:#fff;border:.4px solid #e4dfd0;border-radius:1.154mm;padding:0.231mm 1.385mm;color:var(--ink)}.lgd .hc b{color:#D6336C;font-weight:900}.lgd .hc2 b{color:var(--navy)}
+.lgd .hc{background:#fff;border:.4px solid #e4dfd0;border-radius:1.154mm;padding:0.231mm 1.385mm;color:var(--ink)}.lgd .hc b{color:#D6336C;font-weight:900}.lgd .hc2 b{color:var(--navy)}.lgd .hc.he{border-color:#4B3FC8}.lgd .hc.he b{color:#4B3FC8}
 table.st{border-collapse:collapse;width:100%;margin-top:2.538mm;font-size:7.615pt;table-layout:fixed}.st th,.st td{border:.5px solid #d6d0bd;padding:0.462mm 0.923mm;text-align:center;height:4.269mm}.st th{background:var(--navy2);color:#fff;font-weight:700}.st td.l{background:#f1ecdf;color:var(--navy2);font-weight:700;width:19.615mm}.st td.e{color:var(--ink)}
 .sth{font-weight:900;font-size:9.462pt;color:var(--navy2);margin-top:2.538mm}.sth small{font-weight:500;color:var(--sub);font-size:7.615pt;margin-left:1.615mm}
 /* 삽입 이미지 */
@@ -302,7 +302,7 @@ var $=function(s){return document.querySelector(s)};
 var DEF_PH=[
  {n:'브릿지 과정',sub:'12/2 대개강 · 8회차 + 12/30 반편성고사',s:'2026-12-02',e:'2026-12-31',c:'#C79B63',t:'12월 2일(수) 대개강. 중등 핵심을 공통수학1·2와 연결해 정리하고, 12월 30일 반편성고사로 마무리합니다.'},
  {n:'공통수학1 8주 완성 (정규)',sub:'정규반 전원 · 15회차',s:'2027-01-04',e:'2027-02-26',c:'#3E8F79',x:'월·수 수업 15회(15회차 3/3) · MATHY FRIDAY 7회 (2/5 휴강 제외)',t:''},
- {n:'공통수학2 특강',sub:'18회차 · 월·수·금 2~4시 · S필수 A선택',s:'2027-01-11',e:'2027-02-26',c:'#2F7F9F',x:'월·수·금 특강 18회 (2/5 · 2/8 · 2/10 휴강 제외)',t:''},
+ {n:'공통수학2 특강',sub:'18회차 · 월·수·금 2~4시 · S필수 A선택',s:'2027-01-11',e:'2027-02-26',c:'#E0872B',sp:1,x:'월·수·금 특강 18회 (2/5 · 2/8 · 2/10 휴강 제외)',t:''},
  {n:'1학기 중간고사 내신 대비',sub:'3/1 ~ 4/28 · 약 8주',s:'2027-03-01',e:'2027-04-28',c:'#D0587A',t:'학교별 기출 분석과 변형 문제로 첫 시험을 대비합니다. (시험 기간은 올해 기준 예시 · 변경될 수 있음)'},
  {n:'6모 대비 + 기말 대비',sub:'4/29 ~ 5월',s:'2027-04-29',e:'2027-05-23',c:'#6C86B8',t:'학평(6월)을 대비하며 기말 범위를 미리 정리합니다.'},
  {n:'기말 대비 집중 기간',sub:'6월 · 6주',s:'2027-05-24',e:'2027-07-04',c:'#8B2A46',t:'기말고사까지 6주, 기출과 서술형을 집중 점검합니다.'},
@@ -332,6 +332,7 @@ if(!ST.ph3){ST.ph.forEach(function(p){if(!p)return;var d;
 if(!ST.hol2&&ST.hol){if(!ST.hol.some(function(h){return h.d==='2027-02-05'}))ST.hol.push({d:'2027-02-05',n:'설 연휴',off:true});ST.hol2=1}
 if(!ST.ev4){ST.ev=ST.ev||[];[['2027-02-03','설연휴 과제 배부'],['2027-02-12','REHEARSAL 모의'],['2027-02-20','신갈고 진단평가(25년)']].forEach(function(a){if(!ST.ev.some(function(x){return x.d===a[0]}))ST.ev.push({d:a[0],n:a[1]})});ST.ev.sort(function(a,b){return(a.d||'9999')<(b.d||'9999')?-1:1});ST.ev4=1}
 if(!ST.ev5){var RN={'2027-01-04':['공통수학1 개강','공수1 개강'],'2027-01-11':['공통수학2 특강 개강','공수2 특강 개강'],'2027-01-29':['S반 승급시험','승급시험'],'2027-02-26':['내신 반편성고사','반편성고사'],'2027-02-03':['설연휴 특별과제 배부','설연휴 과제 배부'],'2027-02-12':['REHEARSAL 모의고사 60제','REHEARSAL 모의'],'2027-02-20':['신갈고 진단평가(25년 일정)','신갈고 진단평가(25년)']};(ST.ev||[]).forEach(function(x){var r=RN[x.d];if(r&&x.n===r[0])x.n=r[1]});ST.ev5=1}
+if(!ST.ph5){ST.ph.forEach(function(p){if(p&&p.n==='공통수학2 특강'){p.sp=1;if(p.c==='#2F7F9F')p.c='#E0872B'}});ST.ph5=1}
 if(!ST.ph4){ST.ph.forEach(function(p){if(!p)return;if(p.n==='공통수학1 8주 완성 (정규)'){p.sub=DEF_PH[1].sub;p.t=''}else if(p.n==='공통수학2 특강'){p.sub=DEF_PH[2].sub;p.t=''}});ST.ph4=1}
 if(!ST.hol3&&ST.hol){if(!ST.hol.some(function(h){return h.d==='2027-02-10'}))ST.hol.push({d:'2027-02-10',n:'설 연휴 휴강',off:true});ST.hol3=1}
  ST.ex=ST.ex||{}; ST.py=ST.py||DEF_PY; ST.hol=ST.hol||DEF_HOL; ST.imgs=ST.imgs||[]; ST.theme=ST.theme||{name:'navy',c:null}; ST.font=ST.font||{h:0,b:8}; ST.paper=ST.paper||'a3'; ST.kit=ST.kit||{};
@@ -367,7 +368,9 @@ function parseRange(t,keyName){
   var m1=+m[1],d1=+m[2],m2=m[3]?+m[3]:m1,d2=m[4]?+m[4]:d1;var y=keyName==='e2'?(m1>=10?2026:2027):2027;
   var a=new Date(y,m1-1,d1),b=new Date(m2<m1?y+1:y,m2-1,d2);for(var x=new Date(a);x<=b;x.setDate(x.getDate()+1))out.push(new Date(x))});
  return out}
-function phaseOf(d){for(var i=0;i<ST.ph.length;i++){var p=ST.ph[i];if(d>=P(p.s)&&d<=P(p.e))return p}return null}
+function phaseOf(d){for(var i=0;i<ST.ph.length;i++){var p=ST.ph[i];if(p.sp)continue;if(d>=P(p.s)&&d<=P(p.e))return p}return null}
+function spOf(d,hm){var w=d.getDay();if(w!==1&&w!==3&&w!==5)return null;var h=hm[key(d)];if(h&&h.off!==false)return null;for(var i=0;i<ST.ph.length;i++){var p=ST.ph[i];if(p.sp&&d>=P(p.s)&&d<=P(p.e))return p}return null}
+var SN={'공통수학1 8주 완성 (정규)':'공통수학1 8주 완성(정규)','1학기 중간고사 내신 대비':'1학기 중간 내신 대비','6모 대비 + 기말 대비':'6모 + 기말 대비','기말 대비 집중 기간':'기말 대비 집중','공통수학2 + 대수 특강':'공수2 + 대수 특강','9모 대비 + 공수2 중간 대비':'9모 + 공수2 중간','2학기 중간고사 내신 대비':'2학기 중간 대비'};
 function examsOn(){var map={};SCH.forEach(function(s,si){EXK.forEach(function(k){parseRange(ST.ex[s][k[0]],k[0]).forEach(function(d){(map[key(d)]=map[key(d)]||[]).push(si)})})});return map}
 function holMap(){var m={};ST.hol.forEach(function(h){if(h.d&&/^\d{4}-\d{1,2}-\d{1,2}$/.test(h.d))m[key(P(h.d))]=h});return m}
 var EVK={};var WD=['월','화','수','목','금','토','일'],HW=['일','월','화','수','목','금','토'];
@@ -375,20 +378,25 @@ function cnt(p,hm){var c=0,f=0,off=0;for(var d=P(p.s),e=P(p.e);d<=e;d.setDate(d.
 function offs(hm){var out=[];for(var d=new Date(2026,11,1);d<=new Date(2027,11,31);d.setDate(d.getDate()+1)){var h=hm[key(d)];if(!h||h.off===false)continue;var w=d.getDay();if((w===1||w===3||w===5)&&phaseOf(d))out.push({d:new Date(d),h:h})}return out}
 function monthHtml(y,m,exm,pyk,hm){
  var first=new Date(y,m-1,1),last=new Date(y,m,0).getDate(),off=(first.getDay()+6)%7,rows=Math.ceil((off+last)/7);
- var names=[];ST.ph.forEach(function(p){var a=P(p.s),b=P(p.e);if(a<=new Date(y,m,0)&&b>=first&&names.indexOf(p.n)<0)names.push(p.n)});
- var h='<div class="mo"><div class="mh"><b>'+m+'월</b><small>'+y+'</small><em>'+names.join('<br>')+'</em></div><table class="cl"><thead><tr>'+WD.map(function(w,i){return'<th'+(i===0||i===2?' class="cw"':'')+'>'+w+'</th>'}).join('')+'</tr></thead><tbody>';
+ var names=[];ST.ph.forEach(function(p){var a=P(p.s),b=P(p.e);if(a<=new Date(y,m,0)&&b>=first){var nm=p.sn||SN[p.n]||p.n;if(names.indexOf(nm)<0)names.push(nm)}});
+ var h='<div class="mo"><div class="mh"><b>'+m+'월</b><small>'+y+'</small><em>'+names.join(' · ')+'</em></div><table class="cl"><thead><tr>'+WD.map(function(w,i){return'<th'+(i===0||i===2?' class="cw"':'')+'>'+w+'</th>'}).join('')+'</tr></thead><tbody>';
  for(var r=0;r<rows;r++){h+='<tr>';for(var c=0;c<7;c++){var dn=r*7+c-off+1;if(dn<1||dn>last){h+='<td></td>';continue}
    var d=new Date(y,m-1,dn),ph=phaseOf(d),k=key(d),cls='',style='',inner='<b>'+dn+'</b>',hd=hm[k],ho=hd&&hd.off!==false;
    if(c>=5)cls+=' wkd';
    if(hd)cls+=' hol';
    if(ph&&(c===0||c===2)){cls+=' cd';style='background:'+mix(ph.c,.74)+';--c:'+ph.c;if(ho)inner+='<span class="hk">휴</span>'}
    else if(ph&&c===4){style='--c:'+ph.c;inner+=ho?'<span class="hk">휴</span>':'<span class="cn"></span>'}
+   var sp=spOf(d,hm);
+   if(sp){var spt=mix(sp.c,.74);
+    if(ph&&(c===0||c===2))style='background:linear-gradient(to bottom,'+spt+' 50%,'+mix(ph.c,.74)+' 50%);--c:'+ph.c;
+    else if(c===4)style+=';background:linear-gradient(to bottom,'+spt+' 50%,transparent 50%)';
+    else style='background:linear-gradient(to bottom,'+spt+' 50%,transparent 50%);--c:'+sp.c}
    var ex=exm[k];if(ex){inner+='<span class="ex">'+ex.map(function(si){return'<i style="background:'+SCOL[si]+'"></i>'}).join('')+'</span>'}
    if(pyk[k])inner+='<span class="pe">★</span>';if(EVK[k])inner+='<span class="pe2">◆</span>';
    h+='<td class="'+cls+'" style="'+style+'"'+(hd?' title="'+esc(hd.n)+'"':'')+'>'+inner+'</td>'}h+='</tr>'}
- var hcs=[];for(var dn2=1;dn2<=last;dn2++){var d2=new Date(y,m-1,dn2),hd2=hm[key(d2)],w2=d2.getDay();if(hd2&&hd2.off!==false&&(w2===1||w2===3||w2===5)&&phaseOf(d2))hcs.push('<span class="hc"><b>'+m+'/'+dn2+'('+HW[w2]+')</b> '+esc(hd2.n)+'</span>')}
- var pcs=[],ecs=[];ST.py.forEach(function(x){if(!x.d||!/^\d{4}-\d{1,2}-\d{1,2}$/.test(x.d))return;var d3=P(x.d);if(d3.getFullYear()===y&&d3.getMonth()===m-1)pcs.push('<span class="hc hc2"><b>★ '+m+'/'+d3.getDate()+'('+HW[d3.getDay()]+')</b> '+esc(x.n)+' 학평</span>')});
- (ST.ev||[]).forEach(function(x){if(!x.d||!/^\d{4}-\d{1,2}-\d{1,2}$/.test(x.d))return;var d4=P(x.d);if(d4.getFullYear()===y&&d4.getMonth()===m-1)ecs.push('<span class="hc"><b>◆ '+m+'/'+d4.getDate()+'('+HW[d4.getDay()]+')</b> '+esc(x.n)+'</span>')});
+ var hcs=[];for(var dn2=1;dn2<=last;dn2++){var d2=new Date(y,m-1,dn2),hd2=hm[key(d2)],w2=d2.getDay();if(hd2&&hd2.off!==false&&(w2===1||w2===3||w2===5)&&phaseOf(d2))hcs.push('<span class="hc"><b>'+dn2+'('+HW[w2]+')</b> '+esc(hd2.n)+'</span>')}
+ var pcs=[],ecs=[];ST.py.forEach(function(x){if(!x.d||!/^\d{4}-\d{1,2}-\d{1,2}$/.test(x.d))return;var d3=P(x.d);if(d3.getFullYear()===y&&d3.getMonth()===m-1)pcs.push('<span class="hc hc2"><b>★ '+d3.getDate()+'('+HW[d3.getDay()]+')</b> '+esc(x.n)+' 학평</span>')});
+ (ST.ev||[]).forEach(function(x){if(!x.d||!/^\d{4}-\d{1,2}-\d{1,2}$/.test(x.d))return;var d4=P(x.d);if(d4.getFullYear()===y&&d4.getMonth()===m-1)ecs.push('<span class="hc he"><b>◆ '+d4.getDate()+'('+HW[d4.getDay()]+')</b> '+esc(x.n)+'</span>')});
  var chips=(hcs.length?'<span style="color:#D6336C;font-weight:900">휴강</span>'+hcs.join(''):'')+pcs.join('')+ecs.join('');
  return h+'</tbody></table>'+(chips?'<div class="lgd" style="margin-top:0.923mm">'+chips+'</div>':'')+'</div>'}
 var GROUPS=[[[2026,12],[2027,1],[2027,2]],[[2027,3],[2027,4],[2027,5]],[[2027,6],[2027,7],[2027,8]],[[2027,9],[2027,10],[2027,11],[2027,12]]];
@@ -405,7 +413,7 @@ function render(){
    return'<div class="pc'+(full?'':' cp')+'" style="--c:'+p.c+';--ct:'+mix(p.c,.88)+';--cl:'+mix(p.c,.6)+'"><b>'+esc(p.n)+'</b><small>'+fmt(p.s)+' ~ '+fmt(p.e)+' · '+esc(p.sub)+(full?'':' · 수업 '+n.c+'·FRIDAY '+n.f)+'</small>'+(full?(p.t?'<span>'+esc(p.t)+'</span>':'')+'<em class="cnt">'+ct+'</em>':'')+'</div>'};
   PHGRP[i].forEach(function(pi){var p=ST.ph[pi];if(p)h+=cc(p,i<3)});
   if(i===0){
-   h+='<div class="sth">달력 보는 법</div><div class="lgd" style="margin-top:1.615mm"><span><i style="background:#c9d6ee"></i>월·수 = 수업 (단계별 색)</span><span><i style="background:var(--gold);border-radius:50%;width:2.077mm;height:2.077mm"></i>금 = MATHY FRIDAY</span><span><i style="background:#D6336C;width:2.308mm"></i>휴 = 공휴일 휴강</span></div>'+
+   h+='<div class="sth">달력 보는 법</div><div class="lgd" style="margin-top:1.615mm"><span><i style="background:#c9d6ee"></i>월·수 = 수업 (단계별 색)</span><span><i style="background:linear-gradient(to bottom,#f4d6b3 50%,#c9e3d9 50%)"></i>칸 위 공수2 특강 · 아래 공수1</span><span><i style="background:var(--gold);border-radius:50%;width:2.077mm;height:2.077mm"></i>금 = MATHY FRIDAY</span><span><i style="background:#D6336C;width:2.308mm"></i>휴 = 공휴일 휴강</span><span style="color:#4B3FC8;font-weight:700">◆ = 개강 · 시험 일정</span></div>'+
     '<div class="lgd">'+SCH.map(function(s,si){return'<span><i style="background:'+SCOL[si]+';height:1.269mm"></i>'+s+' 시험</span>'}).join('')+'</div>'}
   if(i>=1)h+=exTable(PANEX[i-1]);
   el.innerHTML=h});
