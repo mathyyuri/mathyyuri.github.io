@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>연간 플래너 | MATHY YURI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,600&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@400;700;900&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Song+Myung&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -12,7 +12,7 @@
 :root{
   color-scheme: light;
   --paper:#FBF8F1; --ink:#1A1A1A; --ink2:#5B574D; --muted:#948C78;
-  --gold:#A8853F; --gold-deep:#7A5F25; --gold-soft:rgba(168,133,63,.12); --gold-line:#E6DCC6;
+  --gold:#A8853F; --gold-deep:#7A5F25; --gold-soft:rgba(168,133,63,.12); --gold-h:rgba(168,133,63,.14); --gold-line:#E6DCC6;
   --mint:#7FC8B4; --mint-deep:#3E8F79; --mint-soft:#E4F3EE;
   --pink:#E58BA4; --pink-deep:#C64E71; --pink-soft:#FBE8EE;
   --peri:#7088B5; --sand:#C98F5E;
@@ -95,7 +95,7 @@ body.zoomed .wrap{max-width:none}
 .sec h2 em{font-family:var(--serif);font-style:italic;font-weight:600;color:var(--mint-deep);margin-left:.1em}
 .sec p{margin:0;color:var(--ink2);font-size:.95em}
 .cd{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden}
-.cd .ch{font-family:var(--kserif);font-weight:700;font-size:1em;padding:.45em .9em;background:rgba(168,133,63,.14)}
+.cd .ch{font-family:var(--kserif);font-weight:700;font-size:1em;padding:.45em .9em;background:var(--gold-h)}
 .cd .cb{padding:.6em .9em}
 
 /* 편집 가능 글자 */
@@ -137,7 +137,7 @@ ul.bl li .ed{flex:1}
 
 /* 로드맵 */
 .rm{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:1px solid var(--gold-line);border-radius:4px;background:#fff;overflow:hidden}
-.rm-h{display:grid;grid-template-columns:var(--lw,110px) repeat(var(--n,12),1fr);background:rgba(168,133,63,.14);font-family:var(--serif);font-weight:700;font-size:.95em;text-align:center}
+.rm-h{display:grid;grid-template-columns:var(--lw,110px) repeat(var(--n,12),1fr);background:var(--gold-h);font-family:var(--serif);font-weight:700;font-size:.95em;text-align:center}
 .rm-h div{padding:.5em 0;border-left:1px solid var(--gold-line)}
 .rm-h .yr{display:block;font-family:var(--sans);font-size:.62em;color:var(--gold);letter-spacing:.06em;line-height:1}
 .rm-h div:first-child{border-left:none;font-family:var(--kserif);font-size:.85em}
@@ -151,7 +151,7 @@ ul.bl li .ed{flex:1}
 .yg.p{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr)}
 .yg.l{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr)}
 .mc{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-.mc-h{display:flex;align-items:baseline;gap:.4em;padding:.35em .7em;background:rgba(168,133,63,.14)}
+.mc-h{display:flex;align-items:baseline;gap:.4em;padding:.35em .7em;background:var(--gold-h)}
 .mc-h b{font-family:var(--serif);font-weight:900;font-size:1.5em;line-height:1}
 .mc-h small{font-size:.72em;color:var(--muted);letter-spacing:.06em}
 .mc-h .mx{margin-left:auto;font-size:.7em}
@@ -181,7 +181,7 @@ ul.bl li .ed{flex:1}
 .mb.l .sch{grid-column:2;grid-row:2}
 .mb.l .memo{grid-column:2;grid-row:3}
 .cal{display:flex;flex-direction:column;min-height:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff;overflow:hidden}
-.cal-h{display:grid;grid-template-columns:repeat(7,1fr);background:rgba(168,133,63,.14);text-align:center;font-size:.8em;font-weight:700}
+.cal-h{display:grid;grid-template-columns:repeat(7,1fr);background:var(--gold-h);text-align:center;font-size:.8em;font-weight:700}
 .cal-h div{padding:.3em 0}.cal-h div:first-child{color:var(--pink-deep)}.cal-h div:last-child{color:var(--peri)}
 .cal-g{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr)}
 .dc{border-top:1px solid #EFE8D6;border-left:1px solid #EFE8D6;padding:.15em .3em .2em;display:flex;flex-direction:column;min-height:0;overflow:hidden;font-size:.82em}
@@ -214,14 +214,14 @@ ul.bl li .ed{flex:1}
 .wt{width:100%;flex:1 1 auto;height:100%;border-collapse:collapse;font-size:.95em}
 .wt td:nth-child(2){width:50%}.wt td:nth-child(3){width:34%}
 .wt th{white-space:nowrap}
-.wt th{background:rgba(168,133,63,.14);padding:.4em .6em;font-size:.82em;letter-spacing:.06em;text-align:left;border-bottom:1.4px solid var(--gold)}
+.wt th{background:var(--gold-h);padding:.4em .6em;font-size:.82em;letter-spacing:.06em;text-align:left;border-bottom:1.4px solid var(--gold)}
 .wt td{border-bottom:1px solid #EFE8D6;padding:.35em .6em;vertical-align:top}
 .wt td.wl{width:3.2em;font-family:var(--serif);font-weight:700;white-space:nowrap}
 .wt td.ck{width:2em;text-align:center}
 .ckb{border:1.5px solid var(--gold);width:1.1em;height:1.1em;border-radius:3px;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.9em;color:var(--mint-deep);padding:0;line-height:1}
 .ckb.on{background:var(--mint-soft)}
 .side{background:#fff;border:1px solid var(--gold-line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-.side .ch{font-family:var(--kserif);font-weight:700;padding:.4em .8em;background:rgba(168,133,63,.14);font-size:.95em}
+.side .ch{font-family:var(--kserif);font-weight:700;padding:.4em .8em;background:var(--gold-h);font-size:.95em}
 .side .cb{padding:.5em .8em;flex:1;min-height:0;overflow:hidden}
 .side.memo .ed{min-height:5em;height:100%}
 
@@ -254,6 +254,13 @@ ul.bl li .ed{flex:1}
 .fbox:hover .fb-bar,.fbox:focus-within .fb-bar{opacity:1}
 .fb-mv{cursor:grab;padding:0 3px}.fb-b{border:none;background:none;padding:0 3px;font-size:12px}
 .fb-rs{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,#A8853F 50%);border-radius:0 0 4px 0}
+.fbox img.fi{width:100%;height:100%;object-fit:fill;display:block;border-radius:inherit;user-select:none;-webkit-user-drag:none}
+.fbox.im{cursor:move;border:none!important}.fbox.im:hover,.fbox.im:focus-within{outline:2px dashed #3a7bd5}
+.mc:hover .mx{opacity:1}
+.fmt .fh{flex-basis:100%;font-size:11px;color:var(--muted);padding:0 2px}
+.dz{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
+.dz input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--gold-line);border-radius:4px;background:#fff}
+.dz .lb{font-size:12px;color:var(--ink2)}
 /* 모달 */
 .modal{position:fixed;inset:0;background:rgba(26,26,26,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
 .modal[hidden]{display:none}
@@ -293,6 +300,7 @@ ul.bl li .ed{flex:1}
   <div id="deck"></div>
 </div>
 
+<input type="file" id="imgFile" accept="image/*" hidden>
 <div class="modal" id="modal" hidden><div class="mdl" id="mdl"></div></div>
 
 <script>
@@ -313,8 +321,8 @@ const safeLS = {get(k){ try { return localStorage.getItem(k); } catch(e){ return
 
 /* ---------------- 상수 ---------------- */
 const COLORS = [['민트', '#3E8F79'], ['연민트', '#7FC8B4'], ['골드', '#A8853F'], ['연골드', '#E6D08E'], ['핑크', '#E58BA4'], ['딥핑크', '#C64E71'], ['블루', '#7088B5'], ['테라코타', '#C98F5E']];
-const LIGHT = new Set(['#7FC8B4', '#E6D08E', '#E58BA4']);
-const textOn = c => LIGHT.has(c) ? '#1A1A1A' : '#FFFFFF';
+const lumOf = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || '')); if (!m) return 0; const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+const textOn = c => lumOf(c) > 0.64 ? '#1A1A1A' : '#FFFFFF';
 const RATIOS = [
   {key: 'a4p', label: 'A4 세로', w: 794, h: 1123, o: 'p'},
   {key: 'a4l', label: 'A4 가로', w: 1123, h: 794, o: 'l'},
@@ -328,6 +336,9 @@ const BGS = [
 ];
 const bgOf = k => BGS.find(b => b.key === k) || BGS[0];
 const LSK = 'mathy_planner_v1';
+/* 배열에 붙은 서식(_st·_h)도 저장되도록 감싸서 저장 / 불러오기 */
+const ser = (o, sp) => JSON.stringify(o, (k, v) => (Array.isArray(v) && (v._st || v._h)) ? {__arr: v.slice(), _st: v._st, _h: v._h} : v, sp);
+const deser = t => JSON.parse(t, (k, v) => (v && v.__arr) ? Object.assign(v.__arr, {_st: v._st, _h: v._h}) : v);
 
 /* ---------------- 데이터 · 초안 ---------------- */
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -338,7 +349,7 @@ function mkMonths(spec){
     schedule: [], weeks: weeksFrom(weeks || [bullets[0] || '', bullets[1] || '', bullets[2] || '', '월말 테스트 · 오답 정리']),
   }));
 }
-function seedYongin(){
+function seedYonginRaw(){
   return {
     id: uid(), name: '용인 예비고1 연간 플랜', region: '용인', schools: ['보라고', '신갈고', '서천고'], midSchools: ['보라중학교', '상갈중학교', '나곡중학교'], grade: '예비고1', startYm: '2026-11',
     tagline: '개념 1회독 → 내신 완성 → 공통수학2 선행까지, 한 해의 흐름을 한 장에', note: '초안입니다. 월별 내용은 페이지에서 바로 고쳐 쓰세요.',
@@ -380,7 +391,7 @@ function seedYongin(){
     ]),
   };
 }
-function seedBundang(){
+function seedBundangRaw(){
   return {
     id: uid(), name: '분당 연간 플랜 (초안)', region: '분당', schools: [], grade: '예비고1', startYm: '2026-11',
     tagline: '심화·서술형 중심으로 한 걸음 빠르게', note: '학교 이름과 월별 내용을 분당 학교 일정에 맞게 고쳐 쓰세요.',
@@ -418,6 +429,8 @@ function seedBundang(){
     ]),
   };
 }
+function seedYongin(){ const p = seedYonginRaw(); dropMonth(p, 0); return p; }   // 2026년 11월은 뺀 12월 시작
+function seedBundang(){ const p = seedBundangRaw(); dropMonth(p, 0); return p; }
 function seedBlank(){
   const b = seedYongin(); b.id = uid(); b.name = '새 플랜'; b.region = ''; b.schools = []; b.midSchools = []; b.midExams = {}; b.tagline = ''; b.note = '';
   b.bars = []; b.months.forEach(m => { m.theme = ''; m.bullets = []; m.exam = ''; m.goal = ''; m.weeks = weeksFrom(['', '', '', '']); });
@@ -426,46 +439,109 @@ function seedBlank(){
 let DB = {plans: [], cur: null};
 
 function load(){
-  try { const j = JSON.parse(safeLS.get(LSK) || 'null'); if (j && j.plans && j.plans.length) { DB = j; return; } } catch(e){}
-  DB = {plans: [seedYongin(), seedBundang()], cur: null}; DB.cur = DB.plans[0].id; save(true);
+  try { const j = deser(safeLS.get(LSK) || 'null'); if (j && j.plans && j.plans.length) { DB = j; migrate(); return; } } catch(e){}
+  DB = {plans: [seedYongin(), seedBundang()], cur: null, mig1: 1}; DB.cur = DB.plans[0].id; save(true);
 }
 let saveT = 0;
 function save(now){
   clearTimeout(saveT);
-  const go = () => { safeLS.set(LSK, JSON.stringify(DB)); const m = $('#savedMsg'); if (m) { m.textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}); } };
+  const go = () => { let ok = true; try { localStorage.setItem(LSK, ser(DB)); } catch(e) { ok = false; } const m = $('#savedMsg'); if (m) { m.textContent = ok ? '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '⚠ 저장 공간이 가득 찼어요 — 이미지를 지우거나 줄이고, 「내보내기(JSON)」로 백업해 두세요'; } };
   if (now) go(); else saveT = setTimeout(go, 350);
 }
 const cur = () => DB.plans.find(p => p.id === DB.cur) || DB.plans[0];
 const nOf = p => p.months.length;
-const monthInfo = (p, i) => { const [y, m] = p.startYm.split('-').map(Number); const t = (m - 1) + i; return {y: y + Math.floor(t / 12), m: (t % 12) + 1}; };
+const monthInfo = (p, i) => {   // 달마다 저장된 ym(연-월)이 있으면 그것을, 없으면 앞 달 다음 달(첫 달은 startYm)
+  const mm = p.months && p.months[i];
+  if (mm && mm.ym) { const [y, m] = mm.ym.split('-').map(Number); return {y, m}; }
+  if (i > 0) { const a = monthInfo(p, i - 1); return a.m === 12 ? {y: a.y + 1, m: 1} : {y: a.y, m: a.m + 1}; }
+  const [y, m] = p.startYm.split('-').map(Number); return {y, m};
+};
+/* 달 지우기: 월간 페이지·연간 계획표 칸·로드맵 막대가 함께 정리되고, 남은 달의 이름(월)은 그대로 유지된다 */
+function dropMonth(p, i){
+  const N = p.months.length; if (N <= 3 || i < 0 || i >= N) return false;
+  p.months.forEach((m, k) => { const mi = monthInfo(p, k); m.ym = mi.y + '-' + mi.m; });
+  p.months.splice(i, 1);
+  p.bars = (p.bars || []).filter(b => !(b.s === i && b.e === i));
+  p.bars.forEach(b => { if (b.s > i) b.s--; if (b.e >= i) b.e--; b.s = Math.max(0, Math.min(b.s, N - 2)); b.e = Math.max(b.s, Math.min(b.e, N - 2)); });
+  const re = o => { if (!o) return o; const out = {}; Object.keys(o).forEach(k => { const mt = /^m(\d+)$/.exec(k); if (!mt) { out[k] = o[k]; return; } const n = +mt[1]; if (n === i) return; out['m' + (n > i ? n - 1 : n)] = o[k]; }); return out; };
+  p.free = re(p.free); p.pub = re(p.pub);
+  const f = p.months[0].ym.split('-'); p.startYm = f[0] + '-' + String(f[1]).padStart(2, '0');
+  return true;
+}
+function migrate(){   // 한 번만: 시작이 2026년 11월인 플랜에서 11월을 뺀다 (원장님 요청)
+  if (DB.mig1) return;
+  DB.plans.forEach(p => { try { if (p.months && p.months.length > 6 && p.startYm === '2026-11' && !(p.months[0] && p.months[0].ym)) dropMonth(p, 0); } catch(e){} });
+  DB.mig1 = 1; save(true);
+}
 const periodText = p => { const a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1); return `${a.y}.${String(a.m).padStart(2, '0')} – ${b.y}.${String(b.m).padStart(2, '0')}`; };
-const SEASON = m => (m >= 3 && m <= 5) ? '#7FC8B4' : (m >= 6 && m <= 8) ? '#E6D08E' : (m >= 9 && m <= 11) ? '#E58BA4' : '#7088B5';
+let SEAS = ['#7FC8B4', '#E6D08E', '#E58BA4', '#7088B5'];
+const SEASON = m => (m >= 3 && m <= 5) ? SEAS[0] : (m >= 6 && m <= 8) ? SEAS[1] : (m >= 9 && m <= 11) ? SEAS[2] : SEAS[3];
 
 /* ---------------- 편집 가능 부품 ---------------- */
 let FIT_T = 0;
 /* ---------------- 글자 서식 (글꼴·크기·색·굵게·정렬) ---------------- */
-const FONTS = {sans: "'Noto Sans KR',sans-serif", serif: "'Noto Serif KR',serif", hand: "'Gaegu','Noto Sans KR',cursive", disp: "'Playfair Display','Noto Serif KR',serif"};
+const FONTS = {sans: "'Noto Sans KR',sans-serif", serif: "'Noto Serif KR',serif", hand: "'Gaegu','Noto Sans KR',cursive", disp: "'Playfair Display','Noto Serif KR',serif",
+  nm: "'Nanum Myeongjo',serif", ng: "'Nanum Gothic',sans-serif", gb: "'Gowun Batang',serif", gd: "'Gowun Dodum',sans-serif", hm: "'Hahmlet',serif",
+  bh: "'Black Han Sans',sans-serif", dh: "'Do Hyeon',sans-serif", ju: "'Jua',sans-serif", sm: "'Song Myung',serif", ib: "'IBM Plex Sans KR',sans-serif"};
+const FONT_LABELS = {sans: '고딕', serif: '명조', hand: '손글씨', disp: '영문 세리프', nm: '나눔명조', ng: '나눔고딕', gb: '고운바탕', gd: '고운돋움', hm: '함렛', bh: '블랙한산스(굵게)', dh: '도현', ju: '주아(둥글게)', sm: '송명', ib: 'IBM Plex'};
+const fontName = k => ((FONTS[k] || '').match(/'([^']+)'/) || [])[1] || '';
 const FCOLORS = ['#1A1A1A', '#5B574D', '#A8853F', '#3E8F79', '#C64E71', '#7088B5', '#FFFFFF'];
 function applyStyle(e, st){
   st = st || {};
   e.style.fontFamily = st.f ? FONTS[st.f] : ''; e.style.fontSize = st.s ? st.s + 'em' : ''; e.style.color = st.c || '';
   e.style.fontWeight = st.b === 1 ? '900' : (st.b === 0 ? '400' : ''); e.style.textAlign = st.a || '';
 }
+/* 글자 일부만 서식을 준 경우(_h)의 안전한 HTML */
+function cleanHtml(h){
+  const doc = new DOMParser().parseFromString('<body>' + h, 'text/html'), ok = /^(color|font-size|font-family|font-weight|font-style|text-decoration)\s*:/i;
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const walk = n => [...n.childNodes].map(c => {
+    if (c.nodeType === 3) return esc(c.nodeValue); if (c.nodeType !== 1) return '';
+    const t = c.tagName.toLowerCase(); if (t === 'br') return '<br>'; const inner = walk(c);
+    if (t === 'b' || t === 'strong') return '<b>' + inner + '</b>'; if (t === 'i' || t === 'em') return '<i>' + inner + '</i>'; if (t === 'u') return '<u>' + inner + '</u>';
+    if (t === 'span' || t === 'font') { let st = (c.getAttribute('style') || '').split(';').map(x => x.trim()).filter(x => ok.test(x) && !/url\(|expression|javascript/i.test(x)).join(';'); if (t === 'font' && c.getAttribute('color')) st += ';color:' + c.getAttribute('color').replace(/[^#\w(),. %]/g, ''); return st ? '<span style="' + st.replace(/"/g, '') + '">' + inner + '</span>' : inner; }
+    return inner; }).join('');
+  return walk(doc.body);
+}
+const plainOf = h => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent; };
 function ed(obj, key, ph, cls){
   const e = H('div', {class: 'ed ' + (cls || ''), contenteditable: 'true', spellcheck: 'false', 'data-ph': ph || ''});
   e.textContent = obj[key] || '';
+  const hh = obj._h && obj._h[key];
+  if (hh != null && plainOf(hh).replace(/\s+/g, '') === String(obj[key] || '').replace(/\s+/g, '')) e.innerHTML = cleanHtml(hh);
   e._ref = {obj, key}; applyStyle(e, obj._st && obj._st[key]);
-  e.addEventListener('input', () => { obj[key] = e.innerText.replace(/\n$/, ''); save(); refit(e); });
+  e.addEventListener('input', () => { obj[key] = e.innerText.replace(/\n$/, ''); if (obj._h && obj._h[key] != null) obj._h[key] = e.innerHTML; save(); refit(e); });
   e.addEventListener('paste', ev => { ev.preventDefault(); const t = (ev.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, t); });
   return e;
 }
-const FMT = {bar: null, tgt: null, t: 0};
+const FMT = {bar: null, tgt: null, t: 0, rng: null};
 function setStyle(patch){
   const el = FMT.tgt; if (!el || !el._ref) return;
   const {obj, key} = el._ref; obj._st = obj._st || {};
   const st = obj._st[key] = Object.assign({}, obj._st[key] || {}, patch);
   Object.keys(st).forEach(k => { if (st[k] == null) delete st[k]; });
   applyStyle(el, st); save(); refit(el); placeFmt();
+}
+/* 글자를 드래그해서 골랐으면(partSel) 그 부분만, 아니면 칸 전체에 서식을 준다 */
+function partSel(){ const r = FMT.rng, el = FMT.tgt; return (r && el && !r.collapsed && el.isConnected && el.contains(r.commonAncestorContainer)) ? r : null; }
+function withPart(fn){
+  const el = FMT.tgt, r = partSel(); if (!r || !el._ref) return false;
+  el.focus(); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  try { document.execCommand('styleWithCSS', false, true); } catch(e){}
+  fn(el, s);
+  const {obj, key} = el._ref; obj._h = obj._h || {}; obj._h[key] = el.innerHTML; obj[key] = el.innerText.replace(/\n$/, ''); save(); refit(el);
+  if (s.rangeCount) FMT.rng = s.getRangeAt(0).cloneRange(); placeFmt(); return true;
+}
+function partScale(f){
+  return withPart((el, s) => {
+    const a = s.anchorNode, an = a.nodeType === 1 ? a : a.parentElement, base = parseFloat(getComputedStyle(an).fontSize);
+    document.execCommand('fontSize', false, '7');
+    $$('font[size="7"], span', el).forEach(n => {
+      if (n.tagName === 'SPAN' && n.style.fontSize !== 'xxx-large') return;
+      let t = n; if (n.tagName === 'FONT') { t = document.createElement('span'); while (n.firstChild) t.appendChild(n.firstChild); n.replaceWith(t); }
+      const pp = parseFloat(getComputedStyle(t.parentElement).fontSize) || base; t.style.fontSize = (base * f / pp).toFixed(3) + 'em';
+    });
+  });
 }
 function placeFmt(){
   const bar = FMT.bar, el = FMT.tgt; if (!bar || !el || !el.isConnected) return;
@@ -475,26 +551,60 @@ function placeFmt(){
 }
 function initFmt(){
   const mk = (t, title, fn, cls) => { const b = H('button', {type: 'button', class: 'fb ' + (cls || ''), title, text: t}); b.addEventListener('mousedown', e => e.preventDefault()); b.addEventListener('click', fn); return b; };
-  const sel = H('select', {title: '글꼴'}, [['', '글꼴'], ['sans', '고딕'], ['serif', '명조'], ['hand', '손글씨'], ['disp', '영문 세리프']].map(([v, t]) => H('option', {value: v, text: t})));
-  sel.addEventListener('change', () => setStyle({f: sel.value || null}));
+  const sel = H('select', {title: '글꼴 (글자를 드래그로 고르면 그 부분만)'}, [H('option', {value: '', text: '글꼴'}), ...Object.keys(FONTS).map(k => H('option', {value: k, text: FONT_LABELS[k] || k}))]);
+  sel.addEventListener('change', () => { const v = sel.value; if (v && partSel()) { const nm = fontName(v); withPart(() => document.execCommand('fontName', false, nm)); sel.value = ''; } else setStyle({f: v || null}); });
   const cur = () => (FMT.tgt && FMT.tgt._ref.obj._st && FMT.tgt._ref.obj._st[FMT.tgt._ref.key]) || {};
+  const color = c => { if (partSel()) withPart(() => document.execCommand('foreColor', false, c)); else setStyle({c}); };
   const bar = H('div', {id: 'fmt', class: 'fmt noprint', hidden: true}, [
     sel,
-    mk('A−', '작게', () => setStyle({s: Math.max(0.5, +((cur().s || 1) - 0.1).toFixed(2))})), mk('A+', '크게', () => setStyle({s: Math.min(3, +((cur().s || 1) + 0.1).toFixed(2))})),
-    ...FCOLORS.map(c => { const b = mk('', '글자색', () => setStyle({c}), 'cs'); b.style.background = c; return b; }),
-    (() => { const i = H('input', {type: 'color', title: '다른 색', value: '#1A1A1A'}); i.addEventListener('input', () => setStyle({c: i.value})); return i; })(),
-    mk('B', '굵게', () => setStyle({b: cur().b === 1 ? 0 : 1}), 'bd'),
-    mk('⟸', '왼쪽', () => setStyle({a: 'left'})), mk('⟺', '가운데', () => setStyle({a: 'center'})), mk('⟹', '오른쪽', () => setStyle({a: 'right'})),
-    mk('↺', '서식 지우기', () => { const el = FMT.tgt; if (el && el._ref.obj._st) { delete el._ref.obj._st[el._ref.key]; applyStyle(el, null); save(); refit(el); } }),
+    mk('A−', '작게', () => { if (!partScale(0.87)) setStyle({s: Math.max(0.5, +((cur().s || 1) - 0.1).toFixed(2))}); }), mk('A+', '크게', () => { if (!partScale(1.15)) setStyle({s: Math.min(3, +((cur().s || 1) + 0.1).toFixed(2))}); }),
+    ...FCOLORS.map(c => { const b = mk('', '글자색', () => color(c), 'cs'); b.style.background = c; return b; }),
+    (() => { const i = H('input', {type: 'color', title: '다른 색', value: '#1A1A1A'}); i.addEventListener('change', () => color(i.value)); return i; })(),
+    mk('B', '굵게', () => { if (!partSel() || !withPart(() => document.execCommand('bold'))) setStyle({b: cur().b === 1 ? 0 : 1}); }, 'bd'),
+    mk('⟸', '왼쪽 (칸 전체)', () => setStyle({a: 'left'})), mk('⟺', '가운데 (칸 전체)', () => setStyle({a: 'center'})), mk('⟹', '오른쪽 (칸 전체)', () => setStyle({a: 'right'})),
+    mk('↺', '서식 지우기', () => { if (partSel()) { withPart(() => document.execCommand('removeFormat')); return; } const el = FMT.tgt; if (!el || !el._ref) return; const {obj, key} = el._ref; if (obj._st) delete obj._st[key]; if (obj._h) delete obj._h[key]; el.textContent = obj[key] || ''; applyStyle(el, null); save(); refit(el); }),
+    H('div', {class: 'fh', text: '글자를 드래그로 고르면 그 부분만, 고르지 않으면 칸 전체가 바뀌어요 (정렬은 칸 전체)'}),
   ]);
   FMT.bar = bar; document.body.append(bar);
+  document.addEventListener('selectionchange', () => { const s = getSelection(); if (!s.rangeCount || !FMT.tgt) return; const r = s.getRangeAt(0); if (!FMT.tgt.contains(r.commonAncestorContainer)) return; FMT.rng = r.collapsed ? null : r.cloneRange(); });
   document.addEventListener('focusin', e => {
     const t = e.target; if (!(t && t.classList && t.classList.contains('ed') && t._ref && t.closest('.rpage') && !t.closest('.cap'))) return;
-    clearTimeout(FMT.t); FMT.tgt = t; const st = (t._ref.obj._st && t._ref.obj._st[t._ref.key]) || {}; sel.value = st.f || ''; bar.hidden = false; placeFmt();
+    clearTimeout(FMT.t); if (FMT.tgt !== t) FMT.rng = null; FMT.tgt = t; const st = (t._ref.obj._st && t._ref.obj._st[t._ref.key]) || {}; sel.value = st.f || ''; bar.hidden = false; placeFmt();
   });
   document.addEventListener('focusout', () => { clearTimeout(FMT.t); FMT.t = setTimeout(() => { const a = document.activeElement; if (bar.matches(':hover') || bar.contains(a) || (a && a.classList && a.classList.contains('ed'))) return; bar.hidden = true; }, 220); });
   window.addEventListener('scroll', () => { if (!bar.hidden) placeFmt(); }, {passive: true});
 }
+
+/* ---------------- 전체 색 · 글꼴 (플랜별) ---------------- */
+const THEMES = [
+  {k: 'base', n: '기본 (골드·민트·핑크)', g: '#A8853F', a: '#3E8F79', b: '#C64E71', s: ['#7FC8B4', '#E6D08E', '#E58BA4', '#7088B5']},
+  {k: 'navy', n: '네이비·로즈골드', g: '#C79B63', a: '#1B3566', b: '#D0587A', s: ['#6C86B8', '#E8CD9C', '#D0587A', '#13264A']},
+  {k: 'wine', n: '딥와인·골드', g: '#B8863B', a: '#8B2A46', b: '#5E2A5C', s: ['#D9A441', '#E8C8A0', '#8B2A46', '#5A1A30']},
+  {k: 'forest', n: '포레스트', g: '#8A6D2B', a: '#2F6B57', b: '#B0603F', s: ['#7DB59A', '#E8D08E', '#D08B5B', '#2F6B57']},
+  {k: 'royal', n: '로열블루·앰버', g: '#B07808', a: '#123C8A', b: '#D6336C', s: ['#5B8BD6', '#F2B134', '#E87A9A', '#123C8A']},
+  {k: 'plum', n: '플럼·핑크', g: '#A5527F', a: '#47226B', b: '#C24A8A', s: ['#E0A3C8', '#F2CDE3', '#A5527F', '#47226B']},
+  {k: 'char', n: '차콜·모노', g: '#6B7385', a: '#1E2128', b: '#8A4B5C', s: ['#B8BFCC', '#9AA3B5', '#6B7385', '#323744']},
+  {k: 'coral', n: '블랙·코랄', g: '#C2402F', a: '#141414', b: '#FF6B57', s: ['#FFB3A8', '#FFD8A8', '#FF6B57', '#2A2A2A']},
+];
+function mixHex(c, t, w){ const f = x => { const n = parseInt(String(x).slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }, a = f(c), b = f(t); return '#' + a.map((v, i) => { const q = Math.round(v + (b[i] - v) * w); return (q < 16 ? '0' : '') + q.toString(16); }).join(''); }
+const rgbaOf = (c, al) => { const n = parseInt(c.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${al})`; };
+function themeColors(p){
+  const t = p.theme || {}, base = THEMES.find(x => x.k === t.k) || THEMES[0], c = Object.assign({}, base, t.c || {});
+  const s = (t.seas && t.seas.length === 4) ? t.seas : (t.c ? [mixHex(c.a, '#FFFFFF', .4), mixHex(c.g, '#FFFFFF', .5), mixHex(c.b, '#FFFFFF', .4), '#7088B5'] : base.s);
+  return {g: c.g, a: c.a, b: c.b, s};
+}
+function lookVars(p){
+  const t = p.theme || {}, v = {}, f = p.fonts || {};
+  if (t.c || (t.k && t.k !== 'base') || t.seas) {
+    const c = themeColors(p);
+    Object.assign(v, {'--gold': c.g, '--gold-deep': mixHex(c.g, '#000000', .3), '--gold-soft': rgbaOf(c.g, .12), '--gold-h': rgbaOf(c.g, .14), '--gold-line': mixHex(c.g, '#FFFFFF', .72),
+      '--mint-deep': c.a, '--mint-soft': mixHex(c.a, '#FFFFFF', .88), '--mint': mixHex(c.a, '#FFFFFF', .45), '--pink-deep': c.b, '--pink-soft': mixHex(c.b, '#FFFFFF', .88), '--pink': mixHex(c.b, '#FFFFFF', .4)});
+  }
+  if (f.h && FONTS[f.h]) { v['--kserif'] = FONTS[f.h]; v['--serif'] = FONTS[f.h]; }
+  if (f.b && FONTS[f.b]) v['--sans'] = FONTS[f.b];
+  return v;
+}
+function applyLook(rp, p){ const v = lookVars(p); Object.keys(v).forEach(k => rp.style.setProperty(k, v[k])); }
 
 /* ---------------- 자유 텍스트 상자 ---------------- */
 const BOX_BGS = ['#FFFFFF', '#FFF8D6', '#E4F3EE', '#FBE8EE', '#E8EDF6', 'transparent'];
@@ -505,27 +615,50 @@ function freeLayer(pg){
   pg.rp.append(layer);
 }
 function boxEl(b, i, list, pg){
-  const el = H('div', {class: 'fbox'});
-  const paint = () => { el.style.cssText = `left:${b.x * 100}%;top:${b.y * 100}%;width:${b.w * 100}%;height:${b.h * 100}%;background:${b.bg};border:${b.bg === 'transparent' ? '1px dashed rgba(168,133,63,.45)' : '1px solid #E6DCC6'}`; };
+  const el = H('div', {class: 'fbox' + (b.img ? ' im' : '')});
+  const paint = () => {
+    if (b.img) { b.h = clamp(b.w * (b.ar || 1) * PW / PH, 0.02, 1); if (b.y + b.h > 1) b.y = Math.max(0, 1 - b.h); }
+    el.style.cssText = `left:${b.x * 100}%;top:${b.y * 100}%;width:${b.w * 100}%;height:${b.h * 100}%;` + (b.img ? 'background:transparent' : `background:${b.bg};border:${b.bg === 'transparent' ? '1px dashed rgba(168,133,63,.45)' : '1px solid #E6DCC6'}`);
+  };
   paint();
   const pageRect = () => pg.rp.getBoundingClientRect();
   const drag = (kind) => ev => {
     ev.preventDefault(); const r = pageRect(), sx = ev.clientX, sy = ev.clientY, o = {x: b.x, y: b.y, w: b.w, h: b.h};
     const mv = e => { const dx = (e.clientX - sx) / r.width, dy = (e.clientY - sy) / r.height;
-      if (kind === 'mv') { b.x = clamp(o.x + dx, 0, 1 - b.w); b.y = clamp(o.y + dy, 0, 1 - b.h); } else { b.w = clamp(o.w + dx, 0.06, 1 - b.x); b.h = clamp(o.h + dy, 0.03, 1 - b.y); } paint(); };
+      if (kind === 'mv') { b.x = clamp(o.x + dx, 0, 1 - b.w); b.y = clamp(o.y + dy, 0, 1 - b.h); }
+      else if (b.img) { b.w = clamp(o.w + dx, 0.05, 1 - b.x); }
+      else { b.w = clamp(o.w + dx, 0.06, 1 - b.x); b.h = clamp(o.h + dy, 0.03, 1 - b.y); } paint(); };
     const up = () => { window.removeEventListener('pointermove', mv); save(); };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up, {once: true});
   };
   const mvh = H('span', {class: 'fb-mv', title: '끌어서 옮기기', text: '✥'}); mvh.addEventListener('pointerdown', drag('mv'));
-  const bg = H('button', {type: 'button', class: 'fb-b', title: '배경색 바꾸기', text: '🎨', onclick: () => { b.bg = BOX_BGS[(BOX_BGS.indexOf(b.bg) + 1) % BOX_BGS.length]; paint(); save(); }});
-  const del = H('button', {type: 'button', class: 'fb-b', title: '상자 지우기', text: '×', onclick: () => { list.splice(i, 1); save(); render(true); }});
+  const bg = b.img ? null : H('button', {type: 'button', class: 'fb-b', title: '배경색 바꾸기', text: '🎨', onclick: () => { b.bg = BOX_BGS[(BOX_BGS.indexOf(b.bg) + 1) % BOX_BGS.length]; paint(); save(); }});
+  const del = H('button', {type: 'button', class: 'fb-b', title: b.img ? '이미지 지우기' : '상자 지우기', text: '×', onclick: () => { list.splice(i, 1); save(); render(true); }});
   const rs = H('i', {class: 'fb-rs ctl', title: '끌어서 크기 바꾸기'}); rs.addEventListener('pointerdown', drag('rs'));
-  el.append(H('div', {class: 'fb-bar ctl'}, [mvh, bg, del]), ed(b, 'text', '글을 쓰세요', 'fb-t'), rs);
+  let inner;
+  if (b.img) { inner = H('img', {class: 'fi', src: b.img, alt: ''}); el.addEventListener('pointerdown', e => { if (e.target === el || e.target === inner) drag('mv')(e); }); }
+  else inner = ed(b, 'text', '글을 쓰세요', 'fb-t');
+  el.append(H('div', {class: 'fb-bar ctl'}, [mvh, bg, del]), inner, rs);
   return el;
 }
 function addBox(idx){
   const pg = D.pages[idx], p = cur(); if (!pg) return; p.free = p.free || {}; (p.free[pg.key] = p.free[pg.key] || []).push({x: 0.12, y: 0.22, w: 0.34, h: 0.14, text: '', bg: '#FFF8D6'});
   save(true); render(true);
+}
+function addImage(idx){
+  const pg = D.pages[idx]; if (!pg) return; const f = $('#imgFile');
+  f.onchange = () => {
+    const file = f.files && f.files[0]; f.value = ''; if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => { const im = new Image(); im.onload = () => {
+      const png = file.type === 'image/png', mx = png ? 1000 : 1400, k = Math.min(1, mx / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k);
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); if (!png) { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); } g.drawImage(im, 0, 0, w, h);
+      const src = png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.86), p = cur(), bw = 0.4, ar = h / w;
+      p.free = p.free || {}; (p.free[pg.key] = p.free[pg.key] || []).push({x: 0.3, y: 0.3, w: bw, h: bw * ar * PW / PH, ar, img: src});
+      save(true); render(true); }; im.src = rd.result; };
+    rd.readAsDataURL(file);
+  };
+  f.click();
 }
 
 /* ---------------- 페이지 공개 표시 · 공개용 내보내기 ---------------- */
@@ -569,7 +702,7 @@ const mmW = () => +(PW * 210 / 794).toFixed(2), mmH = () => +(PH * 210 / 794).to
 function newPage(title, kind, key){
   const p = cur();
   const rp = H('div', {class: 'rpage' + (kind ? ' ' + kind : '')});
-  rp.style.setProperty('--paper', bgOf(D.bg).bg); rp.style.setProperty('--pw', PW + 'px'); rp.style.setProperty('--ph', PH + 'px');
+  rp.style.setProperty('--paper', bgOf(D.bg).bg); rp.style.setProperty('--pw', PW + 'px'); rp.style.setProperty('--ph', PH + 'px'); applyLook(rp, p);
   const body = H('div', {class: 'rp-body'});
   if (kind === 'cover') rp.append(body);
   else rp.append(H('div', {class: 'rp-head'}, [H('span', {class: 'rp-brand'}, ['MATHY ', H('em', {text: 'YURI'})]), H('span', {class: 'rp-eye', text: 'ANNUAL PLANNER'})]), body,
@@ -585,7 +718,7 @@ const secHead = (en, ko, accent, sub) => H('div', {class: 'sec'}, [H('div', {cla
 
 function coverPage(p){
   const pg = newPage('표지', 'cover', 'cover'), a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1);
-  const frame = H('div', {class: 'cv-frame', html: `<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="${PW - 48}" height="${PH - 48}" fill="none" stroke="#A8853F" stroke-opacity=".75" stroke-width="1.89"/></svg>`});
+  const frame = H('div', {class: 'cv-frame', html: `<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" preserveAspectRatio="none"><rect x="24" y="24" width="${PW - 48}" height="${PH - 48}" fill="none" stroke="${themeColors(p).g}" stroke-opacity=".75" stroke-width="1.89"/></svg>`});
   const sch = H('div', {class: 'cv-line'});
   sch.textContent = [p.region, (p.schools || []).join(' · ')].filter(Boolean).join('  |  ');
   const months = H('div', {class: 'cv-months'}, Array.from({length: nOf(p)}, (_, i) => { const mi = monthInfo(p, i); return H('span', {text: mi.m, style: `background:${SEASON(mi.m)};color:${textOn(SEASON(mi.m))}`}); }));
@@ -672,7 +805,7 @@ function yearPage(p){
   p.months.forEach((m, i) => {
     const mi = monthInfo(p, i);
     grid.append(H('div', {class: 'mc'}, [
-      H('div', {class: 'mc-h', style: `border-left:5px solid ${SEASON(mi.m)}`}, [H('b', {text: mi.m + '월'}), H('small', {text: mi.y})]),
+      H('div', {class: 'mc-h', style: `border-left:5px solid ${SEASON(mi.m)}`}, [H('b', {text: mi.m + '월'}), H('small', {text: mi.y}), H('button', {class: 'xbtn ctl mx', type: 'button', title: '이 달 지우기', text: '×', onclick: () => askDropMonth(i)})]),
       H('div', {class: 'mc-b'}, [ed(m, 'theme', '월 주제', 'mc-th'), bulletList(m.bullets, '핵심 내용'), ed(m, 'exam', '시험·평가 일정', 'mc-ex'), ed(m, 'goal', '월 목표', 'mc-goal')]),
     ]));
   });
@@ -805,6 +938,7 @@ function monthPage(p, i){
     H('div', {class: 'mh-m'}, [H('small', {text: `${mi.y} · MONTHLY`}), mi.m + '월']),
     H('div', {class: 'mh-t'}, [ed(m, 'theme', '이 달의 주제', 'mh-th'), ed(m, 'goal', '이 달의 목표', 'mh-g')]),
     ed(m, 'exam', '시험·평가', 'mh-ex'),
+    H('button', {class: 'xbtn ctl', type: 'button', style: 'opacity:1;align-self:flex-start;font-size:12px', text: '× 이 달 지우기', onclick: () => askDropMonth(i)}),
   ]));
   const body = H('div', {class: 'mb ' + (ORI === 'l' ? 'l' : 'p')});
   const tbody = H('tbody');
@@ -849,7 +983,7 @@ function render(keep){
   D.stage = H('div', {class: 'stage'});
   D.stage.style.setProperty('--pw', PW + 'px'); D.stage.style.setProperty('--ph', PH + 'px');
   host.append(H('div', {class: 'stage-host'}, [D.stage]));
-  ensurePlan(p); coverPage(p); roadmapPage(p); yearPage(p); examPage(p); if (p.midSchools.length) midPage(p); for (let i = 0; i < nOf(p); i++) monthPage(p, i);
+  ensurePlan(p); SEAS = themeColors(p).s; coverPage(p); roadmapPage(p); yearPage(p); examPage(p); if (p.midSchools.length) midPage(p); for (let i = 0; i < nOf(p); i++) monthPage(p, i);
   D.pages.forEach(pg => { const pn = $('.pn', pg.rp); if (pn) pn.textContent = `${pg.idx + 1} / ${D.pages.length}`; freeLayer(pg); });
   host.insertBefore(buildBar(), host.firstChild);
   layout();
@@ -967,7 +1101,7 @@ function buildBar(){
   const ratioSel = H('div', {class: 'ratiosel'}, [H('span', {class: 'lbl', text: '크기'}), ...RATIOS.map(r => { const b = H('button', {class: 'rt' + (D.ratio === r.key ? ' on' : ''), type: 'button', text: r.label}); b.addEventListener('click', () => { if (D.ratio === r.key) return; D.ratio = r.key; safeLS.set('pl_ratio', r.key); render(true); }); return b; })]);
   const bgSel = H('div', {class: 'bgsel'}, [H('span', {class: 'lbl', text: '바탕'}), ...BGS.map(b => { const sw = H('button', {class: 'sw' + (D.bg === b.key ? ' on' : ''), type: 'button', title: b.label, style: `background:${b.bg}`}); sw.addEventListener('click', () => { D.bg = b.key; safeLS.set('pl_bg', b.key); D.pages.forEach(pg => pg.rp.style.setProperty('--paper', b.bg)); $$('.bgsel .sw').forEach(x => x.classList.toggle('on', x === sw)); }); return sw; })]);
   const zoomSel = H('div', {class: 'zoomsel'}, [H('span', {class: 'lbl', text: '확대'}), mkb('−', () => stepZoom(-1)), H('span', {class: 'zl', id: 'zoomLbl'}), mkb('＋', () => stepZoom(1)), mkb('화면에 맞춤', () => setZoom(1))]);
-  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
+  const act = H('div', {class: 'dk-act'}, [ratioSel, bgSel, zoomSel, mkb('여백없는 PDF로 저장', b => exportPdf(b), 'pri'), mkb('선택 페이지 이미지로 저장', b => exportImages(b)), mkb('지금 화면 이미지로 저장', b => exportImages(b, curIndex())), mkb('인쇄', () => window.print()), mkb('+ 텍스트 상자 (지금 페이지)', () => addBox(curIndex())), mkb('🖼 이미지 넣기 (지금 페이지)', () => addImage(curIndex())), mkb('사이트에 공개하기', b => publishSite(b), 'pri'), mkb('공개용 파일(ZIP)', b => exportPublic(b)), H('span', {class: 'hint', id: 'pubCnt'})]);
   const chips = H('div', {class: 'dk-chips', id: 'dkChips'}, D.pages.map((pg, i) => { const c = H('button', {class: 'pc', type: 'button', title: pg.title, text: i + 1}); c.addEventListener('click', e => { if (e.shiftKey || e.ctrlKey || e.metaKey) { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); } else goPage(i); }); c.addEventListener('dblclick', () => { D.sel.has(i) ? D.sel.delete(i) : D.sel.add(i); syncSel(); }); return c; }));
   return H('div', {class: 'dk-bar noprint'}, [H('div', {class: 'dk-row'}, [nav, sel]), chips, H('div', {class: 'hint', text: '페이지 글자를 눌러 바로 고쳐 쓰세요 (자동 저장). 번호를 두 번 누르거나 Ctrl/Shift+클릭하면 저장할 페이지로 선택돼요.'}), act, H('div', {class: 'msg', id: 'dkMsg'})]);
 }
@@ -978,11 +1112,11 @@ function renderPlanBar(){
   const sel = H('select', {}, DB.plans.map(p => H('option', {value: p.id, text: [p.region, p.name].filter(Boolean).join(' · ')})));
   sel.value = DB.cur; sel.addEventListener('change', () => { DB.cur = sel.value; save(true); D.sel = new Set(); render(); });
   const b = (t, fn, cls) => { const x = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); x.addEventListener('click', fn); return x; };
-  bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = JSON.parse(JSON.stringify(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
-    b('플랜 설정', openSettings), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
-    b('내보내기(JSON)', () => download(new Blob([JSON.stringify(cur(), null, 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
+  bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = deser(ser(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
+    b('플랜 설정', openSettings), b('디자인 (색·글꼴)', openDesign, 'pri'), b('달 관리 (지우기)', openMonths), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
+    b('내보내기(JSON)', () => download(new Blob([ser(cur(), 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
     b('가져오기', () => $('#impFile').click()));
-  bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
+  bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = deser(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
 }
 function openModal(node){ const m = $('#mdl'); m.innerHTML = ''; m.append(node); $('#modal').hidden = false; }
 function closeModal(){ $('#modal').hidden = true; }
@@ -999,7 +1133,42 @@ function openSettings(){
   const row = (l, el) => H('label', {class: 'f'}, [l, el]);
   openModal(H('div', {}, [H('h3', {text: '플랜 설정'}), H('div', {class: 'grid'}, [row('플랜 이름', f.name), row('지역', f.region), row('학교 (쉼표로 구분)', f.schools), row('대상 (학년)', f.grade), row('시작 월', f.start), row('기간 (개월 수, 예: 14 = 다음 해 12월까지)', f.n)]),
     H('p', {class: 'hint', text: '시작 월을 바꾸면 월 이름과 학년도 표시가 따라서 바뀌고, 월별 내용은 그대로 남아요.'}),
-    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '저장', onclick: () => { p.name = f.name.value.trim() || p.name; p.region = f.region.value.trim(); p.schools = f.schools.value.split(/[,，]/).map(s => s.trim()).filter(Boolean); p.grade = f.grade.value.trim(); if (f.start.value) p.startYm = f.start.value; const nn = clamp(parseInt(f.n.value, 10) || nOf(p), 6, 24); while (p.months.length < nn) p.months.push({theme: '', bullets: [], exam: '', goal: '', memo: '', schedule: [], days: {}, weeks: weeksFrom(['', '', '', ''])}); if (p.months.length > nn) { if (!confirm(`기간을 ${nn}개월로 줄이면 뒤쪽 ${p.months.length - nn}개월의 내용이 지워져요. 계속할까요?`)) return; p.months.length = nn; p.bars.forEach(b => { b.s = Math.min(b.s, nn - 1); b.e = Math.min(b.e, nn - 1); }); } save(true); closeModal(); render(true); }})])]));
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '취소', onclick: closeModal}), H('button', {class: 'btn', type: 'button', text: '저장', onclick: () => { p.name = f.name.value.trim() || p.name; p.region = f.region.value.trim(); p.schools = f.schools.value.split(/[,，]/).map(s => s.trim()).filter(Boolean); p.grade = f.grade.value.trim(); if (f.start.value && f.start.value !== p.startYm) { p.startYm = f.start.value; p.months.forEach(m => { delete m.ym; }); } const nn = clamp(parseInt(f.n.value, 10) || nOf(p), 6, 24); while (p.months.length < nn) p.months.push({theme: '', bullets: [], exam: '', goal: '', memo: '', schedule: [], days: {}, weeks: weeksFrom(['', '', '', ''])}); if (p.months.length > nn) { if (!confirm(`기간을 ${nn}개월로 줄이면 뒤쪽 ${p.months.length - nn}개월의 내용이 지워져요. 계속할까요?`)) return; p.months.length = nn; p.bars.forEach(b => { b.s = Math.min(b.s, nn - 1); b.e = Math.min(b.e, nn - 1); }); } save(true); closeModal(); render(true); }})])]));
+}
+function askDropMonth(i){
+  const p = cur(); if (p.months.length <= 3) { alert('달이 3개 이하로는 줄일 수 없어요.'); return; }
+  const mi = monthInfo(p, i); if (!confirm(`${mi.y}년 ${mi.m}월을 지울까요?\n이 달의 월간 페이지, 연간 계획표 칸, 로드맵 막대가 함께 정리돼요. (되돌릴 수 없어요)`)) return;
+  dropMonth(p, i); save(true); D.sel = new Set(); render(true);
+}
+function openMonths(){
+  const p = cur(), list = H('div', {});
+  const draw = () => {
+    list.innerHTML = '';
+    p.months.forEach((m, i) => { const mi = monthInfo(p, i);
+      list.append(H('div', {style: 'display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid #EFE8D6'}, [H('b', {style: 'width:5.6em', text: `${mi.y}년 ${mi.m}월`}), H('span', {class: 'hint', style: 'flex:1', text: m.theme || ''}),
+        H('button', {type: 'button', class: 'btn sec sm', text: '지우기', onclick: () => { askDropMonth(i); draw(); }})])); });
+  };
+  draw();
+  openModal(H('div', {}, [H('h3', {text: '달 관리 — 지우기 · 추가'}), H('p', {class: 'hint', text: '지운 달은 월간 페이지, 연간 계획표, 로드맵에서 함께 빠져요. 가운데 달을 지워도 나머지 달의 이름(월)은 그대로 유지돼요.'}), list,
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '+ 맨 뒤에 달 추가', onclick: () => { if (p.months.length >= 24) { alert('최대 24개월까지예요.'); return; } p.months.push({theme: '', bullets: [], exam: '', goal: '', memo: '', schedule: [], days: {}, weeks: weeksFrom(['', '', '', ''])}); save(true); render(true); draw(); }}), H('button', {class: 'btn', type: 'button', text: '닫기', onclick: closeModal})])]));
+}
+function openDesign(){
+  const p = cur(); p.theme = p.theme || {}; p.fonts = p.fonts || {};
+  const tc = themeColors(p), apply = () => { save(true); render(true); };
+  const presets = H('div', {class: 'dz'}, THEMES.map(t => H('button', {type: 'button', class: 'btn sec sm', style: `background:linear-gradient(90deg,${t.g} 0 33%,${t.a} 33% 66%,${t.b} 66% 100%);color:#fff;text-shadow:0 0 3px #000b;border:2px solid #fff;box-shadow:0 0 0 1px #E6DCC6`, text: t.n,
+    onclick: () => { p.theme = {k: t.k}; apply(); openDesign(); }})));
+  const mkc = v => H('input', {type: 'color', value: v});
+  const cg = mkc(tc.g), ca = mkc(tc.a), cb = mkc(tc.b), ss = tc.s.map(mkc);
+  const custom = () => { p.theme = {k: p.theme.k, c: {g: cg.value, a: ca.value, b: cb.value}, seas: p.theme.seas}; apply(); };
+  [cg, ca, cb].forEach(x => x.addEventListener('change', custom));
+  ss.forEach(x => x.addEventListener('change', () => { p.theme = Object.assign({}, p.theme, {seas: ss.map(y => y.value)}); apply(); }));
+  const fsel = (key) => { const s = H('select', {}, [H('option', {value: '', text: '(기본)'}), ...Object.keys(FONTS).map(k => H('option', {value: k, text: FONT_LABELS[k] || k, style: `font-family:${FONTS[k]}`}))]); s.value = p.fonts[key] || ''; s.addEventListener('change', () => { p.fonts[key] = s.value || null; apply(); }); return s; };
+  openModal(H('div', {}, [H('h3', {text: '디자인 — 전체 색과 글꼴'}), H('p', {class: 'hint', text: '이 플랜 전체(표지·로드맵·연간·월간)에 적용돼요. 누르면 바로 바뀝니다. 바탕색은 위쪽 "바탕" 동그라미에서 고르세요.'}),
+    H('div', {class: 'lbl', text: '색 조합'}), presets,
+    H('div', {class: 'lbl', text: '직접 고르기'}), H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '포인트색(선·제목바)'}), cg, H('span', {class: 'lb', text: '포인트2(강조 제목)'}), ca, H('span', {class: 'lb', text: '포인트3(시험·일요일)'}), cb]),
+    H('div', {class: 'lbl', text: '계절색 (월 이름 띠·표지 동그라미)'}), H('div', {class: 'dz'}, ['봄(3~5월)', '여름(6~8월)', '가을(9~11월)', '겨울(12~2월)'].flatMap((t, i) => [H('span', {class: 'lb', text: t}), ss[i]])),
+    H('div', {class: 'lbl', text: '글꼴'}), H('div', {class: 'dz'}, [H('span', {class: 'lb', text: '제목 글꼴'}), fsel('h'), H('span', {class: 'lb', text: '본문 글꼴'}), fsel('b')]),
+    H('div', {class: 'acts'}, [H('button', {class: 'btn sec', type: 'button', text: '기본으로 되돌리기', onclick: () => { p.theme = {}; p.fonts = {}; apply(); openDesign(); }}), H('button', {class: 'btn', type: 'button', text: '닫기', onclick: closeModal})])]));
 }
 function openRoadmap(){
   const p = cur(); const bars = p.bars.map(b => ({...b}));
