@@ -1,0 +1,263 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OMR 답안지 · 자동채점</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box}html,body{margin:0;background:#e3e6ec;font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#1b2233}
+.bar{position:sticky;top:0;z-index:30;background:#0B1A31;color:#fff;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.bar b{margin-right:6px}.bar button,.bar input,.bar select{border:0;border-radius:6px;padding:6px 11px;font-size:13px;font-weight:700;font-family:inherit}
+.bar button{background:#C79B63;color:#0B1A31;cursor:pointer}.bar button.g{background:#e7ebf3}.bar button.on{background:#fff;box-shadow:0 0 0 2px #C79B63 inset}.bar button:disabled{opacity:.4}
+.wrap{max-width:1180px;margin:0 auto;padding:12px 12px 50px}
+.panel{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
+.panel h3{margin:0 0 6px;font-size:15px;color:#13264A}.hint{font-size:12px;color:#5A6580;line-height:1.7;margin:0 0 8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12.5px}.row label{display:flex;gap:5px;align-items:center}
+.row input[type=number]{width:62px;padding:4px 6px;border:1px solid #c9ced9;border-radius:5px}.row input[type=text],.row select,.row textarea{padding:4px 6px;border:1px solid #c9ced9;border-radius:5px;font-family:inherit;font-size:12.5px}
+.row input[type=color]{width:36px;height:26px;border:0;padding:0;background:none}
+button.b{border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer;background:#13264A;color:#fff}button.b.o{background:#C79B63;color:#0B1A31}button.b.g{background:#e7ebf3;color:#13264A}
+.stage{display:flex;flex-direction:column;align-items:center;margin-top:6px;--s:1}
+.pw{width:calc(297mm*var(--s));height:calc(210mm*var(--s));position:relative;box-shadow:0 6px 24px rgba(0,0,0,.25);background:#fff}
+.pg{position:absolute;left:0;top:0;width:297mm;height:210mm;background:#fff;transform:scale(var(--s));transform-origin:0 0;overflow:hidden;color:var(--pc);font-family:"Noto Sans KR","Malgun Gothic",sans-serif}
+.cap .pg,.pg.cap{transform:none!important}.cap{box-shadow:none!important}
+.pg *{position:absolute;box-sizing:border-box}
+.pg .fid{background:#000}
+.pg .ed{position:absolute;outline:1px dashed rgba(58,123,213,.4);outline-offset:1px;cursor:text;white-space:nowrap}.pg .ed:focus{outline:2px solid #3a7bd5;background:rgba(58,123,213,.1)}.cap .ed{outline:none!important;background:none!important}
+.pg .fr{border:.35mm solid var(--pc);border-radius:1mm}
+.pg .fr2{border:.35mm solid var(--pc)}
+.pg .tx{white-space:nowrap;line-height:1;display:flex;align-items:center;justify-content:center;font-size:7pt;font-weight:700}
+.pg .tl{justify-content:flex-start}
+.pg .bb{border:.28mm solid var(--pc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6pt;font-weight:700;line-height:1;font-style:normal}
+.pg .bb.fill{background:#111;color:#111;border-color:#111}
+.pg .bar1{background:var(--pc);opacity:.85}
+.pg .ln{background:var(--pc)}
+.pg .hd{background:var(--pc);color:#fff}
+.pg .big{font-weight:900}
+.tabs button{background:#e7ebf3}
+#readPanel{display:none}
+.res{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;margin:10px 0;padding:10px;border:1px solid #dfe3ea;border-radius:8px}
+.res canvas{max-width:430px;width:100%;border:1px solid #ccd}
+.res table{border-collapse:collapse;font-size:11.5px}.res td,.res th{border:1px solid #d9dde6;padding:2px 5px;text-align:center}.res th{background:#13264A;color:#fff}
+.res td.ok{background:#e4f6ec}.res td.no{background:#fde8ec}.res td.un{background:#fff6dc}.res select{font-size:11px;padding:1px}
+.keyg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:4px 8px}.keyg label{display:flex;gap:4px;align-items:center;font-size:12px}.keyg input{width:38px;padding:2px 4px;border:1px solid #c9ced9;border-radius:4px}
+.warn{color:#c33;font-weight:700}.okc{color:#1a7a50;font-weight:700}
+@page{size:297mm 210mm;margin:0}
+@media print{html,body{background:#fff}.bar,.panel,#readPanel{display:none!important}.stage{margin:0;--s:1!important}.pw{box-shadow:none}.pg{transform:none}.pg .ed{outline:none}}
+</style></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">아래 답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>. 문항 수·수험번호 자리 수·색은 여기서 바꿉니다. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요(위쪽 PDF 저장 버튼으로 만든 PDF를 100%로 인쇄하면 됩니다).</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>수험번호: 학교(학원) <input type="number" id="sd" min="0" max="8"> 자리 · 반 <input type="number" id="cd" min="0" max="4"> 자리 · 번호 <input type="number" id="nd" min="0" max="4"> 자리</label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" id="resetCfg">처음 모양으로</button></div></div><div class="panel" id="readPanel"><h3>사진·스캔으로 자동 채점</h3><p class="hint">① 아래에 정답과 배점을 넣고 → ② 학생 답안지 사진(또는 스캔 이미지)을 올리면 됩니다. 네 모서리의 검은 네모가 모두 사진에 나오게 찍어 주세요(좌상단은 네모 2개). 사진이 약간 기울어져도, 돌아가 있어도 읽어요. 읽은 결과는 칸에서 바로 고칠 수 있고, 헷갈린 칸은 <span class="warn">복수/?</span>로 표시됩니다.</p><div class="row"><b>정답·배점</b> <button class="b g" type="button" onclick="allPts()">배점 한 번에 채우기</button></div><div class="row"><textarea id="keyTxt" rows="3" cols="60" placeholder="정답을 한 번에 붙여넣기: 공백·줄바꿈으로 구분(예: 3 5 2 1 …) 또는 줄마다 번호,정답,배점"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button></div><div class="keyg" id="keyg"></div><div class="row" style="margin-top:10px"><b>답안지 사진</b> <input type="file" id="fileIn" accept="image/*" multiple> <button class="b g" type="button" id="clearRes">결과 지우기</button> <button class="b o" type="button" onclick="exportCsv()">결과 CSV로 저장</button> <span id="readMsg"></span></div><div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
+(function(){
+var KEY='bro_omr_v1',ST={};try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+var $=function(s){return document.querySelector(s)};
+var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'수 학 영 역',school:'학교(학원)',name:'성  명',hand:'필 적<br>확인란',
+ n1:21,n2:9,rows:9,sd:4,cd:2,nd:2,color:'#B8334F',
+ note:'※ 문제지 표지에 안내된 필적확인문구를 아래 「필적확인란」에 정자로 반드시 기재하여야 합니다.',
+ inst:'※ 답안지 작성(표기)은 반드시 검은색 컴퓨터용 사인펜만을 사용하고, 연필 또는 샤프 등의 필기구를 절대 사용하지 마십시오.',
+ sa:'단답형 답란<br>표 기 방 법',sa1:'십진법에 의하되, 반드시 자리에 맞추어 표기',sa2:'정답이 한 자리인 경우 일의 자리에만 표기하거나, 십의 자리에 0을 표기하고 일의 자리에 표기',
+ mon:'감독관<br>확인',mon2:'서 명<br>또는 날인',mon3:'반, 번호 등의 표기가 정확한지 반드시 확인 후 서명 또는 날인',foot:'연습용 답안지',exam:'',
+ idl:'수 험 번 호',idl2:['학교(학원)번호','반','번호']};
+var C=Object.assign({},DEF,ST.cfg||{});
+var KEYV=ST.key||{};   // {a:{1:'3',...},p:{1:3,...}}
+KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}}
+/* ================= 칸 위치 계산 (단위: mm) ================= */
+var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];   // 좌상단은 2개(방향 표시)
+function layout(c){
+ var L={mc:[],sa:[],id:[],fr:[]},R=Math.max(3,c.rows|0||9),n1=c.n1|0,n2=c.n2|0;
+ var rp=9.2,hdr=8,bw=40,gap=3,bx0=96,nb=n1>0?Math.ceil(n1/R):0;
+ for(var b=0;b<nb;b++){var x0=bx0+b*(bw+gap),cnt=Math.min(R,n1-b*R);L.fr.push({k:'mc',x:x0,y:14,w:bw,h:hdr+cnt*rp+2});
+  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=14+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.4+k*6.4);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4})}
+  if(b===nb-1&&cnt<R){var ny=14+hdr+cnt*rp+5;if(14+hdr+R*rp-ny>=24)L.notice={x:x0,y:ny,w:bw,h:Math.min(40,14+hdr+R*rp-ny)}}}
+ var xs0=bx0+nb*(bw+gap),pitch=18.2,top=Math.max(0,Math.min(n2,Math.floor((283-xs0+.8)/pitch))),bot=Math.min(n2-top,Math.floor((283-96)/pitch));
+ var sx=function(x,y,q){L.fr.push({k:'sa',x:x,y:y,w:17.4,h:76,q:q});var d=[];for(var i=0;i<3;i++){var ys=[];for(var j=0;j<10;j++)ys.push(y+13+6*(j+.5));d.push({x:x+3.3+i*5.4,ys:ys})}L.sa.push({q:q,cols:d,r:2.0})};
+ for(var i=0;i<top;i++)sx(xs0+i*pitch,14,n1+i+1);
+ for(var j=0;j<bot;j++)sx(283-bot*pitch+.8+j*pitch,118,n1+top+j+1);
+ L.saTopN=top;L.saBotN=bot;L.saBotX=283-bot*pitch+.8;
+ /* 수험번호 */
+ var sd=c.sd|0,cd=c.cd|0,nd=c.nd|0,nc=sd+cd+nd,cw=Math.min(8.6,74/Math.max(1,nc)),ix0=14+(78-cw*nc)/2;
+ L.idBox={x:14,y:93,w:78,h:82};L.idCw=cw;L.idX0=ix0;L.idGroups=[sd,cd,nd];
+ for(var k=0;k<nc;k++){var ys=[];for(var m=0;m<10;m++)ys.push(93+7+5+6+5.4*(m+.5));L.id.push({x:ix0+cw*(k+.5),ys:ys,r:1.8})}
+ return L}
+window.OMR_layout=layout;
+/* ================= 답안지 그리기 ================= */
+function E(k,html,st,cls){return'<span class="ed '+(cls||'')+'" contenteditable="true" spellcheck="false" data-k="'+k+'" style="'+(st||'')+'">'+html+'</span>'}
+function el(cls,x,y,w,h,html,st){return'<i class="'+cls+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+(html||'')+'</i>'}
+function bub(cx,cy,r,t,fill){return'<i class="bb'+(fill?' fill':'')+'" style="left:'+(cx-r)+'mm;top:'+(cy-r)+'mm;width:'+2*r+'mm;height:'+2*r+'mm">'+t+'</i>'}
+function sheet(){
+ var L=layout(C),h='';
+ FID.forEach(function(f){h+=el('fid',f.x-3,f.y-3,6,6)});
+ for(var i=0;i<12;i++)h+=el('bar1',32+i*9,3.6,1.8,4.2);
+ /* 왼쪽 */
+ h+=E('title',C.title,'left:14mm;top:15mm;font-size:10.5pt;font-weight:800');
+ if(C.exam!==undefined)h+=E('exam',C.exam,'left:14mm;top:11mm;font-size:6.6pt;font-weight:500');
+ h+='<i class="bb" style="left:14mm;top:31mm;width:13mm;height:13mm;border-width:.6mm"></i>'+E('per',C.per,'left:17.3mm;top:32.6mm;font-size:20pt;font-weight:900')+E('perl','교시','left:29mm;top:37.4mm;font-size:7pt;font-weight:700')+E('subj',C.subj,'left:42mm;top:32mm;font-size:21pt;font-weight:900;letter-spacing:.06em');
+ h+=el('fr',14,49,78,16)+el('ln',14+15,49,.35,16)+el('ln',14,57,78,.35)+E('school',C.school,'left:15.2mm;top:51.6mm;font-size:7pt;font-weight:700')+E('name',C.name,'left:15.2mm;top:59.6mm;font-size:7pt;font-weight:700');
+ h+=E('note',C.note,'left:14mm;top:67mm;font-size:5.3pt;font-weight:500;white-space:normal;width:78mm;line-height:1.35');
+ h+=el('fr',14,76,78,14)+el('ln',14+15,76,.35,14)+E('hand',C.hand,'left:15.2mm;top:79.5mm;font-size:6.6pt;font-weight:700;white-space:normal;line-height:1.2');
+ /* 수험번호 */
+ var B=L.idBox;h+=el('fr',B.x,B.y,B.w,B.h)+el('hd',B.x,B.y,B.w,7)+'<i class="tx" style="left:'+B.x+'mm;top:'+B.y+'mm;width:'+B.w+'mm;height:7mm;color:#fff;font-size:8.5pt;letter-spacing:.2em">'+E('idl',C.idl,'position:static;outline:none;color:#fff')+'</i>';
+ var cx=L.idX0,g=0,gl=C.idl2;for(var gi=0;gi<3;gi++){var w=L.idGroups[gi]*L.idCw;if(w>0){h+='<i class="tx" style="left:'+cx+'mm;top:'+(B.y+7.5)+'mm;width:'+w+'mm;height:4.5mm;font-size:5.4pt">'+E('idl2_'+gi,gl[gi],'position:static;outline:none')+'</i>';h+=el('ln',cx,B.y+7,.3,B.h-8)}cx+=w}
+ h+=el('ln',cx,B.y+7,.3,B.h-8);
+ L.id.forEach(function(c,k){h+=el('fr2',c.x-L.idCw/2+.5,B.y+12.2,L.idCw-1,6);for(var m=0;m<10;m++)h+=bub(c.x,c.ys[m],c.r,m)});
+ /* 감독관 */
+ h+=el('fr',14,178,78,18)+el('ln',14+14,178,.35,18)+el('ln',14+30,178,.35,18)+E('mon',C.mon,'left:15mm;top:182mm;font-size:6.6pt;font-weight:800;white-space:normal;line-height:1.25;text-align:center;width:12mm')+E('mon2',C.mon2,'left:43.6mm;top:182.5mm;font-size:5.8pt;font-weight:700;white-space:normal;text-align:center;line-height:1.25;width:14mm')+E('mon3',C.mon3,'left:60mm;top:181mm;font-size:5.4pt;font-weight:600;white-space:normal;width:31mm;line-height:1.4');
+ /* 안내문(오른쪽 위) */
+ h+=E('inst',C.inst,'left:150mm;top:5.2mm;font-size:5pt;font-weight:600;white-space:normal;width:134mm;line-height:1.3;text-align:right');
+ /* 객관식 */
+ L.fr.forEach(function(f){if(f.k==='mc'){h+=el('fr',f.x,f.y,f.w,f.h)+el('hd',f.x,f.y,f.w,8)+'<i class="tx" style="left:'+f.x+'mm;top:'+f.y+'mm;width:8mm;height:8mm;color:#fff;font-size:6pt">문번</i><i class="tx" style="left:'+(f.x+8)+'mm;top:'+f.y+'mm;width:'+(f.w-8)+'mm;height:8mm;color:#fff;font-size:8pt;letter-spacing:.5em">답 란</i>'}
+  else{h+=el('fr',f.x,f.y,f.w,f.h)+'<i class="tx big" style="left:'+f.x+'mm;top:'+(f.y+.8)+'mm;width:'+f.w+'mm;height:5mm;font-size:8pt">'+f.q+'번</i><i class="tx" style="left:'+f.x+'mm;top:'+(f.y+7)+'mm;width:'+f.w+'mm;height:4mm;font-size:5.4pt;letter-spacing:.3em">백 십 일</i>'+el('ln',f.x,f.y+12,f.w,.3);for(var s=1;s<3;s++)h+=el('ln',f.x+3.3+s*5.4-2.7,f.y+12,.25,f.h-12)}});
+ L.mc.forEach(function(r){h+='<i class="tx big" style="left:'+(r.nx-3.5)+'mm;top:'+(r.y-3)+'mm;width:7mm;height:6mm;font-size:'+(r.q%5===0?9.5:8.2)+'pt;'+(r.q%5===0?'font-weight:900':'font-weight:500')+'">'+r.q+'</i>';r.xs.forEach(function(x,k){h+=bub(x,r.y,r.r,k+1)});if(r.q%5===0&&r.q<C.n1)h+=el('ln',r.xs[0]-9.4,r.y+4.6,39.4,.3)});
+ L.sa.forEach(function(s){s.cols.forEach(function(c){for(var j=0;j<10;j++)h+=bub(c.x,c.ys[j],s.r,j)})});
+ if(L.notice){var n=L.notice;h+=el('fr',n.x,n.y,n.w,n.h)+E('sa',C.sa,'left:'+(n.x+1)+'mm;top:'+(n.y+1.4)+'mm;width:'+(n.w-2)+'mm;font-size:7.4pt;font-weight:900;white-space:normal;text-align:center;line-height:1.25')+E('sa1','· '+C.sa1,'left:'+(n.x+1.6)+'mm;top:'+(n.y+12.5)+'mm;width:'+(n.w-3.2)+'mm;font-size:5.2pt;white-space:normal;line-height:1.35;font-weight:500')+E('sa2','· '+C.sa2,'left:'+(n.x+1.6)+'mm;top:'+(n.y+22)+'mm;width:'+(n.w-3.2)+'mm;font-size:5.2pt;white-space:normal;line-height:1.35;font-weight:500')}
+ /* 성명(쓰는 칸) — 아래 가운데 */
+ var nx0=96,nx1=L.saBotN>0?L.saBotX-3:283;if(nx1-nx0>30){h+=el('fr',nx0,118,nx1-nx0,76)+el('hd',nx0,118,nx1-nx0,8)+'<i class="tx" style="left:'+nx0+'mm;top:118mm;width:'+(nx1-nx0)+'mm;height:8mm;color:#fff;font-size:9pt;letter-spacing:.9em">성 명</i>'+E('nmnote','(한글로 크게 써 주세요)','left:'+(nx0+2)+'mm;top:128mm;font-size:6pt;font-weight:500')}
+ h+=E('foot',C.foot,'left:250mm;top:200.6mm;font-size:5.4pt;font-weight:500');
+ return h}
+function renderSheet(){var pg=$('#pg');pg.innerHTML=sheet();pg.style.setProperty('--pc',C.color);fit();
+ pg.querySelectorAll('.ed').forEach(function(e){var k=e.dataset.k;e.addEventListener('input',function(){var v=e.innerHTML;if(k==='sa1'||k==='sa2')v=v.replace(/^·\s*/,'');if(/^idl2_/.test(k)){C.idl2[+k.slice(5)]=v}else C[k]=v;save()});e.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();e.blur()}})})}
+function fit(){var w=document.querySelector('.wrap').clientWidth-24,s=Math.min(1,w/(297*3.7795));$('.stage').style.setProperty('--s',s.toFixed(4))}
+window.addEventListener('resize',fit);
+/* ================= 설정 ================= */
+function bindSet(){
+ [['n1','n1'],['n2','n2'],['rows','rows'],['sd','sd'],['cd','cd'],['nd','nd']].forEach(function(p){var i=$('#'+p[0]);i.value=C[p[1]];i.addEventListener('change',function(){var v=Math.max(0,parseInt(i.value,10)||0);if(p[0]==='n1')v=Math.min(v,45);if(p[0]==='n2')v=Math.min(v,19);if(p[0]==='rows')v=Math.max(3,Math.min(10,v));if(p[0]==='n1'||p[0]==='n2'){var tot=(p[0]==='n1'?v:C.n1)+(p[0]==='n2'?v:C.n2);if(tot>45){alert('문항은 모두 합쳐 45개까지 만들 수 있어요.');i.value=C[p[1]];return}}C[p[1]]=v;i.value=v;save();renderSheet();buildKey()})});
+ var pc=$('#pcolor');pc.value=C.color;pc.addEventListener('input',function(){C.color=pc.value;save();$('#pg').style.setProperty('--pc',C.color)});
+ $('#resetCfg').addEventListener('click',function(){if(confirm('답안지 글자와 문항 수를 처음 모양으로 되돌릴까요?')){C=Object.assign({},DEF);save();location.reload()}});
+}
+/* ================= 탭 ================= */
+function tab(n){$('#makePanel').style.display=n===1?'':'none';$('#stageWrap').style.display=n===1?'':'none';$('#readPanel').style.display=n===2?'block':'none';$('#t1').classList.toggle('on',n===1);$('#t2').classList.toggle('on',n===2);$('#pdfBtn').style.display=$('#pngBtn').style.display=$('#rng').style.display=n===1?'':'none';if(n===1)fit()}
+/* ================= 정답 입력 ================= */
+function buildKey(){var h='';for(var q=1;q<=C.n1+C.n2;q++){var sa=q>C.n1;h+='<label><b style="width:2.2em;text-align:right">'+q+'.</b><input data-a="'+q+'" value="'+(KEYV.a[q]==null?'':KEYV.a[q])+'" placeholder="'+(sa?'0~999':'1~5')+'"> <input data-p="'+q+'" value="'+(KEYV.p[q]==null?'':KEYV.p[q])+'" placeholder="점" style="width:30px"></label>'}$('#keyg').innerHTML=h;
+ $('#keyg').querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){if(i.dataset.a)KEYV.a[i.dataset.a]=i.value.trim();else KEYV.p[i.dataset.p]=i.value.trim();save()})})}
+function pasteKey(){var N=C.n1+C.n2,lines=$('#keyTxt').value.split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+ var tri=lines.length>0&&lines.every(function(l,i){var p=l.split(/[,\t]+/).map(function(x){return x.trim()});return p.length>=2&&p.length<=3&&parseInt(p[0],10)===i+1});
+ if(tri){lines.forEach(function(l){var p=l.split(/[,\t]+/).map(function(x){return x.trim()}),n=parseInt(p[0],10);if(n>=1&&n<=N){KEYV.a[n]=p[1];if(p[2]!=null&&p[2]!=='')KEYV.p[n]=p[2]}})}
+ else{var q=1;lines.join(' ').split(/[\s,]+/).forEach(function(v){if(v!==''&&q<=N){KEYV.a[q]=v;q++}})}
+ save();buildKey()}
+function allPts(){var v=prompt('모든 문항의 배점을 같은 값으로 채울까요? 배점을 입력하세요 (예: 3)');if(v==null)return;for(var q=1;q<=C.n1+C.n2;q++)KEYV.p[q]=v;save();buildKey()}
+/* ================= 사진 읽기 ================= */
+function loadImg(f){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){rej(new Error('이미지를 열 수 없어요'))};im.src=URL.createObjectURL(f)})}
+function toGray(c){var w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Uint8Array(w*h);for(var i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000;return g}
+function paperLevel(g){var hist=new Uint32Array(256);for(var i=0;i<g.length;i+=3)hist[g[i]]++;var tot=0;for(var k=0;k<256;k++)tot+=hist[k];var acc=0;for(k=255;k>=0;k--){acc+=hist[k];if(acc>tot*.55)return k}return 200}
+function blobsIn(n,w,h,x0,y0,x1,y1,thr){var vis=new Uint8Array((x1-x0)*(y1-y0)),W=x1-x0,out=[],st=[];
+ for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){var i=(y-y0)*W+(x-x0);if(vis[i]||n[y*w+x]>=thr)continue;var minx=x,maxx=x,miny=y,maxy=y,sx=0,sy=0,a=0;st.length=0;st.push(x,y);vis[i]=1;
+  while(st.length){var cy=st.pop(),cx=st.pop();a++;sx+=cx;sy+=cy;if(cx<minx)minx=cx;if(cx>maxx)maxx=cx;if(cy<miny)miny=cy;if(cy>maxy)maxy=cy;
+   for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=cx+dx,ny=cy+dy;if(nx<x0||nx>=x1||ny<y0||ny>=y1)continue;var ii=(ny-y0)*W+(nx-x0);if(vis[ii]||n[ny*w+nx]>=thr)continue;vis[ii]=1;st.push(nx,ny)}}
+  out.push({cx:sx/a,cy:sy/a,a:a,bw:maxx-minx+1,bh:maxy-miny+1})}
+ return out}
+function validBlob(b,w,h){var r=b.bw/b.bh;return r>.6&&r<1.7&&b.a/(b.bw*b.bh)>.7&&b.a>w*h*.00002&&b.a<w*h*.004}
+function findFid(n,w,h){var thr=80,rx=Math.round(w*.3),ry=Math.round(h*.3),R=[[0,0,rx,ry],[w-rx,0,w,ry],[w-rx,h-ry,w,h],[0,h-ry,rx,h]],cn=[[0,0],[w,0],[w,h],[0,h]],res=[];
+ for(var k=0;k<4;k++){var bl=blobsIn(n,w,h,R[k][0],R[k][1],R[k][2],R[k][3],thr).filter(function(b){return validBlob(b,w,h)});
+  bl.sort(function(a,b){return Math.hypot(a.cx-cn[k][0],a.cy-cn[k][1])-Math.hypot(b.cx-cn[k][0],b.cy-cn[k][1])});if(!bl.length)throw new Error('모서리 표식을 찾지 못했어요 (사진 네 모서리의 검은 네모가 모두 보여야 해요)');
+  var a=bl[0],pair=null;for(var j=1;j<bl.length;j++){var d=Math.hypot(bl[j].cx-a.cx,bl[j].cy-a.cy),s=Math.sqrt(a.a);if(d<s*3.4&&d>s*.9&&bl[j].a>a.a*.5&&bl[j].a<a.a*2){pair=bl[j];break}}
+  res.push({x:pair?(a.cx+pair.cx)/2:a.cx,y:pair?(a.cy+pair.cy)/2:a.cy,pair:!!pair,s:Math.sqrt(a.a)})}
+ return res}
+function solve(A,b){var n=b.length;for(var i=0;i<n;i++){var p=i;for(var r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;var t=A[i];A[i]=A[p];A[p]=t;var tb=b[i];b[i]=b[p];b[p]=tb;for(r=i+1;r<n;r++){var f=A[r][i]/A[i][i];for(var c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}
+ var x=new Array(n);for(i=n-1;i>=0;i--){var s=b[i];for(c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/A[i][i]}return x}
+function homog(src,dst){var A=[],b=[];for(var i=0;i<4;i++){var x=src[i][0],y=src[i][1],u=dst[i][0],v=dst[i][1];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v)}var h=solve(A,b);h.push(1);return h}
+function mapp(H,x,y){var w=H[6]*x+H[7]*y+1;return[(H[0]*x+H[1]*y+H[2])/w,(H[3]*x+H[4]*y+H[5])/w]}
+/* 읽기: 한 장 */
+function readSheet(canvas){
+ var w=canvas.width,h=canvas.height,g=toGray(canvas),pl=paperLevel(g),n=new Uint8Array(w*h);for(var i=0;i<g.length;i++){var v=g[i]*255/pl;n[i]=v>255?255:v}
+ var f=findFid(n,w,h);/* f: 화면 기준 좌상, 우상, 우하, 좌하 */
+ var cx=0,cy=0;f.forEach(function(p){cx+=p.x/4;cy+=p.y/4});
+ var ord=f.map(function(p,i){return{p:p,a:Math.atan2(p.y-cy,p.x-cx)}}).sort(function(a,b){return a.a-b.a}).map(function(o){return o.p});/* 시계 방향(화면) */
+ var mi=ord.findIndex(function(p){return p.pair});if(mi<0)mi=0;
+ var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);/* 시트의 좌상, 우상, 우하, 좌하 */
+ var sheetPts=[[9,14.5],[288,9],[288,201],[9,201]],H=homog(sheetPts,rot.map(function(p){return[p.x,p.y]}));
+ var L=layout(C),sc=Math.hypot(mapp(H,10,0)[0]-mapp(H,0,0)[0],mapp(H,10,0)[1]-mapp(H,0,0)[1])/10;
+ function samp(x,y,r){var p=mapp(H,x,y),rr=r*sc*.62,x0=Math.max(0,Math.floor(p[0]-rr)),x1=Math.min(w-1,Math.ceil(p[0]+rr)),y0=Math.max(0,Math.floor(p[1]-rr)),y1=Math.min(h-1,Math.ceil(p[1]+rr)),s=0,c=0;
+  for(var yy=y0;yy<=y1;yy++)for(var xx=x0;xx<=x1;xx++){var dx=xx-p[0],dy=yy-p[1];if(dx*dx+dy*dy<=rr*rr){s+=n[yy*w+xx];c++}}return{v:c?s/c:255,px:p[0],py:p[1]}}
+ var all=[],mc=L.mc.map(function(r){var vs=r.xs.map(function(x){var s=samp(x,r.y,r.r);all.push(s.v);return s});return{q:r.q,vs:vs}});
+ var sa=L.sa.map(function(s){return{q:s.q,cols:s.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,s.r);all.push(t.v);return t})})}});
+ var idc=L.id.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})});
+ all.sort(function(a,b){return a-b});var base=all[Math.floor(all.length*.6)],thr=Math.max(22,base*.2);
+ function pick(vs){var d=vs.map(function(s){return base-s.v}),idx=[];for(var i=0;i<d.length;i++)if(d[i]>thr)idx.push(i);if(!idx.length)return{i:-1,flag:''};idx.sort(function(a,b){return d[b]-d[a]});if(idx.length===1)return{i:idx[0],flag:''};if(d[idx[0]]-d[idx[1]]>.5*d[idx[0]])return{i:idx[0],flag:'?'};return{i:-2,flag:'복수'}}
+ var ans=[];mc.forEach(function(r){var p=pick(r.vs);ans.push({q:r.q,t:'mc',v:p.i>=0?String(p.i+1):'',flag:p.i===-2?'복수':p.flag,pts:r.vs})});
+ sa.forEach(function(s){var ds=s.cols.map(function(c){return pick(c)}),bad=ds.some(function(d){return d.i===-2}),any=ds.some(function(d){return d.i>=0});var v='';if(any&&!bad)v=String(ds.reduce(function(a,d){return a*10+(d.i>=0?d.i:0)},0));ans.push({q:s.q,t:'sa',v:v,flag:bad?'복수':'',pts:[].concat.apply([],s.cols)})});
+ var id=idc.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'});
+ return{ans:ans,id:id,H:H,sc:sc,base:base,thr:thr,layout:L,sheet:rot,w:w,h:h}}
+/* ================= 채점 화면 ================= */
+var RES=[];
+function gradeOne(a){var key=KEYV.a[a.q],pt=parseFloat(KEYV.p[a.q]);if(isNaN(pt))pt=0;if(key==null||key==='')return{s:'',sc:0};if(a.v==='')return{s:'un',sc:0};return String(a.v)===String(key).trim()?{s:'ok',sc:pt}:{s:'no',sc:0}}
+function drawPrev(cv,im,r){var c=cv,k=Math.min(1,430/im.width);c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);x.lineWidth=2;
+ r.sheet.forEach(function(p){x.strokeStyle='#e22';x.strokeRect(p.x*k-6,p.y*k-6,12,12)});
+ r.ans.forEach(function(a){var g=a.t==='mc'?a.pts:a.pts;g.forEach(function(s,i){var on=false;if(a.t==='mc')on=a.v!==''&&i===parseInt(a.v,10)-1;x.beginPath();x.arc(s.px*k,s.py*k,Math.max(1.5,r.sc*k*.9),0,7);x.strokeStyle=on?'#0a8':'rgba(0,0,0,0)';x.stroke()})})}
+function resHtml(i){var o=RES[i],r=o.r,tot=0,mx=0,h='<table><tr><th>번호</th><th>학생 답</th><th>정답</th><th>배점</th><th>점수</th></tr>';
+ o.ans.forEach(function(a){var g=gradeOne(a),pt=parseFloat(KEYV.p[a.q])||0;tot+=g.sc;mx+=pt;h+='<tr><td>'+a.q+'</td><td class="'+g.s+'">'+(a.t==='mc'?'<select data-i="'+i+'" data-q="'+a.q+'"><option value="">—</option>'+[1,2,3,4,5].map(function(v){return'<option'+(String(v)===a.v?' selected':'')+'>'+v+'</option>'}).join('')+'</select>':'<input data-i="'+i+'" data-q="'+a.q+'" value="'+a.v+'" style="width:40px">')+(a.flag?' <span class="warn">'+a.flag+'</span>':'')+'</td><td>'+(KEYV.a[a.q]==null?'':KEYV.a[a.q])+'</td><td>'+(pt||'')+'</td><td>'+(g.s==='ok'?g.sc:g.s?0:'')+'</td></tr>'});
+ o.tot=tot;o.mx=mx;return h+'</table>'}
+function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML='<b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 수험번호 읽음: <b>'+o.idtxt+'</b>';
+ d.querySelectorAll('select,input').forEach(function(s){s.addEventListener('change',function(){var a=o.ans.filter(function(x){return String(x.q)===s.dataset.q})[0];a.v=s.value;a.flag='';showRes(i);saveRes()})})}
+function saveRes(){try{localStorage.setItem('bro_omr_results_v1',JSON.stringify({cfg:{n1:C.n1,n2:C.n2},key:KEYV,students:RES.map(function(o){return{file:o.file,id:o.idtxt,answers:o.ans.map(function(a){return a.v}),score:o.tot,max:o.mx}})}))}catch(e){}}
+async function runFiles(files){var box=$('#resBox');$('#readMsg').textContent='';for(var f of files){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><canvas></canvas><div class="warn" style="font-size:12px;margin-top:4px">읽는 중...</div></div><div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
+  try{var im=await loadImg(f),cv=document.createElement('canvas'),k=Math.min(1,2400/Math.max(im.width,im.height));cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,idtxt:r.id.join('')});var o=RES[i];o.idtxt=idFmt(r.id);drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i)}
+  catch(e){RES.push({file:f.name,r:null,ans:[],idtxt:'',tot:0,mx:0,err:1});div.innerHTML='<div class="warn">'+f.name+' — '+e.message+'</div>'}}
+ saveRes()}
+function idFmt(id){var c=C,a=id.slice(0,c.sd).join(''),b=id.slice(c.sd,c.sd+c.cd).join(''),d=id.slice(c.sd+c.cd).join('');return a+'-'+b+'-'+d}
+window.exportCsv=function(){var rows=[['파일','수험번호','점수','만점'].concat(Array.from({length:C.n1+C.n2},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.idtxt,o.tot,o.mx].concat(o.ans.map(function(a){return a.v})))});
+ var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='OMR_채점결과.csv';document.body.appendChild(a);a.click();a.remove()};
+window.OMR_test=function(canvas){return readSheet(canvas)};
+/* ================= 시작 ================= */
+window.tab=tab;window.pasteKey=pasteKey;window.allPts=allPts;
+bindSet();renderSheet();buildKey();
+$('#fileIn').addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
+$('#clearRes').addEventListener('click',function(){RES=[];$('#resBox').innerHTML='';saveRes()});
+})();
+</script><script>/* 여백없는 PDF — 쪽마다 화면 그대로 그림으로 찍어서 한 장씩 붙이는 방식(html2canvas + jsPDF).
+   브라우저 인쇄와 달리 HTML에서 보던 모양 그대로 나온다. 쪽 지정(예: 1-4, 7) 가능. */
+(function () {
+  var W = window.PDF_W || 257, H = window.PDF_H || 364;   // 용지(mm): 기본 B4, 성적표는 A4(210x297)
+  function pagesList() { return [].slice.call(document.querySelectorAll('.stage .pg')); }
+  function parse(t, n) {
+    var c = String(t).split('~').join('-').split(' ').join(''); if (!c) return null;
+    var seen = {}, out = [], ps = c.split(',');
+    for (var i = 0; i < ps.length; i++) {
+      var p = ps[i]; if (!p) continue;
+      var ab = p.split('-'), a, b;
+      if (ab.length === 1) { a = b = parseInt(ab[0], 10); } else if (ab.length === 2) { a = parseInt(ab[0], 10); b = parseInt(ab[1], 10); } else return null;
+      if (isNaN(a) || isNaN(b)) return null; if (a > b) { var x = a; a = b; b = x; }
+      if (a < 1 || b > n) return null;
+      for (var k = a; k <= b; k++) { if (!seen[k]) { seen[k] = 1; out.push(k); } }
+    }
+    out.sort(function (x, y) { return x - y; }); return out.length ? out : null;
+  }
+  function selection() {
+    var n = pagesList().length, v = (document.getElementById('rng') || { value: '' }).value.trim();
+    if (!v) { var all = []; for (var i = 1; i <= n; i++) all.push(i); return all; }
+    var s = parse(v, n); if (!s) { alert('쪽 지정이 올바르지 않아요. 예: 1-4, 7  (표지가 1쪽, 총 ' + n + '쪽)'); return null; }
+    return s;
+  }
+  async function capture(pg) {
+    var host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:-12000px;top:0;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden';
+    var clone = pg.cloneNode(true); clone.classList.add('cap'); clone.style.position = 'relative';
+    host.appendChild(clone); document.body.appendChild(host);
+    try {
+      await new Promise(function (r) { setTimeout(r, 120); });
+      var rc = host.getBoundingClientRect();
+      return await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, width: Math.round(rc.width), height: Math.round(rc.height), logging: false });
+    } finally { host.remove(); }
+  }
+  async function run(btn, kind) {
+    var PW = window.PDF_PW || W, PH = window.PDF_PH || H;   // PDF 용지(레이아웃 크기와 다를 때: 그림을 용지에 맞춰 늘림)
+    var nums = selection(); if (!nums) return;
+    var orig = btn.textContent; btn.disabled = true;
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      var pdf = null, J = window.jspdf && window.jspdf.jsPDF;
+      if (kind === 'pdf' && !J) throw new Error('PDF 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      if (!window.html2canvas) throw new Error('캡처 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      for (var i = 0; i < nums.length; i++) {
+        btn.textContent = '찍는 중... (' + (i + 1) + '/' + nums.length + ')';
+        var c = await capture(pagesList()[nums[i] - 1]);
+        if (kind === 'pdf') {
+          if (!pdf) pdf = new J({ orientation: PW > PH ? 'landscape' : 'portrait', unit: 'mm', format: [PW, PH] }); else pdf.addPage([PW, PH], PW > PH ? 'landscape' : 'portrait');
+          pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
+        } else {
+          var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (window.PDFBASE || 'mo10') + '_' + nums[i] + '쪽.png';
+          document.body.appendChild(a); a.click(); a.remove(); await new Promise(function (r) { setTimeout(r, 250); });
+        }
+      }
+      if (kind === 'pdf') pdf.save((window.PDFBASE || 'mo10') + '.pdf');
+    } catch (e) { alert('저장 실패: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = orig; }
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (t && t.id === 'pdfBtn') run(t, 'pdf');
+    else if (t && t.id === 'pngBtn') run(t, 'png');
+  });
+})();
+</script></body></html>
