@@ -110,7 +110,7 @@ html.lgc .lg-ko,html.lgc .lg-en{color:var(--lgcol)!important}html.lgc .lg-bar{bo
     <div class="qn" style="--c:#C79B63" data-n="1">1</div><div class="qb"><b><span class="ed " contenteditable="true" spellcheck="false" data-k="t12">12월 ~ 2월 · 준비</span></b><span><span class="ed " contenteditable="true" spellcheck="false" data-k="t13">브릿지(12/2 대개강) → 공통수학1(정규) + 공통수학2 특강</span></span><em><span class="ed " contenteditable="true" spellcheck="false" data-k="t14">개념의 뼈대를 세우는 시간</span></em></div>
   </div>
   <div class="q">
-    <div class="qn" style="--c:#C64E71" data-n="2">2</div><div class="qb"><b><span class="ed " contenteditable="true" spellcheck="false" data-k="t15">3월 ~ 6월 · 1학기 내신</span></b><span><span class="ed " contenteditable="true" spellcheck="false" data-k="t16">중간고사 대비 7주 → 6모 + 기말 대비 → 기말 집중 6주</span></span><em><span class="ed " contenteditable="true" spellcheck="false" data-k="t17">내신과 학평을 함께 잡는 구간</span></em></div>
+    <div class="qn" style="--c:#C64E71" data-n="2">2</div><div class="qb"><b><span class="ed " contenteditable="true" spellcheck="false" data-k="t15">3월 ~ 6월 · 1학기 내신</span></b><span><span class="ed " contenteditable="true" spellcheck="false" data-k="t16">중간고사 대비 3/1~4/28 → 6모 + 기말 대비 → 기말 집중 6주</span></span><em><span class="ed " contenteditable="true" spellcheck="false" data-k="t17">내신과 학평을 함께 잡는 구간</span></em></div>
   </div>
   <div class="q">
     <div class="qn" style="--c:#E58B3D" data-n="3">3</div><div class="qb"><b><span class="ed " contenteditable="true" spellcheck="false" data-k="t18">7월 ~ 9월 · 도약</span></b><span><span class="ed " contenteditable="true" spellcheck="false" data-k="t19">공통수학2 + 대수 특강 → 9모 + 공수2 중간 대비 → 중간 대비 7주</span></span><em><span class="ed " contenteditable="true" spellcheck="false" data-k="t20">방학에 앞서가고 2학기 중간까지</span></em></div>
@@ -301,10 +301,10 @@ function save(){shareSave();if(window.Hist)Hist.touch();try{localStorage.setItem
 var $=function(s){return document.querySelector(s)};
 var DEF_PH=[
  {n:'브릿지 과정',sub:'12/2 대개강 · 8회차 + 12/30 반편성고사',s:'2026-12-02',e:'2026-12-31',c:'#C79B63',t:'12월 2일(수) 대개강. 중등 핵심을 공통수학1·2와 연결해 정리하고, 12월 30일 반편성고사로 마무리합니다.'},
- {n:'공통수학1 8주 완성 (정규)',sub:'1/4 개강 · 15회차',s:'2027-01-04',e:'2027-02-26',c:'#3E8F79',x:'월·수 수업 15회 · MATHY FRIDAY 7회 (2/5 휴강 제외)',t:'정규반 전원 · 1/29 승급시험 · 2/26 반편성고사'},
- {n:'공통수학2 특강',sub:'1/11 개강 · 18회차 · 월·수·금 2~4시',s:'2027-01-11',e:'2027-02-26',c:'#2F7F9F',x:'월·수·금 특강 18회 (2/5 · 2/8 · 2/10 휴강 제외)',t:'S반 필수 · A반 선택 · 공통수학2 전 단원'},
- {n:'1학기 중간고사 내신 대비',sub:'3월 · 7주',s:'2027-03-01',e:'2027-04-18',c:'#D0587A',t:'학교별 기출 분석과 변형 문제로 첫 시험을 대비합니다.'},
- {n:'6모 대비 + 기말 대비',sub:'4월 말~5월',s:'2027-04-19',e:'2027-05-23',c:'#6C86B8',t:'학평(6월)을 대비하며 기말 범위를 미리 정리합니다.'},
+ {n:'공통수학1 8주 완성 (정규)',sub:'정규반 전원 · 15회차',s:'2027-01-04',e:'2027-02-26',c:'#3E8F79',x:'월·수 수업 15회(15회차 3/3) · MATHY FRIDAY 7회 (2/5 휴강 제외)',t:''},
+ {n:'공통수학2 특강',sub:'18회차 · 월·수·금 2~4시 · S필수 A선택',s:'2027-01-11',e:'2027-02-26',c:'#2F7F9F',x:'월·수·금 특강 18회 (2/5 · 2/8 · 2/10 휴강 제외)',t:''},
+ {n:'1학기 중간고사 내신 대비',sub:'3/1 ~ 4/28 · 약 8주',s:'2027-03-01',e:'2027-04-28',c:'#D0587A',t:'학교별 기출 분석과 변형 문제로 첫 시험을 대비합니다. (시험 기간은 올해 기준 예시 · 변경될 수 있음)'},
+ {n:'6모 대비 + 기말 대비',sub:'4/29 ~ 5월',s:'2027-04-29',e:'2027-05-23',c:'#6C86B8',t:'학평(6월)을 대비하며 기말 범위를 미리 정리합니다.'},
  {n:'기말 대비 집중 기간',sub:'6월 · 6주',s:'2027-05-24',e:'2027-07-04',c:'#8B2A46',t:'기말고사까지 6주, 기출과 서술형을 집중 점검합니다.'},
  {n:'공통수학2 + 대수 특강',sub:'기말 후 ~ 여름방학',s:'2027-07-05',e:'2027-08-08',c:'#E58B3D',t:'공통수학2 개념을 앞서 학습하고 대수 영역을 보강합니다.'},
  {n:'9모 대비 + 공수2 중간 대비',sub:'8월',s:'2027-08-09',e:'2027-08-29',c:'#2F8FA3',t:'학평(8월)과 공통수학2 중간 범위를 함께 준비합니다.'},
@@ -315,16 +315,25 @@ var DEF_PH=[
 var SCH=['보라고','신갈고','서천고'], SCOL=['#E63946','#1D4ED8','#0F9D58'];
 var EXK=[['m1','1학기 중간'],['f1','1학기 기말'],['m2','2학기 중간'],['f2','2학기 기말']];
 var PANEX=[[EXK[0]],[EXK[1]],[EXK[2],EXK[3]]];
-function exTable(rows){return'<div class="sth">보갈천 학교 시험<small>올해 일정 기준 · 플래너에서 자동 · 입력 가능</small></div><table class="st"><thead><tr><th></th>'+SCH.map(function(s,si){return'<th style="background:'+SCOL[si]+'">'+s+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(k){return'<tr><td class="l">'+k[1]+'</td>'+SCH.map(function(s){return'<td class="e" contenteditable="true" spellcheck="false" data-s="'+s+'" data-k="'+k[0]+'">'+esc(ST.ex[s][k[0]]||'')+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'}
+function exTable(rows){return'<div class="sth">보갈천 학교 시험<small>올해 일정 기준 예시 · 확정되면 변경될 수 있어요</small></div><table class="st"><thead><tr><th></th>'+SCH.map(function(s,si){return'<th style="background:'+SCOL[si]+'">'+s+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(k){return'<tr><td class="l">'+k[1]+'</td>'+SCH.map(function(s){return'<td class="e" contenteditable="true" spellcheck="false" data-s="'+s+'" data-k="'+k[0]+'">'+esc(ST.ex[s][k[0]]||'')+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'}
 var DEF_PY=[{d:'2027-03-24',n:'3월'},{d:'2027-06-02',n:'6월'},{d:'2027-08-25',n:'8월'},{d:'2027-10-19',n:'10월'}];
 /* 공휴일(월력요항 기준, 2027 노동절·제헌절 공휴일 포함) — 휴강 여부는 칸에서 끌 수 있음 */
-var DEF_HOL=[['2026-12-25','성탄절'],['2027-01-01','신정'],['2027-02-05','설 연휴'],['2027-02-06','설 연휴'],['2027-02-07','설날'],['2027-02-08','설 연휴'],['2027-02-09','설 대체공휴일'],
+var DEF_HOL=[['2026-12-25','성탄절'],['2027-01-01','신정'],['2027-02-05','설 연휴'],['2027-02-06','설 연휴'],['2027-02-07','설날'],['2027-02-08','설 연휴'],['2027-02-09','설 대체공휴일'],['2027-02-10','설 연휴 휴강'],
  ['2027-03-01','삼일절'],['2027-05-01','노동절'],['2027-05-03','노동절 대체'],['2027-05-05','어린이날'],['2027-05-13','부처님오신날'],['2027-06-06','현충일'],
  ['2027-07-17','제헌절'],['2027-07-19','제헌절 대체'],['2027-08-15','광복절'],['2027-08-16','광복절 대체'],['2027-09-14','추석 연휴'],['2027-09-15','추석'],['2027-09-16','추석 연휴'],
  ['2027-10-03','개천절'],['2027-10-04','개천절 대체'],['2027-10-09','한글날'],['2027-10-11','한글날 대체'],['2027-12-25','성탄절'],['2027-12-27','성탄절 대체']].map(function(a){return{d:a[0],n:a[1],off:true}});
 ST.ph=ST.ph||DEF_PH;if(ST.ph[0]&&ST.ph[0].sub==='중등과 고등을 잇는 4주'&&ST.ph[0].s==='2026-12-01')ST.ph[0]=JSON.parse(JSON.stringify(DEF_PH[0]));ST.ev=ST.ev||[{d:'2026-12-30',n:'반편성고사'}]; if(!ST.ph2){var _k=ST.ph.findIndex(function(p){return p&&p.n==='공통수학1 + 공통수학2 특강'});if(_k>=0)ST.ph.splice(_k,1,JSON.parse(JSON.stringify(DEF_PH[1])),JSON.parse(JSON.stringify(DEF_PH[2])));ST.ph2=1}
-if(!ST.ev2){ST.ev=ST.ev||[];[['2027-01-04','공통수학1 개강'],['2027-01-11','공통수학2 특강 개강'],['2027-01-29','S반 승급시험'],['2027-02-10','공통수학2 특강 휴강'],['2027-02-26','내신 반편성고사']].forEach(function(a){if(!ST.ev.some(function(x){return x.d===a[0]}))ST.ev.push({d:a[0],n:a[1]})});ST.ev.sort(function(a,b){return(a.d||'9999')<(b.d||'9999')?-1:1});ST.ev2=1}
+if(!ST.ev2){ST.ev=ST.ev||[];[['2027-01-04','공수1 개강'],['2027-01-11','공수2 특강 개강'],['2027-01-29','승급시험'],['2027-02-26','반편성고사']].forEach(function(a){if(!ST.ev.some(function(x){return x.d===a[0]}))ST.ev.push({d:a[0],n:a[1]})});ST.ev.sort(function(a,b){return(a.d||'9999')<(b.d||'9999')?-1:1});ST.ev2=1}
+if(!ST.ph3){ST.ph.forEach(function(p){if(!p)return;var d;
+ if(p.n==='1학기 중간고사 내신 대비'&&p.e==='2027-04-18'){d=DEF_PH[3];p.sub=d.sub;p.e=d.e;p.t=d.t}
+ else if(p.n==='6모 대비 + 기말 대비'&&p.s==='2027-04-19'){d=DEF_PH[4];p.sub=d.sub;p.s=d.s}
+ else if(p.n==='공통수학1 8주 완성 (정규)'){p.x=DEF_PH[1].x}});
+ ST.ev=(ST.ev||[]).filter(function(x){return x.d!=='2027-02-10'});ST.ph3=1}
 if(!ST.hol2&&ST.hol){if(!ST.hol.some(function(h){return h.d==='2027-02-05'}))ST.hol.push({d:'2027-02-05',n:'설 연휴',off:true});ST.hol2=1}
+if(!ST.ev4){ST.ev=ST.ev||[];[['2027-02-03','설연휴 과제 배부'],['2027-02-12','REHEARSAL 모의'],['2027-02-20','신갈고 진단평가(25년)']].forEach(function(a){if(!ST.ev.some(function(x){return x.d===a[0]}))ST.ev.push({d:a[0],n:a[1]})});ST.ev.sort(function(a,b){return(a.d||'9999')<(b.d||'9999')?-1:1});ST.ev4=1}
+if(!ST.ev5){var RN={'2027-01-04':['공통수학1 개강','공수1 개강'],'2027-01-11':['공통수학2 특강 개강','공수2 특강 개강'],'2027-01-29':['S반 승급시험','승급시험'],'2027-02-26':['내신 반편성고사','반편성고사'],'2027-02-03':['설연휴 특별과제 배부','설연휴 과제 배부'],'2027-02-12':['REHEARSAL 모의고사 60제','REHEARSAL 모의'],'2027-02-20':['신갈고 진단평가(25년 일정)','신갈고 진단평가(25년)']};(ST.ev||[]).forEach(function(x){var r=RN[x.d];if(r&&x.n===r[0])x.n=r[1]});ST.ev5=1}
+if(!ST.ph4){ST.ph.forEach(function(p){if(!p)return;if(p.n==='공통수학1 8주 완성 (정규)'){p.sub=DEF_PH[1].sub;p.t=''}else if(p.n==='공통수학2 특강'){p.sub=DEF_PH[2].sub;p.t=''}});ST.ph4=1}
+if(!ST.hol3&&ST.hol){if(!ST.hol.some(function(h){return h.d==='2027-02-10'}))ST.hol.push({d:'2027-02-10',n:'설 연휴 휴강',off:true});ST.hol3=1}
  ST.ex=ST.ex||{}; ST.py=ST.py||DEF_PY; ST.hol=ST.hol||DEF_HOL; ST.imgs=ST.imgs||[]; ST.theme=ST.theme||{name:'navy',c:null}; ST.font=ST.font||{h:0,b:8}; ST.paper=ST.paper||'a3'; ST.kit=ST.kit||{};
 SCH.forEach(function(s){ST.ex[s]=ST.ex[s]||{}});
 function P(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
@@ -393,7 +402,7 @@ function render(){
   var h='<div class="pnh"><b>'+TITLES[i][0]+'</b><span>'+TITLES[i][1]+'</span></div>';
   GROUPS[i].forEach(function(g){h+=monthHtml(g[0],g[1],exm,pyk,hm)});
   var cc=function(p,full){var n=cnt(p,hm),ct=p.x||('월·수 수업 '+n.c+'회 · MATHY FRIDAY '+n.f+'회'+(n.off?' (휴강 '+n.off+'회 제외)':''));
-   return'<div class="pc'+(full?'':' cp')+'" style="--c:'+p.c+';--ct:'+mix(p.c,.88)+';--cl:'+mix(p.c,.6)+'"><b>'+esc(p.n)+'</b><small>'+fmt(p.s)+' ~ '+fmt(p.e)+' · '+esc(p.sub)+(full?'':' · 수업 '+n.c+'·FRIDAY '+n.f)+'</small>'+(full?'<span>'+esc(p.t)+'</span><em class="cnt">'+ct+'</em>':'')+'</div>'};
+   return'<div class="pc'+(full?'':' cp')+'" style="--c:'+p.c+';--ct:'+mix(p.c,.88)+';--cl:'+mix(p.c,.6)+'"><b>'+esc(p.n)+'</b><small>'+fmt(p.s)+' ~ '+fmt(p.e)+' · '+esc(p.sub)+(full?'':' · 수업 '+n.c+'·FRIDAY '+n.f)+'</small>'+(full?(p.t?'<span>'+esc(p.t)+'</span>':'')+'<em class="cnt">'+ct+'</em>':'')+'</div>'};
   PHGRP[i].forEach(function(pi){var p=ST.ph[pi];if(p)h+=cc(p,i<3)});
   if(i===0){
    h+='<div class="sth">달력 보는 법</div><div class="lgd" style="margin-top:1.615mm"><span><i style="background:#c9d6ee"></i>월·수 = 수업 (단계별 색)</span><span><i style="background:var(--gold);border-radius:50%;width:2.077mm;height:2.077mm"></i>금 = MATHY FRIDAY</span><span><i style="background:#D6336C;width:2.308mm"></i>휴 = 공휴일 휴강</span></div>'+
