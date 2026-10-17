@@ -325,11 +325,19 @@ async function cloudKey(auto){var pw=$('#cPw').value,m=document.getElementById('
   its.forEach(function(it){KEYV.a[it.no]=String(it.ans);KEYV.p[it.no]=String(it.pts)});save();buildKey();updKeyStat();
   var n1=its.filter(function(x){return x.type==='mc'}).length;m.innerHTML='<span class="okc">서버에서 정답·배점 '+its.length+'문항을 불러왔어요 ✓</span>'+(n1!==C.n1?' <span class="warn">(객관식 수가 답안지 설정과 달라요: '+n1+' / '+C.n1+')</span>':'')}
  catch(e){m.innerHTML='<span class="warn">불러오기 실패: '+e.message+'</span>'}}
-function cInit(){var pw=$('#cPw');if(!pw)return;var kb=$('#cKey');if(kb)kb.addEventListener('click',function(){cloudKey(false)});var sv='';try{sv=localStorage.getItem('bro_omr_cpw')||sessionStorage.getItem('bro_omr_cpw')||''}catch(e){}if(sv){pw.value=sv;$('#cRem').checked=!!localStorage.getItem('bro_omr_cpw')}
+async function cloudSetKey(){var pw=$('#cPw').value,m=document.getElementById('cKeyMsg');if(!pw){m.innerHTML='<span class="warn">비밀번호를 넣어 주세요</span>';return}
+ var ex=($('#cExam').value||'').trim();if(!ex){m.innerHTML='<span class="warn">시험 이름을 넣어 주세요 (예: mo10-2026)</span>';return}
+ var items=[];for(var q=1;q<=C.n1+C.n2;q++){var a=KEYV.a[q],pt=KEYV.p[q];if(a==null||a==='')continue;items.push({no:q,type:q<=C.n1?'mc':'sa',pts:parseFloat(pt)||0,ans:isNaN(+a)?a:+a})}
+ if(!items.length){m.innerHTML='<span class="warn">먼저 정답·배점을 넣어 주세요</span>';return}
+ m.textContent='저장 중...';
+ try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'setkey',key:pw,exam_id:ex,title:ex,items:items})});var d=await r.json();if(!d.ok)throw new Error(d.error||'저장 실패');
+  m.innerHTML='<span class="okc">☁ 시험 "'+ex+'" 의 정답·배점 '+d.saved+'문항을 서버에 저장했어요 ✓</span>'}
+ catch(e){m.innerHTML='<span class="warn">저장 실패: '+e.message+(/알 수 없는 요청/.test(e.message)?' (서버 함수를 새 버전으로 Deploy 해야 해요)':'')+'</span>'}}
+function cInit(){var pw=$('#cPw');if(!pw)return;var kb=$('#cKey');if(kb)kb.addEventListener('click',function(){cloudKey(false)});var sv='';try{sv=localStorage.getItem('bro_omr_cpw')||sessionStorage.getItem('bro_omr_cpw')||''}catch(e){}if(sv){pw.value=sv;var rm0=$('#cRem');if(rm0)rm0.checked=!!localStorage.getItem('bro_omr_cpw')}
  try{var ex=localStorage.getItem('bro_omr_cexam');if(ex)$('#cExam').value=ex}catch(e){}
- function keep(){try{localStorage.removeItem('bro_omr_cpw');sessionStorage.removeItem('bro_omr_cpw');if(pw.value)(($('#cRem').checked)?localStorage:sessionStorage).setItem('bro_omr_cpw',pw.value);localStorage.setItem('bro_omr_cexam',$('#cExam').value)}catch(e){}}
- pw.addEventListener('change',keep);$('#cRem').addEventListener('change',keep);$('#cExam').addEventListener('change',keep);
- $('#cNow').addEventListener('click',function(){cloudSave(RES.map(function(o,i){return i}),true)});cMsg(pw.value?'자동 저장 켜짐':'비밀번호를 넣으면 서버에 저장돼요',pw.value?1:-1);if(pw.value&&!Object.keys(KEYV.a).some(function(k){return KEYV.a[k]!==''&&KEYV.a[k]!=null}))cloudKey(true)}
+ function keep(){try{localStorage.removeItem('bro_omr_cpw');sessionStorage.removeItem('bro_omr_cpw');if(pw.value)((($('#cRem')||{}).checked)?localStorage:sessionStorage).setItem('bro_omr_cpw',pw.value);localStorage.setItem('bro_omr_cexam',$('#cExam').value)}catch(e){}}
+ pw.addEventListener('change',keep);if($('#cRem'))$('#cRem').addEventListener('change',keep);$('#cExam').addEventListener('change',keep);var sk=$('#cSet');if(sk)sk.addEventListener('click',cloudSetKey);
+ if($('#cNow'))$('#cNow').addEventListener('click',function(){cloudSave(RES.map(function(o,i){return i}),true)});cMsg(pw.value?'자동 저장 켜짐':'비밀번호를 넣으면 서버에 저장돼요',pw.value?1:-1);if(SCAN&&pw.value&&!Object.keys(KEYV.a).some(function(k){return KEYV.a[k]!==''&&KEYV.a[k]!=null}))cloudKey(true)}
 async function cloudSave(idxs,force){if(!SCAN)return;var pw=$('#cPw').value,auto=$('#cAuto').checked;if(!force&&!auto)return;if(!pw){cMsg('비밀번호를 넣으면 서버에 저장돼요',-1);return}
  var skipped=0,list=[];idxs.forEach(function(i){var o=RES[i];if(!o||o.err)return;var bad=!o.id.school||o.id.school==='?'||o.id.school==='(복수)'||!o.id.cls||o.id.cls==='?'||o.id.cls==='(복수)'||!/^[0-9]{4}$/.test(o.id.num||'');if(bad){skipped++;return}
   list.push({school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),score:Math.round(o.tot||0)})});
@@ -373,6 +381,7 @@ bindSet();Logo.init(function(){Hist.touch()});renderSheet();buildKey();setupFmt(
 $('#fileIn').addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
 var fa=$('#fileAlb');if(fa)fa.addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
 $('#clearRes').addEventListener('click',function(){if(SCAN&&RES.length&&!confirm('읽은 결과를 모두 지울까요? (CSV로 먼저 저장했는지 확인하세요)'))return;RES=[];$('#resBox').innerHTML='';var sl=document.getElementById('scanLast');if(sl)sl.innerHTML='';saveRes()});
+if(!SCAN)cInit();
 if(SCAN){document.body.classList.add('scan');tab(2);restoreRes();updKeyStat();cInit();if(window.__gotKey){var ks=document.getElementById('keyStat');if(ks)ks.insertAdjacentHTML('afterend','<div class="okc">PC에서 보낸 정답·설정을 받았어요 ✓</div>')}}
 function restoreAll(str){var o=JSON.parse(str);C=Object.assign({},DEF,o.c);C.off=C.off||{};KEYV=o.k||{a:{},p:{}};Logo.restore(o.lg);try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}bindSet();renderSheet();buildKey()}
 Hist.init({snap:function(){return JSON.stringify({c:C,k:KEYV,lg:Logo.snap()})},restore:restoreAll});
