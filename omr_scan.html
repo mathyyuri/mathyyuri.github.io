@@ -64,7 +64,7 @@ body.scan .wrap{padding:10px;max-width:640px;margin:0 auto}
 @media(max-width:700px){.res{flex-direction:column}.res canvas{max-width:100%}}
 @page{size:297mm 210mm;margin:0}
 @media print{html,body{background:#fff}.bar,.panel,#readPanel{display:none!important}.stage{margin:0;--s:1!important}.pw{box-shadow:none}.pg{transform:none}.pg .ed{outline:none}.pg .gh,.lgtb{display:none!important}}
-</style></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button><button type="button" id="mvBtn" class="g" onclick="toggleMove()">박스 위치 조절</button><button type="button" id="omrSave" class="g">💾 저장파일 받기</button><button type="button" id="omrLoad" class="g">📂 저장파일 열기</button><button type="button" id="undoBtn" class="g">↶ 되돌리기</button><button type="button" id="redoBtn" class="g">↷ 다시</button><div class="fmt" id="fmt"><b>글자 서식</b><span class="lbl">고칠 글자를 드래그로 선택 → 누르세요 (선택 없이 칸만 눌러도 칸 전체에 적용)</span><span class="lbl">색</span><input type="color" id="fColor" value="#B8334F"><button class="sq" data-c="#FFFFFF" style="background:#fff;color:#000">흰</button><button class="sq" data-c="#000000" style="background:#000;color:#fff">검정</button><button class="sq" data-c="#D6336C" style="background:#D6336C;color:#fff">빨강</button><span class="lbl">크기</span><button type="button" id="fMinus">A−</button><input type="number" id="fSize" min="3" max="80" step="0.5" value="7"><button type="button" id="fPlus">A＋</button><span class="lbl">글꼴</span><select id="fFont"></select><button type="button" id="fBold"><b>B</b></button><button type="button" id="fClr" class="g">서식 지우기</button></div></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>(위쪽 "글자 서식"으로 색·크기·글꼴도 바꿀 수 있어요). 아래에서 문항 수·학교/반 목록·색을 바꿉니다. <b>박스 위치 조절</b>: 위쪽 버튼을 누르면 박스마다 파란 손잡이가 생겨요 — 끌어서 옮기거나, 눌러 두고 화살표 키로 0.5mm씩 옮기세요. 채점기도 같은 위치를 쓰니, <b>인쇄한 뒤에는 위치·문항 수를 바꾸지 마세요</b>. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요. 학원 로고는 답안지 위쪽(제목 아래)에 마우스를 올리면 바꾸기·크기 버튼이 나와요.</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>수험번호 아래칸(생일) 자리 수 <input type="number" id="nd" min="0" max="4"></label><label>이름 점선 칸 수 <input type="number" id="nameN" min="0" max="8"></label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" onclick="resetOff()">박스 위치 처음대로</button><button class="b g" type="button" id="resetCfg">전체 처음 모양으로</button></div><div class="row"><label>학교 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="schools" style="width:420px"></label></div><div class="row"><label>반 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="classes" style="width:420px"></label></div></div><div class="panel" id="readPanel"><div id="scanTop"><h2>📷 OMR 촬영 채점</h2><p>답안지를 <b>밝은 곳에서 평평하게</b> 놓고, <b>네 모서리의 검은 네모가 모두 보이게</b>(왼쪽 위는 네모 2개) 화면을 크게 채워 찍으세요. 찍으면 바로 점수가 나와요.</p><div class="keybox"><b>정답·배점</b> <span id="keyStat"></span> <button class="b o" type="button" id="cKey" style="margin-top:6px;width:100%">☁ 서버에서 정답·배점 불러오기</button><div id="cKeyMsg" class="hint2"></div><details style="margin-top:6px"><summary>정답 직접 넣기 / 확인</summary><p>PC 채점기의 "폰용 링크 복사"로 보내면 자동으로 들어가요. 직접 넣으려면 줄마다 <code>번호,정답,배점</code> 으로 붙여넣으세요.</p><textarea id="keyTxt" rows="4" style="width:100%" placeholder="1,3,2&#10;2,5,2&#10;…"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button><div class="keyg" id="keyg"></div></details></div><div class="keybox"><b>☁ 서버 저장 (Supabase)</b> <span id="cloudStat"></span><details style="margin-top:6px"><summary>설정 · 비밀번호</summary><p>성적표 비밀번호를 넣으면, 찍을 때마다 학생 답·점수가 서버에 저장돼요(다른 학생 기록은 지우지 않아요). 비밀번호는 이 폰에만 있고 페이지 파일에는 들어 있지 않아요.</p><label style="display:block;margin:4px 0">비밀번호 <input type="password" id="cPw" autocomplete="off" style="width:60%"></label><label style="display:block;margin:4px 0">시험 구분 이름 <input id="cExam" value="mo10-2026" style="width:50%"></label><label style="display:block;margin:4px 0"><input type="checkbox" id="cRem"> 이 폰에 비밀번호 기억</label><label style="display:block;margin:4px 0"><input type="checkbox" id="cAuto" checked> 찍을 때마다 자동 저장</label><button class="b o" type="button" id="cNow">지금 읽은 학생 모두 저장</button></details></div><label class="cap" for="fileIn">📷 답안지 사진 찍기</label><input type="file" id="fileIn" accept="image/*" capture="environment" hidden><label class="cap alt" for="fileAlb">🖼 앨범에서 고르기 (여러 장 가능)</label><input type="file" id="fileAlb" accept="image/*" multiple hidden><div id="scanLast"></div></div><h3 style="margin-top:14px">읽은 학생 목록</h3><div class="row"><button class="b o" type="button" onclick="shareCsv()">결과 CSV 공유·저장</button> <button class="b g" type="button" id="clearRes">결과 지우기</button></div><div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
+</style></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button><button type="button" id="mvBtn" class="g" onclick="toggleMove()">박스 위치 조절</button><button type="button" id="omrSave" class="g">💾 저장파일 받기</button><button type="button" id="omrLoad" class="g">📂 저장파일 열기</button><button type="button" id="undoBtn" class="g">↶ 되돌리기</button><button type="button" id="redoBtn" class="g">↷ 다시</button><div class="fmt" id="fmt"><b>글자 서식</b><span class="lbl">고칠 글자를 드래그로 선택 → 누르세요 (선택 없이 칸만 눌러도 칸 전체에 적용)</span><span class="lbl">색</span><input type="color" id="fColor" value="#B8334F"><button class="sq" data-c="#FFFFFF" style="background:#fff;color:#000">흰</button><button class="sq" data-c="#000000" style="background:#000;color:#fff">검정</button><button class="sq" data-c="#D6336C" style="background:#D6336C;color:#fff">빨강</button><span class="lbl">크기</span><button type="button" id="fMinus">A−</button><input type="number" id="fSize" min="3" max="80" step="0.5" value="7"><button type="button" id="fPlus">A＋</button><span class="lbl">글꼴</span><select id="fFont"></select><button type="button" id="fBold"><b>B</b></button><button type="button" id="fClr" class="g">서식 지우기</button></div></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>(위쪽 "글자 서식"으로 색·크기·글꼴도 바꿀 수 있어요). 아래에서 문항 수·학교/반 목록·색을 바꿉니다. <b>박스 위치 조절</b>: 위쪽 버튼을 누르면 박스마다 파란 손잡이가 생겨요 — 끌어서 옮기거나, 눌러 두고 화살표 키로 0.5mm씩 옮기세요. 채점기도 같은 위치를 쓰니, <b>인쇄한 뒤에는 위치·문항 수를 바꾸지 마세요</b>. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요. 학원 로고는 답안지 위쪽(제목 아래)에 마우스를 올리면 바꾸기·크기 버튼이 나와요.</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>수험번호 아래칸(생일) 자리 수 <input type="number" id="nd" min="0" max="4"></label><label>이름 점선 칸 수 <input type="number" id="nameN" min="0" max="8"></label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" onclick="resetOff()">박스 위치 처음대로</button><button class="b g" type="button" id="resetCfg">전체 처음 모양으로</button></div><div class="row"><label>학교 선택 칸 (쉼표로 구분 · 수능형 최대 10 / 내신형 최대 18, 2열) <input type="text" id="schools" style="width:420px"></label></div><div class="row"><label>반 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="classes" style="width:420px"></label></div></div><div class="panel" id="readPanel"><div id="scanTop"><h2>📷 OMR 촬영 채점</h2><p>답안지를 <b>밝은 곳에서 평평하게</b> 놓고, <b>네 모서리의 검은 네모가 모두 보이게</b>(왼쪽 위는 네모 2개) 화면을 크게 채워 찍으세요. 찍으면 바로 점수가 나와요.</p><div class="keybox"><b>답안지 종류</b> <select id="shType"><option value="su">수능형 (가로 1장)</option><option value="sn">내신형 (세로 앞·뒤)</option></select> <span id="shSn" style="display:none">객관식 수 <input type="number" id="sn1" min="1" max="30" style="width:56px"></span><br><b>정답·배점</b> <span id="keyStat"></span> <button class="b o" type="button" id="cKey" style="margin-top:6px;width:100%">☁ 서버에서 정답·배점 불러오기</button><div id="cKeyMsg" class="hint2"></div><details style="margin-top:6px"><summary>정답 직접 넣기 / 확인</summary><p>PC 채점기의 "폰용 링크 복사"로 보내면 자동으로 들어가요. 직접 넣으려면 줄마다 <code>번호,정답,배점</code> 으로 붙여넣으세요.</p><textarea id="keyTxt" rows="4" style="width:100%" placeholder="1,3,2&#10;2,5,2&#10;…"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button><div class="keyg" id="keyg"></div></details></div><div class="keybox"><b>☁ 서버 저장 (Supabase)</b> <span id="cloudStat"></span><details style="margin-top:6px"><summary>설정 · 비밀번호</summary><p>성적표 비밀번호를 넣으면, 찍을 때마다 학생 답·점수가 서버에 저장돼요(다른 학생 기록은 지우지 않아요). 비밀번호는 이 폰에만 있고 페이지 파일에는 들어 있지 않아요.</p><label style="display:block;margin:4px 0">비밀번호 <input type="password" id="cPw" autocomplete="off" style="width:60%"></label><label style="display:block;margin:4px 0">시험 구분 이름 <input id="cExam" value="mo10-2026" style="width:50%"></label><label style="display:block;margin:4px 0"><input type="checkbox" id="cRem"> 이 폰에 비밀번호 기억</label><label style="display:block;margin:4px 0"><input type="checkbox" id="cAuto" checked> 찍을 때마다 자동 저장</label><button class="b o" type="button" id="cNow">지금 읽은 학생 모두 저장</button></details></div><label class="cap" for="fileIn">📷 답안지 사진 찍기</label><input type="file" id="fileIn" accept="image/*" capture="environment" hidden><label class="cap alt" for="fileAlb">🖼 앨범에서 고르기 (여러 장 가능)</label><input type="file" id="fileAlb" accept="image/*" multiple hidden><div id="scanLast"></div></div><h3 style="margin-top:14px">읽은 학생 목록</h3><div class="row"><button class="b o" type="button" onclick="shareCsv()">결과 CSV 공유·저장</button> <button class="b g" type="button" id="clearRes">결과 지우기</button></div><div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
 window.Logo=(function(){
  var P0=window.LOGO_PREFIX||'bro_logo',K=P0,KS=P0+'_s',KP=P0+'_prev',KC=P0+'_c',cb=null,cache={},alpha={};
  function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -118,7 +118,7 @@ var KEY=SCAN?'bro_omr_scan_v1':'bro_omr_v2',ST={};try{ST=JSON.parse(localStorage
 if(SCAN&&location.hash.indexOf('#k=')===0){try{var PL=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(3)))));ST={cfg:Object.assign({},ST.cfg||{},PL.c||{}),key:PL.k||ST.key};localStorage.setItem(KEY,JSON.stringify(ST));history.replaceState(null,'',location.pathname);window.__gotKey=1}catch(e){}}
 var $=function(s){return document.querySelector(s)};
 var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'수학영역',school:'학교',cls:'반',name:'성 명',hand:'필 적<br>확인란',
- n1:21,n2:9,rows:9,nd:4,nameN:5,color:'#B8334F',schools:'보라고,신갈고,서천고,성지고,보라중,나곡중,상갈중,외부생',classes:'S+,A+,S,A,B,외부생',off:{},
+ n1:21,n2:9,rows:9,nd:4,nameN:5,color:'#B8334F',schools:'보라고,신갈고,서천고,성지고,보라중,나곡중,상갈중,외부생',schoolsN:'낙생고,늘푸른고,돌마고,보평고,분당고,분당대진고,분당영덕여고,불곡고,서현고,송림고,수내고,야탑고,운중고,이매고,태원고,판교고,한솔고',classes:'S+,A+,S,A,B,외부생',off:{},
  note:'※ 문제지 표지에 안내된 필적확인문구를 아래 「필적확인란」에 정자로 반드시 기재하여야 합니다.',
  inst:'※ 답안지 작성(표기)은 반드시 검은색 컴퓨터용 사인펜만을 사용하고, 연필 또는 샤프 등의 필기구를 절대 사용하지 마십시오.',
  sa:'단답형 답란<br>표 기 방 법',sa1:'십진법에 의하되, 반드시 자리에 맞추어 표기',sa2:'정답이 한 자리인 경우 일의 자리에만 표기하거나, 십의 자리에 0을 표기하고 일의 자리에 표기',
@@ -129,7 +129,7 @@ if(!C.v3){if(C.nd===2)C.nd=4;if(C.idl3==='번호')C.idl3=DEF.idl3;if(/^한 칸�
 if(C.foot==='연습용 답안지')C.foot=DEF.foot;
 var KEYV=ST.key||{};KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
 function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}if(window.Hist)Hist.touch()}
-function list(s){return String(s||'').split(/[,\n]+/).map(function(x){return x.trim()}).filter(Boolean).slice(0,10)}
+function list(s,m){return String(s||'').split(/[,\n]+/).map(function(x){return x.trim()}).filter(Boolean).slice(0,m||10)}
 /* ================= 칸 위치 계산 (단위: mm) ================= */
 var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];
 function layout(c){
@@ -155,6 +155,58 @@ function layout(c){
  for(var k=0;k<nd;k++){var ys=[];for(var m=0;m<10;m++)ys.push(B.y+19+5.4*(m+.5));L.num.cols.push({x:B.x+50+ncw*(k+.5),ys:ys,r:1.8})}
  return L}
 window.OMR_layout=layout;
+/* 내신형 OMR 답안지(A4 세로 · 앞면+뒷면) 칸 위치 계산 — 답안지 만들기(인쇄)와 사진 채점(읽기)이 같은 계산을 쓴다. 단위 mm.
+   앞면: 위쪽 성명·수험번호(학교·반·생일)·서술형 점수란 → 객관식(최대 30) → 서술형 앞쪽 몇 문항 / 뒷면: 나머지 서술형 + 채점칸. 사진 채점은 앞면만 읽는다. */
+var FIDN = [{x: 9, y: 9}, {x: 9, y: 20}, {x: 201, y: 9}, {x: 201, y: 288}, {x: 9, y: 288}];
+function layoutN(c) {
+  var lst = function (s, m) { return String(s || '').split(/[,\n]+/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, m || 18); };
+  var n1 = Math.max(1, Math.min(30, (c.sn1 | 0) || 30)), ne = Math.max(0, Math.min(8, c.ne == null ? 4 : (c.ne | 0)));
+  var nef = Math.max(0, Math.min(ne, c.nef == null ? 1 : (c.nef | 0)));
+  var L = {sheet: 'sn', mc: [], sa: [], fr: [], fid: FIDN, pts: [[9, 14.5], [201, 9], [201, 288], [9, 288]], area: [20, 30, 190, 280], ess: [], n1: n1, ne: ne, nef: nef};
+  /* 객관식: 10문항씩 3칸 */
+  var bw = 58, gap = 4, x00 = 14, y0 = 116, hdr = 8, rp = 9, R = 10, nb = Math.ceil(n1 / R);
+  for (var b = 0; b < nb; b++) {
+    var x0 = x00 + b * (bw + gap), cnt = Math.min(R, n1 - b * R), fh = hdr + cnt * rp + 2;
+    L.fr.push({k: 'mc', x: x0, y: y0, w: bw, h: fh});
+    for (var r = 0; r < cnt; r++) {
+      var q = b * R + r + 1, yc = y0 + hdr + rp * (r + .5), xs = [];
+      for (var k = 0; k < 5; k++) xs.push(x0 + 16.4 + k * 8.8);
+      L.mc.push({q: q, y: yc, xs: xs, r: 2.4, nx: x0 + 6, x0: x0, bw: bw, rp: rp, last: r === cnt - 1});
+    }
+  }
+  /* 수험번호: 학교 · 반 · 생일(월·일 4자리) */
+  var idY = 46, sc = lst(c.schoolsN != null ? c.schoolsN : c.schools, 18);
+  L.idBox = {x: 14, y: idY, w: 82, h: 66};
+  /* 학교: 9개 넘으면 2열(왼쪽 열부터 9개씩) · 반 칸은 없음 */
+  var rows = sc.length > 9 ? Math.ceil(sc.length / 2) : Math.max(1, sc.length), pS = Math.min(5.6, 48 / rows);
+  L.sch = {x: 14, w: 27, opts: sc.map(function (n, i) { var col = Math.floor(i / rows), r = i - col * rows; return {name: n, x: 14 + col * 27 + 3.6, y: idY + 15 + pS * (r + .5)}; }), r: 1.9};
+  L.cls = {x: 68, w: 0, opts: [], r: 1.9};
+  var ncw = 6.5;
+  L.num = {x: 68, w: ncw * 4, cw: ncw, cols: []};
+  for (var kk = 0; kk < 4; kk++) {
+    var ys = [];
+    for (var m = 0; m < 10; m++) ys.push(idY + 15 + 5.0 * (m + .5));
+    L.num.cols.push({x: 68 + ncw * (kk + .5), ys: ys, r: 1.8});
+  }
+  /* 서술형 점수란: 십의 자리 · 일의 자리 · 소수 첫째 자리 (선생님이 채점 후 칠함) */
+  L.es = {x: 100, y: idY, w: 24, h: 66, cols: []};
+  for (var e = 0; e < 3; e++) {
+    var ye = [];
+    for (var mm = 0; mm < 10; mm++) ye.push(idY + 15 + 5.0 * (mm + .5));
+    L.es.cols.push({x: 100 + 4.4 + e * 6.6, ys: ye, r: 1.8});
+  }
+  L.nm = {x: 128, y: idY, w: 68, h: 66};
+  /* 서술형 답란 상자 */
+  var fy0 = 226, fy1 = 283, by0 = 14, by1 = 262, i;
+  var nb2 = ne - nef;
+  for (i = 0; i < nef; i++) { var h1 = (fy1 - fy0) / nef; L.ess.push({side: 'f', k: i + 1, x: 14, y: fy0 + i * h1, w: 182, h: h1}); }
+  for (i = 0; i < nb2; i++) { var h2 = (by1 - by0) / nb2; L.ess.push({side: 'b', k: nef + i + 1, x: 14, y: by0 + i * h2, w: 182, h: h2}); }
+  return L;
+}
+
+function SN(){return C.sheet==='sn'}
+function Q1(){return SN()?(C.sn1||30):C.n1}
+function Q2(){return SN()?0:C.n2}
 /* ================= 답안지 그리기 ================= */
 function E(k,html,st,cls){return'<span class="ed '+(cls||'')+'" contenteditable="true" spellcheck="false" data-k="'+k+'" style="'+(st||'')+'">'+html+'</span>'}
 function el(cls,x,y,w,h,html,st){return'<i class="'+cls+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+(html||'')+'</i>'}
@@ -217,21 +269,21 @@ window.resetOff=function(){if(confirm('모든 박스 위치를 처음 자리로 
 function bindSet(){
  [['n1','n1'],['n2','n2'],['rows','rows'],['nd','nd'],['nameN','nameN']].forEach(function(p){var i=$('#'+p[0]);i.value=C[p[1]];if(i._b)return;i._b=1;i.addEventListener('change',function(){var v=Math.max(0,parseInt(i.value,10)||0);if(p[0]==='n1')v=Math.min(v,45);if(p[0]==='n2')v=Math.min(v,19);if(p[0]==='rows')v=Math.max(3,Math.min(10,v));if(p[0]==='nd')v=Math.min(v,4);if(p[0]==='nameN')v=Math.min(v,8);
   if(p[0]==='n1'||p[0]==='n2'){var tot=(p[0]==='n1'?v:C.n1)+(p[0]==='n2'?v:C.n2);if(tot>45){alert('문항은 모두 합쳐 45개까지 만들 수 있어요.');i.value=C[p[1]];return}}C[p[1]]=v;i.value=v;save();renderSheet();buildKey()})});
- ['schools','classes'].forEach(function(k){var i=$('#'+k);i.value=C[k];if(i._b)return;i._b=1;i.addEventListener('change',function(){C[k]=list(i.value).join(',');i.value=C[k];save();renderSheet()})});
+ ['schools','classes'].forEach(function(k){var i=$('#'+k),kk=function(){return k==='schools'&&SN()?'schoolsN':k};i.value=C[kk()];if(i._b)return;i._b=1;i.addEventListener('change',function(){C[kk()]=list(i.value,kk()==='schoolsN'?18:10).join(',');i.value=C[kk()];save();renderSheet()})});
  var pc=$('#pcolor');pc.value=C.color;if(!pc._b){pc._b=1;pc.addEventListener('input',function(){C.color=pc.value;save();$('#pg').style.setProperty('--pc',C.color)})}
  var rc=$('#resetCfg');if(!rc._b){rc._b=1;rc.addEventListener('click',function(){if(confirm('답안지 글자와 문항 수·위치를 처음 모양으로 되돌릴까요?')){C=Object.assign({},DEF);C.off={};save();renderSheet();bindSet();buildKey()}})}}
 function tab(n){$('#makePanel').style.display=n===1?'':'none';$('#stageWrap').style.display=n===1?'':'none';$('#readPanel').style.display=n===2?'block':'none';$('#t1').classList.toggle('on',n===1);$('#t2').classList.toggle('on',n===2);['pdfBtn','pngBtn','rng','mvBtn','fmt'].forEach(function(id){var e=$('#'+id);if(e)e.style.display=n===1?'':'none'});if(n===1)fit()}
 /* ================= 정답 입력 ================= */
-function buildKey(){if(window.updKeyStat)setTimeout(updKeyStat,0);var h='';for(var q=1;q<=C.n1+C.n2;q++){var sa=q>C.n1;h+='<label><b style="width:2.2em;text-align:right">'+q+'.</b><input data-a="'+q+'" value="'+(KEYV.a[q]==null?'':KEYV.a[q])+'" placeholder="'+(sa?'0~999':'1~5')+'"> <input data-p="'+q+'" value="'+(KEYV.p[q]==null?'':KEYV.p[q])+'" placeholder="점" style="width:30px"></label>'}$('#keyg').innerHTML=h;
+function buildKey(){if(window.updKeyStat)setTimeout(updKeyStat,0);var h='';for(var q=1;q<=(Q1()+Q2());q++){var sa=q>Q1();h+='<label><b style="width:2.2em;text-align:right">'+q+'.</b><input data-a="'+q+'" value="'+(KEYV.a[q]==null?'':KEYV.a[q])+'" placeholder="'+(sa?'0~999':'1~5')+'"> <input data-p="'+q+'" value="'+(KEYV.p[q]==null?'':KEYV.p[q])+'" placeholder="점" style="width:30px"></label>'}$('#keyg').innerHTML=h;
  $('#keyg').querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){if(i.dataset.a)KEYV.a[i.dataset.a]=i.value.trim();else KEYV.p[i.dataset.p]=i.value.trim();save()})})}
-function pasteKey(){var N=C.n1+C.n2,lines=$('#keyTxt').value.split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+function pasteKey(){var N=(Q1()+Q2()),lines=$('#keyTxt').value.split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
  var tri=lines.length>0&&lines.every(function(l,i){var p=l.split(/[,\t]+/).map(function(x){return x.trim()});return p.length>=2&&p.length<=3&&parseInt(p[0],10)===i+1});
  if(tri){lines.forEach(function(l){var p=l.split(/[,\t]+/).map(function(x){return x.trim()}),n=parseInt(p[0],10);if(n>=1&&n<=N){KEYV.a[n]=p[1];if(p[2]!=null&&p[2]!=='')KEYV.p[n]=p[2]}})}
  else{var q=1;lines.join(' ').split(/[\s,]+/).forEach(function(v){if(v!==''&&q<=N){KEYV.a[q]=v;q++}})}
  save();buildKey()}
 var PRESET10=[];
-function presetKey(){if(!PRESET10.length){alert('10모대비 정답 데이터를 찾지 못했어요');return}if(C.n1!==21||C.n2!==9){alert('문항 수가 객관식 21 · 단답형 9 일 때만 쓸 수 있어요 (지금: '+C.n1+' · '+C.n2+')');return}PRESET10.forEach(function(r){KEYV.a[r[0]]=String(r[1]);KEYV.p[r[0]]=String(r[2])});save();buildKey();alert('10모대비 정답·배점 30문항을 넣었어요 (합계 '+PRESET10.reduce(function(a,r){return a+r[2]},0)+'점)')}
-function allPts(){var v=prompt('모든 문항의 배점을 같은 값으로 채울까요? 배점을 입력하세요 (예: 3)');if(v==null)return;for(var q=1;q<=C.n1+C.n2;q++)KEYV.p[q]=v;save();buildKey()}
+function presetKey(){if(!PRESET10.length){alert('10모대비 정답 데이터를 찾지 못했어요');return}if(SN()||Q1()!==21||Q2()!==9){alert('10모대비 정답은 수능형(객관식 21 · 단답형 9)일 때만 쓸 수 있어요');return}PRESET10.forEach(function(r){KEYV.a[r[0]]=String(r[1]);KEYV.p[r[0]]=String(r[2])});save();buildKey();alert('10모대비 정답·배점 30문항을 넣었어요 (합계 '+PRESET10.reduce(function(a,r){return a+r[2]},0)+'점)')}
+function allPts(){var v=prompt('모든 문항의 배점을 같은 값으로 채울까요? 배점을 입력하세요 (예: 3)');if(v==null)return;for(var q=1;q<=(Q1()+Q2());q++)KEYV.p[q]=v;save();buildKey()}
 /* ================= 사진 읽기 ================= */
 function loadImg(f){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){rej(new Error('이미지를 열 수 없어요'))};im.src=URL.createObjectURL(f)})}
 function toGray(c){var w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Uint8Array(w*h);for(var i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000;return g}
@@ -259,43 +311,46 @@ function readSheet(canvas){
  var ord=f.map(function(p){return{p:p,a:Math.atan2(p.y-cy,p.x-cx)}}).sort(function(a,b){return a.a-b.a}).map(function(o){return o.p});
  var mi=ord.findIndex(function(p){return p.pair});if(mi<0)mi=0;
  var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);
- var sheetPts=[[9,14.5],[288,9],[288,201],[9,201]],H=homog(sheetPts,rot.map(function(p){return[p.x,p.y]}));
- var gs=[];for(var yy=22;yy<=188;yy+=6)for(var xx=20;xx<=280;xx+=6){var pp=mapp(H,xx,yy),px=Math.round(pp[0]),py=Math.round(pp[1]);if(px>=0&&px<w&&py>=0&&py<h)gs.push(g[py*w+px])}
+ var sheetPts=SN()?[[9,14.5],[201,9],[201,288],[9,288]]:[[9,14.5],[288,9],[288,201],[9,201]],H=homog(sheetPts,rot.map(function(p){return[p.x,p.y]}));
+ var gs=[],GA=SN()?[20,30,190,280]:[20,22,280,188];for(var yy=GA[1];yy<=GA[3];yy+=6)for(var xx=GA[0];xx<=GA[2];xx+=6){var pp=mapp(H,xx,yy),px=Math.round(pp[0]),py=Math.round(pp[1]);if(px>=0&&px<w&&py>=0&&py<h)gs.push(g[py*w+px])}
  gs.sort(function(a,b){return a-b});var pl2=gs.length>50?gs[Math.floor(gs.length*.85)]:pl;   /* 종이 밝기를 '답안지 안쪽'에서 다시 잰다(책상 배경이 넓은 사진 대응) */
  if(Math.abs(pl2-pl)>6&&pl2>40){for(var i2=0;i2<g.length;i2++){var v2=g[i2]*255/pl2;n[i2]=v2>255?255:v2}}
- var L=layout(C),sc=Math.hypot(mapp(H,10,0)[0]-mapp(H,0,0)[0],mapp(H,10,0)[1]-mapp(H,0,0)[1])/10;
+ var L=SN()?layoutN(C):layout(C),sc=Math.hypot(mapp(H,10,0)[0]-mapp(H,0,0)[0],mapp(H,10,0)[1]-mapp(H,0,0)[1])/10;
  function samp(x,y,r){var p=mapp(H,x,y),rr=r*sc*.62,x0=Math.max(0,Math.floor(p[0]-rr)),x1=Math.min(w-1,Math.ceil(p[0]+rr)),y0=Math.max(0,Math.floor(p[1]-rr)),y1=Math.min(h-1,Math.ceil(p[1]+rr)),s=0,c=0;
   for(var yy=y0;yy<=y1;yy++)for(var xx=x0;xx<=x1;xx++){var dx=xx-p[0],dy=yy-p[1];if(dx*dx+dy*dy<=rr*rr){s+=n[yy*w+xx];c++}}return{v:c?s/c:255,px:p[0],py:p[1]}}
  var all=[],mc=L.mc.map(function(r){var vs=r.xs.map(function(x){var s=samp(x,r.y,r.r);all.push(s.v);return s});return{q:r.q,vs:vs}});
  var sa=L.sa.map(function(s){return{q:s.q,cols:s.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,s.r);all.push(t.v);return t})})}});
  var sch=L.sch.opts.map(function(o){var t=samp(o.x,o.y,L.sch.r);all.push(t.v);return t}),cls=L.cls.opts.map(function(o){var t=samp(o.x,o.y,L.cls.r);all.push(t.v);return t});
  var num=L.num.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})});
+ var ec=L.es?L.es.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})}):null;
  all.sort(function(a,b){return a-b});var base=all[Math.floor(all.length*.6)],thr=Math.max(22,base*.2);
  function pick(vs){var d=vs.map(function(s){return base-s.v}),idx=[];for(var i=0;i<d.length;i++)if(d[i]>thr)idx.push(i);if(!idx.length)return{i:-1,flag:''};idx.sort(function(a,b){return d[b]-d[a]});if(idx.length===1)return{i:idx[0],flag:''};if(d[idx[0]]-d[idx[1]]>.5*d[idx[0]])return{i:idx[0],flag:'?'};return{i:-2,flag:'복수'}}
  var ans=[];mc.forEach(function(r){var p=pick(r.vs);ans.push({q:r.q,t:'mc',v:p.i>=0?String(p.i+1):'',flag:p.i===-2?'복수':p.flag,pts:r.vs})});
  sa.forEach(function(s){var ds=s.cols.map(function(c){return pick(c)}),bad=ds.some(function(d){return d.i===-2}),any=ds.some(function(d){return d.i>=0});var v='';if(any&&!bad)v=String(ds.reduce(function(a,d){return a*10+(d.i>=0?d.i:0)},0));ans.push({q:s.q,t:'sa',v:v,flag:bad?'복수':'',pts:[].concat.apply([],s.cols)})});
- var sl=list(C.schools),cl=list(C.classes),ps=pick(sch),pc=pick(cls);
- var id={school:ps.i>=0?sl[ps.i]:(ps.i===-2?'(복수)':'?'),cls:pc.i>=0?cl[pc.i]:(pc.i===-2?'(복수)':'?'),num:num.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'}).join('')};
- return{ans:ans,id:id,H:H,sc:sc,base:base,thr:thr,layout:L,sheet:rot,w:w,h:h}}
+ var sl=SN()?list(C.schoolsN,18):list(C.schools),cl=list(C.classes),ps=pick(sch),pc=pick(cls);
+ var id={school:ps.i>=0?sl[ps.i]:(ps.i===-2?'(복수)':'?'),cls:SN()?'-':(pc.i>=0?cl[pc.i]:(pc.i===-2?'(복수)':'?')),num:num.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'}).join('')};
+ var es='';if(ec){var ed=ec.map(function(c){return pick(c)});if(ed.some(function(d){return d.i===-2}))es='?';else if(ed.some(function(d){return d.i>=0})){var tv=ed[0].i>=0?ed[0].i:0,ov=ed[1].i>=0?ed[1].i:0,dv=ed[2].i>=0?ed[2].i:0;es=String(Math.round((tv*10+ov+dv/10)*10)/10)}}
+ return{ans:ans,es:es,id:id,H:H,sc:sc,base:base,thr:thr,layout:L,sheet:rot,w:w,h:h}}
 /* ================= 채점 화면 ================= */
 var RES=[];
 function gradeOne(a){var key=KEYV.a[a.q],pt=parseFloat(KEYV.p[a.q]);if(isNaN(pt))pt=0;if(key==null||key==='')return{s:'',sc:0};if(a.v==='')return{s:'un',sc:0};return String(a.v)===String(key).trim()?{s:'ok',sc:pt}:{s:'no',sc:0}}
 function drawPrev(cv,im,r){var c=cv,k=Math.min(1,430/im.width);c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);x.lineWidth=2;
  r.sheet.forEach(function(p){x.strokeStyle='#e22';x.strokeRect(p.x*k-6,p.y*k-6,12,12)});
  r.ans.forEach(function(a){a.pts.forEach(function(s,i){var on=a.t==='mc'&&a.v!==''&&i===parseInt(a.v,10)-1;x.beginPath();x.arc(s.px*k,s.py*k,Math.max(1.5,r.sc*k*.9),0,7);x.strokeStyle=on?'#0a8':'rgba(0,0,0,0)';x.stroke()})})}
-function idTxt(id){var n=id.num||'',b=n.length===4&&/^\d{4}$/.test(n)?(+n.slice(0,2))+'월 '+(+n.slice(2))+'일':(n||'-');return id.school+' · '+id.cls+' · 생일 '+b}
+function idTxt(id){var n=id.num||'',b=n.length===4&&/^\d{4}$/.test(n)?(+n.slice(0,2))+'월 '+(+n.slice(2))+'일':(n||'-');return id.school+(id.cls&&id.cls!=='-'?' · '+id.cls:'')+' · 생일 '+b}
 function resHtml(i){var o=RES[i],tot=0,mx=0,h='<table><tr><th>번호</th><th>학생 답</th><th>정답</th><th>배점</th><th>점수</th></tr>';
  o.ans.forEach(function(a){var g=gradeOne(a),pt=parseFloat(KEYV.p[a.q])||0;tot+=g.sc;mx+=pt;h+='<tr><td>'+a.q+'</td><td class="'+g.s+'">'+(a.t==='mc'?'<select data-i="'+i+'" data-q="'+a.q+'"><option value="">—</option>'+[1,2,3,4,5].map(function(v){return'<option'+(String(v)===a.v?' selected':'')+'>'+v+'</option>'}).join('')+'</select>':'<input data-i="'+i+'" data-q="'+a.q+'" value="'+a.v+'" style="width:40px">')+(a.flag?' <span class="warn">'+a.flag+'</span>':'')+'</td><td>'+(KEYV.a[a.q]==null?'':KEYV.a[a.q])+'</td><td>'+(pt||'')+'</td><td>'+(g.s==='ok'?g.sc:g.s?0:'')+'</td></tr>'});
  o.tot=tot;o.mx=mx;return h+'</table>'}
-function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML='<b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 읽은 정보: <b>'+o.idtxt+'</b>';
- d.querySelectorAll('select,input').forEach(function(s){s.addEventListener('change',function(){var a=o.ans.filter(function(x){return String(x.q)===s.dataset.q})[0];a.v=s.value;a.flag='';showRes(i);saveRes();if(SCAN)cloudSave([i])})});if(SCAN)lastCard(i)}
-function saveRes(){try{localStorage.setItem(SCAN?'bro_omr_scan_results_v1':'bro_omr_results_v1',JSON.stringify({cfg:{n1:C.n1,n2:C.n2},key:KEYV,students:RES.filter(function(o){return !o.err}).map(function(o){return{file:o.file,school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),score:o.tot,max:o.mx}})}))}catch(e){}}
+function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML='<b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 읽은 정보: <b>'+o.idtxt+'</b>'+(SN()?' · 서술형 합계 <input class="esT" data-i="'+i+'" value="'+(o.es||'')+'" style="width:54px" placeholder="—">점':'');
+ d.querySelectorAll('.esT').forEach(function(s){s.addEventListener('change',function(){o.es=s.value.trim();saveRes();if(SCAN)cloudSave([i])})});
+ d.querySelectorAll('select,input:not(.esT)').forEach(function(s){s.addEventListener('change',function(){var a=o.ans.filter(function(x){return String(x.q)===s.dataset.q})[0];a.v=s.value;a.flag='';showRes(i);saveRes();if(SCAN)cloudSave([i])})});if(SCAN)lastCard(i)}
+function saveRes(){try{localStorage.setItem(SCAN?'bro_omr_scan_results_v1':'bro_omr_results_v1',JSON.stringify({cfg:{n1:Q1(),n2:Q2()},key:KEYV,students:RES.filter(function(o){return !o.err}).map(function(o){return{file:o.file,school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),es:o.es||'',score:o.tot,max:o.mx}})}))}catch(e){}}
 async function runFiles(files){var box=$('#resBox');for(var f of files){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><canvas></canvas><div class="warn" style="font-size:12px;margin-top:4px">읽는 중...</div></div><div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
   try{var im=await loadImg(f),cv=document.createElement('canvas'),k=Math.min(1,2400/Math.max(im.width,im.height));cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
-   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,id:r.id,idtxt:idTxt(r.id)});drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i);if(SCAN)cloudSave([i])}
+   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,es:r.es,id:r.id,idtxt:idTxt(r.id)});drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i);if(SCAN)cloudSave([i])}
   catch(e){RES.push({file:f.name,r:null,ans:[],id:{},idtxt:'',tot:0,mx:0,err:1});div.innerHTML='<div class="warn">'+f.name+' — '+e.message+'</div>';if(SCAN)errCard(f.name,e.message)}}
  saveRes()}
-window.exportCsv=function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점'].concat(Array.from({length:C.n1+C.n2},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx].concat(o.ans.map(function(a){return a.v})))});
+window.exportCsv=function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점'].concat(SN()?['서술형합계']:[]).concat(Array.from({length:(Q1()+Q2())},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx].concat(SN()?[o.es||'']:[]).concat(o.ans.map(function(a){return a.v})))});
  var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='OMR_채점결과.csv';document.body.appendChild(a);a.click();a.remove()};
 window.OMR_test=function(canvas){return readSheet(canvas)};
 /* ================= 폰 촬영 채점 보조 ================= */
@@ -311,23 +366,23 @@ function lastCard(i){var o=RES[i],box=document.getElementById('scanLast');if(!bo
   +'<div class="hint2">학생 '+RES.filter(function(x){return !x.err}).length+'명째 · 읽은 결과는 이 폰에 저장돼요</div></div>';
  box.scrollIntoView({behavior:'smooth',block:'start'})}
 function errCard(name,msg){var box=document.getElementById('scanLast');if(box)box.innerHTML='<div class="card warn"><div class="warn">읽지 못했어요 😢</div><div>'+msg+'</div><div class="hint2">밝은 곳에서 답안지가 화면을 크게 채우고, 네 모서리의 검은 네모가 모두 나오게 다시 찍어 주세요.</div></div>'}
-function updKeyStat(){var e=document.getElementById('keyStat');if(!e)return;var n=0,sum=0;for(var q=1;q<=C.n1+C.n2;q++){if(KEYV.a[q]!=null&&KEYV.a[q]!==''){n++;sum+=parseFloat(KEYV.p[q])||0}}
+function updKeyStat(){var e=document.getElementById('keyStat');if(!e)return;var n=0,sum=0;for(var q=1;q<=(Q1()+Q2());q++){if(KEYV.a[q]!=null&&KEYV.a[q]!==''){n++;sum+=parseFloat(KEYV.p[q])||0}}
  e.innerHTML=n?'<span class="okc">정답 '+n+'문항 · '+sum+'점 ✓</span>':'<span class="warn">정답이 아직 없어요</span>'}
 function restoreRes(){var o;try{o=JSON.parse(localStorage.getItem('bro_omr_scan_results_v1')||'null')}catch(e){}if(!o||!o.students)return;var box=$('#resBox');
  o.students.forEach(function(s){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
-  var id={school:s.school,cls:s.cls,num:s.num};RES.push({file:s.file,r:null,ans:s.answers.map(function(v,k){return{q:k+1,t:k<C.n1?'mc':'sa',v:v,flag:'',pts:[]}}),id:id,idtxt:idTxt(id)});showRes(i)})}
+  var id={school:s.school,cls:s.cls,num:s.num};RES.push({file:s.file,es:s.es||'',r:null,ans:s.answers.map(function(v,k){return{q:k+1,t:k<Q1()?'mc':'sa',v:v,flag:'',pts:[]}}),id:id,idtxt:idTxt(id)});showRes(i)})}
 var SB_URL='https://eqllmvfbcdtzercliicy.supabase.co/functions/v1/report',SB_KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';   /* 공개용 키(비밀번호는 서버가 확인) */
 function cMsg(t,ok){var e=document.getElementById('cloudStat');if(e){e.textContent=t;e.style.color=ok===1?'#1a7a50':(ok===0?'#c33':'#667');e.style.fontWeight='700'}}
 async function cloudKey(auto){var pw=$('#cPw').value,m=document.getElementById('cKeyMsg');if(!pw){if(!auto)m.innerHTML='<span class="warn">먼저 아래 "☁ 서버 저장 → 설정"에 비밀번호를 넣어 주세요</span>';return}
  m.textContent='불러오는 중...';
  try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'load',key:pw,exam_id:($('#cExam').value||'mo10-2026').trim()})});var d=await r.json();if(!d.ok)throw new Error(d.error||'불러오기 실패');
   var its=(d.exam&&d.exam.items)||[];if(!its.length){m.innerHTML='<span class="warn">서버에 이 시험의 정답·배점이 아직 없어요. PC 성적표 생성기에서 "☁ 서버에 저장"을 한 번 하면 올라가요.</span>';return}
-  its.forEach(function(it){KEYV.a[it.no]=String(it.ans);KEYV.p[it.no]=String(it.pts)});save();buildKey();updKeyStat();
-  var n1=its.filter(function(x){return x.type==='mc'}).length;m.innerHTML='<span class="okc">서버에서 정답·배점 '+its.length+'문항을 불러왔어요 ✓</span>'+(n1!==C.n1?' <span class="warn">(객관식 수가 답안지 설정과 달라요: '+n1+' / '+C.n1+')</span>':'')}
+  its=its.filter(function(it){return it.type!=='essay'});its.forEach(function(it){KEYV.a[it.no]=String(it.ans);KEYV.p[it.no]=String(it.pts)});save();buildKey();updKeyStat();
+  var n1=its.filter(function(x){return x.type==='mc'}).length;m.innerHTML='<span class="okc">서버에서 정답·배점 '+its.length+'문항을 불러왔어요 ✓</span>'+(n1!==Q1()?' <span class="warn">(객관식 수가 답안지 설정과 달라요: '+n1+' / '+Q1()+')</span>':'')}
  catch(e){m.innerHTML='<span class="warn">불러오기 실패: '+e.message+'</span>'}}
 async function cloudSetKey(){var pw=$('#cPw').value,m=document.getElementById('cKeyMsg');if(!pw){m.innerHTML='<span class="warn">비밀번호를 넣어 주세요</span>';return}
  var ex=($('#cExam').value||'').trim();if(!ex){m.innerHTML='<span class="warn">시험 이름을 넣어 주세요 (예: mo10-2026)</span>';return}
- var items=[];for(var q=1;q<=C.n1+C.n2;q++){var a=KEYV.a[q],pt=KEYV.p[q];if(a==null||a==='')continue;items.push({no:q,type:q<=C.n1?'mc':'sa',pts:parseFloat(pt)||0,ans:isNaN(+a)?a:+a})}
+ var items=[];for(var q=1;q<=(Q1()+Q2());q++){var a=KEYV.a[q],pt=KEYV.p[q];if(a==null||a==='')continue;items.push({no:q,type:q<=Q1()?'mc':'sa',pts:parseFloat(pt)||0,ans:isNaN(+a)?a:+a})}
  if(!items.length){m.innerHTML='<span class="warn">먼저 정답·배점을 넣어 주세요</span>';return}
  m.textContent='저장 중...';
  try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'setkey',key:pw,exam_id:ex,title:ex,items:items})});var d=await r.json();if(!d.ok)throw new Error(d.error||'저장 실패');
@@ -339,17 +394,17 @@ function cInit(){var pw=$('#cPw');if(!pw)return;var kb=$('#cKey');if(kb)kb.addEv
  pw.addEventListener('change',keep);if($('#cRem'))$('#cRem').addEventListener('change',keep);$('#cExam').addEventListener('change',keep);var sk=$('#cSet');if(sk)sk.addEventListener('click',cloudSetKey);
  if($('#cNow'))$('#cNow').addEventListener('click',function(){cloudSave(RES.map(function(o,i){return i}),true)});cMsg(pw.value?'자동 저장 켜짐':'비밀번호를 넣으면 서버에 저장돼요',pw.value?1:-1);if(SCAN&&pw.value&&!Object.keys(KEYV.a).some(function(k){return KEYV.a[k]!==''&&KEYV.a[k]!=null}))cloudKey(true)}
 async function cloudSave(idxs,force){if(!SCAN)return;var pw=$('#cPw').value,auto=$('#cAuto').checked;if(!force&&!auto)return;if(!pw){cMsg('비밀번호를 넣으면 서버에 저장돼요',-1);return}
- var skipped=0,list=[];idxs.forEach(function(i){var o=RES[i];if(!o||o.err)return;var bad=!o.id.school||o.id.school==='?'||o.id.school==='(복수)'||!o.id.cls||o.id.cls==='?'||o.id.cls==='(복수)'||!/^[0-9]{4}$/.test(o.id.num||'');if(bad){skipped++;return}
-  list.push({school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),score:Math.round(o.tot||0)})});
+ var skipped=0,list=[];idxs.forEach(function(i){var o=RES[i];if(!o||o.err)return;var bad=!o.id.school||o.id.school==='?'||o.id.school==='(복수)'||(!SN()&&(!o.id.cls||o.id.cls==='?'||o.id.cls==='(복수)'))||!/^[0-9]{4}$/.test(o.id.num||'');if(bad){skipped++;return}
+  list.push({school:o.id.school,cls:o.id.cls,num:o.id.num,answers:o.ans.map(function(a){return a.v}),esTot:o.es||'',score:Math.round(o.tot||0)})});
  if(!list.length){cMsg(skipped?'학교·반·생일을 못 읽은 답안지는 저장하지 못했어요('+skipped+'장) — 표에서 고친 뒤 "지금 모두 저장"':'저장할 결과가 없어요',skipped?0:-1);return}
  cMsg('☁ 저장 중...',-1);
  try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'omr',key:pw,exam_id:($('#cExam').value||'mo10-2026').trim(),title:'10모 대비',students:list})});
   var d=await r.json();if(!d.ok)throw new Error(d.error||'저장 실패');cMsg('☁ 서버에 저장했어요 ✓ ('+d.saved+'명'+(skipped?' · 못 읽은 '+skipped+'장 제외':'')+')',1)}
  catch(e){cMsg('저장 실패: '+e.message+' — 결과는 이 폰에 남아 있어요',0)}}
-window.shareCsv=async function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점'].concat(Array.from({length:C.n1+C.n2},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx].concat(o.ans.map(function(a){return a.v})))});
+window.shareCsv=async function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점'].concat(SN()?['서술형합계']:[]).concat(Array.from({length:(Q1()+Q2())},function(_,i){return'답'+(i+1)}))];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx].concat(SN()?[o.es||'']:[]).concat(o.ans.map(function(a){return a.v})))});
  var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),f=new File([csv],'OMR_채점결과.csv',{type:'text/csv'});
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'OMR 채점 결과'});return}catch(e){if(e&&e.name==='AbortError')return}}exportCsv()};
-window.phoneLink=function(){var pl={c:{n1:C.n1,n2:C.n2,rows:C.rows,nd:C.nd,nameN:C.nameN,schools:C.schools,classes:C.classes,off:C.off,v3:1},k:KEYV};
+window.phoneLink=function(){var pl={c:{sheet:C.sheet,sn1:C.sn1,ne:C.ne,nef:C.nef,n1:C.n1,n2:C.n2,rows:C.rows,nd:C.nd,nameN:C.nameN,schools:C.schools,schoolsN:C.schoolsN,classes:C.classes,off:C.off,v3:1},k:KEYV};
  var link='https://mathyyuri.com/omr_scan.html#k='+btoa(unescape(encodeURIComponent(JSON.stringify(pl))));
  var done=function(){alert('폰용 링크를 복사했어요. 이 링크를 카톡 "나에게 보내기" 등으로 폰에 보내서 열면, 정답·배점과 답안지 설정이 폰에 자동으로 들어가요.\n(링크 안에 정답이 들어 있으니 학생에게는 보내지 마세요)')};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(link).then(done,function(){prompt('아래 링크를 복사하세요',link)});else prompt('아래 링크를 복사하세요',link)};
@@ -381,6 +436,9 @@ bindSet();Logo.init(function(){Hist.touch()});renderSheet();buildKey();setupFmt(
 $('#fileIn').addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
 var fa=$('#fileAlb');if(fa)fa.addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
 $('#clearRes').addEventListener('click',function(){if(SCAN&&RES.length&&!confirm('읽은 결과를 모두 지울까요? (CSV로 먼저 저장했는지 확인하세요)'))return;RES=[];$('#resBox').innerHTML='';var sl=document.getElementById('scanLast');if(sl)sl.innerHTML='';saveRes()});
+(function(){var st=$('#shType'),sw=$('#shSn'),n1=$('#sn1');if(!st)return;if(!C.sn1||!C.snv){C.snv=1;C.sn1=30}st.value=C.sheet==='sn'?'sn':'su';n1.value=C.sn1;sw.style.display=C.sheet==='sn'?'':'none';
+ st.addEventListener('change',function(){C.sheet=st.value==='sn'?'sn':'su';sw.style.display=C.sheet==='sn'?'':'none';save();buildKey();updKeyStat();try{bindSet()}catch(e){}});
+ n1.addEventListener('input',function(){C.sn1=Math.max(1,Math.min(30,parseInt(n1.value,10)||30));save();buildKey();updKeyStat()})})();
 if(!SCAN)cInit();
 if(SCAN){document.body.classList.add('scan');tab(2);restoreRes();updKeyStat();cInit();if(window.__gotKey){var ks=document.getElementById('keyStat');if(ks)ks.insertAdjacentHTML('afterend','<div class="okc">PC에서 보낸 정답·설정을 받았어요 ✓</div>')}}
 function restoreAll(str){var o=JSON.parse(str);C=Object.assign({},DEF,o.c);C.off=C.off||{};KEYV=o.k||{a:{},p:{}};Logo.restore(o.lg);try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}bindSet();renderSheet();buildKey()}
