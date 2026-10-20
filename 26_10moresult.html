@@ -112,7 +112,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 <div class="wrap">
   <div class="notice">
     <span class="notice-icon">⚠️</span>
-    국어·수학 등급은 이투스·메가스터디 등급컷의 평균(예상, 10/20 기준)으로 표시돼요. 통합사회·통합과학은 컷이 정리되면 표시되고, 영어·한국사는 절대평가 기준이에요. 이름은 공개되지 않고 학생은 알파벳으로만 보여요.
+    국어·수학·통합사회·통합과학 등급은 이투스·메가스터디 등급컷의 평균(예상, 10/20 기준)으로 표시돼요. 영어·한국사는 절대평가 기준이에요. 이름은 공개되지 않고 학생은 알파벳으로만 보여요.
   </div>
 
   <div id="loading" class="loading">
@@ -165,8 +165,8 @@ const SUBJECTS = [
   { key:'math',    label:'수학',   max:100, kind:'relative', cuts:{1:80,2:69,3:57,4:46,5:34,6:23,7:16,8:10} },
   { key:'english', label:'영어',   max:100, kind:'absolute', cuts:{1:90,2:80,3:70,4:60,5:50,6:40,7:30,8:20,9:0} },
   { key:'history', label:'한국사', max:50,  kind:'absolute', cuts:{1:40,2:35,3:30,4:25,5:20,6:15,7:10,8:5,9:0} },
-  { key:'society', label:'통합사회', max:50, kind:'relative', cuts:null },
-  { key:'science', label:'통합과학', max:50, kind:'relative', cuts:null },
+  { key:'society', label:'통합사회', max:50, kind:'relative', cuts:{1:48,2:45.5,3:41,4:34.5,5:25.5,6:17,7:12,8:7.5} },
+  { key:'science', label:'통합과학', max:50, kind:'relative', cuts:{1:47.5,2:43.5,3:36,4:27.5,5:19.5,6:14,7:10,8:7.5} },
   { key:'total',   label:'총점',   max:450, kind:'sum',      cuts:null },
 ];
 // ↑ 상대평가 과목은 예상 등급컷이 나오면 위 cuts를 예: {1:88,2:76,3:60,4:45} 처럼
@@ -317,7 +317,10 @@ function render(){
     scores.forEach(function(v){ const g=gradeOf(v,cuts); gradeCnt[g-1]++; });
 
     let gradeGridHtml = '<div class="grade-grid">';
-    for(let i=0; i<9; i++){
+    const shown = [];                    // 1~5등급은 항상, 6등급 이하는 학생이 있을 때만 보여줌
+    for(let i=0; i<9; i++){ if(i < 5 || gradeCnt[i] > 0) shown.push(i); }
+    for(let k=0; k<shown.length; k++){
+      const i = shown[k];
       const pct = n > 0 ? Math.round((gradeCnt[i]/n)*100) : 0;
       let cutText = '';
       if(i === 0) cutText = cuts[1] + '점↑';
@@ -331,7 +334,7 @@ function render(){
     if (charts.grade) charts.grade.destroy();
     charts.grade = new Chart(document.getElementById('chart-grade'), {
       type: 'doughnut',
-      data: { labels: G_LABELS, datasets: [{ data: gradeCnt, backgroundColor: G_COLORS, borderWidth: 1 }] },
+      data: { labels: shown.map(function(i){ return G_LABELS[i]; }), datasets: [{ data: shown.map(function(i){ return gradeCnt[i]; }), backgroundColor: shown.map(function(i){ return G_COLORS[i]; }), borderWidth: 1 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
     });
   }
