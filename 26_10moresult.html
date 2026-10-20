@@ -74,6 +74,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .gb3{background:#eff5ff;border-color:#b0c8e8;}.gb3 .g-label{color:#2a5fa0;}.gb3 .g-count{color:#2a5fa0;}
 .gb4{background:#f5f5f5;border-color:#ccc;}.gb4 .g-label{color:#666;}.gb4 .g-count{color:#666;}
 .gb5{background:#fef0f4;border-color:#f0b0c4;}.gb5 .g-label{color:var(--g5plus);}.gb5 .g-count{color:var(--g5plus);}
+.gb6{background:#fdf3ea;border-color:#efc9a6;}.gb6 .g-label,.gb6 .g-count{color:#b0642a;}
+.gb7{background:#f6f0fb;border-color:#d3bde8;}.gb7 .g-label,.gb7 .g-count{color:#7a4aa8;}
+.gb8,.gb9{background:#f3f3f3;border-color:#d4d4d4;}.gb8 .g-label,.gb8 .g-count,.gb9 .g-label,.gb9 .g-count{color:#7a7a7a;}
 
 .no-cuts{text-align:center;padding:22px 10px;color:var(--text3);font-size:12px;line-height:1.7;background:var(--surface2);border-radius:var(--radius-sm);border:1px dashed var(--border2);}
 
@@ -109,7 +112,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 <div class="wrap">
   <div class="notice">
     <span class="notice-icon">⚠️</span>
-    국어·수학·통합사회·통합과학은 상대평가라 등급컷이 발표된 뒤에 등급이 표시돼요 (영어·한국사는 절대평가 기준으로 바로 표시). 이름은 공개되지 않고 학생은 알파벳으로만 보여요.
+    국어·수학 등급은 이투스·메가스터디 등급컷의 평균(예상, 10/20 기준)으로 표시돼요. 통합사회·통합과학은 컷이 정리되면 표시되고, 영어·한국사는 절대평가 기준이에요. 이름은 공개되지 않고 학생은 알파벳으로만 보여요.
   </div>
 
   <div id="loading" class="loading">
@@ -158,8 +161,8 @@ const SB_KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
 // 상대평가 과목(국어/수학/통합사회/통합과학) cuts는 2026년 10월 고1 학평
 // (10모 등급컷은 발표 후 아래 cuts 에 채우면 등급이 표시돼요)
 const SUBJECTS = [
-  { key:'korean',  label:'국어',   max:100, kind:'relative', cuts:null },
-  { key:'math',    label:'수학',   max:100, kind:'relative', cuts:null },
+  { key:'korean',  label:'국어',   max:100, kind:'relative', cuts:{1:83,2:72,3:64,4:53,5:41,6:31,7:24,8:17} },
+  { key:'math',    label:'수학',   max:100, kind:'relative', cuts:{1:80,2:69,3:57,4:46,5:34,6:23,7:16,8:10} },
   { key:'english', label:'영어',   max:100, kind:'absolute', cuts:{1:90,2:80,3:70,4:60,5:50,6:40,7:30,8:20,9:0} },
   { key:'history', label:'한국사', max:50,  kind:'absolute', cuts:{1:40,2:35,3:30,4:25,5:20,6:15,7:10,8:5,9:0} },
   { key:'society', label:'통합사회', max:50, kind:'relative', cuts:null },
@@ -170,8 +173,8 @@ const SUBJECTS = [
 //   채워주세요(1~4등급 컷만 있으면 충분 — 5등급은 "미만"으로 자동 처리됩니다).
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const G_COLORS = ['rgba(184,154,80,0.85)','rgba(61,170,138,0.82)','rgba(91,159,216,0.8)','rgba(140,140,140,0.75)','rgba(200,72,112,0.75)'];
-const G_LABELS = ['1등급', '2등급', '3등급', '4등급', '5등급이하'];
+const G_COLORS = ['rgba(184,154,80,0.85)','rgba(61,170,138,0.82)','rgba(91,159,216,0.8)','rgba(140,140,140,0.75)','rgba(200,72,112,0.75)','rgba(224,140,70,0.75)','rgba(150,100,200,0.7)','rgba(120,120,120,0.6)','rgba(80,80,80,0.55)'];
+const G_LABELS = ['1등급', '2등급', '3등급', '4등급', '5등급', '6등급', '7등급', '8등급', '9등급'];
 const FIELD_MAP = { korean:'국어', math:'수학', english:'영어', history:'한국사', society:'통합사회', science:'통합과학', total:'합계' };
 
 let allRows = [];
@@ -216,11 +219,11 @@ const barLabelsPlugin = {
 
 function gradeOf(score, cuts){
   if(!cuts) return null;
-  if(score>=cuts[1]) return 1;
-  if(score>=cuts[2]) return 2;
-  if(score>=cuts[3]) return 3;
-  if(score>=cuts[4]) return 4;
-  return 5;
+  for(let g=1; g<=8; g++){
+    if(cuts[g]==null) return g;      // 컷이 없는 구간부터는 "이하"로 묶음
+    if(score>=cuts[g]) return g;
+  }
+  return 9;
 }
 
 async function loadData(){
@@ -310,18 +313,16 @@ function render(){
     if (charts.grade) { charts.grade.destroy(); charts.grade = null; }
   } else {
     const cuts = subj.cuts;
-    const gradeCnt=[0,0,0,0,0];
-    scores.forEach(function(v){ const g=gradeOf(v,cuts); gradeCnt[Math.min(g,5)-1]++; });
+    const gradeCnt=[0,0,0,0,0,0,0,0,0];
+    scores.forEach(function(v){ const g=gradeOf(v,cuts); gradeCnt[g-1]++; });
 
     let gradeGridHtml = '<div class="grade-grid">';
-    for(let i=0; i<5; i++){
+    for(let i=0; i<9; i++){
       const pct = n > 0 ? Math.round((gradeCnt[i]/n)*100) : 0;
       let cutText = '';
       if(i === 0) cutText = cuts[1] + '점↑';
-      else if(i === 1) cutText = cuts[2] + '~' + roundedMinus(cuts[1]);
-      else if(i === 2) cutText = cuts[3] + '~' + roundedMinus(cuts[2]);
-      else if(i === 3) cutText = cuts[4] + '~' + roundedMinus(cuts[3]);
-      else cutText = '~' + roundedMinus(cuts[4]);
+      else if(i < 8) cutText = (cuts[i+1]==null ? '' : cuts[i+1]) + '~' + roundedMinus(cuts[i]);
+      else cutText = '~' + roundedMinus(cuts[8]);
       gradeGridHtml += '<div class="grade-box gb' + (i+1) + '"><div class="g-label">' + G_LABELS[i] + '</div><div class="g-cut">' + cutText + '</div><div class="g-count">' + gradeCnt[i] + '</div><div class="g-pct">' + pct + '%</div></div>';
     }
     gradeGridHtml += '</div><div class="chart-wrap h180"><canvas id="chart-grade"></canvas></div>';
