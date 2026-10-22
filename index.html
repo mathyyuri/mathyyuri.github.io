@@ -644,7 +644,7 @@ function postCard(p){
  const long=p.body.length>110||p.body.indexOf('\n')>=0;
  let h='<div class="post'+(p.pin?' pin':'')+'" id="post_'+p.id+'"><div class="hd"><span class="badge t-'+p.type+'">'+p.type+'</span>'+(p.pin?'<span class="badge">고정</span>':'')+comBadge(p)+'<span class="badge" style="background:#eee;color:#555">'+esc(scope)+'</span>'+(unread?'<span class="badge new">NEW</span>':'')+'</div>'+
  '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
- '<div class="bd'+(open?'':' clamp')+'">'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
+ thumbHtml(p,open)+'<div class="bd'+(open?'':' clamp')+'">'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
  '<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
  '<button data-a="open" data-id="'+p.id+'">댓글 '+p.cm.length+'</button>'+(staff?'<button class="rd" data-a="reads" data-id="'+p.id+'">읽음 '+rc+'/'+tg.length+'</button>':'')+
  '<span class="sp"></span>'+(canEditPost(p)?'<button data-a="editpost" data-id="'+p.id+'">수정</button>':'')+(me().role==='admin'?'<button data-a="pin" data-id="'+p.id+'">'+(p.pin?'고정 해제':'고정')+'</button><button data-a="delpost" data-id="'+p.id+'" style="color:var(--bad)">삭제</button>':'')+'</div>';
@@ -882,8 +882,8 @@ function vMsgChat(){
 function chatHtml(key,title,subt){
  const a=DB.msgs[key]||[],[sid,k]=key.split(':'),s=U[sid],staff=isStaff();
  const mark=staff?'rdS':'rdU';let ch=false;a.forEach(m=>{if((staff&&m.f==='u'&&!m.rdS)||(!staff&&m.f==='s'&&!m.rdU)){m[mark]=true;ch=true;}});if(ch)markMsg(key);
- return '<div class="chat"><div class="hh">'+(staff?'<button class="btn sm3 gh back" data-a="thread" data-v="">‹</button>'+esc(s.name)+(k==='parent'?' 학부모':'')+' <span class="muted sm" style="font-weight:500">'+s.cls+'</span>':esc(title)+' <span class="muted sm" style="font-weight:500">'+subt+'</span>')+'</div>'+
- '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
+ return '<div class="chat"><div class="hh">'+(staff?'<button class="btn sm3 gh back" data-a="thread" data-v="">‹</button>'+esc(s.name)+(k==='parent'?' 학부모':'')+' <span class="muted sm" style="font-weight:500">'+s.cls+'</span>'+delAllBtn(sid,k):esc(title)+' <span class="muted sm" style="font-weight:500">'+subt+'</span>')+'</div>'+
+ '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+msgDelBtn(m)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
  '<div id="attbar">'+attBar()+'</div><div class="in"><button class="btn sm3 gh" type="button" data-a="attpick">첨부</button><button class="btn sm3 gh" type="button" data-a="emo" data-t="min">이모티콘</button><input id="min" placeholder="메시지 입력 (사진·파일은 여기로 끌어다 놓거나 붙여넣기)" data-enter="send" data-key="'+key+'"><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
 }
 
@@ -1048,10 +1048,10 @@ async function mediaApi(action,args){
  try{const r=await fetch(MEDIA_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 12_글사진_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
 }
 async function loadPostMedia(){
- const els=[].slice.call(document.querySelectorAll('img[data-mid]')).filter(e=>!e.getAttribute('src'));
+ const els=[].slice.call(document.querySelectorAll('img[data-mid]')).filter(e=>!e.getAttribute('src')&&!e.closest('.clamp'));
  if(!els.length)return;
  const need=[...new Set(els.map(e=>e.dataset.mid).filter(id=>!PMED[id]))];
- for(let i=0;i<need.length;i+=12){const j=await mediaApi('gets',{ids:need.slice(i,i+12)});if(j&&j.ok)Object.keys(j.map||{}).forEach(k=>{PMED[k]=j.map[k];});}
+ for(let i=0;i<need.length;i+=6){const j=await mediaApi('gets',{ids:need.slice(i,i+6)});if(j&&j.ok)Object.keys(j.map||{}).forEach(k=>{PMED[k]=j.map[k];});}
  els.forEach(e=>{const d=PMED[e.dataset.mid];if(d)e.setAttribute('src',d);});
 }
 function compressImg(f){
@@ -1079,6 +1079,29 @@ async function loadEditorMedia(){
  if(j&&j.ok)els.forEach(e=>{const d=j.map[e.dataset.mid];if(d){PMED[e.dataset.mid]=d;e.setAttribute('src',d);e.setAttribute('draggable','true');}});
 }
 document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closest('.bd img[data-mid]');if(im&&im.getAttribute('src')){window.open(dataBlobUrl(im.getAttribute('src')),'_blank');}});
+
+/* ── 메시지 삭제 · 소식 미리보기 사진 ── */
+const MSGDEL_URL=API_URL.replace('ac_api','ac_msg_del');
+async function msgDelApi(action,args){
+ try{const r=await fetch(MSGDEL_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 13_메시지삭제_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
+}
+function msgDelBtn(m){
+ if(!m||!m.id)return '';
+ const can=isStaff()?(me().role==='admin'||m.f==='s'):m.f==='u';
+ return can?'<button type="button" class="mdel" data-a="msgdel" data-id="'+m.id+'" title="이 메시지 지우기">지우기</button>':'';
+}
+function delAllBtn(sid,k){return me().role==='admin'?' <button type="button" class="btn sm3 gh mdelall" data-a="msgdelall" data-sid="'+sid+'" data-kind="'+k+'" style="color:var(--bad);margin-left:auto">대화 전체 지우기</button>':'';}
+function firstMid(p){const m=/<img[^>]*data-mid="(\d+)"/.exec(String(p.body||''));return m?m[1]:null;}
+function midCount(p){return (String(p.body||'').match(/data-mid="\d+"/g)||[]).length;}
+function thumbHtml(p,open){
+ if(open)return '';const mid=firstMid(p);if(!mid)return '';const n=midCount(p);
+ return '<div class="pthw" data-a="open" data-id="'+p.id+'"><img class="ph2 pth" data-mid="'+mid+'" alt="">'+(n>1?'<span class="pthn">사진 '+n+'장</span>':'')+'</div>';
+}
+function smallThumb(p){
+ const mid=firstMid(p);if(mid)return '<img class="nwsimg" data-mid="'+mid+'" alt="">';
+ if(p.img)return '<img class="nwsimg" data-pid="'+p.id+'" src="'+(IMGS[p.id]||BLANK)+'" alt="">';
+ return '';
+}
 
 /* ── 소식 글: 수정 · 사진 붙여넣기/끌어놓기 ── */
 const POSTEDIT_URL=API_URL.replace('ac_api','ac_post_edit');
@@ -1185,7 +1208,10 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.mxg th,.mxg td{min-width:26px;height:30px;font-size:12.5px}.mxg .rk{min-width:40px;left:0;font-size:14px}.mxg .nm{min-width:104px;left:40px;border-right:0}.mxg .sc{position:sticky;left:144px;z-index:3;min-width:46px;background:#fff;font-weight:800}.mxg .cl{position:sticky;left:190px;z-index:3;min-width:54px;background:#fff;border-right:2px solid #d9cfba}.mxg th.sc,.mxg th.cl{z-index:4;background:#f1f3f8}.mxg tr.me td.rk,.mxg tr.me td.nm,.mxg tr.me td.sc,.mxg tr.me td.cl{background:#fff3cf}.mxg tr.rt td.rk,.mxg tr.rt td.nm,.mxg tr.rt td.sc,.mxg tr.rt td.cl{background:#faf6ee}.mxg td.gO{color:#1f3a6e;background:#dce7fb;font-weight:800}.mxg td.gX{color:#b0334b;background:#f7d6dc;font-weight:800}.mxg td.gT{color:#7a5a0b;background:#f5e4b0;font-weight:800}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}@media(max-width:640px){.mxg .sc,.mxg .cl{position:static}.mxg .nm{border-right:1px solid #eee7d8}.mxg .nm{min-width:92px}}'+
  '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:6px}.pgrp{display:grid;grid-template-columns:repeat(10,32px);gap:2px}.pc{text-align:center;border-radius:6px;padding:1px 0;line-height:1;background:#fbf9f4;color:#c9c9c9;height:32px;display:flex;flex-direction:column;justify-content:center}.pc i{display:block;font-style:normal;font-size:8.5px;opacity:.75}.pc b{font-size:13px}@media(max-width:640px){.pgrp{grid-template-columns:repeat(10,minmax(0,1fr));width:100%}}.chgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px}.chgrid .card{margin:0}.mnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f7f2e6;font-size:13.5px;line-height:1.65}.mnote small{color:var(--mut);font-size:11px;margin-left:6px}.dgt{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.dgt ul{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.9}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
- '.stamp{display:inline-block;border:2px solid #d4486a;color:#d4486a;border-radius:50%;width:44px;height:44px;line-height:40px;text-align:center;font-weight:900;font-size:10px;letter-spacing:-.3px;transform:rotate(-14deg);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3.5px #d4486a;background:rgba(212,72,106,.05)}.stamp.s{width:34px;height:34px;line-height:30px;font-size:8px}.stamp.xs{width:26px;height:26px;line-height:22px;font-size:6.5px;border-width:1.5px;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 2.5px #d4486a}'+
+ '.post .bd.clamp img{display:none}.pthw{position:relative;max-width:640px;cursor:pointer}.pthw .pth{width:100%;max-height:280px;min-height:120px;object-fit:cover;background:var(--bg2,#eee)}.pthn{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 9px;border-radius:999px}'+
+'.nwsimg{float:right;width:64px;height:64px;object-fit:cover;border-radius:10px;margin:0 0 4px 10px;background:var(--bg2,#eee)}.nws::after{content:"";display:block;clear:both}'+
+'.mdel{background:none;border:0;color:inherit;opacity:.75;font-size:11px;text-decoration:underline;cursor:pointer;margin-left:8px;padding:0}.mdel:hover{opacity:1}.chat .hh{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'+
+'.stamp{display:inline-block;border:2px solid #d4486a;color:#d4486a;border-radius:50%;width:44px;height:44px;line-height:40px;text-align:center;font-weight:900;font-size:10px;letter-spacing:-.3px;transform:rotate(-14deg);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3.5px #d4486a;background:rgba(212,72,106,.05)}.stamp.s{width:34px;height:34px;line-height:30px;font-size:8px}.stamp.xs{width:26px;height:26px;line-height:22px;font-size:6.5px;border-width:1.5px;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 2.5px #d4486a}'+
  '.mxg{border-collapse:separate;border-spacing:0;font-size:13px}.mxg th,.mxg td{min-width:28px;height:30px;padding:0 3px;text-align:center;border-bottom:1px solid #eee7d8;border-right:1px solid #f4efe4;background:var(--card)}.mxg th{position:sticky;top:0;z-index:2;background:#f4efe4;font-size:11.5px}.mxg .rk{position:sticky;left:0;z-index:3;min-width:42px;font-weight:800;background:var(--card)}.mxg th.rk{z-index:4;background:#f4efe4}.mxg .nm{position:sticky;left:42px;z-index:3;text-align:left;min-width:120px;font-weight:700;white-space:nowrap;background:var(--card);border-right:2px solid var(--line)}.mxg th.nm{z-index:4;background:#f4efe4}.mxg tr.me td{background:#fff3cf}.mxg tr.rt td{background:#faf6ee;font-size:11px;font-weight:700}'+
  '.mxg td.gO{color:#0b3d91;background:#cfe0ff;font-weight:900}.mxg td.gX{color:#b01030;background:#ffc9d2;font-weight:900}.mxg td.gT{color:#7a5200;background:#ffe27a;font-weight:900}.mxg td.gN{color:#c9c9c9}'+
  '.rtbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}.rtbar button,.rtbar select{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer}.rtbar .rtc{display:inline-flex;gap:4px}.rtbar .rtc button{width:22px;height:22px;padding:0;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}'+
@@ -1235,7 +1261,7 @@ function newsCard(){
  const staff=false,u=me();
  const P=DB.posts.filter(p=>postVis(p)).sort((a,b)=>(b.pin||0)-(a.pin||0)||b.ts.localeCompare(a.ts)).slice(0,4);
  return '<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+(P.length?P.map(p=>{const un=!p.reads.includes(u.id);
-  return '<button class="nws" data-a="tab" data-v="feed"><span class="badge t-'+p.type+'">'+esc(p.type)+'</span>'+(un?' <span class="badge new">NEW</span>':'')+(p.img?' <span class="muted sm">사진</span>':'')+'<div style="font-weight:700;margin-top:4px">'+esc(p.title)+'</div>'+(p.body?'<div class="pv2">'+esc(plainOf(p.body))+'</div>':'')+'<div class="muted sm" style="margin-top:3px">'+fmtTs(p.ts)+'</div></button>';}).join(''):'<div class="empty">아직 소식이 없어요</div>')+'</div>';
+  return '<button class="nws" data-a="tab" data-v="feed">'+smallThumb(p)+'<span class="badge t-'+p.type+'">'+esc(p.type)+'</span>'+(un?' <span class="badge new">NEW</span>':'')+(p.img?' <span class="muted sm">사진</span>':'')+'<div style="font-weight:700;margin-top:4px">'+esc(p.title)+'</div>'+(p.body?'<div class="pv2">'+esc(plainOf(p.body))+'</div>':'')+'<div class="muted sm" style="margin-top:3px">'+fmtTs(p.ts)+'</div></button>';}).join(''):'<div class="empty">아직 소식이 없어요</div>')+'</div>';
 }
 function noteCard(){
  const st=stuOf(),n=SH&&SH.note;
@@ -1581,6 +1607,8 @@ document.addEventListener('click',async e=>{
  case 'comment':{const i=document.getElementById('cin_'+id),tx=i.value.trim();if(!tx)return;await mut('comment_add',{id:id,text:tx});break;}
  case 'pin':await mut('post_pin',{id:id});break;
  case 'delpost':if(confirm('이 글을 삭제할까요?'))await mut('post_delete',{id:id});break;
+ case 'msgdel':{if(!confirm('이 메시지를 지울까요?\n지우면 상대방 화면에서도 사라지고 되돌릴 수 없어요.'))break;const j=await msgDelApi('one',{id:+id});if(j&&j.ok){Object.keys(DB.msgs).forEach(k=>{DB.msgs[k]=DB.msgs[k].filter(x=>x.id!==+id);});render();toast('메시지를 지웠어요');}else toast((j&&j.error)||'지우지 못했어요');break;}
+ case 'msgdelall':{const sid=t.dataset.sid,kd=t.dataset.kind,u2=DB.students&&DB.students.find?DB.students.find(x=>x.id===sid):null,nm=(u2&&u2.name)||(typeof U!=='undefined'&&U[sid]?U[sid].name:'이 학생');if(!confirm(nm+(kd==='parent'?' 학부모':'')+'님과 주고받은 메시지를 모두 지울까요?\n사진·파일도 함께 지워지고 되돌릴 수 없어요.'))break;const j=await msgDelApi('all',{sid:sid,kind:kd});if(j&&j.ok){DB.msgs[sid+':'+kd]=[];render();toast('대화를 모두 지웠어요 ('+j.n+'개)');}else toast((j&&j.error)||'지우지 못했어요');break;}
  case 'reads':openReads(id);break;
  case 'write':openWrite(t.dataset.t);break;
  case 'postsave':await actPost();break;
