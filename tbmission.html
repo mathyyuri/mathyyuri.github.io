@@ -140,7 +140,9 @@ function vLogin(){
  '<div class="fld" id="fname"><label>이름</label><input id="lname" autocomplete="off"></div><div class="fld"><label id="lpl">학부모 전화번호 뒤 4자리</label><input id="lpin" type="password" autocomplete="off" inputmode="numeric"></div>'+
  '<button class="btn" style="width:100%;margin-top:6px" data-a="login">들어가기</button><div class="err" id="lerr"></div></div></div>'}
 var LOGIN={ac:'ds',role:'student'};
-function catOf(m){return m.cat||'미션'}
+function guessCat(n){n=String(n||'');return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'미션'}
+function catOf(m){return m.cat||guessCat(m.name)}
+function defCat(){var has=S.list.some(function(m){return seasonOf(m)===S.season&&catOf(m)==='교과서미션'});return has?'교과서미션':''}
 var SEAS=[['fin','2학기 기말대비'],['mid','2학기 중간대비']],FIN_FROM='2026-10-15';
 function seasonOf(m){return (m.old||String(m.date)<FIN_FROM)?'mid':'fin'}
 function filtered(){return S.list.filter(function(m){return seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
@@ -256,11 +258,25 @@ function vMy(){
  return h}
 
 /* 전체 성적표 (닉네임) */
+function barChart(){
+ var C=S.C,R=C.G.slice().sort(function(a,b){return b.s-a.s}),n=R.length,tot=C.tot||1;
+ var BW=36,pl=36,W=Math.max(560,pl+n*BW+16),H=240,pt=20,pb=40,ih=H-pt-pb;
+ function Y(v){return pt+ih*(1-v/tot)}
+ var avg=n?R.reduce(function(a,r){return a+r.s},0)/n:0,g='';
+ [0,.25,.5,.75,1].forEach(function(f){var v=tot*f;g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+Math.round(v)+'</text>'});
+ R.forEach(function(r,i){var x=pl+i*BW+5,w=BW-10,y=Y(r.s),nm=isStaff()?r.name:(r.me?r.name:r.nick);
+  g+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(Y(0)-y)+'" rx="4" fill="'+cc(r.cls)+'"'+(r.me?' stroke="#d4486a" stroke-width="3"':'')+'><title>'+esc(nm+' · '+r.s+'점')+'</title></rect><text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="11" font-weight="'+(r.me?800:600)+'" fill="'+(r.me?'#d4486a':'#3a4256')+'">'+(Math.round(r.s*10)/10)+'</text><text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?800:400)+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(String(nm||'').slice(0,4))+'</text>'});
+ g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
+ return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto;display:block">'+g+'</svg></div>'}
+function xCount(r){return cnts(r.ox).x}
+function isClear(r){var c=cnts(r.ox);return c.x===0&&c.o+c.t>=S.C.n&&c.o+c.t>0}
 function vBoard(){
  var C=S.C,h='<div class="card"><h3>반별 현황</h3><div class="row">'+Object.keys(C.cls).sort().map(function(k){var l=C.cls[k],av=l.reduce(function(a,r){return a+r.s},0)/l.length;return '<div class="kp" style="border-left-color:'+cc(k)+';min-width:150px"><b>'+badge(k)+' '+av.toFixed(1)+'점</b><span>'+l.length+'명 · 최고 '+l[0].s+'점</span></div>'}).join('')+'</div></div>';
- h+='<div class="card"><h3>전체 성적표 <span class="muted sm" style="font-weight:400">'+(isStaff()?'':'닉네임으로 보여요 · ')+'노란 줄이 나</span></h3><table class="tbl"><tr><th>순위</th><th>'+(isStaff()?'이름 (닉네임)':'닉네임')+'</th><th>반</th><th>점수</th><th class="hide-m">정답률</th><th>틀린 수</th></tr>'+
+ var ncl=C.G.filter(isClear).length;
+ h+='<div class="card"><h3>전체 성적차트 <span class="muted sm" style="font-weight:400">막대 하나 = 학생 한 명 · 점선 = 평균'+(isStaff()?'':' · 붉은 테두리 = 나')+'</span></h3><div class="kpis" style="margin-bottom:10px"><div class="kp n"><b>'+C.G.length+'명</b><span>응시</span></div><div class="kp"><b>'+(Math.round(C.avg*10)/10)+'점</b><span>평균</span></div><div class="kp"><b>'+ncl+' / '+C.G.length+'</b><span>클리어 (남은 오답 0)</span></div><div class="kp r"><b>'+C.G.reduce(function(a,r){return a+xCount(r)},0)+'개</b><span>남은 오답 합계</span></div></div>'+barChart()+'</div>';
+ h+='<div class="card"><h3>전체 성적표 <span class="muted sm" style="font-weight:400">'+(isStaff()?'':'닉네임으로 보여요 · ')+'노란 줄이 나</span></h3><table class="tbl"><tr><th>순위</th><th>'+(isStaff()?'이름 (닉네임)':'닉네임')+'</th><th>반</th><th>점수</th><th class="hide-m">정답률</th><th>남은 오답</th><th>클리어</th></tr>'+
  C.G.map(function(r){var ok=0,n=0;C.items.forEach(function(_,i){var v=okAt(r,i);if(v!=null){n++;ok+=v}});
-  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?r.name:(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+(n-ok)+'</td></tr>'}).join('')+'</table></div>';
+  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?r.name:(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+xCount(r)+'</td><td>'+(isClear(r)?'<span class="cb" style="background:#2f7d5b;color:#fff">클리어</span>':'')+'</td></tr>'}).join('')+'</table></div>';
  return h}
 
 /* 전체 정오표 */
@@ -598,7 +614,7 @@ async function boot(){
  S.me=j.me;var l=await ms('list');S.list=l&&l.ok?l.list:[];
  S.cards={};S.cat='';S.lim=30;
  if(!isStaff())await studentCards();
- S.season=S.list.some(function(m){return seasonOf(m)==='fin'})?'fin':'mid';
+ S.season=S.list.some(function(m){return seasonOf(m)==='fin'})?'fin':'mid';S.cat=defCat();
  var qm=qs.get('m');if(qm&&S.list.some(function(m){return m.id===qm})){await openMission(qm,qs.get('v')||undefined);return}
  render()}
 document.addEventListener('click',async function(ev){
@@ -613,7 +629,7 @@ document.addEventListener('click',async function(ev){
  if(a==='out'){var tk=S.tok;S.ex=null;S.ov=false;S.hist=null;await api('logout');logout();return}
  if(a==='open'){openMission(b.getAttribute('data-id'));return}
  if(a==='back'){S.ex=null;if(S.fromOv){S.fromOv=false;S.ov=true}render();return}
- if(a==='season'){S.season=b.getAttribute('data-v');S.cat='';S.lim=30;render();return}
+ if(a==='season'){S.season=b.getAttribute('data-v');S.cat=defCat();S.lim=30;render();return}
  if(a==='ov'){openOv();return}
  if(a==='ovback'){S.ov=false;render();return}
  if(a==='ovopen'){S.fromOv=true;openMission(b.getAttribute('data-id'),'my',S.ovSid);return}

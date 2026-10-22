@@ -1262,24 +1262,37 @@ async function saveTools(){
  TOOLS=undefined;TOOLS_BUSY=false;closeModal();ensureTools();toast('도구 모음을 저장했어요 ('+j.n+'개)');
 }
 
-/* ── 미션 탭: 공통 성적차트 (새 미션 결과를 한눈에) ── */
+/* ── 미션 탭: 미션별 클리어 현황 · 평균 · 남은 오답 + 눌러서 전체 성적차트 ── */
 let MS=null,MS_BUSY=false;
 const MS_URL=API_URL.replace('ac_api','ac_mission');
 const MSC={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
+const MS_GROUPS=[['chart','성적차트',null],['prog','진도미션',['교과서미션','진도미션']],['wrong','오답미션',['오답미션']],['test','TEST미션',['TEST']],['past','기출미션',['기출']]];
 async function msApi(a,args){
  try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
+}
+function msCatOf(it){
+ const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
+ return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
 }
 function msEnsure(){
  if(MS||MS_BUSY)return;MS_BUSY=true;
  (async()=>{
   const l=await msApi('list');
   if(!l||!l.ok){MS={err:true,items:[]};MS_BUSY=false;render();return;}
-  const cand=l.list.filter(m=>!m.old&&m.graded>0).slice(0,6),items=[];
-  await Promise.all(cand.map(async m=>{const x=await msApi('load',{exam_id:m.id});if(x&&x.ok)items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null)});}));
+  const cand=l.list.filter(m=>!m.old).slice(0,40),items=[];
+  await Promise.all(cand.map(async m=>{
+   if(!(m.graded>0)){items.push({m:m,ex:{id:m.id,name:m.name,date:m.date,cat:m.cat,items:new Array(m.n).fill({pts:1})},roster:[]});return;}
+   const x=await msApi('load',{exam_id:m.id});if(x&&x.ok)items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null)});}));
   items.sort((a,b)=>cand.indexOf(a.m)-cand.indexOf(b.m));
   MS={items:items,n:l.list.length};MS_BUSY=false;render();
  })();
+}
+function msCnt(ox,len){let o=0,x=0,t=0;String(ox||'').split('').forEach(ch=>{if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;});return {o:o,x:x,t:t,b:Math.max(0,len-o-x-t)};}
+function msStat(it){
+ const len=it.ex.items.length;let cl=0,xs=0,sc=0;
+ const rows=it.roster.map(r=>{const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
+ const n=rows.length;return {n:n,cl:cl,xs:xs,avg:n?sc/n:null,rows:rows,me:rows.find(x=>x.r.me)};
 }
 function msChart(it){
  const R=it.roster.slice().sort((a,b)=>b.score-a.score),n=R.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
@@ -1291,29 +1304,42 @@ function msChart(it){
   const x=pl+i*BW+5,w=BW-10,v=+r.score,y=Y(v),col=MSC[String(r.cls||'').replace(/반$/,'')]||'#a0a6b5',nm=r.me?(r.name||'나'):(r.name||r.nick||'');
   s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(Y(0)-y)+'" rx="4" fill="'+col+'"'+(r.me?' stroke="#d4486a" stroke-width="3"':'')+'><title>'+esc(nm+' · '+r.score+'점 ('+(r.cls||'')+')')+'</title></rect>'+
    '<text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="11" font-weight="'+(r.me?'800':'600')+'" fill="'+(r.me?'#d4486a':'#3a4256')+'">'+(Math.round(v*10)/10)+'</text>'+
-   '<text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?'800':'400')+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(nm.length>4?nm.slice(0,4):nm)+(r.me?'':'')+'</text>';});
+   '<text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?'800':'400')+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(nm.length>4?nm.slice(0,4):nm)+'</text>';});
  s+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
  return s+'</svg>';
 }
-function msCard(it){
- const R=it.roster,n=R.length,me=R.find(r=>r.me),sc=R.map(r=>+r.score),avg=n?sc.reduce((a,b)=>a+b,0)/n:0,mx=n?Math.max.apply(null,sc):0;
- const rk=me?R.filter(r=>+r.score>+me.score).length+1:null;
- const cl={};R.forEach(r=>{const k=String(r.cls||'').replace(/반$/,'');if(k)cl[k]=1;});
- return '<div class="card"><h3>'+esc(it.ex.name)+' <span class="muted sm" style="font-weight:400">'+esc(String(it.ex.date).slice(5).replace('-','/'))+(it.ex.cat?' · '+esc(it.ex.cat):'')+'</span></h3>'+
-  '<div class="kpi" style="margin-bottom:10px"><div><b>'+n+'명</b><span>응시</span></div><div><b>'+(Math.round(avg*10)/10)+'</b><span>평균</span></div><div><b>'+(Math.round(mx*10)/10)+'</b><span>최고</span></div>'+(me?'<div><b>'+me.score+'점 · '+rk+'위</b><span>내 성적</span></div>':'')+'</div>'+
+function msDetail(it,st){
+ const cl={};it.roster.forEach(r=>{const k=String(r.cls||'').replace(/반$/,'');if(k)cl[k]=1;});
+ const chips=st.rows.slice().sort((a,b)=>(b.clear-a.clear)||(a.c.x-b.c.x)).map(x=>{const nm=x.r.me?(x.r.name||'나')+'(나)':(x.r.name||x.r.nick||'');
+  return '<span class="badge" style="'+(x.clear?'background:#2f7d5b;color:#fff':'background:#f1f3f8;color:#3a4256')+(x.r.me?';outline:2px solid #d4486a':'')+'">'+(x.clear?'✓ ':'')+esc(nm)+(x.clear?'':' · 남은 '+x.c.x)+'</span>';}).join(' ');
+ return '<div style="margin:4px 0 8px"><b>전체 성적차트</b> <span class="muted sm">막대 하나 = 학생 한 명 · 점선 = 평균'+(isStaff()?'':' · 붉은 테두리 = 나')+'</span></div>'+
   '<div style="margin-bottom:6px">'+Object.keys(cl).map(k=>'<span class="badge" style="background:'+(MSC[k]||'#a0a6b5')+';color:'+(k==='A+'||k==='B'?'#2b2f3a':'#fff')+'">'+esc(k)+'반</span>').join(' ')+'</div>'+
   '<div style="overflow-x:auto;padding-bottom:4px">'+msChart(it)+'</div>'+
-  '<div style="margin-top:8px"><a class="btn sm3 rose" style="text-decoration:none" href="tbmission.html?m='+it.m.id+'&v=board">전체 성적표 · 정오표 · 분석 보기</a></div></div>';
+  '<div style="margin:12px 0 6px"><b>클리어 현황</b> <span class="muted sm">✓ = 틀린 문제를 모두 고친 친구 · 나머지는 남은 오답 수</span></div><div style="line-height:2.1">'+chips+'</div>'+
+  '<div style="margin-top:10px"><a class="btn sm3 rose" style="text-decoration:none" href="tbmission.html?m='+it.m.id+'&v=board">전체 성적표 · 정오표 · 분석 보기</a></div>';
 }
 function vMission(){
- if(S.sub.mission!=='chart')return vMissionOld();
+ const g=S.sub.mission;
+ const chips='<div class="chips">'+MS_GROUPS.map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button></div>';
+ if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h='<div class="chips"><button class="chip on" data-a="sub" data-k="mission" data-v="chart">성적차트</button>'+['진도','오답','TEST','공통'].map(x=>'<button class="chip" data-a="sub" data-k="mission" data-v="'+x+'">'+(x==='공통'?'공통과제':x+'미션')+'</button>').join('')+'</div>';
- h+='<div class="row" style="margin-bottom:12px"><a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 내 기록 한눈에 보기</a><button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+'<div class="row" style="margin-bottom:12px"><a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 내 기록 한눈에 보기</a><button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
- if(MS.err)return h+'<div class="card"><div class="empty">성적차트를 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
- if(!MS.items.length)return h+'<div class="card"><div class="empty">아직 채점된 미션이 없어요.<br>미션을 채점하면 여기에 공통 성적차트가 나와요.</div></div>';
- return h+'<div class="note">막대 하나가 학생 한 명이에요. 반마다 색이 달라요. 점선은 전체 평균'+(isStaff()?'':', 붉은 테두리가 내 점수예요')+'.</div>'+MS.items.map(msCard).join('');
+ if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
+ const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
+ const L=MS.items.filter(it=>!grp[2]||grp[2].indexOf(msCatOf(it))>=0);
+ if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
+ const stu=!isStaff();
+ h+='<div class="note">미션을 누르면 <b>전체 성적차트</b>와 <b>클리어 현황</b>이 펼쳐져요. 클리어 = 틀린 문제를 모두 고친 상태(남은 오답 0개)예요.</div><div class="card" style="padding:8px 4px"><table class="tbl"><tr><th style="text-align:left">미션</th><th>응시</th><th>평균</th><th>클리어</th><th>남은 오답</th>'+(stu?'<th>내 상태</th>':'')+'</tr>';
+ L.forEach(it=>{
+  const st=msStat(it),op=!!S.open['ms'+it.m.id],id=it.m.id;
+  let mine='';
+  if(stu){const me=st.me;mine='<td>'+(me?(me.clear?'<span class="badge" style="background:#2f7d5b;color:#fff">클리어 ✓</span>':'<b style="color:#b84a4a">남은 오답 '+me.c.x+'개</b>'):(st.n?'<span class="muted sm">기록 없음</span>':'<span class="muted sm">채점 전</span>'))+'</td>';}
+  h+='<tr style="cursor:pointer" data-a="open" data-id="ms'+id+'"><td style="text-align:left"><b>'+esc(it.ex.name)+'</b> <span class="muted">'+(op?'▲':'▼')+'</span><div class="muted sm">'+esc(String(it.ex.date).slice(5).replace('-','/'))+' · '+esc(msCatOf(it))+'</div></td>'+
+   '<td>'+(st.n?st.n+'명':'-')+'</td><td>'+(st.avg==null?'-':(Math.round(st.avg*10)/10))+'</td><td>'+(st.n?'<div class="bar"><i style="width:'+Math.round(st.cl*100/st.n)+'%"></i></div><span class="sm">'+st.cl+' / '+st.n+'</span>':'-')+'</td><td>'+(st.n?'<b>'+st.xs+'개</b>':'-')+'</td>'+mine+'</tr>';
+  if(op)h+='<tr><td colspan="'+(stu?6:5)+'" style="text-align:left;padding:12px 14px;background:#fbf8f1">'+(st.n?msDetail(it,st):'<div class="muted">아직 채점 전이에요.</div>')+'</td></tr>';
+ });
+ return h+'</table></div>';
 }
 
 async function sendMsg(key){
