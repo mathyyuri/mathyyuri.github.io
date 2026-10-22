@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10모 성적 (강사용)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;1,500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{--navy:#1f3a6e;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#eceae4;--fk:"Gowun Batang",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb)}
+.tool{background:#17284d;color:#fff;padding:14px 18px}.tool .in{max-width:1000px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.tool b{font-family:var(--fk);font-size:17px;margin-right:6px}.tool input,.tool select,.tool button,.tool textarea{font-family:inherit;font-size:13px;border-radius:16px;border:0;padding:7px 14px}
+.tool input[type=password]{width:150px}.tool button{background:#c9a55d;color:#1b2540;font-weight:700;cursor:pointer}.tool button.g{background:#34518a;color:#fff}
+.tool .cuts{display:flex;gap:4px;align-items:center;font-size:12px;color:#cfd7ea}.tool .cuts input{width:46px;padding:5px 6px;text-align:center;border-radius:8px}
+.tool .msg{font-size:12.5px;color:#e8cd9c;flex-basis:100%}
+details{max-width:1000px;margin:10px auto 0;color:#cfd7ea;font-size:12.5px}details textarea{width:100%;height:90px;border-radius:10px;margin-top:6px;font-size:12px}
+.wrap{max-width:1000px;margin:18px auto 50px;padding:0 12px}
+#sheet{background:#fff;border-radius:14px;padding:26px 28px 24px;box-shadow:0 4px 18px rgba(30,40,70,.12)}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid var(--navy);padding-bottom:12px;flex-wrap:wrap}
+.eb{font-family:"Playfair Display",serif;font-style:italic;letter-spacing:.2em;color:var(--gold);font-size:13px}
+h1{font-family:var(--fk);font-size:26px;margin:4px 0 0}.meta{font-size:12.5px;color:var(--mute);text-align:right;line-height:1.7}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}.chip{border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:8px;padding:6px 12px;font-size:12.5px;line-height:1.5;background:#fbfaf7}
+.chip b{font-size:14px}.chip.Sp{border-left-color:#1f3a6e}.chip.S{border-left-color:#b76e79}.chip.Ap{border-left-color:#c9a55d}.chip.A{border-left-color:#8d94a3}.chip.B{border-left-color:#c5c9d2}
+.cls{margin-top:20px}.cls h2{font-family:var(--fk);font-size:18px;margin:0 0 6px;display:flex;align-items:baseline;gap:10px}.cls h2 small{font-family:var(--fb);font-size:12px;color:var(--mute);font-weight:400}
+table{width:100%;border-collapse:collapse;font-size:14px}th{background:#f1f3f8;font-weight:700;font-size:12.5px}th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:center}
+td.n{color:var(--mute);width:54px}td.n b{color:#1f3a6e;font-size:14px}td.n small{font-size:10.5px;color:#9aa0b0}td.nm{font-weight:700;text-align:left}td.sc{font-weight:700;font-size:15px}td.sch{text-align:left;color:#43485a}
+.gb{display:inline-block;min-width:44px;padding:2px 8px;border-radius:12px;color:#fff;font-weight:700;font-size:13px}.g1{background:#1f3a6e}.g2{background:#b76e79}.g3{background:#c9a55d;color:#3a2f10}.g4{background:#a9afbd}.g5,.g6,.g7,.g8,.g9{background:#c9cdd7;color:#3d4252}
+.bar{position:relative;height:10px;background:#eef0f5;border-radius:5px;min-width:130px}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#b76e79}.bar s{position:absolute;top:-2px;bottom:-2px;width:2px;background:#1f3a6e;opacity:.55}.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#c9a55d;text-decoration:none}
+.foot{margin-top:16px;font-size:11.5px;color:var(--mute);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.empty{padding:60px 10px;text-align:center;color:var(--mute);line-height:1.9}
+.full{font-size:12.5px}.full th,.full td{padding:6px 4px}td.sc2{font-weight:700;white-space:nowrap}.gb2{display:inline-block;margin-left:3px;min-width:15px;padding:0 4px;border-radius:8px;font-size:10px;font-weight:700;color:#fff;vertical-align:1px;text-align:center}
+.cb{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:12.5px;line-height:1.5}.cb.big{font-size:15px;padding:2px 14px}
+.dist{margin-top:8px}.dist h3{font-family:var(--fk);font-size:16px;margin:16px 0 6px}.drow{display:flex;align-items:center;gap:10px;margin:6px 0}.drow .cb{width:46px;text-align:center;padding:2px 0}.dbar{flex:1;display:flex;height:26px;border-radius:6px;overflow:hidden;background:#eef0f5}.dbar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12.5px;font-weight:700}.drow em{width:44px;font-style:normal;font-size:12px;color:#6b7080}.lg2{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:#555;margin:6px 0 10px}.lg2 u{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+@media(max-width:640px){#sheet{padding:16px 10px}table{font-size:12.5px}.bar{display:none}.hbar{display:none}}
+</style></head><body>
+<div class="tool"><div class="in">
+ <b>10모 성적 · 강사용</b>
+ <input id="pw" type="password" placeholder="원장 비밀번호" autocomplete="off"><button id="go">이름까지 불러오기</button><button id="goPub" class="g">이름 없이(공개 자료)</button>
+ <select id="view"><option value="math">수학만</option><option value="full">전체 성적(6과목)</option></select>
+ <select id="mode"><option value="cls">반별 보기</option><option value="all">전체 점수순</option></select>
+ <span class="cuts">수학 등급컷 <input class="cut" value="80"><input class="cut" value="69"><input class="cut" value="56"><input class="cut" value="46"><input class="cut" value="34"><input class="cut" value="23"><input class="cut" value="16"><input class="cut" value="10"></span>
+ <button id="png">이미지(PNG) 저장</button><button id="copy" class="g">표 복사</button>
+ <div class="msg" id="msg">원장 비밀번호로 이름이 있는 성적을 불러와요. (이 비밀번호는 저장되지 않아요)</div>
+</div>
+<details><summary>비밀번호 없이 쓰려면: Supabase에서 뽑은 표를 여기에 붙여넣기</summary>
+ <textarea id="paste" placeholder="7_10모_수학성적_표로보기.sql 결과의 [Copy] 를 여기에 붙여넣고 아래 버튼을 누르세요 (학교·이름·반·수학 열이 있으면 돼요)"></textarea>
+ <button id="usePaste" style="margin-top:6px;border:0;border-radius:14px;padding:6px 14px;background:#c9a55d;font-weight:700;cursor:pointer">붙여넣은 표로 보기</button>
+</details></div>
+<div class="wrap"><div id="sheet"><div class="empty">위에서 [이름까지 불러오기]를 누르세요.</div></div></div>
+<script>
+(function(){
+ var $=function(i){return document.getElementById(i)};
+ var qs=new URLSearchParams(location.search);
+ var SBR='https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/';
+ var SBV='https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/mo10_public?select=*&order=seq';
+ var KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
+ var ORDER=['S+','S','A+','A','B'],rows=[],named=true,stamp='';
+ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+ function cuts(){return [].map.call(document.querySelectorAll('.cut'),function(i){return parseFloat(i.value)||0})}
+ var CCOL={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
+ function cc(k){return CCOL[k]||'#a0a6b5'}
+ function ct(k){return (k==='A+'||k==='B')?'#2b2f3a':'#fff'}
+ function badge(k,big){return '<span class="cb'+(big?' big':'')+'" style="background:'+cc(k)+';color:'+ct(k)+'">'+esc(k)+'</span>'}
+ var NTOT=0;
+ function rkh(all){return all?'<th>전체 등수</th>':'<th>반 순위</th><th>전체 등수</th>'}
+ function rk(r,i,all){var bl=' style="border-left:5px solid '+cc(r.cls)+'"';var t='<td class="n"'+(all?bl:'')+'><b>'+r._rk+'</b><small>/'+NTOT+'</small></td>';return all?t:'<td class="n"'+bl+'>'+(i+1)+'</td>'+t}
+ function num(v){var n=parseFloat(v);return isNaN(n)?null:n}
+ function mk(school,name,cls,o){var r={school:school,name:name,cls:cls,math:num(o.math),korean:num(o.korean),english:num(o.english),history:num(o.history),society:num(o.society),science:num(o.science),total:num(o.total)};if(r.total==null){var t=0,n=0;['korean','math','english','history','society','science'].forEach(function(k){if(r[k]!=null){t+=r[k];n++}});r.total=n?t:null}return r}
+ function grade(m,c){for(var g=0;g<8;g++){if(m>=c[g])return g+1}return 9}
+ function ck(c){return c.replace('+','p')}
+ function msg(t){$('msg').textContent=t}
+ async function rpc(fn,args){var r;try{r=await fetch(SBR+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify(args)})}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'}}
+  if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 8_10모_강사용_조회_추가.sql 을 아직 실행하지 않았어요':'')};try{return await r.json()}catch(e){return {ok:false,error:'응답을 읽지 못했어요'}}}
+ $('go').onclick=async function(){
+  var pw=$('pw').value;if(!pw){msg('비밀번호를 입력해 주세요');return}
+  msg('불러오는 중…');
+  var j=await rpc('ac_api',{p_action:'login',p_token:null,p_args:{academy:'ds',role:'admin',password:pw}});$('pw').value='';
+  if(!j||!j.ok){msg((j&&j.error)||'로그인하지 못했어요');return}
+  var k=await rpc('ac_mo10',{p_token:j.token});
+  if(!k||!k.ok){msg((k&&k.error)||'불러오지 못했어요');return}
+  rows=k.rows.map(function(r){return mk(r.school,r.name,r.cls,r)});named=true;stamp='';msg('불러왔어요 · '+rows.length+'명 (이름 포함 · 내부용)');render();
+ };
+ $('goPub').onclick=async function(){
+  msg('공개 자료 불러오는 중…');
+  try{var r=await fetch(SBV,{headers:{apikey:KEY,Authorization:'Bearer '+KEY}});var d=await r.json();
+   rows=d.filter(function(x){return x.math!=null}).map(function(x,i){return mk(x.school,'학생 '+(i+1),x.cls,x)});named=false;msg('공개 자료 '+rows.length+'명 (이름은 비공개라 번호로 표시)');render()}catch(e){msg('불러오지 못했어요')}
+ };
+ $('usePaste').onclick=function(){
+  var t=$('paste').value.trim();if(!t){msg('붙여넣을 표가 비었어요');return}
+  var L=t.split(/\r?\n/).filter(function(x){return x.trim()}).map(function(l){return l.indexOf('\t')>=0?l.split('\t'):l.split(',')});
+  var h=L[0].map(function(x){return x.trim()}),ix={school:h.indexOf('학교'),name:h.indexOf('이름'),cls:h.indexOf('반'),math:h.indexOf('수학')},start=1;
+  if(ix.school<0||ix.math<0){ix={school:0,name:1,cls:2,math:3};start=0}
+  var hx={korean:h.indexOf('국어'),english:h.indexOf('영어'),history:h.indexOf('한국사'),society:h.indexOf('통합사회'),science:h.indexOf('통합과학'),total:h.indexOf('합계')};rows=L.slice(start).map(function(c){var o={math:parseFloat(c[ix.math])};Object.keys(hx).forEach(function(k){if(hx[k]>=0)o[k]=parseFloat(c[hx[k]])});return mk((c[ix.school]||'').trim(),(c[ix.name]||'').trim(),(c[ix.cls]||'').trim(),o)}).filter(function(r){return !isNaN(r.math)});named=true;msg('붙여넣은 표 '+rows.length+'명');render();
+ };
+ function tbl(list,showCls,c){
+  var c1=c[0],c2=c[1];
+  var h='<table><tr>'+rkh(showCls)+'<th>학교</th><th>이름</th>'+(showCls?'<th>반</th>':'')+'<th>수학</th><th>등급</th><th class="hbar">점수 위치 <small style="font-weight:400;color:#8a8f9e">(남색선 1등급컷 · 금색선 2등급컷)</small></th></tr>';
+  list.forEach(function(r,i){var g=grade(r.math,c);
+   h+='<tr>'+rk(r,i,showCls)+'<td class="sch">'+esc(r.school)+'</td><td class="nm">'+esc(r.name)+'</td>'+(showCls?'<td>'+badge(r.cls)+'</td>':'')+'<td class="sc">'+r.math+'</td><td><span class="gb g'+g+'">'+g+'등급</span></td><td class="hbar"><div class="bar"><i style="width:'+Math.min(100,r.math)+'%"></i><s style="left:'+c1+'%"></s><u style="left:'+c2+'%"></u></div></td></tr>'});
+  return h+'</table>'}
+ var SUBJ=[['korean','국어',[83,72,64,53,41,31,24,17]],['math','수학',null],['english','영어',[90,80,70,60,50,40,30,20]],['history','한국사',[40,35,30,25,20,15,10,5]],['society','통합사회',[48,45.5,41,34.5,25.5,17,12,7.5]],['science','통합과학',[47.5,43.5,36,27.5,19.5,14,10,7.5]]];
+ function fullTbl(list,showCls,c){
+  var h='<table class="full"><tr>'+rkh(showCls)+'<th>학교</th><th>이름</th>'+(showCls?'<th>반</th>':'')+SUBJ.map(function(x){return '<th>'+x[1]+'</th>'}).join('')+'<th>합계</th></tr>';
+  list.forEach(function(r,i){h+='<tr>'+rk(r,i,showCls)+'<td class="sch">'+esc(r.school)+'</td><td class="nm">'+esc(r.name)+'</td>'+(showCls?'<td>'+badge(r.cls)+'</td>':'')+SUBJ.map(function(x){var v=r[x[0]];if(v==null)return '<td class="na">-</td>';var g=grade(v,x[2]||c);return '<td class="sc2">'+v+'<span class="gb2 g'+g+'">'+g+'</span></td>'}).join('')+'<td class="sc">'+(r.total==null?'-':r.total)+'</td></tr>'});
+  return h+'</table>'}
+ var GC=['#1f3a6e','#b76e79','#c9a55d','#a9afbd','#c9cdd7'];
+ function distHtml(R,view,keys,c){
+  var rs=R.filter(function(r){return r.math!=null});
+  var h='<div class="dist"><h3>반별 수학 등급 분포</h3>';
+  keys.forEach(function(k){var l=rs.filter(function(r){return r.cls===k});if(!l.length)return;var cnt=[0,0,0,0,0];l.forEach(function(r){cnt[Math.min(grade(r.math,c),5)-1]++});
+   h+='<div class="drow">'+badge(k)+'<div class="dbar">'+cnt.map(function(n,i){return n?'<i style="flex:'+n+';background:'+GC[i]+';color:'+(i<3?'#fff':'#333')+'">'+n+'</i>':''}).join('')+'</div><em>'+l.length+'명</em></div>'});
+  h+='<div class="lg2">'+['1등급','2등급','3등급','4등급','5등급 이하'].map(function(t,i){return '<span><u style="background:'+GC[i]+'"></u>'+t+'</span>'}).join('')+'</div>';
+  var full=view==='full',vals=full?R.filter(function(r){return r.total!=null}):rs,w=full?50:10,nb=full?9:10,val=function(r){return full?r.total:r.math},bins=[],i;
+  for(i=0;i<nb;i++)bins.push({});
+  vals.forEach(function(r){var b=Math.min(nb-1,Math.floor(val(r)/w));bins[b][r.cls]=(bins[b][r.cls]||0)+1});
+  var tot=bins.map(function(b){return keys.reduce(function(s,k){return s+(b[k]||0)},0)}),mx=Math.max(1,Math.max.apply(null,tot)),W=860,H=210,L=24,B=34,T=20,bw=(W-L-10)/nb,u=(H-B-T)/mx;
+  var sv='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  bins.forEach(function(b,i){var y=H-B,x=L+bw*i+4;keys.forEach(function(k){var n=b[k]||0;if(!n)return;var hh=u*n;y-=hh;sv+='<rect x="'+x+'" y="'+y+'" width="'+(bw-8)+'" height="'+hh+'" fill="'+cc(k)+'" stroke="#fff" stroke-width="1.5"/>';if(hh>15)sv+='<text x="'+(x+(bw-8)/2)+'" y="'+(y+hh/2+4)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+ct(k)+'">'+n+'</text>'});
+   if(tot[i])sv+='<text x="'+(L+bw*i+bw/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="12" fill="#555">'+tot[i]+'</text>';
+   sv+='<text x="'+(L+bw*i+bw/2)+'" y="'+(H-14)+'" text-anchor="middle" font-size="11.5" fill="#6b7080">'+(i*w)+'~</text>'});
+  sv+='<line x1="'+L+'" x2="'+(W-6)+'" y1="'+(H-B)+'" y2="'+(H-B)+'" stroke="#cfd3dc"/></svg>';
+  h+='<h3>'+(full?'합계 점수 분포 (50점 단위)':'수학 점수 분포 (10점 단위)')+'</h3>'+sv+'<div class="lg2">'+keys.map(function(k){return '<span><u style="background:'+cc(k)+'"></u>'+esc(k)+'반</span>'}).join('')+'</div></div>';
+  return h}
+ function render(){
+  var c=cuts(),mode=$('mode').value,view=$('view').value;var R=view==='full'?rows:rows.filter(function(r){return r.math!=null});
+  if(!R.length){$('sheet').innerHTML='<div class="empty">표시할 성적이 없어요.</div>';return}
+  var by={};R.forEach(function(r){(by[r.cls]=by[r.cls]||[]).push(r)});
+  var keys=Object.keys(by).sort(function(a,b){var x=ORDER.indexOf(a),y=ORDER.indexOf(b);return (x<0?9:x)-(y<0?9:y)});
+  var avg=function(l){return l.reduce(function(s,r){return s+r.math},0)/l.length};var avgT=function(l){var v=l.filter(function(r){return r.total!=null});return v.length?(v.reduce(function(s,r){return s+r.total},0)/v.length).toFixed(1):'-'};
+  var d=new Date();stamp=d.getFullYear()+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+('0'+d.getDate()).slice(-2);
+  var out='<div class="top"><div><div class="eb">MATHY YURI · 대치에스플러스</div><h1>10모 '+(view==='full'?'전체 성적':'수학 성적')+' <span style="font-size:15px;color:#6b7080">(강사용 · 내부)</span></h1></div><div class="meta">2026.10.20 전국연합학력평가 · 제출 '+R.length+'명 · '+(view==='full'?'합계 평균 '+avgT(R)+'점<br>6과목(국·수·영·한국사·통합사회·통합과학) · 등급은 예상컷 기준':'수학 평균 '+avg(R.filter(function(r){return r.math!=null})).toFixed(1)+'점<br>등급컷 '+c.slice(0,5).join(' / ')+' (예상컷)')+'</div></div>';
+  out+='<div class="chips">'+keys.map(function(k){var l=by[k],hi=l.filter(function(r){return grade(r.math,c)<=2}).length;return '<div class="chip '+ck(k)+'"><b style="color:'+cc(k)+'">'+esc(k)+'반</b> '+l.length+'명<br>'+(view==='full'?'합계 평균 '+avgT(l)+' · 수학 '+avg(l).toFixed(1):'평균 '+avg(l).toFixed(1)+' · 1·2등급 '+hi+'명')+'</div>'}).join('')+'</div>';
+  out+=distHtml(R,view,keys,c);
+  var key=view==='full'?function(r){return r.total==null?-1:r.total}:function(r){return r.math};
+  NTOT=R.length;var srt=R.slice().sort(function(a,b){return key(b)-key(a)});srt.forEach(function(r,i){r._rk=(i>0&&key(srt[i-1])===key(r))?srt[i-1]._rk:i+1});var T=view==='full'?fullTbl:tbl;
+  if(mode==='all'){var all=R.slice().sort(function(a,b){return key(b)-key(a)});out+='<div class="cls"><h2>전체 '+(view==='full'?'합계순':'점수순')+' <small>'+all.length+'명</small></h2>'+T(all,true,c)+'</div>'}
+  else keys.forEach(function(k){var l=by[k].slice().sort(function(a,b){return key(b)-key(a)});
+   out+='<div class="cls"><h2>'+badge(k,1)+' 반 <small>'+l.length+'명 · '+(view==='full'?'합계 평균 '+avgT(l):'평균 '+avg(l).toFixed(1)+'점')+'</small></h2>'+T(l,false,c)+'</div>'});
+  out+='<div class="foot"><span>'+(named?'이름 포함 · 강사 내부용 자료 (외부 공유 금지)':'이름 비공개 자료')+'</span><span>작성 '+stamp+' · MATHY YURI</span></div>';
+  $('sheet').innerHTML=out;
+ }
+ $('mode').onchange=render;$('view').onchange=render;[].forEach.call(document.querySelectorAll('.cut'),function(i){i.oninput=function(){if(rows.length)render()}});
+ $('png').onclick=async function(){
+  if(!rows.length){msg('먼저 성적을 불러와 주세요');return}
+  var b=this;b.disabled=true;var o=b.textContent;b.textContent='찍는 중…';
+  try{var cv=await html2canvas($('sheet'),{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});var a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='10모_성적_강사용_'+stamp.replace(/\./g,'')+'.png';document.body.appendChild(a);a.click();a.remove();msg('이미지를 저장했어요 (내려받기 폴더)')}
+  catch(e){msg('이미지 저장 실패: '+e.message)}finally{b.disabled=false;b.textContent=o}
+ };
+ $('copy').onclick=function(){
+  if(!rows.length){msg('먼저 성적을 불러와 주세요');return}
+  var c=cuts(),t='학교\t이름\t반\t국어\t수학\t영어\t한국사\t통합사회\t통합과학\t합계\t수학등급\n'+rows.slice().sort(function(a,b){var x=ORDER.indexOf(a.cls),y=ORDER.indexOf(b.cls);return ((x<0?9:x)-(y<0?9:y))||(b.math-a.math)}).map(function(r){return [r.school,r.name,r.cls,r.korean==null?'':r.korean,r.math,r.english==null?'':r.english,r.history==null?'':r.history,r.society==null?'':r.society,r.science==null?'':r.science,r.total==null?'':r.total,grade(r.math,c)].join('\t')}).join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){msg('표를 복사했어요 (엑셀·시트에 붙여넣기)')},function(){msg('복사하지 못했어요')});
+ };
+})();
+</script></body></html>
