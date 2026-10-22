@@ -1061,7 +1061,7 @@ document.addEventListener('drop',e=>{if(!$('#wb')||!e.target.closest||!e.target.
 /* ── 앱 설치(PWA) · 앱 알림(웹 푸시) ── */
 const VAPID_PUB='BCTCEwzngOCtZ5aUjVxHt6MjS8eeXudgj_Fg1p87cG0w51lVVzun6wlP0KN6-zrTHd5pkmBJFCYn7nTCcqzFzDA';
 const PUSH_URL=API_URL.replace('ac_api','ac_push');
-let INSTALL_EVT=null,PUSH_ON=undefined,PUSH_BUSY=false;
+let INSTALL_EVT=null,PUSH_ON=undefined,PUSH_BUSY=false,PUSH_READY=undefined;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
 const IS_APP=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
 const PUSH_OK=('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
@@ -1075,7 +1075,7 @@ async function pushApi(action,args){
 async function pushStatus(){
  if(!S.uid||!PUSH_OK||PUSH_ON!==undefined||PUSH_BUSY)return;PUSH_BUSY=true;
  try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
-  if(!sub||Notification.permission!=='granted')PUSH_ON=false;else{const j=await pushApi('status',{endpoint:sub.endpoint});PUSH_ON=!!(j&&j.ok&&j.on);}
+  if(!sub||Notification.permission!=='granted')PUSH_ON=false;else{const j=await pushApi('status',{endpoint:sub.endpoint});PUSH_ON=!!(j&&j.ok&&j.on);PUSH_READY=(j&&j.ok)?j.ready:undefined;}
  }catch(e){PUSH_ON=false;}
  PUSH_BUSY=false;homeRefresh();
 }
@@ -1104,7 +1104,7 @@ function appCard(side){
  else steps.push('<span class="muted">브라우저 메뉴(⋮) → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></span>');
  if(S.uid){
   if(!PUSH_OK||(IS_IOS&&!IS_APP))steps.push('<span class="muted">알림은 '+(IS_IOS?'홈 화면에 추가한 앱에서':'알림을 지원하는 브라우저에서')+' 켤 수 있어요.</span>');
-  else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
+  else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <button class="btn sm3 sec" data-a="pushtest" type="button">테스트 알림</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요'+(PUSH_READY===false?'<br><b style="color:#b84a4a">서버 알림 설정이 아직 안 끝났어요 (원장님: 앱알림_설정방법 2~4단계)</b>':'')+'</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
  }else steps.push('<span class="muted">로그인하면 알림을 켤 수 있어요.</span>');
  return side?h+steps.join('<div style="height:6px"></div>')+'</div>':h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
 }
@@ -1117,7 +1117,7 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.chk .seg{display:flex;gap:4px;flex-wrap:wrap}.chk .seg button{padding:4px 10px;font-size:12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--mut);font-weight:700;cursor:pointer}.chk .seg button.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}'+
  '.mxs{overflow:auto;max-width:100%;max-height:66vh;border:1px solid var(--line);border-radius:12px}.anagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.anagrid .card{padding:10px 12px}.anagrid h3{margin:0 0 4px}.anagrid .li{padding:3px 0;font-size:13px;gap:8px}.anagrid .clr{padding:4px 0;font-size:13px}'+
  '.mxg th,.mxg td{min-width:26px;height:30px;font-size:12.5px}.mxg .rk{min-width:40px;left:0;font-size:14px}.mxg .nm{min-width:104px;left:40px;border-right:0}.mxg .sc{position:sticky;left:144px;z-index:3;min-width:46px;background:#fff;font-weight:800}.mxg .cl{position:sticky;left:190px;z-index:3;min-width:54px;background:#fff;border-right:2px solid #d9cfba}.mxg th.sc,.mxg th.cl{z-index:4;background:#f1f3f8}.mxg tr.me td.rk,.mxg tr.me td.nm,.mxg tr.me td.sc,.mxg tr.me td.cl{background:#fff3cf}.mxg tr.rt td.rk,.mxg tr.rt td.nm,.mxg tr.rt td.sc,.mxg tr.rt td.cl{background:#faf6ee}.mxg td.gO{color:#1f3a6e;background:#dce7fb;font-weight:800}.mxg td.gX{color:#b0334b;background:#f7d6dc;font-weight:800}.mxg td.gT{color:#7a5a0b;background:#f5e4b0;font-weight:800}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}@media(max-width:640px){.mxg .sc,.mxg .cl{position:static}.mxg .nm{border-right:1px solid #eee7d8}.mxg .nm{min-width:92px}}'+
- '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:6px}.pc{text-align:center;border-radius:8px;padding:3px 0 2px;line-height:1.1;background:#fbf9f4;color:#c9c9c9}.pc i{display:block;font-style:normal;font-size:9.5px;opacity:.75}.pc b{font-size:15px}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
+ '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:6px}.pgrp{display:grid;grid-template-columns:repeat(10,32px);gap:2px}.pc{text-align:center;border-radius:6px;padding:1px 0;line-height:1;background:#fbf9f4;color:#c9c9c9;height:32px;display:flex;flex-direction:column;justify-content:center}.pc i{display:block;font-style:normal;font-size:8.5px;opacity:.75}.pc b{font-size:13px}@media(max-width:640px){.pgrp{grid-template-columns:repeat(10,minmax(0,1fr));width:100%}}.chgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px}.chgrid .card{margin:0}.mnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f7f2e6;font-size:13.5px;line-height:1.65}.mnote small{color:var(--mut);font-size:11px;margin-left:6px}.dgt{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.dgt ul{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.9}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
  '.stamp{display:inline-block;border:2px solid #d4486a;color:#d4486a;border-radius:50%;width:44px;height:44px;line-height:40px;text-align:center;font-weight:900;font-size:10px;letter-spacing:-.3px;transform:rotate(-14deg);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3.5px #d4486a;background:rgba(212,72,106,.05)}.stamp.s{width:34px;height:34px;line-height:30px;font-size:8px}.stamp.xs{width:26px;height:26px;line-height:22px;font-size:6.5px;border-width:1.5px;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 2.5px #d4486a}'+
  '.mxg{border-collapse:separate;border-spacing:0;font-size:13px}.mxg th,.mxg td{min-width:28px;height:30px;padding:0 3px;text-align:center;border-bottom:1px solid #eee7d8;border-right:1px solid #f4efe4;background:var(--card)}.mxg th{position:sticky;top:0;z-index:2;background:#f4efe4;font-size:11.5px}.mxg .rk{position:sticky;left:0;z-index:3;min-width:42px;font-weight:800;background:var(--card)}.mxg th.rk{z-index:4;background:#f4efe4}.mxg .nm{position:sticky;left:42px;z-index:3;text-align:left;min-width:120px;font-weight:700;white-space:nowrap;background:var(--card);border-right:2px solid var(--line)}.mxg th.nm{z-index:4;background:#f4efe4}.mxg tr.me td{background:#fff3cf}.mxg tr.rt td{background:#faf6ee;font-size:11px;font-weight:700}'+
  '.mxg td.gO{color:#0b3d91;background:#cfe0ff;font-weight:900}.mxg td.gX{color:#b01030;background:#ffc9d2;font-weight:900}.mxg td.gT{color:#7a5200;background:#ffe27a;font-weight:900}.mxg td.gN{color:#c9c9c9}'+
@@ -1199,7 +1199,7 @@ function rpKey(){if(!isStaff())return 'me';const L=stuList(curAc()).filter(x=>S.
 function rpEnsure(){
  const key=rpKey();if(RPB||(RP&&RPK===key))return;if(!key){RP={hist:[],notes:[]};RPK=key;return;}
  RPB=true;RPK=key;
- (async()=>{const a=isStaff()?{sid:key}:{},h=await msApi('history',a),n=await noteApi(isStaff()?'get':'mine',a);RP={hist:(h&&h.ok)?h.list:[],notes:(n&&n.ok)?n.list:[]};RPB=false;render();})();
+ (async()=>{const a=isStaff()?{sid:key}:{},h=await msApi('history',a),n=await noteApi(isStaff()?'get':'mine',a),mn=await noteApi('mlist',a);RP={hist:(h&&h.ok)?h.list:[],notes:(n&&n.ok)?n.list:[],mn:(mn&&mn.ok)?mn.map:{},det:{}};RPB=false;render();rpLoadDet();})();
 }
 function rpStudentBar(){
  if(!isStaff())return '';
@@ -1214,8 +1214,34 @@ function noteLog(){
 }
 function pBlocks(h){
  const n=h.n||String(h.ox||'').length,sym={O:'○',X:'✕',T:'△'};let g='';
- for(let q=0;q<n;q++){const ch=(h.ox||'')[q];g+='<div class="pc'+(ch==='O'||ch==='X'||ch==='T'?' p'+ch:'')+'"><i>'+(q+1)+'</i><b>'+(sym[ch]||'·')+'</b></div>';}
+ for(let st=0;st<n;st+=10){let c='';for(let q=st;q<Math.min(n,st+10);q++){const ch=(h.ox||'')[q];c+='<div class="pc'+(ch==='O'||ch==='X'||ch==='T'?' p'+ch:'')+'"><i>'+(q+1)+'</i><b>'+(sym[ch]||'·')+'</b></div>';}g+='<div class="pgrp">'+c+'</div>';}
  return '<div class="pgrid">'+g+'</div>';
+}
+function autoMissionNote(h){
+ const c=hCnt(h),pc=pctOf(h),n=h.n||String(h.ox||'').length,det=RP&&RP.det&&RP.det[h.id],r1=v=>Math.round(v*10)/10,out=[];
+ out.push(r1(h.score)+'점('+Math.round(pc)+'%)으로 '+h.cnt+'명 중 '+h.rk+'위예요.');
+ if(h.avg!=null){const d=h.score-h.avg;out.push(Math.abs(d)<0.5?'반 평균과 비슷해요.':d>0?'반 평균보다 '+r1(d)+'점 높아요.':'반 평균보다 '+r1(-d)+'점 낮아요.');}
+ if(c.x===0&&c.b===0&&c.o+c.t>0)out.push(c.t?'틀렸던 '+c.t+'문제를 모두 고쳐서 클리어했어요.':'모두 맞혀서 클리어했어요.');
+ else if(c.x>0){const nums=[],U={};for(let i=0;i<n;i++)if((h.ox||'')[i]==='X'){nums.push(i+1);const u=det&&det.items[i]&&det.items[i].unit;if(u)U[u]=(U[u]||0)+1;}
+  const ks=Object.keys(U).sort((a,b)=>U[b]-U[a]).slice(0,2);
+  out.push('남은 오답이 '+c.x+'문제예요('+nums.slice(0,6).join(', ')+'번'+(nums.length>6?' 등':'')+').'+(ks.length?' '+ks.map(k=>k+' '+U[k]+'문제').join(', ')+'에서 틀렸어요.':'')+' 오답노트로 정리해 보세요.');}
+ else if(c.b>0)out.push('기록이 비어 있는 문항이 '+c.b+'개 있어요.');
+ return out.join(' ');
+}
+function mnoteHtml(h){
+ const sv=RP.mn&&RP.mn[h.id];
+ return '<div class="mnote">'+esc(sv?sv.body:autoMissionNote(h))+'<small>'+(sv?(sv.author||'선생님')+'이 고친 글':'자동 분석')+'</small>'+(isStaff()?' <button class="btn sm3 gh" type="button" data-a="mnedit" data-id="'+h.id+'">수정</button>':'')+'</div>';
+}
+function openMNote(id){
+ const h=(RP.hist||[]).find(x=>x.id===id);if(!h)return;const sv=RP.mn&&RP.mn[id];
+ openModal('<h3>'+esc(h.name)+' · 한마디</h3><div class="muted sm" style="margin-bottom:8px">자동 분석 글이 기본으로 들어 있어요. 고쳐서 저장하면 학생·학부모에게 이 글이 보여요.</div><div class="fld"><textarea id="mn_t" style="min-height:120px">'+esc(sv?sv.body:autoMissionNote(h))+'</textarea></div><div class="row"><button class="btn gh" type="button" data-a="mnreset" data-id="'+id+'">자동 글로 되돌리기</button><span class="sp"></span><button class="btn gh" data-a="closemodal">닫기</button><button class="btn" data-a="mnsave" data-id="'+id+'">저장</button></div>');
+}
+async function rpLoadDet(){
+ const ids=(RP.hist||[]).slice(-12).map(h=>h.id),key=RPK;
+ for(let i=0;i<ids.length;i+=4){
+  await Promise.all(ids.slice(i,i+4).map(async id=>{if(RP.det[id])return;const x=await msApi('load',{exam_id:id});if(x&&x.ok)RP.det[id]={items:x.exam.items,roster:x.roster.filter(r=>r.ox)};}));
+  if(RPK!==key)return;render();
+ }
 }
 function rpReport(){
  const hist=RP.hist||[];
@@ -1229,15 +1255,46 @@ function rpReport(){
  h+='<div class="kpi" style="margin-bottom:10px"><div><b>'+L.length+'개</b><span>푼 미션</span></div><div><b>'+(np?Math.round(sp/np*10)/10:'-')+'%</b><span>평균 점수</span></div><div><b style="color:#2f7d5b">'+clr+'개</b><span>클리어</span></div><div><b style="color:'+(xs?'#b84a4a':'#2f7d5b')+'">'+xs+'문제</b><span>남은 오답</span></div></div>';
  const lim=S.rpAll?L.length:8;
  h+=L.slice(0,lim).map(x=>{const c=hCnt(x),ok=c.x===0&&c.b===0&&c.o+c.t>0;
-  return '<div class="rpc"><div class="hd"><div><b>'+esc(x.name)+'</b><div class="muted sm">'+esc(String(x.date).slice(5).replace('-','/'))+(x.cat?' · '+esc(x.cat):'')+'</div></div><div class="sc"><strong>'+(x.score==null?'-':Math.round(x.score*10)/10)+'</strong> / '+Math.round(x.tot*10)/10+'점<div>'+x.rk+'위 / '+x.cnt+'명'+(x.avg!=null?' · 평균 '+Math.round(x.avg*10)/10:'')+'</div></div>'+(ok?'<span class="stamp s">CLEAR</span>':(c.x?'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+c.x+'</b>':''))+'</div>'+pBlocks(x)+'</div>';}).join('');
+  return '<div class="rpc"><div class="hd"><div><b>'+esc(x.name)+'</b><div class="muted sm">'+esc(String(x.date).slice(5).replace('-','/'))+(x.cat?' · '+esc(x.cat):'')+'</div></div><div class="sc"><strong>'+(x.score==null?'-':Math.round(x.score*10)/10)+'</strong> / '+Math.round(x.tot*10)/10+'점<div>'+x.rk+'위 / '+x.cnt+'명'+(x.avg!=null?' · 평균 '+Math.round(x.avg*10)/10:'')+'</div></div>'+(ok?'<span class="stamp s">CLEAR</span>':(c.x?'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+c.x+'</b>':''))+'</div>'+pBlocks(x)+mnoteHtml(x)+'</div>';}).join('');
  if(L.length>8)h+='<div style="text-align:center"><button class="btn sm3 gh" type="button" data-a="rpall">'+(S.rpAll?'접기':'미션 '+L.length+'개 전체 보기')+'</button></div>';
  h+='<div class="muted sm" style="margin-top:8px">○ 맞음(파랑) · ✕ 틀림(빨강) · △ 틀렸다 고침(노랑) · · 기록 없음</div>';
  return h;
 }
+function barPair(L){
+ const W=640,H=240,pl=34,pr=10,pt=18,pb=38,n=L.length,gw=(W-pl-pr)/n,bw=Math.max(8,Math.min(26,gw/2-4)),Y=v=>pt+(H-pt-pb)*(1-Math.max(0,Math.min(100,v))/100);
+ let g='';[0,25,50,75,100].forEach(v=>{g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+v+'</text>';});
+ L.forEach((h,i)=>{const cx=pl+gw*i+gw/2,my=pctOf(h),av=h.avg!=null?h.avg*100/h.tot:null;
+  g+='<rect x="'+(cx-bw-1)+'" y="'+Y(my)+'" width="'+bw+'" height="'+(Y(0)-Y(my))+'" rx="3" fill="#b76e79"><title>'+esc(h.name+' · 내 '+Math.round(my)+'%')+'</title></rect><text x="'+(cx-bw/2-1)+'" y="'+(Y(my)-4)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#b76e79">'+Math.round(my)+'</text>';
+  if(av!=null)g+='<rect x="'+(cx+1)+'" y="'+Y(av)+'" width="'+bw+'" height="'+(Y(0)-Y(av))+'" rx="3" fill="#9aa1b3"><title>'+esc(h.name+' · 반 평균 '+Math.round(av)+'%')+'</title></rect><text x="'+(cx+bw/2+1)+'" y="'+(Y(av)-4)+'" text-anchor="middle" font-size="10" fill="#6a7388">'+Math.round(av)+'</text>';
+  g+='<text x="'+cx+'" y="'+(H-pb+14)+'" text-anchor="middle" font-size="10" fill="#6a7388">'+esc(String(h.date).slice(5).replace('-','/'))+'</text><text x="'+cx+'" y="'+(H-pb+26)+'" text-anchor="middle" font-size="9.5" fill="#8a8f9e">'+esc(String(h.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,6))+'</text>';});
+ return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+g+'</svg>';
+}
+function unitBars(L){
+ const U={};
+ L.forEach(h=>{const d=RP.det&&RP.det[h.id];if(!d)return;d.items.forEach((it,i)=>{const u=it.unit||'기타',x=U[u]=U[u]||{mo:0,mt:0,co:0,ct:0},ch=(h.ox||'')[i];if(ch==='O'||ch==='X'||ch==='T'){x.mt++;if(ch==='O')x.mo++;}
+  d.roster.forEach(r=>{const c=r.ox[i];if(c==='O'||c==='X'||c==='T'){x.ct++;if(c==='O')x.co++;}});});});
+ const ks=Object.keys(U).filter(k=>U[k].mt>0).sort((a,b)=>U[b].mt-U[a].mt).slice(0,8);
+ if(!ks.length)return '';
+ return ks.map(k=>{const x=U[k],m=Math.round(x.mo*100/x.mt),c=x.ct?Math.round(x.co*100/x.ct):null;
+  return '<div style="margin:8px 0"><div class="sm"><b>'+esc(k)+'</b> <span class="muted">'+x.mt+'문항</span></div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:10px;background:#eee;border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:'+m+'%;background:#b76e79"></i></div><b style="width:38px;text-align:right;color:#b76e79">'+m+'%</b></div>'+
+   (c!=null?'<div style="display:flex;align-items:center;gap:8px;margin-top:3px"><div style="flex:1;height:10px;background:#eee;border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:'+c+'%;background:#9aa1b3"></i></div><b style="width:38px;text-align:right;color:#6a7388">'+c+'%</b></div>':'')+'</div>';}).join('');
+}
+function donut(o,t,x){
+ const tot=o+t+x;if(!tot)return '';const R=48,C=2*Math.PI*R;let off=0,svg='<svg viewBox="0 0 120 120" width="130" height="130"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="#eee" stroke-width="18"/>';
+ [[o,'#5b8def'],[t,'#f0b429'],[x,'#e5566d']].forEach(a=>{const len=C*a[0]/tot;if(len>0){svg+='<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+a[1]+'" stroke-width="18" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"/>';off+=len;}});
+ return svg+'<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="800" fill="#2b2f3a">'+Math.round(o*100/tot)+'%</text><text x="60" y="74" text-anchor="middle" font-size="9" fill="#8a8f9e">정답률</text></svg>';
+}
 function rpTrend(){
  const hist=RP.hist||[],L=hist.filter(h=>pctOf(h)!=null&&!h.old&&String(h.date)>=GRAPH_FROM);
- let h=rpStudentBar()+cumChartOf(hist,'성적 추이');
- if(L.length)h+='<div class="card"><h3>미션별 점수</h3><table class="tbl"><tr><th>날짜</th><th class="l" style="text-align:left">미션</th><th>내 점수</th><th>반 평균</th><th>순위</th></tr>'+L.slice().reverse().map(x=>'<tr><td class="sm">'+esc(String(x.date).slice(5).replace('-','/'))+'</td><td class="l" style="text-align:left"><b>'+esc(x.name)+'</b></td><td><b>'+Math.round(pctOf(x)*10)/10+'%</b></td><td>'+(x.avg!=null?Math.round(x.avg*100/x.tot*10)/10+'%':'-')+'</td><td>'+x.rk+' / '+x.cnt+'</td></tr>').join('')+'</table></div>';
+ let h=rpStudentBar();
+ if(!L.length)return h+cumChartOf(hist,'성적 추이');
+ const bars=L.slice(-10);let o=0,t=0,x=0;L.forEach(m=>{const c=hCnt(m);o+=c.o;t+=c.t;x+=c.x;});
+ const ub=unitBars(L);
+ h+='<div class="chgrid"><div class="card"><h3>미션별 점수 <span class="muted sm" style="font-weight:400"><span style="color:#b76e79">■</span> 내 점수(%) · <span style="color:#9aa1b3">■</span> 반 평균(%)</span></h3>'+barPair(bars)+'</div>'+
+  cumChartOf(hist,'누적 성적 추이')+
+  '<div class="card"><h3>단원별 정답률 <span class="muted sm" style="font-weight:400"><span style="color:#b76e79">■</span> 나 · <span style="color:#9aa1b3">■</span> 반 평균</span></h3>'+(ub||'<div class="empty">'+(RP.det&&Object.keys(RP.det).length?'단원 정보가 있는 미션이 아직 없어요':'불러오는 중…')+'</div>')+'</div>'+
+  '<div class="card"><h3>정오표 구성 <span class="muted sm" style="font-weight:400">지금까지의 새 미션</span></h3><div class="dgt">'+donut(o,t,x)+'<ul><li><b style="color:#5b8def">●</b> ○ 맞음 <b>'+o+'</b>문제</li><li><b style="color:#f0b429">●</b> △ 고침 <b>'+t+'</b>문제</li><li><b style="color:#e5566d">●</b> ✕ 남은 오답 <b>'+x+'</b>문제</li></ul></div></div></div>';
+ h+='<div class="card"><h3>미션별 점수 표</h3><table class="tbl"><tr><th>날짜</th><th class="l" style="text-align:left">미션</th><th>내 점수</th><th>반 평균</th><th>순위</th></tr>'+L.slice().reverse().map(m=>'<tr><td class="sm">'+esc(String(m.date).slice(5).replace('-','/'))+'</td><td class="l" style="text-align:left"><b>'+esc(m.name)+'</b></td><td><b>'+Math.round(pctOf(m)*10)/10+'%</b></td><td>'+(m.avg!=null?Math.round(m.avg*100/m.tot*10)/10+'%':'-')+'</td><td>'+m.rk+' / '+m.cnt+'</td></tr>').join('')+'</table></div>';
  return h;
 }
 function vExam(){
@@ -1506,6 +1563,10 @@ document.addEventListener('click',async e=>{
  case 'ntauto':{const j=await msApi('history',{sid:id});const t=$('#nt_t');if(t)t.value=autoNote(U[id].name,(j&&j.ok)?j.list:[]);break;}
  case 'ntsave':{const j=await noteApi('set',{sid:id,body:($('#nt_t').value||'').trim()});if(j&&j.ok){closeModal();RP=undefined;toast('기록에 저장했어요');render();}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 실행했는지 확인해 주세요)');break;}
  case 'ntdel':{if(!confirm('이 기록을 지울까요?'))break;const j=await noteApi('del',{sid:S.rpSid,id:t.dataset.id});if(j&&j.ok){RP=undefined;render();}else toast('지우지 못했어요');break;}
+ case 'mnedit':openMNote(id);break;
+ case 'mnsave':{const j=await noteApi('mset',{sid:S.rpSid,exam_id:id,body:($('#mn_t').value||'').trim()});if(j&&j.ok){RP.mn=RP.mn||{};const b=($('#mn_t').value||'').trim();if(b)RP.mn[id]={body:b,author:'선생님'};else delete RP.mn[id];closeModal();render();toast('저장했어요');}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 다시 실행해 주세요)');break;}
+ case 'mnreset':{const j=await noteApi('mset',{sid:S.rpSid,exam_id:id,body:''});if(j&&j.ok){delete RP.mn[id];closeModal();render();toast('자동 글로 되돌렸어요');}break;}
+ case 'pushtest':{const j=await pushApi('test');toast(j&&j.ok?'테스트 알림을 보냈어요. 몇 초 안에 이 기기에 알림이 와야 해요 ('+j.devices+'대)':((j&&j.error)||'테스트 알림을 보내지 못했어요 (10_앱알림_서버.sql 을 다시 실행했는지 확인해 주세요)'));break;}
  case 'rpmore':RPMORE=!RPMORE;render();break;
  case 'rpall':S.rpAll=!S.rpAll;render();break;
  case 'rpseason':S.rpSeason=v;S.rpAll=false;render();break;
