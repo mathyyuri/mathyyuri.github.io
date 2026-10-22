@@ -393,7 +393,7 @@ function ph(txt,c1,c2){const svg="<svg xmlns='http://www.w3.org/2000/svg' width=
 
 /* ════════ 학원·사용자 ════════ */
 const AC={
- ds:{id:'ds',name:'대치에스플러스',short:'대치S+',classes:['S+반','S반','A+반','A반','B반','대수연마','PRISM']},
+ ds:{id:'ds',name:'대치에스플러스',short:'대치S+',classes:['S+반','S반','A+반','A반','B반']},
  bd:{id:'bd',name:'분당미래탐구',short:'분당',classes:['T-Class','공수내모']}
 };
 const ROLE={student:'학생',parent:'학부모',ta:'조교',admin:'원장'};
@@ -444,12 +444,13 @@ function applySync(j){
  DB.posts=j.posts||[];DB.missions=j.missions||[];DB.exams=j.exams||[];DB.msgs=j.msgs||{};
  const c=j.content||[],mk=k=>c.filter(x=>x.kind===k).map(x=>Object.assign({},x.data,{id:x.id,ac:x.ac,cls:x.cls}));
  DB.lessons=mk('lesson');DB.videos=mk('video');DB.resources=mk('resource');DB.events=mk('event');DB.sched=mk('sched');
- DB.set=j.set||{};if(DB.set.notif==null)DB.set.notif=clone(DEF_NOTIF);if(!DB.set.pref)DB.set.pref={};
+ DB.set=j.set||{};applyClasses(DB.set.classes);if(DB.set.notif==null)DB.set.notif=clone(DEF_NOTIF);if(!DB.set.pref)DB.set.pref={};
  DB.log=j.log||[];DB.staff=j.staff||[];
  S.uid=m.uid;
  if(m.role==='ta')S.ac=m.academy;else if(m.role==='admin'&&!S.ac)S.ac='ds';
 }
 async function resync(){const j=await api('sync');if(j.ok){applySync(j);return true;}return false;}
+function applyClasses(c){['ds','bd'].forEach(k=>{if(c&&Array.isArray(c[k])&&c[k].length)AC[k].classes=c[k].slice();});}
 async function mut(action,args,opt){
  opt=opt||{};
  const j=await api(action,args);
@@ -508,8 +509,8 @@ function renderLogin(){
   '<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>'+tlHtml();
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
-  h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="d">용인 보라고 · 신갈고 · 서천고</div><div class="cl"><span class="badge">S+반</span><span class="badge">S반</span></div></button>'+
-   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="d">분당 17개 학교 내신 · S-DAY</div><div class="cl"><span class="badge">T-Class</span><span class="badge">공수내모</span></div></button></div>';
+  h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="d">용인 보라고 · 신갈고 · 서천고</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
+   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="d">분당 17개 학교 내신 · S-DAY</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button></div>';
  }else{
   const a=AC[L.ac],role=L.role==='parent'?'parent':'student';
   h+='<div class="lsel"><div class="lsel-h"><button class="link" data-a="lback">← 학원 다시 고르기</button><span class="lsel-t">'+a.name+'</span></div>';
@@ -1034,8 +1035,9 @@ async function saveOx(){
 /* ── 관리 탭: 학생 · 선생님 · 비밀번호 ── */
 function vAdmin(){
  const u=me(),adm=u.role==='admin';let k=S.sub.admin||'tools';if(!adm&&k!=='pw')k='tools';
- let h='<div class="chips">'+(adm?[['tools','도구 모음'],['stu','학생'],['staff','선생님'],['pw','내 비밀번호']]:[['tools','도구 모음'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ let h='<div class="chips">'+(adm?[['tools','도구 모음'],['stu','학생'],['cls','반 관리'],['staff','선생님'],['pw','내 비밀번호']]:[['tools','도구 모음'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  if(k==='tools')return h+vTools();
+ if(k==='cls')return h+vClasses();
  if(k==='pw')return h+'<div class="card" style="max-width:460px"><h3>내 비밀번호 바꾸기</h3><div class="fld"><label>지금 비밀번호</label><input type="password" id="pw0" autocomplete="off" style="width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px"></div><div class="fld"><label>새 비밀번호 (6자 이상)</label><input type="password" id="pw1" autocomplete="off" style="width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px"></div><button class="btn" data-a="pwsave">바꾸기</button></div>';
  if(k==='staff'){
   const T=DB.staff.filter(x=>x.role==='ta');
@@ -1046,7 +1048,20 @@ function vAdmin(){
  h+='<div class="note">학생·학부모 로그인은 "이름 + 학부모 전화번호 뒤 4자리"예요. 이름과 전화번호는 원장님 화면에만 보여요. 같은 학원에서 같은 이름·같은 뒤 4자리는 둘 이상 만들 수 없어요.</div><div class="row wrap" style="margin-bottom:12px"><button class="btn" data-a="stuform">학생 추가</button><button class="btn sec" data-a="stuimport">여러 명 한번에 추가</button></div>';
  AC[ac].classes.forEach(c=>{const l=L.filter(s=>s.cls===c);
   h+='<div class="card"><h3>'+c+' <span class="badge">'+l.length+'명</span></h3>'+(l.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+l.map(s=>'<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 학생이 없어요</div>')+'</div>';});
+ const known=AC[ac].classes,odd=L.filter(s=>known.indexOf(s.cls)<0);
+ if(odd.length)h+='<div class="card"><h3>목록에 없는 반 <span class="badge">'+odd.length+'명</span></h3><div class="note">[반 관리]에서 지운 반에 아직 학생이 남아 있어요. 학생을 눌러 반을 바꿔 주세요.</div><table class="tbl"><tr><th>반</th><th>이름</th><th>학교</th><th></th></tr>'+odd.map(s=>'<tr><td>'+esc(s.cls)+'</td><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button></td></tr>').join('')+'</table></div>';
  return h;
+}
+function vClasses(){
+ let h='<div class="note">반 이름을 추가하거나 지워요. 학생이 남아 있는 반은 지울 수 없어요(학생 탭에서 먼저 옮겨 주세요). 순서는 추가한 순서대로예요.</div>';
+ Object.values(AC).forEach(a=>{
+  h+='<div class="card"><h3>'+esc(a.name)+'</h3><div class="row wrap" style="margin-bottom:12px">'+a.classes.map(c=>{const n=stuList(a.id).filter(s=>s.cls===c).length;return '<span class="badge" style="font-size:14px;padding:7px 12px">'+esc(c)+' · '+n+'명 '+(n?'':'<button class="btn sm3 dng" style="margin-left:6px" data-a="clsdel" data-ac="'+a.id+'" data-c="'+esc(c)+'">삭제</button>')+'</span>';}).join('')+'</div><div class="row"><input type="text" id="cn_'+a.id+'" maxlength="12" placeholder="새 반 이름 (예: A+반)" style="border:1px solid var(--line);border-radius:16px;padding:10px 14px"><button class="btn" data-a="clsadd" data-ac="'+a.id+'">추가</button></div></div>';});
+ return h;
+}
+async function saveClasses(){
+ const v={};Object.values(AC).forEach(a=>{v[a.id]=a.classes.slice();});
+ const j=await mut('settings_set',{key:'classes',value:v});
+ return j&&j.ok;
 }
 function classOpts(ac,sel){return AC[ac].classes.map(c=>'<option'+(sel===c?' selected':'')+'>'+c+'</option>').join('');}
 function openStu(id){
@@ -1157,6 +1172,8 @@ document.addEventListener('click',async e=>{
  case 'stdel':if(confirm('이 조교를 삭제할까요?'))await mut('staff_delete',{id:id});break;
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
+ case 'clsadd':{const ac=t.dataset.ac,i=$('#cn_'+ac),nm=(i.value||'').trim();if(!nm){toast('반 이름을 적어 주세요');break;}if(AC[ac].classes.indexOf(nm)>=0){toast('이미 있는 반이에요');break;}if(AC[ac].classes.length>=12){toast('반은 12개까지예요');break;}AC[ac].classes.push(nm);if(!(await saveClasses())){AC[ac].classes.pop();render();}break;}
+ case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuList(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
  case 'tooladd':readToolsEdit();TEDIT.push({id:'t'+Date.now().toString(36),name:'새 도구',url:'',grp:'기타',desc:'',roles:[]});renderToolsEdit();break;
  case 'tooldel':readToolsEdit();TEDIT.splice(+t.dataset.i,1);renderToolsEdit();break;
  case 'toolreset':if(confirm('기본 도구 목록으로 되돌릴까요? (저장 전까지는 바뀌지 않아요)')){TEDIT=DEF_TOOLS.map(x=>Object.assign({},x,{roles:x.roles.slice()}));renderToolsEdit();}break;
@@ -1270,7 +1287,7 @@ const _st=document.createElement('style');_st.textContent='@media(min-width:900p
 (async function init(){
  $('#app').innerHTML='<div class="landing"><div class="lmain"><h1 class="big">MATHY <i>YURI</i></h1><div class="sko" style="margin-top:14px">불러오는 중…</div></div></div>';
  const p=await api('public');
- if(p&&p.ok){PUB.season=p.season;PUB.face=p.face||null;PUB.ok=true;}else PUB.ok=false;
+ if(p&&p.ok){PUB.season=p.season;PUB.face=p.face||null;applyClasses(p.classes);PUB.ok=true;}else PUB.ok=false;
  if(TOKEN&&PUB.ok){const ok=await resync();if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}}}
  render(0);
 })();

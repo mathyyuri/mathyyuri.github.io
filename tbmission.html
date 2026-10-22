@@ -23,7 +23,7 @@ button{font-family:inherit;cursor:pointer}input,select,textarea{font-family:inhe
 .fld input,.fld select{width:100%;border:1px solid #d9deea;border-radius:10px;padding:10px 12px;background:#fff}
 .seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--mute)}.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
 .err{color:#b84a4a;font-size:13px;margin-top:8px;min-height:18px}
-.mlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.mc{background:#fff;border:1px solid var(--line);border-top:5px solid var(--gold);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 2px 10px rgba(30,40,70,.05)}.mc:hover{border-top-color:var(--rose)}
+.mlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.mc{background:#fff;border:1px solid var(--line);border-top:5px solid var(--gold);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 2px 10px rgba(30,40,70,.05)}.mc:hover{border-top-color:var(--rose)}.mc{position:relative}.mc.dg{opacity:.45}.mc.ov{outline:2px dashed var(--rose)}.mvb{position:absolute;right:10px;top:10px;display:flex;gap:4px}.mvb button{border:1px solid var(--line);background:#fff;border-radius:8px;width:26px;height:26px;font-size:11px;color:var(--mute);cursor:pointer}.mvb button:hover{background:#f1f3f8}
 .mc .t{font-family:var(--fk);font-size:19px;font-weight:700;margin:2px 0 6px}.mc .k{display:flex;gap:16px;margin-top:10px}.mc .k b{font-size:20px;font-family:var(--fk);display:block}.mc .k span{font-size:11.5px;color:var(--mute)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.kp{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:10px;padding:10px 12px}.kp b{display:block;font-family:var(--fk);font-size:22px}.kp span{font-size:12px;color:var(--mute)}.kp.r{border-left-color:var(--rose)}.kp.n{border-left-color:var(--navy)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px}.tabs button{flex:none;border:1px solid var(--line);background:#fff;border-radius:18px;padding:8px 16px;font-size:13.5px;font-weight:700;color:var(--mute)}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -160,13 +160,13 @@ function catBar(list){
  return '<div class="seg" style="margin-bottom:12px"><button class="'+(!S.cat?'on':'')+'" data-a="cat" data-v="">전체 '+n+'</button>'+cats.map(function(k){return '<button class="'+(S.cat===k?'on':'')+'" data-a="cat" data-v="'+esc(k)+'">'+esc(k)+' '+cnt[k]+'</button>'}).join('')+'</div>'}
 function vList(){
  var h='<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
- h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button></div>';
+ h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=seasonBar(S.list)+catBar(S.list);
  var all=filtered(),lim=S.lim||30,vis=all.slice(0,lim);
  if(!all.length)return h+'<div class="card"><div class="empty">이 시즌에는 아직 미션이 없어요.</div></div>';
  h+='<div class="mlist">'+vis.map(function(m){
-  return '<div class="mc" data-a="open" data-id="'+m.id+'"><div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
+  return '<div class="mc" data-a="open" data-id="'+m.id+'"'+(isStaff()?' draggable="true"':'')+'>'+(isStaff()?'<span class="mvb"><button data-a="mvup" data-id="'+m.id+'" title="위로">▲</button><button data-a="mvdn" data-id="'+m.id+'" title="아래로">▼</button></span>':'')+'<div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
  if(all.length>lim)h+='<div style="text-align:center;margin:16px"><button class="btn sec" data-a="more">더 보기 ('+(all.length-lim)+'개 남음)</button></div>';
  return h}
 
@@ -446,8 +446,53 @@ function pasteOk(){
 /* 선생님: 미션 관리 */
 function vMng(){
  var e=S.ex;
- return '<div class="card"><h3>미션 관리</h3><div class="row"><b>해설 공개</b><span class="muted sm">켜면 학생·학부모가 정답과 풀이, 오답노트 해설을 볼 수 있어요.</span><span class="sp"></span><button class="btn '+(e.reveal?'rose':'sec')+'" data-a="reveal">'+(e.reveal?'공개 중 · 끄기':'비공개 · 켜기')+'</button></div>'+
+ return '<div class="card"><h3>미션 관리</h3><div class="row wrap" style="margin-bottom:14px"><b>이름·날짜</b><input id="inm" class="oxin" style="min-width:220px" value="'+esc(e.name)+'" maxlength="100"><input id="idt" type="date" class="oxin" value="'+esc(e.date)+'"><input id="icat" class="oxin" list="ncl2" style="max-width:150px" placeholder="카테고리" value="'+esc(e.cat||'')+'"><datalist id="ncl2">'+catList().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><button class="btn sec sm3" data-a="infosave">저장</button></div><div class="row"><b>해설 공개</b><span class="muted sm">켜면 학생·학부모가 정답과 풀이, 오답노트 해설을 볼 수 있어요.</span><span class="sp"></span><button class="btn '+(e.reveal?'rose':'sec')+'" data-a="reveal">'+(e.reveal?'공개 중 · 끄기':'비공개 · 켜기')+'</button></div>'+
  (isAdmin()?'<hr style="border:0;border-top:1px solid var(--line);margin:14px 0"><div class="row"><b>미션 삭제</b><span class="muted sm">정오표 기록도 함께 지워져요.</span><span class="sp"></span><button class="btn rose" data-a="delmis">삭제</button></div>':'')+'</div>'}
+
+/* ───────── 미션 추가 · 정보 수정 · 순서 바꾸기 (선생님) ───────── */
+function ymd(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function catList(){var c=[];S.list.forEach(function(m){if(m.cat&&c.indexOf(m.cat)<0)c.push(m.cat)});return c}
+function openNew(){
+ var m=$('#mb');$('#md').hidden=false;
+ m.innerHTML='<h3>미션 추가</h3><div class="note1">여기서는 <b>정오표만 채점하는 미션</b>을 바로 만들어요. 문제 보기·오답노트까지 연결된 미션은 교재 생성기의 [서버 저장·불러오기]에서 올려요.</div>'+
+  (isAdmin()?'<div class="fld"><label>학원</label><select id="nac" class="oxin" style="max-width:260px"><option value="ds">대치에스플러스학원</option><option value="bd">분당미래탐구</option></select></div>':'')+
+  '<div class="fld"><label>미션 이름</label><input id="nnm" class="oxin" style="width:100%" placeholder="예: 교과서 미션 : 함수 (2회)" autocomplete="off"></div>'+
+  '<div class="fld"><label>카테고리</label><input id="ncat" class="oxin" list="ncl" style="max-width:260px" placeholder="예: 교과서미션" autocomplete="off"><datalist id="ncl">'+catList().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist></div>'+
+  '<div class="row"><div class="fld"><label>날짜</label><input id="ndt" type="date" class="oxin" value="'+ymd()+'"></div><div class="fld"><label>문항 수</label><input id="nn" type="number" min="1" max="400" class="oxin" value="20" style="width:90px"></div><div class="fld"><label>문항당 배점</label><input id="npt" type="number" step="0.1" min="0.1" class="oxin" value="1" style="width:90px"></div></div>'+
+  '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn gold" data-a="newok">만들기</button></div>'}
+async function newOk(){
+ var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||1,cat=$('#ncat').value.trim();
+ if(!nm){alert('미션 이름을 적어 주세요');return}
+ if(!(n>=1&&n<=400)){alert('문항 수는 1~400 사이로 적어 주세요');return}
+ var items=[];for(var i=1;i<=n;i++)items.push({unit:nm,sub:cat,src:nm+' · '+i+'번',pts:pt});
+ var args={name:nm,cat:cat,date:$('#ndt').value||ymd(),items:items};if(isAdmin())args.ac=$('#nac').value;
+ var j=await ms('create',args);
+ if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
+ var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
+ $('#md').hidden=true;await openMission(j.id,'input')}
+async function saveInfo(){
+ var nm=$('#inm').value.trim(),dt=$('#idt').value,cat=$('#icat').value.trim();
+ if(!nm){alert('미션 이름을 적어 주세요');return}
+ var j=await ms('create',{id:S.ex.id,ac:S.ex.ac,name:nm,date:dt||S.ex.date,cat:cat,items:S.ex.items});
+ if(!j||!j.ok){alert((j&&j.error)||'저장하지 못했어요');return}
+ S.ex.name=nm;S.ex.date=dt||S.ex.date;S.ex.cat=cat||null;
+ S.list.forEach(function(m){if(m.id===S.ex.id){m.name=nm;m.date=S.ex.date;m.cat=cat||null}});
+ render();alert('저장했어요')}
+function saveOrder(){return ms('reorder',{ids:S.list.map(function(m){return m.id})}).then(function(j){if(!j||!j.ok)alert((j&&j.error)||'순서를 저장하지 못했어요')})}
+function applyOrder(vis){
+ var set={},byId={},k=0;vis.forEach(function(x){set[x]=1});S.list.forEach(function(m){byId[m.id]=m});
+ S.list=S.list.map(function(m){return set[m.id]?byId[vis[k++]]:m});
+ render();saveOrder()}
+function moveIn(id,dir){
+ var vis=visList().map(function(m){return m.id}),i=vis.indexOf(id),j=i+dir;if(i<0||j<0||j>=vis.length)return;
+ var t=vis[i];vis[i]=vis[j];vis[j]=t;applyOrder(vis)}
+var DRAG=null;
+document.addEventListener('dragstart',function(ev){var c=ev.target.closest&&ev.target.closest('.mc[draggable]');if(!c)return;DRAG=c.getAttribute('data-id');c.classList.add('dg');try{ev.dataTransfer.effectAllowed='move';ev.dataTransfer.setData('text/plain',DRAG)}catch(e){}});
+document.addEventListener('dragend',function(){DRAG=null;[].forEach.call(document.querySelectorAll('.mc.dg,.mc.ov'),function(c){c.classList.remove('dg');c.classList.remove('ov')})});
+document.addEventListener('dragover',function(ev){var c=ev.target.closest&&ev.target.closest('.mc[draggable]');if(!c||!DRAG)return;ev.preventDefault();[].forEach.call(document.querySelectorAll('.mc.ov'),function(x){if(x!==c)x.classList.remove('ov')});c.classList.add('ov')});
+document.addEventListener('drop',function(ev){var c=ev.target.closest&&ev.target.closest('.mc[draggable]');if(!c||!DRAG)return;ev.preventDefault();
+ var to=c.getAttribute('data-id'),vis=visList().map(function(m){return m.id}),a=vis.indexOf(DRAG),b=vis.indexOf(to);DRAG=null;if(a<0||b<0||a===b)return;
+ vis.splice(b,0,vis.splice(a,1)[0]);applyOrder(vis)});
 
 /* 이전 구글시트 기록 가져오기 (원장) */
 function openImp(){
@@ -550,6 +595,11 @@ document.addEventListener('click',async function(ev){
  if(a==='cat'){S.cat=b.getAttribute('data-v');S.lim=30;render();return}
  if(a==='more'){S.lim=(S.lim||30)+30;render();return}
  if(a==='imp'){openImp();return}
+ if(a==='new'){openNew();return}
+ if(a==='newok'){newOk();return}
+ if(a==='infosave'){saveInfo();return}
+ if(a==='mvup'){moveIn(b.getAttribute('data-id'),-1);return}
+ if(a==='mvdn'){moveIn(b.getAttribute('data-id'),1);return}
  if(a==='impgo'){runImp();return}
  if(a==='stu'){openStu();return}
  if(a==='sprev'||a==='sok'){var P=parseSheet($('#sst').value);
