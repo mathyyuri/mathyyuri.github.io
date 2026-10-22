@@ -443,7 +443,7 @@ async function api(action,args){
  if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
  return j;
 }
-function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -540,7 +540,7 @@ function renderLogin(){
  $('#app').innerHTML=h;
 }
 /* 메인 틀 */
-const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','성적·오답'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
+const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','누적성적'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
 const tabsNow=()=>isStaff()?TABS.concat([['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']]):TABS;
 function badgeFor(t){const u=me();
  if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
@@ -551,7 +551,7 @@ function unreadMsgs(){const u=me();let n=0;
   else{const my=stuOf(u);if(my.id!==sid||(u.role==='student'?'student':'parent')!==kind)return;DB.msgs[k].forEach(m=>{if(m.f==='s'&&!m.rdU)n++;});}});
  return n;}
 const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',msg:'messages',admin:'manage'};
-function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'성적·오답',msg:'메시지',admin:'관리'}[t];}
+function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:'관리'}[t];}
 function renderMain(){
  const u=me(),a=AC[curAc()],st=stuOf(u);
  const sub=isStaff()?(ROLE[u.role]+' · '+a.name):(st.cls+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
@@ -850,7 +850,7 @@ function vReport(){
 function vTbm(){
  return '<div class="card"><h3>교과서 미션 · 모의 기출 미션</h3><div class="muted sm" style="margin:-6px 0 12px">교과서 문제와 모의 기출 3점 문제를 풀고 채점한 기록이에요. 미션별 전체 정오표 · 번호별 정답률 · 닉네임 성적표 · 문제 분석 · 오답노트(MEN BOOK)를 볼 수 있어요.</div><a class="btn" style="display:inline-block;text-decoration:none" href="tbmission.html" target="_blank" rel="noopener">교과서 미션 열기</a><div class="muted sm" style="margin-top:10px">같은 로그인으로 들어가져요.</div></div>';
 }
-function vExam(){
+function vExamOld2(){
  const k=S.sub.exam;
  let h='<div class="chips">'+[['rpt','결과 리포트'],['tbm','교과서 미션'],['score','성적 추이'],['prep','기출·모의고사 대비'],['tools','기존 도구']].map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="exam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  return h+(k==='tbm'?vTbm():k==='rpt'?vReport():vExamOld());
@@ -907,7 +907,7 @@ function pickFace(){
  i.click();}
 async function startSession(tok){
  TOKEN=tok;try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
- TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;
+ TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;
  const ok=await resync();
  if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}
  S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);
@@ -1114,8 +1114,10 @@ function sideApp(){return appCard(true);}
 let SH=undefined,SHB=false;
 const NOTE_URL=API_URL.replace('ac_api','ac_note');
 (function(){const st=document.createElement('style');st.textContent=
+ '.chk .seg{display:flex;gap:4px;flex-wrap:wrap}.chk .seg button{padding:4px 10px;font-size:12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--mut);font-weight:700;cursor:pointer}.chk .seg button.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}'+
  '.mxs{overflow:auto;max-width:100%;max-height:66vh;border:1px solid var(--line);border-radius:12px}.anagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.anagrid .card{padding:10px 12px}.anagrid h3{margin:0 0 4px}.anagrid .li{padding:3px 0;font-size:13px;gap:8px}.anagrid .clr{padding:4px 0;font-size:13px}'+
  '.mxg th,.mxg td{min-width:26px;height:30px;font-size:12.5px}.mxg .rk{min-width:40px;left:0;font-size:14px}.mxg .nm{min-width:104px;left:40px;border-right:0}.mxg .sc{position:sticky;left:144px;z-index:3;min-width:46px;background:#fff;font-weight:800}.mxg .cl{position:sticky;left:190px;z-index:3;min-width:54px;background:#fff;border-right:2px solid #d9cfba}.mxg th.sc,.mxg th.cl{z-index:4;background:#f1f3f8}.mxg tr.me td.rk,.mxg tr.me td.nm,.mxg tr.me td.sc,.mxg tr.me td.cl{background:#fff3cf}.mxg tr.rt td.rk,.mxg tr.rt td.nm,.mxg tr.rt td.sc,.mxg tr.rt td.cl{background:#faf6ee}.mxg td.gO{color:#1f3a6e;background:#dce7fb;font-weight:800}.mxg td.gX{color:#b0334b;background:#f7d6dc;font-weight:800}.mxg td.gT{color:#7a5a0b;background:#f5e4b0;font-weight:800}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}@media(max-width:640px){.mxg .sc,.mxg .cl{position:static}.mxg .nm{border-right:1px solid #eee7d8}.mxg .nm{min-width:92px}}'+
+ '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:6px}.pc{text-align:center;border-radius:8px;padding:3px 0 2px;line-height:1.1;background:#fbf9f4;color:#c9c9c9}.pc i{display:block;font-style:normal;font-size:9.5px;opacity:.75}.pc b{font-size:15px}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
  '.stamp{display:inline-block;border:2px solid #d4486a;color:#d4486a;border-radius:50%;width:44px;height:44px;line-height:40px;text-align:center;font-weight:900;font-size:10px;letter-spacing:-.3px;transform:rotate(-14deg);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3.5px #d4486a;background:rgba(212,72,106,.05)}.stamp.s{width:34px;height:34px;line-height:30px;font-size:8px}.stamp.xs{width:26px;height:26px;line-height:22px;font-size:6.5px;border-width:1.5px;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 2.5px #d4486a}'+
  '.mxg{border-collapse:separate;border-spacing:0;font-size:13px}.mxg th,.mxg td{min-width:28px;height:30px;padding:0 3px;text-align:center;border-bottom:1px solid #eee7d8;border-right:1px solid #f4efe4;background:var(--card)}.mxg th{position:sticky;top:0;z-index:2;background:#f4efe4;font-size:11.5px}.mxg .rk{position:sticky;left:0;z-index:3;min-width:42px;font-weight:800;background:var(--card)}.mxg th.rk{z-index:4;background:#f4efe4}.mxg .nm{position:sticky;left:42px;z-index:3;text-align:left;min-width:120px;font-weight:700;white-space:nowrap;background:var(--card);border-right:2px solid var(--line)}.mxg th.nm{z-index:4;background:#f4efe4}.mxg tr.me td{background:#fff3cf}.mxg tr.rt td{background:#faf6ee;font-size:11px;font-weight:700}'+
  '.mxg td.gO{color:#0b3d91;background:#cfe0ff;font-weight:900}.mxg td.gX{color:#b01030;background:#ffc9d2;font-weight:900}.mxg td.gT{color:#7a5200;background:#ffe27a;font-weight:900}.mxg td.gN{color:#c9c9c9}'+
@@ -1135,7 +1137,10 @@ async function noteApi(action,args){
 }
 function shEnsure(){
  if(SH!==undefined||SHB)return;SHB=true;
- (async()=>{const h=await msApi('history',{}),n=await noteApi('mine');SH={hist:(h&&h.ok)?h.list:[],note:(n&&n.ok&&n.body)?n:null};SHB=false;render();})();
+ (async()=>{const h=await msApi('history',{});let n=await noteApi('mine');const H=(h&&h.ok)?h.list:[];
+  try{const L=H.filter(x=>x.tot>0&&x.score!=null&&!x.old&&String(x.date)>=GRAPH_FROM),last=n&&n.ok&&n.list&&n.list[0]?new Date(n.list[0].ts):null;
+   if(L.length&&(!last||(Date.now()-last.getTime())/864e5>=6)){const st=stuOf();await noteApi('auto',{body:autoNote(st?st.name:'',H)});n=await noteApi('mine');}}catch(e){}
+  SH={hist:H,note:(n&&n.ok&&n.body)?n:null};SHB=false;render();})();
 }
 function pctOf(h){return h.tot>0&&h.score!=null?h.score*100/h.tot:null;}
 function hCnt(h){return msCnt(h.ox,h.n||String(h.ox||'').length);}
@@ -1169,19 +1174,77 @@ function noteCard(){
  const st=stuOf(),n=SH&&SH.note;
  if(SH===undefined)return '<div class="card nt"><div class="muted">불러오는 중…</div></div>';
  const body=n?n.body:autoNote(st.name,SH.hist);
- return '<div class="card nt"><h3 style="margin:0">'+esc(st.name)+' 학생 이번 주 한마디</h3><p>'+esc(body)+'</p>'+(n?'<div class="src">선생님이 직접 남긴 글이에요 · '+esc(String(n.ts||'').slice(5,10).replace('-','/'))+'</div>':'')+'</div>';
+ return '<div class="card nt"><h3 style="margin:0">'+esc(st.name)+' 학생 이번 주 한마디</h3><p>'+esc(body)+'</p>'+(n?'<div class="src">'+(n.kind==='teacher'?'선생님이 직접 남긴 글이에요 · ':'')+esc(String(n.ts||'').slice(5,10).replace('-','/'))+' · 누적성적 탭에서 지난 기록을 볼 수 있어요</div>':'')+'</div>';
 }
-function cumChart(){
- if(SH===undefined)return '<div class="card"><h3>누적 성적 그래프</h3><div class="empty">불러오는 중…</div></div>';
- const L=SH.hist.filter(h=>pctOf(h)!=null&&!h.old&&String(h.date)>=GRAPH_FROM).slice(-40);
- if(L.length<2)return '<div class="card"><h3>누적 성적 그래프</h3><div class="empty">10월 22일 기록부터 쌓여요. 미션이 2개 이상 채점되면 그래프가 나와요</div></div>';
- const W=640,H=230,pl=34,pr=12,pt=14,pb=26,n=L.length,X=i=>pl+i*(W-pl-pr)/(n-1),Y=v=>pt+(H-pt-pb)*(1-Math.max(0,Math.min(100,v))/100);
+function cumChartOf(H,title){
+ const L=H.filter(h=>pctOf(h)!=null&&!h.old&&String(h.date)>=GRAPH_FROM).slice(-40);
+ if(L.length<2)return '<div class="card"><h3>'+title+'</h3><div class="empty">10월 22일 기록부터 쌓여요. 미션이 2개 이상 채점되면 그래프가 나와요</div></div>';
+ const W=640,H2=230,pl=34,pr=12,pt=14,pb=26,n=L.length,X=i=>pl+i*(W-pl-pr)/(n-1),Y=v=>pt+(H2-pt-pb)*(1-Math.max(0,Math.min(100,v))/100);
  let run=0;const my=L.map(pctOf),ca=L.map(h=>h.avg!=null?h.avg*100/h.tot:null),ra=my.map((v,i)=>{run+=v;return run/(i+1);});
  let g='';[0,25,50,75,100].forEach(v=>{g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+v+'</text>';});
  const line=(a,col,dash,w)=>{const q=a.map((v,i)=>v==null?null:X(i).toFixed(1)+','+Y(v).toFixed(1)).filter(Boolean);return q.length>1?'<polyline fill="none" stroke="'+col+'" stroke-width="'+(w||2.2)+'" '+(dash?'stroke-dasharray="5 4" ':'')+'points="'+q.join(' ')+'"/>':'';};
  const dots=my.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="3.6" fill="#b76e79" stroke="#fff" stroke-width="1.4"><title>'+esc(L[i].date+' · '+L[i].name+' · '+L[i].score+'/'+Math.round(L[i].tot*10)/10+'점 ('+Math.round(v)+'%)')+'</title></circle>').join('');
- const xl=[0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'" font-size="10.5" fill="#8a8f9e">'+esc(String(L[i].date).slice(5).replace('-','/'))+'</text>').join('');
- return '<div class="card"><h3>누적 성적 그래프 <span class="muted sm" style="font-weight:400">미션 '+L.length+'개 · <span style="color:#b76e79">●</span> 내 점수(%) · <span style="color:#1f3a6e">━</span> 누적 평균 · <span style="color:#9aa1b3">┅</span> 반 평균</span></h3><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+g+line(ca,'#9aa1b3',true,1.8)+line(ra,'#1f3a6e',false,2.6)+line(my,'#b76e79',false,2)+dots+xl+'</svg></div>';
+ const xl=[0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H2-8)+'" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'" font-size="10.5" fill="#8a8f9e">'+esc(String(L[i].date).slice(5).replace('-','/'))+'</text>').join('');
+ return '<div class="card"><h3>'+title+' <span class="muted sm" style="font-weight:400">미션 '+L.length+'개 · <span style="color:#b76e79">●</span> 내 점수(%) · <span style="color:#1f3a6e">━</span> 누적 평균 · <span style="color:#9aa1b3">┅</span> 반 평균</span></h3><svg viewBox="0 0 '+W+' '+H2+'" style="width:100%;height:auto;display:block">'+g+line(ca,'#9aa1b3',true,1.8)+line(ra,'#1f3a6e',false,2.6)+line(my,'#b76e79',false,2)+dots+xl+'</svg></div>';
+}
+function cumChart(){
+ if(SH===undefined)return '<div class="card"><h3>누적 성적 그래프</h3><div class="empty">불러오는 중…</div></div>';
+ return cumChartOf(SH.hist,'누적 성적 그래프');
+}
+
+/* ── 누적성적 탭: 결과 리포트(내 성적 전체) · 성적 추이 ── */
+let RP=undefined,RPK=null,RPB=false,RPMORE=false;
+function msSeasonH(h){return (h.old||String(h.date)<'2026-10-15')?'mid':'fin';}
+function rpKey(){if(!isStaff())return 'me';const L=stuList(curAc()).filter(x=>S.cls==='all'||x.cls===S.cls);if(!S.rpSid||!L.some(x=>x.id===S.rpSid))S.rpSid=L[0]?L[0].id:'';return S.rpSid;}
+function rpEnsure(){
+ const key=rpKey();if(RPB||(RP&&RPK===key))return;if(!key){RP={hist:[],notes:[]};RPK=key;return;}
+ RPB=true;RPK=key;
+ (async()=>{const a=isStaff()?{sid:key}:{},h=await msApi('history',a),n=await noteApi(isStaff()?'get':'mine',a);RP={hist:(h&&h.ok)?h.list:[],notes:(n&&n.ok)?n.list:[]};RPB=false;render();})();
+}
+function rpStudentBar(){
+ if(!isStaff())return '';
+ const L=stuList(curAc()).filter(x=>S.cls==='all'||x.cls===S.cls).sort((a,b)=>(a.cls+a.name).localeCompare(b.cls+b.name));
+ return '<div class="card"><div class="row"><b>학생</b><select id="rpsel" class="sel" data-ch="rpsel" style="max-width:260px">'+L.map(x=>'<option value="'+x.id+'"'+(x.id===S.rpSid?' selected':'')+'>'+esc(x.cls)+' · '+esc(x.name)+'</option>').join('')+'</select>'+(S.rpSid?'<button class="btn sm3 gh" data-a="stunote" data-id="'+S.rpSid+'" type="button">한마디 쓰기</button>':'')+'</div></div>';
+}
+function noteLog(){
+ const N=RP.notes||[];
+ if(!N.length)return '<div class="card"><h3>한마디 기록</h3><div class="empty">아직 기록이 없어요. 선생님이 남기거나 학습 기록으로 자동 작성된 글이 날짜별로 쌓여요.</div></div>';
+ const show=RPMORE?N:N.slice(0,5);
+ return '<div class="card"><h3>한마디 기록 <span class="muted sm" style="font-weight:400">날짜별로 쌓여요</span></h3>'+show.map(x=>'<div class="nlog"><div class="d">'+esc(String(x.ts).slice(5,10).replace('-','/'))+'</div><div style="flex:1"><span class="k'+(x.kind==='auto'?' a':'')+'">'+(x.kind==='auto'?'자동 분석':esc(x.author||'선생님'))+'</span>'+esc(x.body)+'</div>'+(isStaff()?'<button class="btn sm3 dng" type="button" data-a="ntdel" data-id="'+x.id+'">삭제</button>':'')+'</div>').join('')+(N.length>5?'<div style="text-align:center;margin-top:6px"><button class="btn sm3 gh" type="button" data-a="rpmore">'+(RPMORE?'접기':'전체 '+N.length+'개 보기')+'</button></div>':'')+'</div>';
+}
+function pBlocks(h){
+ const n=h.n||String(h.ox||'').length,sym={O:'○',X:'✕',T:'△'};let g='';
+ for(let q=0;q<n;q++){const ch=(h.ox||'')[q];g+='<div class="pc'+(ch==='O'||ch==='X'||ch==='T'?' p'+ch:'')+'"><i>'+(q+1)+'</i><b>'+(sym[ch]||'·')+'</b></div>';}
+ return '<div class="pgrid">'+g+'</div>';
+}
+function rpReport(){
+ const hist=RP.hist||[];
+ if(!hist.length)return rpStudentBar()+noteLog()+'<div class="card"><div class="empty">아직 채점된 미션 기록이 없어요.</div></div>';
+ const seas=S.rpSeason&&(S.rpSeason==='fin'||S.rpSeason==='mid')?S.rpSeason:(hist.some(h=>msSeasonH(h)==='fin')?'fin':'mid');
+ const L=hist.filter(h=>msSeasonH(h)===seas).slice().reverse();
+ let clr=0,xs=0,sp=0,np=0;L.forEach(h=>{const c=hCnt(h);if(c.x===0&&c.b===0&&c.o+c.t>0)clr++;xs+=c.x;const p=pctOf(h);if(p!=null){sp+=p;np++;}});
+ const cnt={fin:0,mid:0};hist.forEach(h=>cnt[msSeasonH(h)]++);
+ let h=rpStudentBar()+noteLog();
+ h+='<div class="tabs" style="padding-bottom:6px">'+[['fin','2학기 기말대비'],['mid','2학기 중간대비']].map(x=>'<button class="'+(seas===x[0]?'on':'')+'" data-a="rpseason" data-v="'+x[0]+'">'+x[1]+' <span style="opacity:.7">'+cnt[x[0]]+'</span></button>').join('')+'</div>';
+ h+='<div class="kpi" style="margin-bottom:10px"><div><b>'+L.length+'개</b><span>푼 미션</span></div><div><b>'+(np?Math.round(sp/np*10)/10:'-')+'%</b><span>평균 점수</span></div><div><b style="color:#2f7d5b">'+clr+'개</b><span>클리어</span></div><div><b style="color:'+(xs?'#b84a4a':'#2f7d5b')+'">'+xs+'문제</b><span>남은 오답</span></div></div>';
+ const lim=S.rpAll?L.length:8;
+ h+=L.slice(0,lim).map(x=>{const c=hCnt(x),ok=c.x===0&&c.b===0&&c.o+c.t>0;
+  return '<div class="rpc"><div class="hd"><div><b>'+esc(x.name)+'</b><div class="muted sm">'+esc(String(x.date).slice(5).replace('-','/'))+(x.cat?' · '+esc(x.cat):'')+'</div></div><div class="sc"><strong>'+(x.score==null?'-':Math.round(x.score*10)/10)+'</strong> / '+Math.round(x.tot*10)/10+'점<div>'+x.rk+'위 / '+x.cnt+'명'+(x.avg!=null?' · 평균 '+Math.round(x.avg*10)/10:'')+'</div></div>'+(ok?'<span class="stamp s">CLEAR</span>':(c.x?'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+c.x+'</b>':''))+'</div>'+pBlocks(x)+'</div>';}).join('');
+ if(L.length>8)h+='<div style="text-align:center"><button class="btn sm3 gh" type="button" data-a="rpall">'+(S.rpAll?'접기':'미션 '+L.length+'개 전체 보기')+'</button></div>';
+ h+='<div class="muted sm" style="margin-top:8px">○ 맞음(파랑) · ✕ 틀림(빨강) · △ 틀렸다 고침(노랑) · · 기록 없음</div>';
+ return h;
+}
+function rpTrend(){
+ const hist=RP.hist||[],L=hist.filter(h=>pctOf(h)!=null&&!h.old&&String(h.date)>=GRAPH_FROM);
+ let h=rpStudentBar()+cumChartOf(hist,'성적 추이');
+ if(L.length)h+='<div class="card"><h3>미션별 점수</h3><table class="tbl"><tr><th>날짜</th><th class="l" style="text-align:left">미션</th><th>내 점수</th><th>반 평균</th><th>순위</th></tr>'+L.slice().reverse().map(x=>'<tr><td class="sm">'+esc(String(x.date).slice(5).replace('-','/'))+'</td><td class="l" style="text-align:left"><b>'+esc(x.name)+'</b></td><td><b>'+Math.round(pctOf(x)*10)/10+'%</b></td><td>'+(x.avg!=null?Math.round(x.avg*100/x.tot*10)/10+'%':'-')+'</td><td>'+x.rk+' / '+x.cnt+'</td></tr>').join('')+'</table></div>';
+ return h;
+}
+function vExam(){
+ const k=S.sub.exam==='trend'?'trend':'rpt';rpEnsure();
+ let h='<div class="chips">'+[['rpt','결과 리포트'],['trend','성적 추이']].map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="exam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ if(RP===undefined||RPB||RPK!==rpKey())return h+rpStudentBar()+'<div class="card"><div class="empty">불러오는 중…</div></div>';
+ return h+(k==='trend'?rpTrend():rpReport());
 }
 function clearCard(){
  if(SH===undefined)return '<div class="card"><h3>미션 클리어 현황</h3><div class="empty">불러오는 중…</div></div>';
@@ -1208,8 +1271,9 @@ function vHomeStu(){
 /* ── 선생님: 학생별 한마디 쓰기 (직접 쓰거나 자동 작성) ── */
 async function openNote(sid){
  const st=U[sid];if(!st)return;
- openModal('<h3>'+esc(st.name)+' 학생 한마디</h3><div class="muted sm" style="margin-bottom:8px">학생·학부모 홈에 "이번 주 한마디"로 보여요. 비워서 저장하면 선생님 글이 지워지고, 학습 기록으로 만든 자동 글이 대신 보여요.</div><div class="fld"><textarea id="nt_t" style="min-height:130px" placeholder="불러오는 중…"></textarea></div><div class="row"><button class="btn gh" type="button" data-a="ntauto" data-id="'+sid+'">자동 작성 (학습 기록으로)</button><span class="sp"></span><button class="btn gh" data-a="closemodal">취소</button><button class="btn" data-a="ntsave" data-id="'+sid+'">저장</button></div>');
- const j=await noteApi('get',{sid:sid});const t=$('#nt_t');if(t){t.placeholder='학생의 이번 주 학습 상황을 적어 주세요';t.value=(j&&j.ok&&j.body)?j.body:'';}
+ openModal('<h3>'+esc(st.name)+' 학생 한마디</h3><div class="muted sm" style="margin-bottom:8px">저장하면 날짜와 함께 <b>기록으로 쌓이고</b>, 학생·학부모 홈에는 가장 최근 글이 보여요. 바쁘실 때는 [자동 작성]으로 학습 기록 글을 채워 저장하세요.</div><div class="fld"><textarea id="nt_t" style="min-height:110px" placeholder="학생의 이번 주 학습 상황을 적어 주세요"></textarea></div><div class="row"><button class="btn gh" type="button" data-a="ntauto" data-id="'+sid+'">자동 작성 (학습 기록으로)</button><span class="sp"></span><button class="btn gh" data-a="closemodal">닫기</button><button class="btn" data-a="ntsave" data-id="'+sid+'">저장</button></div><div id="nt_log" style="margin-top:12px;max-height:30vh;overflow:auto"></div>');
+ const j=await noteApi('get',{sid:sid});const el=$('#nt_log');
+ if(el&&j&&j.ok)el.innerHTML=(j.list.length?'<b>지금까지의 기록</b>':'')+j.list.map(x=>'<div class="nlog"><div class="d">'+esc(String(x.ts).slice(5,10).replace('-','/'))+'</div><div style="flex:1"><span class="k'+(x.kind==='auto'?' a':'')+'">'+(x.kind==='auto'?'자동 분석':esc(x.author||'선생님'))+'</span>'+esc(x.body)+'</div></div>').join('');
 }
 
 /* ── 일정·수업내용·영상·자료 입력 ── */
@@ -1382,7 +1446,7 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;render(0);break;}
+ case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':S.tab=v;S.thread=null;render(0);break;
  case 'cls':S.cls=v;S.thread=null;render();break;
@@ -1440,7 +1504,13 @@ document.addEventListener('click',async e=>{
  case 'msrefresh':MS=null;MS_BUSY=false;render();break;
  case 'vunit':PVU=v;homeRefresh();break;
  case 'ntauto':{const j=await msApi('history',{sid:id});const t=$('#nt_t');if(t)t.value=autoNote(U[id].name,(j&&j.ok)?j.list:[]);break;}
- case 'ntsave':{const j=await noteApi('set',{sid:id,body:($('#nt_t').value||'').trim()});if(j&&j.ok){closeModal();toast('저장했어요');}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 실행했는지 확인해 주세요)');break;}
+ case 'ntsave':{const j=await noteApi('set',{sid:id,body:($('#nt_t').value||'').trim()});if(j&&j.ok){closeModal();RP=undefined;toast('기록에 저장했어요');render();}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 실행했는지 확인해 주세요)');break;}
+ case 'ntdel':{if(!confirm('이 기록을 지울까요?'))break;const j=await noteApi('del',{sid:S.rpSid,id:t.dataset.id});if(j&&j.ok){RP=undefined;render();}else toast('지우지 못했어요');break;}
+ case 'rpmore':RPMORE=!RPMORE;render();break;
+ case 'rpall':S.rpAll=!S.rpAll;render();break;
+ case 'rpseason':S.rpSeason=v;S.rpAll=false;render();break;
+ case 'gsize':GSZ=+v;Object.keys(GPG).forEach(k=>delete GPG[k]);render();break;
+ case 'gpage':GPG[t.dataset.id]=+v;render();break;
  case 'stunote':openNote(id);break;
  case 'rtcmd':{const ed=$('#wbe');if(ed){ed.focus();document.execCommand('styleWithCSS',false,true);document.execCommand(t.dataset.c,false,null);}break;}
  case 'rtcolor':{const ed=$('#wbe');if(ed){ed.focus();document.execCommand('styleWithCSS',false,true);document.execCommand('foreColor',false,t.dataset.c);}break;}
@@ -1593,18 +1663,25 @@ function msChart(it){
  s+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
  return s+'</svg>';
 }
+let GSZ=10;const GPG={};
+function chunkBar(id,n){
+ let h='<div class="chk" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 8px"><div class="seg">'+[10,20,30,0].map(v=>'<button type="button" class="'+(GSZ===v?'on':'')+'" data-a="gsize" data-v="'+v+'">'+(v?v+'문제씩':'전체')+'</button>').join('')+'</div>';
+ if(GSZ&&n>GSZ){const pn=Math.ceil(n/GSZ),pg=GPG[id]||0;h+='<div class="seg">'+Array.from({length:pn},(_,i)=>'<button type="button" class="'+(pg===i?'on':'')+'" data-a="gpage" data-id="'+id+'" data-v="'+i+'">'+(i*GSZ+1)+'~'+Math.min(n,(i+1)*GSZ)+'</button>').join('')+'</div>';}
+ return h+'</div>';
+}
+function chunkRange(id,n){if(!GSZ||n<=GSZ)return [0,n];const pg=Math.min(GPG[id]||0,Math.ceil(n/GSZ)-1);return [pg*GSZ,Math.min(n,(pg+1)*GSZ)];}
 function msRanks(R){let k=0;return R.map((r,i)=>{if(i===0||+r.score!==+R[i-1].score)k=i+1;return k;});}
 function msDetail(it,st){
  const items=it.ex.items,n=items.length,R=it.roster.slice().sort((a,b)=>b.score-a.score),rk=msRanks(R);
  const rate=items.map((_,i)=>{let o=0,t=0;R.forEach(r=>{const c=r.ox[i];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}});return t?o/t:null;});
- const sym={O:'○',X:'✕',T:'△'};
+ const sym={O:'○',X:'✕',T:'△'},rg=chunkRange(it.m.id,n),cols=[];for(let q=rg[0];q<rg[1];q++)cols.push(q);
  let h='<div class="kpi" style="margin:2px 0 10px"><div><b>'+st.n+'명</b><span>응시</span></div><div><b>'+(Math.round(st.avg*10)/10)+'</b><span>평균</span></div><div><b>'+st.cl+' / '+st.n+'</b><span>클리어</span></div><div><b>'+st.xs+'개</b><span>남은 오답</span></div></div>';
- h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+' · 옆으로 밀어 보세요</span></div>';
- h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+items.map((_,i)=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
- h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+rate.map(r=>{const p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';
+ h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
+ h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
+ h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(i=>{const r=rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';
  R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':(r.name||r.nick||'');
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+'</span>':''))+'</td>'+
-   items.map((_,q)=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
+   cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
  h+='</table></div>';
  const hard=items.map((_,i)=>i).filter(i=>rate[i]!=null).sort((a,b)=>rate[a]-rate[b]).slice(0,5);
  const ug={};items.forEach((x,i)=>{const k=x.unit||'기타';(ug[k]=ug[k]||[]).push(i);});
@@ -1777,6 +1854,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.targ
  if(t.dataset.enter==='send')sendMsg(t.dataset.key);});
 document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]');if(!t)return;const c=t.dataset.ch;
  if(c==='exsel'){S.exsel=t.value;render();}
+ if(c==='rpsel'){S.rpSid=t.value;RP=undefined;render();}
  if(c==='nfrom'||c==='nto'){if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');render();return;}DB.set.notif[c==='nfrom'?'from':'to']=t.value;const j=await saveNotif();if(j&&j.ok)toast('저장했어요');}
  if(c==='wscope'){const o=scopeObj(t.value);$('#wncnt').textContent='받는 학부모 '+targetsOf(o).filter(x=>x.role==='parent').length+'명';}
  if(c==='rex'){S.rex=t.value;S.rstu='';render();}
