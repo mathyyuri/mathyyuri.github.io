@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MATHY 학원 관리 시스템</title>
+<title>MATHY YURI SYSTEM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;0,900;1,600&display=swap" rel="stylesheet">
 <style>
@@ -214,7 +214,7 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .tl .av.p{background:var(--pri2);color:#fff}
 .tl .tx{flex:1;min-width:0}
 .tl .tx div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat{background:var(--card);border:1px solid var(--line);border-radius:26px;display:flex;flex-direction:column;min-height:420px;box-shadow:var(--sh)}
+.syslbl{font-family:var(--disp,serif);font-weight:800;letter-spacing:.62em;font-size:13px;color:var(--acc);margin:8px 0 0 4px}.chat.dz{outline:3px dashed var(--acc);outline-offset:-6px}.attc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg2,#f4efe4);border-radius:999px;padding:4px 6px 4px 12px;font-size:12.5px;margin:0 6px 6px 0}.attc button{border:0;background:#d9cfbc;border-radius:50%;width:20px;height:20px;line-height:20px;padding:0;cursor:pointer}#attbar{padding:8px 16px 0}.mimg{max-width:min(260px,100%);border-radius:10px;display:block;margin-top:6px;cursor:zoom-in;background:var(--bg2,#eee);min-height:60px}.mfile{display:inline-block;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;cursor:pointer;color:var(--ink);font-size:13px}.chat{background:var(--card);border:1px solid var(--line);border-radius:26px;display:flex;flex-direction:column;min-height:420px;box-shadow:var(--sh)}
 .chat .hh{padding:14px 20px;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:17px;font-weight:700;display:flex;gap:10px;align-items:center}
 .chat .msgs{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;max-height:56vh;overflow:auto}
 .b{max-width:82%;padding:10px 15px;border-radius:20px;font-size:15px;white-space:pre-wrap}
@@ -495,7 +495,7 @@ function render(y){
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
  else{document.body.dataset.ac=curAc();renderMain();}
  window.scrollTo(0,keep);
- setTimeout(loadImages,0);
+ setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);
 }
 function saveSession(){}
 
@@ -505,7 +505,7 @@ function tlHtml(){const si=seasonIdx();
 function renderLogin(){
  const L=S.L,si=seasonIdx(),X=SEASONS[si];
  let h='<div class="landing"><div class="lface"><img src="'+faceSrc()+'" alt=""></div><div class="lmain">'+
-  '<div class="eb">2026 – 27 season</div><h1 class="big">MATHY <i>YURI</i></h1>'+
+  '<div class="eb">2026 – 27 season</div><h1 class="big">MATHY <i>YURI</i></h1><div class="syslbl">SYSTEM</div>'+
   '';
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
@@ -574,7 +574,7 @@ const seasonIdx=()=>{const v=S.uid?DB.set.season:null,x=(v&&typeof v==='object')
 function seasonHero(){
  const u=me(),st=stuOf(),a=AC[curAc()],si=seasonIdx(),X=SEASONS[si],bio=bioOf();
  const hi=isStaff()?esc(u.name)+'님, 안녕하세요':(u.role==='parent'?esc(st.name)+' 학부모님, 안녕하세요':esc(st.name)+' 학생, 안녕하세요');
- return '<section class="hero2"><div class="hl"><div class="hi">'+hi+'</div><div class="eb">'+a.name+' · 2026 – 27 season</div><h2 class="big">MATHY <i>YURI</i></h2>'+
+ return '<section class="hero2"><div class="hl"><div class="hi">'+hi+'</div><div class="eb">'+a.name+' · 2026 – 27 season</div><h2 class="big">MATHY <i>YURI</i></h2><div class="syslbl">SYSTEM</div>'+
   examTag()+'</div>'+
   '<div class="hr"><img class="face" src="'+faceSrc()+'" alt=""'+(u.role==='admin'?' data-a="facepick" title="사진을 누르면 바꿀 수 있어요" style="cursor:pointer"':'')+'><div class="bio"><b>'+esc(bio[0]||'')+'</b><ul>'+bio.slice(1).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(u.role==='admin'?'<button class="btn sm3 gh" style="margin-top:8px" data-a="bioedit">약력 수정</button>':'')+'</div></div></section>';
 }
@@ -865,7 +865,7 @@ function vMsgChat(){
  if(!staff){const st=stuOf(),kind=u.role==='student'?'student':'parent',key=st.id+':'+kind;S.thread=key;return chatHtml(key,'선생님에게 메시지','원장·조교가 함께 확인해요');}
  const list=[];stuList(curAc()).filter(s=>S.cls==='all'||s.cls===S.cls).forEach(s=>['student','parent'].forEach(k=>{const key=s.id+':'+k,a=DB.msgs[key]||[];list.push({key,s,k,a,last:lastOf(a),un:a.filter(m=>m.f==='u'&&!m.rdS).length});}));
  list.sort((x,y)=>(y.last?y.last.ts:'').localeCompare(x.last?x.last.ts:''));
- const lh='<div class="tl">'+list.map(x=>'<button class="'+(S.thread===x.key?'on':'')+'" data-a="thread" data-v="'+x.key+'"><div class="av '+(x.k==='parent'?'p':'')+'">'+esc(x.s.name[0])+'</div><div class="tx"><div><b>'+esc(x.s.name)+(x.k==='parent'?' 학부모':'')+'</b> <span class="muted sm">'+x.s.cls+'</span></div><div class="muted sm">'+(x.last?esc(x.last.t):'대화 시작하기')+'</div></div>'+(x.un?'<span class="badge new">'+x.un+'</span>':'')+'</button>').join('')+'</div>';
+ const lh='<div class="tl">'+list.map(x=>'<button class="'+(S.thread===x.key?'on':'')+'" data-a="thread" data-v="'+x.key+'"><div class="av '+(x.k==='parent'?'p':'')+'">'+esc(x.s.name[0])+'</div><div class="tx"><div><b>'+esc(x.s.name)+(x.k==='parent'?' 학부모':'')+'</b> <span class="muted sm">'+x.s.cls+'</span></div><div class="muted sm">'+(x.last?esc(x.last.t||(x.last.a?'(사진·파일)':'')):'대화 시작하기')+'</div></div>'+(x.un?'<span class="badge new">'+x.un+'</span>':'')+'</button>').join('')+'</div>';
  const hasT=!!S.thread;
  return '<div class="chatw"><div class="'+(hasT?'hide-m':'')+'">'+lh+'</div><div class="'+(hasT?'':'hide-m')+'">'+(hasT?chatHtml(S.thread,null):'<div class="empty card">왼쪽에서 대화를 선택하세요</div>')+'</div></div><style>@media(max-width:899px){.hide-m{display:none}}</style>';
 }
@@ -873,8 +873,8 @@ function chatHtml(key,title,subt){
  const a=DB.msgs[key]||[],[sid,k]=key.split(':'),s=U[sid],staff=isStaff();
  const mark=staff?'rdS':'rdU';let ch=false;a.forEach(m=>{if((staff&&m.f==='u'&&!m.rdS)||(!staff&&m.f==='s'&&!m.rdU)){m[mark]=true;ch=true;}});if(ch)markMsg(key);
  return '<div class="chat"><div class="hh">'+(staff?'<button class="btn sm3 gh back" data-a="thread" data-v="">‹</button>'+esc(s.name)+(k==='parent'?' 학부모':'')+' <span class="muted sm" style="font-weight:500">'+s.cls+'</span>':esc(title)+' <span class="muted sm" style="font-weight:500">'+subt+'</span>')+'</div>'+
- '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
- '<div class="in"><input id="min" placeholder="메시지 입력" data-enter="send" data-key="'+key+'"><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
+ '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
+ '<div id="attbar">'+attBar()+'</div><div class="in"><button class="btn sm3 gh" type="button" data-a="attpick">첨부</button><input id="min" placeholder="메시지 입력 (사진·파일은 여기로 끌어다 놓거나 붙여넣기)" data-enter="send" data-key="'+key+'"><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
 }
 
 function cutWhite(cv){
@@ -1146,7 +1146,10 @@ document.addEventListener('click',async e=>{
  case 'mdel':if(confirm('이 미션을 삭제할까요?'))await mut('mission_delete',{id:id});break;
  case 'newmission':openNewMission();break;
  case 'msave':{const tt=$('#nt').value.trim();if(!tt){toast('제목을 입력하세요');return;}const k=$('#nk').value;const j=await mut('mission_create',{ac:curAc(),cls:$('#nc').value,kind:k,title:tt,desc:$('#nd').value,due:$('#ndu').value},{render:false});if(j&&j.ok){closeModal();S.sub.mission=k;render();toast('미션을 추가했어요');}break;}
- case 'thread':S.thread=v||null;render(0);break;
+ case 'thread':S.thread=v||null;ATT=[];render(0);break;
+ case 'attpick':FIN.click();break;
+ case 'attdel':ATT.splice(+t.dataset.i,1);{const b=$('#attbar');if(b)b.innerHTML=attBar();}break;
+ case 'dlfile':{const j=await fileApi(t.dataset.fid);if(!j||!j.ok){toast((j&&j.error)||'파일을 받지 못했어요');break;}const a=document.createElement('a');a.href=dataBlobUrl(j.data);a.download=t.dataset.n||j.name;document.body.appendChild(a);a.click();a.remove();break;}
  case 'send':await sendMsg(t.dataset.key);break;
  case 'q':openQ(t.dataset.ex,+t.dataset.no);break;
  case 'qsave':{const j=await mut('item_save',{exam_id:t.dataset.ex,no:+t.dataset.no,yt:$('#qyt').value.trim(),note:$('#qnote').value.trim()},{render:false});if(j&&j.ok){render();openQ(t.dataset.ex,+t.dataset.no);toast('저장했어요');}break;}
@@ -1428,11 +1431,64 @@ function vPastVideos(){
  return h;
 }
 
+/* ── 메시지: 사진 · 파일 (끌어다 놓기 · 붙여넣기 · 첨부 버튼) ── */
+let ATT=[];const MIMG={};
+const FILE_URL=API_URL.replace('ac_api','ac_file');
+const FIN=document.createElement('input');FIN.type='file';FIN.multiple=true;FIN.style.display='none';FIN.accept='.jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.txt,.csv,.zip';
+document.body.appendChild(FIN);FIN.onchange=()=>{addFiles(FIN.files);FIN.value='';};
+function fmtSize(n){return n>=1048576?(n/1048576).toFixed(1)+'MB':Math.max(1,Math.round(n/1024))+'KB';}
+function attBar(){return ATT.map((a,i)=>'<span class="attc">'+esc(a.name)+' <small>'+fmtSize(a.size)+'</small><button type="button" data-a="attdel" data-i="'+i+'">×</button></span>').join('');}
+function attHtml(m){
+ if(!m.a||!m.a.length)return '';
+ return m.a.map(f=>/^image\//.test(f.m)&&!/heic/.test(f.m)?'<img class="mimg" data-fid="'+f.id+'" src="'+(MIMG[f.id]||BLANK)+'" alt="'+esc(f.n)+'">':'<button type="button" class="mfile" data-a="dlfile" data-fid="'+f.id+'" data-n="'+esc(f.n)+'">'+esc(f.n)+' <small>'+fmtSize(f.z)+'</small> · 받기</button>').join('');
+}
+async function fileApi(id){
+ try{const r=await fetch(FILE_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_token:TOKEN,p_id:+id})});return r.ok?await r.json():null;}catch(e){return null;}
+}
+async function loadMsgFiles(){
+ for(const el of [...document.querySelectorAll('img.mimg[data-fid]')]){
+  const id=el.dataset.fid;if(MIMG[id]){el.src=MIMG[id];continue;}
+  const j=await fileApi(id);if(j&&j.ok){MIMG[id]=j.data;el.src=j.data;el.style.minHeight='0';}
+ }
+}
+function dataBlobUrl(d,type){const b=atob(d.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return URL.createObjectURL(new Blob([u],{type:type||'application/octet-stream'}));}
+function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});}
+async function prepImage(f){
+ const d=await readFile(f);if(!d)return null;
+ if(!/^image\/(jpeg|png|webp)$/.test(f.type))return {name:f.name,data:d,size:f.size};
+ return new Promise(res=>{const im=new Image();im.onload=()=>{const M=1600,w=im.width,h=im.height;if(w<=M&&h<=M&&f.size<900000){res({name:f.name,data:d,size:f.size});return;}
+  const k=Math.min(1,M/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  const out=c.toDataURL('image/jpeg',0.85);res({name:f.name.replace(/\.\w+$/,'')+'.jpg',data:out,size:Math.round(out.length*3/4)});};
+  im.onerror=()=>res({name:f.name,data:d,size:f.size});im.src=d;});
+}
+async function addFiles(list){
+ const ok=/\.(jpe?g|png|gif|webp|heic|pdf|docx?|xlsx?|pptx?|hwpx?|txt|csv|zip)$/i;
+ for(const f of [].slice.call(list)){
+  if(ATT.length>=5){toast('파일은 한 번에 5개까지예요');break;}
+  const nm=f.name||('붙여넣은 사진.'+((f.type||'image/png').split('/')[1]||'png'));
+  if(!ok.test(nm)){toast('보낼 수 없는 파일이에요: '+nm);continue;}
+  if(f.size>3*1048576&&!/^image\//.test(f.type)){toast('파일이 너무 커요 (3MB까지): '+nm);continue;}
+  const a=/^image\//.test(f.type)?await prepImage(f):{name:nm,data:await readFile(f),size:f.size};
+  if(!a||!a.data){toast('파일을 읽지 못했어요: '+nm);continue;}
+  if(a.data.length>4200000){toast('사진이 너무 커요 (3MB까지): '+nm);continue;}
+  if(!a.name||a.name==='image.png')a.name=nm;
+  ATT.push(a);
+ }
+ const b=$('#attbar');if(b)b.innerHTML=attBar();
+}
+['dragover','drop'].forEach(ev=>window.addEventListener(ev,e=>{if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],'Files')>=0)e.preventDefault();}));
+document.addEventListener('dragover',e=>{const c=e.target.closest&&e.target.closest('.chat');if(c)c.classList.add('dz');});
+document.addEventListener('dragleave',e=>{const c=e.target.closest&&e.target.closest('.chat');if(c&&!c.contains(e.relatedTarget))c.classList.remove('dz');});
+document.addEventListener('drop',e=>{const c=e.target.closest&&e.target.closest('.chat');if(!c)return;c.classList.remove('dz');if(e.dataTransfer&&e.dataTransfer.files.length)addFiles(e.dataTransfer.files);});
+document.addEventListener('paste',e=>{if(e.target&&e.target.id==='min'&&e.clipboardData&&e.clipboardData.files&&e.clipboardData.files.length){e.preventDefault();addFiles(e.clipboardData.files);}});
+document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closest('img.mimg');if(im&&MIMG[im.dataset.fid]){window.open(dataBlobUrl(MIMG[im.dataset.fid]),'_blank');}});
 async function sendMsg(key){
- const i=$('#min'),tx=i.value.trim();if(!tx)return;const p=key.split(':');
- i.disabled=true;
- const j=await mut('msg_send',isStaff()?{sid:p[0],kind:p[1],text:tx}:{text:tx});
- const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;const n=$('#min');if(n&&(!j||j.ok===false)){n.disabled=false;n.value=tx;}else if(n)n.focus();
+ const i=$('#min'),tx=i.value.trim();if(!tx&&!ATT.length)return;const p=key.split(':');
+ i.disabled=true;const sb=document.querySelector('[data-a="send"]');if(sb)sb.disabled=true;
+ const files=ATT.map(a=>({name:a.name,data:a.data}));
+ const j=await mut('msg_send',isStaff()?{sid:p[0],kind:p[1],text:tx,files:files}:{text:tx,files:files});
+ if(j&&j.ok!==false){ATT=[];const ab=$('#attbar');if(ab)ab.innerHTML=attBar();}
+ const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;const n=$('#min');if(n&&(!j||j.ok===false)){n.disabled=false;n.value=tx;if(sb)sb.disabled=false;}else if(n)n.focus();
 }
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target.closest('[data-enter]');if(!t)return;
  if(t.dataset.enter==='comment'){const b=document.querySelector('[data-a="comment"][data-id="'+t.dataset.id+'"]');if(b)b.click();}
@@ -1452,7 +1508,7 @@ document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]
 /* 시작 */
 const _st=document.createElement('style');_st.textContent='@media(min-width:900px){.hide-pc{display:none}}';document.head.appendChild(_st);
 (async function init(){
- $('#app').innerHTML='<div class="landing"><div class="lmain"><h1 class="big">MATHY <i>YURI</i></h1><div class="sko" style="margin-top:14px">불러오는 중…</div></div></div>';
+ $('#app').innerHTML='<div class="landing"><div class="lmain"><h1 class="big">MATHY <i>YURI</i></h1><div class="syslbl">SYSTEM</div><div class="sko" style="margin-top:14px">불러오는 중…</div></div></div>';
  const p=await api('public');
  if(p&&p.ok){PUB.season=p.season;PUB.face=p.face||null;applyClasses(p.classes);PUB.pv=Array.isArray(p.pastvideos)?p.pastvideos:[];PUB.ok=true;}else PUB.ok=false;
  if(TOKEN&&PUB.ok){const ok=await resync();if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}}}
