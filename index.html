@@ -508,13 +508,13 @@ function render(y){
 function saveSession(){}
 
 /* 로그인 */
-function tlHtml(){const si=seasonIdx();
- return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'" title="'+x.full+'"><div class="nd">'+(i<si?'✓':i+1)+'</div></div>').join('')+'</div>';}
+function tlHtml(nohl){const si=nohl?-1:seasonIdx();
+ return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'"><div class="nd">'+(i<si?'✓':i+1)+'</div><div class="en">'+x.en+'</div><div class="ko">'+x.ko+'</div></div>').join('')+'</div><div class="tlg"><span class="k"></span>시험 대비 시즌<span class="k v"></span>방학 시즌</div>';}
 function renderLogin(){
  const L=S.L,si=seasonIdx(),X=SEASONS[si];
  let h='<div class="landing"><div class="lface"><img src="'+faceSrc()+'" alt=""></div><div class="lmain">'+
   '<div class="eb">2026 – 27 season</div><h1 class="big">MATHY <i>YURI</i></h1><div class="syslbl">SYSTEM</div>'+
-  '';
+  (L.ac?'<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>':'')+tlHtml(!L.ac);
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
@@ -559,7 +559,7 @@ function renderMain(){
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
  const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin})[S.tab]();
  $('#app').innerHTML=
- '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+'<div class="nav">'+nav+'</div><div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
+ '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
  '<div><div class="top"><div class="brand">'+a.name+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div><button class="sw" data-a="logout">로그아웃</button></div>'+
  '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+EB[S.tab]+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
  '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
@@ -577,12 +577,14 @@ function upcoming(n){const out=[];for(let i=0;i<30&&out.length<n;i++){const d=ne
  eventsOn(ds).forEach(e=>{if(out.length<n)out.push({ds,e});});}return out;}
 function myMissions(){const st=stuOf();return DB.missions.filter(m=>inAc(m)&&clsOk(m));}
 function mTargets(m){return stuList().filter(s=>(m.ac==='all'||m.ac===s.ac)&&(m.cls==='all'||m.cls===s.cls));}
+function seasonFor(ac){const v=S.uid?DB.set.season:PUB.season,x=(v&&typeof v==='object')?v[ac]:null;return x==null?(ac==='bd'?0:5):+x;}
 function examTag(){const l=DB.events.filter(e=>e.kind==='시험'&&inAc(e)&&e.date>=TODAY).sort((a,b)=>a.date.localeCompare(b.date))[0];return l?'<span class="dd">'+esc(l.n)+' '+ddTxt(dday(l.date))+'</span>':'';}
-const seasonIdx=()=>{const v=S.uid?DB.set.season:null,x=(v&&typeof v==='object')?v[curAc()]:v;return x==null?5:+x;};
+const seasonIdx=()=>seasonFor(S.uid?curAc():((S.L&&S.L.ac)||'ds'));
 function seasonHero(){
  const u=me(),st=stuOf(),a=AC[curAc()],si=seasonIdx(),X=SEASONS[si],bio=bioOf();
  const hi=isStaff()?esc(u.name)+'님, 안녕하세요':(u.role==='parent'?esc(st.name)+' 학부모님, 안녕하세요':esc(st.name)+' 학생, 안녕하세요');
  return '<section class="hero2"><div class="hl"><div class="hi">'+hi+'</div><div class="eb">'+a.name+' · 2026 – 27 season</div><h2 class="big">MATHY <i>YURI</i></h2><div class="syslbl">SYSTEM</div>'+
+  '<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>'+
   examTag()+'</div>'+
   '<div class="hr"><img class="face" src="'+faceSrc()+'" alt=""'+(u.role==='admin'?' data-a="facepick" title="사진을 누르면 바꿀 수 있어요" style="cursor:pointer"':'')+'><div class="bio"><b>'+esc(bio[0]||'')+'</b><ul>'+bio.slice(1).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(u.role==='admin'?'<button class="btn sm3 gh" style="margin-top:8px" data-a="bioedit">약력 수정</button>':'')+'</div></div></section>';
 }
@@ -1037,8 +1039,8 @@ async function pushOff(){
   if(sub){await pushApi('unsubscribe',{endpoint:sub.endpoint});await sub.unsubscribe();}
   PUSH_ON=false;toast('알림을 껐어요');homeRefresh();}catch(e){toast('알림을 끄지 못했어요');}
 }
-function appCard(){
- let h='<div class="lxc lxs"><b>앱으로 설치 · 알림 받기</b>',steps=[];
+function appCard(side){
+ let h=side?'<div class="sapp"><b>앱 설치 · 알림 받기</b>':'<div class="lxc lxs'+(S.uid?' appm':'')+'"><b>앱으로 설치 · 알림 받기</b>',steps=[];
  if(IS_APP)steps.push('<span class="muted">앱으로 설치되어 있어요.</span>');
  else if(INSTALL_EVT)steps.push('<button class="btn sm3" data-a="appinstall" type="button">홈 화면에 설치</button>');
  else if(IS_IOS)steps.push('<span class="muted">아이폰: Safari 아래 <b>공유 버튼</b> → <b>홈 화면에 추가</b></span>');
@@ -1047,13 +1049,15 @@ function appCard(){
   if(!PUSH_OK||(IS_IOS&&!IS_APP))steps.push('<span class="muted">알림은 '+(IS_IOS?'홈 화면에 추가한 앱에서':'알림을 지원하는 브라우저에서')+' 켤 수 있어요.</span>');
   else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
  }else steps.push('<span class="muted">로그인하면 알림을 켤 수 있어요.</span>');
- return h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
+ return side?h+steps.join('<div style="height:6px"></div>')+'</div>':h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
 }
+function sideApp(){return appCard(true);}
 
 /* ── 학생·학부모 홈: 소식 → 선생님 한마디 → 누적 성적 그래프 → 미션 클리어 현황 / 오른쪽 달력·일정 ── */
 let SH=undefined,SHB=false;
 const NOTE_URL=API_URL.replace('ac_api','ac_note');
 (function(){const st=document.createElement('style');st.textContent=
+ '.sapp{border:2px solid var(--acc);background:#fff8e8;border-radius:16px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.5}.sapp>b:first-child{display:block;font-size:14px;color:var(--acc);margin-bottom:6px}.sapp .btn{width:100%}.sapp .muted{display:block}@media(min-width:900px){.appm{display:none}}'+
  '.hgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.hside .card{padding:14px 14px}.hside h3{font-size:15px;margin:0 0 8px}'+
  '@media(min-width:960px){.hgrid{grid-template-columns:minmax(0,1fr) 280px;align-items:start}.hside{position:sticky;top:12px}}'+
  '.mcal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:11.5px}.mcal .h{color:var(--mut);padding:2px 0}.mcal button{border:0;background:none;border-radius:8px;padding:4px 0 6px;font-size:12px;cursor:pointer;position:relative;color:var(--ink)}.mcal button.o{color:#bbb}.mcal button.t{background:var(--ink);color:var(--bg,#fff)}.mcal button.sel{outline:2px solid var(--acc)}.mcal button i{position:absolute;left:50%;bottom:1px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}'+
@@ -1696,7 +1700,7 @@ document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]
  if(c==='wscope'){const o=scopeObj(t.value);$('#wncnt').textContent='받는 학부모 '+targetsOf(o).filter(x=>x.role==='parent').length+'명';}
  if(c==='rex'){S.rex=t.value;S.rstu='';render();}
  if(c==='rstu'){S.rstu=t.value;render();}
- if(c==='season'){const cur=DB.set.season,base=(cur&&typeof cur==='object')?cur:{ds:cur==null?5:+cur,bd:cur==null?5:+cur},o=Object.assign({},base);o[curAc()]=+t.value;await mut('settings_set',{key:'season',value:o});}
+ if(c==='season'){const cur=DB.set.season,base=(cur&&typeof cur==='object')?cur:{},o=Object.assign({ds:5,bd:0},base);o[curAc()]=+t.value;await mut('settings_set',{key:'season',value:o});}
  if(c==='score'){await mut('score_set',{exam_id:t.dataset.eid,sid:t.dataset.sid,score:t.value.trim()===''?null:Math.max(0,Math.min(100,+t.value))});toast('점수를 저장했어요');}
  if(c==='stuac'){$('#sf_c').innerHTML=classOpts(t.value,null);}
  if(c==='wimg'){const f=t.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/im.width),cv=document.createElement('canvas');cv.width=im.width*k;cv.height=im.height*k;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);S.tmpImg=cv.toDataURL('image/jpeg',.72);$('#wpv').innerHTML='<img class="pv" src="'+S.tmpImg+'">';};im.src=r.result;};r.readAsDataURL(f);}
