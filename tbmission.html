@@ -23,7 +23,7 @@ button{font-family:inherit;cursor:pointer}input,select,textarea{font-family:inhe
 .fld input,.fld select{width:100%;border:1px solid #d9deea;border-radius:10px;padding:10px 12px;background:#fff}
 .seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--mute)}.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
 .err{color:#b84a4a;font-size:13px;margin-top:8px;min-height:18px}
-.mlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.mc{background:#fff;border:1px solid var(--line);border-top:5px solid var(--gold);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 2px 10px rgba(30,40,70,.05)}.mc:hover{border-top-color:var(--rose)}.mc{position:relative}.mc.dg{opacity:.45}.mc.ov{outline:2px dashed var(--rose)}.mvb{position:absolute;right:10px;top:10px;display:flex;gap:4px}.mvb button{border:1px solid var(--line);background:#fff;border-radius:8px;width:26px;height:26px;font-size:11px;color:var(--mute);cursor:pointer}.mvb button:hover{background:#f1f3f8}
+.mlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.mc{background:#fff;border:1px solid var(--line);border-top:5px solid var(--gold);border-radius:14px;padding:16px;cursor:pointer;box-shadow:0 2px 10px rgba(30,40,70,.05)}.mc:hover{border-top-color:var(--rose)}.mc{position:relative}.mc.dg{opacity:.45}.mc.ov{outline:2px dashed var(--rose)}.gw{overflow:auto;max-height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff}table.gt{border-collapse:separate;border-spacing:0;font-size:14px}.gt th,.gt td{width:32px;min-width:32px;height:34px;text-align:center;border-bottom:1px solid #eef0f5;border-right:1px solid #f1f3f8;padding:0;background:#fff;cursor:pointer;user-select:none;-webkit-user-select:none}.gt th{position:sticky;top:0;background:#f1f3f8;z-index:2;cursor:default;font-size:11.5px;color:#555}.gt td.gn,.gt th.gn{position:sticky;left:0;z-index:3;width:190px;min-width:190px;text-align:left;padding:5px 8px;cursor:default;background:#fff;border-right:2px solid var(--line);white-space:nowrap}.gt th.gn{z-index:4;background:#f1f3f8}.gt .g5{border-right:2px solid #c9cfdd}.gt td.c-O{color:var(--navy);font-weight:700;background:#f1f5fc}.gt td.c-X{color:var(--rose);font-weight:700;background:#fdf1f3}.gt td.c-T{color:#b7791f;font-weight:700;background:#fff8e6}.gt td.c--{color:#cdd1da}.gt td[data-a=cell]:hover{outline:2px solid var(--gold);outline-offset:-2px}.gb{display:flex;gap:3px;margin-top:3px}.gb button{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:11px;padding:2px 6px;color:var(--mute);cursor:pointer}.gb button:hover{background:#f1f3f8}.gs{font-size:11.5px;color:var(--mute);margin-top:2px}.gt tr.dirty td.gn{box-shadow:inset 4px 0 0 var(--gold)}.oxg.big{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}.oxg.big .ox{cursor:pointer;padding:10px 2px}.oxg.big .ox b{font-size:24px}.ox.n b{color:#cdd1da}.ox.t b{color:#b7791f}.gleg{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin:6px 0 10px}.gleg span{display:inline-flex;align-items:center;gap:5px}.gleg i{font-style:normal;display:inline-block;min-width:24px;text-align:center;border-radius:6px;padding:1px 4px;font-weight:700}.mvb{position:absolute;right:10px;top:10px;display:flex;gap:4px}.mvb button{border:1px solid var(--line);background:#fff;border-radius:8px;width:26px;height:26px;font-size:11px;color:var(--mute);cursor:pointer}.mvb button:hover{background:#f1f3f8}
 .mc .t{font-family:var(--fk);font-size:19px;font-weight:700;margin:2px 0 6px}.mc .k{display:flex;gap:16px;margin-top:10px}.mc .k b{font-size:20px;font-family:var(--fk);display:block}.mc .k span{font-size:11.5px;color:var(--mute)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.kp{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:10px;padding:10px 12px}.kp b{display:block;font-family:var(--fk);font-size:22px}.kp span{font-size:12px;color:var(--mute)}.kp.r{border-left-color:var(--rose)}.kp.n{border-left-color:var(--navy)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px}.tabs button{flex:none;border:1px solid var(--line);background:#fff;border-radius:18px;padding:8px 16px;font-size:13.5px;font-weight:700;color:var(--mute)}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -412,36 +412,74 @@ var PDFJS='(function(){var W=window.PDF_W||210,H=window.PDF_H||297;function pl()
 
 /* 선생님: 정오표 입력 */
 function normOx(t){return String(t||'').replace(/[\s,]/g,'').split('').map(function(c){return /[Oo○◯ㅇ1맞]/.test(c)?'O':/[Xx✕✗×ㅌ0틀2]/.test(c)?'X':/[Tt△▲▵세3]/.test(c)?'T':''}).join('')}
+var CYC={'-':'O','O':'X','X':'T','T':'-'};
+function gInit(){
+ if(S.Gex===S.ex.id&&S.G)return;
+ S.Gex=S.ex.id;S.G={};S.G0={};S.GN={};var n=S.C.n;
+ S.R.forEach(function(r){var a=String(r.ox||'').split('');while(a.length<n)a.push('-');a=a.slice(0,n).map(function(c){return 'OXT'.indexOf(c)>=0?c:'-'});S.G[r.k]=a;S.G0[r.k]=a.join('')});
+ S.gmode=S.gmode||'tab'}
+function gSym(c){return c==='O'?'○':c==='X'?'✕':c==='T'?'△':'-'}
+function gCnt(k){var o=0,x=0,t=0,sc=0;S.G[k].forEach(function(c,i){if(c==='O'){o++;sc+=(+S.ex.items[i].pts||1)}else if(c==='X')x++;else if(c==='T')t++});return {o:o,x:x,t:t,sc:Math.round(sc*100)/100}}
+function gSum(k){var c=gCnt(k);return '○'+c.o+' ✕'+c.x+' △'+c.t+' · <b>'+c.sc+'점</b>'}
+function gDirty(k){return S.G[k].join('')!==S.G0[k]}
+function gDirtyN(){if(!S.G)return 0;var n=0;Object.keys(S.G).forEach(function(k){if(gDirty(k))n++});return n}
+function gRows(){return S.R.slice().sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)}).filter(function(r){return !S.icls||r.cls===S.icls})}
 function vInput(){
- var C=S.C,n=C.n,rs=S.R.slice().sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)});
+ gInit();
+ var C=S.C,n=C.n,rs=gRows();
  var cls=Object.keys(S.R.reduce(function(o,r){o[r.cls]=1;return o},{})).sort();
- var h='<div class="note1">학생마다 문항 순서대로 <b>O(맞음) · X(틀림) · △(틀렸다 고침)</b>를 한 줄로 입력하세요 (○ ✕ △ 또는 숫자 1=맞음 2=틀림 3=세모 도 돼요, 총 <b>'+n+'</b>문항). 엑셀·메모에서 <b>이름 + O/X</b> 한 줄씩 복사해 [붙여넣기]로 한꺼번에 넣을 수도 있어요.</div>'+
- '<div class="card"><div class="row"><div class="seg" id="icls"><button class="'+(!S.icls?'on':'')+'" data-a="icls" data-v="">전체</button>'+cls.map(function(k){return '<button data-a="icls" data-v="'+esc(k)+'" class="'+(S.icls===k?'on':'')+'">'+esc(cn(k))+'</button>'}).join('')+'</div><span class="sp"></span><button class="btn sec sm3" data-a="paste">붙여넣기</button><button class="btn" data-a="saveox">저장</button></div><table class="tbl" style="margin-top:10px"><tr><th>반</th><th>이름</th><th style="width:100%">O/X ('+n+'문항)</th><th>이번 미션 닉네임<div class="muted" style="font-size:10.5px;font-weight:400">(비우면 기본 닉네임)</div></th><th>점수</th></tr>'+
- rs.filter(function(r){return !S.icls||r.cls===S.icls}).map(function(r){return '<tr><td>'+badge(r.cls)+'</td><td class="l"><b>'+esc(r.name)+'</b><div class="muted" style="font-size:11px">'+esc(r.school||'')+'</div></td><td><input class="oxin" data-k="'+r.k+'" value="'+esc(r.ox||'')+'" placeholder="OOXOO…" autocomplete="off"><div class="muted" style="font-size:11px" data-len="'+r.k+'">'+(r.ox?r.ox.length+'/'+n:'')+'</div></td><td><input class="oxin" style="min-width:110px;letter-spacing:0;font-family:inherit" data-nk="'+r.k+'" maxlength="10" value="'+esc(r.enick||'')+'" placeholder="'+esc(r.nick)+'" autocomplete="off"></td><td data-sc="'+r.k+'"><b>'+(r.ox?r.score:'-')+'</b></td></tr>'}).join('')+'</table></div>';
+ var h='<div class="note1"><b>칸을 누를 때마다</b> <b>- → ○ → ✕ → △ → -</b> 순서로 바뀌어요. 학생 이름 아래 버튼으로 <b>전체 ○ · 전체 ✕ · 지움</b>도 돼요. 다 하면 위쪽 <b>저장</b>을 눌러 주세요.</div>'+
+ '<div class="gleg"><span><i style="background:#f1f5fc;color:var(--navy)">○</i>맞음</span><span><i style="background:#fdf1f3;color:var(--rose)">✕</i>틀림</span><span><i style="background:#fff8e6;color:#b7791f">△</i>틀렸다 고침(오답완료)</span><span><i style="color:#bbb">-</i>기록 안 함</span><span class="muted">점수는 ○만 세요 · 총 '+n+'문항</span></div>'+
+ '<div class="card" style="position:sticky;top:48px;z-index:6"><div class="row"><div class="seg" id="icls"><button class="'+(!S.icls?'on':'')+'" data-a="icls" data-v="">전체</button>'+cls.map(function(k){return '<button data-a="icls" data-v="'+esc(k)+'" class="'+(S.icls===k?'on':'')+'">'+esc(cn(k))+'</button>'}).join('')+'</div>'+
+ '<div class="seg"><button class="'+(S.gmode==='tab'?'on':'')+'" data-a="gmode" data-v="tab">표로 보기</button><button class="'+(S.gmode==='one'?'on':'')+'" data-a="gmode" data-v="one">한 명씩 크게</button></div><span class="sp"></span><span class="muted sm" id="gcnt">'+(gDirtyN()?'저장 안 한 학생 '+gDirtyN()+'명':'')+'</span><button class="btn sec sm3" data-a="paste">붙여넣기</button><button class="btn" data-a="saveox">저장</button></div></div>';
+ if(!rs.length)return h+'<div class="card"><div class="empty">이 반에는 학생이 없어요.</div></div>';
+ var btns=function(k){return '<div class="gb"><button data-a="gall" data-k="'+k+'" data-v="O">전체 ○</button><button data-a="gall" data-k="'+k+'" data-v="X">전체 ✕</button><button data-a="gall" data-k="'+k+'" data-v="-">지움</button><button data-a="gfill" data-k="'+k+'" title="비어 있는 칸만 ○로">빈칸 ○</button></div>'};
+ if(S.gmode==='one'){
+  if(!S.gwho||!rs.some(function(r){return r.k===S.gwho}))S.gwho=rs[0].k;
+  var i0=rs.findIndex(function(r){return r.k===S.gwho}),r0=rs[i0];
+  h+='<div class="card"><div class="row"><button class="btn sec sm3" data-a="gprev"'+(i0?'':' disabled')+'>← 이전</button><select id="gsel" class="oxin" style="max-width:240px">'+rs.map(function(r){return '<option value="'+r.k+'"'+(r.k===S.gwho?' selected':'')+'>'+esc(cn(r.cls))+' · '+esc(r.name)+'</option>'}).join('')+'</select><button class="btn sec sm3" data-a="gnext"'+(i0<rs.length-1?'':' disabled')+'>다음 →</button><span class="muted sm">'+(i0+1)+' / '+rs.length+'</span><span class="sp"></span><span class="sm" data-gs="'+r0.k+'">'+gSum(r0.k)+'</span></div>'+btns(r0.k)+
+   '<div class="oxg big" style="margin-top:12px">'+S.G[r0.k].map(function(c,i){return '<button class="ox '+(c==='O'?'o':c==='X'?'x':c==='T'?'t':'n')+'" data-a="cell" data-k="'+r0.k+'" data-i="'+i+'"><i>'+(i+1)+'번</i><b>'+gSym(c)+'</b></button>'}).join('')+'</div></div>';
+ }else{
+  h+='<div class="gw"><table class="gt"><tr><th class="gn">학생 \\ 문항 번호</th>'+S.C.items.map(function(_,i){return '<th class="'+(i%5===4?'g5':'')+'">'+(i+1)+'</th>'}).join('')+'</tr>'+
+   rs.map(function(r){var k=r.k;return '<tr data-row="'+k+'"'+(gDirty(k)?' class="dirty"':'')+'><td class="gn">'+badge(r.cls)+' <b>'+esc(r.name)+'</b>'+btns(k)+'<div class="gs" data-gs="'+k+'">'+gSum(k)+'</div></td>'+S.G[k].map(function(c,i){return '<td class="c-'+c+(i%5===4?' g5':'')+'" data-a="cell" data-k="'+k+'" data-i="'+i+'" title="'+esc(r.name)+' · '+(i+1)+'번">'+gSym(c)+'</td>'}).join('')+'</tr>'}).join('')+'</table></div>';
+ }
+ h+='<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">이번 미션 닉네임 (선택)</summary><div class="muted sm" style="margin:6px 0">비우면 기본 닉네임이 보여요.</div><table class="tbl">'+rs.map(function(r){return '<tr><td>'+badge(r.cls)+'</td><td class="l"><b>'+esc(r.name)+'</b></td><td><input class="oxin" style="min-width:120px;letter-spacing:0;font-family:inherit" data-nk="'+r.k+'" maxlength="10" value="'+esc(S.GN[r.k]!==undefined?S.GN[r.k]:(r.enick||''))+'" placeholder="'+esc(r.nick)+'" autocomplete="off"></td></tr>'}).join('')+'</table></details>';
  return h}
+function gPaint(el,c){
+ if(el.classList.contains('ox')){el.className='ox '+(c==='O'?'o':c==='X'?'x':c==='T'?'t':'n');el.querySelector('b').textContent=gSym(c)}
+ else{var g5=el.classList.contains('g5');el.className='c-'+c+(g5?' g5':'');el.textContent=gSym(c)}}
+function gRefresh(k){
+ [].forEach.call(document.querySelectorAll('[data-gs="'+k+'"]'),function(e){e.innerHTML=gSum(k)});
+ var tr=document.querySelector('tr[data-row="'+k+'"]');if(tr)tr.classList.toggle('dirty',gDirty(k));
+ var c=$('#gcnt');if(c){var d=gDirtyN();c.textContent=d?'저장 안 한 학생 '+d+'명':''}}
+function gSet(k,i,c){S.G[k][i]=c;[].forEach.call(document.querySelectorAll('[data-a="cell"][data-k="'+k+'"][data-i="'+i+'"]'),function(el){gPaint(el,c)});gRefresh(k)}
+function gAll(k,v){S.G[k]=S.G[k].map(function(){return v});[].forEach.call(document.querySelectorAll('[data-a="cell"][data-k="'+k+'"]'),function(el){gPaint(el,v)});gRefresh(k)}
+function gFill(k){S.G[k]=S.G[k].map(function(c){return c==='-'?'O':c});[].forEach.call(document.querySelectorAll('[data-a="cell"][data-k="'+k+'"]'),function(el){gPaint(el,S.G[k][+el.getAttribute('data-i')])});gRefresh(k)}
+window.addEventListener('beforeunload',function(ev){if(S.view==='input'&&gDirtyN()>0){ev.preventDefault();ev.returnValue=''}});
 async function saveOx(){
- var n=S.C.n,map={},warn=[];
- [].forEach.call(document.querySelectorAll('.oxin[data-k]'),function(inp){var k=inp.getAttribute('data-k'),r=S.R.filter(function(x){return x.k===k})[0],v=normOx(inp.value);if(!v||v===(r.ox||''))return;if(v.length!==n)warn.push(r.name+' ('+v.length+'/'+n+')');(map[k]=map[k]||{sid:k}).ox=v});
- [].forEach.call(document.querySelectorAll('.oxin[data-nk]'),function(inp){var k=inp.getAttribute('data-nk'),r=S.R.filter(function(x){return x.k===k})[0],v=inp.value.trim();if(v===(r.enick||''))return;(map[k]=map[k]||{sid:k}).nick=v});
+ var map={},nrow=0;
+ Object.keys(S.G).forEach(function(k){if(!gDirty(k))return;var v=S.G[k].join('');if(/^-+$/.test(v))return;(map[k]=map[k]||{sid:k}).ox=v});
+ [].forEach.call(document.querySelectorAll('.oxin[data-nk]'),function(inp){var k=inp.getAttribute('data-nk'),r=S.R.filter(function(x){return x.k===k})[0],v=inp.value.trim();if(!r||v===(r.enick||''))return;(map[k]=map[k]||{sid:k}).nick=v});
  var rows=Object.keys(map).map(function(k){return map[k]});
  if(!rows.length){alert('바뀐 입력이 없어요');return}
- if(warn.length&&!confirm('문항 수가 맞지 않는 학생이 있어요:\n'+warn.join('\n')+'\n그래도 저장할까요?'))return;
  var j=await ms('ox',{exam_id:S.ex.id,rows:rows});
  if(!j||!j.ok){alert((j&&j.error)||'저장하지 못했어요');return}
- await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명 · 닉네임 '+(j.nicks||0)+'명)')}
+ S.Gex=null;S.G=null;await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
 function openPaste(){
  var m=$('#mb');$('#md').hidden=false;m.innerHTML='<h3>정오표 붙여넣기</h3><div class="muted sm" style="margin-bottom:8px">한 줄에 한 명: <b>이름 O/X문자열 닉네임(있으면)</b> (탭·공백·쉼표 모두 가능). 닉네임은 이번 미션에서만 써요. 이름이 같은 학생이 여러 명이면 위 표에서 직접 입력해 주세요.</div><textarea id="pst" placeholder="김하준 OOXOOOXO... 번개\n이서윤 OXOXOOOO... 별똥별"></textarea><div id="pres" class="sm" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn" data-a="pasteok">입력칸에 넣기</button></div>'}
 function pasteOk(){
- var lines=$('#pst').value.split(/\r?\n/).map(function(l){return l.trim()}).filter(Boolean),done=0,bad=[];
+ gInit();
+ var lines=$('#pst').value.split(/\r?\n/).map(function(l){return l.trim()}).filter(Boolean),done=0,bad=[],n=S.C.n;
  lines.forEach(function(l){var m=l.match(/^(\S+?)[\s,\t]+(.+)$/);if(!m){bad.push(l.slice(0,12));return}
   var nm=m[1],toks=m[2].split(/[\s,\t]+/),oxs=[],nk='';
   toks.forEach(function(t){if(/^[OoXxTt○✕✗×△▲01234]+$/.test(t))oxs.push(t);else if(!nk)nk=t});
   var ox=normOx(oxs.join('')),hit=S.R.filter(function(r){return r.name===nm});
   if(hit.length!==1||(!ox&&!nk)){bad.push(nm+(hit.length>1?'(동명이인)':''));return}
-  var inp=document.querySelector('.oxin[data-k="'+hit[0].k+'"]');if(!inp){bad.push(nm+'(이 반 목록에 없음)');return}
-  if(ox)inp.value=ox;var ni=document.querySelector('.oxin[data-nk="'+hit[0].k+'"]');if(ni&&nk)ni.value=nk;done++;});
- $('#pres').innerHTML='<b>'+done+'명</b> 입력칸에 넣었어요.'+(bad.length?'<br>확인 필요: '+esc(bad.join(', ')):'')+(done?'<br>맨 위의 <b>저장</b>을 눌러야 서버에 기록돼요.':'');
- if(done&&!bad.length){$('#md').hidden=true}}
+  var k=hit[0].k;
+  if(ox){var a=ox.split('');while(a.length<n)a.push('-');S.G[k]=a.slice(0,n);if(ox.length!==n)bad.push(nm+' ('+ox.length+'/'+n+'문항)')}
+  if(nk)S.GN[k]=nk;done++;});
+ $('#pres').innerHTML='<b>'+done+'명</b> 입력칸에 넣었어요.'+(bad.length?'<br>확인 필요: '+esc(bad.join(', ')):'')+(done?'<br>위쪽 <b>저장</b>을 눌러야 서버에 기록돼요.':'');
+ if(done){render();if(!bad.length)$('#md').hidden=true}}
 
 /* 선생님: 미션 관리 */
 function vMng(){
@@ -553,7 +591,7 @@ function renderStu(){
 async function openMission(id,view,who){
  var j=await ms('load',{exam_id:id});
  if(!j||!j.ok){alert((j&&j.error)||'불러오지 못했어요');return}
- S.sel=id;S.ov=false;S.ex=j.exam;S.R=j.roster;S.view=view||(isStaff()?'board':'my');S.who=who||null;S.icls=S.icls||'';calc();render();window.scrollTo(0,0)}
+ S.sel=id;S.ov=false;S.ex=j.exam;S.R=j.roster;S.view=view||(isStaff()?(S.me.role==='ta'?'input':'board'):'my');S.who=who||null;S.Gex=null;S.G=null;S.icls=S.icls||'';calc();render();window.scrollTo(0,0)}
 async function boot(){
  var j=await api('sync');
  if(!j||!j.ok){S.me=null;render();return}
@@ -585,6 +623,11 @@ document.addEventListener('click',async function(ev){
  if(a==='icls'){S.icls=b.getAttribute('data-v');render();return}
  if(a==='paste'){openPaste();return}if(a==='pasteok'){pasteOk();return}
  if(a==='saveox'){saveOx();return}
+ if(a==='cell'){var kk=b.getAttribute('data-k'),ii=+b.getAttribute('data-i');gSet(kk,ii,CYC[S.G[kk][ii]]||'O');return}
+ if(a==='gall'){gAll(b.getAttribute('data-k'),b.getAttribute('data-v'));return}
+ if(a==='gfill'){gFill(b.getAttribute('data-k'));return}
+ if(a==='gmode'){S.gmode=b.getAttribute('data-v');render();return}
+ if(a==='gprev'||a==='gnext'){var rr=gRows(),q=rr.findIndex(function(r){return r.k===S.gwho})+(a==='gnext'?1:-1);if(q>=0&&q<rr.length){S.gwho=rr[q].k;render()}return}
  if(a==='reveal'){var jr=await ms('reveal',{exam_id:S.ex.id,on:!S.ex.reveal});if(jr&&jr.ok){S.ex.reveal=!S.ex.reveal;render()}else alert((jr&&jr.error)||'바꾸지 못했어요');return}
  if(a==='delmis'){if(!confirm('이 미션과 정오표 기록을 모두 삭제할까요?'))return;var jd=await ms('delete',{exam_id:S.ex.id});if(jd&&jd.ok){S.list=S.list.filter(function(m){return m.id!==S.ex.id});S.ex=null;render()}else alert((jd&&jd.error)||'삭제하지 못했어요');return}
  if(a==='mknote'){S.who=b.getAttribute('data-k');S.view='note';render();return}
@@ -612,9 +655,10 @@ document.addEventListener('click',async function(ev){
 });
 document.addEventListener('change',function(ev){var t=ev.target;
  if(t.id==='whosel'){S.who=t.value;render()}
+ if(t.id==='gsel'){S.gwho=t.value;render()}
  if(t.id==='ovsel'){S.ovSid=t.value;S.hist=null;render();loadHist().then(render)}
  if(t.id==='impf'&&t.files&&t.files[0])readImp(t.files[0]);});
-document.addEventListener('input',function(ev){var t=ev.target;if(t.classList&&t.classList.contains('oxin')&&t.getAttribute('data-k')){var k=t.getAttribute('data-k'),v=normOx(t.value),n=S.C?S.C.n:0,L=document.querySelector('[data-len="'+k+'"]');if(L)L.innerHTML=v?'<span style="color:'+(v.length===n?'#2f7d5b':'#b84a4a')+'">'+v.length+'/'+n+'</span>':''}});
+document.addEventListener('input',function(ev){var t=ev.target;if(t.getAttribute&&t.getAttribute('data-nk')&&S.GN)S.GN[t.getAttribute('data-nk')]=t.value;if(t.classList&&t.classList.contains('oxin')&&t.getAttribute('data-k')){var k=t.getAttribute('data-k'),v=normOx(t.value),n=S.C?S.C.n:0,L=document.querySelector('[data-len="'+k+'"]');if(L)L.innerHTML=v?'<span style="color:'+(v.length===n?'#2f7d5b':'#b84a4a')+'">'+v.length+'/'+n+'</span>':''}});
 render();if(S.tok)boot();
 })();
 </script></body></html>
