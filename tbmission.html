@@ -599,6 +599,7 @@ async function boot(){
  S.cards={};S.cat='';S.lim=30;
  if(!isStaff())await studentCards();
  S.season=S.list.some(function(m){return seasonOf(m)==='fin'})?'fin':'mid';
+ var qm=qs.get('m');if(qm&&S.list.some(function(m){return m.id===qm})){await openMission(qm,qs.get('v')||undefined);return}
  render()}
 document.addEventListener('click',async function(ev){
  var t=ev.target;

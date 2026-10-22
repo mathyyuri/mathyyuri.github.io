@@ -435,7 +435,7 @@ async function api(action,args){
  if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
  return j;
 }
-function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -474,7 +474,7 @@ function faceSrc(){return PUB.face||FACE;}
 
 /* ════════ 상태 ════════ */
 let DB={posts:[],missions:[],msgs:{},exams:[],lessons:[],videos:[],resources:[],events:[],sched:[],set:{season:5,bio:{},pref:{},notif:null},log:[],staff:[]};
-let S={ac:null,uid:null,tab:'home',cls:'all',ftype:'all',sub:{lesson:'sched',mission:'진도',exam:'rpt'},cy:DEMO_TODAY.getFullYear(),cm:DEMO_TODAY.getMonth(),csel:TODAY,open:{},thread:null,L:{ac:null,step:0},tmpImg:null,exsel:null,rtype:'all',vsel:null,rex:null,rstu:''};
+let S={ac:null,uid:null,tab:'home',cls:'all',ftype:'all',sub:{lesson:'sched',mission:'chart',exam:'rpt'},cy:DEMO_TODAY.getFullYear(),cm:DEMO_TODAY.getMonth(),csel:TODAY,open:{},thread:null,L:{ac:null,step:0},tmpImg:null,exsel:null,rtype:'all',vsel:null,rex:null,rstu:''};
 
 const me=()=>U[S.uid];
 const isStaff=(u=me())=>u.role==='admin'||u.role==='ta';
@@ -679,9 +679,9 @@ function vLesson(){
 }
 
 /* ── 미션 ── */
-function vMission(){
+function vMissionOld(){
  const k=S.sub.mission,st=stuOf(),staff=isStaff();
- let h='<div class="chips">'+['진도','오답','TEST','공통'].map(x=>'<button class="chip '+(k===x?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x+'">'+(x==='공통'?'공통과제':x+'미션')+'</button>').join('')+'</div>';
+ let h='<div class="chips"><button class="chip" data-a="sub" data-k="mission" data-v="chart">성적차트</button>'+['진도','오답','TEST','공통'].map(x=>'<button class="chip '+(k===x?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x+'">'+(x==='공통'?'공통과제':x+'미션')+'</button>').join('')+'</div>';
  if(staff)h+='<div class="row" style="margin-bottom:12px"><button class="btn" data-a="newmission">＋ 미션 추가</button></div>';
  const L=DB.missions.filter(m=>m.kind===k&&inAc(m)&&clsOk(m)).sort((a,b)=>a.due.localeCompare(b.due));
  h+='<div class="grid g2">'+(L.length?L.map(m=>{
@@ -896,7 +896,7 @@ function pickFace(){
  i.click();}
 async function startSession(tok){
  TOKEN=tok;try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
- TOOLS=undefined;TOOLS_BUSY=false;
+ TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;
  const ok=await resync();
  if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}
  S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);
@@ -1120,7 +1120,7 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;render(0);break;}
+ case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':S.tab=v;S.thread=null;render(0);break;
  case 'cls':S.cls=v;S.thread=null;render();break;
@@ -1172,6 +1172,7 @@ document.addEventListener('click',async e=>{
  case 'stdel':if(confirm('이 조교를 삭제할까요?'))await mut('staff_delete',{id:id});break;
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
+ case 'msrefresh':MS=null;MS_BUSY=false;render();break;
  case 'clsadd':{const ac=t.dataset.ac,i=$('#cn_'+ac),nm=(i.value||'').trim();if(!nm){toast('반 이름을 적어 주세요');break;}if(AC[ac].classes.indexOf(nm)>=0){toast('이미 있는 반이에요');break;}if(AC[ac].classes.length>=12){toast('반은 12개까지예요');break;}AC[ac].classes.push(nm);if(!(await saveClasses())){AC[ac].classes.pop();render();}break;}
  case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuList(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
  case 'tooladd':readToolsEdit();TEDIT.push({id:'t'+Date.now().toString(36),name:'새 도구',url:'',grp:'기타',desc:'',roles:[]});renderToolsEdit();break;
@@ -1259,6 +1260,60 @@ async function saveTools(){
  const j=await toolsApi('set',{tools:TEDIT});
  if(!j||!j.ok){toast((j&&j.error)||'저장하지 못했어요');return;}
  TOOLS=undefined;TOOLS_BUSY=false;closeModal();ensureTools();toast('도구 모음을 저장했어요 ('+j.n+'개)');
+}
+
+/* ── 미션 탭: 공통 성적차트 (새 미션 결과를 한눈에) ── */
+let MS=null,MS_BUSY=false;
+const MS_URL=API_URL.replace('ac_api','ac_mission');
+const MSC={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
+async function msApi(a,args){
+ try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
+  if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
+}
+function msEnsure(){
+ if(MS||MS_BUSY)return;MS_BUSY=true;
+ (async()=>{
+  const l=await msApi('list');
+  if(!l||!l.ok){MS={err:true,items:[]};MS_BUSY=false;render();return;}
+  const cand=l.list.filter(m=>!m.old&&m.graded>0).slice(0,6),items=[];
+  await Promise.all(cand.map(async m=>{const x=await msApi('load',{exam_id:m.id});if(x&&x.ok)items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null)});}));
+  items.sort((a,b)=>cand.indexOf(a.m)-cand.indexOf(b.m));
+  MS={items:items,n:l.list.length};MS_BUSY=false;render();
+ })();
+}
+function msChart(it){
+ const R=it.roster.slice().sort((a,b)=>b.score-a.score),n=R.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
+ const BW=36,pl=36,W=Math.max(560,pl+n*BW+16),H=240,pt=20,pb=40,ih=H-pt-pb,Y=v=>pt+ih*(1-v/tot);
+ const avg=n?R.reduce((a,r)=>a+(+r.score),0)/n:0;
+ let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto;display:block">';
+ [0,.25,.5,.75,1].forEach(g=>{const v=tot*g;s+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+Math.round(v)+'</text>';});
+ R.forEach((r,i)=>{
+  const x=pl+i*BW+5,w=BW-10,v=+r.score,y=Y(v),col=MSC[String(r.cls||'').replace(/반$/,'')]||'#a0a6b5',nm=r.me?(r.name||'나'):(r.name||r.nick||'');
+  s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(Y(0)-y)+'" rx="4" fill="'+col+'"'+(r.me?' stroke="#d4486a" stroke-width="3"':'')+'><title>'+esc(nm+' · '+r.score+'점 ('+(r.cls||'')+')')+'</title></rect>'+
+   '<text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="11" font-weight="'+(r.me?'800':'600')+'" fill="'+(r.me?'#d4486a':'#3a4256')+'">'+(Math.round(v*10)/10)+'</text>'+
+   '<text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?'800':'400')+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(nm.length>4?nm.slice(0,4):nm)+(r.me?'':'')+'</text>';});
+ s+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
+ return s+'</svg>';
+}
+function msCard(it){
+ const R=it.roster,n=R.length,me=R.find(r=>r.me),sc=R.map(r=>+r.score),avg=n?sc.reduce((a,b)=>a+b,0)/n:0,mx=n?Math.max.apply(null,sc):0;
+ const rk=me?R.filter(r=>+r.score>+me.score).length+1:null;
+ const cl={};R.forEach(r=>{const k=String(r.cls||'').replace(/반$/,'');if(k)cl[k]=1;});
+ return '<div class="card"><h3>'+esc(it.ex.name)+' <span class="muted sm" style="font-weight:400">'+esc(String(it.ex.date).slice(5).replace('-','/'))+(it.ex.cat?' · '+esc(it.ex.cat):'')+'</span></h3>'+
+  '<div class="kpi" style="margin-bottom:10px"><div><b>'+n+'명</b><span>응시</span></div><div><b>'+(Math.round(avg*10)/10)+'</b><span>평균</span></div><div><b>'+(Math.round(mx*10)/10)+'</b><span>최고</span></div>'+(me?'<div><b>'+me.score+'점 · '+rk+'위</b><span>내 성적</span></div>':'')+'</div>'+
+  '<div style="margin-bottom:6px">'+Object.keys(cl).map(k=>'<span class="badge" style="background:'+(MSC[k]||'#a0a6b5')+';color:'+(k==='A+'||k==='B'?'#2b2f3a':'#fff')+'">'+esc(k)+'반</span>').join(' ')+'</div>'+
+  '<div style="overflow-x:auto;padding-bottom:4px">'+msChart(it)+'</div>'+
+  '<div style="margin-top:8px"><a class="btn sm3 rose" style="text-decoration:none" href="tbmission.html?m='+it.m.id+'&v=board">전체 성적표 · 정오표 · 분석 보기</a></div></div>';
+}
+function vMission(){
+ if(S.sub.mission!=='chart')return vMissionOld();
+ msEnsure();
+ let h='<div class="chips"><button class="chip on" data-a="sub" data-k="mission" data-v="chart">성적차트</button>'+['진도','오답','TEST','공통'].map(x=>'<button class="chip" data-a="sub" data-k="mission" data-v="'+x+'">'+(x==='공통'?'공통과제':x+'미션')+'</button>').join('')+'</div>';
+ h+='<div class="row" style="margin-bottom:12px"><a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 내 기록 한눈에 보기</a><button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
+ if(MS.err)return h+'<div class="card"><div class="empty">성적차트를 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
+ if(!MS.items.length)return h+'<div class="card"><div class="empty">아직 채점된 미션이 없어요.<br>미션을 채점하면 여기에 공통 성적차트가 나와요.</div></div>';
+ return h+'<div class="note">막대 하나가 학생 한 명이에요. 반마다 색이 달라요. 점선은 전체 평균'+(isStaff()?'':', 붉은 테두리가 내 점수예요')+'.</div>'+MS.items.map(msCard).join('');
 }
 
 async function sendMsg(key){
