@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>MATHY YURI SYSTEM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f3a6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MATHY">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;0,900;1,600&display=swap" rel="stylesheet">
 <style>
@@ -435,7 +443,7 @@ async function api(action,args){
  if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
  return j;
 }
-function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -604,7 +612,7 @@ function recentCard(){
   '<div class="muted sm" style="margin-top:14px">가장 많이 틀린 문항 TOP5 — 다음 수업에서 먼저 짚을 문제</div><div class="wchips">'+rt.map(x=>'<button class="wc" data-a="q" data-ex="'+e.id+'" data-no="'+(x.i+1)+'">'+(x.i+1)+'번 · '+Math.round(x.r*100)+'%</button>').join('')+'</div>'+
   '<button class="btn" data-a="gorpt" data-ex="'+e.id+'">반 전체 정오표 · 문항 분석 보기</button></div>';
 }
-function vHome(){
+function vHome(){if(!isStaff())return vHomeStu();
  const u=me(),st=stuOf(),a=AC[curAc()],staff=isStaff();
  let h=seasonHero()+seasonTimeline()+recentCard()+landingExtras()+'<div class="grid g3">';
  const ev=upcoming(5);
@@ -633,11 +641,11 @@ function postCard(p){
  const scope=p.sid?'개인 · '+U[p.sid].name:(p.ac==='all'?'두 학원 공통':(p.cls&&p.cls!=='all'?p.cls:AC[p.ac].name+' 전체'));
  const long=p.body.length>110||p.body.indexOf('\n')>=0;
  let h='<div class="post'+(p.pin?' pin':'')+'" id="post_'+p.id+'"><div class="hd"><span class="badge t-'+p.type+'">'+p.type+'</span>'+(p.pin?'<span class="badge">고정</span>':'')+comBadge(p)+'<span class="badge" style="background:#eee;color:#555">'+esc(scope)+'</span>'+(unread?'<span class="badge new">NEW</span>':'')+'</div>'+
- '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au)+' · '+fmtTs(p.ts)+'</div>'+
+ '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
  '<div class="bd'+(open?'':' clamp')+'">'+nl(p.body)+'</div>'+(p.img?imgTag(p):'')+
  '<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
  '<button data-a="open" data-id="'+p.id+'">댓글 '+p.cm.length+'</button>'+(staff?'<button class="rd" data-a="reads" data-id="'+p.id+'">읽음 '+rc+'/'+tg.length+'</button>':'')+
- '<span class="sp"></span>'+(me().role==='admin'?'<button data-a="pin" data-id="'+p.id+'">'+(p.pin?'고정 해제':'고정')+'</button><button data-a="delpost" data-id="'+p.id+'" style="color:var(--bad)">삭제</button>':'')+'</div>';
+ '<span class="sp"></span>'+(canEditPost(p)?'<button data-a="editpost" data-id="'+p.id+'">수정</button>':'')+(me().role==='admin'?'<button data-a="pin" data-id="'+p.id+'">'+(p.pin?'고정 해제':'고정')+'</button><button data-a="delpost" data-id="'+p.id+'" style="color:var(--bad)">삭제</button>':'')+'</div>';
  if(open){h+='<div class="cm">'+(p.cm.length?p.cm.map(c=>'<div class="c"><b>'+esc(c.label||'')+'</b>'+esc(c.t)+'<span>'+fmtTs(c.ts)+'</span></div>').join(''):'<div class="muted sm">첫 댓글을 남겨보세요</div>')+
   '<div class="cin"><input id="cin_'+p.id+'" placeholder="댓글 쓰기" data-enter="comment" data-id="'+p.id+'"><button class="btn sm3" data-a="comment" data-id="'+p.id+'">등록</button></div></div>';}
  return h+'</div>';
@@ -897,7 +905,7 @@ function pickFace(){
  i.click();}
 async function startSession(tok){
  TOKEN=tok;try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
- TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;
+ TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;
  const ok=await resync();
  if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}
  S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);
@@ -924,7 +932,7 @@ function closeModal(){$('#modal').classList.remove('on');S.tmpImg=null;}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
 
 function scopeObj(sc){const ac=curAc(),p={ac:ac,cls:'all'};if(sc==='all')p.ac='all';else if(sc.startsWith('c:'))p.cls=sc.slice(2);else if(sc.startsWith('s:')){p.sid=sc.slice(2);p.cls=U[p.sid].cls;}return p;}
-function openWrite(type){
+function openWrite0(type){
  const u=me(),ac=curAc();S.tmpImg=null;
  let sc='<option value="ac">'+AC[ac].name+' 전체</option>'+AC[ac].classes.map(c=>'<option value="c:'+c+'"'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+stuList(ac).map(s=>'<option value="s:'+s.id+'">개인 · '+s.name+' ('+s.cls+')</option>').join('')+(u.role==='admin'?'<option value="all">두 학원 공통</option>':'');
  openModal('<h3>글쓰기</h3><div class="fld"><label>종류</label><select id="wt">'+POST_TYPES.map(t=>'<option'+(t===(type||'공지')?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
@@ -943,6 +951,13 @@ function openNewMission(){const ac=curAc();
 async function actPost(){
  const t=$('#wt').value,sc=$('#ws').value,h=$('#wh').value.trim(),b=$('#wb').value.trim();
  if(!h){toast('제목을 입력하세요');return;}
+ if(S.editId){
+  const args={id:S.editId,type:t,title:h,body:b};if(S.tmpImg!==undefined)args.image=S.tmpImg||'';
+  const j=await postEditApi(args);
+  if(!j||!j.ok){toast((j&&j.error)||'고치지 못했어요');return;}
+  if(S.tmpImg!==undefined){delete IMGS['_'+S.editId];if(S.tmpImg)IMGS[S.editId]=S.tmpImg;else delete IMGS[S.editId];}
+  const id=S.editId;S.editId=null;await resync();closeModal();render();toast('글을 고쳤어요');return;
+ }
  const o=scopeObj(sc),ac=curAc(),wn=$('#wn'),notify=!!(wn&&wn.checked);
  const j=await mut('post_create',{ac:o.ac,cls:o.cls,sid:o.sid||null,type:t,title:h,body:b,pin:$('#wp')&&$('#wp').checked?1:0,image:S.tmpImg||null},{render:false});
  if(!j||j.ok===false)return;
@@ -950,6 +965,180 @@ async function actPost(){
  if(notify){const pc=targetsOf({ac:o.ac,cls:o.cls,sid:o.sid}).filter(x=>x.role==='parent').length;
   await api('notif_log',{ac:ac,n:pc,ch:'문자',t:'['+AC[ac].name+'] '+h,st:'기록만(발송 전)'});nt=' · 문자 발송은 아직 연결 전이라 기록만 남겼어요';}
  closeModal();S.tab='feed';S.ftype='all';render(0);toast('글을 올렸어요'+nt);
+}
+
+/* ── 소식 글: 수정 · 사진 붙여넣기/끌어놓기 ── */
+const POSTEDIT_URL=API_URL.replace('ac_api','ac_post_edit');
+async function postEditApi(args){
+ try{const r=await fetch(POSTEDIT_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_token:TOKEN,p_args:args})});
+  if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 9_메시지_첨부_글수정_서버.sql 을 먼저 실행해 주세요':'')};return await r.json();}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
+}
+function canEditPost(p){const u=me();if(u.role==='admin')return true;return u.role==='ta'&&p.au==='조교'&&p.ac===u.ac;}
+function openWrite(type,editId){
+ openWrite0(type);S.editId=null;
+ if(!editId)return;
+ const p=DB.posts.find(x=>x.id===editId);if(!p)return;
+ S.editId=editId;S.tmpImg=undefined;
+ $('#wt').value=p.type;$('#wh').value=p.title;$('#wb').value=p.body;
+ const ws=$('#ws');if(ws&&ws.closest('.fld'))ws.closest('.fld').style.display='none';
+ const nb=document.querySelector('.nfbox');if(nb)nb.style.display='none';
+ const h3=document.querySelector('#sheet h3');if(h3)h3.textContent='글 수정';
+ const sb=document.querySelector('#sheet [data-a="postsave"]');if(sb)sb.textContent='저장';
+ if(p.img){(async()=>{if(!IMGS[p.id]){const j=await api('post_img',{id:p.id});if(j&&j.ok&&j.img)IMGS[p.id]=j.img;}if(IMGS[p.id]&&S.editId===p.id)showPostImg(IMGS[p.id]);})();}
+}
+function showPostImg(src){const v=$('#wpv');if(!v)return;v.innerHTML=src?'<img class="pv" src="'+src+'"><div><button class="btn sm3 gh" type="button" data-a="wimgdel" style="margin-top:6px">사진 빼기</button></div>':'';}
+function setPostImage(f){
+ if(!f||!/^image\//.test(f.type))return;
+ const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/im.width),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);S.tmpImg=cv.toDataURL('image/jpeg',.72);showPostImg(S.tmpImg);};im.src=r.result;};r.readAsDataURL(f);
+}
+document.addEventListener('paste',e=>{
+ if(!$('#wb')||!e.clipboardData)return;
+ const f=[].slice.call(e.clipboardData.files||[]).find(x=>/^image\//.test(x.type));
+ if(f){e.preventDefault();setPostImage(f);toast('사진을 붙였어요');}
+});
+document.addEventListener('dragover',e=>{if($('#wb')&&e.target.closest&&e.target.closest('#sheet')&&e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],'Files')>=0)e.preventDefault();});
+document.addEventListener('drop',e=>{if(!$('#wb')||!e.target.closest||!e.target.closest('#sheet'))return;const f=[].slice.call((e.dataTransfer&&e.dataTransfer.files)||[]).find(x=>/^image\//.test(x.type));if(f){e.preventDefault();setPostImage(f);}});
+
+/* ── 앱 설치(PWA) · 앱 알림(웹 푸시) ── */
+const VAPID_PUB='BCTCEwzngOCtZ5aUjVxHt6MjS8eeXudgj_Fg1p87cG0w51lVVzun6wlP0KN6-zrTHd5pkmBJFCYn7nTCcqzFzDA';
+const PUSH_URL=API_URL.replace('ac_api','ac_push');
+let INSTALL_EVT=null,PUSH_ON=undefined,PUSH_BUSY=false;
+const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const IS_APP=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const PUSH_OK=('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INSTALL_EVT=e;homeRefresh();});
+window.addEventListener('appinstalled',()=>{INSTALL_EVT=null;toast('앱으로 설치했어요');homeRefresh();});
+function b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+async function pushApi(action,args){
+ try{const r=await fetch(PUSH_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():null;}catch(e){return null;}
+}
+async function pushStatus(){
+ if(!S.uid||!PUSH_OK||PUSH_ON!==undefined||PUSH_BUSY)return;PUSH_BUSY=true;
+ try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+  if(!sub||Notification.permission!=='granted')PUSH_ON=false;else{const j=await pushApi('status',{endpoint:sub.endpoint});PUSH_ON=!!(j&&j.ok&&j.on);}
+ }catch(e){PUSH_ON=false;}
+ PUSH_BUSY=false;homeRefresh();
+}
+async function pushOn(){
+ if(!PUSH_OK){toast('이 브라우저는 앱 알림을 지원하지 않아요');return;}
+ const perm=await Notification.requestPermission();
+ if(perm!=='granted'){toast('알림이 막혀 있어요. 브라우저(또는 휴대폰) 설정에서 이 사이트의 알림을 허용해 주세요');return;}
+ try{
+  const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
+  const k=sub.toJSON(),j=await pushApi('subscribe',{endpoint:k.endpoint,p256dh:k.keys.p256dh,auth:k.keys.auth});
+  if(!j||!j.ok){toast((j&&j.error)||'알림을 켜지 못했어요 (10_앱알림_서버.sql 을 실행했는지 확인해 주세요)');return;}
+  PUSH_ON=true;toast('이 기기에서 알림을 받아요');homeRefresh();
+ }catch(e){toast('알림을 켜지 못했어요: '+(e&&e.message||''));}
+}
+async function pushOff(){
+ try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+  if(sub){await pushApi('unsubscribe',{endpoint:sub.endpoint});await sub.unsubscribe();}
+  PUSH_ON=false;toast('알림을 껐어요');homeRefresh();}catch(e){toast('알림을 끄지 못했어요');}
+}
+function appCard(){
+ let h='<div class="lxc lxs"><b>앱으로 설치 · 알림 받기</b>',steps=[];
+ if(IS_APP)steps.push('<span class="muted">앱으로 설치되어 있어요.</span>');
+ else if(INSTALL_EVT)steps.push('<button class="btn sm3" data-a="appinstall" type="button">홈 화면에 설치</button>');
+ else if(IS_IOS)steps.push('<span class="muted">아이폰: Safari 아래 <b>공유 버튼</b> → <b>홈 화면에 추가</b></span>');
+ else steps.push('<span class="muted">브라우저 메뉴(⋮) → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></span>');
+ if(S.uid){
+  if(!PUSH_OK||(IS_IOS&&!IS_APP))steps.push('<span class="muted">알림은 '+(IS_IOS?'홈 화면에 추가한 앱에서':'알림을 지원하는 브라우저에서')+' 켤 수 있어요.</span>');
+  else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
+ }else steps.push('<span class="muted">로그인하면 알림을 켤 수 있어요.</span>');
+ return h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
+}
+
+/* ── 학생·학부모 홈: 소식 → 선생님 한마디 → 누적 성적 그래프 → 미션 클리어 현황 / 오른쪽 달력·일정 ── */
+let SH=undefined,SHB=false;
+const NOTE_URL=API_URL.replace('ac_api','ac_note');
+(function(){const st=document.createElement('style');st.textContent=
+ '.hgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.hside .card{padding:14px 14px}.hside h3{font-size:15px;margin:0 0 8px}'+
+ '@media(min-width:960px){.hgrid{grid-template-columns:minmax(0,1fr) 280px;align-items:start}.hside{position:sticky;top:12px}}'+
+ '.mcal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:11.5px}.mcal .h{color:var(--mut);padding:2px 0}.mcal button{border:0;background:none;border-radius:8px;padding:4px 0 6px;font-size:12px;cursor:pointer;position:relative;color:var(--ink)}.mcal button.o{color:#bbb}.mcal button.t{background:var(--ink);color:var(--bg,#fff)}.mcal button.sel{outline:2px solid var(--acc)}.mcal button i{position:absolute;left:50%;bottom:1px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}'+
+ '.hside .li{font-size:13px;padding:7px 0}.hside .li .tm{font-size:12px}.nws{padding:12px 0;border-top:1px solid var(--line);cursor:pointer;display:block;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;color:inherit}.nws:first-of-type{border-top:0}.nws .pv2{font-size:13px;color:var(--mut);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'+
+ '.nt{background:linear-gradient(135deg,#fffaf0,#fff);border-left:5px solid var(--acc)}.nt p{margin:6px 0 0;line-height:1.75;font-size:15px}.nt .src{font-size:12px;color:var(--mut)}.clr{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}.clr:first-of-type{border-top:0}.clr .nm{flex:1;min-width:0}.clr .bx{display:flex;height:9px;width:110px;border-radius:5px;overflow:hidden;background:#eee}.clr .bx i{display:block;height:100%}';
+ document.head.appendChild(st);})();
+async function noteApi(action,args){
+ try{const r=await fetch(NOTE_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():null;}catch(e){return null;}
+}
+function shEnsure(){
+ if(SH!==undefined||SHB)return;SHB=true;
+ (async()=>{const h=await msApi('history',{}),n=await noteApi('mine');SH={hist:(h&&h.ok)?h.list:[],note:(n&&n.ok&&n.body)?n:null};SHB=false;render();})();
+}
+function pctOf(h){return h.tot>0&&h.score!=null?h.score*100/h.tot:null;}
+function hCnt(h){return msCnt(h.ox,h.n||String(h.ox||'').length);}
+function autoNote(name,H){
+ const L=(H||[]).filter(h=>h.tot>0&&h.score!=null);
+ if(!L.length)return name+' 학생의 미션 기록이 쌓이면 이곳에서 학습 상황을 알려 드려요.';
+ const R=L.slice(-5),avg=a=>a.reduce((x,y)=>x+y,0)/a.length,r1=v=>Math.round(v*10)/10;
+ const mine=avg(R.map(pctOf)),ca=R.map(h=>h.avg!=null?h.avg*100/h.tot:null).filter(v=>v!=null),cls=ca.length?avg(ca):null,diff=cls==null?null:mine-cls;
+ const last=R[R.length-1],prev=R.length>1?R[R.length-2]:null,trend=prev?pctOf(last)-pctOf(prev):0;
+ const out=[];
+ if(diff==null)out.push('최근 '+R.length+'개 미션 평균 '+r1(mine)+'%예요.');
+ else if(diff>=8)out.push('최근 '+R.length+'개 미션 평균 '+r1(mine)+'%로 반 평균보다 '+r1(diff)+'%p 높아요. 탄탄하게 잘 따라오고 있어요.');
+ else if(diff>=-3)out.push('최근 '+R.length+'개 미션 평균 '+r1(mine)+'%로 반 평균 수준이에요. 꾸준히 유지하고 있어요.');
+ else out.push('최근 '+R.length+'개 미션 평균 '+r1(mine)+'%로 반 평균보다 '+r1(-diff)+'%p 낮아요. 기본 개념을 다시 짚어 볼 때예요.');
+ if(trend>=10)out.push('직전 미션보다 '+r1(trend)+'%p 올라 상승세예요.');
+ else if(trend<=-10)out.push('직전 미션보다 '+r1(-trend)+'%p 내려갔어요. 실수한 유형을 함께 점검해요.');
+ const cur=L.filter(h=>!h.old).slice(-3);
+ if(cur.length){let x=0,c=0;cur.forEach(h=>{const k=hCnt(h);x+=k.x;if(k.x===0&&k.b===0)c++;});
+  out.push(x===0?'남은 오답이 없어요. 오답 정리를 끝까지 해냈어요.':'남은 오답이 '+x+'문제 있어요. 오답노트로 정리하면 점수가 더 올라가요.');
+  out.push('최근 미션 '+cur.length+'개 중 '+c+'개를 클리어했어요.');}
+ return name+' 학생은 '+out.join(' ');
+}
+function newsCard(){
+ const staff=false,u=me();
+ const P=DB.posts.filter(p=>postVis(p)).sort((a,b)=>(b.pin||0)-(a.pin||0)||b.ts.localeCompare(a.ts)).slice(0,4);
+ return '<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+(P.length?P.map(p=>{const un=!p.reads.includes(u.id);
+  return '<button class="nws" data-a="tab" data-v="feed"><span class="badge t-'+p.type+'">'+esc(p.type)+'</span>'+(un?' <span class="badge new">NEW</span>':'')+(p.img?' <span class="muted sm">사진</span>':'')+'<div style="font-weight:700;margin-top:4px">'+esc(p.title)+'</div>'+(p.body?'<div class="pv2">'+esc(p.body.replace(/\n/g,' '))+'</div>':'')+'<div class="muted sm" style="margin-top:3px">'+fmtTs(p.ts)+'</div></button>';}).join(''):'<div class="empty">아직 소식이 없어요</div>')+'</div>';
+}
+function noteCard(){
+ const st=stuOf(),n=SH&&SH.note;
+ if(SH===undefined)return '<div class="card nt"><div class="muted">불러오는 중…</div></div>';
+ const body=n?n.body:autoNote(st.name,SH.hist);
+ return '<div class="card nt"><h3 style="margin:0">'+esc(st.name)+' 학생 이번 주 한마디</h3><p>'+esc(body)+'</p><div class="src">'+(n?'선생님이 직접 남긴 글이에요 · '+esc(String(n.ts||'').slice(5,10).replace('-','/')):'학습 기록으로 자동 작성한 글이에요 · 선생님이 직접 쓰시면 그 글로 바뀌어요')+'</div></div>';
+}
+function cumChart(){
+ if(SH===undefined)return '<div class="card"><h3>누적 성적 그래프</h3><div class="empty">불러오는 중…</div></div>';
+ const L=SH.hist.filter(h=>pctOf(h)!=null).slice(-40);
+ if(L.length<2)return '<div class="card"><h3>누적 성적 그래프</h3><div class="empty">미션 기록이 2개 이상 쌓이면 그래프가 나와요</div></div>';
+ const W=640,H=230,pl=34,pr=12,pt=14,pb=26,n=L.length,X=i=>pl+i*(W-pl-pr)/(n-1),Y=v=>pt+(H-pt-pb)*(1-Math.max(0,Math.min(100,v))/100);
+ let run=0;const my=L.map(pctOf),ca=L.map(h=>h.avg!=null?h.avg*100/h.tot:null),ra=my.map((v,i)=>{run+=v;return run/(i+1);});
+ let g='';[0,25,50,75,100].forEach(v=>{g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+v+'</text>';});
+ const line=(a,col,dash,w)=>{const q=a.map((v,i)=>v==null?null:X(i).toFixed(1)+','+Y(v).toFixed(1)).filter(Boolean);return q.length>1?'<polyline fill="none" stroke="'+col+'" stroke-width="'+(w||2.2)+'" '+(dash?'stroke-dasharray="5 4" ':'')+'points="'+q.join(' ')+'"/>':'';};
+ const dots=my.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="3.6" fill="#b76e79" stroke="#fff" stroke-width="1.4"><title>'+esc(L[i].date+' · '+L[i].name+' · '+L[i].score+'/'+Math.round(L[i].tot*10)/10+'점 ('+Math.round(v)+'%)')+'</title></circle>').join('');
+ const xl=[0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'" font-size="10.5" fill="#8a8f9e">'+esc(String(L[i].date).slice(5).replace('-','/'))+'</text>').join('');
+ return '<div class="card"><h3>누적 성적 그래프 <span class="muted sm" style="font-weight:400">미션 '+L.length+'개 · <span style="color:#b76e79">●</span> 내 점수(%) · <span style="color:#1f3a6e">━</span> 누적 평균 · <span style="color:#9aa1b3">┅</span> 반 평균</span></h3><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+g+line(ca,'#9aa1b3',true,1.8)+line(ra,'#1f3a6e',false,2.6)+line(my,'#b76e79',false,2)+dots+xl+'</svg></div>';
+}
+function clearCard(){
+ if(SH===undefined)return '<div class="card"><h3>미션 클리어 현황</h3><div class="empty">불러오는 중…</div></div>';
+ const L=SH.hist.filter(h=>!h.old).slice().reverse();
+ if(!L.length)return '<div class="card"><h3>미션 클리어 현황</h3><div class="empty">아직 채점된 미션이 없어요</div></div>';
+ let clr=0,xs=0;const rows=L.map(h=>{const c=hCnt(h),ok=c.x===0&&c.b===0&&c.o+c.t>0;if(ok)clr++;xs+=c.x;return {h:h,c:c,ok:ok};});
+ const w=(v,t)=>t?(v*100/t).toFixed(1):0;
+ return '<div class="card"><h3>미션 클리어 현황 <button class="more" onclick="location.href=\'tbmission.html\'" type="button">전체 ›</button></h3><div class="kpi" style="margin-bottom:8px"><div><b style="color:#2f7d5b">'+clr+'개</b><span>클리어한 미션</span></div><div><b style="color:'+(xs?'#b84a4a':'#2f7d5b')+'">'+xs+'문제</b><span>남은 오답</span></div><div><b>'+L.length+'개</b><span>채점된 미션</span></div></div>'+
+  rows.slice(0,8).map(r=>{const n=r.c.o+r.c.t+r.c.x+r.c.b;return '<div class="clr"><div class="nm"><b>'+esc(r.h.name)+'</b><div class="muted sm">'+esc(String(r.h.date).slice(5).replace('-','/'))+' · '+(Math.round(r.h.score*10)/10)+'점</div></div><div class="bx"><i style="width:'+w(r.c.o,n)+'%;background:#1f3a6e"></i><i style="width:'+w(r.c.t,n)+'%;background:#c9a55d"></i><i style="width:'+w(r.c.x,n)+'%;background:#b76e79"></i></div>'+(r.ok?'<span class="badge" style="background:#2f7d5b;color:#fff">클리어</span>':'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+r.c.x+'</b>')+'</div>';}).join('')+
+  '<div class="muted sm" style="margin-top:8px">남색 ○ 맞음 · 금색 △ 틀렸다 고침 · 분홍 ✕ 남은 오답 · 클리어 = 남은 오답이 없는 미션</div></div>';
+}
+function sideCal(){
+ const y=S.cy,m=S.cm,first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());
+ let c='<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px"><button class="btn sm3 gh" data-a="mon" data-v="-1" type="button">‹</button><b>'+y+'년 '+(m+1)+'월</b><button class="btn sm3 gh" data-a="mon" data-v="1" type="button">›</button></div><div class="mcal">'+DOW.map(d=>'<div class="h">'+d+'</div>').join('');
+ for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),has=eventsOn(ds).length>0;c+='<button type="button" class="'+(d.getMonth()!==m?'o ':'')+(ds===TODAY?'t ':'')+(ds===S.csel?'sel':'')+'" data-a="csel" data-v="'+ds+'">'+d.getDate()+(has?'<i></i>':'')+'</button>';}
+ c+='</div>';
+ const sel=eventsOn(S.csel),useSel=S.csel!==TODAY&&sel.length>0,list=(useSel?sel.map(e=>({ds:S.csel,n:e.n,time:e.time})):upcoming(3)).slice(0,3);
+ return '<div class="card"><h3>다가오는 일정</h3>'+c+'<div style="margin-top:8px">'+(list.length?list.map(x=>'<div class="li"><div class="tm">'+(x.ds===TODAY?'오늘':x.ds.slice(5).replace('-','/'))+'</div><div class="tx"><b>'+esc(x.n)+'</b>'+(x.time?'<div class="muted sm">'+esc(x.time)+'</div>':'')+'</div></div>').join(''):'<div class="muted sm">예정된 일정이 없어요</div>')+'</div></div>';
+}
+function vHomeStu(){
+ shEnsure();
+ return seasonHero()+seasonTimeline()+'<div class="hgrid"><div>'+newsCard()+noteCard()+cumChart()+clearCard()+landingExtras(true)+'</div><aside class="hside">'+sideCal()+'</aside></div>';
+}
+/* ── 선생님: 학생별 한마디 쓰기 (직접 쓰거나 자동 작성) ── */
+async function openNote(sid){
+ const st=U[sid];if(!st)return;
+ openModal('<h3>'+esc(st.name)+' 학생 한마디</h3><div class="muted sm" style="margin-bottom:8px">학생·학부모 홈에 "이번 주 한마디"로 보여요. 비워서 저장하면 선생님 글이 지워지고, 학습 기록으로 만든 자동 글이 대신 보여요.</div><div class="fld"><textarea id="nt_t" style="min-height:130px" placeholder="불러오는 중…"></textarea></div><div class="row"><button class="btn gh" type="button" data-a="ntauto" data-id="'+sid+'">자동 작성 (학습 기록으로)</button><span class="sp"></span><button class="btn gh" data-a="closemodal">취소</button><button class="btn" data-a="ntsave" data-id="'+sid+'">저장</button></div>');
+ const j=await noteApi('get',{sid:sid});const t=$('#nt_t');if(t){t.placeholder='학생의 이번 주 학습 상황을 적어 주세요';t.value=(j&&j.ok&&j.body)?j.body:'';}
 }
 
 /* ── 일정·수업내용·영상·자료 입력 ── */
@@ -1049,7 +1238,7 @@ function vAdmin(){
  const ac=curAc(),L=stuList(ac);
  h+='<div class="note">학생·학부모 로그인은 "이름 + 학부모 전화번호 뒤 4자리"예요. 이름과 전화번호는 원장님 화면에만 보여요. 같은 학원에서 같은 이름·같은 뒤 4자리는 둘 이상 만들 수 없어요.</div><div class="row wrap" style="margin-bottom:12px"><button class="btn" data-a="stuform">학생 추가</button><button class="btn sec" data-a="stuimport">여러 명 한번에 추가</button></div>';
  AC[ac].classes.forEach(c=>{const l=L.filter(s=>s.cls===c);
-  h+='<div class="card"><h3>'+c+' <span class="badge">'+l.length+'명</span></h3>'+(l.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+l.map(s=>'<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 학생이 없어요</div>')+'</div>';});
+  h+='<div class="card"><h3>'+c+' <span class="badge">'+l.length+'명</span></h3>'+(l.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+l.map(s=>'<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 학생이 없어요</div>')+'</div>';});
  const known=AC[ac].classes,odd=L.filter(s=>known.indexOf(s.cls)<0);
  if(odd.length)h+='<div class="card"><h3>목록에 없는 반 <span class="badge">'+odd.length+'명</span></h3><div class="note">[반 관리]에서 지운 반에 아직 학생이 남아 있어요. 학생을 눌러 반을 바꿔 주세요.</div><table class="tbl"><tr><th>반</th><th>이름</th><th>학교</th><th></th></tr>'+odd.map(s=>'<tr><td>'+esc(s.cls)+'</td><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button></td></tr>').join('')+'</table></div>';
  return h;
@@ -1122,7 +1311,7 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;render(0);break;}
+ case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':S.tab=v;S.thread=null;render(0);break;
  case 'cls':S.cls=v;S.thread=null;render();break;
@@ -1179,6 +1368,14 @@ document.addEventListener('click',async e=>{
  case 'toolsedit':openToolsEdit();break;
  case 'msrefresh':MS=null;MS_BUSY=false;render();break;
  case 'vunit':PVU=v;homeRefresh();break;
+ case 'ntauto':{const j=await msApi('history',{sid:id});const t=$('#nt_t');if(t)t.value=autoNote(U[id].name,(j&&j.ok)?j.list:[]);break;}
+ case 'ntsave':{const j=await noteApi('set',{sid:id,body:($('#nt_t').value||'').trim()});if(j&&j.ok){closeModal();toast('저장했어요');}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 실행했는지 확인해 주세요)');break;}
+ case 'stunote':openNote(id);break;
+ case 'appinstall':if(INSTALL_EVT){INSTALL_EVT.prompt();INSTALL_EVT=null;}break;
+ case 'pushon':await pushOn();break;
+ case 'pushoff':await pushOff();break;
+ case 'editpost':openWrite(null,id);break;
+ case 'wimgdel':S.tmpImg=S.editId?'':null;showPostImg('');break;
  case 'pvadd':{const u=$('#pv_u').value.trim(),ti=$('#pv_t').value.trim(),l=$('#pv_l').value.trim();if(!u||!ti||!l){toast('단원 · 제목 · 주소를 모두 적어 주세요');break;}if(!ytId(l)){toast('유튜브 주소를 붙여 넣어 주세요');break;}
   const arr=(PUB.pv||[]).concat([{unit:u,title:ti,url:l}]);await savePv(arr);break;}
  case 'pvdel':{const i=+t.dataset.i;if(!confirm('이 영상을 목록에서 지울까요?'))break;const arr=(PUB.pv||[]).filter((_,k)=>k!==i);await savePv(arr);break;}
@@ -1395,8 +1592,8 @@ function ytId(url){const u=String(url||'');const m=u.match(/youtube\.com\/shorts
 document.addEventListener('click',e=>{const f=e.target.closest&&e.target.closest('.ytf');if(!f||!f.dataset.yid)return;
  const i=document.createElement('iframe');i.className='ytif';i.src='https://www.youtube.com/embed/'+f.dataset.yid+'?autoplay=1';i.allow='autoplay; encrypted-media; picture-in-picture';i.allowFullscreen=true;f.replaceWith(i);});
 function pvUnits(){const o=[];(PUB.pv||[]).forEach(v=>{if(v.unit&&ytId(v.url)&&o.indexOf(v.unit)<0)o.push(v.unit);});return o;}
-function landingExtras(){
- statsEnsure();
+function landingExtras(noStats){
+ if(!noStats)statsEnsure();
  const fmt=n=>(+n).toLocaleString('ko-KR');let h='';
  const U=pvUnits();
  if(U.length){
@@ -1405,13 +1602,13 @@ function landingExtras(){
   h+='<div class="lxc"><h3>모의고사 기출풀이</h3><div class="muted sm">단원별 풀이영상 · 썸네일을 누르면 바로 재생돼요</div><div class="lchips">'+U.map(u=>'<button class="lchip'+(u===PVU?' on':'')+'" data-a="vunit" data-v="'+esc(u)+'">'+esc(u)+' <b>'+(PUB.pv||[]).filter(v=>v.unit===u&&ytId(v.url)).length+'</b></button>').join('')+'</div>'+
    '<div class="vgrid">'+L.map(v=>{const id=ytId(v.url);return '<div><div class="ytf" data-yid="'+id+'" style="background-image:url(https://i.ytimg.com/vi/'+id+'/hqdefault.jpg)"><span>▶</span></div><div class="vq"><b>'+esc(v.title||'')+'</b></div></div>';}).join('')+'</div></div>';
  }
- if(STATS&&STATS.total>0){
+ if(!noStats&&STATS&&STATS.total>0){
   const by={};(STATS.units||[]).forEach(u=>{(by[u.course]=by[u.course]||[]).push(u);});
   const order=['공통수학1','공통수학2'];Object.keys(by).forEach(c=>{if(order.indexOf(c)<0&&c!=='기타')order.push(c);});
   h+='<div class="lxc lxs"><span class="muted">저장된 문제</span> <span class="big2">'+fmt(STATS.total)+'</span><span class="muted">문제</span>'+
    order.map(c=>{const L=by[c];return '<div style="margin-top:6px"><b>'+esc(c)+'</b> <span class="muted">'+(L?fmt(L.reduce((a,x)=>a+ +x.n,0))+'문제':'단원 분류 전')+'</span>'+(L?'<span class="lchips" style="display:inline-flex;margin:0 0 0 6px">'+L.map(u=>'<span class="lchip">'+esc(u.unit)+' <b>'+fmt(u.n)+'</b></span>').join('')+'</span>':'')+'</div>';}).join('')+'</div>';
  }
- return h;
+ return h+appCard();
 }
 /* ── 관리 탭: 기출풀이 영상 올리기 (원장) ── */
 async function savePv(arr){
