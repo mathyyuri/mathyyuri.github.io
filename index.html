@@ -1221,6 +1221,7 @@ const DEF_TOOLS=[
  {id:'oldmain',name:'예전 메인 화면',url:'index_old.html',desc:'옛 mathyyuri.com 첫 화면',grp:'관리',roles:[]}
 ];
 let TOOLS=undefined,TOOLS_BUSY=false;
+const NEW_TOOLS=['pimport'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
 async function toolsApi(action,args){
  try{const r=await fetch(TOOLS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 5_이전데이터_도구모음_서버.sql 을 먼저 실행해 주세요':'')};
@@ -1235,7 +1236,7 @@ function toolsNow(){
 function ensureTools(){
  if(TOOLS!==undefined||TOOLS_BUSY)return;
  TOOLS_BUSY=true;
- toolsApi('get').then(j=>{TOOLS=(j&&j.ok&&Array.isArray(j.tools))?j.tools:null;TOOLS_BUSY=false;render();});
+ toolsApi('get').then(j=>{TOOLS=(j&&j.ok&&Array.isArray(j.tools))?j.tools:null;if(TOOLS&&me().role==='admin')NEW_TOOLS.forEach(id=>{if(!TOOLS.some(t=>t.id===id)){const d=DEF_TOOLS.find(t=>t.id===id);if(d)TOOLS=TOOLS.concat([Object.assign({},d)]);}});TOOLS_BUSY=false;render();});
 }
 function toolLinks(){ensureTools();return toolsNow().filter(t=>t.id!=='oldmain').map(t=>({n:t.name,d:t.desc||'',u:t.url,ic:''}));}
 function vTools(){
