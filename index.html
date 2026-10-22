@@ -501,12 +501,12 @@ function saveSession(){}
 
 /* 로그인 */
 function tlHtml(){const si=seasonIdx();
- return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'"><div class="nd">'+(i<si?'✓':i+1)+'</div><div class="en">'+x.en+'</div><div class="ko">'+x.ko+'</div></div>').join('')+'</div><div class="tlg"><span class="k"></span>시험 대비 시즌<span class="k v"></span>방학 시즌</div>';}
+ return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'" title="'+x.full+'"><div class="nd">'+(i<si?'✓':i+1)+'</div></div>').join('')+'</div>';}
 function renderLogin(){
  const L=S.L,si=seasonIdx(),X=SEASONS[si];
  let h='<div class="landing"><div class="lface"><img src="'+faceSrc()+'" alt=""></div><div class="lmain">'+
   '<div class="eb">2026 – 27 season</div><h1 class="big">MATHY <i>YURI</i></h1>'+
-  '<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>'+tlHtml();
+  '';
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="d">용인 보라고 · 신갈고 · 서천고</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
@@ -526,7 +526,9 @@ function renderLogin(){
   }
   h+='</div>';
  }
- h+='</div></div>';
+ h+='</div>';
+ if(!L.ac)h+='<div style="grid-column:1/-1;order:3">'+landingExtras()+'</div>';
+ h+='</div>';
  $('#app').innerHTML=h;
 }
 /* 메인 틀 */
@@ -568,19 +570,18 @@ function upcoming(n){const out=[];for(let i=0;i<30&&out.length<n;i++){const d=ne
 function myMissions(){const st=stuOf();return DB.missions.filter(m=>inAc(m)&&clsOk(m));}
 function mTargets(m){return stuList().filter(s=>(m.ac==='all'||m.ac===s.ac)&&(m.cls==='all'||m.cls===s.cls));}
 function examTag(){const l=DB.events.filter(e=>e.kind==='시험'&&inAc(e)&&e.date>=TODAY).sort((a,b)=>a.date.localeCompare(b.date))[0];return l?'<span class="dd">'+esc(l.n)+' '+ddTxt(dday(l.date))+'</span>':'';}
-const seasonIdx=()=>{const v=S.uid?DB.set.season:PUB.season;return v==null?5:+v;};
+const seasonIdx=()=>{const v=S.uid?DB.set.season:null,x=(v&&typeof v==='object')?v[curAc()]:v;return x==null?5:+x;};
 function seasonHero(){
  const u=me(),st=stuOf(),a=AC[curAc()],si=seasonIdx(),X=SEASONS[si],bio=bioOf();
  const hi=isStaff()?esc(u.name)+'님, 안녕하세요':(u.role==='parent'?esc(st.name)+' 학부모님, 안녕하세요':esc(st.name)+' 학생, 안녕하세요');
  return '<section class="hero2"><div class="hl"><div class="hi">'+hi+'</div><div class="eb">'+a.name+' · 2026 – 27 season</div><h2 class="big">MATHY <i>YURI</i></h2>'+
-  '<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>'+
   examTag()+'</div>'+
   '<div class="hr"><img class="face" src="'+faceSrc()+'" alt=""'+(u.role==='admin'?' data-a="facepick" title="사진을 누르면 바꿀 수 있어요" style="cursor:pointer"':'')+'><div class="bio"><b>'+esc(bio[0]||'')+'</b><ul>'+bio.slice(1).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(u.role==='admin'?'<button class="btn sm3 gh" style="margin-top:8px" data-a="bioedit">약력 수정</button>':'')+'</div></div></section>';
 }
 function seasonTimeline(){
  const si=seasonIdx();
  return tlHtml()+
-  (me().role==='admin'?'<div class="muted sm" style="margin:-8px 4px 14px;text-align:right">현재 시즌 바꾸기 <select class="sel" data-ch="season">'+SEASONS.map((x,i)=>'<option value="'+i+'"'+(i===si?' selected':'')+'>'+x.full+'</option>').join('')+'</select></div>':'');
+  (me().role==='admin'?'<div class="muted sm" style="margin:-8px 4px 14px;text-align:right">'+AC[curAc()].name+' 현재 시즌 바꾸기 <select class="sel" data-ch="season">'+SEASONS.map((x,i)=>'<option value="'+i+'"'+(i===si?' selected':'')+'>'+x.full+'</option>').join('')+'</select></div>':'');
 }
 function recentCard(){
  const st=stuOf();
@@ -605,7 +606,7 @@ function recentCard(){
 }
 function vHome(){
  const u=me(),st=stuOf(),a=AC[curAc()],staff=isStaff();
- let h=seasonHero()+seasonTimeline()+recentCard()+'<div class="grid g3">';
+ let h=seasonHero()+seasonTimeline()+recentCard()+landingExtras()+'<div class="grid g3">';
  const ev=upcoming(5);
  h+='<div class="card"><h3>오늘·다가오는 일정<button class="more" data-a="tab" data-v="lesson">스케줄 ›</button></h3>'+(ev.length?ev.map(x=>'<div class="li"><div class="tm">'+(x.ds===TODAY?'오늘':x.ds.slice(5).replace('-','/'))+'</div><div class="tx"><b>'+esc(x.e.n)+'</b><div class="muted sm">'+(x.e.time||'종일')+(x.e.kind==='클리닉'?' · 클리닉':'')+'</div></div></div>').join(''):'<div class="empty">예정된 일정이 없어요</div>')+'</div>';
  const pins=DB.posts.filter(p=>postVis(p)).sort((a,b)=>(b.pin||0)-(a.pin||0)||b.ts.localeCompare(a.ts)).slice(0,3);
@@ -1173,6 +1174,7 @@ document.addEventListener('click',async e=>{
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
  case 'msrefresh':MS=null;MS_BUSY=false;render();break;
+ case 'vround':VROUND=+v;homeRefresh();break;
  case 'clsadd':{const ac=t.dataset.ac,i=$('#cn_'+ac),nm=(i.value||'').trim();if(!nm){toast('반 이름을 적어 주세요');break;}if(AC[ac].classes.indexOf(nm)>=0){toast('이미 있는 반이에요');break;}if(AC[ac].classes.length>=12){toast('반은 12개까지예요');break;}AC[ac].classes.push(nm);if(!(await saveClasses())){AC[ac].classes.pop();render();}break;}
  case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuList(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
  case 'tooladd':readToolsEdit();TEDIT.push({id:'t'+Date.now().toString(36),name:'새 도구',url:'',grp:'기타',desc:'',roles:[]});renderToolsEdit();break;
@@ -1342,6 +1344,55 @@ function vMission(){
  return h+'</table></div>';
 }
 
+/* ── 첫 화면·홈: 저장된 문제 수 · 모의고사 기출풀이 영상 ── */
+const STATS_URL=API_URL.replace('ac_api','mathy_stats');
+const GAS_VIDEO='https://script.google.com/macros/s/AKfycbynxupIBGMhIb6knPPTzCgQ3No_nId6YdjoKsvoFGZAEk4HkVztI0a6Wto5UfUww8e1/exec';
+let STATS=undefined,VID=undefined,VROUND=null;
+(function(){const st=document.createElement('style');st.textContent=
+ '.lxc{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 20px;margin:16px 0;box-shadow:var(--sh);text-align:left}'+
+ '.lxc h3{margin:0 0 4px;font-size:17px}.lxc .big2{font-family:var(--disp,serif);font-size:42px;font-weight:800;line-height:1.1}'+
+ '.lchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.lchip{display:inline-block;border:1px solid var(--line);background:var(--bg2,#f4efe4);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink);cursor:default}.lchip b{margin-left:3px}'+
+ 'button.lchip{cursor:pointer}button.lchip.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}'+
+ '.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}.vgrid .vq{font-size:12.5px;margin-top:4px;color:var(--mut)}'+
+ '.ytf{position:relative;aspect-ratio:16/9;background:#222 center/cover;border-radius:12px;cursor:pointer}.ytf span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.6)}.ytf iframe,iframe.ytif{width:100%;aspect-ratio:16/9;border:0;border-radius:12px}';
+ document.head.appendChild(st);})();
+function homeRefresh(){if(S.uid)render();else if(!S.L.ac)render(0);}
+function statsEnsure(){
+ if(STATS!==undefined)return;STATS=null;
+ fetch(STATS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:'{}'}).then(r=>r.ok?r.json():null).then(j=>{STATS=(j&&j.ok)?j:false;homeRefresh();}).catch(()=>{STATS=false;});
+}
+function videosEnsure(){
+ if(VID!==undefined)return;VID=null;
+ fetch(GAS_VIDEO+'?action=dailyquizvideolist').then(r=>r.json()).then(j=>{
+  const by={};((j&&j.videos)||[]).forEach(v=>{if(v&&v.url){(by[v.round]=by[v.round]||[]).push(v);}});
+  const rounds=Object.keys(by).map(Number).sort((a,b)=>a-b);rounds.forEach(r=>by[r].sort((a,b)=>a.num-b.num));
+  VID=rounds.length?{by:by,rounds:rounds}:false;if(VID&&VROUND==null)VROUND=rounds[0];homeRefresh();
+ }).catch(()=>{VID=false;});
+}
+function ytId(url){let m=String(url||'').match(/youtube\.com\/shorts\/([\w-]{6,})/)||String(url||'').match(/youtu\.be\/([\w-]{6,})/)||String(url||'').match(/[?&]v=([\w-]{6,})/);return m?m[1]:null;}
+document.addEventListener('click',e=>{const f=e.target.closest&&e.target.closest('.ytf');if(!f||!f.dataset.yid)return;
+ const i=document.createElement('iframe');i.className='ytif';i.src='https://www.youtube.com/embed/'+f.dataset.yid+'?autoplay=1';i.allow='autoplay; encrypted-media; picture-in-picture';i.allowFullscreen=true;f.replaceWith(i);});
+function landingExtras(){
+ statsEnsure();videosEnsure();
+ const fmt=n=>(+n).toLocaleString('ko-KR');let h='';
+ if(STATS&&STATS.total>0){
+  const by={};let tagged=0;(STATS.units||[]).forEach(u=>{(by[u.course]=by[u.course]||[]).push(u);tagged+=+u.n;});
+  const order=['공통수학1','공통수학2'];Object.keys(by).forEach(c=>{if(order.indexOf(c)<0)order.push(c);});
+  const rest=Math.max(0,+STATS.total-tagged);
+  h+='<div class="lxc"><div class="eb">MATHY problem bank</div><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="big2">'+fmt(STATS.total)+'</span><b>문제가 저장되어 있어요</b></div>'+
+   order.filter(c=>c!=='기타').map(c=>{const L=by[c];if(!L)return '<div style="margin-top:12px"><b>'+esc(c)+'</b> <span class="muted sm">단원 분류 정리 중</span></div>';
+    return '<div style="margin-top:12px"><b>'+esc(c)+'</b> <span class="muted sm">'+fmt(L.reduce((a,x)=>a+ +x.n,0))+'문제</span><div class="lchips">'+L.map(u=>'<span class="lchip">'+esc(u.unit)+' <b>'+fmt(u.n)+'</b></span>').join('')+'</div></div>';}).join('')+
+   (rest>0?'<div class="muted sm" style="margin-top:12px">그 밖에 단원 분류 전 문제 '+fmt(rest)+'개 (내신 기출 등)</div>':'')+'</div>';
+ }
+ if(VID&&VID.rounds.length){
+  const L=VID.by[VROUND]||[];
+  h+='<div class="lxc"><h3>모의고사 기출풀이</h3><div class="muted sm">일일일모 문제별 풀이영상 · 썸네일을 누르면 바로 재생돼요</div><div class="lchips">'+VID.rounds.map(r=>'<button class="lchip'+(r===VROUND?' on':'')+'" data-a="vround" data-v="'+r+'">'+r+'회차</button>').join('')+'</div>'+
+   '<div class="vgrid">'+L.map(v=>{const id=ytId(v.url);return id?'<div><div class="ytf" data-yid="'+id+'" style="background-image:url(https://i.ytimg.com/vi/'+id+'/hqdefault.jpg)"><span>▶</span></div><div class="vq"><b>'+esc(v.num)+'번</b> 풀이</div></div>':'';}).join('')+'</div>'+
+   '<div style="margin-top:12px"><a class="btn sm3 gh" style="text-decoration:none" href="dailyquizvideos.html">문제와 빠른정답까지 보기 →</a></div></div>';
+ }
+ return h;
+}
+
 async function sendMsg(key){
  const i=$('#min'),tx=i.value.trim();if(!tx)return;const p=key.split(':');
  i.disabled=true;
@@ -1357,7 +1408,7 @@ document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]
  if(c==='wscope'){const o=scopeObj(t.value);$('#wncnt').textContent='받는 학부모 '+targetsOf(o).filter(x=>x.role==='parent').length+'명';}
  if(c==='rex'){S.rex=t.value;S.rstu='';render();}
  if(c==='rstu'){S.rstu=t.value;render();}
- if(c==='season'){const j=await mut('settings_set',{key:'season',value:+t.value});if(j&&j.ok){PUB.season=+t.value;}}
+ if(c==='season'){const cur=DB.set.season,base=(cur&&typeof cur==='object')?cur:{ds:cur==null?5:+cur,bd:cur==null?5:+cur},o=Object.assign({},base);o[curAc()]=+t.value;await mut('settings_set',{key:'season',value:o});}
  if(c==='score'){await mut('score_set',{exam_id:t.dataset.eid,sid:t.dataset.sid,score:t.value.trim()===''?null:Math.max(0,Math.min(100,+t.value))});toast('점수를 저장했어요');}
  if(c==='stuac'){$('#sf_c').innerHTML=classOpts(t.value,null);}
  if(c==='wimg'){const f=t.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/im.width),cv=document.createElement('canvas');cv.width=im.width*k;cv.height=im.height*k;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);S.tmpImg=cv.toDataURL('image/jpeg',.72);$('#wpv').innerHTML='<img class="pv" src="'+S.tmpImg+'">';};im.src=r.result;};r.readAsDataURL(f);}
