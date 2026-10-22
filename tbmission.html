@@ -141,7 +141,7 @@ function vLogin(){
  '<button class="btn" style="width:100%;margin-top:6px" data-a="login">들어가기</button><div class="err" id="lerr"></div></div></div>'}
 var LOGIN={ac:'ds',role:'student'};
 function catOf(m){return m.cat||'미션'}
-var SEAS=[['fin','2학기 기말대비'],['mid','2학기 중간대비']],FIN_FROM='2026-10-21';
+var SEAS=[['fin','2학기 기말대비'],['mid','2학기 중간대비']],FIN_FROM='2026-10-15';
 function seasonOf(m){return (m.old||String(m.date)<FIN_FROM)?'mid':'fin'}
 function filtered(){return S.list.filter(function(m){return seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
 function mineHtml(m){
