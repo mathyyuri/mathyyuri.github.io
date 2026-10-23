@@ -1081,6 +1081,20 @@ async function loadEditorMedia(){
 }
 document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closest('.bd img[data-mid]');if(im&&im.getAttribute('src')){window.open(dataBlobUrl(im.getAttribute('src')),'_blank');}});
 
+/* ── 점수·정오표가 바뀌면 화면에도 바로 반영: 한 번 불러온 값을 계속 쓰지 않고 다시 불러오기 ── */
+let LASTLOAD=Date.now();
+function dataStale(ms){return Date.now()-LASTLOAD>(ms||45000);}
+function dropCaches(){MS=null;MS_BUSY=false;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;}
+async function refreshAll(){LASTLOAD=Date.now();dropCaches();try{await resync();}catch(e){}}
+function safeToRefresh(){
+ if(!S.uid||tbmOn())return false;
+ if(document.querySelector('#modal.on')||document.querySelector('#wbe'))return false;
+ const a=document.activeElement;if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable))return false;
+ return true;
+}
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&dataStale(30000)&&safeToRefresh()){await refreshAll();if(safeToRefresh())render();}});
+setInterval(async()=>{if(document.visibilityState==='visible'&&dataStale(120000)&&safeToRefresh()){await refreshAll();if(safeToRefresh())render();}},60000);
+
 /* ── 좋아요 · 이모티콘 (소식 글 · 메시지) ── */
 const REACT_URL=API_URL.replace('ac_api','ac_react'),RXE=['👍','❤️','👏','🎉','😊','🔥'],RX={post:{},msg:{}},RXL={},RXO={};
 async function reactApi(action,args){
@@ -1111,6 +1125,7 @@ async function rxToggle(k,id,e){
 window.addEventListener('message',e=>{
  if(e.origin!==location.origin||!e.data)return;
  if(e.data.tbmh)document.querySelectorAll('iframe.tbmh').forEach(f=>{if(f.contentWindow===e.source)f.style.height=Math.max(160,e.data.tbmh)+'px';});
+ if(e.data.tbmsaved){LASTLOAD=0;dropCaches();}
  if(e.data.tbmhome&&S.uid){S.tab='home';S.thread=null;render(0);}
 });
 
@@ -1667,7 +1682,7 @@ document.addEventListener('click',async e=>{
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
  case 'logout':{await api('logout');TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
- case 'tab':S.tab=v;S.thread=null;render(0);break;
+ case 'tab':{if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
  case 'cls':S.cls=v;S.thread=null;render();break;
  case 'ftype':S.ftype=v;render();break;
  case 'sub':S.sub[t.dataset.k]=v;render();break;
@@ -1725,7 +1740,7 @@ document.addEventListener('click',async e=>{
  case 'stdel':if(confirm('이 운영진를 삭제할까요?'))await mut('staff_delete',{id:id});break;
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
- case 'msrefresh':MS=null;MS_BUSY=false;render();break;
+ case 'msrefresh':await refreshAll();render();break;
  case 'vunit':PVU=v;homeRefresh();break;
  case 'ntauto':{const j=await msApi('history',{sid:id});const t=$('#nt_t');if(t)t.value=autoNote(U[id].name,(j&&j.ok)?j.list:[]);break;}
  case 'ntsave':{const j=await noteApi('set',{sid:id,body:($('#nt_t').value||'').trim()});if(j&&j.ok){closeModal();RP=undefined;toast('기록에 저장했어요');render();}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 실행했는지 확인해 주세요)');break;}

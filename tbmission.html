@@ -504,7 +504,7 @@ async function saveOx(){
  if(!rows.length){alert('바뀐 입력이 없어요');return}
  var j=await ms('ox',{exam_id:S.ex.id,rows:rows});
  if(!j||!j.ok){alert((j&&j.error)||'저장하지 못했어요');return}
- S.Gex=null;S.G=null;await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
+ S.Gex=null;S.G=null;try{window.parent.postMessage({tbmsaved:1},location.origin)}catch(e){}await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
 function openPaste(){
  var m=$('#mb');$('#md').hidden=false;m.innerHTML='<h3>정오표 붙여넣기</h3><div class="muted sm" style="margin-bottom:8px">한 줄에 한 명: <b>이름 O/X문자열 닉네임(있으면)</b> (탭·공백·쉼표 모두 가능). 닉네임은 이번 미션에서만 써요. 이름이 같은 학생이 여러 명이면 위 표에서 직접 입력해 주세요.</div><textarea id="pst" placeholder="김하준 OOXOOOXO... 번개\n이서윤 OXOXOOOO... 별똥별"></textarea><div id="pres" class="sm" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn" data-a="pasteok">입력칸에 넣기</button></div>'}
 function pasteOk(){
