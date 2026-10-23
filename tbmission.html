@@ -33,7 +33,7 @@ tr.me td{background:#fff6e0}tr.me td:first-child{box-shadow:inset 4px 0 0 var(--
 .cb{display:inline-block;padding:1px 9px;border-radius:12px;font-weight:700;font-size:12px;line-height:1.6}
 .bar{position:relative;height:10px;background:#eef0f5;border-radius:5px;min-width:80px}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--rose)}.bar.n i{background:var(--navy)}
 .oxg{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}.ox{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px 2px;text-align:center;line-height:1.25}.ox i{display:block;font-style:normal;font-size:11px;color:var(--mute)}.ox b{font-size:18px}.ox span{display:block;font-size:10.5px;color:var(--mute)}.ox.o b{color:var(--navy)}.ox.o{background:#f1f5fc}.ox.x b{color:var(--rose)}.ox.x{background:#fdf1f3;border-color:#f0cdd3}.ox.t b{color:#b7791f}.ox.t{background:#fff8e6;border-color:#ecd9a6}.mx td.t{color:#b7791f;background:#fff8e6;font-weight:700}
-.mxg tr.ns td{background:#fbf3f3;color:#b84a4a}.nsb{color:#b84a4a;font-size:11px;font-weight:700}.mxw{overflow:auto;border:1px solid var(--line);border-radius:10px}table.mx{border-collapse:separate;border-spacing:0;font-size:12.5px}.mx th,.mx td{padding:4px 5px;text-align:center;border-bottom:1px solid #eef0f5;min-width:26px;background:#fff}.mx th{position:sticky;top:0;background:#f1f3f8;z-index:2;font-size:11.5px}.mx td.nm,.mx th.nm{position:sticky;left:0;z-index:3;text-align:left;min-width:92px;background:#fff;border-right:1px solid var(--line);font-weight:700}.mx th.nm{background:#f1f3f8;z-index:4}.mx td.o{color:var(--navy);font-weight:700}.mx td.x{color:var(--rose);background:#fdf1f3;font-weight:700}.mx tr.me td{background:#fff6e0}.mx tr.me td.x{background:#fbe6e9}.mx tr.rt td{background:#faf6ee;font-weight:700;font-size:11px;color:#555}
+.mxg tr.ns td{background:#fbf3f3;color:#b84a4a}.mxg tr.nr td,table.tbl tr.nr td{background:#f4f4f4;color:#8a8f9e}.nsb{color:#b84a4a;font-size:11px;font-weight:700}.nrb{color:#8a8f9e;font-size:11px;font-weight:700}.gb button[data-a=gns].on{background:#b84a4a;color:#fff;border-color:#b84a4a}.mxw{overflow:auto;border:1px solid var(--line);border-radius:10px}table.mx{border-collapse:separate;border-spacing:0;font-size:12.5px}.mx th,.mx td{padding:4px 5px;text-align:center;border-bottom:1px solid #eef0f5;min-width:26px;background:#fff}.mx th{position:sticky;top:0;background:#f1f3f8;z-index:2;font-size:11.5px}.mx td.nm,.mx th.nm{position:sticky;left:0;z-index:3;text-align:left;min-width:92px;background:#fff;border-right:1px solid var(--line);font-weight:700}.mx th.nm{background:#f1f3f8;z-index:4}.mx td.o{color:var(--navy);font-weight:700}.mx td.x{color:var(--rose);background:#fdf1f3;font-weight:700}.mx tr.me td{background:#fff6e0}.mx tr.me td.x{background:#fbe6e9}.mx tr.rt td{background:#faf6ee;font-weight:700;font-size:11px;color:#555}
 .pc{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}.pc .h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.pc .no{font-family:var(--fk);font-weight:700;font-size:20px;color:var(--rose)}
 .q{font-size:15px;line-height:1.85;word-break:keep-all}.q p{margin:0 0 6px}.q img.fig{max-width:100%;max-height:260px;display:block;margin:6px auto}.q .cbox{border:1px solid #6f6450;padding:8px 12px;margin:8px 0;border-radius:4px}.q .hwpBlankBox{display:inline-block;min-width:40px;border-bottom:1.5px solid #7d7364}
 .ch{display:grid;gap:4px 14px;margin-top:8px;font-size:14.5px}.ch.c5{grid-template-columns:repeat(5,1fr)}.ch.c3{grid-template-columns:repeat(3,1fr)}.ch.c2{grid-template-columns:1fr 1fr}.ch.c1{grid-template-columns:1fr}.ch span b{color:var(--rose);margin-right:6px;font-weight:500}
@@ -139,7 +139,8 @@ function calc(){
  S.C={items:items,n:n,G:G,tot:tot,cls:cls,rate:rate,cnt:cnt,crate:crate,avg:G.length?G.reduce(function(a,r){return a+r.s},0)/G.length:0}}
 function meRow(){return S.R.filter(function(r){return r.me})[0]}
 function ungraded(){return isStaff()?S.R.filter(function(r){return !r.ox}).sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)}):[]}
-function nsKpi(){var u=ungraded();return u.length?'<div class="kp r"><b>'+u.length+'명</b><span>미시작 (채점 전)</span></div>':''}
+function nsKpi(){var u=ungraded(),a=u.filter(function(r){return r.ns}).length,b=u.length-a;return (a?'<div class="kp r"><b>'+a+'명</b><span>미시작</span></div>':'')+(b?'<div class="kp n"><b>'+b+'명</b><span>미기록 (채점 전)</span></div>':'')}
+function nsTag(r){return r.ns?'<span class="nsb">미시작</span>':'<span class="nrb">미기록</span>'}
 function whoRow(){var k=isStaff()?S.who:null;return isStaff()?(S.R.filter(function(r){return r.k===k})[0]||null):meRow()}
 function groups(by){var o={},ord=[];S.C.items.forEach(function(it,i){var k=it[by]||'기타';if(!o[k]){o[k]=[];ord.push(k)}o[k].push(i)});return ord.map(function(k){return {k:k,idx:o[k]}})}
 function rateCls(r){return r==null?'':r>=.8?'easy':r>=.5?'mid':'hard'}
@@ -289,7 +290,7 @@ function barChart(){
  [0,.25,.5,.75,1].forEach(function(f){var v=tot*f;g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+Math.round(v)+'</text>'});
  R.forEach(function(r,i){var x=pl+i*BW+5,w=BW-10,y=Y(r.s),nm=isStaff()?sn(r):(r.me?r.name:r.nick);
   g+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(Y(0)-y)+'" rx="4" fill="'+cc(r.cls)+'"'+(r.me?' stroke="#d4486a" stroke-width="3"':'')+'><title>'+esc(nm+' · '+r.s+'점')+'</title></rect><text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="11" font-weight="'+(r.me?800:600)+'" fill="'+(r.me?'#d4486a':'#3a4256')+'">'+(Math.round(r.s*10)/10)+'</text><text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?800:400)+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(String(nm||'').slice(0,4))+'</text>'});
- U.forEach(function(r,j){var i=R.length+j,x=pl+i*BW+5,w=BW-10;g+='<rect x="'+x+'" y="'+(Y(0)-3)+'" width="'+w+'" height="3" rx="1.5" fill="#d8b4b4"/><text x="'+(x+w/2)+'" y="'+(Y(0)-8)+'" text-anchor="middle" font-size="10" fill="#b84a4a">미시작</text><text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" fill="#b84a4a">'+esc(String(sn(r)||'').slice(0,4))+'</text>'});
+ U.forEach(function(r,j){var i=R.length+j,x=pl+i*BW+5,w=BW-10;g+='<rect x="'+x+'" y="'+(Y(0)-3)+'" width="'+w+'" height="3" rx="1.5" fill="#d8b4b4"/><text x="'+(x+w/2)+'" y="'+(Y(0)-8)+'" text-anchor="middle" font-size="10" fill="'+(r.ns?'#b84a4a':'#8a8f9e')+'">'+(r.ns?'미시작':'미기록')+'</text><text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" fill="'+(r.ns?'#b84a4a':'#8a8f9e')+'">'+esc(String(sn(r)||'').slice(0,4))+'</text>'});
  g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto;display:block">'+g+'</svg></div>'}
 function xCount(r){return cnts(r.ox).x}
@@ -300,7 +301,7 @@ function vBoard(){
  h+='<div class="card"><h3>전체 성적차트 <span class="muted sm" style="font-weight:400">막대 하나 = 학생 한 명 · 점선 = 평균'+(isStaff()?'':' · 붉은 테두리 = 나')+'</span></h3><div class="kpis" style="margin-bottom:10px"><div class="kp n"><b>'+C.G.length+'명</b><span>응시</span></div>'+nsKpi()+'<div class="kp"><b>'+(Math.round(C.avg*10)/10)+'점</b><span>평균</span></div><div class="kp"><b>'+ncl+' / '+C.G.length+'</b><span>클리어 (남은 오답 0)</span></div><div class="kp r"><b>'+C.G.reduce(function(a,r){return a+xCount(r)},0)+'개</b><span>남은 오답 합계</span></div></div>'+barChart()+'</div>';
  h+='<div class="card"><h3>전체 성적표 <span class="muted sm" style="font-weight:400">'+(isStaff()?'':'닉네임으로 보여요 · ')+'노란 줄이 나</span></h3><table class="tbl"><tr><th>순위</th><th>'+(isStaff()?'이름 (닉네임)':'닉네임')+'</th><th>반</th><th>점수</th><th class="hide-m">정답률</th><th>남은 오답</th><th>완성도</th><th>클리어</th></tr>'+
  C.G.map(function(r){var ok=0,n=0;C.items.forEach(function(_,i){var v=okAt(r,i);if(v!=null){n++;ok+=v}});
-  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?sn(r):(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()&&!NICK?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+xCount(r)+'개 <span class="muted sm">('+pct(xCount(r),C.n)+'%)</span></td><td><b>'+pct(cnts(r.ox).o+cnts(r.ox).t,C.n)+'%</b></td><td>'+(isClear(r)?'<span class="cb" style="background:#2f7d5b;color:#fff">클리어</span>':'')+'</td></tr>'}).join('')+ungraded().map(function(r){return '<tr class="ns"><td>-</td><td class="l"><b>'+esc(sn(r))+'</b></td><td>'+badge(r.cls)+'</td><td>-</td><td class="hide-m"></td><td>-</td><td>-</td><td><span class="nsb">미시작</span></td></tr>'}).join('')+'</table></div>';
+  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?sn(r):(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()&&!NICK?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+xCount(r)+'개 <span class="muted sm">('+pct(xCount(r),C.n)+'%)</span></td><td><b>'+pct(cnts(r.ox).o+cnts(r.ox).t,C.n)+'%</b></td><td>'+(isClear(r)?'<span class="cb" style="background:#2f7d5b;color:#fff">클리어</span>':'')+'</td></tr>'}).join('')+ungraded().map(function(r){return '<tr class="'+(r.ns?'ns':'nr')+'"><td>-</td><td class="l"><b>'+esc(sn(r))+'</b></td><td>'+badge(r.cls)+'</td><td>-</td><td class="hide-m"></td><td>-</td><td>-</td><td>'+nsTag(r)+'</td></tr>'}).join('')+'</table></div>';
  return h}
 
 /* 전체 정오표 */
@@ -318,7 +319,7 @@ function vGrid(){
  h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(function(i){var r=C.rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>'}).join('')+'</tr>';
  C.G.forEach(function(r){var clr=isClear(r),x=xCount(r);
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+r.rk+'</td><td class="nm">'+badge(r.cls)+' '+esc(isStaff()?sn(r):(r.me?r.name+'(나)':r.nick))+'</td><td class="sc">'+r.s+'</td><td class="cl">'+(clr?'<span class="stamp s">CLEAR</span>':(x?'<span style="color:#b84a4a;font-size:11px">남은 '+x+' ('+pct(x,C.n)+'%)</span>':''))+'</td>'+cols.map(function(i){var ch=r.ox[i];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>'}).join('')+'</tr>'});
- ungraded().forEach(function(r){h+='<tr class="ns"><td class="rk">-</td><td class="nm">'+badge(r.cls)+' '+esc(sn(r))+'</td><td class="sc">-</td><td class="cl"><span class="nsb">미시작</span></td>'+cols.map(function(){return '<td class="gN"></td>'}).join('')+'</tr>'});
+ ungraded().forEach(function(r){h+='<tr class="'+(r.ns?'ns':'nr')+'"><td class="rk">-</td><td class="nm">'+badge(r.cls)+' '+esc(sn(r))+'</td><td class="sc">-</td><td class="cl">'+nsTag(r)+'</td>'+cols.map(function(){return '<td class="gN"></td>'}).join('')+'</tr>'});
  return h+'</table></div></div>'}
 
 /* 번호별 정답률 */
@@ -470,13 +471,14 @@ function normOx(t){return String(t||'').replace(/[\s,]/g,'').split('').map(funct
 var CYC={'-':'O','O':'X','X':'T','T':'-'};
 function gInit(){
  if(S.Gex===S.ex.id&&S.G)return;
- S.Gex=S.ex.id;S.G={};S.G0={};S.GN={};var n=S.C.n;
- S.R.forEach(function(r){var a=String(r.ox||'').split('');while(a.length<n)a.push('-');a=a.slice(0,n).map(function(c){return 'OXT'.indexOf(c)>=0?c:'-'});S.G[r.k]=a;S.G0[r.k]=a.join('')});
+ S.Gex=S.ex.id;S.G={};S.G0={};S.GN={};S.NS={};S.NS0={};var n=S.C.n;
+ S.R.forEach(function(r){var a=String(r.ox||'').split('');while(a.length<n)a.push('-');a=a.slice(0,n).map(function(c){return 'OXT'.indexOf(c)>=0?c:'-'});S.G[r.k]=a;S.G0[r.k]=a.join('');S.NS[r.k]=!!r.ns;S.NS0[r.k]=!!r.ns});
  S.gmode=S.gmode||'tab'}
 function gSym(c){return c==='O'?'○':c==='X'?'✕':c==='T'?'△':'-'}
 function gCnt(k){var o=0,x=0,t=0,sc=0;S.G[k].forEach(function(c,i){if(c==='O'){o++;sc+=(+S.ex.items[i].pts||1)}else if(c==='X')x++;else if(c==='T')t++});return {o:o,x:x,t:t,sc:Math.round(sc*100)/100}}
-function gSum(k){var c=gCnt(k);return '○'+c.o+' ✕'+c.x+' △'+c.t+' · <b>'+c.sc+'점</b>'}
-function gDirty(k){return S.G[k].join('')!==S.G0[k]}
+function nsEff(k){return !!S.NS[k]&&/^-+$/.test(S.G[k].join(''))}
+function gSum(k){var c=gCnt(k);return (nsEff(k)?'<b class="nsb">미시작</b> ':'')+'○'+c.o+' ✕'+c.x+' △'+c.t+' · <b>'+c.sc+'점</b>'}
+function gDirty(k){return S.G[k].join('')!==S.G0[k]||nsEff(k)!==!!S.NS0[k]}
 function gDirtyN(){if(!S.G)return 0;var n=0;Object.keys(S.G).forEach(function(k){if(gDirty(k))n++});return n}
 function gRows(){return S.R.slice().sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)}).filter(function(r){return !S.icls||r.cls===S.icls})}
 function vInput(){
@@ -488,7 +490,7 @@ function vInput(){
  '<div class="card" style="position:sticky;top:48px;z-index:6"><div class="row"><div class="seg" id="icls"><button class="'+(!S.icls?'on':'')+'" data-a="icls" data-v="">전체</button>'+cls.map(function(k){return '<button data-a="icls" data-v="'+esc(k)+'" class="'+(S.icls===k?'on':'')+'">'+esc(cn(k))+'</button>'}).join('')+'</div>'+
  '<div class="seg"><button class="'+(S.gmode==='tab'?'on':'')+'" data-a="gmode" data-v="tab">표로 보기</button><button class="'+(S.gmode==='one'?'on':'')+'" data-a="gmode" data-v="one">한 명씩 크게</button></div><span class="sp"></span><span class="muted sm" id="gcnt">'+(gDirtyN()?'저장 안 한 학생 '+gDirtyN()+'명':'')+'</span><button class="btn sec sm3" data-a="paste">붙여넣기</button><button class="btn" data-a="saveox">저장</button></div></div>';
  if(!rs.length)return h+'<div class="card"><div class="empty">이 반에는 학생이 없어요.</div></div>';
- var btns=function(k){return '<div class="gb"><button data-a="gall" data-k="'+k+'" data-v="O">전체 ○</button><button data-a="gall" data-k="'+k+'" data-v="X">전체 ✕</button><button data-a="gall" data-k="'+k+'" data-v="-">지움</button><button data-a="gfill" data-k="'+k+'" title="비어 있는 칸만 ○로">빈칸 ○</button></div>'};
+ var btns=function(k){return '<div class="gb"><button data-a="gall" data-k="'+k+'" data-v="O">전체 ○</button><button data-a="gall" data-k="'+k+'" data-v="X">전체 ✕</button><button data-a="gall" data-k="'+k+'" data-v="-">지움</button><button data-a="gfill" data-k="'+k+'" title="비어 있는 칸만 ○로">빈칸 ○</button><button data-a="gns" data-k="'+k+'" class="'+(nsEff(k)?'on':'')+'" title="이 학생은 이 미션을 아직 시작하지 않았어요 (채점을 입력하면 자동으로 풀려요)">미시작</button></div>'};
  if(S.gmode==='one'){
   if(!S.gwho||!rs.some(function(r){return r.k===S.gwho}))S.gwho=rs[0].k;
   var i0=rs.findIndex(function(r){return r.k===S.gwho}),r0=rs[i0];
@@ -503,7 +505,9 @@ function vInput(){
 function gPaint(el,c){
  if(el.classList.contains('ox')){el.className='ox '+(c==='O'?'o':c==='X'?'x':c==='T'?'t':'n');el.querySelector('b').textContent=gSym(c)}
  else{var g5=el.classList.contains('g5');el.className='c-'+c+(g5?' g5':'');el.textContent=gSym(c)}}
+function gNs(k){if(nsEff(k)){S.NS[k]=false}else{S.NS[k]=true;S.G[k]=S.G[k].map(function(){return '-'});[].forEach.call(document.querySelectorAll('[data-a="cell"][data-k="'+k+'"]'),function(el){gPaint(el,'-')})}gRefresh(k)}
 function gRefresh(k){
+ [].forEach.call(document.querySelectorAll('[data-a="gns"][data-k="'+k+'"]'),function(b){b.classList.toggle('on',nsEff(k))});
  [].forEach.call(document.querySelectorAll('[data-gs="'+k+'"]'),function(e){e.innerHTML=gSum(k)});
  var tr=document.querySelector('tr[data-row="'+k+'"]');if(tr)tr.classList.toggle('dirty',gDirty(k));
  var c=$('#gcnt');if(c){var d=gDirtyN();c.textContent=d?'저장 안 한 학생 '+d+'명':''}}
@@ -513,7 +517,7 @@ function gFill(k){S.G[k]=S.G[k].map(function(c){return c==='-'?'O':c});[].forEac
 window.addEventListener('beforeunload',function(ev){if(S.view==='input'&&gDirtyN()>0){ev.preventDefault();ev.returnValue=''}});
 async function saveOx(){
  var map={},nrow=0;
- Object.keys(S.G).forEach(function(k){if(!gDirty(k))return;var v=S.G[k].join('');if(/^-+$/.test(v)){(map[k]=map[k]||{sid:k}).clear=true;return}(map[k]=map[k]||{sid:k}).ox=v});
+ Object.keys(S.G).forEach(function(k){if(!gDirty(k))return;var v=S.G[k].join('');if(/^-+$/.test(v)){var m=(map[k]=map[k]||{sid:k});if(nsEff(k))m.ns=true;else{if(/[OXT]/.test(S.G0[k]))m.clear=true;if(S.NS0[k])m.ns=false}return}(map[k]=map[k]||{sid:k}).ox=v});
  [].forEach.call(document.querySelectorAll('.oxin[data-nk]'),function(inp){var k=inp.getAttribute('data-nk'),r=S.R.filter(function(x){return x.k===k})[0],v=inp.value.trim();if(!r||v===(r.enick||''))return;(map[k]=map[k]||{sid:k}).nick=v});
  var rows=Object.keys(map).map(function(k){return map[k]});
  if(!rows.length){alert('바뀐 입력이 없어요');return}
@@ -521,7 +525,8 @@ async function saveOx(){
  if(!j||!j.ok){alert((j&&j.error)||'저장하지 못했어요');return}
  var nclr=rows.filter(function(x){return x.clear}).length;
  if(nclr&&j.cleared===undefined){alert('채점 지우기를 저장하려면 서버에 15_채점지우기_서버.sql 을 먼저 실행해 주세요');return}
- S.Gex=null;S.G=null;try{window.parent.postMessage({tbmsaved:1},location.origin)}catch(e){}await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.cleared?' · 지움 '+j.cleared+'명':'')+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
+ if(rows.some(function(x){return x.ns!==undefined})&&j.nsn===undefined){alert('미시작 표시를 저장하려면 서버에 18_미시작구분_서버.sql 을 먼저 실행해 주세요');return}
+ S.Gex=null;S.G=null;try{window.parent.postMessage({tbmsaved:1},location.origin)}catch(e){}await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.cleared?' · 지움 '+j.cleared+'명':'')+(j.nsn?' · 미시작 표시 '+j.nsn+'명':'')+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
 function openPaste(){
  var m=$('#mb');$('#md').hidden=false;m.innerHTML='<h3>정오표 붙여넣기</h3><div class="muted sm" style="margin-bottom:8px">한 줄에 한 명: <b>이름 O/X문자열 닉네임(있으면)</b> (탭·공백·쉼표 모두 가능). 닉네임은 이번 미션에서만 써요. 이름이 같은 학생이 여러 명이면 위 표에서 직접 입력해 주세요.</div><textarea id="pst" placeholder="김하준 OOXOOOXO... 번개\n이서윤 OXOXOOOO... 별똥별"></textarea><div id="pres" class="sm" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn" data-a="pasteok">입력칸에 넣기</button></div>'}
 function pasteOk(){
@@ -688,6 +693,7 @@ document.addEventListener('click',async function(ev){
  if(a==='paste'){openPaste();return}if(a==='pasteok'){pasteOk();return}
  if(a==='saveox'){saveOx();return}
  if(a==='cell'){var kk=b.getAttribute('data-k'),ii=+b.getAttribute('data-i');gSet(kk,ii,CYC[S.G[kk][ii]]||'O');return}
+ if(a==='gns'){gNs(b.getAttribute('data-k'));return}
  if(a==='gall'){gAll(b.getAttribute('data-k'),b.getAttribute('data-v'));return}
  if(a==='gfill'){gFill(b.getAttribute('data-k'));return}
  if(a==='gmode'){S.gmode=b.getAttribute('data-v');render();return}
