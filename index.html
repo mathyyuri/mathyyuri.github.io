@@ -443,7 +443,7 @@ async function api(action,args){
  if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
  return j;
 }
-function forceLogout(){TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){if(typeof VIEW!=='undefined'&&VIEW){viewEnd(true);return;}TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -503,7 +503,7 @@ function render(y){
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
  else{document.body.dataset.ac=curAc();renderMain();}
  window.scrollTo(0,keep);
- setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);
+ setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();
 }
 function saveSession(){}
 
@@ -541,7 +541,7 @@ function renderLogin(){
 }
 /* 메인 틀 */
 const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','누적성적'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
-const tabsNow=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
+const tabsNow=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
 function badgeFor(t){const u=me();
  if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
  if(t==='msg')return unreadMsgs();return 0;}
@@ -550,22 +550,22 @@ function unreadMsgs(){const u=me();let n=0;
   if(isStaff()){if(st.ac!==curAc())return;if(S.cls!=='all'&&st.cls!==S.cls)return;DB.msgs[k].forEach(m=>{if(m.f==='u'&&!m.rdS)n++;});}
   else{const my=stuOf(u);if(my.id!==sid||(u.role==='student'?'student':'parent')!==kind)return;DB.msgs[k].forEach(m=>{if(m.f==='s'&&!m.rdU)n++;});}});
  return n;}
-const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',msg:'messages',admin:'manage',todo:'today'};
-function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항')}[t];}
+const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
+function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크'}[t];}
 function renderMain(){
- if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
+ if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
  const u=me(),a=AC[curAc()],st=stuOf(u);
  const sub=isStaff()?(ROLE[u.role]+' · '+a.name):(st.cls+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
  const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'</div>':'';
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
- const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo})[S.tab]();
+ const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend})[S.tab]();
  $('#app').innerHTML=
- '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
- '<div><div class="top"><div class="brand">'+a.name+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div><button class="sw" data-a="logout">로그아웃</button></div>'+
+ '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+''+viewAsBtn()+'<button data-a="logout">로그아웃</button></div></aside>'+
+ '<div><div class="top"><div class="brand">'+a.name+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
  '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+EB[S.tab]+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
  '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
 }
-function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo')return '';
+function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att')return '';
  return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+c+'">'+c+'</button>').join('')+'</div>';}
 const comBadge=it=>it.ac==='all'?' <span class="badge com">공통</span>':'';
 
@@ -1086,10 +1086,10 @@ let LASTLOAD=Date.now();
 const NICKK='acadapp_nickview';let NICKV=false;try{NICKV=localStorage.getItem(NICKK)==='1';}catch(e){}
 function pn(r){return r.me?(r.name||'나'):(isStaff()&&NICKV?(r.nick||r.name||''):(r.name||r.nick||''));}
 function dataStale(ms){return Date.now()-LASTLOAD>(ms||45000);}
-function dropCaches(){TODO=undefined;PR=undefined;MS=null;MS_BUSY=false;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;}
+function dropCaches(){TODO=undefined;PR=undefined;if(!atdDirtyN())ATD=undefined;MS=null;MS_BUSY=false;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;}
 async function refreshAll(){LASTLOAD=Date.now();dropCaches();try{await resync();}catch(e){}}
 function safeToRefresh(){
- if(!S.uid||tbmOn())return false;
+ if(!S.uid||tbmOn()||S.tab==='att'||atdDirtyN())return false;
  if(document.querySelector('#modal.on')||document.querySelector('#wbe'))return false;
  const a=document.activeElement;if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable))return false;
  return true;
@@ -1099,7 +1099,7 @@ setInterval(async()=>{if(document.visibilityState==='visible'&&dataStale(120000)
 
 /* ── 오늘의 지시사항(조교에게 그날 할 일) · 알림 현황 ── */
 const TASK_URL=API_URL.replace('ac_api','ac_tasks'),ROSTER_URL=API_URL.replace('ac_api','ac_push_roster');
-let TODO=undefined,TODOB=false,TODOD=null,PR=undefined,PRB=false,PRF={cls:'',only:false};
+let TODOE=null,TODO=undefined,TODOB=false,TODOD=null,PR=undefined,PRB=false,PRF={cls:'',only:false};
 async function taskApi(action,args){
  try{const r=await fetch(TASK_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 16_조교지시_알림현황_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
 }
@@ -1130,12 +1130,12 @@ function vTodo(){
   h+=L.length?L.map(x=>'<button type="button" class="tdi'+(x.done?' on':'')+'" data-a="tdone" data-id="'+x.id+'" data-on="'+(x.done?0:1)+'"><span class="tck">'+(x.done?'☑':'☐')+'</span><span class="tbd">'+esc(x.body).replace(/\n/g,'<br>')+(x.to!=='전체 조교'?' <span class="muted sm">(나에게)</span>':'')+'</span></button>').join(''):'<div class="empty">오늘은 전달된 지시사항이 없어요</div>';
   return h+'<div class="row" style="margin-top:14px"><button class="btn" data-a="gograde">채점하러 가기</button></div></div>';
  }
- const ac=curAc(),mine=L.filter(x=>x.ac===ac),tas=j.staff.filter(x=>x.ac===ac);
+ const ac=curAc(),mine=L.filter(x=>x.ac===ac),tas=j.staff.filter(x=>x.ac===ac),ed=TODOE?mine.find(x=>x.id===TODOE):null;
  let h='<div class="card"><div class="row" style="gap:8px;align-items:center"><button class="btn sm3 sec" data-a="tododay" data-v="-1">‹</button><b style="font-size:17px">'+dayLabel(want)+(isToday?' · 오늘':'')+'</b><button class="btn sm3 sec" data-a="tododay" data-v="1">›</button>'+(isToday?'':'<button class="btn sm3 gh" data-a="tododay" data-v="0">오늘로</button>')+'</div></div>';
- h+='<div class="card"><h3>지시사항 보내기 <span class="muted sm" style="font-weight:400">'+esc(AC[ac].name)+' 조교</span></h3><div class="fld"><label>받는 사람</label><select id="td_to" class="sel"><option value="">전체 조교 ('+tas.length+'명)</option>'+tas.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></div><div class="fld"><label>내용 ('+dayLabel(want)+' 할 일)</label><textarea id="td_t" style="width:100%;min-height:84px;border:1px solid var(--line);border-radius:16px;padding:11px 14px;background:#fff" placeholder="예: 오늘 모의기출 미션 채점 마무리 · 7시까지 정오표 입력"></textarea></div><button class="btn" data-a="todoadd">보내기</button>'+(tas.length?'':'<div class="muted sm" style="margin-top:6px">이 학원에 조교 계정이 아직 없어요 (관리 > 운영진에서 추가해요)</div>')+'</div>';
+ h+='<div class="card"><h3>'+(ed?'지시사항 고치기':'지시사항 보내기')+' <span class="muted sm" style="font-weight:400">'+esc(AC[ac].name)+' 조교</span></h3><div class="fld"><label>받는 사람</label><select id="td_to" class="sel"><option value=""'+(ed&&!ed.sid?' selected':'')+'>전체 조교 ('+tas.length+'명)</option>'+tas.map(x=>'<option value="'+x.id+'"'+(ed&&ed.sid===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div><div class="fld"><label>내용 ('+dayLabel(want)+' 할 일)</label><textarea id="td_t" style="width:100%;min-height:84px;border:1px solid var(--line);border-radius:16px;padding:11px 14px;background:#fff" placeholder="예: 오늘 모의기출 미션 채점 마무리 · 7시까지 정오표 입력">'+(ed?esc(ed.body):'')+'</textarea></div><label class="sm" style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="td_nt" checked> 조교에게 앱 알림 보내기</label><button class="btn" data-a="todoadd">'+(ed?'저장':'보내기')+'</button>'+(ed?' <button class="btn sec" data-a="todocancel">취소</button>':'')+(tas.length?'':'<div class="muted sm" style="margin-top:6px">이 학원에 조교 계정이 아직 없어요 (관리 > 운영진에서 추가해요)</div>')+'</div>';
  h+='<div class="card"><h3>보낸 지시사항 <span class="badge">'+mine.length+'</span></h3>'+(mine.length?mine.map(x=>{
   const nd=x.done.length,tot=x.n_ta;
-  return '<div class="tdr"><div class="tbd">'+esc(x.body).replace(/\n/g,'<br>')+'</div><div class="muted sm" style="margin-top:4px">받는 사람: <b>'+esc(x.to)+'</b> · 완료 <b>'+nd+'/'+tot+'</b>'+(nd?' ('+x.done.map(d=>esc(d.name)+' '+esc(String(d.at).slice(11,16))).join(', ')+')':'')+'</div><div style="margin-top:4px"><button class="btn sm3 dng" data-a="todel" data-id="'+x.id+'">지우기</button></div></div>';}).join(''):'<div class="empty">이 날 보낸 지시사항이 없어요</div>')+'</div>';
+  return '<div class="tdr"><div class="tbd">'+esc(x.body).replace(/\n/g,'<br>')+'</div><div class="muted sm" style="margin-top:4px">받는 사람: <b>'+esc(x.to)+'</b> · 완료 <b>'+nd+'/'+tot+'</b>'+(nd?' ('+x.done.map(d=>esc(d.name)+' '+esc(String(d.at).slice(11,16))).join(', ')+')':'')+'</div><div style="margin-top:4px"><button class="btn sm3 gh" data-a="todoedit" data-id="'+x.id+'">고치기</button> <button class="btn sm3 dng" data-a="todel" data-id="'+x.id+'">지우기</button></div></div>';}).join(''):'<div class="empty">이 날 보낸 지시사항이 없어요</div>')+'</div>';
  return h;
 }
 function vPushRoster(){
@@ -1151,6 +1151,131 @@ function vPushRoster(){
  h+='<div class="chips"><button class="chip '+(!PRF.cls?'on':'')+'" data-a="prcls" data-v="">전체 반</button>'+cls.map(c=>'<button class="chip '+(PRF.cls===c?'on':'')+'" data-a="prcls" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'<button class="chip '+(PRF.only?'on':'')+'" data-a="pronly">아직 안 켠 사람만</button><button class="chip" data-a="prreload">새로고침</button></div>';
  h+='<div class="card" style="padding:8px 4px"><table class="tbl"><tr><th style="text-align:left">반 · 이름</th><th>학생</th><th>학부모</th></tr>'+(rows.length?rows.map(x=>'<tr><td style="text-align:left"><span class="muted sm">'+esc(x.cls)+'</span> <b>'+esc(x.name)+'</b></td><td>'+st(x.s)+'</td><td>'+st(x.p)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">해당하는 학생이 없어요</td></tr>')+'</table></div>';
  return h;
+}
+
+/* ── 출석체크 (출석·지각·조퇴·결석) ── */
+const ATTEND_URL=API_URL.replace('ac_api','ac_attend');
+let ATD=undefined,ATDB=false,ATDD=null,ATDC='',ATDR={};
+const ATS=[['present','출석','p'],['late','지각','l'],['early','조퇴','e'],['absent','결석','a']];
+async function attendApi(action,args){
+ try{const r=await fetch(ATTEND_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 19_출석체크_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
+}
+function atdDay(){return ATDD||kstToday();}
+function atdDirtyN(){return Object.keys(ATDR).filter(k=>ATDR[k].dirty).length;}
+function atdEnsure(){
+ const want=atdDay();if(ATDB||(ATD&&ATD.day===want))return;ATDB=true;
+ (async()=>{const j=await attendApi('day',{day:want});ATDB=false;
+  if(j&&j.ok){ATD=j;ATDR={};j.list.forEach(x=>{const r=x.rec;ATDR[x.id]=r?{status:r.status,minutes:r.minutes==null?'':String(r.minutes),leave:r.leave||'',reason:r.reason||'',dirty:false}:{status:'none',minutes:'',leave:'',reason:'',dirty:false};});}
+  else ATD={day:want,err:(j&&j.error)||'불러오지 못했어요',list:[]};
+  render();})();
+}
+function atdLabel(r){
+ const st=r.status;
+ return st==='present'?'출석':st==='late'?'지각'+(r.minutes!=null?' '+r.minutes+'분':'')+(r.reason?' · '+r.reason:''):st==='early'?'조퇴'+(r.leave?' '+r.leave:'')+(r.reason?' · '+r.reason:''):st==='absent'?'결석'+(r.reason?' · '+r.reason:''):'';
+}
+function atdRow(x){
+ const r=ATDR[x.id];
+ let h='<div class="atr'+(r.dirty?' dirty':'')+'" data-sid="'+x.id+'"><div class="row" style="gap:8px;align-items:center"><b>'+esc(x.name)+'</b><span class="muted sm">'+esc(x.cls)+'</span><span class="sp"></span><button class="btn sm3 gh" data-a="athist" data-id="'+x.id+'" type="button">기록</button></div><div class="atsb">'+
+  ATS.map(t=>'<button type="button" class="ats '+t[2]+(r.status===t[0]?' on':'')+'" data-a="atst" data-id="'+x.id+'" data-s="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+ const inp=(f,type,ph,w,extra)=>'<input type="'+type+'" data-atf="'+f+'" data-id="'+x.id+'" value="'+esc(r[f])+'" placeholder="'+ph+'" style="'+w+'" '+(extra||'')+'>';
+ if(r.status==='late')h+='<div class="atx">몇 분 늦었나요? '+inp('minutes','number','분','width:76px','min="1" max="600" inputmode="numeric"')+' 분 '+[5,10,15,20,30].map(m=>'<button type="button" class="chip" data-a="atmin" data-id="'+x.id+'" data-v="'+m+'">'+m+'분</button>').join('')+'</div><div class="atx">'+inp('reason','text','사유 (선택)','flex:1;min-width:150px')+'</div>';
+ if(r.status==='early')h+='<div class="atx">몇 시에 갔나요? '+inp('leave','time','','width:120px')+'</div><div class="atx">'+inp('reason','text','조퇴 사유','flex:1;min-width:150px')+'</div>';
+ if(r.status==='absent')h+='<div class="atx">'+inp('reason','text','결석 사유','flex:1;min-width:150px')+'</div><div class="atx">'+['아픔','학교 행사','개인 사정','가족 행사','연락 없음'].map(t=>'<button type="button" class="chip" data-a="atrs" data-id="'+x.id+'" data-v="'+t+'">'+t+'</button>').join('')+'</div>';
+ if(x.rec&&!r.dirty)h+='<div class="muted sm" style="margin-top:6px">기록: '+esc(x.rec.by||'')+' · '+esc(String(x.rec.at||'').slice(5,16))+'</div>';
+ return h+'</div>';
+}
+function vAttend(){
+ atdEnsure();
+ const want=atdDay();
+ if(!ATD||ATD.day!==want)return '<div class="card"><div class="empty">불러오는 중…</div></div>';
+ if(ATD.err)return '<div class="card"><div class="empty">'+esc(ATD.err)+'</div></div>';
+ const ac=curAc(),all=ATD.list.filter(x=>x.ac===ac),known=AC[ac].classes.filter(c=>all.some(x=>x.cls===c)),cls=known.concat([...new Set(all.map(x=>x.cls))].filter(c=>known.indexOf(c)<0));
+ const rows=all.filter(x=>!ATDC||x.cls===ATDC),cnt={present:0,late:0,early:0,absent:0,none:0};
+ rows.forEach(x=>{cnt[(ATDR[x.id]||{status:'none'}).status]++;});
+ const isToday=want===kstToday(),dn=atdDirtyN();
+ let h='<div class="card"><div class="row" style="gap:8px;align-items:center"><button class="btn sm3 sec" data-a="atday" data-v="-1">‹</button><b style="font-size:17px">'+dayLabel(want)+(isToday?' · 오늘':'')+'</b><button class="btn sm3 sec" data-a="atday" data-v="1">›</button>'+(isToday?'':'<button class="btn sm3 gh" data-a="atday" data-v="0">오늘로</button>')+'</div></div>';
+ h+='<div class="chips"><button class="chip '+(!ATDC?'on':'')+'" data-a="atcls" data-v="">전체 반</button>'+cls.map(c=>'<button class="chip '+(ATDC===c?'on':'')+'" data-a="atcls" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
+ h+='<div class="kpi" style="margin:6px 0 10px"><div><b>'+cnt.present+'</b><span>출석</span></div><div><b>'+cnt.late+'</b><span>지각</span></div><div><b>'+cnt.early+'</b><span>조퇴</span></div><div><b>'+cnt.absent+'</b><span>결석</span></div><div><b>'+cnt.none+'</b><span>미체크</span></div></div>';
+ h+='<div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn gold" data-a="atall" type="button">전원 출석</button><button class="btn" data-a="atsave" id="atsave" type="button">'+(dn?'저장 ('+dn+'명 바뀜)':'저장')+'</button><span class="muted sm">'+(ATDC?esc(ATDC)+' ':'')+rows.length+'명 · 전원 출석을 누른 뒤 지각·조퇴·결석인 학생만 바꾸세요</span></div>';
+ h+=rows.length?rows.map(atdRow).join(''):'<div class="card"><div class="empty">학생이 없어요</div></div>';
+ return h;
+}
+function atdBar(){const b=document.getElementById('atsave');if(b){const n=atdDirtyN();b.textContent=n?'저장 ('+n+'명 바뀜)':'저장';}}
+document.addEventListener('input',e=>{
+ const el=e.target.closest&&e.target.closest('[data-atf]');if(!el)return;
+ const r=ATDR[el.dataset.id];if(!r)return;r[el.dataset.atf]=el.value;r.dirty=true;
+ const row=el.closest('.atr');if(row)row.classList.add('dirty');atdBar();
+});
+async function atdSave(){
+ const want=atdDay(),ids=Object.keys(ATDR).filter(k=>ATDR[k].dirty);
+ if(!ids.length){toast('바뀐 내용이 없어요');return;}
+ const nm=id=>{const x=ATD.list.find(y=>y.id===id);return x?x.name:'';},bad=[];
+ ids.forEach(k=>{const r=ATDR[k];
+  if(r.status==='late'&&!(+r.minutes>0))bad.push(nm(k)+' (몇 분 늦었는지)');
+  if(r.status==='early'&&(!r.leave||!String(r.reason).trim()))bad.push(nm(k)+' (조퇴 시각·사유)');
+  if(r.status==='absent'&&!String(r.reason).trim())bad.push(nm(k)+' (결석 사유)');});
+ if(bad.length){toast('빠진 내용이 있어요: '+bad.slice(0,4).join(', ')+(bad.length>4?' 외 '+(bad.length-4)+'명':''));return;}
+ const j=await attendApi('save',{day:want,rows:ids.map(k=>{const r=ATDR[k];return {sid:k,status:r.status,minutes:r.minutes,leave:r.leave,reason:r.reason};})});
+ if(j&&j.ok){ATD=undefined;toast('출석을 저장했어요 ('+j.n+'명)');render();}else toast((j&&j.error)||'저장하지 못했어요');
+}
+async function atdHist(sid){
+ const x=ATD&&ATD.list.find(y=>y.id===sid),j=await attendApi('hist',{sid:sid});
+ if(!(j&&j.ok)){toast((j&&j.error)||'불러오지 못했어요');return;}
+ const cnt={present:0,late:0,early:0,absent:0};j.list.forEach(r=>{cnt[r.status]++;});
+ openModal('<h3>'+esc(x?x.name:'')+' 출석 기록 <span class="muted sm" style="font-weight:400">최근 '+j.list.length+'건</span></h3><div class="muted sm" style="margin-bottom:8px">출석 '+cnt.present+' · 지각 '+cnt.late+' · 조퇴 '+cnt.early+' · 결석 '+cnt.absent+'</div>'+
+  (j.list.length?'<div style="max-height:52vh;overflow:auto"><table class="tbl">'+j.list.map(r=>'<tr><td style="text-align:left;white-space:nowrap">'+dayLabel(String(r.day).slice(0,10))+'</td><td style="text-align:left"><b>'+esc(atdLabel(r))+'</b></td><td class="muted sm">'+esc(r.by||'')+'</td></tr>').join('')+'</table></div>':'<div class="empty">아직 기록이 없어요</div>')+
+  '<div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn sec" data-a="closem" type="button" onclick="closeModal()">닫기</button></div>');
+}
+
+/* ── 원장 미리보기: 학생 · 학부모 · 조교 · 부원장 화면으로 보기 (보기만 가능) ── */
+const VIEWAS_URL=API_URL.replace('ac_api','ac_viewas');
+let VIEW=null,VAM='student';
+const VIEW_OK={ac_api:['sync','public','post_img','logout'],ac_mission:['list','load','problems','history','students'],ac_note:['mine','get','mlist','auto'],ac_tools:['get'],ac_react:['get'],ac_post_media:['get','gets'],ac_push:['status'],ac_push_roster:['list'],ac_tasks:['day'],ac_attend:['day','hist']};
+(function(){
+ const f0=window.fetch.bind(window);
+ window.fetch=function(input,init){
+  if(VIEW&&init&&String(init.method||'').toUpperCase()==='POST'){
+   const fn=String(typeof input==='string'?input:((input&&input.url)||'')).split('?')[0].split('/').pop();let a=null;
+   try{a=JSON.parse(init.body||'{}').p_action;}catch(e){}
+   const ok=fn==='ac_file'||fn==='mathy_stats'||(a&&VIEW_OK[fn]&&VIEW_OK[fn].indexOf(a)>=0);
+   if(!ok)return Promise.resolve(new Response(JSON.stringify({ok:false,error:'미리보기 중에는 저장·전송이 안 돼요'}),{status:200,headers:{'Content-Type':'application/json'}}));
+  }
+  return f0(input,init);
+ };
+})();
+function viewAsBtn(){return (S.uid&&me().role==='admin'&&!VIEW)?'<button data-a="viewas" type="button">👁 미리보기 (학생·학부모·조교·부원장)</button>':'';}
+function viewAsBtnM(){return (S.uid&&me().role==='admin'&&!VIEW)?'<button class="sw" data-a="viewas" type="button">👁 미리보기</button>':'';}
+function paintViewBar(){
+ let b=document.getElementById('viewbar');
+ if(!VIEW){if(b)b.remove();document.body.classList.remove('viewing');return;}
+ if(!b){b=document.createElement('div');b.id='viewbar';document.body.appendChild(b);}
+ b.innerHTML='👁 <b>'+esc(VIEW.label)+'</b> 화면 미리보기 중 · 보기만 가능해요 <button data-a="viewend" type="button">원장 화면으로 돌아가기</button>';document.body.classList.add('viewing');
+}
+function openViewAs(){
+ const ac=curAc(),isS=VAM==='student'||VAM==='parent',BOSS=/^(대표원장|원장|부원장)/;
+ const studs=Object.values(U).filter(u=>u.role==='student'&&u.ac===ac).sort((a,b)=>(a.cls+a.name).localeCompare(b.cls+b.name));
+ const staff=DB.staff.filter(x=>x.role==='ta'&&(x.academy===ac||x.academy==='all')&&(VAM==='dir'?BOSS.test(x.name):!BOSS.test(x.name)));
+ const opts=isS?studs.map(u=>'<option value="'+u.id+'">'+esc(u.cls)+' · '+esc(u.name)+'</option>').join(''):staff.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('');
+ const none=isS?!studs.length:!staff.length;
+ openModal('<h3>미리보기</h3><div class="muted sm" style="margin-bottom:10px">고른 사람이 실제로 보는 화면을 그대로 보여 줘요. <b>보기만 가능</b>하고 저장·전송은 되지 않아요. (2시간 뒤 자동 종료)</div>'+
+  '<div class="seg" style="margin-bottom:10px">'+[['student','학생으로 보기'],['parent','학부모로 보기'],['ta','조교로 보기'],['dir','부원장으로 보기']].map(x=>'<button type="button" class="'+(VAM===x[0]?'on':'')+'" data-a="vam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
+  '<div class="fld"><label>'+esc(AC[ac].name)+' · '+(isS?'학생 고르기':VAM==='dir'?'원장·부원장 계정 고르기':'조교 계정 고르기')+'</label>'+(none?'<div class="muted sm">'+(isS?'등록된 학생이 없어요':VAM==='dir'?'아직 원장·부원장 계정이 없어요 (관리 > 운영진에서 [부원장] 버튼으로 이름을 만들어 추가해요)':'아직 조교 계정이 없어요 (관리 > 운영진에서 추가해요)')+'</div>':'<select id="va_p" class="sel" style="width:100%">'+opts+'</select>')+'</div>'+
+  '<div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn sec" type="button" onclick="closeModal()">닫기</button>'+(none?'':'<button class="btn gold" data-a="vastart" type="button">보기 시작</button>')+'</div>');
+}
+async function viewAsStart(){
+ const pid=$('#va_p')&&$('#va_p').value;if(!pid){toast('보실 사람을 골라 주세요');return;}
+ const isS=VAM==='student'||VAM==='parent';
+ let j;try{const r=await fetch(VIEWAS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:'start',p_token:TOKEN,p_args:isS?{mode:VAM,sid:pid}:{mode:VAM,staff_id:pid}})});j=r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 20_미리보기_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){j={ok:false,error:'인터넷 연결을 확인해 주세요'};}
+ if(!j||!j.ok){toast((j&&j.error)||'미리보기를 시작하지 못했어요');return;}
+ VIEW={orig:TOKEN,ac:S.ac,tab:S.tab,label:j.label};TOKEN=j.token;closeModal();
+ viewReset();await resync();S.ac=j.academy||S.ac;S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';render(0);window.scrollTo(0,0);
+}
+function viewReset(){dropCaches();ATD=undefined;ATDR={};TODOE=null;RX.post={};RX.msg={};Object.keys(RXL).forEach(k=>delete RXL[k]);PUSH_ON=undefined;PUSHMARKED=false;LASTLOAD=Date.now();}
+async function viewEnd(auto){
+ if(!VIEW)return;const v=VIEW;
+ try{await api('logout');}catch(e){}
+ VIEW=null;TOKEN=v.orig;viewReset();await resync();S.ac=v.ac;S.tab=v.tab;S.cls='all';S.thread=null;S.open={};render(0);
+ toast(auto?'미리보기가 끝나서 원장 화면으로 돌아왔어요':'원장 화면으로 돌아왔어요');
 }
 
 /* ── 좋아요 · 이모티콘 (소식 글 · 메시지) ── */
@@ -1342,6 +1467,8 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
  '.tbmf{width:100%;height:calc(100vh - 190px);height:calc(100dvh - 190px);min-height:520px;border:0;border-radius:18px;background:var(--card)}@media(max-width:899px){.tbmf{height:calc(100dvh - 230px)}}'+
  '.dg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}.dg.ok>b{color:#2f7d5b}.dg.no>b{color:#b84a4a}.dgt{width:100%;font-size:12.5px;border-collapse:collapse}.dgt td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}'+
+ '#viewbar{position:fixed;left:0;right:0;top:0;z-index:9999;background:#17284d;color:#fff;padding:8px 14px;font-size:13.5px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25)}#viewbar button{margin-left:10px;background:#c9a55d;color:#17284d;border:0;border-radius:999px;padding:4px 12px;font-weight:700;cursor:pointer;font-family:inherit}body.viewing{padding-top:38px}.side .me .vabtn,.side .me button[data-a=viewas]{margin-bottom:6px}'+
+ '.atr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px;background:var(--card)}.atr.dirty{border-color:#c9a55d;background:#fffaf0}.atsb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.ats{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 0;font-size:15px;font-weight:700;cursor:pointer;color:inherit;font-family:inherit}.ats.on.p{background:#2c7653;color:#fff;border-color:#2c7653}.ats.on.l{background:#c77d12;color:#fff;border-color:#c77d12}.ats.on.e{background:#2a6f9a;color:#fff;border-color:#2a6f9a}.ats.on.a{background:#b84a4a;color:#fff;border-color:#b84a4a}.atx{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}.atx input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:15px;font-family:inherit}'+
  '.tdi{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:8px;font-size:15px;cursor:pointer;color:inherit;font-family:inherit}.tdi .tck{font-size:20px;line-height:1.2}.tdi.on{opacity:.55;background:var(--bg2,#f4efe4)}.tdi.on .tbd{text-decoration:line-through}.tdr{padding:12px 0;border-bottom:1px solid var(--line)}.tdr:last-child{border-bottom:0}.tdr .tbd{font-size:15px;line-height:1.6}'+
  '.pok{display:inline-block;background:#e1f1e8;color:#2c7653;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}.pok.app{background:#2c7653;color:#fff}.pno{color:#b84a4a;font-weight:700}tr.ns td{background:#fbf3f3;color:#b84a4a}tr.nr td{background:#f4f4f4;color:#8a8f9e}.nrb{color:#8a8f9e;font-size:11px;font-weight:700}.msx td.nr{color:#8a8f9e;font-size:10.5px;font-weight:700;background:#f4f4f4}.nsb{color:#b84a4a;font-size:11px;font-weight:700}.msx td.ns{color:#b84a4a;font-size:10.5px;font-weight:700;background:#fbf3f3}'+
  '.rx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}.rxb{border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer;font-family:inherit}.rxb i{font-style:normal;font-weight:700;margin-left:2px}.rxb.me{background:var(--ink);color:var(--bg);border-color:var(--ink)}.rxb.add{padding:3px 9px;opacity:.7}.b .rx{margin-top:5px}.b .rxb{font-size:12px;padding:1px 8px;background:rgba(127,127,127,.22);border-color:transparent}.b .rxb.me{outline:2px solid rgba(255,255,255,.7);color:inherit}'+
@@ -1741,9 +1868,9 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{await api('logout');TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;PRF={cls:'',only:false};try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
+ case 'logout':{if(VIEW){await viewEnd();break;}await api('logout');TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;TODOE=null;ATD=undefined;ATDR={};ATDD=null;ATDC='';PRF={cls:'',only:false};try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
- case 'tab':{if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
+ case 'tab':{if(S.tab==='att'&&atdDirtyN()&&!confirm('저장하지 않은 출석 기록이 있어요. 저장하지 않고 이동할까요?'))break;if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
  case 'cls':S.cls=v;S.thread=null;render();break;
  case 'ftype':S.ftype=v;render();break;
  case 'sub':S.sub[t.dataset.k]=v;render();break;
@@ -1752,10 +1879,26 @@ document.addEventListener('click',async e=>{
  case 'comment':{const i=document.getElementById('cin_'+id),tx=i.value.trim();if(!tx)return;await mut('comment_add',{id:id,text:tx});break;}
  case 'pin':await mut('post_pin',{id:id});break;
  case 'delpost':if(confirm('이 글을 삭제할까요?'))await mut('post_delete',{id:id});break;
+ case 'atst':{const r=ATDR[id];if(r){r.status=r.status===t.dataset.s?'none':t.dataset.s;if(r.status==='present'||r.status==='none'){r.minutes='';r.leave='';r.reason='';}r.dirty=true;render();}break;}
+ case 'atmin':{const r=ATDR[id];if(r){r.minutes=v;r.dirty=true;render();}break;}
+ case 'atrs':{const r=ATDR[id];if(r){r.reason=v;r.dirty=true;render();}break;}
+ case 'atall':{const ac=curAc();ATD.list.filter(x=>x.ac===ac&&(!ATDC||x.cls===ATDC)).forEach(x=>{const r=ATDR[x.id];if(r&&r.status==='none'){r.status='present';r.dirty=true;}});render();toast('미체크 학생을 모두 출석으로 채웠어요. 저장을 눌러 주세요');break;}
+ case 'atsave':await atdSave();break;
+ case 'atcls':ATDC=v||'';render();break;
+ case 'atday':{if(atdDirtyN()&&!confirm('저장하지 않은 출석 기록이 있어요. 저장하지 않고 날짜를 옮길까요?'))break;const d=new Date(atdDay()+'T00:00:00Z');if(v==='0')ATDD=null;else{d.setUTCDate(d.getUTCDate()+(+v));ATDD=d.toISOString().slice(0,10);}ATD=undefined;ATDR={};render();break;}
+ case 'athist':await atdHist(id);break;
+ case 'viewas':openViewAs();break;
+ case 'vam':VAM=v;openViewAs();break;
+ case 'vastart':await viewAsStart();break;
+ case 'viewend':await viewEnd();break;
  case 'tdone':{const x=TODO&&TODO.list.find(y=>String(y.id)===String(id));if(x){x.done=t.dataset.on==='1';render();}const j=await taskApi('done',{id:+id,on:t.dataset.on==='1'});if(!(j&&j.ok)){toast((j&&j.error)||'저장하지 못했어요');TODO=undefined;render();}break;}
  case 'gograde':S.tab='admin';S.sub.admin='tbm';render(0);break;
- case 'tododay':{const d=new Date(todoDay()+'T00:00:00Z');if(v==='0')TODOD=null;else{d.setUTCDate(d.getUTCDate()+(+v));TODOD=d.toISOString().slice(0,10);}TODO=undefined;render();break;}
- case 'todoadd':{const tx=($('#td_t').value||'').trim();if(!tx){toast('내용을 적어 주세요');break;}const j=await taskApi('add',{day:todoDay(),academy:curAc(),staff_id:$('#td_to').value||null,body:tx});if(j&&j.ok){TODO=undefined;render();toast('지시사항을 보냈어요');}else toast((j&&j.error)||'보내지 못했어요');break;}
+ case 'tododay':{TODOE=null;const d=new Date(todoDay()+'T00:00:00Z');if(v==='0')TODOD=null;else{d.setUTCDate(d.getUTCDate()+(+v));TODOD=d.toISOString().slice(0,10);}TODO=undefined;render();break;}
+ case 'todoadd':{const tx=($('#td_t').value||'').trim();if(!tx){toast('내용을 적어 주세요');break;}const nt=!!($('#td_nt')&&$('#td_nt').checked),sf=$('#td_to').value||null,was=TODOE;
+  const j=was?await taskApi('edit',{id:was,body:tx,staff_id:sf,notify:nt}):await taskApi('add',{day:todoDay(),academy:curAc(),staff_id:sf,body:tx,notify:nt});
+  if(j&&j.ok){TODOE=null;TODO=undefined;render();toast(was?'지시사항을 고쳤어요'+(nt?' (조교에게 알림도 보냈어요)':''):'지시사항을 보냈어요'+(nt?' (조교에게 알림도 보냈어요)':''));}else toast((j&&j.error)||'저장하지 못했어요');break;}
+ case 'todoedit':{TODOE=+id;render();setTimeout(()=>{const e=$('#td_t');if(e){e.scrollIntoView({block:'center'});e.focus();}},60);break;}
+ case 'todocancel':TODOE=null;render();break;
  case 'todel':{if(!confirm('이 지시사항을 지울까요?'))break;const j=await taskApi('del',{id:+id});if(j&&j.ok){TODO=undefined;render();}else toast((j&&j.error)||'지우지 못했어요');break;}
  case 'prcls':PRF.cls=v||'';render();break;
  case 'pronly':PRF.only=!PRF.only;render();break;
