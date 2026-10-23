@@ -560,7 +560,7 @@ function renderMain(){
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
  const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend})[S.tab]();
  $('#app').innerHTML=
- '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+''+viewAsBtn()+'<button data-a="logout">로그아웃</button></div></aside>'+
+ '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+''+viewAsNav()+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
  '<div><div class="top"><div class="brand">'+a.name+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
  '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+EB[S.tab]+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
  '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
@@ -1243,7 +1243,7 @@ const VIEW_OK={ac_api:['sync','public','post_img','logout'],ac_mission:['list','
   return f0(input,init);
  };
 })();
-function viewAsBtn(){return (S.uid&&me().role==='admin'&&!VIEW)?'<button data-a="viewas" type="button">👁 미리보기 (학생·학부모·조교·부원장)</button>':'';}
+function viewAsNav(){return (S.uid&&me().role==='admin'&&!VIEW)?'<button class="vanav" data-a="viewas" type="button">👁 미리보기<small>학생·학부모·조교·부원장 화면으로 보기</small></button>':'';}
 function viewAsBtnM(){return (S.uid&&me().role==='admin'&&!VIEW)?'<button class="sw" data-a="viewas" type="button">👁 미리보기</button>':'';}
 function paintViewBar(){
  let b=document.getElementById('viewbar');
@@ -1467,6 +1467,7 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
  '.tbmf{width:100%;height:calc(100vh - 190px);height:calc(100dvh - 190px);min-height:520px;border:0;border-radius:18px;background:var(--card)}@media(max-width:899px){.tbmf{height:calc(100dvh - 230px)}}'+
  '.dg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}.dg.ok>b{color:#2f7d5b}.dg.no>b{color:#b84a4a}.dgt{width:100%;font-size:12.5px;border-collapse:collapse}.dgt td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}'+
+ '@media(max-width:899px){.bnav button{font-size:10px;white-space:nowrap;letter-spacing:-.04em}}@media(min-width:900px){.side{overflow-y:auto}}.vanav{display:block;margin:12px 0 4px;width:100%;border:1px dashed var(--line);background:transparent;border-radius:14px;padding:9px 10px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit;text-align:center}.vanav small{display:block;font-weight:400;font-size:11px;color:var(--mut);margin-top:2px}.vanav:hover{background:var(--card)}'+
  '#viewbar{position:fixed;left:0;right:0;top:0;z-index:9999;background:#17284d;color:#fff;padding:8px 14px;font-size:13.5px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25)}#viewbar button{margin-left:10px;background:#c9a55d;color:#17284d;border:0;border-radius:999px;padding:4px 12px;font-weight:700;cursor:pointer;font-family:inherit}body.viewing{padding-top:38px}.side .me .vabtn,.side .me button[data-a=viewas]{margin-bottom:6px}'+
  '.atr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px;background:var(--card)}.atr.dirty{border-color:#c9a55d;background:#fffaf0}.atsb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.ats{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 0;font-size:15px;font-weight:700;cursor:pointer;color:inherit;font-family:inherit}.ats.on.p{background:#2c7653;color:#fff;border-color:#2c7653}.ats.on.l{background:#c77d12;color:#fff;border-color:#c77d12}.ats.on.e{background:#2a6f9a;color:#fff;border-color:#2a6f9a}.ats.on.a{background:#b84a4a;color:#fff;border-color:#b84a4a}.atx{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}.atx input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:15px;font-family:inherit}'+
  '.tdi{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:8px;font-size:15px;cursor:pointer;color:inherit;font-family:inherit}.tdi .tck{font-size:20px;line-height:1.2}.tdi.on{opacity:.55;background:var(--bg2,#f4efe4)}.tdi.on .tbd{text-decoration:line-through}.tdr{padding:12px 0;border-bottom:1px solid var(--line)}.tdr:last-child{border-bottom:0}.tdr .tbd{font-size:15px;line-height:1.6}'+
@@ -1780,7 +1781,7 @@ function tbmOn(){return !!S.uid&&S.tab==='admin'&&(S.sub.admin||(me().role==='ad
 /* ── 관리 탭: 학생 · 선생님 · 비밀번호 ── */
 function vAdmin(){
  const u=me(),adm=u.role==='admin';let k=S.sub.admin||(adm?'tools':'tbm');if(!adm&&k!=='pw')k='tbm';
- let h='<div class="chips">'+(adm?[['tbm','교과서 미션'],['tools','도구 모음'],['pr','알림 현황'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','운영진'],['pw','내 비밀번호']]:[['tbm','교과서 미션 채점'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ let h=(adm&&!VIEW?'<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="viewas" type="button">👁 미리보기 — 학생·학부모·조교·부원장 화면으로 보기</button></div>':'')+'<div class="chips">'+(adm?[['tbm','교과서 미션'],['tools','도구 모음'],['pr','알림 현황'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','운영진'],['pw','내 비밀번호']]:[['tbm','교과서 미션 채점'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  if(k==='tbm')return h+tbmFrame();
  if(k==='pr')return h+vPushRoster();
  if(k==='tools')return h+vTools();
