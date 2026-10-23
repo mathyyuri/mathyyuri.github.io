@@ -404,7 +404,7 @@ const AC={
  ds:{id:'ds',name:'대치에스플러스',short:'대치S+',classes:['S+반','S반','A+반','A반','B반']},
  bd:{id:'bd',name:'분당미래탐구',short:'분당',classes:['T-Class','공수내모']}
 };
-const ROLE={student:'학생',parent:'학부모',ta:'조교',admin:'원장'};
+const ROLE={student:'학생',parent:'학부모',ta:'운영진',admin:'원장'};
 const U={};                                   // 서버에서 받은 사람들 (로그인한 사람 기준)
 const stuList=ac=>Object.values(U).filter(u=>u.role==='student'&&(!ac||u.ac===ac));
 const LINKS=[
@@ -527,9 +527,9 @@ function renderLogin(){
     '<form class="lform" data-form="login" autocomplete="off"><div class="fld"><label>'+(role==='parent'?'자녀 이름':'내 이름')+'</label><input type="text" id="lname" placeholder="이름" autocomplete="off" value="'+esc(L.nm||'')+'"></div>'+
     '<div class="fld"><label>학부모님 전화번호 뒤 4자리</label><input type="password" id="lpin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></div>'+
     '<div class="lerr">'+esc(L.err||'')+'</div><button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'들어가기')+'</button></form>'+
-    '<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">조교</button> 로그인</div>';
+    '<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">운영진</button> 로그인</div>';
   }else{
-   h+='<form class="lform" data-form="staff" autocomplete="off"><div class="fld"><label>'+(L.staff==='admin'?'원장':'조교')+' 비밀번호</label><input type="password" id="lpw" placeholder="비밀번호" autocomplete="off"></div><div class="lerr">'+esc(L.err||'')+'</div>'+
+   h+='<form class="lform" data-form="staff" autocomplete="off"><div class="fld"><label>'+(L.staff==='admin'?'원장':'운영진')+' 비밀번호</label><input type="password" id="lpw" placeholder="비밀번호" autocomplete="off"></div><div class="lerr">'+esc(L.err||'')+'</div>'+
     '<button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'로그인')+'</button></form><div class="staffln"><button class="link" data-a="lstaffback">← 학생 · 학부모 로그인으로</button></div>';
   }
   h+='</div>';
@@ -643,7 +643,7 @@ function postCard(p){
  const scope=p.sid?'개인 · '+U[p.sid].name:(p.ac==='all'?'두 학원 공통':(p.cls&&p.cls!=='all'?p.cls:AC[p.ac].name+' 전체'));
  const long=p.body.length>110||p.body.indexOf('\n')>=0;
  let h='<div class="post'+(p.pin?' pin':'')+'" id="post_'+p.id+'"><div class="hd"><span class="badge t-'+p.type+'">'+p.type+'</span>'+(p.pin?'<span class="badge">고정</span>':'')+comBadge(p)+'<span class="badge" style="background:#eee;color:#555">'+esc(scope)+'</span>'+(unread?'<span class="badge new">NEW</span>':'')+'</div>'+
- '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
+ '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au==='조교'?'운영진':p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
  thumbHtml(p,open)+'<div class="bd'+(open?'':' clamp')+'">'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
  '<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
  '<button data-a="open" data-id="'+p.id+'">댓글 '+p.cm.length+'</button>'+(staff?'<button class="rd" data-a="reads" data-id="'+p.id+'">읽음 '+rc+'/'+tg.length+'</button>':'')+
@@ -872,7 +872,7 @@ function openBio(){openModal('<h3>약력 수정 · '+esc(AC[curAc()].name)+'</h3
 function lastOf(a){return a&&a.length?a[a.length-1]:null;}
 function vMsgChat(){
  const u=me(),staff=isStaff();
- if(!staff){const st=stuOf(),kind=u.role==='student'?'student':'parent',key=st.id+':'+kind;S.thread=key;return chatHtml(key,'선생님에게 메시지','원장·조교가 함께 확인해요');}
+ if(!staff){const st=stuOf(),kind=u.role==='student'?'student':'parent',key=st.id+':'+kind;S.thread=key;return chatHtml(key,'선생님에게 메시지','원장·운영진이 함께 확인해요');}
  const list=[];stuList(curAc()).filter(s=>S.cls==='all'||s.cls===S.cls).forEach(s=>['student','parent'].forEach(k=>{const key=s.id+':'+k,a=DB.msgs[key]||[];list.push({key,s,k,a,last:lastOf(a),un:a.filter(m=>m.f==='u'&&!m.rdS).length});}));
  list.sort((x,y)=>(y.last?y.last.ts:'').localeCompare(x.last?x.last.ts:''));
  const lh='<div class="tl">'+list.map(x=>'<button class="'+(S.thread===x.key?'on':'')+'" data-a="thread" data-v="'+x.key+'"><div class="av '+(x.k==='parent'?'p':'')+'">'+esc(x.s.name[0])+'</div><div class="tx"><div><b>'+esc(x.s.name)+(x.k==='parent'?' 학부모':'')+'</b> <span class="muted sm">'+x.s.cls+'</span></div><div class="muted sm">'+(x.last?esc(x.last.t||(x.last.a?'(사진·파일)':'')):'대화 시작하기')+'</div></div>'+(x.un?'<span class="badge new">'+x.un+'</span>':'')+'</button>').join('')+'</div>';
@@ -1185,6 +1185,30 @@ async function pushOff(){
   if(sub){await pushApi('unsubscribe',{endpoint:sub.endpoint});await sub.unsubscribe();}
   PUSH_ON=false;toast('알림을 껐어요');homeRefresh();}catch(e){toast('알림을 끄지 못했어요');}
 }
+
+function diagRes(l){
+ if(l.pending)return '<span class="muted">응답 기다리는 중… (잠시 뒤 [새로고침])</span>';
+ if(l.err)return '<b style="color:#b84a4a">알림 서버에 닿지 못했어요</b><div class="muted sm">'+esc(l.err)+'</div>';
+ if(l.status==null)return '<span class="muted">'+esc(l.note||'')+'</span>';
+ let o=null;try{o=JSON.parse(l.resp||'');}catch(e){}
+ if(l.status===200){const n=o&&o.sent;return n>0?'<b style="color:#2f7d5b">기기 '+n+'대에 보냈어요</b>'+(o.dead?'<div class="muted sm">꺼진 기기 '+o.dead+'대는 정리했어요</div>':''):'<b style="color:#b84a4a">보냈지만 기기에 닿지 못했어요</b><div class="muted sm">'+esc(JSON.stringify((o&&o.errors)||[]))+' — 오류 403·401 이면 알림 키(VAPID) 두 개가 서로 맞지 않는 거예요</div>';}
+ if(l.status===401)return '<b style="color:#b84a4a">비밀 문구가 달라요</b><div class="muted sm">Supabase Secrets 의 PUSH_SECRET 과 push_config 에 넣은 문구가 같아야 해요</div>';
+ if(l.status===404)return '<b style="color:#b84a4a">push-send 함수를 찾지 못했어요</b><div class="muted sm">push_config 의 주소와 함수 이름을 확인해 주세요</div>';
+ if(l.status>=500)return '<b style="color:#b84a4a">함수 안에서 오류('+l.status+')</b><div class="muted sm">'+esc((o&&o.error)||l.resp||'')+'</div>';
+ return '<b style="color:#b84a4a">응답 '+l.status+'</b><div class="muted sm">'+esc(l.resp||'')+'</div>';
+}
+function diagHtml(j){
+ const ok=(b,t,hint)=>'<div class="dg '+(b?'ok':'no')+'"><b>'+(b?'✔':'✘')+'</b> '+t+(!b&&hint?'<div class="muted sm">'+hint+'</div>':'')+'</div>';
+ const nd=(j.devices||[]).reduce((a,x)=>a+x.n,0);
+ let h='<h3>알림 점검</h3><div class="muted sm" style="margin-bottom:8px">알림이 안 올 때 어디에서 막혔는지 순서대로 보여줘요.</div>';
+ h+=ok(j.cfg,'서버 알림 설정(push_config)'+(j.cfg?' · '+esc(j.host||''):''),'앱알림_설정방법 4단계의 <b>select ac.push_config(...)</b> 한 줄을 SQL Editor 에서 실행해 주세요');
+ h+=ok(j.ext,'알림을 인터넷으로 보내는 기능(pg_net)','Supabase → Database → Extensions 에서 <b>pg_net</b> 을 켜 주세요');
+ h+=ok(nd>0,'알림을 켠 기기 '+nd+'대'+(nd?' — '+(j.devices||[]).map(x=>esc(x.name)+' '+x.who+' '+x.n+'대').join(' · '):''),'받는 폰에서 <b>그 계정으로 로그인</b>한 뒤 <b>[알림 켜기]</b> 를 눌러야 해요. 학생 계정과 학부모 계정은 따로 켜야 해요(학생에게 보낸 메시지는 학생 계정에만 와요)');
+ h+=ok(j.inwin,'지금 한국시각 '+esc(j.now)+' · 선생님→학생 알림 발송 시간대 '+esc(j.from)+'~'+esc(j.to),'시간대 밖이라 선생님이 보내는 메시지·글 알림은 보내지 않아요. 홈 > 메시지 > 알림 설정에서 바꿀 수 있어요');
+ h+='<h4 style="margin:14px 0 6px;font-size:14px">최근 발송 기록</h4>';
+ h+=(j.log&&j.log.length)?'<table class="dgt">'+j.log.map(l=>'<tr><td style="white-space:nowrap">'+esc(String(l.at||'').slice(5,16).replace('-','/'))+'</td><td><b>'+esc(l.kind||'')+'</b><div class="muted sm">'+esc(l.title||'')+' · 기기 '+l.devices+'대</div></td><td>'+diagRes(l)+'</td></tr>').join('')+'</table>':'<div class="muted sm">아직 기록이 없어요. 아래 [내 기기로 테스트] 를 눌러 보세요.</div>';
+ return h+'<div class="row" style="margin-top:14px;gap:8px"><button class="btn sm3" data-a="pushtest" type="button">내 기기로 테스트</button><button class="btn sm3 sec" data-a="pushdiag" type="button">새로고침</button><button class="btn sm3 gh" data-a="msheet" type="button" onclick="closeModal()">닫기</button></div>';
+}
 function appCard(side){
  let h=side?'<div class="sapp"><b>앱 설치 · 알림 받기</b>':'<div class="lxc lxs'+(S.uid?' appm':'')+'"><b>앱으로 설치 · 알림 받기</b>',steps=[];
  if(IS_APP)steps.push('<span class="muted">앱으로 설치되어 있어요.</span>');
@@ -1195,6 +1219,7 @@ function appCard(side){
   if(!PUSH_OK||(IS_IOS&&!IS_APP))steps.push('<span class="muted">알림은 '+(IS_IOS?'홈 화면에 추가한 앱에서':'알림을 지원하는 브라우저에서')+' 켤 수 있어요.</span>');
   else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <button class="btn sm3 sec" data-a="pushtest" type="button">테스트 알림</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요'+(PUSH_READY===false?'<br><b style="color:#b84a4a">서버 알림 설정이 아직 안 끝났어요 (원장님: 앱알림_설정방법 2~4단계)</b>':'')+'</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
  }else steps.push('<span class="muted">로그인하면 알림을 켤 수 있어요.</span>');
+ if(S.uid&&isStaff()&&me().role==='admin')steps.push('<button class="btn sm3 sec" data-a="pushdiag" type="button">알림 점검</button>');
  return side?h+steps.join('<div style="height:6px"></div>')+'</div>':h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
 }
 function sideApp(){return appCard(true);}
@@ -1208,6 +1233,7 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.mxg th,.mxg td{min-width:26px;height:30px;font-size:12.5px}.mxg .rk{min-width:40px;left:0;font-size:14px}.mxg .nm{min-width:104px;left:40px;border-right:0}.mxg .sc{position:sticky;left:144px;z-index:3;min-width:46px;background:#fff;font-weight:800}.mxg .cl{position:sticky;left:190px;z-index:3;min-width:54px;background:#fff;border-right:2px solid #d9cfba}.mxg th.sc,.mxg th.cl{z-index:4;background:#f1f3f8}.mxg tr.me td.rk,.mxg tr.me td.nm,.mxg tr.me td.sc,.mxg tr.me td.cl{background:#fff3cf}.mxg tr.rt td.rk,.mxg tr.rt td.nm,.mxg tr.rt td.sc,.mxg tr.rt td.cl{background:#faf6ee}.mxg td.gO{color:#1f3a6e;background:#dce7fb;font-weight:800}.mxg td.gX{color:#b0334b;background:#f7d6dc;font-weight:800}.mxg td.gT{color:#7a5a0b;background:#f5e4b0;font-weight:800}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}@media(max-width:640px){.mxg .sc,.mxg .cl{position:static}.mxg .nm{border-right:1px solid #eee7d8}.mxg .nm{min-width:92px}}'+
  '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:6px}.pgrp{display:grid;grid-template-columns:repeat(10,32px);gap:2px}.pc{text-align:center;border-radius:6px;padding:1px 0;line-height:1;background:#fbf9f4;color:#c9c9c9;height:32px;display:flex;flex-direction:column;justify-content:center}.pc i{display:block;font-style:normal;font-size:8.5px;opacity:.75}.pc b{font-size:13px}@media(max-width:640px){.pgrp{grid-template-columns:repeat(10,minmax(0,1fr));width:100%}}.chgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px}.chgrid .card{margin:0}.mnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f7f2e6;font-size:13.5px;line-height:1.65}.mnote small{color:var(--mut);font-size:11px;margin-left:6px}.dgt{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.dgt ul{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.9}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
+ '.dg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}.dg.ok>b{color:#2f7d5b}.dg.no>b{color:#b84a4a}.dgt{width:100%;font-size:12.5px;border-collapse:collapse}.dgt td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}'+
  '.post .bd.clamp img{display:none}.pthw{position:relative;max-width:640px;cursor:pointer}.pthw .pth{width:100%;max-height:280px;min-height:120px;object-fit:cover;background:var(--bg2,#eee)}.pthn{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 9px;border-radius:999px}'+
 '.nwsimg{float:right;width:64px;height:64px;object-fit:cover;border-radius:10px;margin:0 0 4px 10px;background:var(--bg2,#eee)}.nws::after{content:"";display:block;clear:both}'+
 '.mdel{background:none;border:0;color:inherit;opacity:.75;font-size:11px;text-decoration:underline;cursor:pointer;margin-left:8px;padding:0}.mdel:hover{opacity:1}.chat .hh{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'+
@@ -1510,15 +1536,15 @@ async function saveOx(){
 /* ── 관리 탭: 학생 · 선생님 · 비밀번호 ── */
 function vAdmin(){
  const u=me(),adm=u.role==='admin';let k=S.sub.admin||'tools';if(!adm&&k!=='pw')k='tools';
- let h='<div class="chips">'+(adm?[['tools','도구 모음'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','선생님'],['pw','내 비밀번호']]:[['tools','도구 모음'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ let h='<div class="chips">'+(adm?[['tools','도구 모음'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','운영진'],['pw','내 비밀번호']]:[['tools','도구 모음'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  if(k==='tools')return h+vTools();
  if(k==='cls')return h+vClasses();
  if(k==='pv'){statsEnsure();return h+vPastVideos();}
  if(k==='pw')return h+'<div class="card" style="max-width:460px"><h3>내 비밀번호 바꾸기</h3><div class="fld"><label>지금 비밀번호</label><input type="password" id="pw0" autocomplete="off" style="width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px"></div><div class="fld"><label>새 비밀번호 (6자 이상)</label><input type="password" id="pw1" autocomplete="off" style="width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px"></div><button class="btn" data-a="pwsave">바꾸기</button></div>';
  if(k==='staff'){
   const T=DB.staff.filter(x=>x.role==='ta');
-  return h+'<div class="note">조교는 자기 학원의 글·미션·성적을 입력할 수 있어요. 학생 전화번호와 학생 관리는 원장만 볼 수 있어요.</div><div class="row" style="margin-bottom:12px"><button class="btn" data-a="stform">조교 추가</button></div><div class="card">'+
-   (T.length?'<table class="tbl"><tr><th>이름</th><th>학원</th><th></th></tr>'+T.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(AC[x.academy].name)+'</td><td><button class="btn sm3 gh" data-a="stform" data-id="'+x.id+'">수정·비밀번호</button> <button class="btn sm3 dng" data-a="stdel" data-id="'+x.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 조교가 없어요</div>')+'</div>';
+  return h+'<div class="note">운영진는 자기 학원의 글·미션·성적을 입력할 수 있어요. 학생 전화번호와 학생 관리는 원장만 볼 수 있어요.</div><div class="row" style="margin-bottom:12px"><button class="btn" data-a="stform">운영진 추가</button></div><div class="card">'+
+   (T.length?'<table class="tbl"><tr><th>이름</th><th>학원</th><th></th></tr>'+T.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(AC[x.academy].name)+'</td><td><button class="btn sm3 gh" data-a="stform" data-id="'+x.id+'">수정·비밀번호</button> <button class="btn sm3 dng" data-a="stdel" data-id="'+x.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 운영진가 없어요</div>')+'</div>';
  }
  const ac=curAc(),L=stuList(ac);
  h+='<div class="note">학생·학부모 로그인은 "이름 + 학부모 전화번호 뒤 4자리"예요. 이름과 전화번호는 원장님 화면에만 보여요. 같은 학원에서 같은 이름·같은 뒤 4자리는 둘 이상 만들 수 없어요.</div><div class="row wrap" style="margin-bottom:12px"><button class="btn" data-a="stuform">학생 추가</button><button class="btn sec" data-a="stuimport">여러 명 한번에 추가</button></div>';
@@ -1569,7 +1595,7 @@ async function saveStuImport(){
 }
 function openStaff(id){
  const s=id?DB.staff.find(x=>x.id===id):null;
- openModal('<h3>'+(s?'조교 수정':'조교 추가')+'</h3><div class="fld"><label>이름</label><input type="text" id="st_n" value="'+esc(s?s.name:'')+'"></div><div class="fld"><label>학원</label><select id="st_a">'+Object.values(AC).map(a=>'<option value="'+a.id+'"'+(s&&s.academy===a.id?' selected':(!s&&a.id===curAc()?' selected':''))+'>'+a.name+'</option>').join('')+'</select></div>'+
+ openModal('<h3>'+(s?'운영진 수정':'운영진 추가')+'</h3><div class="fld"><label>이름 · 직함 (로그인한 뒤 화면 위쪽에 이 이름이 보여요)</label><input type="text" id="st_n" placeholder="예: 부원장 김OO" value="'+esc(s?s.name:'')+'"><div class="row" style="margin-top:6px;gap:6px">'+['대표원장','원장','부원장'].map(x=>'<button type="button" class="chip" data-a="stjob" data-v="'+x+'">'+x+'</button>').join('')+'</div></div><div class="fld"><label>학원</label><select id="st_a">'+Object.values(AC).map(a=>'<option value="'+a.id+'"'+(s&&s.academy===a.id?' selected':(!s&&a.id===curAc()?' selected':''))+'>'+a.name+'</option>').join('')+'</select></div>'+
   '<div class="fld"><label>비밀번호 '+(s?'(바꿀 때만 입력)':'(6자 이상)')+'</label><input type="password" id="st_p" autocomplete="new-password" style="width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px"></div><div class="row"><button class="btn gh sp" data-a="closemodal">취소</button><button class="btn sp" data-a="stsave" data-id="'+(id||'')+'">저장</button></div>');
 }
 async function saveStaff(id){
@@ -1650,7 +1676,8 @@ document.addEventListener('click',async e=>{
  case 'siok':await saveStuImport();break;
  case 'stform':openStaff(id||null);break;
  case 'stsave':await saveStaff(id||null);break;
- case 'stdel':if(confirm('이 조교를 삭제할까요?'))await mut('staff_delete',{id:id});break;
+ case 'stjob':{const i=$('#st_n');if(i){i.value=v+' '+i.value.replace(/^(대표원장|부원장|원장)\s*/,'');i.focus();}break;}
+ case 'stdel':if(confirm('이 운영진를 삭제할까요?'))await mut('staff_delete',{id:id});break;
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
  case 'msrefresh':MS=null;MS_BUSY=false;render();break;
@@ -1661,6 +1688,7 @@ document.addEventListener('click',async e=>{
  case 'mnedit':openMNote(id);break;
  case 'mnsave':{const j=await noteApi('mset',{sid:S.rpSid,exam_id:id,body:($('#mn_t').value||'').trim()});if(j&&j.ok){RP.mn=RP.mn||{};const b=($('#mn_t').value||'').trim();if(b)RP.mn[id]={body:b,author:'선생님'};else delete RP.mn[id];closeModal();render();toast('저장했어요');}else toast((j&&j.error)||'저장하지 못했어요 (11_학생멘트_서버.sql 을 다시 실행해 주세요)');break;}
  case 'mnreset':{const j=await noteApi('mset',{sid:S.rpSid,exam_id:id,body:''});if(j&&j.ok){delete RP.mn[id];closeModal();render();toast('자동 글로 되돌렸어요');}break;}
+ case 'pushdiag':{const j=await pushApi('diag');if(!j)toast('알림 점검을 불러오지 못했어요 — 10_앱알림_서버.sql 을 다시 실행했는지 확인해 주세요');else if(!j.ok)toast(j.error||'불러오지 못했어요');else openModal(diagHtml(j));break;}
  case 'pushtest':{const j=await pushApi('test');toast(j&&j.ok?'테스트 알림을 보냈어요. 몇 초 안에 이 기기에 알림이 와야 해요 ('+j.devices+'대)':((j&&j.error)||'테스트 알림을 보내지 못했어요 (10_앱알림_서버.sql 을 다시 실행했는지 확인해 주세요)'));break;}
  case 'rpmore':RPMORE=!RPMORE;render();break;
  case 'rpall':S.rpAll=!S.rpAll;render();break;
@@ -1746,10 +1774,10 @@ function vTools(){
  ensureTools();
  const adm=me().role==='admin',L=toolsNow();
  const grp=[];L.forEach(t=>{let g=grp.find(x=>x.k===(t.grp||'기타'));if(!g){g={k:t.grp||'기타',a:[]};grp.push(g);}g.a.push(t);});
- let h='<div class="note">'+(adm?'원장님은 모든 도구를 볼 수 있어요. <b>[도구 관리]</b>에서 <b>조교 · 학생 · 학부모</b>가 볼 도구를 정해요.':'원장님이 정해 준 도구가 보여요.')+'</div>';
+ let h='<div class="note">'+(adm?'원장님은 모든 도구를 볼 수 있어요. <b>[도구 관리]</b>에서 <b>운영진 · 학생 · 학부모</b>가 볼 도구를 정해요.':'원장님이 정해 준 도구가 보여요.')+'</div>';
  if(adm)h+='<div class="row" style="margin-bottom:12px"><button class="btn" data-a="toolsedit">도구 관리</button></div>';
  if(!L.length)return h+'<div class="card"><div class="empty">보여 줄 도구가 아직 없어요</div></div>';
- grp.forEach(g=>{h+='<div class="card"><h3>'+esc(g.k)+'</h3><div class="grid g3">'+g.a.map(t=>'<a class="card" href="'+esc(t.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;margin:0"><div style="font-weight:800;font-size:16px">'+esc(t.name)+'</div><div class="muted sm" style="margin-top:4px">'+esc(t.desc||'')+'</div>'+(adm&&t.roles&&t.roles.length?'<div style="margin-top:6px">'+t.roles.map(r=>'<span class="badge">'+({ta:'조교',student:'학생',parent:'학부모'}[r]||r)+'</span>').join(' ')+'</div>':'')+'</a>').join('')+'</div></div>';});
+ grp.forEach(g=>{h+='<div class="card"><h3>'+esc(g.k)+'</h3><div class="grid g3">'+g.a.map(t=>'<a class="card" href="'+esc(t.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;margin:0"><div style="font-weight:800;font-size:16px">'+esc(t.name)+'</div><div class="muted sm" style="margin-top:4px">'+esc(t.desc||'')+'</div>'+(adm&&t.roles&&t.roles.length?'<div style="margin-top:6px">'+t.roles.map(r=>'<span class="badge">'+({ta:'운영진',student:'학생',parent:'학부모'}[r]||r)+'</span>').join(' ')+'</div>':'')+'</a>').join('')+'</div></div>';});
  return h;
 }
 let TEDIT=null;
@@ -1760,7 +1788,7 @@ function openToolsEdit(){
 function renderToolsEdit(){
  const row=(t,i)=>'<tr><td><input type="text" data-ti="'+i+'" data-tf="name" value="'+esc(t.name)+'" style="width:130px"></td><td><input type="text" data-ti="'+i+'" data-tf="url" value="'+esc(t.url)+'" style="width:150px"></td><td><input type="text" data-ti="'+i+'" data-tf="grp" value="'+esc(t.grp||'')+'" style="width:80px"></td>'+
   ['ta','student','parent'].map(r=>'<td><input type="checkbox" data-ti="'+i+'" data-tr="'+r+'"'+((t.roles||[]).indexOf(r)>=0?' checked':'')+'></td>').join('')+'<td><button class="btn sm3 dng" data-a="tooldel" data-i="'+i+'">삭제</button></td></tr>';
- openModal('<h3>도구 관리</h3><div class="muted sm" style="margin-bottom:8px">원장님은 항상 모든 도구를 봐요. 아래에서 <b>조교 · 학생 · 학부모</b>에게 보여 줄 도구에 체크하세요. 주소는 <b>tbmission.html</b>처럼 이 사이트 안의 파일 이름이나 https:// 주소예요.</div><div style="max-height:52vh;overflow:auto"><table class="tbl"><tr><th>이름</th><th>주소</th><th>묶음</th><th>조교</th><th>학생</th><th>학부모</th><th></th></tr>'+TEDIT.map(row).join('')+'</table></div>'+
+ openModal('<h3>도구 관리</h3><div class="muted sm" style="margin-bottom:8px">원장님은 항상 모든 도구를 봐요. 아래에서 <b>운영진 · 학생 · 학부모</b>에게 보여 줄 도구에 체크하세요. 주소는 <b>tbmission.html</b>처럼 이 사이트 안의 파일 이름이나 https:// 주소예요.</div><div style="max-height:52vh;overflow:auto"><table class="tbl"><tr><th>이름</th><th>주소</th><th>묶음</th><th>운영진</th><th>학생</th><th>학부모</th><th></th></tr>'+TEDIT.map(row).join('')+'</table></div>'+
   '<div class="row" style="margin-top:12px"><button class="btn sm3 sec" data-a="tooladd">도구 추가</button><button class="btn sm3 gh" data-a="toolreset">기본값으로</button><span class="sp"></span><button class="btn gh" data-a="closemodal">닫기</button><button class="btn" data-a="toolsave">저장</button></div>');
 }
 function readToolsEdit(){

@@ -128,7 +128,7 @@ function rateTxt(r){return r==null?'-':Math.round(r*100)+'%'}
 function render(){
  var a=$('#app');
  if(!S.tok||!S.me){a.innerHTML=vLogin();return}
- var h='<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>교과서 미션</h1><span class="sp"></span><span class="chipu">'+esc(S.me.name||'')+(isStaff()?' · '+(isAdmin()?'원장':'조교'):(S.me.role==='parent'?' · 학부모':' · 학생'))+'</span>'+
+ var h='<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>교과서 미션</h1><span class="sp"></span><span class="chipu">'+esc(S.me.name||'')+(isStaff()?' · '+(isAdmin()?'원장':'운영진'):(S.me.role==='parent'?' · 학부모':' · 학생'))+'</span>'+
   (!isStaff()?'<button class="tb g" data-a="nick">'+(S.ex?'이 미션 닉네임':'기본 닉네임')+'</button>':'')+(isAdmin()?'<button class="tb g" data-a="imp">이전 기록 가져오기</button><button class="tb g" data-a="stu">학생 관리</button>':'')+'<button class="tb" data-a="out">로그아웃</button></div></div><div class="wrap">';
  h+=S.ex?vDetail():S.ov?vOverview():vList();
  a.innerHTML=h+'</div>';
@@ -136,7 +136,7 @@ function render(){
 function vLogin(){
  return '<div class="login"><div class="card"><div class="logo" style="color:#a8853f">MATHY YURI</div><h2>교과서 미션</h2><div class="muted sm" style="margin-bottom:12px">정오표 · 정답률 · 오답노트</div>'+
  '<div class="fld"><label>학원</label><div class="seg" id="lac"><button class="on" data-ac="ds">대치에스플러스</button><button data-ac="bd">분당미래탐구</button></div></div>'+
- '<div class="fld"><label>구분</label><div class="seg" id="lrole"><button class="on" data-role="student">학생</button><button data-role="parent">학부모</button><button data-role="admin">원장</button><button data-role="ta">조교</button></div></div>'+
+ '<div class="fld"><label>구분</label><div class="seg" id="lrole"><button class="on" data-role="student">학생</button><button data-role="parent">학부모</button><button data-role="admin">원장</button><button data-role="ta">운영진</button></div></div>'+
  '<div class="fld" id="fname"><label>이름</label><input id="lname" autocomplete="off"></div><div class="fld"><label id="lpl">학부모 전화번호 뒤 4자리</label><input id="lpin" type="password" autocomplete="off" inputmode="numeric"></div>'+
  '<button class="btn" style="width:100%;margin-top:6px" data-a="login">들어가기</button><div class="err" id="lerr"></div></div></div>'}
 var LOGIN={ac:'ds',role:'student'};
