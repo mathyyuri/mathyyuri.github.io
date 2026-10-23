@@ -503,7 +503,7 @@ function render(y){
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
  else{document.body.dataset.ac=curAc();renderMain();}
  window.scrollTo(0,keep);
- setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);
+ setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);
 }
 function saveSession(){}
 
@@ -646,7 +646,7 @@ function postCard(p){
  let h='<div class="post'+(p.pin?' pin':'')+'" id="post_'+p.id+'"><div class="hd"><span class="badge t-'+p.type+'">'+p.type+'</span>'+(p.pin?'<span class="badge">고정</span>':'')+comBadge(p)+'<span class="badge" style="background:#eee;color:#555">'+esc(scope)+'</span>'+(unread?'<span class="badge new">NEW</span>':'')+'</div>'+
  '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au==='조교'?'운영진':p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
  thumbHtml(p,open)+'<div class="bd'+(open?'':' clamp')+'">'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
- '<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
+ rxHtml('post',p.id)+'<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
  '<button data-a="open" data-id="'+p.id+'">댓글 '+p.cm.length+'</button>'+(staff?'<button class="rd" data-a="reads" data-id="'+p.id+'">읽음 '+rc+'/'+tg.length+'</button>':'')+
  '<span class="sp"></span>'+(canEditPost(p)?'<button data-a="editpost" data-id="'+p.id+'">수정</button>':'')+(me().role==='admin'?'<button data-a="pin" data-id="'+p.id+'">'+(p.pin?'고정 해제':'고정')+'</button><button data-a="delpost" data-id="'+p.id+'" style="color:var(--bad)">삭제</button>':'')+'</div>';
  if(open){h+='<div class="cm">'+(p.cm.length?p.cm.map(c=>'<div class="c"><b>'+esc(c.label||'')+'</b>'+esc(c.t)+'<span>'+fmtTs(c.ts)+'</span></div>').join(''):'<div class="muted sm">첫 댓글을 남겨보세요</div>')+
@@ -884,7 +884,7 @@ function chatHtml(key,title,subt){
  const a=DB.msgs[key]||[],[sid,k]=key.split(':'),s=U[sid],staff=isStaff();
  const mark=staff?'rdS':'rdU';let ch=false;a.forEach(m=>{if((staff&&m.f==='u'&&!m.rdS)||(!staff&&m.f==='s'&&!m.rdU)){m[mark]=true;ch=true;}});if(ch)markMsg(key);
  return '<div class="chat"><div class="hh">'+(staff?'<button class="btn sm3 gh back" data-a="thread" data-v="">‹</button>'+esc(s.name)+(k==='parent'?' 학부모':'')+' <span class="muted sm" style="font-weight:500">'+s.cls+'</span>'+delAllBtn(sid,k):esc(title)+' <span class="muted sm" style="font-weight:500">'+subt+'</span>')+'</div>'+
- '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+msgDelBtn(m)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
+ '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+(m.id?rxHtml('msg',m.id):'')+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+msgDelBtn(m)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
  '<div id="attbar">'+attBar()+'</div><div class="in"><button class="btn sm3 gh" type="button" data-a="attpick">첨부</button><button class="btn sm3 gh" type="button" data-a="emo" data-t="min">이모티콘</button><input id="min" placeholder="메시지 입력 (사진·파일은 여기로 끌어다 놓거나 붙여넣기)" data-enter="send" data-key="'+key+'"><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
 }
 
@@ -1081,6 +1081,39 @@ async function loadEditorMedia(){
 }
 document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closest('.bd img[data-mid]');if(im&&im.getAttribute('src')){window.open(dataBlobUrl(im.getAttribute('src')),'_blank');}});
 
+/* ── 좋아요 · 이모티콘 (소식 글 · 메시지) ── */
+const REACT_URL=API_URL.replace('ac_api','ac_react'),RXE=['👍','❤️','👏','🎉','😊','🔥'],RX={post:{},msg:{}},RXL={},RXO={};
+async function reactApi(action,args){
+ try{const r=await fetch(REACT_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 14_좋아요_서버.sql 을 먼저 실행해 주세요':'')};}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
+}
+function rxInner(k,id){
+ const L=RX[k][id]||[],map={};L.forEach(x=>{map[x[0]]=x;});const open=!!RXO[k+id];
+ return RXE.filter(e=>e==='👍'||map[e]||open).map(e=>{const x=map[e],n=x?x[1]:0,me=x&&x[2];
+  return '<button type="button" class="rxb'+(me?' me':'')+'" data-a="rx" data-k="'+k+'" data-id="'+id+'" data-e="'+e+'">'+e+(e==='👍'&&!n?' 좋아요':'')+(n?' <i>'+n+'</i>':'')+'</button>';}).join('')+
+  '<button type="button" class="rxb add" data-a="rxmore" data-k="'+k+'" data-id="'+id+'" title="이모티콘">'+(open?'−':'＋')+'</button>';
+}
+function rxHtml(k,id){return '<div class="rx" data-k="'+k+'" data-id="'+id+'">'+rxInner(k,id)+'</div>';}
+function refillReacts(k,id){document.querySelectorAll('.rx'+(k?'[data-k="'+k+'"][data-id="'+id+'"]':'')).forEach(el=>{el.innerHTML=rxInner(el.dataset.k,el.dataset.id);});}
+async function loadReacts(){
+ const els=[].slice.call(document.querySelectorAll('.rx')),need={post:[],msg:[]},now=Date.now();
+ els.forEach(el=>{const k=el.dataset.k,id=el.dataset.id;if(!(now-(RXL[k+id]||0)<60000)&&need[k].indexOf(id)<0)need[k].push(id);});
+ for(const k of ['post','msg']){for(let i=0;i<need[k].length;i+=60){const ids=need[k].slice(i,i+60),j=await reactApi('get',{kind:k,ids:ids});
+  if(!(j&&j.ok))break;ids.forEach(id=>{RXL[k+id]=Date.now();RX[k][id]=(j.map&&j.map[id])||[];});}}
+ refillReacts();
+}
+async function rxToggle(k,id,e){
+ const L=(RX[k][id]=(RX[k][id]||[]).map(x=>x.slice())),x=L.find(y=>y[0]===e);
+ if(x&&x[2]){x[1]--;x[2]=0;if(x[1]<=0)L.splice(L.indexOf(x),1);}else if(x){x[1]++;x[2]=1;}else L.push([e,1,1]);
+ refillReacts(k,id);
+ const j=await reactApi('toggle',{kind:k,id:String(id),emoji:e});
+ if(!j||!j.ok){RXL[k+id]=0;toast((j&&j.error)||'누르지 못했어요');await loadReacts();}
+}
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||!e.data)return;
+ if(e.data.tbmh)document.querySelectorAll('iframe.tbmh').forEach(f=>{if(f.contentWindow===e.source)f.style.height=Math.max(160,e.data.tbmh)+'px';});
+ if(e.data.tbmhome&&S.uid){S.tab='home';S.thread=null;render(0);}
+});
+
 /* ── 메시지 삭제 · 소식 미리보기 사진 ── */
 const MSGDEL_URL=API_URL.replace('ac_api','ac_msg_del');
 async function msgDelApi(action,args){
@@ -1236,6 +1269,8 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
  '.tbmf{width:100%;height:calc(100vh - 190px);height:calc(100dvh - 190px);min-height:520px;border:0;border-radius:18px;background:var(--card)}@media(max-width:899px){.tbmf{height:calc(100dvh - 230px)}}'+
  '.dg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}.dg.ok>b{color:#2f7d5b}.dg.no>b{color:#b84a4a}.dgt{width:100%;font-size:12.5px;border-collapse:collapse}.dgt td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}'+
+ '.rx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}.rxb{border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer;font-family:inherit}.rxb i{font-style:normal;font-weight:700;margin-left:2px}.rxb.me{background:var(--ink);color:var(--bg);border-color:var(--ink)}.rxb.add{padding:3px 9px;opacity:.7}.b .rx{margin-top:5px}.b .rxb{font-size:12px;padding:1px 8px;background:rgba(127,127,127,.22);border-color:transparent}.b .rxb.me{outline:2px solid rgba(255,255,255,.7);color:inherit}'+
+'.tbmh{width:100%;border:0;height:420px;min-height:160px;background:transparent}'+
  '.post .bd.clamp img{display:none}.pthw{position:relative;max-width:640px;cursor:pointer}.pthw .pth{width:100%;max-height:280px;min-height:120px;object-fit:cover;background:var(--bg2,#eee)}.pthn{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 9px;border-radius:999px}'+
 '.nwsimg{float:right;width:64px;height:64px;object-fit:cover;border-radius:10px;margin:0 0 4px 10px;background:var(--bg2,#eee)}.nws::after{content:"";display:block;clear:both}'+
 '.mdel{background:none;border:0;color:inherit;opacity:.75;font-size:11px;text-decoration:underline;cursor:pointer;margin-left:8px;padding:0}.mdel:hover{opacity:1}.chat .hh{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'+
@@ -1537,7 +1572,7 @@ async function saveOx(){
 
 /* ── 교과서 미션 화면을 이 앱 안에 그대로 넣기 (다른 주소로 이동하지 않고, 로그인 정보도 그대로 써요) ── */
 function isDir(){const u=me();return !!u&&u.role==='ta'&&/^(대표원장|원장|부원장)/.test(String(u.name||''));}
-function tbmUrl(){const loc=/localhost|127\.0\.0\.1/.test(API_URL);return (loc?'교과서미션.html':'tbmission.html')+'?embed=1'+(loc?'&sb='+encodeURIComponent(API_URL.replace(/ac_api$/,'')):'');}
+function tbmUrl(extra){const loc=/localhost|127\.0\.0\.1/.test(API_URL);return (loc?'교과서미션.html':'tbmission.html')+'?embed=1'+(extra||'')+(loc?'&sb='+encodeURIComponent(API_URL.replace(/ac_api$/,'')):'');}
 function tbmFrame(){return '<iframe class="tbmf" id="tbmf" src="'+tbmUrl()+'" title="교과서 미션"></iframe>';}
 function tbmOn(){return !!S.uid&&S.tab==='admin'&&(S.sub.admin||(me().role==='admin'?'tools':'tbm'))==='tbm';}
 /* ── 관리 탭: 학생 · 선생님 · 비밀번호 ── */
@@ -1641,6 +1676,8 @@ document.addEventListener('click',async e=>{
  case 'comment':{const i=document.getElementById('cin_'+id),tx=i.value.trim();if(!tx)return;await mut('comment_add',{id:id,text:tx});break;}
  case 'pin':await mut('post_pin',{id:id});break;
  case 'delpost':if(confirm('이 글을 삭제할까요?'))await mut('post_delete',{id:id});break;
+ case 'rx':rxToggle(t.dataset.k,t.dataset.id,t.dataset.e);break;
+ case 'rxmore':{const kk=t.dataset.k+t.dataset.id;RXO[kk]=!RXO[kk];refillReacts(t.dataset.k,t.dataset.id);break;}
  case 'msgdel':{if(!confirm('이 메시지를 지울까요?\n지우면 상대방 화면에서도 사라지고 되돌릴 수 없어요.'))break;const j=await msgDelApi('one',{id:+id});if(j&&j.ok){Object.keys(DB.msgs).forEach(k=>{DB.msgs[k]=DB.msgs[k].filter(x=>x.id!==+id);});render();toast('메시지를 지웠어요');}else toast((j&&j.error)||'지우지 못했어요');break;}
  case 'msgdelall':{const sid=t.dataset.sid,kd=t.dataset.kind,u2=DB.students&&DB.students.find?DB.students.find(x=>x.id===sid):null,nm=(u2&&u2.name)||(typeof U!=='undefined'&&U[sid]?U[sid].name:'이 학생');if(!confirm(nm+(kd==='parent'?' 학부모':'')+'님과 주고받은 메시지를 모두 지울까요?\n사진·파일도 함께 지워지고 되돌릴 수 없어요.'))break;const j=await msgDelApi('all',{sid:sid,kind:kd});if(j&&j.ok){DB.msgs[sid+':'+kd]=[];render();toast('대화를 모두 지웠어요 ('+j.n+'개)');}else toast((j&&j.error)||'지우지 못했어요');break;}
  case 'reads':openReads(id);break;
@@ -1880,6 +1917,7 @@ function msDetail(it,st){
  const ug={};items.forEach((x,i)=>{const k=x.unit||'기타';(ug[k]=ug[k]||[]).push(i);});
  h+='<div style="margin:16px 0 6px"><b>미션 분석</b></div><div class="anagrid"><div class="card" style="margin:0"><h3 style="font-size:14px">오답률 높은 문항 TOP '+hard.length+'</h3>'+hard.map((i,k)=>'<div class="li"><div class="tm">'+(k+1)+'위</div><div class="tx"><b>'+(i+1)+'번</b> <span class="muted sm">정답률 '+Math.round(rate[i]*100)+'% · '+esc(items[i].unit||'')+'</span></div></div>').join('')+'</div>'+
   '<div class="card" style="margin:0"><h3 style="font-size:14px">단원별 정답률</h3>'+Object.keys(ug).slice(0,8).map(k=>{const L=ug[k].filter(i=>rate[i]!=null);const v=L.length?L.reduce((a,i)=>a+rate[i],0)/L.length:null;return '<div class="clr"><div class="nm"><b>'+esc(k)+'</b> <span class="muted sm">'+ug[k].length+'문항</span></div><div class="bx"><i style="width:'+Math.round((v||0)*100)+'%;background:#1f3a6e"></i></div><b>'+(v==null?'-':Math.round(v*100)+'%')+'</b></div>';}).join('')+'</div></div>';
+ h+='<div style="margin:16px 0 6px"><b>오답률 높은 문제 · 문제 · 팁 · 풀이</b></div><iframe class="tbmh" src="'+tbmUrl('&only=hard&m='+it.m.id)+'" title="오답률 높은 문제"></iframe>';
  return h;
 }
 function msMatrix(L){
@@ -1906,7 +1944,7 @@ function vMission(){
  const chips='<div class="chips">'+MS_GROUPS.map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button></div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h=chips+'<div class="row" style="margin-bottom:12px"><a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 내 기록 한눈에 보기</a><button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
