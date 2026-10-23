@@ -1291,27 +1291,65 @@ function msRateRows(R,cols,n){
  [...new Set(R.map(r=>String(r.cls)))].sort(ordCls).forEach(k=>{h+=row(clsBadge(k)+' 정답률',R.filter(r=>String(r.cls)===k));});
  return h;
 }
+function heatSt(p){
+ if(p==null)return 'background:#f1f1f1;color:#aaa';
+ const h=Math.round(p*1.25),l=Math.round(88-Math.abs(p-50)*0.9);
+ return 'background:hsl('+h+',66%,'+l+'%);color:'+(l<58?'#fff':'#1f2a24');
+}
+function heatLegend(){return '<div class="heatlg"><span>정답률 낮음</span>'+[0,15,30,45,60,75,90,100].map(p=>'<i style="'+heatSt(p)+'">'+p+'</i>').join('')+'<span>높음</span><em>색이 진할수록 극단(아주 낮거나 아주 높음), 연한 노랑은 중간(50% 안팎)</em></div>';}
+function examMissionCard(it,clsSel){
+ const items=it.ex.items,n=items.length,nmx=it.ex.name;
+ const R=it.roster.filter(r=>!clsSel||String(r.cls)===clsSel);
+ if(!R.length)return '<div class="card"><h3>'+esc(nmx)+'</h3><div class="muted sm">'+esc(clsSel)+' 응시자가 없어요</div></div>';
+ const stat=list=>items.map((_,i)=>{let o=0,t=0;list.forEach(r=>{const c=r.ox[i];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}});return {o:o,t:t,p:t?Math.round(o*100/t):null};});
+ const per=stat(R),classes=[...new Set(it.roster.map(r=>String(r.cls)))].sort(ordCls),byCls={};classes.forEach(k=>{byCls[k]=stat(it.roster.filter(r=>String(r.cls)===k));});
+ let so=0,st=0;per.forEach(x=>{so+=x.o;st+=x.t;});const all=st?Math.round(so*100/st):null,avg=Math.round(R.reduce((a,r)=>a+(+r.score),0)/R.length*10)/10;
+ let h='<div class="card exm"><h3>'+esc(nmx)+' <span class="muted sm" style="font-weight:400">'+esc(String(it.ex.date).slice(5).replace('-','/'))+' · '+esc(msCatOf(it))+(clsSel?' · '+esc(clsSel):'')+'</span></h3>'+
+  '<div class="kpi" style="margin:4px 0 10px"><div><b>'+R.length+'명</b><span>응시</span></div><div><b>'+avg+'점</b><span>평균</span></div><div><b style="'+heatSt(all)+';padding:0 8px;border-radius:8px">'+(all==null?'-':all+'%')+'</b><span>전체 정답률</span></div></div>';
+ h+='<div class="hg">';
+ for(let a=0;a<n;a+=10){h+='<div class="hb">'+per.slice(a,a+10).map((x,k)=>{const q=a+k;return '<div class="hc" style="'+heatSt(x.p)+'" title="'+(q+1)+'번 · '+esc(items[q].unit||'')+(items[q].src?' · '+esc(items[q].src):'')+' · '+(x.t?x.o+'/'+x.t+'명 맞힘':'기록 없음')+'"><i>'+(q+1)+'</i><b>'+(x.p==null?'-':x.p)+'</b></div>';}).join('')+'</div>';}
+ h+='</div>';
+ // 정답률이 낮은 문제
+ const low=per.map((x,q)=>({q:q,x:x})).filter(o=>o.x.p!=null&&o.x.p<80).sort((a,b)=>a.x.p-b.x.p).slice(0,5);
+ h+='<div class="exlow"><b>정답률이 낮은 문제</b>';
+ if(!low.length)h+='<div class="muted sm" style="margin-top:4px">모든 문항이 80% 이상이에요.</div>';
+ low.forEach(o=>{const q=o.q,it2=items[q],p=o.x.p,cr=classes.map(k=>({k:k,p:byCls[k][q].p,t:byCls[k][q].t})).filter(z=>z.p!=null&&z.t>=3),hi=cr.slice().sort((a,b)=>b.p-a.p)[0],lo=cr.slice().sort((a,b)=>a.p-b.p)[0];
+  const wrong=R.filter(r=>{const c=r.ox[q];return c==='X'||c==='T';}).map(pn);
+  const cm=p<40?'절반 이상이 틀린 문항이에요. 수업에서 풀이를 다시 설명하고 오답노트에 꼭 넣어 주세요.':p<60?'약 절반이 틀렸어요. 같은 유형을 한 번 더 풀게 하면 좋아요.':'일부 학생이 놓친 문항이에요.';
+  h+='<div class="exq"><div><span class="exn" style="'+heatSt(p)+'">'+(q+1)+'번</span> <b>정답률 '+p+'%</b> <span class="muted sm">('+o.x.t+'명 중 '+(o.x.t-o.x.o)+'명 틀림)</span> '+(it2.unit?'<span class="badge">'+esc(it2.unit)+'</span>':'')+(it2.sub?' <span class="muted sm">'+esc(it2.sub)+'</span>':'')+(it2.src?' <span class="muted sm">'+esc(it2.src)+'</span>':'')+'</div>'+
+   '<div class="sm" style="margin:3px 0">'+cm+(hi&&lo&&hi.k!==lo.k&&hi.p-lo.p>=30?' <b>반 차이가 커요</b>: '+esc(hi.k)+' '+hi.p+'% ↔ '+esc(lo.k)+' '+lo.p+'%.':'')+'</div>'+
+   (isStaff()&&wrong.length?'<div class="muted sm">틀린 학생: '+wrong.slice(0,10).map(esc).join(', ')+(wrong.length>10?' 외 '+(wrong.length-10)+'명':'')+'</div>':'')+'</div>';});
+ h+='</div>';
+ // 약한 부분 (단원)
+ const U={};per.forEach((x,q)=>{const k=items[q].unit||'기타',u=U[k]=U[k]||{o:0,t:0,q:[]};u.o+=x.o;u.t+=x.t;u.q.push(q+1);});
+ const ul=Object.keys(U).map(k=>({k:k,p:U[k].t?Math.round(U[k].o*100/U[k].t):null,q:U[k].q})).filter(u=>u.p!=null).sort((a,b)=>a.p-b.p);
+ h+='<div class="exun"><b>약한 부분 (단원·유형별 정답률)</b>'+ul.slice(0,8).map(u=>'<div class="exu"><div class="nm">'+esc(u.k)+'<span class="muted sm"> '+u.q.length+'문항 · '+(u.q.length>6?u.q.slice(0,6).join('·')+'…':u.q.join('·'))+'번</span></div><div class="bx"><i style="width:'+u.p+'%;background:'+(heatSt(u.p).match(/hsl\([^)]*\)/)||['#888'])[0]+'"></i></div><b>'+u.p+'%</b></div>').join('');
+ if(ul.length){const w=ul[0],weakQ=w.q.filter(q=>per[q-1].p!=null&&per[q-1].p<60);h+='<div class="exnote">'+(w.p<70?'이번 미션에서 가장 약한 부분은 <b>'+esc(w.k)+'</b>(정답률 '+w.p+'%)이에요'+(weakQ.length?' — '+weakQ.join('·')+'번이 60% 미만이에요.':'.'):'단원별로 큰 약점은 없어요(가장 낮은 단원 '+esc(w.k)+' '+w.p+'%).')+(ul.length>1&&ul[ul.length-1].p-w.p>=25?' 반대로 <b>'+esc(ul[ul.length-1].k)+'</b>('+ul[ul.length-1].p+'%)은 잘하고 있어요.':'')+'</div>';}
+ return h+'</div></div>';
+}
 function vExamAll(){
  msEnsure();
  if(!MS)return '<div class="card"><h3>전체 통계</h3><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return '<div class="card"><h3>전체 통계</h3><div class="empty">미션을 불러오지 못했어요</div></div>';
- const all=MS.items.filter(it=>it.roster.length),cats=[...new Set(all.map(msCatOf))],cat=S.sub.eacat||'';
- let h='<div class="chips"><button class="chip '+(!cat?'on':'')+'" data-a="sub" data-k="eacat" data-v="">전체 분류</button>'+cats.map(c=>'<button class="chip '+(cat===c?'on':'')+'" data-a="sub" data-k="eacat" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
- const L=all.filter(it=>!cat||msCatOf(it)===cat).sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,15);
+ const all=MS.items.filter(it=>it.roster.length),cats=[...new Set(all.map(msCatOf))],cat=S.sub.eacat||'',clsAll=[...new Set(all.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),clsSel=S.sub.eacls||'';
+ let h='<div class="chips"><span class="lbl">분류</span><button class="chip '+(!cat?'on':'')+'" data-a="sub" data-k="eacat" data-v="">전체</button>'+cats.map(c=>'<button class="chip '+(cat===c?'on':'')+'" data-a="sub" data-k="eacat" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>'+
+  '<div class="chips"><span class="lbl">보는 범위</span><button class="chip '+(!clsSel?'on':'')+'" data-a="sub" data-k="eacls" data-v="">전체 학생</button>'+clsAll.map(k=>'<button class="chip '+(clsSel===k?'on':'')+'" data-a="sub" data-k="eacls" data-v="'+esc(k)+'">'+esc(k)+'만</button>').join('')+'</div>';
+ const L=all.filter(it=>!cat||msCatOf(it)===cat).sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,30);
  if(!L.length)return h+'<div class="card"><div class="empty">채점된 미션이 아직 없어요</div></div>';
+ const more=!!S.sub.emore,shown=more?L:L.slice(0,4);
+ h+=heatLegend();
+ h+=shown.map(it=>examMissionCard(it,clsSel)).join('');
+ if(L.length>4)h+='<div style="text-align:center;margin:12px"><button class="btn sec" data-a="emore" type="button">'+(more?'최근 4개만 보기':'이전 미션 '+(L.length-4)+'개 더 보기')+'</button></div>';
+ // 미션별·반별 정답률 요약 표
  const cls=[...new Set(L.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),sum={},tot={o:0,t:0};
  const rows=L.map(it=>{const len=it.ex.items.length,by={},t0={o:0,t:0,n:0,sc:0};
   it.roster.forEach(r=>{const c=msCnt(r.ox,len),k=String(r.cls),b=by[k]=by[k]||{o:0,t:0,n:0,sc:0},t=c.o+c.x+c.t;b.o+=c.o;b.t+=t;b.n++;b.sc+=(+r.score);t0.o+=c.o;t0.t+=t;t0.n++;t0.sc+=(+r.score);
-   const s=sum[k]=sum[k]||{o:0,t:0};s.o+=c.o;s.t+=t;tot.o+=c.o;tot.t+=t;});
+   const s2=sum[k]=sum[k]||{o:0,t:0};s2.o+=c.o;s2.t+=t;tot.o+=c.o;tot.t+=t;});
   return {it:it,by:by,t0:t0};});
- const pc=(o,t)=>t?Math.round(o*100/t):null,cell=(o,t,n,sc)=>{const p=pc(o,t);return '<td style="'+rateSt(p)+'">'+(p==null?'-':p+'%')+(n?'<small style="display:block;font-weight:400;opacity:.8">'+n+'명 · '+(Math.round(sc/n*10)/10)+'점</small>':'')+'</td>';};
- const worst=rows.slice().sort((a,b)=>(pc(a.t0.o,a.t0.t)==null?999:pc(a.t0.o,a.t0.t))-(pc(b.t0.o,b.t0.t)==null?999:pc(b.t0.o,b.t0.t)))[0];
- h+='<div class="kpi" style="margin:6px 0 10px"><div><b>'+(pc(tot.o,tot.t)==null?'-':pc(tot.o,tot.t)+'%')+'</b><span>전체 정답률 (최근 '+L.length+'개 미션)</span></div>'+
-  cls.map(k=>'<div><b style="'+rateSt(pc((sum[k]||{}).o,(sum[k]||{}).t)).replace(/font-weight:800/,'')+';padding:0 6px;border-radius:8px">'+(pc((sum[k]||{}).o,(sum[k]||{}).t)==null?'-':pc(sum[k].o,sum[k].t)+'%')+'</b><span>'+esc(k)+' 정답률</span></div>').join('')+
-  '<div><b style="font-size:16px">'+esc(worst.it.ex.name.slice(0,14))+'</b><span>가장 낮은 미션 ('+pc(worst.t0.o,worst.t0.t)+'%)</span></div></div>';
- h+='<div class="card" style="padding:8px 4px"><div class="muted sm" style="margin:4px 10px 8px">정답률 = 맞힌 칸 ÷ 풀이(○✕△) 칸 · 색: <span style="'+rateSt(90)+';padding:1px 8px;border-radius:6px">80% 이상</span> <span style="'+rateSt(60)+';padding:1px 8px;border-radius:6px">50~79%</span> <span style="'+rateSt(30)+';padding:1px 8px;border-radius:6px">50% 미만</span></div><div style="overflow-x:auto"><table class="tbl"><tr><th style="text-align:left">미션</th><th>전체</th>'+cls.map(k=>'<th>'+clsBadge(k)+'</th>').join('')+'</tr>'+
+ const pc=(o,t)=>t?Math.round(o*100/t):null,cell=(o,t,n,sc)=>{const p=pc(o,t);return '<td style="'+heatSt(p)+'">'+(p==null?'-':p+'%')+(n?'<small style="display:block;font-weight:400;opacity:.85">'+n+'명 · '+(Math.round(sc/n*10)/10)+'점</small>':'')+'</td>';};
+ h+='<details class="card" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800">미션별 · 반별 정답률 요약 표 (최근 '+L.length+'개)</summary><div style="overflow-x:auto;margin-top:8px"><table class="tbl"><tr><th style="text-align:left">미션</th><th>전체</th>'+cls.map(k=>'<th>'+clsBadge(k)+'</th>').join('')+'</tr>'+
   rows.map(r=>'<tr><td style="text-align:left"><b>'+esc(r.it.ex.name)+'</b><div class="muted sm">'+esc(String(r.it.ex.date).slice(5).replace('-','/'))+' · '+esc(msCatOf(r.it))+'</div></td>'+cell(r.t0.o,r.t0.t,r.t0.n,r.t0.sc)+cls.map(k=>{const b=r.by[k];return b?cell(b.o,b.t,b.n,b.sc):'<td class="muted">-</td>';}).join('')+'</tr>').join('')+
-  '<tr style="border-top:2px solid var(--line)"><td style="text-align:left"><b>누적 (최근 '+L.length+'개)</b></td>'+cell(tot.o,tot.t,0,0)+cls.map(k=>cell((sum[k]||{}).o||0,(sum[k]||{}).t||0,0,0)).join('')+'</tr></table></div></div>';
+  '<tr style="border-top:2px solid var(--line)"><td style="text-align:left"><b>누적</b></td>'+cell(tot.o,tot.t,0,0)+cls.map(k=>cell((sum[k]||{}).o||0,(sum[k]||{}).t||0,0,0)).join('')+'</tr></table></div></details>';
  return h;
 }
 
@@ -1506,7 +1544,10 @@ const NOTE_URL=API_URL.replace('ac_api','ac_note');
  '.dg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}.dg.ok>b{color:#2f7d5b}.dg.no>b{color:#b84a4a}.dgt{width:100%;font-size:12.5px;border-collapse:collapse}.dgt td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}'+
  '@media(max-width:899px){.bnav button{font-size:10px;white-space:nowrap;letter-spacing:-.04em}}@media(min-width:900px){.side{overflow-y:auto}}.vanav{display:block;margin:12px 0 4px;width:100%;border:1px dashed var(--line);background:transparent;border-radius:14px;padding:9px 10px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit;text-align:center}.vanav small{display:block;font-weight:400;font-size:11px;color:var(--mut);margin-top:2px}.vanav:hover{background:var(--card)}'+
  '#viewbar{position:fixed;left:0;right:0;top:0;z-index:9999;background:#17284d;color:#fff;padding:8px 14px;font-size:13.5px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25)}#viewbar button{margin-left:10px;background:#c9a55d;color:#17284d;border:0;border-radius:999px;padding:4px 12px;font-weight:700;cursor:pointer;font-family:inherit}body.viewing{padding-top:38px}.side .me .vabtn,.side .me button[data-a=viewas]{margin-bottom:6px}'+
- '.atr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px;background:var(--card)}.atr.dirty{border-color:#c9a55d;background:#fffaf0}.atsb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.ats{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 0;font-size:15px;font-weight:700;cursor:pointer;color:inherit;font-family:inherit}.ats.on.p{background:#2c7653;color:#fff;border-color:#2c7653}.ats.on.l{background:#c77d12;color:#fff;border-color:#c77d12}.ats.on.e{background:#2a6f9a;color:#fff;border-color:#2a6f9a}.ats.on.a{background:#b84a4a;color:#fff;border-color:#b84a4a}.atx{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}.atx input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:15px;font-family:inherit}'+
+ '.hg{display:flex;flex-wrap:wrap;gap:10px 14px;margin:6px 0 4px}.hb{display:grid;grid-template-columns:repeat(10,minmax(34px,44px));gap:3px}.hc{border-radius:8px;padding:3px 0;text-align:center;line-height:1.15;cursor:default;min-width:34px}.hc i{display:block;font-style:normal;font-size:10px;opacity:.85}.hc b{font-size:13px;font-weight:800}'+
+'.heatlg{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin:4px 0 10px;font-size:12px;color:var(--mut)}.heatlg i{font-style:normal;font-weight:800;padding:2px 7px;border-radius:6px;font-size:11px}.heatlg em{flex-basis:100%;font-style:normal;font-size:11.5px}'+
+'.exlow,.exun{margin-top:12px}.exq{padding:8px 0;border-bottom:1px solid var(--line)}.exq:last-child{border-bottom:0}.exn{display:inline-block;padding:1px 8px;border-radius:8px;font-weight:800;font-size:13px}.exu{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}.exu .nm{flex:0 0 38%;min-width:0}.exu .bx{flex:1;height:10px;background:#eee7d8;border-radius:6px;overflow:hidden}.exu .bx i{display:block;height:100%}.exnote{margin-top:8px;padding:9px 12px;background:var(--bg2,#f4efe4);border-radius:12px;font-size:13.5px;line-height:1.7}'+
+'.atr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px;background:var(--card)}.atr.dirty{border-color:#c9a55d;background:#fffaf0}.atsb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.ats{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 0;font-size:15px;font-weight:700;cursor:pointer;color:inherit;font-family:inherit}.ats.on.p{background:#2c7653;color:#fff;border-color:#2c7653}.ats.on.l{background:#c77d12;color:#fff;border-color:#c77d12}.ats.on.e{background:#2a6f9a;color:#fff;border-color:#2a6f9a}.ats.on.a{background:#b84a4a;color:#fff;border-color:#b84a4a}.atx{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}.atx input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:15px;font-family:inherit}'+
  '.tdi{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:8px;font-size:15px;cursor:pointer;color:inherit;font-family:inherit}.tdi .tck{font-size:20px;line-height:1.2}.tdi.on{opacity:.55;background:var(--bg2,#f4efe4)}.tdi.on .tbd{text-decoration:line-through}.tdr{padding:12px 0;border-bottom:1px solid var(--line)}.tdr:last-child{border-bottom:0}.tdr .tbd{font-size:15px;line-height:1.6}'+
  '.pok{display:inline-block;background:#e1f1e8;color:#2c7653;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}.pok.app{background:#2c7653;color:#fff}.pno{color:#b84a4a;font-weight:700}tr.ns td{background:#fbf3f3;color:#b84a4a}tr.nr td{background:#f4f4f4;color:#8a8f9e}.mxg td.gU{color:#5b4a8a;background:#e5dcf5;font-weight:900}.nrb{color:#8a8f9e;font-size:11px;font-weight:700}.msx td.nr{color:#8a8f9e;font-size:10.5px;font-weight:700;background:#f4f4f4}.nsb{color:#b84a4a;font-size:11px;font-weight:700}.msx td.ns{color:#b84a4a;font-size:10.5px;font-weight:700;background:#fbf3f3}'+
  '.rx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}.rxb{border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer;font-family:inherit}.rxb i{font-style:normal;font-weight:700;margin-left:2px}.rxb.me{background:var(--ink);color:var(--bg);border-color:var(--ink)}.rxb.add{padding:3px 9px;opacity:.7}.b .rx{margin-top:5px}.b .rxb{font-size:12px;padding:1px 8px;background:rgba(127,127,127,.22);border-color:transparent}.b .rxb.me{outline:2px solid rgba(255,255,255,.7);color:inherit}'+
@@ -1945,6 +1986,7 @@ document.addEventListener('click',async e=>{
  case 'vam':VAM=v;openViewAs();break;
  case 'vastart':await viewAsStart();break;
  case 'viewend':await viewEnd();break;
+ case 'emore':S.sub.emore=S.sub.emore?'':'1';render();break;
  case 'tdone':{const x=TODO&&TODO.list.find(y=>String(y.id)===String(id));if(x){x.done=t.dataset.on==='1';render();}const j=await taskApi('done',{id:+id,on:t.dataset.on==='1'});if(!(j&&j.ok)){toast((j&&j.error)||'저장하지 못했어요');TODO=undefined;render();}break;}
  case 'gograde':S.tab='admin';S.sub.admin='tbm';render(0);break;
  case 'tododay':{TODOE=null;const d=new Date(todoDay()+'T00:00:00Z');if(v==='0')TODOD=null;else{d.setUTCDate(d.getUTCDate()+(+v));TODOD=d.toISOString().slice(0,10);}TODO=undefined;render();break;}
