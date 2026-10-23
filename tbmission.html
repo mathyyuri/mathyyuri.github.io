@@ -79,6 +79,7 @@ async function api(a,args){var j=await call('ac_api',{p_action:a,p_token:S.tok,p
 async function ms(a,args){var j=await call('ac_mission',{p_action:a,p_token:S.tok,p_args:args||{}});guard(j);return j}
 function guard(j){if(j&&j.ok===false&&/다시 로그인/.test(j.error||''))logout(true)}
 function logout(soft){S.tok=null;S.me=null;try{localStorage.removeItem(TK)}catch(e){}if(!soft||true)render()}
+var isTa=function(){return !!S.me&&S.me.role==='ta'&&!/^(대표원장|원장|부원장)/.test(String(S.me.name||''))};
 var isStaff=function(){return S.me&&(S.me.role==='admin'||S.me.role==='ta')};
 var isAdmin=function(){return S.me&&S.me.role==='admin'};
 
@@ -163,7 +164,7 @@ function catBar(list){
  if(cats.length<2)return '';
  return '<div class="seg" style="margin-bottom:12px"><button class="'+(!S.cat?'on':'')+'" data-a="cat" data-v="">전체 '+n+'</button>'+cats.map(function(k){return '<button class="'+(S.cat===k?'on':'')+'" data-a="cat" data-v="'+esc(k)+'">'+esc(k)+' '+cnt[k]+'</button>'}).join('')+'</div>'}
 function vList(){
- var ta=S.me&&S.me.role==='ta';
+ var ta=isTa();
  var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
  if(!ta)h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
@@ -232,7 +233,7 @@ async function loadCards(){
  await Promise.all([w(),w(),w(),w()]);S.cardBusy=false;
  if(!S.ex&&visList().some(function(m){return S.cards[m.id]===undefined}))loadCards()}
 function tabsFor(){
- if(S.me&&S.me.role==='ta')return [['input','채점하기'],['main','정오표 · 분석']];
+ if(isTa())return [['input','채점하기'],['main','정오표 · 분석']];
  var t=[['main','정오표 · 분석'],['my',isStaff()?'학생별 성적':'내 성적'],['board','전체 성적표'],['rate','번호별 정답률'],['note','오답노트']];
  if(isStaff())t.push(['input','정오표 입력'],['mng','미션 관리']);return t}
 function vDetail(){
@@ -621,7 +622,7 @@ function renderStu(){
 async function openMission(id,view,who){
  var j=await ms('load',{exam_id:id});
  if(!j||!j.ok){alert((j&&j.error)||'불러오지 못했어요');return}
- S.sel=id;S.ov=false;S.ex=j.exam;S.R=j.roster;S.view=view||(isStaff()?(S.me.role==='ta'?'input':'main'):'main');S.who=who||null;S.Gex=null;S.G=null;S.icls=S.icls||'';calc();render();window.scrollTo(0,0)}
+ S.sel=id;S.ov=false;S.ex=j.exam;S.R=j.roster;S.view=view||(isStaff()?(isTa()?'input':'main'):'main');S.who=who||null;S.Gex=null;S.G=null;S.icls=S.icls||'';calc();render();window.scrollTo(0,0)}
 async function boot(){
  var j=await api('sync');
  if(!j||!j.ok){S.me=null;render();return}
