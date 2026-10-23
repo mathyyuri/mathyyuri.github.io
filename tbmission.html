@@ -61,6 +61,14 @@ var AC={ds:'대치에스플러스학원',bd:'분당미래탐구'};
 var CCOL={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
 var CIRC='①②③④⑤';
 function $(s){return document.querySelector(s)}
+/* 풀이 맨 앞에 붙는 '풀이'·'정답' 이름표 그림은 자동으로 빼요 (모든 풀이의 첫 그림이 같은 파일이면 이름표로 보고 기억해요).
+   자동으로 안 빠지는 그림이 있으면 아래 [ ] 안에 그 그림 파일명을 따옴표로 적어 넣으세요. 예: ['4ab8a11039360bf5.webp'] */
+var HIDE_FIGS=[];
+var LBLK='mathy_labelfig',LBL=null;
+function lblSet(){if(LBL)return LBL;LBL={};HIDE_FIGS.forEach(function(n){LBL[n]=1});try{(JSON.parse(localStorage.getItem(LBLK)||'[]')).forEach(function(n){LBL[n]=1})}catch(e){}return LBL}
+function lblLearn(P){var c={},tot=0;Object.keys(P).forEach(function(k){var so=(P[k]&&P[k].so)||'';if(!so)return;tot++;var m=/^\s*(?:<p>\s*)?<img[^>]*data-fig="([^"]+)"/.exec(so);if(m)c[m[1]]=(c[m[1]]||0)+1});
+ if(tot<3)return;var s=lblSet(),ch=false;Object.keys(c).forEach(function(n){if(c[n]===tot&&!s[n]){s[n]=1;ch=true}});if(ch)try{localStorage.setItem(LBLK,JSON.stringify(Object.keys(s)))}catch(e){}}
+function solHtml(so){so=String(so||'');var m=/^(\s*(?:<p>\s*)?)(<img[^>]*data-fig="([^"]+)"[^>]*>)/.exec(so);if(m&&lblSet()[m[3]])so=m[1]+so.slice(m[0].length);return fixStem(so)}
 var ONLYH=EMB&&qs.get('only')==='hard';
 var NICKK='acadapp_nickview',NICK=false;try{NICK=localStorage.getItem(NICKK)==='1'}catch(e){}
 function sn(r){return NICK?(r.nick||r.name):r.name}
@@ -122,7 +130,7 @@ function chHtml(ch){
 function okAt(r,i){var c=r.ox&&r.ox[i];return c==='O'?1:(c==='X'||c==='T')?0:null}
 function calc(){
  var items=S.ex.items,n=items.length,G=S.R.filter(function(r){return r.ox}),tot=Math.round(items.reduce(function(a,it){return a+(+it.pts||1)},0)*100)/100;
- G.forEach(function(r){r.s=r.score==null?0:+r.score});G.sort(function(a,b){return b.s-a.s});
+ G.forEach(function(r){r.s=r.score==null?0:Math.round(+r.score*10)/10});G.sort(function(a,b){return b.s-a.s});
  G.forEach(function(r,i){r.rk=(i&&G[i-1].s===r.s)?G[i-1].rk:i+1});
  var cls={};G.forEach(function(r){(cls[r.cls]=cls[r.cls]||[]).push(r)});
  Object.keys(cls).forEach(function(k){cls[k].forEach(function(r,i,a){r.crk=(i&&a[i-1].s===r.s)?a[i-1].crk:i+1})});
@@ -290,9 +298,9 @@ function vBoard(){
  var C=S.C,h='<div class="card"><h3>반별 현황</h3><div class="row">'+Object.keys(C.cls).sort().map(function(k){var l=C.cls[k],av=l.reduce(function(a,r){return a+r.s},0)/l.length;return '<div class="kp" style="border-left-color:'+cc(k)+';min-width:150px"><b>'+badge(k)+' '+av.toFixed(1)+'점</b><span>'+l.length+'명 · 최고 '+l[0].s+'점</span></div>'}).join('')+'</div></div>';
  var ncl=C.G.filter(isClear).length;
  h+='<div class="card"><h3>전체 성적차트 <span class="muted sm" style="font-weight:400">막대 하나 = 학생 한 명 · 점선 = 평균'+(isStaff()?'':' · 붉은 테두리 = 나')+'</span></h3><div class="kpis" style="margin-bottom:10px"><div class="kp n"><b>'+C.G.length+'명</b><span>응시</span></div>'+nsKpi()+'<div class="kp"><b>'+(Math.round(C.avg*10)/10)+'점</b><span>평균</span></div><div class="kp"><b>'+ncl+' / '+C.G.length+'</b><span>클리어 (남은 오답 0)</span></div><div class="kp r"><b>'+C.G.reduce(function(a,r){return a+xCount(r)},0)+'개</b><span>남은 오답 합계</span></div></div>'+barChart()+'</div>';
- h+='<div class="card"><h3>전체 성적표 <span class="muted sm" style="font-weight:400">'+(isStaff()?'':'닉네임으로 보여요 · ')+'노란 줄이 나</span></h3><table class="tbl"><tr><th>순위</th><th>'+(isStaff()?'이름 (닉네임)':'닉네임')+'</th><th>반</th><th>점수</th><th class="hide-m">정답률</th><th>남은 오답</th><th>클리어</th></tr>'+
+ h+='<div class="card"><h3>전체 성적표 <span class="muted sm" style="font-weight:400">'+(isStaff()?'':'닉네임으로 보여요 · ')+'노란 줄이 나</span></h3><table class="tbl"><tr><th>순위</th><th>'+(isStaff()?'이름 (닉네임)':'닉네임')+'</th><th>반</th><th>점수</th><th class="hide-m">정답률</th><th>남은 오답</th><th>완성도</th><th>클리어</th></tr>'+
  C.G.map(function(r){var ok=0,n=0;C.items.forEach(function(_,i){var v=okAt(r,i);if(v!=null){n++;ok+=v}});
-  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?sn(r):(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()&&!NICK?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+xCount(r)+'</td><td>'+(isClear(r)?'<span class="cb" style="background:#2f7d5b;color:#fff">클리어</span>':'')+'</td></tr>'}).join('')+ungraded().map(function(r){return '<tr class="ns"><td>-</td><td class="l"><b>'+esc(sn(r))+'</b></td><td>'+badge(r.cls)+'</td><td>-</td><td class="hide-m"></td><td>-</td><td><span class="nsb">미시작</span></td></tr>'}).join('')+'</table></div>';
+  return '<tr class="'+(r.me?'me':'')+'"><td><b>'+r.rk+'</b></td><td class="l"><b>'+esc(isStaff()?sn(r):(r.me?r.name+' (나)':r.nick))+'</b>'+(isStaff()&&!NICK?' <span class="muted sm">'+esc(r.nick)+'</span>':'')+'</td><td>'+badge(r.cls)+'</td><td><b>'+r.s+'</b></td><td class="hide-m"><div class="bar n"><i style="width:'+pct(ok,n)+'%"></i></div></td><td>'+xCount(r)+'개 <span class="muted sm">('+pct(xCount(r),C.n)+'%)</span></td><td><b>'+pct(cnts(r.ox).o+cnts(r.ox).t,C.n)+'%</b></td><td>'+(isClear(r)?'<span class="cb" style="background:#2f7d5b;color:#fff">클리어</span>':'')+'</td></tr>'}).join('')+ungraded().map(function(r){return '<tr class="ns"><td>-</td><td class="l"><b>'+esc(sn(r))+'</b></td><td>'+badge(r.cls)+'</td><td>-</td><td class="hide-m"></td><td>-</td><td>-</td><td><span class="nsb">미시작</span></td></tr>'}).join('')+'</table></div>';
  return h}
 
 /* 전체 정오표 */
@@ -309,7 +317,7 @@ function vGrid(){
  h+='<div class="card"><h3>전체 정오표 <span class="muted sm" style="font-weight:400">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어 · 순위순'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></h3>'+chunkBar(S.ex.id,C.n)+'<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(function(i){return '<th>'+(i+1)+'</th>'}).join('')+'</tr>';
  h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(function(i){var r=C.rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>'}).join('')+'</tr>';
  C.G.forEach(function(r){var clr=isClear(r),x=xCount(r);
-  h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+r.rk+'</td><td class="nm">'+badge(r.cls)+' '+esc(isStaff()?sn(r):(r.me?r.name+'(나)':r.nick))+'</td><td class="sc">'+r.s+'</td><td class="cl">'+(clr?'<span class="stamp s">CLEAR</span>':(x?'<span style="color:#b84a4a;font-size:11px">남은 '+x+'</span>':''))+'</td>'+cols.map(function(i){var ch=r.ox[i];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>'}).join('')+'</tr>'});
+  h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+r.rk+'</td><td class="nm">'+badge(r.cls)+' '+esc(isStaff()?sn(r):(r.me?r.name+'(나)':r.nick))+'</td><td class="sc">'+r.s+'</td><td class="cl">'+(clr?'<span class="stamp s">CLEAR</span>':(x?'<span style="color:#b84a4a;font-size:11px">남은 '+x+' ('+pct(x,C.n)+'%)</span>':''))+'</td>'+cols.map(function(i){var ch=r.ox[i];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>'}).join('')+'</tr>'});
  ungraded().forEach(function(r){h+='<tr class="ns"><td class="rk">-</td><td class="nm">'+badge(r.cls)+' '+esc(sn(r))+'</td><td class="sc">-</td><td class="cl"><span class="nsb">미시작</span></td>'+cols.map(function(){return '<td class="gN"></td>'}).join('')+'</tr>'});
  return h+'</table></div></div>'}
 
@@ -344,19 +352,20 @@ function vAna(){
 async function ensureProblems(nos){
  var key=S.ex.id,P=S.prob[key]=S.prob[key]||{},need=nos.filter(function(n){return !P[n]});
  if(need.length){var j=await ms('problems',{exam_id:key,nos:need});if(j&&j.ok){(j.items||[]).forEach(function(p){P[p.no]=p});Object.keys(j.figs||{}).forEach(function(k){S.figs[k]=j.figs[k]});need.forEach(function(n){if(!P[n])P[n]={no:n,none:1}})}}
+ lblLearn(P);
  return P}
 async function loadAna(nos1){
  var P=await ensureProblems(nos1.map(function(i){return i+1}));
  [].forEach.call(document.querySelectorAll('#anaList .q'),function(q){var p=P[+q.getAttribute('data-no')];q.innerHTML=probBody(p);mathIn(q)});
  [].forEach.call(document.querySelectorAll('#anaList .sol'),function(s){var p=P[+s.getAttribute('data-no')];
-  if(p&&(p.an||p.so)){s.innerHTML='<div class="an" style="border-left-color:var(--navy)"><b>정답 · 풀이</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+fixStem(p.so)+'</div>':'')+'</div>';mathIn(s)}
+  if(p&&(p.an||p.so)){s.innerHTML='<div class="an" style="border-left-color:var(--navy)"><b>정답 · 풀이</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>';mathIn(s)}
   else s.innerHTML=isStaff()?'<div class="muted sm" style="margin-top:8px">등록된 풀이가 없어요.</div>':'<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>'})}
 function probBody(p){if(!p||p.none)return '<span class="muted sm">문제 내용이 서버 문제 DB에 없어요 (문제 SQL을 실행했는지 확인해 주세요).</span>';return fixStem(p.stem)+chHtml(p.ch)}
 async function showProb(no){
  var m=$('#mb'),it=S.C.items[no-1];$('#md').hidden=false;m.innerHTML='<h3>'+no+'번 · '+esc(it.unit)+'</h3><div class="muted sm">'+esc(it.src||'')+'</div><div class="q" id="pq"><span class="muted">불러오는 중…</span></div><div id="pa"></div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button></div>';
  var P=await ensureProblems([no]),p=P[no],q=$('#pq');if(!q)return;q.innerHTML=probBody(p);mathIn(q);
  var a='<div class="an"><b>정답률 '+rateTxt(S.C.rate[no-1])+'</b> — '+analyze(no-1)+'</div>';
- if(p&&(p.an||p.so)){a+='<div class="an"><b>정답</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+fixStem(p.so)+'</div>':'')+'</div>'}else if(!isStaff())a+='<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>';
+ if(p&&(p.an||p.so)){a+='<div class="an"><b>정답</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>'}else if(!isStaff())a+='<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>';
  $('#pa').innerHTML=a;mathIn($('#pa'))}
 
 /* 오답노트 (MEN BOOK 형식) */
@@ -545,10 +554,10 @@ function openNew(){
   '<div class="row" style="gap:6px;margin-bottom:6px"><button type="button" class="btn sec sm3" data-a="newpre">오늘 모의기출 미션으로 채우기</button></div>'+
   '<div class="fld"><label>미션 이름</label><input id="nnm" class="oxin" style="width:100%" placeholder="예: 교과서 미션 : 함수 (2회)" autocomplete="off"></div>'+
   '<div class="fld"><label>카테고리</label><input id="ncat" class="oxin" list="ncl" style="max-width:260px" placeholder="예: 교과서미션" autocomplete="off"><datalist id="ncl">'+catList().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist></div>'+
-  '<div class="row"><div class="fld"><label>날짜</label><input id="ndt" type="date" class="oxin" value="'+ymd()+'"></div><div class="fld"><label>문항 수</label><input id="nn" type="number" min="1" max="400" class="oxin" value="20" style="width:90px"></div><div class="fld"><label>문항당 배점</label><input id="npt" type="number" step="0.1" min="0.1" class="oxin" value="1" style="width:90px"></div></div>'+
+  '<div class="row"><div class="fld"><label>날짜</label><input id="ndt" type="date" class="oxin" value="'+ymd()+'"></div><div class="fld"><label>문항 수</label><input id="nn" type="number" min="1" max="400" class="oxin" value="20" style="width:90px"></div><div class="fld"><label>문항당 배점 (비우면 100점 만점 자동)</label><input id="npt" type="number" step="0.1" min="0.1" class="oxin" value="" placeholder="자동" style="width:110px"></div></div>'+
   '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn gold" data-a="newok">만들기</button></div>'}
 async function newOk(){
- var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||1,cat=$('#ncat').value.trim();
+ var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||null,cat=$('#ncat').value.trim();
  if(!nm){alert('미션 이름을 적어 주세요');return}
  if(!(n>=1&&n<=400)){alert('문항 수는 1~400 사이로 적어 주세요');return}
  var items=[];for(var i=1;i<=n;i++)items.push({unit:nm,sub:cat,src:nm+' · '+i+'번',pts:pt});
