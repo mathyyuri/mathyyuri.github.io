@@ -482,7 +482,7 @@ function faceSrc(){return PUB.face||FACE;}
 
 /* ════════ 상태 ════════ */
 let DB={posts:[],missions:[],msgs:{},exams:[],lessons:[],videos:[],resources:[],events:[],sched:[],set:{season:5,bio:{},pref:{},notif:null},log:[],staff:[]};
-let S={ac:null,uid:null,tab:'home',cls:'all',ftype:'all',sub:{lesson:'sched',mission:'chart',exam:'rpt'},cy:DEMO_TODAY.getFullYear(),cm:DEMO_TODAY.getMonth(),csel:TODAY,open:{},thread:null,L:{ac:null,step:0},tmpImg:null,exsel:null,rtype:'all',vsel:null,rex:null,rstu:''};
+let S={ac:null,uid:null,tab:'home',cls:'all',ftype:'all',sub:{lesson:'sched',mission:'chart',exam:''},cy:DEMO_TODAY.getFullYear(),cm:DEMO_TODAY.getMonth(),csel:TODAY,open:{},thread:null,L:{ac:null,step:0},tmpImg:null,exsel:null,rtype:'all',vsel:null,rex:null,rstu:''};
 
 const me=()=>U[S.uid];
 const isStaff=(u=me())=>u.role==='admin'||u.role==='ta';
@@ -541,6 +541,7 @@ function renderLogin(){
 }
 /* 메인 틀 */
 const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','누적성적'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
+const TAB_ORDER=['home','feed','mission','exam','lesson','msg'];TABS.sort((a,b)=>TAB_ORDER.indexOf(a[0])-TAB_ORDER.indexOf(b[0]));
 const tabsNow=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
 function badgeFor(t){const u=me();
  if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
@@ -1278,6 +1279,42 @@ async function viewEnd(auto){
  toast(auto?'미리보기가 끝나서 원장 화면으로 돌아왔어요':'원장 화면으로 돌아왔어요');
 }
 
+/* ── 누적성적(운영진): 개인 성적 전에 전체 통계 — 미션별 정답률을 반별·전체로, 색으로 구분 ── */
+function ordCls(a,b){const o={'S+':0,'S':1,'A+':2,'A':3,'B':4},f=x=>{const k=String(x).replace(/반$/,'');return o[k]==null?9:o[k];};return f(a)-f(b)||String(a).localeCompare(String(b));}
+function rateSt(p){return p==null?'color:#999':'background:'+(p>=80?'#d9f0e1;color:#1f6b45':p>=50?'#fff0bd;color:#7a5a00':'#fbd9d9;color:#a8323f')+';font-weight:800';}
+function clsBadge(k){k=String(k);return '<span class="badge" style="background:'+(MSC[k.replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(k)?'#2b2f3a':'#fff')+'">'+esc(k.replace(/반$/,''))+'</span>';}
+function msRateRows(R,cols,n){
+ const st=list=>cols.map(q=>{let o=0,t=0;list.forEach(r=>{const c=r.ox[q];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}});return t?o/t:null;});
+ const avg=list=>{let o=0,t=0;list.forEach(r=>{for(let q=0;q<n;q++){const c=r.ox[q];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}}});return t?Math.round(o*100/t):null;};
+ const row=(label,list)=>{const rates=st(list),a=avg(list);return '<tr class="rt"><td class="rk"></td><td class="nm">'+label+'</td><td class="sc" style="'+rateSt(a)+'">'+(a==null?'':a+'%')+'</td><td class="cl"></td>'+rates.map(r=>{const p=r==null?null:Math.round(r*100);return '<td style="'+rateSt(p)+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';};
+ let h=row('전체 정답률',R);
+ [...new Set(R.map(r=>String(r.cls)))].sort(ordCls).forEach(k=>{h+=row(clsBadge(k)+' 정답률',R.filter(r=>String(r.cls)===k));});
+ return h;
+}
+function vExamAll(){
+ msEnsure();
+ if(!MS)return '<div class="card"><h3>전체 통계</h3><div class="empty">불러오는 중…</div></div>';
+ if(MS.err)return '<div class="card"><h3>전체 통계</h3><div class="empty">미션을 불러오지 못했어요</div></div>';
+ const all=MS.items.filter(it=>it.roster.length),cats=[...new Set(all.map(msCatOf))],cat=S.sub.eacat||'';
+ let h='<div class="chips"><button class="chip '+(!cat?'on':'')+'" data-a="sub" data-k="eacat" data-v="">전체 분류</button>'+cats.map(c=>'<button class="chip '+(cat===c?'on':'')+'" data-a="sub" data-k="eacat" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
+ const L=all.filter(it=>!cat||msCatOf(it)===cat).sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,15);
+ if(!L.length)return h+'<div class="card"><div class="empty">채점된 미션이 아직 없어요</div></div>';
+ const cls=[...new Set(L.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),sum={},tot={o:0,t:0};
+ const rows=L.map(it=>{const len=it.ex.items.length,by={},t0={o:0,t:0,n:0,sc:0};
+  it.roster.forEach(r=>{const c=msCnt(r.ox,len),k=String(r.cls),b=by[k]=by[k]||{o:0,t:0,n:0,sc:0},t=c.o+c.x+c.t;b.o+=c.o;b.t+=t;b.n++;b.sc+=(+r.score);t0.o+=c.o;t0.t+=t;t0.n++;t0.sc+=(+r.score);
+   const s=sum[k]=sum[k]||{o:0,t:0};s.o+=c.o;s.t+=t;tot.o+=c.o;tot.t+=t;});
+  return {it:it,by:by,t0:t0};});
+ const pc=(o,t)=>t?Math.round(o*100/t):null,cell=(o,t,n,sc)=>{const p=pc(o,t);return '<td style="'+rateSt(p)+'">'+(p==null?'-':p+'%')+(n?'<small style="display:block;font-weight:400;opacity:.8">'+n+'명 · '+(Math.round(sc/n*10)/10)+'점</small>':'')+'</td>';};
+ const worst=rows.slice().sort((a,b)=>(pc(a.t0.o,a.t0.t)==null?999:pc(a.t0.o,a.t0.t))-(pc(b.t0.o,b.t0.t)==null?999:pc(b.t0.o,b.t0.t)))[0];
+ h+='<div class="kpi" style="margin:6px 0 10px"><div><b>'+(pc(tot.o,tot.t)==null?'-':pc(tot.o,tot.t)+'%')+'</b><span>전체 정답률 (최근 '+L.length+'개 미션)</span></div>'+
+  cls.map(k=>'<div><b style="'+rateSt(pc((sum[k]||{}).o,(sum[k]||{}).t)).replace(/font-weight:800/,'')+';padding:0 6px;border-radius:8px">'+(pc((sum[k]||{}).o,(sum[k]||{}).t)==null?'-':pc(sum[k].o,sum[k].t)+'%')+'</b><span>'+esc(k)+' 정답률</span></div>').join('')+
+  '<div><b style="font-size:16px">'+esc(worst.it.ex.name.slice(0,14))+'</b><span>가장 낮은 미션 ('+pc(worst.t0.o,worst.t0.t)+'%)</span></div></div>';
+ h+='<div class="card" style="padding:8px 4px"><div class="muted sm" style="margin:4px 10px 8px">정답률 = 맞힌 칸 ÷ 풀이(○✕△) 칸 · 색: <span style="'+rateSt(90)+';padding:1px 8px;border-radius:6px">80% 이상</span> <span style="'+rateSt(60)+';padding:1px 8px;border-radius:6px">50~79%</span> <span style="'+rateSt(30)+';padding:1px 8px;border-radius:6px">50% 미만</span></div><div style="overflow-x:auto"><table class="tbl"><tr><th style="text-align:left">미션</th><th>전체</th>'+cls.map(k=>'<th>'+clsBadge(k)+'</th>').join('')+'</tr>'+
+  rows.map(r=>'<tr><td style="text-align:left"><b>'+esc(r.it.ex.name)+'</b><div class="muted sm">'+esc(String(r.it.ex.date).slice(5).replace('-','/'))+' · '+esc(msCatOf(r.it))+'</div></td>'+cell(r.t0.o,r.t0.t,r.t0.n,r.t0.sc)+cls.map(k=>{const b=r.by[k];return b?cell(b.o,b.t,b.n,b.sc):'<td class="muted">-</td>';}).join('')+'</tr>').join('')+
+  '<tr style="border-top:2px solid var(--line)"><td style="text-align:left"><b>누적 (최근 '+L.length+'개)</b></td>'+cell(tot.o,tot.t,0,0)+cls.map(k=>cell((sum[k]||{}).o||0,(sum[k]||{}).t||0,0,0)).join('')+'</tr></table></div></div>';
+ return h;
+}
+
 /* ── 좋아요 · 이모티콘 (소식 글 · 메시지) ── */
 const REACT_URL=API_URL.replace('ac_api','ac_react'),RXE=['👍','❤️','👏','🎉','😊','🔥'],RX={post:{},msg:{}},RXL={},RXO={};
 async function reactApi(action,args){
@@ -1461,7 +1498,7 @@ let SH=undefined,SHB=false;
 const NOTE_URL=API_URL.replace('ac_api','ac_note');
 (function(){const st=document.createElement('style');st.textContent=
  '.chk .seg{display:flex;gap:4px;flex-wrap:wrap}.chk .seg button{padding:4px 10px;font-size:12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--mut);font-weight:700;cursor:pointer}.chk .seg button.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}'+
- '.mxs{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:12px}.anagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.anagrid .card{padding:10px 12px}.anagrid h3{margin:0 0 4px}.anagrid .li{padding:3px 0;font-size:13px;gap:8px}.anagrid .clr{padding:4px 0;font-size:13px}'+
+ '.mxs{overflow-x:auto;overflow-y:hidden;max-width:100%;border:1px solid var(--line);border-radius:12px}.anagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.anagrid .card{padding:10px 12px}.anagrid h3{margin:0 0 4px}.anagrid .li{padding:3px 0;font-size:13px;gap:8px}.anagrid .clr{padding:4px 0;font-size:13px}'+
  '.mxg th,.mxg td{min-width:26px;height:30px;font-size:12.5px}.mxg .rk{min-width:40px;left:0;font-size:14px}.mxg .nm{min-width:104px;left:40px;border-right:0}.mxg .sc{position:sticky;left:144px;z-index:3;min-width:46px;background:#fff;font-weight:800}.mxg .cl{position:sticky;left:190px;z-index:3;min-width:54px;background:#fff;border-right:2px solid #d9cfba}.mxg th.sc,.mxg th.cl{z-index:4;background:#f1f3f8}.mxg tr.me td.rk,.mxg tr.me td.nm,.mxg tr.me td.sc,.mxg tr.me td.cl{background:#fff3cf}.mxg tr.rt td.rk,.mxg tr.rt td.nm,.mxg tr.rt td.sc,.mxg tr.rt td.cl{background:#faf6ee}.mxg td.gO{color:#1f3a6e;background:#dce7fb;font-weight:800}.mxg td.gX{color:#b0334b;background:#f7d6dc;font-weight:800}.mxg td.gT{color:#7a5a0b;background:#f5e4b0;font-weight:800}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}@media(max-width:640px){.mxg .sc,.mxg .cl{position:static}.mxg .nm{border-right:1px solid #eee7d8}.mxg .nm{min-width:92px}}'+
  '.mxg td.gO{color:#12408f;background:#bcd4fb;font-weight:900}.mxg td.gX{color:#a80f2c;background:#ffbfca;font-weight:900}.mxg td.gT{color:#6a4700;background:#ffdf85;font-weight:900}.mxg td.gN{color:#d4d0c6;background:#fbf9f4}.pgrid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:6px}.pgrp{display:grid;grid-template-columns:repeat(10,32px);gap:2px}.pc{text-align:center;border-radius:6px;padding:1px 0;line-height:1;background:#fbf9f4;color:#c9c9c9;height:32px;display:flex;flex-direction:column;justify-content:center}.pc i{display:block;font-style:normal;font-size:8.5px;opacity:.75}.pc b{font-size:13px}@media(max-width:640px){.pgrp{grid-template-columns:repeat(10,minmax(0,1fr));width:100%}}.chgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px}.chgrid .card{margin:0}.mnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f7f2e6;font-size:13.5px;line-height:1.65}.mnote small{color:var(--mut);font-size:11px;margin-left:6px}.dgt{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.dgt ul{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.9}.pc.pO{color:#12408f;background:#bcd4fb}.pc.pX{color:#a80f2c;background:#ffbfca}.pc.pT{color:#6a4700;background:#ffdf85}.rpc{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}.rpc .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rpc .hd b{font-size:15px}.rpc .sc{margin-left:auto;text-align:right;font-size:12.5px;color:var(--mut)}.rpc .sc strong{font-size:18px;color:var(--ink)}.nlog{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.nlog:first-of-type{border-top:0}.nlog .d{flex:none;width:44px;color:var(--mut);font-size:12px}.nlog .k{font-size:11px;border-radius:999px;padding:1px 8px;background:#e9eefb;color:#1f3a6e;margin-right:6px}.nlog .k.a{background:#f1ece0;color:#8a6a14}'+
  '.rte img,.bd img[data-mid]{max-width:min(100%,340px);height:auto;border-radius:10px;margin:6px 4px;vertical-align:middle;background:var(--bg2,#eee);min-height:60px;min-width:60px}.rte img{cursor:grab}.rte img:hover{outline:2px dashed var(--acc);outline-offset:2px}.bd img[data-mid]{cursor:zoom-in}'+
@@ -1657,8 +1694,10 @@ function rpTrend(){
  return h;
 }
 function vExam(){
- const k=S.sub.exam==='trend'?'trend':'rpt';rpEnsure();
- let h='<div class="chips">'+[['rpt','결과 리포트'],['trend','성적 추이']].map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="exam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ const staff=isStaff();let k=S.sub.exam||(staff?'all':'rpt');if(!staff&&k==='all')k='rpt';
+ if(k==='all')return '<div class="chips">'+[['all','전체 통계'],['rpt','개인 결과 리포트'],['trend','개인 성적 추이']].map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="exam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+vExamAll();
+ rpEnsure();
+ let h='<div class="chips">'+(staff?[['all','전체 통계'],['rpt','개인 결과 리포트'],['trend','개인 성적 추이']]:[['rpt','결과 리포트'],['trend','성적 추이']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="exam" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  if(RP===undefined||RPB||RPK!==rpKey())return h+rpStudentBar()+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  return h+(k==='trend'?rpTrend():rpReport());
 }
@@ -2152,7 +2191,7 @@ function msDetail(it,st){
  let h='<div class="kpi" style="margin:2px 0 10px"><div><b>'+st.n+'명</b><span>응시</span></div><div><b>'+(Math.round(st.avg*10)/10)+'</b><span>평균</span></div><div><b>'+st.cl+' / '+st.n+'</b><span>클리어</span></div><div><b>'+st.xs+'개</b><span>남은 오답</span></div>'+(U.some(r=>r.ns)?'<div><b>'+U.filter(r=>r.ns).length+'명</b><span>미시작</span></div>':'')+(U.some(r=>!r.ns)?'<div><b>'+U.filter(r=>!r.ns).length+'명</b><span>미기록</span></div>':'')+'</div>';
  h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
  h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
- h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(i=>{const r=rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';
+ h+=msRateRows(R,cols,n);
  R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+' ('+Math.round(c.x*100/n)+'%)</span>':''))+'</td>'+
    cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
@@ -2175,7 +2214,7 @@ function msMatrix(L){
    const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/tot;});
   if(isStaff()&&it.all)it.all.forEach(r=>{if(r.ox&&r.score!=null)return;const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:false,cells:{},clr:0,n:0,x:0,sp:0};o.nm=pn(r)||o.nm;o.cls=r.cls||o.cls;if(!o.cells[it.m.id])o.cells[it.m.id]={ns:!!r.ns,nr:!r.ns};});});
  const rows=Object.keys(R).map(k=>R[k]).sort((a,b)=>((ord[String(a.cls).replace(/반$/,'')]==null?9:ord[String(a.cls).replace(/반$/,'')])-(ord[String(b.cls).replace(/반$/,'')]==null?9:ord[String(b.cls).replace(/반$/,'')]))||(b.clr-a.clr)||String(a.nm).localeCompare(String(b.nm)));
- let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수.</div><div style="overflow:auto;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th>'+
+ let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수.</div><div style="overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th>'+
   cols.map(it=>'<th title="'+esc(it.ex.name)+'"><a href="tbmission.html?m='+it.m.id+'&v=board" style="color:inherit;text-decoration:none">'+esc(String(it.ex.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,9))+'<br><span style="font-weight:400;color:#8a8f9e">'+esc(String(it.ex.date).slice(5).replace('-','/'))+'</span></a></th>').join('')+'<th>누적<br>클리어</th><th>평균<br>점수</th><th>남은<br>오답</th></tr>';
  rows.forEach(o=>{
   h+='<tr class="'+(o.me?'me':'')+'"><td class="nm"><span class="badge" style="background:'+(MSC[String(o.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(o.cls))?'#2b2f3a':'#fff')+'">'+esc(String(o.cls).replace(/반$/,''))+'</span> '+esc(o.nm)+(o.me?'(나)':'')+'</td>'+
