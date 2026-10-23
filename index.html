@@ -1572,7 +1572,7 @@ function noteLog(){
  return '<div class="card"><h3>한마디 기록 <span class="muted sm" style="font-weight:400">날짜별로 쌓여요</span></h3>'+show.map(x=>'<div class="nlog"><div class="d">'+esc(String(x.ts).slice(5,10).replace('-','/'))+'</div><div style="flex:1"><span class="k'+(x.kind==='auto'?' a':'')+'">'+(x.kind==='auto'?'자동 분석':esc(x.author||'선생님'))+'</span>'+esc(x.body)+'</div>'+(isStaff()?'<button class="btn sm3 dng" type="button" data-a="ntdel" data-id="'+x.id+'">삭제</button>':'')+'</div>').join('')+(N.length>5?'<div style="text-align:center;margin-top:6px"><button class="btn sm3 gh" type="button" data-a="rpmore">'+(RPMORE?'접기':'전체 '+N.length+'개 보기')+'</button></div>':'')+'</div>';
 }
 function pBlocks(h){
- const n=h.n||String(h.ox||'').length,sym={O:'○',X:'✕',T:'△',N:'미'};let g='';
+ const n=h.n||String(h.ox||'').length,sym={O:'○',X:'✕',T:'△'};let g='';
  for(let st=0;st<n;st+=10){let c='';for(let q=st;q<Math.min(n,st+10);q++){const ch=(h.ox||'')[q];c+='<div class="pc'+(ch==='O'||ch==='X'||ch==='T'?' p'+ch:'')+'"><i>'+(q+1)+'</i><b>'+(sym[ch]||'·')+'</b></div>';}g+='<div class="pgrp">'+c+'</div>';}
  return '<div class="pgrid">'+g+'</div>';
 }
@@ -2116,7 +2116,7 @@ function msEnsure(){
   MS={items:items,n:l.list.length};MS_BUSY=false;render();
  })();
 }
-function msCnt(ox,len){let o=0,x=0,t=0,u=0;String(ox||'').split('').forEach(ch=>{if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;else if(ch==='N')u++;});return {o:o,x:x,t:t,u:u,b:Math.max(0,len-o-x-t)};}
+function msCnt(ox,len){let o=0,x=0,t=0;String(ox||'').split('').forEach(ch=>{if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;});return {o:o,x:x,t:t,b:Math.max(0,len-o-x-t)};}
 function msStat(it){
  const len=it.ex.items.length;let cl=0,xs=0,sc=0;
  const rows=it.roster.map(r=>{const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
@@ -2148,14 +2148,14 @@ function msDetail(it,st){
  const items=it.ex.items,n=items.length,R=it.roster.slice().sort((a,b)=>b.score-a.score),rk=msRanks(R);
  const rate=items.map((_,i)=>{let o=0,t=0;R.forEach(r=>{const c=r.ox[i];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}});return t?o/t:null;});
  const U=isStaff()&&it.all?it.all.filter(r=>!(r.ox&&r.score!=null)).sort((a,b)=>String(a.cls+a.name).localeCompare(b.cls+b.name)):[];
- const sym={O:'○',X:'✕',T:'△',N:'미'},rg=chunkRange(it.m.id,n),cols=[];for(let q=rg[0];q<rg[1];q++)cols.push(q);
+ const sym={O:'○',X:'✕',T:'△'},rg=chunkRange(it.m.id,n),cols=[];for(let q=rg[0];q<rg[1];q++)cols.push(q);
  let h='<div class="kpi" style="margin:2px 0 10px"><div><b>'+st.n+'명</b><span>응시</span></div><div><b>'+(Math.round(st.avg*10)/10)+'</b><span>평균</span></div><div><b>'+st.cl+' / '+st.n+'</b><span>클리어</span></div><div><b>'+st.xs+'개</b><span>남은 오답</span></div>'+(U.some(r=>r.ns)?'<div><b>'+U.filter(r=>r.ns).length+'명</b><span>미시작</span></div>':'')+(U.some(r=>!r.ns)?'<div><b>'+U.filter(r=>!r.ns).length+'명</b><span>미기록</span></div>':'')+'</div>';
  h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
  h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
  h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(i=>{const r=rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';
  R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
-  h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+' ('+Math.round(c.x*100/n)+'%)</span>':'')+(c.u?' <span class="nrb">안 푼 '+c.u+'</span>':''))+'</td>'+
-   cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:ch==='N'?'U':'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
+  h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+' ('+Math.round(c.x*100/n)+'%)</span>':''))+'</td>'+
+   cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
  U.forEach(r=>{h+='<tr class="'+(r.ns?'ns':'nr')+'"><td class="rk">-</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(pn(r))+'</td><td class="sc">-</td><td class="cl">'+(r.ns?'<span class="nsb">미시작</span>':'<span class="nrb">미기록</span>')+'</td>'+cols.map(()=>'<td class="gN"></td>').join('')+'</tr>';});
  h+='</table></div>';
  const hard=items.map((_,i)=>i).filter(i=>rate[i]!=null).sort((a,b)=>rate[a]-rate[b]).slice(0,5);
