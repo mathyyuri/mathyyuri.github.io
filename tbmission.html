@@ -11,6 +11,7 @@
 :root{--navy:#1f3a6e;--navy2:#17284d;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#f4f1ea;--card:#fff;--ok:#2f7d5b;--fk:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif;--fd:"Playfair Display",serif}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-text-size-adjust:100%}
 button{font-family:inherit;cursor:pointer}input,select,textarea{font-family:inherit;font-size:14px}
+html.emb,html.emb body{background:transparent}.emb .wrap{padding-top:6px}
 .top{background:linear-gradient(135deg,#17284d,#243f77);color:#fff}.top .in{max-width:1120px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .logo{font-family:var(--fd);font-style:italic;font-weight:700;font-size:20px;letter-spacing:.06em;color:#e8cd9c}.top h1{margin:0;font-family:var(--fk);font-size:18px;font-weight:700}.top .sp{flex:1}.chipu{background:rgba(255,255,255,.12);border-radius:16px;padding:5px 12px;font-size:12.5px}
 .tb{border:0;border-radius:16px;padding:6px 14px;font-size:12.5px;font-weight:700;background:#c9a55d;color:#1b2540}.tb.g{background:rgba(255,255,255,.16);color:#fff}
@@ -53,6 +54,7 @@ tr.me td{background:#fff6e0}tr.me td:first-child{box-shadow:inset 4px 0 0 var(--
 'use strict';
 var BS=String.fromCharCode(92);
 var qs=new URLSearchParams(location.search);
+var EMB=qs.get('embed')==='1';if(EMB)document.documentElement.classList.add('emb');
 var RPC='https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/';
 var KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV',TK='acadapp_tok_v1';
 var AC={ds:'대치에스플러스학원',bd:'분당미래탐구'};
@@ -128,7 +130,7 @@ function rateTxt(r){return r==null?'-':Math.round(r*100)+'%'}
 function render(){
  var a=$('#app');
  if(!S.tok||!S.me){a.innerHTML=vLogin();return}
- var h='<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>교과서 미션</h1><span class="sp"></span><span class="chipu">'+esc(S.me.name||'')+(isStaff()?' · '+(isAdmin()?'원장':'운영진'):(S.me.role==='parent'?' · 학부모':' · 학생'))+'</span>'+
+ var h=EMB?'<div class="wrap">':'<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>교과서 미션</h1><span class="sp"></span><span class="chipu">'+esc(S.me.name||'')+(isStaff()?' · '+(isAdmin()?'원장':'운영진'):(S.me.role==='parent'?' · 학부모':' · 학생'))+'</span>'+
   (!isStaff()?'<button class="tb g" data-a="nick">'+(S.ex?'이 미션 닉네임':'기본 닉네임')+'</button>':'')+(isAdmin()?'<button class="tb g" data-a="imp">이전 기록 가져오기</button><button class="tb g" data-a="stu">학생 관리</button>':'')+'<button class="tb" data-a="out">로그아웃</button></div></div><div class="wrap">';
  h+=S.ex?vDetail():S.ov?vOverview():vList();
  a.innerHTML=h+'</div>';
@@ -161,14 +163,15 @@ function catBar(list){
  if(cats.length<2)return '';
  return '<div class="seg" style="margin-bottom:12px"><button class="'+(!S.cat?'on':'')+'" data-a="cat" data-v="">전체 '+n+'</button>'+cats.map(function(k){return '<button class="'+(S.cat===k?'on':'')+'" data-a="cat" data-v="'+esc(k)+'">'+esc(k)+' '+cnt[k]+'</button>'}).join('')+'</div>'}
 function vList(){
- var h='<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
- h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
+ var ta=S.me&&S.me.role==='ta';
+ var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
+ if(!ta)h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=seasonBar(S.list)+catBar(S.list);
  var all=filtered(),lim=S.lim||30,vis=all.slice(0,lim);
  if(!all.length)return h+'<div class="card"><div class="empty">이 시즌에는 아직 미션이 없어요.</div></div>';
  h+='<div class="mlist">'+vis.map(function(m){
-  return '<div class="mc" data-a="open" data-id="'+m.id+'"'+(isStaff()?' draggable="true"':'')+'>'+(isStaff()?'<span class="mvb"><button data-a="mvup" data-id="'+m.id+'" title="위로">▲</button><button data-a="mvdn" data-id="'+m.id+'" title="아래로">▼</button></span>':'')+'<div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
+  return '<div class="mc" data-a="open" data-id="'+m.id+'"'+(isStaff()&&!ta?' draggable="true"':'')+'>'+(isStaff()&&!ta?'<span class="mvb"><button data-a="mvup" data-id="'+m.id+'" title="위로">▲</button><button data-a="mvdn" data-id="'+m.id+'" title="아래로">▼</button></span>':'')+'<div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
  if(all.length>lim)h+='<div style="text-align:center;margin:16px"><button class="btn sec" data-a="more">더 보기 ('+(all.length-lim)+'개 남음)</button></div>';
  return h}
 
@@ -229,6 +232,7 @@ async function loadCards(){
  await Promise.all([w(),w(),w(),w()]);S.cardBusy=false;
  if(!S.ex&&visList().some(function(m){return S.cards[m.id]===undefined}))loadCards()}
 function tabsFor(){
+ if(S.me&&S.me.role==='ta')return [['input','채점하기'],['main','정오표 · 분석']];
  var t=[['main','정오표 · 분석'],['my',isStaff()?'학생별 성적':'내 성적'],['board','전체 성적표'],['rate','번호별 정답률'],['note','오답노트']];
  if(isStaff())t.push(['input','정오표 입력'],['mng','미션 관리']);return t}
 function vDetail(){
