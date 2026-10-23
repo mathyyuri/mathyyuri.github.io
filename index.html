@@ -1083,6 +1083,8 @@ document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closes
 
 /* ── 점수·정오표가 바뀌면 화면에도 바로 반영: 한 번 불러온 값을 계속 쓰지 않고 다시 불러오기 ── */
 let LASTLOAD=Date.now();
+const NICKK='acadapp_nickview';let NICKV=false;try{NICKV=localStorage.getItem(NICKK)==='1';}catch(e){}
+function pn(r){return r.me?(r.name||'나'):(isStaff()&&NICKV?(r.nick||r.name||''):(r.name||r.nick||''));}
 function dataStale(ms){return Date.now()-LASTLOAD>(ms||45000);}
 function dropCaches(){MS=null;MS_BUSY=false;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;}
 async function refreshAll(){LASTLOAD=Date.now();dropCaches();try{await resync();}catch(e){}}
@@ -1740,6 +1742,7 @@ document.addEventListener('click',async e=>{
  case 'stdel':if(confirm('이 운영진를 삭제할까요?'))await mut('staff_delete',{id:id});break;
  case 'pwsave':await savePw();break;
  case 'toolsedit':openToolsEdit();break;
+ case 'nickview':{NICKV=!NICKV;try{localStorage.setItem(NICKK,NICKV?'1':'0');}catch(e){}render();break;}
  case 'msrefresh':await refreshAll();render();break;
  case 'vunit':PVU=v;homeRefresh();break;
  case 'ntauto':{const j=await msApi('history',{sid:id});const t=$('#nt_t');if(t)t.value=autoNote(U[id].name,(j&&j.ok)?j.list:[]);break;}
@@ -1901,7 +1904,7 @@ function msChart(it){
  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto;display:block">';
  [0,.25,.5,.75,1].forEach(g=>{const v=tot*g;s+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e6e9f1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10.5" fill="#8a8f9e">'+Math.round(v)+'</text>';});
  R.forEach((r,i)=>{
-  const x=pl+i*BW+5,w=BW-10,v=+r.score,y=Y(v),col=MSC[String(r.cls||'').replace(/반$/,'')]||'#a0a6b5',nm=r.me?(r.name||'나'):(r.name||r.nick||'');
+  const x=pl+i*BW+5,w=BW-10,v=+r.score,y=Y(v),col=MSC[String(r.cls||'').replace(/반$/,'')]||'#a0a6b5',nm=pn(r);
   s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(Y(0)-y)+'" rx="4" fill="'+col+'"'+(r.me?' stroke="#d4486a" stroke-width="3"':'')+'><title>'+esc(nm+' · '+r.score+'점 ('+(r.cls||'')+')')+'</title></rect>'+
    '<text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" font-size="11" font-weight="'+(r.me?'800':'600')+'" fill="'+(r.me?'#d4486a':'#3a4256')+'">'+(Math.round(v*10)/10)+'</text>'+
    '<text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" font-weight="'+(r.me?'800':'400')+'" fill="'+(r.me?'#d4486a':'#6a7388')+'">'+esc(nm.length>4?nm.slice(0,4):nm)+'</text>';});
@@ -1924,7 +1927,7 @@ function msDetail(it,st){
  h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
  h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
  h+='<tr class="rt"><td class="rk"></td><td class="nm">정답률</td><td class="sc"></td><td class="cl"></td>'+cols.map(i=>{const r=rate[i],p=r==null?null:Math.round(r*100);return '<td style="color:'+(p==null?'#999':p>=80?'#2f6a4c':p>=50?'#8a6a14':'#a8434f')+'">'+(p==null?'-':p)+'</td>';}).join('')+'</tr>';
- R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':(r.name||r.nick||'');
+ R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+'</span>':''))+'</td>'+
    cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
  h+='</table></div>';
@@ -1941,7 +1944,7 @@ function msMatrix(L){
  const R={},ord={'S+':0,'S':1,'A+':2,'A':3,'B':4};
  cols.forEach(it=>{const len=it.ex.items.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
   it.roster.forEach(r=>{const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:!!r.me,cells:{},clr:0,n:0,x:0,sp:0};
-   o.nm=r.me?(r.name||'나'):(r.name||r.nick||o.nm);o.cls=r.cls||o.cls;if(r.me)o.me=true;
+   o.nm=r.me?(r.name||'나'):(pn(r)||o.nm);o.cls=r.cls||o.cls;if(r.me)o.me=true;
    const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/tot;});});
  const rows=Object.keys(R).map(k=>R[k]).sort((a,b)=>((ord[String(a.cls).replace(/반$/,'')]==null?9:ord[String(a.cls).replace(/반$/,'')])-(ord[String(b.cls).replace(/반$/,'')]==null?9:ord[String(b.cls).replace(/반$/,'')]))||(b.clr-a.clr)||String(a.nm).localeCompare(String(b.nm)));
  let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수.</div><div style="overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th>'+
@@ -1959,7 +1962,7 @@ function vMission(){
  const chips='<div class="chips">'+MS_GROUPS.map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button></div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h=chips+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
