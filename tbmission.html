@@ -129,7 +129,7 @@ function chHtml(ch){
 /* ───────── 계산 ───────── */
 function okAt(r,i){var c=r.ox&&r.ox[i];return c==='O'?1:(c==='X'||c==='T')?0:null}
 function calc(){
- var items=S.ex.items,n=items.length,G=S.R.filter(function(r){return r.ox}),tot=Math.round(items.reduce(function(a,it){return a+(+it.pts||1)},0)*100)/100;
+ var items=S.ex.items,n=items.length,G=S.R.filter(function(r){return r.ox&&r.score!=null}),tot=Math.round(items.reduce(function(a,it){return a+(+it.pts||1)},0)*100)/100;
  G.forEach(function(r){r.s=r.score==null?0:Math.round(+r.score*10)/10});G.sort(function(a,b){return b.s-a.s});
  G.forEach(function(r,i){r.rk=(i&&G[i-1].s===r.s)?G[i-1].rk:i+1});
  var cls={};G.forEach(function(r){(cls[r.cls]=cls[r.cls]||[]).push(r)});
@@ -138,8 +138,8 @@ function calc(){
  var crate={};Object.keys(cls).forEach(function(k){crate[k]=items.map(function(_,i){var o=0,t=0;cls[k].forEach(function(r){var v=okAt(r,i);if(v!=null){t++;o+=v}});return t?o/t:null})});
  S.C={items:items,n:n,G:G,tot:tot,cls:cls,rate:rate,cnt:cnt,crate:crate,avg:G.length?G.reduce(function(a,r){return a+r.s},0)/G.length:0}}
 function meRow(){return S.R.filter(function(r){return r.me})[0]}
-function ungraded(){return isStaff()?S.R.filter(function(r){return !r.ox}).sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)}):[]}
-function nsKpi(){var u=ungraded(),a=u.filter(function(r){return r.ns}).length,b=u.length-a;return (a?'<div class="kp r"><b>'+a+'명</b><span>미시작</span></div>':'')+(b?'<div class="kp n"><b>'+b+'명</b><span>미기록 (채점 전)</span></div>':'')}
+function ungraded(){return isStaff()?S.R.filter(function(r){return !(r.ox&&r.score!=null)}).sort(function(a,b){return (a.cls+a.name).localeCompare(b.cls+b.name)}):[]}
+function nsKpi(){var u=ungraded(),a=u.filter(function(r){return r.ns}).length,b=u.length-a;return (a?'<div class="kp r"><b>'+a+'명</b><span>미시작</span></div>':'')+(b?'<div class="kp n"><b>'+b+'명</b><span>미기록 (점수 기록 없음)</span></div>':'')}
 function nsTag(r){return r.ns?'<span class="nsb">미시작</span>':'<span class="nrb">미기록</span>'}
 function whoRow(){var k=isStaff()?S.who:null;return isStaff()?(S.R.filter(function(r){return r.k===k})[0]||null):meRow()}
 function groups(by){var o={},ord=[];S.C.items.forEach(function(it,i){var k=it[by]||'기타';if(!o[k]){o[k]=[];ord.push(k)}o[k].push(i)});return ord.map(function(k){return {k:k,idx:o[k]}})}
