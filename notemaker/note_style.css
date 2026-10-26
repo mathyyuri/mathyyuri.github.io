@@ -214,3 +214,15 @@ body.view .tools{display:none!important}
 .pg{width:210mm;height:297mm;padding:10mm 11mm 7mm}
 .pg.how{padding:18mm 16mm}.hw-t{font-size:24pt}
 .pg.mbcover,.pg.mbback{padding:0}
+
+/* ───────── 빠른 정답 (이 학생 노트에 들어간 문제만) ───────── */
+.qablk{margin-bottom:5mm}
+.qa-gt{display:flex;justify-content:space-between;align-items:baseline;border-bottom:.4mm solid var(--rust);padding-bottom:1.2mm;margin-bottom:2.4mm}
+.qa-gt b{font-family:var(--fk);font-size:12pt}.qa-gt em{font-style:normal;font-size:9pt;color:#7d7364}
+.qa-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:1.6mm}
+.qa-cell{border:.25mm solid #e0d6bf;border-radius:1mm;padding:1.2mm 1mm 1.6mm;text-align:center;background:#fff;line-height:1.2}
+.qa-cell i{display:block;font-style:normal;font-size:7.5pt;color:#9c5530;font-weight:700}
+.qa-cell b{font-size:13pt;color:#2a2118}.qa-cell b.sm{font-size:8.5pt}
+.statBarPct{flex:0 0 66mm!important}.statBarLabel{flex:0 0 22mm!important}
+.qa-rows{margin-top:3mm}.qa-row{display:flex;gap:2.4mm;align-items:baseline;border-bottom:.2mm solid #eee3cc;padding:1.2mm 0;font-size:9pt;line-height:1.5}
+.qa-row i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.qa-row .qs{flex:none;width:34mm;font-size:7.5pt;color:#7d7364}.qa-row .qv{flex:1}.qa-row .qv p{margin:0}.qa-row .see{color:#9c5530;font-size:8pt}

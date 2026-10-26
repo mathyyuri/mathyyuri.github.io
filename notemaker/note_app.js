@@ -229,7 +229,7 @@
    S.mk.forEach(function (g) { nM += g.uids.filter(item).length; });
    qa(document, '.n-tb').forEach(function (e) { e.textContent = nT; }); qa(document, '.n-mk').forEach(function (e) { e.textContent = nM; });
    function fullPg(id) { var e = TEL[id]; if (!e) return; st.appendChild(e); pages.push(e); }
-   ['cover', 'author', 'how'].forEach(fullPg);
+   ['cover'].concat(TH.filter(function (b) { return /^sum[0-9]*$/.test(b.id); }).map(function (b) { return b.id; }), ['stat']).forEach(fullPg);
    [1, 2, 3].forEach(function (pn) {
     fullPg('gj-p' + pn);
     var bl = TH.filter(function (b) { return b.part === pn && S.thDel.indexOf(b.id) < 0; });
@@ -244,7 +244,7 @@
    S.tb.forEach(function (u, i) { if (!item(u)) return; var el = EL[u]; el.querySelector('.no').textContent = i + 1; resetPb(el); put(el, 1); });
    closeSection();
    fullPg('gj-mk');
-   section('오답', 2, 'mk', 2);
+   section('오답', 2, 'mk', 1);
    if (TEL['mk-intro']) put(TEL['mk-intro'], 0);
    var j = 0, lastSub = null, subs = [], subCnt = {};
    S.mk.forEach(function (g) { subCnt[g.sub] = (subCnt[g.sub] || 0) + g.uids.filter(item).length; });
@@ -265,8 +265,38 @@
     });
    });
    closeSection();
-   if (window.NOTE_SOL) {                                  /* 정답 · 해설 쪽 (문제 뒤에 모아서) */
-    section('정답 · 해설', 2, 'sol', 0);
+   section('오답 체크', 1, 'one'); put(TEL['chk'], 0); closeSection();
+   while (false) {
+    var m = document.createElement('div'); m.className = 'pg mempg';
+    m.innerHTML = '<div class="pgh"><b>MATHY YURI</b><span>MEMO</span></div><div class="cols" style="grid-template-columns:1fr"><div class="col" style="gap:0"></div></div><div class="pgf"><em>Wrong-answer note</em><span class="pn"></span><em>' + esc(window.NOTE_NAME || '') + '</em></div>';
+    var c = m.querySelector('.col'); for (var k = 0; k < 24; k++) { var d = document.createElement('div'); d.className = 'ml'; c.appendChild(d); }
+    pages.push(m); st.appendChild(m);
+   }
+   fullPg('back');
+   if (window.NOTE_QA) {                                   /* 빠른 정답 (이 학생 노트에 들어간 문제만) */
+    section('빠른 정답', 1, 'sol', 0);
+    var qn = 0;
+    S.mk.forEach(function (g) {
+     var us = g.uids.filter(item); if (!us.length) return;
+     var q = document.createElement('div'); q.className = 'blk qablk';
+     var h = '<div class="qa-gt"><b>' + esc(g.title) + '</b><em>' + us.length + '문항</em></div><div class="qa-grid">', rows = '';
+     us.forEach(function (u) {
+      qn++; var p = item(u), c = chsOf(u), has = p.an != null && String(p.an).replace(/\s/g, '') !== '';
+      if (has) {
+       var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
+       h += '<div class="qa-cell"><i>' + qn + '</i><b' + (String(a).length > 4 ? ' class="sm"' : '') + '>' + esc(String(a)) + '</b></div>';
+      } else {                                           /* 교과서 문제처럼 정답이 풀이 안에 있는 것: 풀이의 첫 줄만 */
+       var m = String(p.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(p.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
+       if (!pl) t = '<span class="see">상세 해설 참고</span>'; else if (pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
+       rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + t + '</span></div>';
+      }
+     });
+     q.innerHTML = h + '</div>' + (rows ? '<div class="qa-rows">' + rows + '</div>' : ''); prepare(q); put(q, 0);
+    });
+    closeSection();
+   }
+   if (window.NOTE_SOL) {                                  /* 상세 해설 */
+    section('상세 해설', 2, 'sol', 0);
     var jj = 0;
     S.mk.forEach(function (g) {
      g.uids.filter(item).forEach(function (u) {
@@ -280,14 +310,6 @@
     });
     closeSection();
    }
-   section('오답 체크', 1, 'one'); put(TEL['chk'], 0); closeSection();
-   while ((pages.length + 1) % 4 !== 0) {
-    var m = document.createElement('div'); m.className = 'pg mempg';
-    m.innerHTML = '<div class="pgh"><b>MATHY YURI</b><span>MEMO</span></div><div class="cols" style="grid-template-columns:1fr"><div class="col" style="gap:0"></div></div><div class="pgf"><em>Wrong-answer note</em><span class="pn"></span><em>' + esc(window.NOTE_NAME || '') + '</em></div>';
-    var c = m.querySelector('.col'); for (var k = 0; k < 24; k++) { var d = document.createElement('div'); d.className = 'ml'; c.appendChild(d); }
-    pages.push(m); st.appendChild(m);
-   }
-   fullPg('back');
    pages.forEach(function (p) { qa(p, '.col').forEach(function (c) { var g = 0; while (over(c) && g++ < 60) { var ss = qa(c, '.sol').filter(function (s) { return s.offsetHeight > 60 && !s.dataset.fixed; }); if (!ss.length) break; ss.forEach(function (s) { s.style.height = (s.offsetHeight - 4) + 'px'; }); } }); });
    pages.forEach(function (p, i) { var n = p.querySelector('.pn'); if (n) n.textContent = (i + 1) + ' / ' + pages.length; });
    $('info').textContent = '총 ' + pages.length + '쪽 (A4) · 오답 ' + (nM + nT) + '문항';

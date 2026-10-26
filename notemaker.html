@@ -67,7 +67,8 @@ tr.exr:hover{background:#fbf6ea}
     <label class="lab"><input type="radio" name="wr" value="X" checked> 틀린 것(X)만</label>
     <label class="lab"><input type="radio" name="wr" value="XT"> 틀린 것 + 고친 것(T)</label>
     <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
-    <label class="lab"><input type="checkbox" id="withSol" checked> 정답·해설 쪽 넣기</label>
+    <label class="lab"><input type="checkbox" id="withQA" checked> 빠른 정답 쪽도 함께 출력</label>
+    <label class="lab"><input type="checkbox" id="withSol"> 상세 해설 쪽도 함께 출력</label>
    </div>
    <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
    <div id="others" class="muted" style="margin:8px 0 10px;line-height:1.9"></div>
@@ -235,13 +236,18 @@ $('#make').onclick = async function () {
   var td = new Date(), today = td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
   var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js');
   var SC = '<' + '/script>';
+  var AT = attempts(STU.id);                                    // 이 학생이 푼 모든 기록 (문제 해시별 · 시험별)
+  POOL.forEach(function (o) {
+   var hs = AT.byH[o.h] || []; o.round = hs.length + 1;
+   o.hist = hs.map(function (a) { return a.c + '(' + a.md + ')'; }).join(' → ') || '-';
+  });
   var theme = MB.themeFor(STU.ac, STU.cls);                     // 반별 색 (S 남색 · S+ 자주 · A+ 초록 · A 갈색)
   var rk = 'notemaker_round_' + STU.id, round = 1; try { round = (parseInt(localStorage.getItem(rk), 10) || 0) + 1; localStorage.setItem(rk, String(round)); } catch (e) { }
   var clsLab = String(STU.cls || '').replace(/\s+/g, ''); if (clsLab && !/반$/.test(clsLab)) clsLab += '반';
   var side = (STU.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + clsLab + ' ' + nm;      // 왼쪽 띠 위쪽에 세로로 들어가는 이름
   var coverHtml = MB.coverHtml({ side: side, round: ('0' + round).slice(-2), eyebrow: per + ' · 오답 ' + POOL.length + '문항', sub: '— Math Error Notebook —' });
   var backInner = await MB.backHtml(theme);
-  var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner);
+  var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, round);
   var key = 'note_v1_' + STU.id + '_' + Date.now();
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
@@ -257,7 +263,7 @@ $('#make').onclick = async function () {
    + '<script type="application/json" id="slidecss">""' + SC + '<script type="application/json" id="slidejs">""' + SC
    + '<script type="application/json" id="pdfjs">' + jdump(PDFJS) + SC + '<script type="application/json" id="quickjs">' + jdump(QUICK) + SC;
   var doc = head + UI + '<div class="stage"><div class="loading">오답노트를 만드는 중이에요… 잠시만 기다려 주세요.</div></div>' + data
-   + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
+   + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_QA=' + ($('#withQA').checked ? 'true' : 'false') + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
    + '<script>' + PDFJS + SC + '<script>' + APP + SC + '</body></html>';
   if (miss) alert('문제 DB에서 찾지 못한 문제가 ' + miss + '개 있어 빼고 만들었어요.');
   document.open(); document.write(doc); document.close();
@@ -265,28 +271,47 @@ $('#make').onclick = async function () {
 };
 
 /* 표지 · 안내 · 오답 체크 · 뒷표지 (엔진이 쪽으로 쓰는 "이론" 자료) */
-function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner) {
+function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, round) {
  var BIO = ['현 대치에스플러스 학원 고등부 원장', '현 분당미래탐구', '현 MATHYYURI.COM 운영', '현 MATHY YURI 수학연구소 운영', '전 목동고교사', '전 대치미탐, 대치다원'];
  var bio = BIO.map(function (b) { return '<li class="ed">' + esc(b) + '</li>'; }).join('');
  var n = POOL.length, nb = groups.length;
- var flows = groups.slice(0, 6).map(function (g, i) {
-  return '<div><i>' + ('0' + (i + 1)).slice(-2) + '</i><b class="ed">' + esc(g.title) + '</b><p class="ed">이 교재에서 틀린 문제 ' + g.uids.length + '문항을 모았어요. 문제마다 번호와 원래 출처가 달려 있습니다.</p><em>' + g.uids.length + '문항</em></div>';
- }).join('');
- var more = groups.length > 6 ? '<div class="hw-box"><b>그 밖의 교재</b><p class="ed">' + groups.slice(6).map(function (g) { return esc(g.title) + ' ' + g.uids.length + '문항'; }).join(' · ') + '</p></div>' : '';
- var HOW = '<div class="hw-en">CONTENTS</div><div class="hw-t ed">이 오답노트는 이렇게 만들어졌어요</div><div class="hw-flow">' + flows + '</div>' + more
-  + '<div class="hw-box"><b>오답 출처 읽는 법</b><p class="ed">문제 위의 작은 글씨 &nbsp;<span>교과서 미션 · 7번 — 교과서 · 01 유리식과 유리함수 · 문제 3</span> → 어느 교재(미션)의 몇 번이었는지, 그리고 그 문제의 원래 출처(교과서 소단원 · 모의고사 연도와 번호)입니다.</p></div>'
-  + '<div class="hw-box"><b>풀 때 이렇게</b><p class="ed">① 풀이 칸에 식을 끝까지 씁니다 &nbsp;② 다시 풀어도 틀리면 문제 번호 옆에 ✓ 표시 &nbsp;③ 마지막 쪽의 오답 체크표에 번호와 이유를 적습니다. 정답과 해설은 문제 뒤에 모아 두었어요.</p></div>';
+
+ var info = { name: nm, round: round };
+ var rows = POOL.map(function (o) { return { n: o.n, mission: o.ty, num: (o.src.match(/ · (\d+)번/) || [0, ''])[1], round: o.round, hist: o.hist }; });
+ var CH = 34, parts = Math.max(1, Math.ceil(rows.length / CH)), sumItems = [];
+ for (var pi = 0; pi < parts; pi++) sumItems.push({ id: 'sum' + (pi + 1), kind: 'pg', cls: 'pg full mbsum ' + ((pi + 2) % 2 === 0 ? 'even' : 'odd'), html: MB.summaryHtml(info, rows.slice(pi * CH, (pi + 1) * CH), pi + 1, parts) });
+ var statItem = { id: 'stat', kind: 'pg', cls: 'pg full mbsum ' + ((parts + 2) % 2 === 0 ? 'even' : 'odd'), html: MB.statsHtml(info, AT.stats) };
  var CHK = '<div class="chk"><b class="ed">오답 체크표</b><span class="ed">다시 풀어도 틀리거나 애매했던 문제의 번호를 적고, 이유에 ○ 하세요. 선생님과 함께 다음 오답노트로 이어집니다.</span><table><tr><th>교재 · 번호</th><th>개념 부족</th><th>계산 실수</th><th>조건 놓침</th><th>풀이 모름</th><th>다시 풀기</th></tr>'
   + new Array(15).join('<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>') + '</table></div>';
- var INTRO = '<div class="parthd mini"><span class="en">WRONG ANSWERS</span><b class="ed">오답 문제</b><p class="ed">' + esc(nm) + ' 학생이 틀린 문제를 교재별로 모았습니다. 한 쪽에 4문제, 풀이 칸은 남는 공간을 나누어 넉넉하게 잡았어요.</p></div>';
+ var INTRO = '<div class="parthd mini"><span class="en">WRONG ANSWERS</span><b class="ed">오답 문제</b><p class="ed">' + esc(nm) + ' 학생이 틀린 문제를 교재별로 모았습니다. 한 쪽에 2문제(왼쪽·오른쪽 단에 한 문제씩), 풀이 칸은 남는 공간을 넉넉하게 잡았어요.</p></div>';
  return [
-  { id: 'cover', kind: 'pg', cls: 'pg full mbcover', html: coverHtml },
-  { id: 'how', kind: 'pg', cls: 'pg full how', html: HOW },
+  { id: 'cover', kind: 'pg', cls: 'pg full mbcover', html: coverHtml }].concat(sumItems, [statItem, 
   { id: 'mk-intro', kind: 'intro', html: INTRO },
   { id: 'chk', kind: 'chk', html: CHK },
   { id: 'back', kind: 'pg', cls: 'pg full mbback', html: backInner }
- ];
+ ]);
 }
+/* 이 학생이 푼 모든 기록: 문제(해시)별로 몇 번째 풀이인지, 시험별 · 회독별 · 단원별 정답률 */
+function attempts(sid) {
+ var ex = (DATA.exams || []).filter(function (e) { return e.ox && e.ox[sid] && e.items && e.items.length; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.n < b.n ? -1 : 1); });
+ var byH = {}, batch = [], unit = {};
+ ex.forEach(function (e, ei) {
+  var ox = e.ox[sid], ok = 0, done = 0, md = e.date.slice(5).replace('-', '/').replace(/^0/, '');
+  for (var i = 0; i < e.items.length; i++) {
+   var c = ox.charAt(i); if ('OXT'.indexOf(c) < 0 || c === '') continue;
+   var it = e.items[i] || {}; done++; if (c === 'O') ok++;
+   var un = it.unit || ''; if (un) { var u = unit[un] || (unit[un] = { ok: 0, wrong: 0 }); if (c === 'O') u.ok++; else u.wrong++; }
+   if (it.h) (byH[it.h] || (byH[it.h] = [])).push({ c: c, md: md, name: e.n });
+  }
+  if (done) batch.push({ label: (batch.length + 1) + '회차 ' + md, pct: Math.round(100 * ok / done), text: '정답 ' + Math.round(100 * ok / done) + '% (' + ok + '/' + done + ') ' + String(e.n).slice(0, 18) });
+ });
+ var rd = {};
+ Object.keys(byH).forEach(function (h) { byH[h].forEach(function (a, k) { var r = rd[k + 1] || (rd[k + 1] = { ok: 0, n: 0 }); r.n++; if (a.c === 'O') r.ok++; }); });
+ var round = Object.keys(rd).map(Number).sort(function (a, b) { return a - b; }).slice(0, 14).map(function (k) { var r = rd[k]; return { label: k + '번째 풀이', pct: Math.round(100 * r.ok / r.n), text: Math.round(100 * r.ok / r.n) + '% (' + r.ok + '/' + r.n + '문항)' }; });
+ var un = Object.keys(unit).map(function (k) { var u = unit[k], t = u.ok + u.wrong; return { label: k.length > 13 ? k.slice(0, 12) + '…' : k, pct: Math.round(100 * u.ok / t), text: Math.round(100 * u.ok / t) + '% (맞음 ' + u.ok + ' / 틀림 ' + u.wrong + ')', w: u.wrong }; }).sort(function (a, b) { return b.w - a.w; }).slice(0, 14);
+ return { byH: byH, stats: { batch: batch.slice(-14), round: round, unit: un } };
+}
+
 boot();
 </script>
 </body>
