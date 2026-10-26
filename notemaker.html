@@ -58,6 +58,7 @@ tr.exr:hover{background:#fbf6ea}
 
   <div class="card">
    <h2>② 틀린 문제 고르기</h2>
+   <details style="margin-bottom:8px"><summary id="ovsum" class="tog">불러온 미션·시험</summary><div id="ovlist" class="muted" style="margin-top:6px;line-height:1.8"></div></details>
    <div class="row" style="margin-bottom:8px">
     <label class="lab">기간 <input id="d1" type="date"> ~ <input id="d2" type="date"></label>
     <span class="row" style="gap:6px"><button class="g" data-p="30">최근 1개월</button><button class="g" data-p="90">최근 3개월</button><button class="g" data-p="0">전체</button></span>
@@ -119,6 +120,12 @@ function start() {
  $('#main').classList.remove('hidden');
  $('#meinfo').textContent = DATA.me.name + ' 로 연결됨';
  fillStudents();
+ var ex = DATA.exams || [], withItems = ex.filter(function (e) { return e.items && e.items.length; }).length, withH = ex.filter(function (e) { return (e.items || []).some(function (i) { return i && i.h; }); }).length;
+ $('#ovsum').textContent = '불러온 미션·시험 ' + ex.length + '개 (문제 번호가 있는 것 ' + withItems + '개 · 문제 DB와 연결된 것 ' + withH + '개) — 눌러서 보기';
+ $('#ovlist').innerHTML = ex.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (e) {
+  var n = (e.items || []).length, h = (e.items || []).filter(function (i) { return i && i.h; }).length, who = Object.keys(e.ox || {}).length;
+  return esc(e.n) + ' <span style="opacity:.75">[' + esc(e.date) + ' · 문항 ' + n + ' · 문제 연결 ' + h + ' · 채점 기록 학생 ' + who + '명]</span>';
+ }).join('<br>') || '불러온 미션·시험이 없어요';
 }
 function fillStudents() {
  var q = $('#q').value.trim(), list = (DATA.students || []).filter(function (s) { return !q || s.name.indexOf(q) >= 0; });
@@ -135,8 +142,8 @@ function compute(selectAll) {
  ROWS = []; OTH = []; if (!STU) { render(); return; }
  var d1 = $('#d1').value, d2 = $('#d2').value, ws = wrongSet();
  (DATA.exams || []).forEach(function (e) {
-  if (!e.items || !e.items.length) return;
   if (d1 && e.date < d1) return; if (d2 && e.date > d2) return;
+  if (!e.items || !e.items.length) { OTH.push({ name: e.n, date: e.date, why: '문항 정보가 비어 있어요(문제 번호·문제 연결이 없는 시험)' }); return; }
   var ox = e.ox && e.ox[STU.id];
   if (!ox) { OTH.push({ name: e.n, date: e.date, why: '이 학생의 채점 기록이 없어요' }); return; }
   var its = [], nodata = 0;
