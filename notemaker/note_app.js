@@ -275,6 +275,11 @@
    if (window.NOTE_QA) {                                   /* 빠른 정답 (이 학생 노트에 들어간 문제만) */
     section('빠른 정답 · ' + (window.NOTE_NAME || '') + ' ' + (window.NOTE_ROUND || '') + '회차 오답노트', 1, 'sol', 0);
     var qn = 0;
+    var ansHtml = function (a) {                           /* 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로 */
+     a = String(a);
+     if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = '<span class="eq">' + esc(a) + '</span>'; else a = esc(a);
+     return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
+    };
     S.mk.forEach(function (g) {
      var us = g.uids.filter(item); if (!us.length) return;
      var q = document.createElement('div'); q.className = 'blk qablk';
@@ -283,7 +288,8 @@
       qn++; var p = item(u), c = chsOf(u), has = p.an != null && String(p.an).replace(/\s/g, '') !== '';
       if (has) {
        var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
-       h += '<div class="qa-cell"><i>' + qn + '</i><b' + (String(a).length > 4 ? ' class="sm"' : '') + '>' + esc(String(a)) + '</b></div>';
+       var ah = ansHtml(a);
+       h += '<div class="qa-cell"><i>' + qn + '</i><b' + (ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length > 5 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
       } else {                                           /* 교과서 문제처럼 정답이 풀이 안에 있는 것: 풀이의 첫 줄만 */
        var m = String(p.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(p.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
        if (!pl) t = '<span class="see">상세 해설 참고</span>'; else if (pl.length > 90) t = '<span class="see">상세 해설 참고</span>';

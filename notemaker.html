@@ -395,6 +395,11 @@ $('#hQuick').onclick = async function () {
  btn.disabled = true;
  try { quickCollect(pick, await getText('notemaker/pdf_save.js')); } catch (e) { alert('빠른 정답 모음을 만들지 못했어요: ' + (e.message || e)); btn.disabled = false; }
 };
+function ansHtml(a) {                                      // 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로
+ a = String(a);
+ if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = '<span class="eq">' + esc(a) + '</span>'; else a = esc(a);
+ return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
+}
 function quickCollect(pick, PDFJS) {
  var SC = '<' + '/script>', pages = [], total = 0;
  var CAP = 262, H1 = 34, H2 = 14, CELLROW = 14.6, ROW = 8.6, SUB = 9;       // 쪽 높이(mm) 계산용 어림값
@@ -418,7 +423,7 @@ function quickCollect(pick, PDFJS) {
     ? '<div class="ttl"><div class="eb">MATHY YURI · QUICK ANSWERS</div><h1>' + esc(x.name) + '<span> 의 ' + x.round + '회차 오답노트</span></h1><div class="meta">빠른 정답 &nbsp;|&nbsp; ' + esc((x.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + (x.cls || '')) + ' &nbsp;|&nbsp; ' + esc(x.date) + ' 제작 &nbsp;|&nbsp; ' + esc(x.per || '') + ' &nbsp;|&nbsp; 오답 ' + x.n + '문항</div></div>'
     : '<div class="run"><b>' + esc(x.name) + ' · ' + x.round + '회차 오답노트</b><span>빠른 정답 (이어서 ' + (ci + 1) + '/' + chunks.length + ')</span></div>';
    var body = '';
-   if (c.cells.length) body += '<div class="grid">' + c.cells.map(function (i) { return '<div class="cell"><i>' + i.n + '</i><b' + (String(i.a).replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length > 5 ? ' class="sm"' : '') + '>' + (/\\\(/.test(i.a) ? '<span class="eq">' + esc(i.a) + '</span>' : esc(String(i.a))) + '</b></div>'; }).join('') + '</div>';
+   if (c.cells.length) body += '<div class="grid">' + c.cells.map(function (i) { var ah = ansHtml(i.a); return '<div class="cell"><i>' + i.n + '</i><b' + (ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length > 5 ? ' class="sm"' : '') + '>' + ah + '</b></div>'; }).join('') + '</div>';
    if (c.rows.length) body += '<div class="sub2">정답이 풀이 안에 있는 문항</div><div class="rws">' + c.rows.map(function (i) { return '<div class="rw"><i>' + i.n + '</i><span class="qs">' + esc(i.s || i.m || '') + '</span><span class="qv">' + (i.r || '') + '</span></div>'; }).join('') + '</div>';
    pages.push('<section class="pg">' + top + body + '<div class="pf"><span>' + esc(x.name) + ' · ' + x.round + '회차 오답노트 · 빠른 정답</span><span class="pn"></span></div></section>');
   });
