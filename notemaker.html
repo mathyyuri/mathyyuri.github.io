@@ -52,6 +52,7 @@ tr.exr:hover{background:#fbf6ea}
    <div class="row">
     <label>찾기 <input id="q" type="text" placeholder="이름 일부" style="width:130px"></label>
     <label>학생 <select id="stu" style="min-width:260px"></select></label>
+    <button class="g" id="reSync" type="button" title="다른 탭에서 채점한 정오표를 다시 불러와요">채점 기록 새로 불러오기</button>
     <button id="clearOld" type="button" title="이 컴퓨터에 저장된 이 학생의 이전 오답노트(고친 내용)와 회차 기록을 지워요">이 학생 이전 노트 지우기</button>
     <span id="meinfo" class="muted"></span>
    </div>
@@ -70,6 +71,7 @@ tr.exr:hover{background:#fbf6ea}
     <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
     <label class="lab"><input type="checkbox" id="withQA" checked> 빠른 정답 쪽도 함께 출력</label>
     <label class="lab"><input type="checkbox" id="withSol"> 상세 해설 쪽도 함께 출력</label>
+    <label class="lab" title="이 노트의 문제들을 이 학생 전용 미션으로 올려요. 채점한 ○✕ 가 쌓여서 다음 오답노트의 회독 수·통계에 들어가요"><input type="checkbox" id="withMs" checked> 채점용 미션도 함께 만들기 (○✕ 누적)</label>
    </div>
    <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
    <div id="others" class="muted" style="margin:8px 0 10px;line-height:1.9"></div>
@@ -89,7 +91,7 @@ tr.exr:hover{background:#fbf6ea}
     <button class="g" id="hExp" type="button">기록 파일로 내려받기</button>
     <label class="g" style="display:inline-block;border-radius:8px;padding:8px 14px;background:#efe5cf;font-weight:700;cursor:pointer">기록 파일 불러오기<input id="hImp" type="file" accept=".json,application/json" style="display:none"></label>
    </div>
-   <div style="overflow-x:auto"><table id="htbl"><thead><tr><th style="width:34px"></th><th>학생</th><th style="width:70px">회차</th><th style="width:96px">만든 날</th><th style="width:70px">문항</th><th>범위</th></tr></thead><tbody></tbody></table></div>
+   <div style="overflow-x:auto"><table id="htbl"><thead><tr><th style="width:34px"></th><th>학생</th><th style="width:70px">회차</th><th style="width:96px">만든 날</th><th style="width:70px">문항</th><th>범위</th><th style="width:150px">채점</th></tr></thead><tbody></tbody></table></div>
    <div id="hEmpty" class="muted" style="margin-top:6px"></div>
   </div>
 
@@ -250,12 +252,25 @@ function roundHint() {
  try { if (STU) n = (parseInt(localStorage.getItem('notemaker_round_' + STU.id), 10) || 0) + 1; } catch (e) { }
  el.placeholder = STU ? ('자동 ' + n) : '자동';
 }
+function gradeCell(x) {                                     // 채점 상태 + 채점하기(새 탭) — 채점용 미션이 있는 노트만
+ if (!x.mid) return '<span class="muted">채점용 미션 없음</span>';
+ var ex = (DATA && DATA.exams || []).filter(function (e) { return e.id === x.mid; })[0], ox = ex && ex.ox && ex.ox[x.sid], st = '';
+ if (ox) { var o = (ox.match(/O/g) || []).length, w = (ox.match(/X/g) || []).length, t = (ox.match(/T/g) || []).length; st = '<span class="ok">채점됨</span> ○' + o + ' ✕' + w + (t ? ' △' + t : '') + '<br>'; }
+ else if (ex) st = '<span class="muted">아직 채점 전</span><br>';
+ var sb = (typeof RPC === 'string' && RPC.indexOf('supabase.co') < 0) ? '&sb=' + encodeURIComponent(RPC) : '';
+ return st + '<a class="tog" target="_blank" href="tbmission.html?m=' + encodeURIComponent(x.mid) + '&v=input' + sb + '">채점하기 ↗</a>';
+}
+async function refreshData(manual) {                        // 다른 탭에서 채점한 것을 다시 불러와요
+ if (!tok) return; var j = await api('sync'); if (!j || !j.ok) { if (manual) alert('채점 기록을 불러오지 못했어요'); return; }
+ DATA = j; if (STU) compute(false); histRender(); if (manual) alert('채점 기록을 새로 불러왔어요 (미션·시험 ' + (DATA.exams || []).length + '개)');
+}
+window.addEventListener('focus', function () { if (DATA && Date.now() - (window.__lastSync || 0) > 15000) { window.__lastSync = Date.now(); refreshData(false); } });
 function histRender() {
  var all = histLoad(), only = $('#hOnlyStu').checked && STU ? STU.id : null;
  var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
  var h = '';
  list.forEach(function (x) {
-  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + (x.est ? '약 ' : '') + x.round + '회차</b>' + (x.est ? '<span class="badge">복원</span>' : '') + '</td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td></tr>';
+  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + (x.est ? '약 ' : '') + x.round + '회차</b>' + (x.est ? '<span class="badge">복원</span>' : '') + '</td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td><td>' + gradeCell(x) + '</td></tr>';
  });
  $('#htbl tbody').innerHTML = h;
  $('#hEmpty').textContent = list.length ? ('기록 ' + list.length + '건' + (only ? ' (이 학생)' : '')) : (all.length ? '이 학생의 기록이 없어요' : '아직 이 컴퓨터에서 만든 기록이 없어요. 지금부터 만드는 노트부터 쌓여요.');
@@ -264,6 +279,7 @@ function histRender() {
 }
 $('#htbl').onchange = function (e) { var t = e.target; if (!t.dataset.h) return; if (t.checked) HSEL[t.dataset.h] = 1; else delete HSEL[t.dataset.h]; histRender(); };
 $('#hOnlyStu').onchange = histRender;
+$('#reSync').onclick = function () { refreshData(true); };
 $('#hAll').onclick = function () { histLoad().forEach(function (x) { if (!$('#hOnlyStu').checked || !STU || x.sid === STU.id) HSEL[x.id] = 1; }); histRender(); };
 $('#hNone').onclick = function () { HSEL = {}; histRender(); };
 $('#hDel').onclick = function () {
@@ -516,7 +532,17 @@ $('#make').onclick = async function () {
   var backInner = await MB.backHtml(theme);
   var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, round);
   var key = 'note_v1_' + STU.id + '_' + Date.now();
-  histAdd({ id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
+  var mid = null;
+  if ($('#withMs').checked) {                                  // 이 학생 전용 채점 미션 (같은 이름이 있으면 갱신)
+   st.textContent = '채점용 미션을 올리는 중…';
+   var mname = '오답노트 · ' + nm + ' ' + round + '회차', same = (DATA.exams || []).filter(function (e) { return e.n === mname; })[0];
+   var iso = td.getFullYear() + '-' + ('0' + (td.getMonth() + 1)).slice(-2) + '-' + ('0' + td.getDate()).slice(-2);
+   var margs = { ac: STU.ac, cls: 'note:' + STU.id, name: mname, short: '오답', cat: '오답노트', date: iso, items: POOL.map(function (o) { return { unit: o.ty || '오답', sub: '오답', typ: '', src: o.src, h: o.h, pts: 1 }; }) };
+   if (same) margs.id = same.id;
+   var mj = await ms('create', margs);
+   if (mj && mj.ok) mid = mj.id; else alert('오답노트는 만들지만 채점용 미션은 올리지 못했어요: ' + ((mj && mj.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요. 노트에 문제 번호는 그대로예요)');
+  }
+  histAdd({ mid: mid, id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
   var CSS = CSS + '\n' + MB.css(theme);

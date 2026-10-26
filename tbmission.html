@@ -196,6 +196,7 @@ function vList(){
  var ta=isTa();
  var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
  if(!ta)h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
+ if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return !S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length)h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><b>오늘의 미션이 준비돼 있어요</b> — 누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요.<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div></div>'}
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=seasonBar(S.list)+catBar(S.list);
  var all=filtered(),lim=S.lim||30,vis=all.slice(0,lim);
@@ -582,14 +583,15 @@ async function loadPrep(){
 async function prepOk(i){
  var m=((S.prep&&S.prep.list)||[])[i];if(!m)return;
  var dt=$('#ndt')?$('#ndt').value:ymd();
- var args={name:m.name,short:m.short||'',cat:m.cat||'',date:dt||ymd(),items:m.items};if(isAdmin())args.ac=$('#nac').value;
+ var args={name:m.name,short:m.short||'',cat:m.cat||'',date:dt||ymd(),items:m.items};
+ if(isAdmin()){if($('#nac'))args.ac=$('#nac').value;else{var pa=prompt('어느 학원 학생들이 볼까요?  ds = 대치에스플러스 / bd = 분당미래탐구','ds');if(!pa)return;pa=pa.trim().toLowerCase();if(pa!=='ds'&&pa!=='bd'){alert('ds 또는 bd 로 적어 주세요');return}args.ac=pa}}
  var same=S.list.filter(function(x){return x.name===m.name&&(!args.ac||x.ac===args.ac)})[0];
  if(same){if(!confirm('같은 이름의 미션이 이미 있어요 ('+same.date+', 채점 '+same.graded+'명).\n이 미션을 지금 준비된 문항으로 갱신할까요? (문항 순서가 바뀌면 이미 한 채점이 어긋나요)'))return;args.id=same.id}
- else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을 만들까요?'+(isAdmin()?'\n학원: '+($('#nac').value==='bd'?'분당미래탐구':'대치에스플러스학원'):'')))return;
+ else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을 만들까요?'+(isAdmin()&&$('#nac')?'\n학원: '+($('#nac').value==='bd'?'분당미래탐구':'대치에스플러스학원'):'')))return;
  var j=await ms('create',args);
  if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
  var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
- $('#md').hidden=true;await openMission(j.id,'input')}
+ if($('#md'))$('#md').hidden=true;await openMission(j.id,'input')}
 async function newOk(){
  var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||null,cat=$('#ncat').value.trim();
  if(!nm){alert('미션 이름을 적어 주세요');return}
@@ -690,6 +692,7 @@ async function boot(){
  S.me=j.me;var l=await ms('list');S.list=l&&l.ok?l.list:[];
  S.cards={};S.cat='';S.lim=30;
  if(!isStaff())await studentCards();
+ try{var pr=await fetch('today_missions.json?v='+Date.now());S.prep=pr.ok?await pr.json():null}catch(e){S.prep=null}
  S.season=S.list.some(function(m){return seasonOf(m)==='fin'})?'fin':'mid';S.cat=defCat();
  var qm=qs.get('m');if(qm&&S.list.some(function(m){return m.id===qm})){await openMission(qm,qs.get('v')||undefined);return}
  render()}
