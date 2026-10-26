@@ -2182,7 +2182,7 @@ async function msApi(a,args){
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
 }
 function msCatOf(it){
- const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
+ if(it.notes||String(it.m.cls||'').indexOf('note:')===0)return '오답미션';const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
  return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
 }
 function msEnsure(){
@@ -2190,7 +2190,7 @@ function msEnsure(){
  (async()=>{
   const l=await msApi('list');
   if(!l||!l.ok){MS={err:true,items:[]};MS_BUSY=false;render();return;}
-  const cand=l.list.filter(m=>!m.old).slice(0,40),items=[];
+  const cand=l.list.filter(m=>!m.old).slice(0,150),items=[];
   await Promise.all(cand.map(async m=>{
    if(!(m.graded>0)&&!isStaff()){items.push({m:m,ex:{id:m.id,name:m.name,date:m.date,cat:m.cat,items:new Array(m.n).fill({pts:1})},roster:[]});return;}
    const x=await msApi('load',{exam_id:m.id});if(x&&x.ok)items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null),all:isStaff()?x.roster:null});}));
@@ -2201,7 +2201,7 @@ function msEnsure(){
 function msCnt(ox,len){let o=0,x=0,t=0;String(ox||'').split('').forEach(ch=>{if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;});return {o:o,x:x,t:t,b:Math.max(0,len-o-x-t)};}
 function msStat(it){
  const len=it.ex.items.length;let cl=0,xs=0,sc=0;
- const rows=it.roster.map(r=>{const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
+ const rows=it.roster.map(r=>{const c=msCnt(r.ox,r._len||len),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
  const n=rows.length;return {n:n,cl:cl,xs:xs,avg:n?sc/n:null,rows:rows,me:rows.find(x=>x.r.me)};
 }
 function msChart(it){
@@ -2235,17 +2235,35 @@ function msDetail(it,st){
  h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
  h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
  h+=msRateRows(R,cols,n);
- R.forEach((r,i)=>{const c=msCnt(r.ox,n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
+ R.forEach((r,i)=>{const c=msCnt(r.ox,r._len||n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+' ('+Math.round(c.x*100/n)+'%)</span>':''))+'</td>'+
    cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
  U.forEach(r=>{h+='<tr class="'+(r.ns?'ns':'nr')+'"><td class="rk">-</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(pn(r))+'</td><td class="sc">-</td><td class="cl">'+(r.ns?'<span class="nsb">미시작</span>':'<span class="nrb">미기록</span>')+'</td>'+cols.map(()=>'<td class="gN"></td>').join('')+'</tr>';});
  h+='</table></div>';
+ if(it.notes)return h+'<div class="muted sm" style="margin-top:10px">오답노트는 학생마다 문제가 달라서 문제별 분석은 각 노트(교과서미션 화면 → 오답미션 탭)에서 봐요.</div>';
  const hard=items.map((_,i)=>i).filter(i=>rate[i]!=null).sort((a,b)=>rate[a]-rate[b]).slice(0,5);
  const ug={};items.forEach((x,i)=>{const k=x.unit||'기타';(ug[k]=ug[k]||[]).push(i);});
  h+='<div style="margin:16px 0 6px"><b>미션 분석</b></div><div class="anagrid"><div class="card" style="margin:0"><h3 style="font-size:14px">오답률 높은 문항 TOP '+hard.length+'</h3>'+hard.map((i,k)=>'<div class="li"><div class="tm">'+(k+1)+'위</div><div class="tx"><b>'+(i+1)+'번</b> <span class="muted sm">정답률 '+Math.round(rate[i]*100)+'% · '+esc(items[i].unit||'')+'</span></div></div>').join('')+'</div>'+
   '<div class="card" style="margin:0"><h3 style="font-size:14px">단원별 정답률</h3>'+Object.keys(ug).slice(0,8).map(k=>{const L=ug[k].filter(i=>rate[i]!=null);const v=L.length?L.reduce((a,i)=>a+rate[i],0)/L.length:null;return '<div class="clr"><div class="nm"><b>'+esc(k)+'</b> <span class="muted sm">'+ug[k].length+'문항</span></div><div class="bx"><i style="width:'+Math.round((v||0)*100)+'%;background:#1f3a6e"></i></div><b>'+(v==null?'-':Math.round(v*100)+'%')+'</b></div>';}).join('')+'</div></div>';
  h+='<div style="margin:16px 0 6px"><b>오답률 높은 문제 · 문제 · 팁 · 풀이</b></div><iframe class="tbmh" src="'+tbmUrl('&only=hard&m='+it.m.id)+'" title="오답률 높은 문제"></iframe>';
  return h;
+}
+function msMergeNotes(L){
+ const isN=it=>String(it.m.cls||'').indexOf('note:')===0;
+ const normal=L.filter(it=>!isN(it)),notes=L.filter(isN);
+ if(!notes.length)return L;
+ const by={};
+ notes.forEach(it=>{const mm=/(\d+)\s*회차/.exec(it.ex.name||''),r=mm?+mm[1]:0;(by[r]=by[r]||[]).push(it);});
+ const virt=Object.keys(by).map(Number).sort((a,b)=>a-b).map(r=>{
+  const g=by[r],roster=[],all=[],date=g.map(x=>String(x.ex.date)).sort().slice(-1)[0],len=Math.max.apply(null,g.map(x=>x.ex.items.length));
+  g.forEach(it=>{
+   const l=it.ex.items.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1,ab=l===1&&/미제출/.test((it.ex.items[0]||{}).src||'');
+   if(!ab)it.roster.forEach(q=>roster.push(Object.assign({},q,{_len:l,_tot:tot})));
+   (it.all||[]).forEach(q=>{if(ab||!(q.ox&&q.score!=null))all.push(Object.assign({},q,{_len:l,ns:ab?true:q.ns}));});
+  });
+  return {m:{id:'mb'+r,cat:'오답미션',cls:null},ex:{id:'mb'+r,name:'MEN BOOK '+r+'회',date:date,cat:'오답미션',items:new Array(len).fill({pts:1})},roster:roster,all:g[0].all?all:null,notes:true,round:r};
+ });
+ return normal.concat(virt);
 }
 function msMatrix(L){
  const cols=L.filter(it=>it.roster.length).slice().sort((a,b)=>String(a.ex.date).localeCompare(String(b.ex.date))||0).slice(-40);
@@ -2254,14 +2272,14 @@ function msMatrix(L){
  cols.forEach(it=>{const len=it.ex.items.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
   it.roster.forEach(r=>{const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:!!r.me,cells:{},clr:0,n:0,x:0,sp:0};
    o.nm=r.me?(r.name||'나'):(pn(r)||o.nm);o.cls=r.cls||o.cls;if(r.me)o.me=true;
-   const c=msCnt(r.ox,len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/tot;});
+   const c=msCnt(r.ox,r._len||len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/(r._tot||tot);});
   if(isStaff()&&it.all)it.all.forEach(r=>{if(r.ox&&r.score!=null)return;const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:false,cells:{},clr:0,n:0,x:0,sp:0};o.nm=pn(r)||o.nm;o.cls=r.cls||o.cls;if(!o.cells[it.m.id])o.cells[it.m.id]={ns:!!r.ns,nr:!r.ns};});});
  const rows=Object.keys(R).map(k=>R[k]).sort((a,b)=>((ord[String(a.cls).replace(/반$/,'')]==null?9:ord[String(a.cls).replace(/반$/,'')])-(ord[String(b.cls).replace(/반$/,'')]==null?9:ord[String(b.cls).replace(/반$/,'')]))||(b.clr-a.clr)||String(a.nm).localeCompare(String(b.nm)));
  let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수.</div><div style="overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th>'+
-  cols.map(it=>'<th title="'+esc(it.ex.name)+'"><a href="tbmission.html?m='+it.m.id+'&v=board" style="color:inherit;text-decoration:none">'+esc(String(it.ex.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,9))+'<br><span style="font-weight:400;color:#8a8f9e">'+esc(String(it.ex.date).slice(5).replace('-','/'))+'</span></a></th>').join('')+'<th>누적<br>클리어</th><th>평균<br>점수</th><th>남은<br>오답</th></tr>';
+  cols.map(it=>'<th title="'+esc(it.ex.name)+'"><a href="'+(it.notes?'tbmission.html':'tbmission.html?m='+it.m.id+'&v=board')+'" style="color:inherit;text-decoration:none">'+esc(String(it.ex.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,it.notes?14:9))+'<br><span style="font-weight:400;color:#8a8f9e">'+esc(String(it.ex.date).slice(5).replace('-','/'))+'</span></a></th>').join('')+'<th>누적<br>클리어</th><th>평균<br>점수</th><th>남은<br>오답</th></tr>';
  rows.forEach(o=>{
   h+='<tr class="'+(o.me?'me':'')+'"><td class="nm"><span class="badge" style="background:'+(MSC[String(o.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(o.cls))?'#2b2f3a':'#fff')+'">'+esc(String(o.cls).replace(/반$/,''))+'</span> '+esc(o.nm)+(o.me?'(나)':'')+'</td>'+
-   cols.map(it=>{const c=o.cells[it.m.id];return c?(c.ns?'<td class="ns" title="이 미션을 아직 시작하지 않았어요">미시작</td>':c.nr?'<td class="nr" title="점수 기록이 비어 있어요 (미시작이 아니라 기록이 빠진 경우)">미기록</td>':c.clear?'<td class="ok" title="클리어"><span class="stamp xs">CLEAR</span><i>'+(Math.round(c.sc*10)/10)+'</i></td>':'<td class="no" title="남은 오답 '+c.x+'개">'+c.x+'<i>'+(Math.round(c.sc*10)/10)+'</i></td>'):'<td class="muted">-</td>';}).join('')+
+   cols.map(it=>{const c=o.cells[it.m.id];return c?(c.ns?(it.notes?'<td class="ns" title="교재 미제출로 미참여">미참여</td>':'<td class="ns" title="이 미션을 아직 시작하지 않았어요">미시작</td>'):c.nr?'<td class="nr" title="점수 기록이 비어 있어요 (미시작이 아니라 기록이 빠진 경우)">미기록</td>':c.clear?'<td class="ok" title="클리어"><span class="stamp xs">CLEAR</span><i>'+(Math.round(c.sc*10)/10)+'</i></td>':'<td class="no" title="남은 오답 '+c.x+'개">'+c.x+'<i>'+(Math.round(c.sc*10)/10)+'</i></td>'):'<td class="muted">-</td>';}).join('')+
    '<td class="sm2">'+o.clr+' / '+o.n+'</td><td class="sm2">'+(o.n?(Math.round(o.sp/o.n*10)/10)+'%':'-')+'</td><td class="sm2"><span style="color:'+(o.x?'#b84a4a':'#2f7d5b')+'">'+o.x+'</span></td></tr>';});
  h+='<tr class="ft"><td class="nm">클리어 인원</td>'+cols.map(it=>{const st=msStat(it);return '<td>'+st.cl+'/'+st.n+'</td>';}).join('')+'<td></td><td></td><td></td></tr>'+
   '<tr class="ft"><td class="nm">평균 점수</td>'+cols.map(it=>{const st=msStat(it);return '<td>'+(st.avg==null?'-':Math.round(st.avg*10)/10)+'</td>';}).join('')+'<td></td><td></td><td></td></tr></table></div>';
@@ -2276,7 +2294,7 @@ function vMission(){
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
- const L=MS.items.filter(it=>!grp[2]||grp[2].indexOf(msCatOf(it))>=0);
+ const L=msMergeNotes(MS.items.filter(it=>!grp[2]||grp[2].indexOf(msCatOf(it))>=0));
  if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
  const stu=!isStaff();
  if(g==='chart')return h+msMatrix(L);

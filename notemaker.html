@@ -286,7 +286,7 @@ async function makeMissionFor(x, quiet) {
  });
  var name = '오답노트 · ' + x.name + ' ' + x.round + '회차', same = (DATA.exams || []).filter(function (e) { return e.n === name; })[0];
  if (!quiet && !confirm('"' + name + '" (' + items.length + '문항) 채점용 미션을 만들까요?' + (miss ? '\n※ 원래 문제를 찾지 못한 ' + miss + '문항은 채점은 되지만 회독 누적·문제 보기는 연결되지 않아요.' : '') + (x.est ? '\n※ 복원(추정) 기록이라 노트의 문제 번호와 다를 수 있어요.' : ''))) return false;
- var d = String(x.date || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, ''), args = { ac: x.ac || (stu && stu.ac) || 'ds', cls: 'note:' + x.sid, name: name, short: '오답', cat: '오답노트', date: /^\d{4}-\d\d-\d\d$/.test(d) ? d : new Date().toISOString().slice(0, 10), items: items };
+ var d = String(x.date || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, ''), args = { ac: x.ac || (stu && stu.ac) || 'ds', cls: 'note:' + x.sid, name: name, short: '오답', cat: '오답미션', date: /^\d{4}-\d\d-\d\d$/.test(d) ? d : new Date().toISOString().slice(0, 10), items: items };
  if (same) args.id = same.id;
  var j = await ms('create', args);
  if (!j || !j.ok) { alert('미션을 만들지 못했어요: ' + ((j && j.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요)'); return false; }
@@ -579,7 +579,7 @@ $('#make').onclick = async function () {
    st.textContent = '채점용 미션을 올리는 중…';
    var mname = '오답노트 · ' + nm + ' ' + round + '회차', same = (DATA.exams || []).filter(function (e) { return e.n === mname; })[0];
    var iso = td.getFullYear() + '-' + ('0' + (td.getMonth() + 1)).slice(-2) + '-' + ('0' + td.getDate()).slice(-2);
-   var margs = { ac: STU.ac, cls: 'note:' + STU.id, name: mname, short: '오답', cat: '오답노트', date: iso, items: POOL.map(function (o) { return { unit: o.ty || '오답', sub: '오답', typ: '', src: o.src, h: o.h, pts: 1 }; }) };
+   var margs = { ac: STU.ac, cls: 'note:' + STU.id, name: mname, short: '오답', cat: '오답미션', date: iso, items: POOL.map(function (o) { return { unit: o.ty || '오답', sub: '오답', typ: '', src: o.src, h: o.h, pts: 1 }; }) };
    if (same) margs.id = same.id;
    var mj = await ms('create', margs);
    if (mj && mj.ok) mid = mj.id; else alert('오답노트는 만들지만 채점용 미션은 올리지 못했어요: ' + ((mj && mj.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요. 노트에 문제 번호는 그대로예요)');

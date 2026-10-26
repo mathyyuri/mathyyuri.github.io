@@ -46,7 +46,7 @@ tr.me td{background:#fff6e0}tr.me td:first-child{box-shadow:inset 4px 0 0 var(--
 .empty{padding:30px 10px;text-align:center;color:var(--mute);line-height:1.8}
 .ub{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13.5px}.ub .nm{width:130px;flex:none}.ub .bar{flex:1}.ub b{width:70px;text-align:right;font-size:12.5px}
 @media(max-width:640px){.wrap{padding:10px 8px 50px}.card{padding:12px}.top h1{font-size:15px}.tbl{font-size:12.5px}.hide-m{display:none}}
-.nmxw{overflow-x:auto;border:1px solid #e5d9c0;border-radius:12px;background:#fffdf8}.nmx{border-collapse:separate;border-spacing:0;min-width:100%}.nmx th,.nmx td{padding:8px 10px;text-align:center;border-bottom:1px solid #eee3cc;border-right:1px solid #eee3cc;white-space:nowrap}.nmx thead th{background:#f4ecdb;font-weight:700;position:sticky;top:0}.nmx .nn{position:sticky;left:0;background:#fffdf8;text-align:left;min-width:96px;font-weight:700;z-index:1}.nmx thead .nn{background:#f4ecdb;z-index:2}.nmx .ncl td{background:#1f3258;color:#fff;text-align:left;font-weight:700;padding:5px 12px}.nmx .nc{min-width:128px;cursor:pointer;line-height:1.35}.nmx .nc b{display:block;font-size:18px}.nmx .nc span{font-size:11px;opacity:.85}.nmx .nw{background:repeating-linear-gradient(45deg,#faf6ec,#faf6ec 6px,#f3ecda 6px,#f3ecda 12px);color:#7d7364}.nmx .nx{color:#ccc;cursor:default}.nmx .na{font-weight:700;background:#faf6ec;min-width:64px}.nmx .nc:hover{outline:2px solid #c9a15a;outline-offset:-2px}</style></head><body>
+.nmxw{overflow-x:auto;border:1px solid #e5d9c0;border-radius:12px;background:#fffdf8}.nmx{border-collapse:separate;border-spacing:0;min-width:100%}.nmx th,.nmx td{padding:8px 10px;text-align:center;border-bottom:1px solid #eee3cc;border-right:1px solid #eee3cc;white-space:nowrap}.nmx thead th{background:#f4ecdb;font-weight:700;position:sticky;top:0}.nmx .nn{position:sticky;left:0;background:#fffdf8;text-align:left;min-width:96px;font-weight:700;z-index:1}.nmx thead .nn{background:#f4ecdb;z-index:2}.nmx .ncl td{background:#1f3258;color:#fff;text-align:left;font-weight:700;padding:5px 12px}.nmx .nc{min-width:128px;cursor:pointer;line-height:1.35}.nmx .nc b{display:block;font-size:18px}.nmx .nc span{font-size:11px;opacity:.85}.nmx .nw{background:repeating-linear-gradient(45deg,#faf6ec,#faf6ec 6px,#f3ecda 6px,#f3ecda 12px);color:#7d7364}.nmx .nx{color:#ccc;cursor:default}.nmx .nx button{display:none;padding:2px 8px;font-size:11px}.nmx .nx:hover button{display:inline-block}.nmx .nx:hover span{display:none}.nmx .nab{color:#7d7364;background:#f3efe6;font-weight:700;cursor:default}.nmx .na{font-weight:700;background:#faf6ec;min-width:64px}.nmx .nc:hover{outline:2px solid #c9a15a;outline-offset:-2px}</style></head><body>
 <div id="app"></div>
 <div class="mdl" id="md" hidden><div class="mb" id="mb"></div></div>
 <script>
@@ -173,11 +173,12 @@ function vLogin(){
  '<button class="btn" style="width:100%;margin-top:6px" data-a="login">들어가기</button><div class="err" id="lerr"></div></div></div>'}
 var LOGIN={ac:'ds',role:'student'};
 function guessCat(n){n=String(n||'');return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'미션'}
-function catOf(m){return m.cat||guessCat(m.name)}
+function isNoteM(m){return String(m.cls||'').indexOf('note:')===0}
+function catOf(m){if(isNoteM(m))return '오답미션';return m.cat||guessCat(m.name)}
 function defCat(){if(isTa())return '';var has=S.list.some(function(m){return seasonOf(m)===S.season&&catOf(m)==='교과서미션'});return has?'교과서미션':''}
 var SEAS=[['fin','2학기 기말대비'],['mid','2학기 중간대비']],FIN_FROM='2026-10-15';
 function seasonOf(m){return (m.old||String(m.date)<FIN_FROM)?'mid':'fin'}
-function filtered(){return S.list.filter(function(m){return seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
+function filtered(){return S.list.filter(function(m){return !isNoteM(m)&&seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
 function mineHtml(m){
  var c=S.cards[m.id];
  if(c===undefined)return '<div class="muted sm" style="margin-top:10px">불러오는 중…</div>';
@@ -199,7 +200,7 @@ function vList(){
  if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return !S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length)h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><b>오늘의 미션이 준비돼 있어요</b> — 누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요.<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div></div>'}
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=seasonBar(S.list)+catBar(S.list);
- if(isStaff()&&!ta&&S.cat==='오답노트')return h+vNotes();
+ if(isStaff()&&!ta&&S.cat==='오답미션'){h+=vNotes();if(!filtered().length)return h}
  var all=filtered(),lim=S.lim||30,vis=all.slice(0,lim);
  if(!all.length)return h+'<div class="card"><div class="empty">이 시즌에는 아직 미션이 없어요.</div></div>';
  h+='<div class="mlist">'+vis.map(function(m){
@@ -208,6 +209,17 @@ function vList(){
  return h}
 
 
+
+function noteBulk(){
+ var cfg=(S.prep&&S.prep.noteAbsent)||{},todo=[];
+ Object.keys(cfg).forEach(function(r){(cfg[r]||[]).forEach(function(nm){var st=(S.studs||[]).filter(function(x){return x.name===nm})[0];if(!st)return;var has=S.list.some(function(m){return isNoteM(m)&&m.cls==='note:'+st.id&&noteRound(m)===+r});if(!has)todo.push({st:st,r:+r})})});
+ return todo}
+async function noteMark(st,r,quiet){
+ var iso=ymd(),args={ac:st.ac||'ds',cls:'note:'+st.id,name:'오답노트 · '+st.name+' '+r+'회차',short:'오답',cat:'오답미션',date:iso,items:[{unit:'미제출',sub:'미참여',typ:'',src:'교재 미제출 (미참여)',h:'',pts:1}]};
+ var j=await ms('create',args);
+ if(!j||!j.ok){if(!quiet)alert((j&&j.error)||'표시하지 못했어요');return false}
+ return true}
+async function noteRefreshList(){var l=await ms('list');if(l&&l.ok)S.list=l.list;S.notes=null;render()}
 /* ───────── 오답노트 현황: 학생(S+반 → S반, 가나다순) 한 줄에 회차별 노트가 가로로, 채점한 칸은 정답률만큼 진하게 ───────── */
 function noteRound(m){var r=/(\d+)\s*회차/.exec(m.name||'');return r?+r[1]:0}
 async function loadNotes(){
@@ -216,7 +228,9 @@ async function loadNotes(){
  if(!S.studs){var js=await ms('students');S.studs=js&&js.ok?js.students:[]}
  var by={};((j&&j.ok&&j.exams)||[]).forEach(function(e){by[e.id]=e});
  S.notes={ex:by};render()}
+function noteAbsent(m){var ex=S.notes&&S.notes.ex&&S.notes.ex[m.id],it=ex&&ex.items;return !!(it&&it.length===1&&/미제출/.test((it[0]||{}).src||''))}
 function noteCell(m,sid){
+ if(noteAbsent(m))return {h:'<td class="nc nx nab" title="교재 미제출로 미참여">미참여</td>',pct:null,absent:true};
  var ex=S.notes.ex[m.id],ox=ex&&ex.ox&&ex.ox[sid],c=cnts(ox);
  if(!c.n)return {h:'<td class="nc nw" data-a="opennote" data-id="'+m.id+'"><b>채점 전</b><span>'+m.n+'문항</span></td>',pct:null};
  var pct=Math.round(c.o/c.n*100),al=(0.10+0.78*pct/100).toFixed(2);
@@ -224,19 +238,19 @@ function noteCell(m,sid){
 function vNotes(){
  if(!S.notes||S.notes.loading){if(!S.notes)loadNotes();return '<div class="card"><div class="empty">오답노트 채점 현황을 불러오는 중…</div></div>'}
  var cell={},maxR=3,hasNote={},nNote=0;
- S.list.forEach(function(m){if(catOf(m)!=='오답노트'||String(m.cls||'').indexOf('note:')!==0)return;var sid=m.cls.slice(5),r=noteRound(m);if(!r)return;var k=sid+'|'+r;if(!cell[k]||String(m.date)>=String(cell[k].date))cell[k]=m;if(r>maxR)maxR=r;hasNote[sid]=1;nNote++});
+ S.list.forEach(function(m){if(!isNoteM(m))return;var sid=m.cls.slice(5),r=noteRound(m);if(!r)return;var k=sid+'|'+r;if(!cell[k]||String(m.date)>=String(cell[k].date))cell[k]=m;if(r>maxR)maxR=r;hasNote[sid]=1;nNote++});
  var all=(S.studs||[]).slice(),shown=all.filter(function(r){return S.noteAll||['S+','S'].indexOf(cn(r.cls))>=0});
  shown.sort(function(a,b){var o=clsOrd(a.cls,b.cls);return o!==0?o:String(a.name).localeCompare(String(b.name),'ko')});
- var hid=all.filter(function(r){return shown.indexOf(r)<0&&hasNote[r.id]}).length,done=0,rows='',lastCls=null,nc=maxR+2;
+ var hid=all.filter(function(r){return shown.indexOf(r)<0&&hasNote[r.id]}).length,done=0,nabs=0,rows='',lastCls=null,nc=maxR+2;
  shown.forEach(function(r){
   if(r.cls!==lastCls){lastCls=r.cls;rows+='<tr class="ncl"><td colspan="'+nc+'">'+esc(cn(r.cls))+'반</td></tr>'}
   var tds='',sum=0,cnt=0;
-  for(var k=1;k<=maxR;k++){var m=cell[r.id+'|'+k];if(!m){tds+='<td class="nc nx">·</td>';continue}var c=noteCell(m,r.id);tds+=c.h;if(c.pct!=null){sum+=c.pct;cnt++;done++}}
+  for(var k=1;k<=maxR;k++){var m=cell[r.id+'|'+k];if(!m){tds+='<td class="nc nx"><span>·</span><button class="btn sec" data-a="noteabsent" data-sid="'+r.id+'" data-r="'+k+'" title="교재 미제출 등으로 이 회차 미참여로 표시">미참여</button></td>';continue}var c=noteCell(m,r.id);tds+=c.h;if(c.pct!=null){sum+=c.pct;cnt++;done++}else if(c.absent)nabs++}
   rows+='<tr><th class="nn">'+esc(r.name)+'</th>'+tds+'<td class="na">'+(cnt?Math.round(sum/cnt)+'%':'')+'</td></tr>'});
  var head='<tr><th class="nn">이름</th>';for(var q=1;q<=maxR;q++)head+='<th>'+q+'회차</th>';head+='<th>평균</th></tr>';
  return '<div class="note1">학생 이름 줄마다 회차별 오답노트가 가로로 놓여 있어요. 칸을 누르면 그 노트의 정오표를 입력하고, 채점한 칸은 정답률이 높을수록 진하게 보여요.</div>'
-  +'<div class="row" style="margin:6px 0 10px;gap:8px"><b>채점 완료 '+done+' / 노트 '+nNote+'개</b><span class="muted sm">○ 맞음 · ✕ 틀림 · △ 고침</span><span class="sp"></span>'
-  +'<button class="btn sec sm3" data-a="noteall">'+(S.noteAll?'S·S+반만 보기':'다른 반도 보기')+'</button><button class="btn sec sm3" data-a="noterefresh">새로 불러오기</button></div>'
+  +'<div class="row" style="margin:6px 0 10px;gap:8px"><b>채점 완료 '+done+' / 노트 '+(nNote-nabs)+'개</b>'+(nabs?'<span class="muted sm">· 미참여 '+nabs+'명</span>':'')+'<span class="muted sm">○ 맞음 · ✕ 틀림 · △ 고침</span><span class="sp"></span>'
+  +(noteBulk().length?'<button class="btn gold sm3" data-a="notebulk" title="교재 미제출자를 해당 회차 미참여로 표시해요">교재 미제출 미참여 처리 ('+noteBulk().map(function(t){return t.st.name+' '+t.r+'회'}).join('·')+')</button>':'')+'<button class="btn sec sm3" data-a="noteall">'+(S.noteAll?'S·S+반만 보기':'다른 반도 보기')+'</button><button class="btn sec sm3" data-a="noterefresh">새로 불러오기</button></div>'
   +(hid?'<div class="muted sm" style="margin-bottom:6px">S·S+ 밖의 반 학생 노트 '+hid+'명은 [다른 반도 보기]에서 볼 수 있어요.</div>':'')
   +'<div class="nmxw"><table class="nmx"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'}
 
@@ -802,6 +816,8 @@ document.addEventListener('click',async function(ev){
  if(a==='cat'){S.cat=b.getAttribute('data-v');S.lim=30;S.notes=null;render();return}
  if(a==='opennote'){S.notes=null;await openMission(b.getAttribute('data-id'),'input');return}
  if(a==='noteall'){S.noteAll=!S.noteAll;render();return}
+ if(a==='noteabsent'){var sid0=b.getAttribute('data-sid'),r0=+b.getAttribute('data-r'),st0=(S.studs||[]).filter(function(x){return x.id===sid0})[0];if(st0&&confirm(st0.name+' 학생을 '+r0+'회차 오답노트 미참여(교재 미제출)로 표시할까요?')){if(await noteMark(st0,r0))await noteRefreshList()}return}
+ if(a==='notebulk'){var td=noteBulk();if(td.length&&confirm('교재 미제출 미참여로 표시할까요?\n'+td.map(function(t){return '· '+t.st.name+' '+t.r+'회차'}).join('\n'))){for(var q=0;q<td.length;q++)await noteMark(td[q].st,td[q].r,true);await noteRefreshList()}return}
  if(a==='noterefresh'){S.notes=null;render();return}
  if(a==='more'){S.lim=(S.lim||30)+30;render();return}
  if(a==='imp'){openImp();return}
