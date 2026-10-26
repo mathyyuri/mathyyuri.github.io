@@ -2118,10 +2118,11 @@ const DEF_TOOLS=[
  {id:'motest',name:'성적 대시보드',url:'motest.html',desc:'',grp:'관리',roles:[]},
  {id:'board',name:'공동 필기',url:'whiteboard.html',desc:'',grp:'관리',roles:['ta']},
  {id:'pimport',name:'문제 가져오기',url:'problemimport.html',desc:'문제 묶음 파일(.json) 올리기',grp:'관리',roles:[]},
+ {id:'notemaker',name:'오답노트 만들기',url:'notemaker.html',desc:'학생별 오답노트 (표지 · 출처 · PDF)',grp:'관리',roles:[]},
  {id:'oldmain',name:'예전 메인 화면',url:'index_old.html',desc:'옛 mathyyuri.com 첫 화면',grp:'관리',roles:[]}
 ];
 let TOOLS=undefined,TOOLS_BUSY=false;
-const NEW_TOOLS=['pimport'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
+const NEW_TOOLS=['pimport','notemaker'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
 async function toolsApi(action,args){
  try{const r=await fetch(TOOLS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 5_이전데이터_도구모음_서버.sql 을 먼저 실행해 주세요':'')};

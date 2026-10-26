@@ -1,0 +1,51 @@
+<div class="bar ui" id="bar">
+ <b>개인별 오답노트 (B4)</b><span id="info"></span>
+ <span class="grp"><button id="bUndo" class="g" title="바로 전 상태로 (Ctrl+Z)" disabled>되돌리기</button><button id="bRedo" class="g" title="되돌린 것을 다시 (Ctrl+Y)" disabled>다시하기</button></span>
+ <span class="grp"><button id="bEdit" class="on" title="글자·수식·그림 고치기 켜고 끄기">고치기 켬</button><button id="bFormula" class="g" title="글 안에서 커서를 둔 곳에 수식을 넣어요">수식 넣기</button></span>
+ <span class="grp"><button id="bAddTb" class="g">교과서 문제 추가</button><button id="bAddMk" class="g">기출 문제 추가</button><button id="bAddGrp" class="g">유형 추가</button><button id="bRelay" class="g" title="글을 고쳐서 칸을 넘치면 눌러 주세요">쪽 다시 나누기</button></span>
+ <span class="grp"><button id="bSave" class="g">서버 저장·불러오기</button><button id="bExport" class="g">파일로 내려받기</button><button id="bImport" class="g">파일 불러오기</button><input id="fImport" type="file" accept=".json,application/json" style="display:none"></span>
+ <span class="grp"><button id="bPpt" class="g" title="지금 교재 그대로 강의 PPT를 만들어 새 창에 열어요">강의 PPT 열기</button><button id="bPptSave" class="g" title="강의 PPT를 파일로 내려받아요">PPT 파일 저장</button><button id="bQuick" class="g" title="정답만 A4 한두 장에 모아서 PDF로 저장할 수 있어요">빠른 정답 (A4)</button><button id="bAns" class="g" title="교과서 풀이까지 있는 자세한 정답표">정답표 열기</button><button id="bReset" class="g">처음 상태로</button></span>
+ <span class="grp"><input id="rng" type="text" placeholder="쪽 지정(비우면 전체) 예: 1-4, 9"><button id="pdfBtn">PDF 저장</button><button id="pngBtn">PNG 저장</button></span>
+ <span class="hint" id="stat">고친 내용은 이 컴퓨터에 자동 저장돼요. 다른 컴퓨터로 옮기려면 [파일로 내려받기].</span>
+</div>
+
+<div class="mdl ui" id="fe" hidden>
+ <div class="mbox">
+  <div class="mh"><b>수식 고치기</b><button class="x" data-close="fe">닫기</button></div>
+  <div class="sym" id="feSym"></div>
+  <textarea id="feTex" rows="3" spellcheck="false"></textarea>
+  <div class="prev" id="fePrev"></div>
+  <div class="mf"><button id="feOk">적용</button><button id="feDel" class="g">수식 지우기</button><span class="hint2">Ctrl+Enter = 적용 · LaTeX 문법 (예: \dfrac{1}{2}, x^{2}, f^{-1})</span></div>
+ </div>
+</div>
+
+<div class="mdl ui" id="pk" hidden>
+ <div class="mbox wide">
+  <div class="mh"><b>문제 추가</b><button class="x" data-close="pk">닫기 (쪽 다시 나누기)</button></div>
+  <div class="pkrow"><label>넣을 곳 <select id="pkTo"></select></label><label>찾기 <input id="pkQ" type="text" placeholder="낱말 · 연도 · 번호"></label>
+   <label>구분 <select id="pkSub"><option value="">전체</option></select></label><label>배점 <select id="pkPt"><option value="">전체</option><option value="2">2점</option><option value="3">3점</option><option value="4">4점</option><option value="5">5점</option></select></label>
+   <button id="pkNew" class="g">직접 입력 문제 만들기</button></div>
+  <div class="pkinfo" id="pkInfo"></div>
+  <div class="pklist" id="pkList"></div>
+ </div>
+</div>
+
+<div class="mdl ui" id="sv" hidden>
+ <div class="mbox">
+  <div class="mh"><b>서버 저장 · 불러오기</b><button class="x" data-close="sv">닫기</button></div>
+  <p class="svp">서버(Supabase)에 이 교재의 배치와, <b>고친 문제 글</b>을 저장합니다. 원장 비밀번호가 필요해요.<br>※ 서버 준비 파일 <b>3_교재_서버저장.sql</b> 을 한 번 실행해 두어야 해요.</p>
+  <div class="pkrow"><label>원장 비밀번호 <input id="svPw" type="password" autocomplete="off"></label><button id="svLogin">연결</button><span id="svSt" class="hint2"></span></div>
+  <label class="ck"><input type="checkbox" id="svProb" checked> 고친 문제 글도 서버의 원본 문제에 반영</label>
+  <div class="mf"><button id="svSave">서버에 저장</button><button id="svLoad" class="g">서버에서 불러오기</button></div>
+  <p class="svp" style="margin-top:14px"><b>채점용 미션 만들기</b> — 지금 교재의 문제 순서·번호 그대로 서버에 "미션"으로 올려요. 올린 뒤 <b>교과서미션.html</b>에서 ○✕를 입력하면 정오표·정답률·오답노트가 만들어져요. 문제를 바꿨다면 다시 눌러 갱신하세요(이미 채점한 뒤에는 순서를 바꾸지 마세요).</p>
+  <div class="mf"><button id="msTb">교과서 미션으로 올리기</button><button id="msMk" class="g">모의 기출 미션으로 올리기</button></div>
+  <div class="svlog" id="svLog"></div>
+ </div>
+</div>
+
+<div class="ui" id="it" hidden>
+ <button data-i="sm" title="작게">작게</button><button data-i="lg" title="크게">크게</button><span id="itPct"></span>
+ <button data-i="l" title="왼쪽으로">←</button><button data-i="r" title="오른쪽으로">→</button><button data-i="u" title="위로">↑</button><button data-i="d" title="아래로">↓</button>
+ <button data-i="ctr" title="가운데로 되돌리기">가운데</button><button data-i="al" title="왼쪽 정렬">왼쪽</button><button data-i="ar" title="오른쪽 정렬">오른쪽</button><button data-i="del" class="red" title="이 그림 지우기">그림 지우기</button>
+</div>
+<div class="ui" id="ih" hidden title="끌어서 크기 바꾸기"></div>

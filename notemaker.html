@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>개인별 오답노트 만들기 · MATHY YURI</title>
+<style>
+:root{--ink:#2a2118;--sub:#7d7364;--gold:#b8863a;--rust:#9c5530;--line:#e5d9c0;--bg:#f6f0e3;--card:#fffdf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Noto Sans KR","Malgun Gothic",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 16px 80px}
+h1{font:700 24px "Gowun Batang","Noto Serif KR",serif;margin:6px 0 2px}
+.sub{color:var(--sub);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(80,55,20,.06)}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--rust)}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:8px 14px;background:var(--rust);color:#fff;font-weight:700}
+button.g{background:#efe5cf;color:var(--ink)}button:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=password],input[type=date],select{font:inherit;padding:7px 9px;border:1px solid #d7c9a8;border-radius:8px;background:#fff}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.muted{color:var(--sub);font-size:13px}.err{color:#b3341f;font-weight:700}.ok{color:#2d6a3e;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #eee3cc;padding:7px 8px;text-align:left;vertical-align:top;font-size:14px}
+th{color:var(--sub);font-weight:500;font-size:13px}
+tr.exr:hover{background:#fbf6ea}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#efe5cf;color:var(--rust);margin-left:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.chip{border:1px solid #d7c9a8;border-radius:16px;padding:3px 10px;font-size:12.5px;background:#fff;cursor:pointer;user-select:none}
+.chip.on{background:var(--rust);border-color:var(--rust);color:#fff}
+.chip.no{opacity:.45;cursor:default;text-decoration:line-through}
+.tog{cursor:pointer;color:var(--rust);font-weight:700}
+.bar2{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 16px;margin:0 -16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;z-index:5}
+.sumtxt{font-weight:700}
+.lab{display:inline-flex;align-items:center;gap:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <h1>개인별 오답노트 만들기</h1>
+ <p class="sub">학생을 고르고, 틀린 문제를 교재(미션)별로 골라 오답노트를 만듭니다. 표지·뒷표지·오답 출처가 들어가고, 완성된 노트는 [PDF 저장]으로 쪽을 지정해 여백 없는 이미지 PDF로 뽑아요.</p>
+
+ <div class="card hidden" id="loginCard">
+  <h2>로그인</h2>
+  <div class="row"><label>원장 비밀번호 <input id="pw" type="password" autocomplete="off"></label><button id="loginBtn">연결</button><span id="lerr" class="err"></span></div>
+  <p class="muted">학원관리 앱에 이미 로그인해 있으면 이 단계는 건너뛰어요.</p>
+ </div>
+
+ <div id="main" class="hidden">
+  <div class="card">
+   <h2>① 학생</h2>
+   <div class="row">
+    <label>찾기 <input id="q" type="text" placeholder="이름 일부" style="width:130px"></label>
+    <label>학생 <select id="stu" style="min-width:260px"></select></label>
+    <span id="meinfo" class="muted"></span>
+   </div>
+  </div>
+
+  <div class="card">
+   <h2>② 틀린 문제 고르기</h2>
+   <div class="row" style="margin-bottom:8px">
+    <label class="lab">기간 <input id="d1" type="date"> ~ <input id="d2" type="date"></label>
+    <span class="row" style="gap:6px"><button class="g" data-p="30">최근 1개월</button><button class="g" data-p="90">최근 3개월</button><button class="g" data-p="0">전체</button></span>
+   </div>
+   <div class="row" style="margin-bottom:8px">
+    <label class="lab"><input type="radio" name="wr" value="X" checked> 틀린 것(X)만</label>
+    <label class="lab"><input type="radio" name="wr" value="XT"> 틀린 것 + 고친 것(T)</label>
+    <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
+    <label class="lab"><input type="checkbox" id="withSol" checked> 정답·해설 쪽 넣기</label>
+   </div>
+   <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
+   <div style="overflow-x:auto"><table id="tbl"><thead><tr><th style="width:34px"></th><th>교재(미션)</th><th style="width:96px">날짜</th><th style="width:110px">틀린 문제</th><th style="width:60px"></th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="bar2">
+   <span class="sumtxt" id="sum">학생을 골라 주세요</span>
+   <span class="row"><span id="status" class="muted"></span><button id="make" disabled>오답노트 만들기</button></span>
+  </div>
+ </div>
+</div>
+
+<script>
+'use strict';
+var qs = new URLSearchParams(location.search);
+var RPC = 'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/';
+var KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV', TK = 'acadapp_tok_v1', tok = null;
+var sbq = qs.get('sb'); if (sbq && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(sbq)) RPC = sbq;     // 시험용(내 컴퓨터) 서버만 허용
+function $(s) { return document.querySelector(s); }
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+try { tok = localStorage.getItem(TK); } catch (e) { }
+
+async function call(fn, args) {
+ var r; try { r = await fetch(RPC + fn, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY }, body: JSON.stringify(args) }); } catch (e) { return { ok: false, error: '인터넷 연결을 확인해 주세요' }; }
+ if (!r.ok) return { ok: false, error: '서버 오류 ' + r.status };
+ try { return await r.json(); } catch (e) { return { ok: false, error: '서버 응답을 읽지 못했어요' }; }
+}
+function api(a, args) { return call('ac_api', { p_action: a, p_token: tok, p_args: args || {} }); }
+function ms(a, args) { return call('ac_mission', { p_action: a, p_token: tok, p_args: args || {} }); }
+
+var DATA = null, STU = null, ROWS = [], SEL = {}, OPEN = {};
+
+/* ───────── 로그인 · 불러오기 ───────── */
+async function boot() {
+ if (tok) { var j = await api('sync'); if (j && j.ok && j.me && (j.me.role === 'admin' || j.me.role === 'ta')) { DATA = j; return start(); } }
+ $('#loginCard').classList.remove('hidden');
+}
+$('#loginBtn').onclick = async function () {
+ $('#lerr').textContent = '';
+ var j = await call('ac_api', { p_action: 'login', p_token: null, p_args: { academy: 'ds', role: 'admin', password: $('#pw').value } });
+ if (!j || !j.ok) { $('#lerr').textContent = (j && j.error) || '로그인하지 못했어요'; return; }
+ tok = j.token; try { localStorage.setItem(TK, tok); } catch (e) { }
+ $('#pw').value = ''; var s = await api('sync');
+ if (!s || !s.ok) { $('#lerr').textContent = (s && s.error) || '불러오지 못했어요'; return; }
+ DATA = s; $('#loginCard').classList.add('hidden'); start();
+};
+function start() {
+ $('#main').classList.remove('hidden');
+ $('#meinfo').textContent = DATA.me.name + ' 로 연결됨';
+ fillStudents();
+}
+function fillStudents() {
+ var q = $('#q').value.trim(), list = (DATA.students || []).filter(function (s) { return !q || s.name.indexOf(q) >= 0; });
+ var o = '<option value="">— 학생을 고르세요 (' + list.length + '명) —</option>';
+ list.forEach(function (s) { o += '<option value="' + s.id + '">' + esc(s.name) + ' · ' + (s.ac === 'bd' ? '분당' : '대치') + ' ' + esc(s.cls || '') + (s.school ? ' · ' + esc(s.school) : '') + '</option>'; });
+ var cur = $('#stu').value; $('#stu').innerHTML = o; if (cur && list.some(function (s) { return s.id === cur; })) $('#stu').value = cur;
+}
+$('#q').oninput = fillStudents;
+$('#stu').onchange = function () { STU = (DATA.students || []).filter(function (s) { return s.id === $('#stu').value; })[0] || null; SEL = {}; OPEN = {}; compute(true); };
+
+/* ───────── 틀린 문제 모으기 ───────── */
+function wrongSet() { return document.querySelector('input[name=wr]:checked').value === 'XT' ? 'XT' : 'X'; }
+function compute(selectAll) {
+ ROWS = []; if (!STU) { render(); return; }
+ var d1 = $('#d1').value, d2 = $('#d2').value, ws = wrongSet();
+ (DATA.exams || []).forEach(function (e) {
+  var ox = e.ox && e.ox[STU.id]; if (!ox || !e.items || !e.items.length) return;
+  if (d1 && e.date < d1) return; if (d2 && e.date > d2) return;
+  var its = [], nodata = 0;
+  for (var i = 0; i < e.items.length; i++) {
+   var c = ox.charAt(i); if (ws.indexOf(c) < 0 || c === '') continue;
+   var it = e.items[i] || {};
+   if (!it.h) { nodata++; continue; }
+   its.push({ i: i, no: i + 1, c: c, src: it.src || '', h: it.h, unit: it.unit || '' });
+  }
+  if (its.length || nodata) ROWS.push({ id: e.id, name: e.n, short: e.short || '', date: e.date, its: its, nodata: nodata, total: e.items.length });
+ });
+ ROWS.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+ if (selectAll) { SEL = {}; ROWS.forEach(function (r) { r.its.forEach(function (it) { SEL[r.id + '|' + it.i] = 1; }); }); }
+ else { Object.keys(SEL).forEach(function (k) { var ok = ROWS.some(function (r) { return r.its.some(function (it) { return r.id + '|' + it.i === k; }); }); if (!ok) delete SEL[k]; }); }
+ render();
+}
+function render() {
+ var tb = $('#tbl tbody'), h = '';
+ $('#empty').textContent = STU ? (ROWS.length ? '' : '이 기간에 틀린 문제 기록이 없어요') : '';
+ ROWS.forEach(function (r, ri) {
+  var n = r.its.filter(function (it) { return SEL[r.id + '|' + it.i]; }).length, all = n === r.its.length && n > 0;
+  h += '<tr class="exr"><td><input type="checkbox" data-r="' + ri + '"' + (all ? ' checked' : '') + (r.its.length ? '' : ' disabled') + '></td><td><b>' + esc(r.name) + '</b>' + (r.short ? '<span class="badge">' + esc(r.short) + '</span>' : '') + '</td><td>' + esc(r.date) + '</td><td>' + n + ' / ' + r.its.length + '문제' + (r.nodata ? '<br><span class="muted">자료 없음 ' + r.nodata + '</span>' : '') + '</td><td><span class="tog" data-o="' + ri + '">' + (OPEN[r.id] ? '접기' : '펼치기') + '</span></td></tr>';
+  if (OPEN[r.id]) h += '<tr><td></td><td colspan="4"><div class="chips">' + r.its.map(function (it) { return '<span class="chip' + (SEL[r.id + '|' + it.i] ? ' on' : '') + '" data-c="' + ri + ':' + it.i + '" title="' + esc(it.src) + '">' + it.no + '번' + (it.c === 'T' ? ' (고침)' : '') + '</span>'; }).join('') + '</div></td></tr>';
+ });
+ tb.innerHTML = h;
+ var tot = Object.keys(SEL).length, ne = ROWS.filter(function (r) { return r.its.some(function (it) { return SEL[r.id + '|' + it.i]; }); }).length;
+ $('#sum').textContent = STU ? ('교재 ' + ne + '개 · 문제 ' + tot + '개 선택' + ($('#dedupe').checked ? ' (같은 문제는 합쳐서 더 줄 수 있어요)' : '')) : '학생을 골라 주세요';
+ $('#make').disabled = !tot;
+}
+$('#tbl').onclick = function (e) {
+ var t = e.target;
+ if (t.dataset.o != null) { var r = ROWS[+t.dataset.o]; OPEN[r.id] = !OPEN[r.id]; render(); }
+ if (t.dataset.c) { var p = t.dataset.c.split(':'), r2 = ROWS[+p[0]], k = r2.id + '|' + p[1]; if (SEL[k]) delete SEL[k]; else SEL[k] = 1; render(); }
+};
+$('#tbl').onchange = function (e) {
+ var t = e.target; if (t.dataset.r == null) return; var r = ROWS[+t.dataset.r];
+ r.its.forEach(function (it) { var k = r.id + '|' + it.i; if (t.checked) SEL[k] = 1; else delete SEL[k]; }); render();
+};
+$('#allBtn').onclick = function () { ROWS.forEach(function (r) { r.its.forEach(function (it) { SEL[r.id + '|' + it.i] = 1; }); }); render(); };
+$('#noneBtn').onclick = function () { SEL = {}; render(); };
+document.querySelectorAll('input[name=wr]').forEach(function (x) { x.onchange = function () { compute(true); }; });
+$('#d1').onchange = $('#d2').onchange = function () { compute(true); };
+$('#dedupe').onchange = render;
+document.querySelectorAll('[data-p]').forEach(function (b) {
+ b.onclick = function () {
+  var n = +b.dataset.p, t = new Date(), f = function (d) { return d.toISOString().slice(0, 10); };
+  $('#d2').value = ''; if (!n) $('#d1').value = ''; else { t.setDate(t.getDate() - n); $('#d1').value = f(t); }
+  compute(true);
+ };
+});
+
+/* ───────── 오답노트 만들기 ───────── */
+function jdump(o) { return JSON.stringify(o).replace(/</g, '\\u003c'); }
+async function getText(u) { var r = await fetch(u + '?v=' + Date.now()); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); }
+function ymd(d) { return d.replace(/-/g, '. '); }
+$('#make').onclick = async function () {
+ var btn = this; btn.disabled = true; var st = $('#status');
+ try {
+  var byEx = {};
+  ROWS.forEach(function (r) { var idx = r.its.filter(function (it) { return SEL[r.id + '|' + it.i]; }); if (idx.length) byEx[r.id] = { r: r, idx: idx }; });
+  var exs = Object.keys(byEx).map(function (k) { return byEx[k]; }).sort(function (a, b) { return a.r.date < b.r.date ? -1 : a.r.date > b.r.date ? 1 : 0; });
+  var POOL = [], FIGS = {}, groups = [], seen = {}, seq = 0, miss = 0, dup = 0, dedupe = $('#dedupe').checked;
+  for (var gi = 0; gi < exs.length; gi++) {
+   var X = exs[gi]; st.textContent = '문제를 가져오는 중… (' + (gi + 1) + ' / ' + exs.length + ') ' + X.r.name;
+   var j = await ms('problems', { exam_id: X.r.id, nos: X.idx.map(function (it) { return it.no; }) });
+   if (!j || !j.ok) throw new Error((j && j.error) || '문제를 가져오지 못했어요');
+   Object.keys(j.figs || {}).forEach(function (k) { FIGS[k] = j.figs[k]; });
+   var by = {}; (j.items || []).forEach(function (p) { by[p.no] = p; });
+   var g = { id: 'g' + (gi + 1), sub: '오답', title: X.r.name, uids: [] };
+   X.idx.forEach(function (it) {
+    var p = by[it.no]; if (!p) { miss++; return; }
+    var from = X.r.name + ' · ' + it.no + '번' + (it.src ? ' — ' + it.src : '');
+    if (dedupe && seen[it.h]) { dup++; var q = seen[it.h]; q.n2 = (q.n2 || 1) + 1; q.src2 += ' / ' + X.r.name + ' ' + it.no + '번'; return; }
+    seq++; var o = { u: 'N' + seq, k: 'm', n: seq, src: from, src2: '', sub: '오답', ty: X.r.name, pt: 0, st: p.stem || '', ch: (p.ch || []).map(String), an: p.an == null ? '' : String(p.an), so: p.so || '', h: it.h };
+    seen[it.h] = o; POOL.push(o); g.uids.push(o.u);
+   });
+   if (g.uids.length) groups.push(g);
+  }
+  var small = {};                                          // 정답 표시 같은 작은 아이콘 그림은 빼요 (가로 130 · 세로 80 이하)
+  await Promise.all(Object.keys(FIGS).map(function (k) { return new Promise(function (res) { var im = new Image(); im.onload = function () { if (im.naturalWidth <= 130 && im.naturalHeight <= 80) small[k] = 1; res(); }; im.onerror = res; im.src = FIGS[k]; }); }));
+  function noIcon(t) { return String(t || '').replace(/<img[^>]*data-fig="([^"]+)"[^>]*>/g, function (m, n) { return small[n] ? '' : m; }); }
+  POOL.forEach(function (o) { o.st = noIcon(o.st); o.so = noIcon(o.so); o.ch = o.ch.map(noIcon); });
+  POOL.forEach(function (o) { if (o.n2) o.src = o.src + ' (' + o.n2 + '번 틀림: ' + o.src2.slice(3) + ')'; delete o.n2; delete o.src2; });
+  if (!POOL.length) throw new Error('가져올 수 있는 문제가 없어요 (문제 DB에 없는 미션이에요)');
+  st.textContent = '노트를 조립하는 중…';
+  var nm = STU.name, dates = exs.map(function (x) { return x.r.date; }).sort(), per = dates[0] === dates[dates.length - 1] ? ymd(dates[0]) : ymd(dates[0]) + ' ~ ' + ymd(dates[dates.length - 1]);
+  var td = new Date(), today = td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
+  var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js');
+  var SC = '<' + '/script>';
+  var TH = buildTheory(nm, per, today, groups, POOL);
+  var key = 'note_v1_' + STU.id + '_' + Date.now();
+  var title = '오답노트 · ' + nm + ' · ' + today;
+  var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
+  var head = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(title) + '</title>'
+   + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">'
+   + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500&display=swap">'
+   + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js">' + SC + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js">' + SC
+   + '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">' + SC + '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">' + SC
+   + '<style>' + CSS + '</style></head><body>';
+  var data = '<script type="application/json" id="pool">' + jdump(POOL) + SC + '<script type="application/json" id="figs">' + jdump(FIGS) + SC + '<script type="application/json" id="theory">' + jdump(TH) + SC
+   + '<script type="application/json" id="init">' + jdump({ tb: [], mk: groups }) + SC + '<script type="application/json" id="types">' + jdump({ '오답': [] }) + SC
+   + '<script type="application/json" id="slidecss">""' + SC + '<script type="application/json" id="slidejs">""' + SC
+   + '<script type="application/json" id="pdfjs">' + jdump(PDFJS) + SC + '<script type="application/json" id="quickjs">' + jdump(QUICK) + SC;
+  var doc = head + UI + '<div class="stage"><div class="loading">오답노트를 만드는 중이에요… 잠시만 기다려 주세요.</div></div>' + data
+   + '<script>window.PDF_W=257;window.PDF_H=364;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
+   + '<script>' + PDFJS + SC + '<script>' + APP + SC + '</body></html>';
+  if (miss) alert('문제 DB에서 찾지 못한 문제가 ' + miss + '개 있어 빼고 만들었어요.');
+  document.open(); document.write(doc); document.close();
+ } catch (e) { st.innerHTML = '<span class="err">' + esc(e.message || e) + '</span>'; btn.disabled = false; }
+};
+
+/* 표지 · 안내 · 오답 체크 · 뒷표지 (엔진이 쪽으로 쓰는 "이론" 자료) */
+function buildTheory(nm, per, today, groups, POOL) {
+ var BIO = ['현 대치에스플러스 학원 고등부 원장', '현 분당미래탐구', '현 MATHYYURI.COM 운영', '현 MATHY YURI 수학연구소 운영', '전 목동고교사', '전 대치미탐, 대치다원'];
+ var bio = BIO.map(function (b) { return '<li class="ed">' + esc(b) + '</li>'; }).join('');
+ var n = POOL.length, nb = groups.length;
+ var COVER = '<div class="cvf"></div><div class="cv-top"><span>MATHY YURI</span><i></i><span class="ed">공통수학</span></div>'
+  + '<div class="cv-en ed">WRONG ANSWER NOTE</div><div class="cv-ko ed">오답노트</div>'
+  + '<div class="cv-sub ed">' + esc(nm) + ' 학생<small class="ed">' + esc(per) + '</small></div><div class="cv-rule"></div>'
+  + '<div class="cv-meta"><div><b>교재</b>' + nb + '개</div><div><b>오답</b>' + n + '문항</div><div><b>구성</b>문제 · 출처 · 풀이 칸' + ($('#withSol').checked ? ' · 정답과 해설' : '') + '</div></div>'
+  + '<div class="cv-date">MADE ON &nbsp;·&nbsp; ' + esc(today) + '</div>'
+  + '<div class="cv-name"><span>이름</span><u class="ed">' + esc(nm) + '</u></div>';
+ var flows = groups.slice(0, 6).map(function (g, i) {
+  return '<div><i>' + ('0' + (i + 1)).slice(-2) + '</i><b class="ed">' + esc(g.title) + '</b><p class="ed">이 교재에서 틀린 문제 ' + g.uids.length + '문항을 모았어요. 문제마다 번호와 원래 출처가 달려 있습니다.</p><em>' + g.uids.length + '문항</em></div>';
+ }).join('');
+ var more = groups.length > 6 ? '<div class="hw-box"><b>그 밖의 교재</b><p class="ed">' + groups.slice(6).map(function (g) { return esc(g.title) + ' ' + g.uids.length + '문항'; }).join(' · ') + '</p></div>' : '';
+ var HOW = '<div class="hw-en">CONTENTS</div><div class="hw-t ed">이 오답노트는 이렇게 만들어졌어요</div><div class="hw-flow">' + flows + '</div>' + more
+  + '<div class="hw-box"><b>오답 출처 읽는 법</b><p class="ed">문제 위의 작은 글씨 &nbsp;<span>교과서 미션 · 7번 — 교과서 · 01 유리식과 유리함수 · 문제 3</span> → 어느 교재(미션)의 몇 번이었는지, 그리고 그 문제의 원래 출처(교과서 소단원 · 모의고사 연도와 번호)입니다.</p></div>'
+  + '<div class="hw-box"><b>풀 때 이렇게</b><p class="ed">① 풀이 칸에 식을 끝까지 씁니다 &nbsp;② 다시 풀어도 틀리면 문제 번호 옆에 ✓ 표시 &nbsp;③ 마지막 쪽의 오답 체크표에 번호와 이유를 적습니다. 정답과 해설은 문제 뒤에 모아 두었어요.</p></div>';
+ var CHK = '<div class="chk"><b class="ed">오답 체크표</b><span class="ed">다시 풀어도 틀리거나 애매했던 문제의 번호를 적고, 이유에 ○ 하세요. 선생님과 함께 다음 오답노트로 이어집니다.</span><table><tr><th>교재 · 번호</th><th>개념 부족</th><th>계산 실수</th><th>조건 놓침</th><th>풀이 모름</th><th>다시 풀기</th></tr>'
+  + new Array(15).join('<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>') + '</table></div>';
+ var BACK = '<div class="cvf"></div><div class="cv-top"><span>MATHY YURI</span><i></i><span class="ed">공통수학</span></div><div class="bk-en ed">Always with you</div><div class="bk-ko ed">수학은,<br>사람을 더 빛나게 합니다.</div><div class="cv-rule" style="top:196mm"></div>'
+  + '<div class="bk-nm">수학강사 <b class="ed">전유리</b></div><div class="bk-bio"><ul class="ed-ul">' + bio + '</ul></div><div class="bk-org ed">MATHY YURI 수학연구소<br>대치에스플러스학원 · 분당미래탐구</div><div class="bk-url">MATHYYURI.COM</div><div class="cv-date" style="top:336mm">© 2026 MATHY YURI &nbsp;·&nbsp; ALL RIGHTS RESERVED</div>';
+ var INTRO = '<div class="parthd mini"><span class="en">WRONG ANSWERS</span><b class="ed">오답 문제</b><p class="ed">' + esc(nm) + ' 학생이 틀린 문제를 교재별로 모았습니다. 한 쪽에 4문제, 풀이 칸은 남는 공간을 나누어 넉넉하게 잡았어요.</p></div>';
+ return [
+  { id: 'cover', kind: 'pg', cls: 'pg full cover', html: COVER },
+  { id: 'how', kind: 'pg', cls: 'pg full how', html: HOW },
+  { id: 'mk-intro', kind: 'intro', html: INTRO },
+  { id: 'chk', kind: 'chk', html: CHK },
+  { id: 'back', kind: 'pg', cls: 'pg full bk', html: BACK }
+ ];
+}
+boot();
+</script>
+</body>
+</html>
