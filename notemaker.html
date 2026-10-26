@@ -84,6 +84,7 @@ tr.exr:hover{background:#fbf6ea}
     <button class="g" id="hAll" type="button">전체 선택</button><button class="g" id="hNone" type="button">전체 해제</button>
     <button id="hQuick" type="button" disabled>선택한 노트 빠른 정답 모음 출력</button>
     <button class="g" id="hDel" type="button" disabled>선택한 기록 지우기</button>
+    <button class="g" id="hRec" type="button" title="기록 기능이 생기기 전에 만든 노트를 이 컴퓨터에 남은 흔적과 지금의 채점 기록으로 다시 맞춰 봐요">옛 노트 기록 되살리기</button>
     <button class="g" id="hExp" type="button">기록 파일로 내려받기</button>
     <label class="g" style="display:inline-block;border-radius:8px;padding:8px 14px;background:#efe5cf;font-weight:700;cursor:pointer">기록 파일 불러오기<input id="hImp" type="file" accept=".json,application/json" style="display:none"></label>
    </div>
@@ -248,7 +249,7 @@ function histRender() {
  var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
  var h = '';
  list.forEach(function (x) {
-  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + x.round + '회차</b></td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td></tr>';
+  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + (x.est ? '약 ' : '') + x.round + '회차</b>' + (x.est ? '<span class="badge">복원</span>' : '') + '</td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td></tr>';
  });
  $('#htbl tbody').innerHTML = h;
  $('#hEmpty').textContent = list.length ? ('기록 ' + list.length + '건' + (only ? ' (이 학생)' : '')) : (all.length ? '이 학생의 기록이 없어요' : '아직 이 컴퓨터에서 만든 기록이 없어요. 지금부터 만드는 노트부터 쌓여요.');
@@ -281,6 +282,111 @@ $('#hImp').onchange = function () {
   } catch (e) { alert('오답노트 기록 파일이 아니에요.'); }
  };
  r.readAsText(f);
+};
+/* 기록 기능 이전에 만든 노트 되살리기: 이 컴퓨터에 남은 노트 저장분(note_v1_학생_시각)에서 학생·시각·교재별 문항 수를 읽고,
+   지금의 채점 기록으로 같은 문제 묶음을 다시 만들어 맞는지 확인한 뒤 빠른 정답을 채워요 (문항 수가 다르면 건너뜀) */
+$('#hRec').onclick = async function () {
+ var btn = this; btn.disabled = true; var out = [], done = 0, st = $('#hEmpty');
+ try {
+  var have = {}; histLoad().forEach(function (x) { have[x.id] = 1; });
+  var found = [];
+  for (var i = 0; i < localStorage.length; i++) {
+   var k = localStorage.key(i), m = /^note_v1_(.+)_(\d{10,})$/.exec(k || ''); if (!m || have[k]) continue;
+   var S0; try { S0 = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+   if (!S0 || !Array.isArray(S0.mk)) continue;
+   found.push({ key: k, sid: m[1], ts: +m[2], groups: S0.mk.filter(function (g) { return g && g.uids && g.uids.length; }) });
+  }
+  found.sort(function (a, b) { return a.ts - b.ts; });
+  var cnt = {}; found.forEach(function (f) { cnt[f.sid] = (cnt[f.sid] || 0) + 1; });
+  var seenNo = {};
+  for (var fi = 0; fi < found.length; fi++) {
+   var f = found[fi], stu = (DATA.students || []).filter(function (s) { return s.id === f.sid; })[0];
+   st.textContent = '되살리는 중… (' + (fi + 1) + ' / ' + found.length + ') ' + (stu ? stu.name : '');
+   var nameOf = stu ? stu.name : f.sid.slice(0, 6);
+   if (!stu) { out.push(nameOf + ': 학생을 찾을 수 없어요'); continue; }
+   var picked = null;
+   for (var mode = 0; mode < 2 && !picked; mode++) {
+    var ws = mode ? 'XT' : 'X', seen = {}, ok = true, sel = [];
+    for (var gi = 0; gi < f.groups.length && ok; gi++) {
+     var g = f.groups[gi], ex = (DATA.exams || []).filter(function (e) { return e.n === g.title && e.ox && e.ox[stu.id] && e.items; })[0];
+     if (!ex) { ok = false; break; }
+     var ox = ex.ox[stu.id], idx = [];
+     for (var q = 0; q < ex.items.length; q++) {
+      var c = ox.charAt(q); if (!c || ws.indexOf(c) < 0) continue; var it = ex.items[q] || {}; if (!it.h) continue;
+      if (seen[it.h]) continue; seen[it.h] = 1; idx.push({ no: q + 1, src: it.src || '', h: it.h });
+     }
+     if (idx.length !== g.uids.length) { ok = false; break; }
+     sel.push({ ex: ex, idx: idx });
+    }
+    if (ok) picked = sel;
+   }
+   if (!picked) { out.push(nameOf + ' ' + new Date(f.ts).toLocaleTimeString('ko-KR') + ': 지금의 채점 기록과 문항 수가 달라서 건너뜀'); continue; }
+   var items = [], seq = 0, dates = [];
+   for (var pi = 0; pi < picked.length; pi++) {
+    var X = picked[pi]; dates.push(X.ex.date);
+    var j = await ms('problems', { exam_id: X.ex.id, nos: X.idx.map(function (t) { return t.no; }) });
+    if (!j || !j.ok) throw new Error((j && j.error) || '문제를 가져오지 못했어요');
+    var by = {}; (j.items || []).forEach(function (p) { by[p.no] = p; });
+    X.idx.forEach(function (t) {
+     var p = by[t.no]; if (!p) return; seq++;
+     var q2 = qaOf({ an: p.an == null ? '' : String(p.an), ch: (p.ch || []).map(String), so: p.so || '' });
+     items.push({ n: seq, m: X.ex.n, s: t.src, a: q2.a, r: q2.r });
+    });
+   }
+   dates.sort(); var per = dates[0] === dates[dates.length - 1] ? ymd(dates[0]) : ymd(dates[0]) + ' ~ ' + ymd(dates[dates.length - 1]);
+   var d = new Date(f.ts), day = d.getFullYear() + '. ' + ('0' + (d.getMonth() + 1)).slice(-2) + '. ' + ('0' + d.getDate()).slice(-2);
+   var rc = 0; try { rc = parseInt(localStorage.getItem('notemaker_round_' + f.sid), 10) || 0; } catch (e) { }
+   var after = found.filter(function (z) { return z.sid === f.sid && z.ts > f.ts; }).length;      // 이 노트 뒤에 만든 노트 수 → 회차 추정
+   var round = rc ? Math.max(1, rc - after) : (found.filter(function (z) { return z.sid === f.sid && z.ts <= f.ts; }).length);
+   var cl = String(stu.cls || '').replace(/\s+/g, ''); if (cl && !/반$/.test(cl)) cl += '반';
+   histAdd({ id: f.key, sid: f.sid, name: stu.name, ac: stu.ac, cls: cl, round: round, date: day, per: per, n: items.length, est: 1, items: items });
+   done++;
+  }
+  /* 노트 저장분이 없는 노트(고치지 않고 닫은 노트): 학생별 회차 기록으로 '기본 설정(틀린 것 전부·같은 문제 한 번만)' 노트를 다시 맞춰 가장 최근 회차만 되살림 */
+  var cand = [];
+  for (var ri = 0; ri < localStorage.length; ri++) {
+   var rk = localStorage.key(ri), rm = /^notemaker_round_(.+)$/.exec(rk || ''); if (!rm) continue;
+   var rv = parseInt(localStorage.getItem(rk), 10) || 0; if (!rv) continue;
+   if (histLoad().some(function (h) { return h.sid === rm[1] && h.round >= rv; })) continue;
+   var stu2 = (DATA.students || []).filter(function (s) { return s.id === rm[1]; })[0]; if (stu2) cand.push({ stu: stu2, round: rv });
+  }
+  if (cand.length && confirm('노트 저장분이 없는 학생 ' + cand.length + '명(' + cand.map(function (c) { return c.stu.name; }).join(', ') + ')은\n이 컴퓨터의 회차 기록으로 가장 최근 회차를 추정해서 되살릴까요?\n\n· 기본 설정(틀린 것 전부 · 같은 문제 한 번만)으로 만들었다고 보고 지금의 채점 기록에서 다시 맞춰요.\n· 노트를 만든 뒤 채점이 바뀌었거나 문제를 골라서 만들었다면 실제 노트와 번호가 다를 수 있어요.')) {
+   var prevStu = STU, prevSel = SEL, prevRows = ROWS, prevOth = OTH;
+   for (var ci = 0; ci < cand.length; ci++) {
+    var C = cand[ci]; st.textContent = '추정해서 되살리는 중… (' + (ci + 1) + ' / ' + cand.length + ') ' + C.stu.name;
+    STU = C.stu; SEL = {};
+    document.querySelector('input[name=wr][value=X]').checked = true; $('#d1').value = ''; $('#d2').value = ''; compute(true);
+    var byEx2 = {};
+    ROWS.forEach(function (r) { var ix = r.its.filter(function (t) { return SEL[r.id + '|' + t.i]; }); if (ix.length) byEx2[r.id] = { r: r, idx: ix }; });
+    var exs2 = Object.keys(byEx2).map(function (k) { return byEx2[k]; }).sort(function (a, b) { return a.r.date < b.r.date ? -1 : a.r.date > b.r.date ? 1 : 0; });
+    var items2 = [], seen2 = {}, seq2 = 0, dts = [];
+    for (var gi2 = 0; gi2 < exs2.length; gi2++) {
+     var X2 = exs2[gi2], j2 = await ms('problems', { exam_id: X2.r.id, nos: X2.idx.map(function (t) { return t.no; }) });
+     if (!j2 || !j2.ok) throw new Error((j2 && j2.error) || '문제를 가져오지 못했어요');
+     var by2 = {}; (j2.items || []).forEach(function (p) { by2[p.no] = p; }); var any = false;
+     X2.idx.forEach(function (t) {
+      var p = by2[t.no]; if (!p || seen2[t.h]) return; seen2[t.h] = 1; seq2++; any = true;
+      var q3 = qaOf({ an: p.an == null ? '' : String(p.an), ch: (p.ch || []).map(String), so: p.so || '' });
+      items2.push({ n: seq2, m: X2.r.name, s: t.src, a: q3.a, r: q3.r });
+     });
+     if (any) dts.push(X2.r.date);
+    }
+    if (!items2.length) { out.push(C.stu.name + ': 지금은 틀린 문제 기록이 없어서 건너뜀'); continue; }
+    dts.sort(); var per2 = dts[0] === dts[dts.length - 1] ? ymd(dts[0]) : ymd(dts[0]) + ' ~ ' + ymd(dts[dts.length - 1]);
+    var nw = new Date(), day2 = nw.getFullYear() + '. ' + ('0' + (nw.getMonth() + 1)).slice(-2) + '. ' + ('0' + nw.getDate()).slice(-2);
+    var cl2 = String(C.stu.cls || '').replace(/\s+/g, ''); if (cl2 && !/반$/.test(cl2)) cl2 += '반';
+    histAdd({ id: 'note_v1_' + C.stu.id + '_' + (Date.now() + ci), sid: C.stu.id, name: C.stu.name, ac: C.stu.ac, cls: cl2, round: C.round, date: day2, per: per2, n: items2.length, est: 1, items: items2 });
+    done++;
+   }
+   STU = prevStu; SEL = prevSel; ROWS = prevRows; OTH = prevOth;
+   if (STU) { compute(true); }
+  }
+  if (!done && !out.length) { alert('되살릴 옛 노트 흔적이 이 컴퓨터에 없어요. (이미 기록에 있거나, 노트를 만든 컴퓨터가 달라요)'); btn.disabled = false; return; }
+  var h2 = histLoad(); h2.sort(function (a, b) { return String(a.id).split('_').pop() - String(b.id).split('_').pop(); }); histSave(h2);
+  histRender();
+  alert('옛 노트 ' + done + '개를 기록에 되살렸어요.' + (out.length ? '\n\n되살리지 못한 것 ' + out.length + '개:\n' + out.join('\n') : '') + '\n\n※ 회차는 이 컴퓨터의 회차 기록으로 추정한 값이에요. 문제 묶음은 지금의 채점 기록으로 다시 맞춘 것이라, 노트를 만든 뒤 채점이 바뀌었다면 달라질 수 있어요.');
+ } catch (e) { alert('되살리지 못했어요: ' + (e.message || e)); }
+ btn.disabled = false;
 };
 $('#hQuick').onclick = async function () {
  var btn = this, all = histLoad(), pick = all.filter(function (x) { return HSEL[x.id]; });
