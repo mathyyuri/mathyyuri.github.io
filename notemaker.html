@@ -87,6 +87,7 @@ tr.exr:hover{background:#fbf6ea}
     <button id="hQuick" type="button" disabled>선택한 노트 빠른 정답 모음 출력</button>
     <button class="g" id="hDel" type="button" disabled>선택한 기록 지우기</button>
     <button class="g" id="hDelEst" type="button">복원(추정) 기록 모두 지우기</button>
+    <button id="hMkAll" type="button" title="이전에 만든 노트에도 채점용 미션을 한꺼번에 만들어요">채점용 미션 없는 기록 모두 만들기</button>
     <button class="g" id="hRec" type="button" title="기록 기능이 생기기 전에 만든 노트를 이 컴퓨터에 남은 흔적과 지금의 채점 기록으로 다시 맞춰 봐요">옛 노트 기록 되살리기</button>
     <button class="g" id="hExp" type="button">기록 파일로 내려받기</button>
     <label class="g" style="display:inline-block;border-radius:8px;padding:8px 14px;background:#efe5cf;font-weight:700;cursor:pointer">기록 파일 불러오기<input id="hImp" type="file" accept=".json,application/json" style="display:none"></label>
@@ -253,7 +254,7 @@ function roundHint() {
  el.placeholder = STU ? ('자동 ' + n) : '자동';
 }
 function gradeCell(x) {                                     // 채점 상태 + 채점하기(새 탭) — 채점용 미션이 있는 노트만
- if (!x.mid) return '<span class="muted">채점용 미션 없음</span>';
+ if (!x.mid) return '<span class="muted">채점용 미션 없음</span><br><button type="button" class="g" data-mk="' + esc(x.id) + '" style="padding:3px 9px;font-size:12px">채점용 미션 만들기</button>';
  var ex = (DATA && DATA.exams || []).filter(function (e) { return e.id === x.mid; })[0], ox = ex && ex.ox && ex.ox[x.sid], st = '';
  if (ox) { var o = (ox.match(/O/g) || []).length, w = (ox.match(/X/g) || []).length, t = (ox.match(/T/g) || []).length; st = '<span class="ok">채점됨</span> ○' + o + ' ✕' + w + (t ? ' △' + t : '') + '<br>'; }
  else if (ex) st = '<span class="muted">아직 채점 전</span><br>';
@@ -265,6 +266,47 @@ async function refreshData(manual) {                        // 다른 탭에서 
  DATA = j; if (STU) compute(false); histRender(); if (manual) alert('채점 기록을 새로 불러왔어요 (미션·시험 ' + (DATA.exams || []).length + '개)');
 }
 window.addEventListener('focus', function () { if (DATA && Date.now() - (window.__lastSync || 0) > 15000) { window.__lastSync = Date.now(); refreshData(false); } });
+/* 채점용 미션이 없는 기록(기능이 생기기 전에 만든 노트)에 미션 만들기: 기록의 (미션 이름 · 출처)로 원래 문제를 다시 찾아 연결해요 */
+async function makeMissionFor(x, quiet) {
+ var stu = (DATA.students || []).filter(function (t) { return t.id === x.sid; })[0];
+ var items = [], miss = 0;
+ var last = {}, used = {};
+ x.items.forEach(function (it) {                              // 같은 출처 글이 여러 번 있어도 문제 번호 순서대로 하나씩 맞춰요
+  var h = '', ex = (DATA.exams || []).filter(function (e) { return e.n === it.m && e.items && e.ox && e.ox[x.sid]; })[0];
+  if (ex) {
+   var ox = ex.ox[x.sid], cand = [], lk = ex.id, lo = last[lk] == null ? -1 : last[lk];
+   for (var i = 0; i < ex.items.length; i++) { var q = ex.items[i] || {}; if (q.h && (q.src || '') === (it.s || '') && !used[lk + '|' + i]) cand.push(i); }
+   var pick = cand.filter(function (i) { return i > lo && 'XT'.indexOf(ox.charAt(i)) >= 0; })[0];
+   if (pick == null) pick = cand.filter(function (i) { return 'XT'.indexOf(ox.charAt(i)) >= 0; })[0];
+   if (pick == null) pick = cand[0];
+   if (pick != null) { h = ex.items[pick].h; used[lk + '|' + pick] = 1; last[lk] = pick; }
+  }
+  if (!h) miss++;
+  items.push({ unit: it.m || '오답', sub: '오답', typ: '', src: (it.m || '') + (it.s ? ' — ' + it.s : ''), h: h, pts: 1 });
+ });
+ var name = '오답노트 · ' + x.name + ' ' + x.round + '회차', same = (DATA.exams || []).filter(function (e) { return e.n === name; })[0];
+ if (!quiet && !confirm('"' + name + '" (' + items.length + '문항) 채점용 미션을 만들까요?' + (miss ? '\n※ 원래 문제를 찾지 못한 ' + miss + '문항은 채점은 되지만 회독 누적·문제 보기는 연결되지 않아요.' : '') + (x.est ? '\n※ 복원(추정) 기록이라 노트의 문제 번호와 다를 수 있어요.' : ''))) return false;
+ var d = String(x.date || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, ''), args = { ac: x.ac || (stu && stu.ac) || 'ds', cls: 'note:' + x.sid, name: name, short: '오답', cat: '오답노트', date: /^\d{4}-\d\d-\d\d$/.test(d) ? d : new Date().toISOString().slice(0, 10), items: items };
+ if (same) args.id = same.id;
+ var j = await ms('create', args);
+ if (!j || !j.ok) { alert('미션을 만들지 못했어요: ' + ((j && j.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요)'); return false; }
+ var all = histLoad(); all.forEach(function (h) { if (h.id === x.id) h.mid = j.id; }); histSave(all);
+ return true;
+}
+$('#htbl').addEventListener('click', async function (e) {
+ var b = e.target.closest && e.target.closest('button[data-mk]'); if (!b) return;
+ var x = histLoad().filter(function (h) { return h.id === b.dataset.mk; })[0]; if (!x) return;
+ b.disabled = true; var ok = await makeMissionFor(x, false);
+ if (ok) { await refreshData(false); histRender(); } else b.disabled = false;
+});
+$('#hMkAll').onclick = async function () {
+ var btn = this, list = histLoad().filter(function (h) { return !h.mid && !h.est; });
+ if (!list.length) { alert('채점용 미션이 없는 기록이 없어요 (복원(추정) 기록은 제외돼요).'); return; }
+ if (!confirm('채점용 미션이 없는 기록 ' + list.length + '건에 미션을 모두 만들까요?\n(원래 문제를 다시 찾아 연결해요. 복원(추정) 기록은 제외)')) return;
+ btn.disabled = true; var ok = 0;
+ for (var i = 0; i < list.length; i++) { $('#hEmpty').textContent = '채점용 미션 만드는 중… (' + (i + 1) + ' / ' + list.length + ') ' + list[i].name; if (await makeMissionFor(list[i], true)) ok++; }
+ await refreshData(false); histRender(); btn.disabled = false; alert('채점용 미션 ' + ok + '개를 만들었어요. 표의 [채점하기]로 채점하세요.');
+};
 function histRender() {
  var all = histLoad(), only = $('#hOnlyStu').checked && STU ? STU.id : null;
  var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
