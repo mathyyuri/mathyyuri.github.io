@@ -46,7 +46,7 @@ tr.me td{background:#fff6e0}tr.me td:first-child{box-shadow:inset 4px 0 0 var(--
 .empty{padding:30px 10px;text-align:center;color:var(--mute);line-height:1.8}
 .ub{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13.5px}.ub .nm{width:130px;flex:none}.ub .bar{flex:1}.ub b{width:70px;text-align:right;font-size:12.5px}
 @media(max-width:640px){.wrap{padding:10px 8px 50px}.card{padding:12px}.top h1{font-size:15px}.tbl{font-size:12.5px}.hide-m{display:none}}
-</style></head><body>
+.nmxw{overflow-x:auto;border:1px solid #e5d9c0;border-radius:12px;background:#fffdf8}.nmx{border-collapse:separate;border-spacing:0;min-width:100%}.nmx th,.nmx td{padding:8px 10px;text-align:center;border-bottom:1px solid #eee3cc;border-right:1px solid #eee3cc;white-space:nowrap}.nmx thead th{background:#f4ecdb;font-weight:700;position:sticky;top:0}.nmx .nn{position:sticky;left:0;background:#fffdf8;text-align:left;min-width:96px;font-weight:700;z-index:1}.nmx thead .nn{background:#f4ecdb;z-index:2}.nmx .ncl td{background:#1f3258;color:#fff;text-align:left;font-weight:700;padding:5px 12px}.nmx .nc{min-width:128px;cursor:pointer;line-height:1.35}.nmx .nc b{display:block;font-size:18px}.nmx .nc span{font-size:11px;opacity:.85}.nmx .nw{background:repeating-linear-gradient(45deg,#faf6ec,#faf6ec 6px,#f3ecda 6px,#f3ecda 12px);color:#7d7364}.nmx .nx{color:#ccc;cursor:default}.nmx .na{font-weight:700;background:#faf6ec;min-width:64px}.nmx .nc:hover{outline:2px solid #c9a15a;outline-offset:-2px}</style></head><body>
 <div id="app"></div>
 <div class="mdl" id="md" hidden><div class="mb" id="mb"></div></div>
 <script>
@@ -199,12 +199,46 @@ function vList(){
  if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return !S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length)h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><b>오늘의 미션이 준비돼 있어요</b> — 누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요.<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div></div>'}
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=seasonBar(S.list)+catBar(S.list);
+ if(isStaff()&&!ta&&S.cat==='오답노트')return h+vNotes();
  var all=filtered(),lim=S.lim||30,vis=all.slice(0,lim);
  if(!all.length)return h+'<div class="card"><div class="empty">이 시즌에는 아직 미션이 없어요.</div></div>';
  h+='<div class="mlist">'+vis.map(function(m){
-  return '<div class="mc" data-a="open" data-id="'+m.id+'"'+(isStaff()&&!ta?' draggable="true"':'')+'>'+(isStaff()&&!ta?'<span class="mvb"><button data-a="mvup" data-id="'+m.id+'" title="위로">▲</button><button data-a="mvdn" data-id="'+m.id+'" title="아래로">▼</button></span>':'')+'<div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
+  return '<div class="mc" data-a="open" data-id="'+m.id+'"'+(isStaff()&&!ta?' draggable="true"':'')+'>'+(isStaff()&&!ta?'<span class="mvb"><button data-a="mvup" data-id="'+m.id+'" title="위로">▲</button><button data-a="mvdn" data-id="'+m.id+'" title="아래로">▼</button></span>':'')+'<div class="muted sm">'+esc(m.date)+' · '+esc(AC[m.ac]||'공통')+(m.cat?' · '+esc(m.cat):'')+(m.cls&&String(m.cls).indexOf('note:')!==0?' · '+esc(m.cls):'')+'</div><div class="t">'+esc(m.name)+'</div><div class="sm">'+m.n+'문항'+(isStaff()?' · 채점 '+m.graded+'명':'')+'</div>'+(isStaff()?'':'<div data-mine="'+m.id+'">'+mineHtml(m)+'</div>')+'</div>'}).join('')+'</div>';
  if(all.length>lim)h+='<div style="text-align:center;margin:16px"><button class="btn sec" data-a="more">더 보기 ('+(all.length-lim)+'개 남음)</button></div>';
  return h}
+
+
+/* ───────── 오답노트 현황: 학생(S+반 → S반, 가나다순) 한 줄에 회차별 노트가 가로로, 채점한 칸은 정답률만큼 진하게 ───────── */
+function noteRound(m){var r=/(\d+)\s*회차/.exec(m.name||'');return r?+r[1]:0}
+async function loadNotes(){
+ if(S.notes&&S.notes.loading)return;S.notes={loading:true};
+ var j=await api('sync');
+ if(!S.studs){var js=await ms('students');S.studs=js&&js.ok?js.students:[]}
+ var by={};((j&&j.ok&&j.exams)||[]).forEach(function(e){by[e.id]=e});
+ S.notes={ex:by};render()}
+function noteCell(m,sid){
+ var ex=S.notes.ex[m.id],ox=ex&&ex.ox&&ex.ox[sid],c=cnts(ox);
+ if(!c.n)return {h:'<td class="nc nw" data-a="opennote" data-id="'+m.id+'"><b>채점 전</b><span>'+m.n+'문항</span></td>',pct:null};
+ var pct=Math.round(c.o/c.n*100),al=(0.10+0.78*pct/100).toFixed(2);
+ return {h:'<td class="nc" data-a="opennote" data-id="'+m.id+'" style="background:rgba(31,50,88,'+al+');color:'+(pct>=48?'#fff':'#1f3258')+'" title="○'+c.o+' ✕'+c.x+(c.t?' △'+c.t:'')+' / '+c.n+'문항"><b>'+pct+'%</b><span>○'+c.o+' ✕'+c.x+(c.t?' △'+c.t:'')+' · '+m.n+'문항</span></td>',pct:pct}}
+function vNotes(){
+ if(!S.notes||S.notes.loading){if(!S.notes)loadNotes();return '<div class="card"><div class="empty">오답노트 채점 현황을 불러오는 중…</div></div>'}
+ var cell={},maxR=3,hasNote={},nNote=0;
+ S.list.forEach(function(m){if(catOf(m)!=='오답노트'||String(m.cls||'').indexOf('note:')!==0)return;var sid=m.cls.slice(5),r=noteRound(m);if(!r)return;var k=sid+'|'+r;if(!cell[k]||String(m.date)>=String(cell[k].date))cell[k]=m;if(r>maxR)maxR=r;hasNote[sid]=1;nNote++});
+ var all=(S.studs||[]).slice(),shown=all.filter(function(r){return S.noteAll||['S+','S'].indexOf(cn(r.cls))>=0});
+ shown.sort(function(a,b){var o=clsOrd(a.cls,b.cls);return o!==0?o:String(a.name).localeCompare(String(b.name),'ko')});
+ var hid=all.filter(function(r){return shown.indexOf(r)<0&&hasNote[r.id]}).length,done=0,rows='',lastCls=null,nc=maxR+2;
+ shown.forEach(function(r){
+  if(r.cls!==lastCls){lastCls=r.cls;rows+='<tr class="ncl"><td colspan="'+nc+'">'+esc(cn(r.cls))+'반</td></tr>'}
+  var tds='',sum=0,cnt=0;
+  for(var k=1;k<=maxR;k++){var m=cell[r.id+'|'+k];if(!m){tds+='<td class="nc nx">·</td>';continue}var c=noteCell(m,r.id);tds+=c.h;if(c.pct!=null){sum+=c.pct;cnt++;done++}}
+  rows+='<tr><th class="nn">'+esc(r.name)+'</th>'+tds+'<td class="na">'+(cnt?Math.round(sum/cnt)+'%':'')+'</td></tr>'});
+ var head='<tr><th class="nn">이름</th>';for(var q=1;q<=maxR;q++)head+='<th>'+q+'회차</th>';head+='<th>평균</th></tr>';
+ return '<div class="note1">학생 이름 줄마다 회차별 오답노트가 가로로 놓여 있어요. 칸을 누르면 그 노트의 정오표를 입력하고, 채점한 칸은 정답률이 높을수록 진하게 보여요.</div>'
+  +'<div class="row" style="margin:6px 0 10px;gap:8px"><b>채점 완료 '+done+' / 노트 '+nNote+'개</b><span class="muted sm">○ 맞음 · ✕ 틀림 · △ 고침</span><span class="sp"></span>'
+  +'<button class="btn sec sm3" data-a="noteall">'+(S.noteAll?'S·S+반만 보기':'다른 반도 보기')+'</button><button class="btn sec sm3" data-a="noterefresh">새로 불러오기</button></div>'
+  +(hid?'<div class="muted sm" style="margin-bottom:6px">S·S+ 밖의 반 학생 노트 '+hid+'명은 [다른 반도 보기]에서 볼 수 있어요.</div>':'')
+  +'<div class="nmxw"><table class="nmx"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'}
 
 /* ───────── 기록 한눈에 (성적 그래프 · 정오표 클리어 현황) ───────── */
 function cnts(ox){var o=0,t=0,x=0;String(ox||'').split('').forEach(function(c){if(c==='O')o++;else if(c==='T')t++;else if(c==='X')x++});return {o:o,t:t,x:x,n:o+t+x}}
@@ -765,7 +799,10 @@ document.addEventListener('click',async function(ev){
   if(isStaff()){var v=wsel.value;keys=v==='__all'?S.C.G.map(function(r){return r.k}):v.indexOf('cls:')===0?S.C.G.filter(function(r){return r.cls===v.slice(4)}).map(function(r){return r.k}):[v]}else keys=[meRow().k];
   makeNote(keys,range,sol);return}
  if(a==='nick'){var per=!!S.ex,nk=prompt(per?'이 미션에서 쓸 닉네임을 적어 주세요 (2~10자, 친구 이름과 같으면 안 돼요). 비우면 기본 닉네임으로 돌아가요.':'기본 닉네임을 정해 주세요 (2~10자). 미션마다 따로 정하려면 미션을 연 뒤 이 버튼을 눌러요.');if(nk===null)return;var jn=await ms('nick',per?{nick:nk,exam_id:S.ex.id}:{nick:nk});alert(jn&&jn.ok?'바꿨어요':((jn&&jn.error)||'바꾸지 못했어요'));if(S.ex)await openMission(S.ex.id,S.view);return}
- if(a==='cat'){S.cat=b.getAttribute('data-v');S.lim=30;render();return}
+ if(a==='cat'){S.cat=b.getAttribute('data-v');S.lim=30;S.notes=null;render();return}
+ if(a==='opennote'){S.notes=null;await openMission(b.getAttribute('data-id'),'input');return}
+ if(a==='noteall'){S.noteAll=!S.noteAll;render();return}
+ if(a==='noterefresh'){S.notes=null;render();return}
  if(a==='more'){S.lim=(S.lim||30)+30;render();return}
  if(a==='imp'){openImp();return}
  if(a==='new'){openNew();return}
