@@ -69,6 +69,7 @@ tr.exr:hover{background:#fbf6ea}
     <label class="lab"><input type="checkbox" id="withSol" checked> 정답·해설 쪽 넣기</label>
    </div>
    <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
+   <div id="others" class="muted" style="margin:8px 0 10px;line-height:1.9"></div>
    <div style="overflow-x:auto"><table id="tbl"><thead><tr><th style="width:34px"></th><th>교재(미션)</th><th style="width:96px">날짜</th><th style="width:110px">틀린 문제</th><th style="width:60px"></th></tr></thead><tbody></tbody></table></div>
   </div>
 
@@ -98,7 +99,7 @@ async function call(fn, args) {
 function api(a, args) { return call('ac_api', { p_action: a, p_token: tok, p_args: args || {} }); }
 function ms(a, args) { return call('ac_mission', { p_action: a, p_token: tok, p_args: args || {} }); }
 
-var DATA = null, STU = null, ROWS = [], SEL = {}, OPEN = {};
+var DATA = null, STU = null, ROWS = [], OTH = [], SEL = {}, OPEN = {};
 
 /* ───────── 로그인 · 불러오기 ───────── */
 async function boot() {
@@ -131,11 +132,13 @@ $('#stu').onchange = function () { STU = (DATA.students || []).filter(function (
 /* ───────── 틀린 문제 모으기 ───────── */
 function wrongSet() { return document.querySelector('input[name=wr]:checked').value === 'XT' ? 'XT' : 'X'; }
 function compute(selectAll) {
- ROWS = []; if (!STU) { render(); return; }
+ ROWS = []; OTH = []; if (!STU) { render(); return; }
  var d1 = $('#d1').value, d2 = $('#d2').value, ws = wrongSet();
  (DATA.exams || []).forEach(function (e) {
-  var ox = e.ox && e.ox[STU.id]; if (!ox || !e.items || !e.items.length) return;
+  if (!e.items || !e.items.length) return;
   if (d1 && e.date < d1) return; if (d2 && e.date > d2) return;
+  var ox = e.ox && e.ox[STU.id];
+  if (!ox) { OTH.push({ name: e.n, date: e.date, why: '이 학생의 채점 기록이 없어요' }); return; }
   var its = [], nodata = 0;
   for (var i = 0; i < e.items.length; i++) {
    var c = ox.charAt(i); if (ws.indexOf(c) < 0 || c === '') continue;
@@ -143,6 +146,7 @@ function compute(selectAll) {
    if (!it.h) { nodata++; continue; }
    its.push({ i: i, no: i + 1, c: c, src: it.src || '', h: it.h, unit: it.unit || '' });
   }
+  if (!its.length && !nodata) OTH.push({ name: e.n, date: e.date, why: '틀린 문제가 없어요(전부 맞았거나 안 푼 문제만 있어요)' });
   if (its.length || nodata) ROWS.push({ id: e.id, name: e.n, short: e.short || '', date: e.date, its: its, nodata: nodata, total: e.items.length });
  });
  ROWS.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
@@ -152,10 +156,11 @@ function compute(selectAll) {
 }
 function render() {
  var tb = $('#tbl tbody'), h = '';
+ $('#others').innerHTML = (STU && OTH.length) ? ('<b>목록에 안 나온 미션</b> (' + OTH.length + '개) — ' + OTH.sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (o) { return esc(o.name) + ' <span style="opacity:.75">[' + esc(o.why) + ']</span>'; }).join(' &nbsp;·&nbsp; ')) : '';
  $('#empty').textContent = STU ? (ROWS.length ? '' : '이 기간에 틀린 문제 기록이 없어요') : '';
  ROWS.forEach(function (r, ri) {
   var n = r.its.filter(function (it) { return SEL[r.id + '|' + it.i]; }).length, all = n === r.its.length && n > 0;
-  h += '<tr class="exr"><td><input type="checkbox" data-r="' + ri + '"' + (all ? ' checked' : '') + (r.its.length ? '' : ' disabled') + '></td><td><b>' + esc(r.name) + '</b>' + (r.short ? '<span class="badge">' + esc(r.short) + '</span>' : '') + '</td><td>' + esc(r.date) + '</td><td>' + n + ' / ' + r.its.length + '문제' + (r.nodata ? '<br><span class="muted">자료 없음 ' + r.nodata + '</span>' : '') + '</td><td><span class="tog" data-o="' + ri + '">' + (OPEN[r.id] ? '접기' : '펼치기') + '</span></td></tr>';
+  h += '<tr class="exr"><td><input type="checkbox" data-r="' + ri + '"' + (all ? ' checked' : '') + (r.its.length ? '' : ' disabled') + '></td><td><b>' + esc(r.name) + '</b>' + (r.short ? '<span class="badge">' + esc(r.short) + '</span>' : '') + '</td><td>' + esc(r.date) + '</td><td>' + n + ' / ' + r.its.length + '문제' + (r.nodata ? '<br><span class="muted">자료 연결 없음 ' + r.nodata + '</span>' : '') + '</td><td><span class="tog" data-o="' + ri + '">' + (OPEN[r.id] ? '접기' : '펼치기') + '</span></td></tr>';
   if (OPEN[r.id]) h += '<tr><td></td><td colspan="4"><div class="chips">' + r.its.map(function (it) { return '<span class="chip' + (SEL[r.id + '|' + it.i] ? ' on' : '') + '" data-c="' + ri + ':' + it.i + '" title="' + esc(it.src) + '">' + it.no + '번' + (it.c === 'T' ? ' (고침)' : '') + '</span>'; }).join('') + '</div></td></tr>';
  });
  tb.innerHTML = h;
