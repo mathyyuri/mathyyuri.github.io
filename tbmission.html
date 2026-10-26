@@ -580,18 +580,43 @@ async function loadPrep(){
  var L=(S.prep&&S.prep.list)||[];if(!L.length){box.innerHTML='';return}
  box.innerHTML='<div class="note1" style="margin:8px 0"><b>준비된 오늘의 미션</b> — 문제 보기·오답노트까지 연결돼요. 누르면 바로 만들고 채점 화면으로 가요.</div>'+L.map(function(m,i){return '<div class="row" style="gap:8px;margin-bottom:6px"><button type="button" class="btn gold sm3" data-a="prepmk" data-i="'+i+'">'+esc(m.name)+' 만들기</button><span class="muted sm">'+esc(m.note||(m.items.length+'문항'))+'</span></div>'}).join('')
 }
+var PREP={i:-1,ac:'ds'};
+function prepClasses(){   /* 고른 학원의 반 목록 (학생 명단에서) */
+ var L={};(S.studs||[]).forEach(function(r){if(!PREP.ac||r.ac===PREP.ac)L[r.cls]=(L[r.cls]||0)+1});
+ var def=((S.prep&&S.prep.defaultCls)||[]).map(function(x){return cn(x)});
+ return Object.keys(L).sort(clsOrd).map(function(k){return '<label class="row" style="gap:6px;margin:2px 12px 2px 0"><input type="checkbox" class="pcls" value="'+esc(k)+'"'+(def.indexOf(cn(k))>=0?' checked':'')+'> '+esc(cn(k))+'반 <span class="muted sm">'+L[k]+'명</span></label>'}).join('')||'<span class="muted">이 학원 학생이 없어요</span>'
+}
 async function prepOk(i){
  var m=((S.prep&&S.prep.list)||[])[i];if(!m)return;
- var dt=$('#ndt')?$('#ndt').value:ymd();
- var args={name:m.name,short:m.short||'',cat:m.cat||'',date:dt||ymd(),items:m.items};
- if(isAdmin()){if($('#nac'))args.ac=$('#nac').value;else{var pa=prompt('어느 학원 학생들이 볼까요?  ds = 대치에스플러스 / bd = 분당미래탐구','ds');if(!pa)return;pa=pa.trim().toLowerCase();if(pa!=='ds'&&pa!=='bd'){alert('ds 또는 bd 로 적어 주세요');return}args.ac=pa}}
- var same=S.list.filter(function(x){return x.name===m.name&&(!args.ac||x.ac===args.ac)})[0];
- if(same){if(!confirm('같은 이름의 미션이 이미 있어요 ('+same.date+', 채점 '+same.graded+'명).\n이 미션을 지금 준비된 문항으로 갱신할까요? (문항 순서가 바뀌면 이미 한 채점이 어긋나요)'))return;args.id=same.id}
- else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을 만들까요?'+(isAdmin()&&$('#nac')?'\n학원: '+($('#nac').value==='bd'?'분당미래탐구':'대치에스플러스학원'):'')))return;
+ if(!S.studs){var js=await ms('students');S.studs=js&&js.ok?js.students:[]}
+ PREP.i=i;PREP.ac=isAdmin()?(PREP.ac||'ds'):((S.studs[0]||{}).ac||'ds');
+ prepShow()
+}
+function prepShow(){
+ var m=S.prep.list[PREP.i],d=$('#md'),b=$('#mb');
+ if(!d||!b){alert('이 화면에서는 열 수 없어요. 새로고침 후 다시 눌러 주세요');return}
+ b.innerHTML='<h3>'+esc(m.name)+' 만들기</h3><div class="note1">'+esc(m.note||(m.items.length+'문항'))+'<br>문제 DB와 연결된 문항으로 만들어요. 만든 뒤 바로 정오표 입력 화면으로 가요.</div>'+
+  (isAdmin()?'<div class="fld"><label>학원</label><div class="row" style="gap:6px"><button type="button" class="btn '+(PREP.ac==='ds'?'gold':'sec')+' sm3" data-a="prepac" data-v="ds">대치에스플러스</button><button type="button" class="btn '+(PREP.ac==='bd'?'gold':'sec')+' sm3" data-a="prepac" data-v="bd">분당미래탐구</button></div></div>':'')+
+  '<div class="fld"><label>대상 반 (체크한 반 학생에게만 보여요 · 모두 체크하거나 모두 빼면 학원 전체)</label><div class="row" style="flex-wrap:wrap" id="pcl">'+prepClasses()+'</div></div>'+
+  '<div class="fld"><label>날짜</label><input id="pdt" type="date" class="oxin" value="'+ymd()+'"></div>'+
+  '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn gold" data-a="prepgo">만들기 (채점 시작)</button></div>';
+ d.hidden=false
+}
+async function prepGo(){
+ var m=S.prep.list[PREP.i];if(!m)return;
+ var all=[].slice.call(document.querySelectorAll('.pcls')),ck=all.filter(function(x){return x.checked}).map(function(x){return x.value});
+ var cls=(ck.length&&ck.length<all.length)?ck.join(','):null;
+ var args={name:m.name,short:m.short||'',cat:m.cat||'',date:($('#pdt').value||ymd()),items:m.items,cls:cls||''};
+ if(isAdmin())args.ac=PREP.ac;
+ var same=S.list.filter(function(x){return x.name===m.name&&x.date===args.date&&(!args.ac||x.ac===args.ac)&&(x.cls||'')===(cls||'')})[0];
+ var who=(cls?ck.map(cn).join('·')+'반':'학원 전체')+(args.ac?' ('+(args.ac==='bd'?'분당미래탐구':'대치에스플러스학원')+')':'');
+ if(same){if(!confirm('같은 미션이 이미 있어요 ('+same.date+', 채점 '+same.graded+'명).\n지금 준비된 문항으로 갱신할까요? (문항 순서가 바뀌면 이미 한 채점이 어긋나요)'))return;args.id=same.id}
+ else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을\n'+who+' 에게 만들까요?'))return;
  var j=await ms('create',args);
  if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
  var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
- if($('#md'))$('#md').hidden=true;await openMission(j.id,'input')}
+ if(cls){var ck2=await ms('load',{exam_id:j.id});if(ck2&&ck2.ok&&!(ck2.roster||[]).length)alert('미션은 만들었지만 채점 명단이 비어 있어요.\n반을 여러 개 고르려면 서버에 23_오답노트채점_서버.sql 을 한 번 실행해야 해요.\n(실행 전에는 반을 하나만 고르거나, 전체로 만들어 주세요)')}
+ $('#md').hidden=true;await openMission(j.id,'input')}
 async function newOk(){
  var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||null,cat=$('#ncat').value.trim();
  if(!nm){alert('미션 이름을 적어 주세요');return}
@@ -708,6 +733,8 @@ document.addEventListener('click',async function(ev){
  if(a==='nickview'){NICK=!NICK;try{localStorage.setItem(NICKK,NICK?'1':'0')}catch(e){}render();return}
  if(a==='home'){goHome();return}
  if(a==='prepmk'){await prepOk(+b.getAttribute('data-i'));return}
+ if(a==='prepac'){PREP.ac=b.getAttribute('data-v');prepShow();return}
+ if(a==='prepgo'){await prepGo();return}
  if(a==='newpre'){$('#nnm').value='모의 기출 : '+ymd();$('#ncat').value='기출';$('#ndt').value=ymd();return}
  if(a==='out'){var tk=S.tok;S.ex=null;S.ov=false;S.hist=null;await api('logout');logout();return}
  if(a==='open'){openMission(b.getAttribute('data-id'));return}
