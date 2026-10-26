@@ -428,7 +428,8 @@ function targetsOf(p){return Object.values(U).filter(u=>{
  if(p.sid&&p.sid!==st.id)return false;return true;});}
 
 /* ════════ 서버 연결 ════════ */
-const API_URL='https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/ac_api', API_KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
+const SBQ=(()=>{try{const q=new URLSearchParams(location.search).get('sb');return q&&/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(q)?q:null;}catch(e){return null;}})();   // 시험용(내 컴퓨터) 서버만 허용
+const API_URL=(SBQ||'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/')+'ac_api', API_KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
 const TOKEN_KEY='acadapp_tok_v1',KEYF='acadapp_face_v1';
 let TOKEN=null;try{TOKEN=localStorage.getItem(TOKEN_KEY);}catch(e){}
 let PUB={season:5,face:null,ok:true};
@@ -443,7 +444,7 @@ async function api(action,args){
  if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
  return j;
 }
-function forceLogout(){if(typeof VIEW!=='undefined'&&VIEW){viewEnd(true);return;}TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){if(typeof VIEW!=='undefined'&&VIEW){viewEnd(true);return;}TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -757,11 +758,112 @@ function vExamOld(){
 
 
 
+/* ── 단톡 · 운영진 톡 (여럿이 함께 하는 대화방) — 서버 24_단톡_서버.sql ── */
+const ROOM_URL=API_URL.replace('ac_api','ac_room');
+let RMS=null,RMSG={},RME=null,RBUSY=false,RTIMER=null,RDRAFT={},RSTAT={};
+async function roomApi(a,args){
+ try{const r=await fetch(ROOM_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
+  if(!r.ok)return {ok:false,error:r.status===404?'단톡 서버가 아직 준비되지 않았어요 (24_단톡_서버.sql 실행 필요)':'서버 오류 '+r.status};return await r.json();}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
+}
+function roomAc(){return isStaff()?curAc():null;}
+async function loadRooms(quiet){
+ if(RBUSY)return;RBUSY=true;
+ const j=await roomApi('rooms',isStaff()?{ac:curAc()}:{});
+ RBUSY=false;
+ if(!j||!j.ok){if(!quiet||RMS===null){RMS={err:(j&&j.error)||'단톡방을 불러오지 못했어요',rooms:[]};if(!quiet)render();}return;}
+ const co={'S+':0,'S':1,'A+':2,'A':3,'B':4},ko=r=>r.kind==='all'?-1:r.kind==='staff'?99:(co[String(r.cls||'').replace(/반$/,'')]==null?9:co[String(r.cls||'').replace(/반$/,'')]);
+ const first=RMS===null;RMS={rooms:(j.rooms||[]).slice().sort((a,b)=>ko(a)-ko(b)),ac:roomAc()};RME=j.me;
+ if(first||!quiet){render();}else paintRoomList();
+}
+function roomMine(m){return RME&&(RME.kind==='student'?(m.k==='student'&&m.f===RME.id):(m.k==='staff'&&m.r===RME.role));}
+function roomIcon(r){return r.kind==='all'?'전':r.kind==='staff'?'운':String(r.cls||'?')[0];}
+function roomListHtml(){
+ const cur=S.room;
+ return RMS.rooms.map(r=>'<button class="'+(cur===r.id?'on':'')+'" data-a="room" data-v="'+esc(r.id)+'"><div class="av '+(r.kind==='staff'?'p':'')+'">'+esc(roomIcon(r))+'</div><div class="tx"><div><b>'+esc(r.title)+'</b></div><div class="muted sm">'+(r.last?esc((r.last.n||'')+': '+(r.last.t||'')):'첫 글을 남겨 보세요')+'</div></div>'+(r.un?'<span class="badge new">'+r.un+'</span>':'')+'</button>').join('');
+}
+function paintRoomList(){const e=document.getElementById('rlist');if(e)e.innerHTML=roomListHtml();}
+function roomMsgsHtml(id){
+ const a=RMSG[id]||[];
+ if(!a.length)return '<div class="empty">아직 대화가 없어요. 첫 글을 남겨 보세요!</div>';
+ let last='',h='';
+ a.forEach(m=>{
+  const mine=roomMine(m),day=String(m.ts||'').slice(0,10);
+  if(day!==last){last=day;h+='<div class="muted sm" style="text-align:center;margin:8px 0">'+esc(day.replace(/-/g,'. '))+'</div>';}
+  const who=m.k==='staff'?'<span class="badge" style="background:#13264A;color:#fff">'+esc(m.n)+'</span>':esc(m.n);
+  const canDel=(RME&&RME.kind==='staff'&&RME.role==='admin')||(mine&&RME&&RME.kind==='student');
+  h+='<div class="b '+(mine?'me':'you')+'">'+(mine?'':'<div class="rn" style="font-size:11.5px;font-weight:700;margin-bottom:2px">'+who+'</div>')+nl(m.t)+'<small>'+fmtTs(String(m.ts).length===16?m.ts+':00':m.ts)+(canDel?' · <button type="button" class="btn sm3 gh" data-a="rdel" data-id="'+m.id+'" style="padding:0 6px;font-size:11px">지우기</button>':'')+'</small></div>';
+ });
+ return h;
+}
+function paintRoomMsgs(stay){
+ const e=document.getElementById('rmsgs');if(!e||!S.room)return;
+ const near=e.scrollHeight-e.scrollTop-e.clientHeight<80;
+ e.innerHTML=roomMsgsHtml(S.room);
+ if(!stay||near)e.scrollTop=e.scrollHeight;
+}
+async function pollRoom(full){
+ const id=S.room;if(!id)return;
+ const a=RMSG[id]||[],after=(!full&&a.length)?a[a.length-1].id:null;
+ const j=await roomApi('list',after?{room:id,after:after}:{room:id});
+ if(!j||!j.ok){RSTAT[id]=(j&&j.error)||'';const e=document.getElementById('rmsgs');if(e&&!(RMSG[id]||[]).length)e.innerHTML='<div class="empty">'+esc(RSTAT[id])+'</div>';return;}
+ let chg=false;
+ if(!after){RMSG[id]=j.msgs||[];chg=true;}else if((j.msgs||[]).length){RMSG[id]=a.concat(j.msgs);chg=true;}
+ if(id!==S.room)return;
+ if(chg)paintRoomMsgs(!!after);
+ const r=RMS&&RMS.rooms.find(x=>x.id===id);
+ if(r&&(r.un||chg)){r.un=0;roomApi('read',{room:id});paintRoomList();}
+}
+function roomChatHtml(id){
+ const r=RMS.rooms.find(x=>x.id===id);if(!r)return '<div class="empty card">왼쪽에서 방을 선택하세요</div>';
+ const sub=r.kind==='staff'?'원장·조교만 볼 수 있어요':r.kind==='all'?'학원 학생 모두와 선생님이 함께 해요':(esc(r.cls)+' 학생과 선생님이 함께 해요');
+ return '<div class="chat"><div class="hh"><button class="btn sm3 gh back" data-a="room" data-v="">‹</button>'+esc(r.title)+' <span class="muted sm" style="font-weight:500">'+sub+'</span></div>'+
+  '<div class="msgs" id="rmsgs">'+roomMsgsHtml(id)+'</div>'+
+  '<div class="in"><button class="btn sm3 gh" type="button" data-a="emo" data-t="rmin">이모티콘</button><input id="rmin" placeholder="메시지 입력 (Enter로 보내기)" maxlength="1000" data-enter="rsend" data-room="'+esc(id)+'" value="'+esc(RDRAFT[id]||'')+'"><button class="btn" data-a="rsend" data-room="'+esc(id)+'">보내기</button></div></div>';
+}
+function vRooms(){
+ if(RMS&&RMS.ac!==undefined&&RMS.ac!==roomAc()){RMS=null;RMSG={};S.room=null;}
+ if(RMS===null){loadRooms();return '<div class="card"><div class="empty">단톡방을 불러오는 중…</div></div>';}
+ if(RMS.err)return '<div class="card"><div class="empty">'+esc(RMS.err)+'</div><div style="text-align:center"><button class="btn sm3 gh" data-a="rretry">다시 불러오기</button></div></div>';
+ if(S.room&&!RMS.rooms.some(r=>r.id===S.room))S.room=null;
+ const wide=window.innerWidth>=900;
+ if(!S.room&&wide&&RMS.rooms.length)S.room=RMS.rooms[0].id;
+ const has=!!S.room;
+ if(has&&!RMSG[S.room])setTimeout(()=>pollRoom(true),0);else if(has)setTimeout(()=>{const e=document.getElementById('rmsgs');if(e)e.scrollTop=e.scrollHeight;pollRoom(false);},0);
+ return '<div class="note" style="margin-bottom:8px">학원 전체 · 반별 단톡방이에요. 서로 존중하며 대화해 주세요. 지운 글은 되돌릴 수 없어요.'+(isStaff()?' <b>운영진 톡</b>은 원장·조교만 볼 수 있어요.':'')+'</div>'+
+  '<div class="chatw"><div class="'+(has?'hide-m':'')+'"><div class="tl" id="rlist">'+roomListHtml()+'</div></div><div class="'+(has?'':'hide-m')+'">'+(has?roomChatHtml(S.room):'<div class="empty card">방을 선택하세요</div>')+'</div></div><style>@media(max-width:899px){.hide-m{display:none}}</style>';
+}
+async function sendRoom(id){
+ const i=document.getElementById('rmin');if(!i)return;const tx=i.value.trim();if(!tx)return;
+ i.disabled=true;const sb=document.querySelector('[data-a="rsend"]');if(sb)sb.disabled=true;
+ const j=await roomApi('send',{room:id,text:tx});
+ const n=document.getElementById('rmin'),b=document.querySelector('[data-a="rsend"]');
+ if(!j||!j.ok){toast((j&&j.error)||'보내지 못했어요');if(n){n.disabled=false;n.focus();}if(b)b.disabled=false;return;}
+ RDRAFT[id]='';if(n){n.value='';n.disabled=false;n.focus();}if(b)b.disabled=false;
+ await pollRoom(false);
+}
+document.addEventListener('click',async e=>{
+ const t=e.target.closest&&e.target.closest('[data-a="room"],[data-a="rsend"],[data-a="rdel"],[data-a="rretry"]');if(!t)return;
+ const a=t.dataset.a;
+ if(a==='room'){S.room=t.dataset.v||null;render();return;}
+ if(a==='rsend'){sendRoom(t.dataset.room);return;}
+ if(a==='rretry'){RMS=null;render();return;}
+ if(a==='rdel'){if(!confirm('이 글을 지울까요?'))return;const j=await roomApi('del',{id:t.dataset.id});if(!j||!j.ok){toast((j&&j.error)||'지우지 못했어요');return;}RMSG[S.room]=(RMSG[S.room]||[]).filter(m=>String(m.id)!==String(t.dataset.id));paintRoomMsgs(true);}
+});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing)return;const t=e.target.closest&&e.target.closest('[data-enter="rsend"]');if(t){e.preventDefault();sendRoom(t.dataset.room);}});
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.id==='rmin'&&S.room)RDRAFT[S.room]=t.value;});
+setInterval(()=>{
+ if(document.hidden||!TOKEN)return;
+ const on=S.tab==='msg'&&S.sub.msg==='group';
+ if(on&&S.room)pollRoom(false);
+ if(on&&Date.now()-(window.__rl||0)>20000){window.__rl=Date.now();loadRooms(true);}
+},5000);
+
 /* ── 알림(카톡·문자) — 화면만 있는 데모 ── */
 function vMsg(){
  const staff=isStaff(),k=S.sub.msg||'chat';
- const tabs=staff?[['chat','대화'],['notif','알림 설정'],['log','발송 기록']]:[['chat','대화'],['pref','알림 받기']];
+ const stu=me().role==='student',tabs=staff?[['chat','대화'],['group','단톡 · 운영진 톡'],['notif','알림 설정'],['log','발송 기록']]:stu?[['chat','선생님과 대화'],['group','단톡'],['pref','알림 받기']]:[['chat','대화'],['pref','알림 받기']];
  let h='<div class="chips">'+tabs.map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="msg" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ if((staff||stu)&&k==='group')return h+vRooms();
  if(staff&&k==='notif')return h+vNotif();
  if(staff&&k==='log')return h+vNlog();
  if(!staff&&k==='pref')return h+vPref();
@@ -909,7 +1011,7 @@ function pickFace(){
  i.click();}
 async function startSession(tok){
  TOKEN=tok;try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
- TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;
+ TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;
  const ok=await resync();
  if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}
  S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);
@@ -1963,7 +2065,7 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{if(VIEW){await viewEnd();break;}await api('logout');TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;TODOE=null;ATD=undefined;ATDR={};ATDD=null;ATDC='';PRF={cls:'',only:false};try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
+ case 'logout':{if(VIEW){await viewEnd();break;}await api('logout');TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;TODOE=null;ATD=undefined;ATDR={};ATDD=null;ATDC='';PRF={cls:'',only:false};try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':{if(S.tab==='att'&&atdDirtyN()&&!confirm('저장하지 않은 출석 기록이 있어요. 저장하지 않고 이동할까요?'))break;if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
  case 'cls':S.cls=v;S.thread=null;render();break;
