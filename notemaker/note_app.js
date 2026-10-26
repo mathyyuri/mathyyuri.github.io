@@ -122,7 +122,7 @@
  }
 
  /* ───────── 상자 만들기 ───────── */
- var TOOLS_P = '<span class="ui tools"><button data-a="up" title="앞으로">↑</button><button data-a="dn" title="뒤로">↓</button><button data-a="add" title="이 문제 뒤에 문제 추가">추가</button><button data-a="rst" title="고친 내용을 원래대로">원래대로</button><button data-a="del" class="red" title="이 문제를 교재에서 빼기">빼기</button></span>';
+ var TOOLS_P = '<span class="ui tools"><button data-a="up" title="앞으로">↑</button><button data-a="dn" title="뒤로">↓</button><button data-a="add" title="이 문제 뒤에 문제 추가">추가</button><button data-a="meta" title="종류·정답·단원·난이도·해설 고치기, 고친 문제를 서버 문제 DB에 등록">정보·DB</button><button data-a="rst" title="고친 내용을 원래대로">원래대로</button><button data-a="del" class="red" title="이 문제를 교재에서 빼기">빼기</button></span>';
  var TOOLS_T = '<span class="ui tools"><button data-a="tdel" class="red" title="이 덩어리를 교재에서 빼기">빼기</button></span>';
  function mkProblem(uid) {
   var p = item(uid), e = S.ed[uid] || {}, t = p.k === 't';
@@ -518,12 +518,21 @@
   insertPb(u, pkTarget, pkAfter); pkAfter = u; save(); $('pk').hidden = true; layout();
  });
 
+ /* ───────── 정보 수정 · 서버 문제 DB 등록 (problem_edit.js) ───────── */
+ function openMeta(u) {
+  var p = item(u);
+  if (!window.ProblemEdit) { alert('문제 수정 도구(problem_edit.js)를 불러오지 못했어요'); return; }
+  if (!p || !p.h) { alert('서버 문제 DB와 연결되지 않은 문제(직접 입력한 문제)라서 등록할 수 없어요'); return; }
+  ProblemEdit.openMeta(p.h, function () { var el = EL[u], q = el && el.querySelector('.q'); if (!q) return null; return { stem: ser(q), ch: qa(el, '.ch .cv').map(ser) }; }, null, (S.ed[u] && S.ed[u].src != null ? S.ed[u].src : p.src));
+ }
+
  /* ───────── 클릭 처리 ───────── */
  st.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('.tools button'); if (!b) return;
   var a = b.dataset.a, pb = b.closest('.pb'), gh = b.closest('.gh'), tb = b.closest('.tblk');
   if (pb) {
    var u = pb.dataset.uid;
+   if (a === 'meta') { openMeta(u); return; }
    if (a === 'up') { snap(); movePb(u, -1); } else if (a === 'dn') { snap(); movePb(u, 1); }
    else if (a === 'del') { snap(); removePb(u); }
    else if (a === 'rst') { if (!confirm('이 문제에서 고친 글·수식·그림을 모두 원래대로 되돌릴까요?')) return; snap(); delete S.ed[u]; delete EL[u]; }

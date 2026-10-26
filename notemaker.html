@@ -501,7 +501,7 @@ $('#make').onclick = async function () {
   st.textContent = '노트를 조립하는 중…';
   var nm = STU.name, dates = exs.map(function (x) { return x.r.date; }).sort(), per = dates[0] === dates[dates.length - 1] ? ymd(dates[0]) : ymd(dates[0]) + ' ~ ' + ymd(dates[dates.length - 1]);
   var td = new Date(), today = td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
-  var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js');
+  var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js'), PEJS = await getText('problem_edit.js');
   var SC = '<' + '/script>';
   var AT = attempts(STU.id);                                    // 이 학생이 푼 모든 기록 (문제 해시별 · 시험별)
   POOL.forEach(function (o) {
@@ -532,7 +532,7 @@ $('#make').onclick = async function () {
    + '<script type="application/json" id="pdfjs">' + jdump(PDFJS) + SC + '<script type="application/json" id="quickjs">' + jdump(QUICK) + SC;
   var doc = head + UI + '<div class="stage"><div class="loading">오답노트를 만드는 중이에요… 잠시만 기다려 주세요.</div></div>' + data
    + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_ROUND=' + JSON.stringify(round) + ';window.NOTE_QA=' + ($('#withQA').checked ? 'true' : 'false') + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
-   + '<script>' + PDFJS + SC + '<script>' + APP + SC + '</body></html>';
+   + '<script>' + PDFJS + SC + '<script>' + PEJS + SC + '<script>' + APP + SC + '</body></html>';
   if (miss) alert('문제 DB에서 찾지 못한 문제가 ' + miss + '개 있어 빼고 만들었어요.');
   document.open(); document.write(doc); document.close();
  } catch (e) { st.innerHTML = '<span class="err">' + esc(e.message || e) + '</span>'; btn.disabled = false; }
