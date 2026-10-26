@@ -79,6 +79,7 @@ tr.exr:hover{background:#fbf6ea}
  </div>
 </div>
 
+<script src="notemaker/menbook.js"></script>
 <script>
 'use strict';
 var qs = new URLSearchParams(location.search);
@@ -222,13 +223,20 @@ $('#make').onclick = async function () {
   var td = new Date(), today = td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
   var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js');
   var SC = '<' + '/script>';
-  var TH = buildTheory(nm, per, today, groups, POOL);
+  var theme = MB.themeFor(STU.ac, STU.cls);                     // 반별 색 (S 남색 · S+ 자주 · A+ 초록 · A 갈색)
+  var rk = 'notemaker_round_' + STU.id, round = 1; try { round = (parseInt(localStorage.getItem(rk), 10) || 0) + 1; localStorage.setItem(rk, String(round)); } catch (e) { }
+  var clsLab = String(STU.cls || '').replace(/\s+/g, ''); if (clsLab && !/반$/.test(clsLab)) clsLab += '반';
+  var side = (STU.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + clsLab + ' ' + nm;      // 왼쪽 띠 위쪽에 세로로 들어가는 이름
+  var coverHtml = MB.coverHtml({ side: side, round: ('0' + round).slice(-2), eyebrow: per + ' · 오답 ' + POOL.length + '문항', sub: '— Math Error Notebook —' });
+  var backInner = await MB.backHtml(theme);
+  var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner);
   var key = 'note_v1_' + STU.id + '_' + Date.now();
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
+  var CSS = CSS + '\n' + MB.css(theme);
   var head = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(title) + '</title>'
    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">'
-   + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500&display=swap">'
+   + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500&display=swap">'
    + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js">' + SC + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js">' + SC
    + '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">' + SC + '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">' + SC
    + '<style>' + CSS + '</style></head><body>';
@@ -237,7 +245,7 @@ $('#make').onclick = async function () {
    + '<script type="application/json" id="slidecss">""' + SC + '<script type="application/json" id="slidejs">""' + SC
    + '<script type="application/json" id="pdfjs">' + jdump(PDFJS) + SC + '<script type="application/json" id="quickjs">' + jdump(QUICK) + SC;
   var doc = head + UI + '<div class="stage"><div class="loading">오답노트를 만드는 중이에요… 잠시만 기다려 주세요.</div></div>' + data
-   + '<script>window.PDF_W=257;window.PDF_H=364;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
+   + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
    + '<script>' + PDFJS + SC + '<script>' + APP + SC + '</body></html>';
   if (miss) alert('문제 DB에서 찾지 못한 문제가 ' + miss + '개 있어 빼고 만들었어요.');
   document.open(); document.write(doc); document.close();
@@ -245,16 +253,10 @@ $('#make').onclick = async function () {
 };
 
 /* 표지 · 안내 · 오답 체크 · 뒷표지 (엔진이 쪽으로 쓰는 "이론" 자료) */
-function buildTheory(nm, per, today, groups, POOL) {
+function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner) {
  var BIO = ['현 대치에스플러스 학원 고등부 원장', '현 분당미래탐구', '현 MATHYYURI.COM 운영', '현 MATHY YURI 수학연구소 운영', '전 목동고교사', '전 대치미탐, 대치다원'];
  var bio = BIO.map(function (b) { return '<li class="ed">' + esc(b) + '</li>'; }).join('');
  var n = POOL.length, nb = groups.length;
- var COVER = '<div class="cvf"></div><div class="cv-top"><span>MATHY YURI</span><i></i><span class="ed">공통수학</span></div>'
-  + '<div class="cv-en ed">WRONG ANSWER NOTE</div><div class="cv-ko ed">오답노트</div>'
-  + '<div class="cv-sub ed">' + esc(nm) + ' 학생<small class="ed">' + esc(per) + '</small></div><div class="cv-rule"></div>'
-  + '<div class="cv-meta"><div><b>교재</b>' + nb + '개</div><div><b>오답</b>' + n + '문항</div><div><b>구성</b>문제 · 출처 · 풀이 칸' + ($('#withSol').checked ? ' · 정답과 해설' : '') + '</div></div>'
-  + '<div class="cv-date">MADE ON &nbsp;·&nbsp; ' + esc(today) + '</div>'
-  + '<div class="cv-name"><span>이름</span><u class="ed">' + esc(nm) + '</u></div>';
  var flows = groups.slice(0, 6).map(function (g, i) {
   return '<div><i>' + ('0' + (i + 1)).slice(-2) + '</i><b class="ed">' + esc(g.title) + '</b><p class="ed">이 교재에서 틀린 문제 ' + g.uids.length + '문항을 모았어요. 문제마다 번호와 원래 출처가 달려 있습니다.</p><em>' + g.uids.length + '문항</em></div>';
  }).join('');
@@ -264,15 +266,13 @@ function buildTheory(nm, per, today, groups, POOL) {
   + '<div class="hw-box"><b>풀 때 이렇게</b><p class="ed">① 풀이 칸에 식을 끝까지 씁니다 &nbsp;② 다시 풀어도 틀리면 문제 번호 옆에 ✓ 표시 &nbsp;③ 마지막 쪽의 오답 체크표에 번호와 이유를 적습니다. 정답과 해설은 문제 뒤에 모아 두었어요.</p></div>';
  var CHK = '<div class="chk"><b class="ed">오답 체크표</b><span class="ed">다시 풀어도 틀리거나 애매했던 문제의 번호를 적고, 이유에 ○ 하세요. 선생님과 함께 다음 오답노트로 이어집니다.</span><table><tr><th>교재 · 번호</th><th>개념 부족</th><th>계산 실수</th><th>조건 놓침</th><th>풀이 모름</th><th>다시 풀기</th></tr>'
   + new Array(15).join('<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>') + '</table></div>';
- var BACK = '<div class="cvf"></div><div class="cv-top"><span>MATHY YURI</span><i></i><span class="ed">공통수학</span></div><div class="bk-en ed">Always with you</div><div class="bk-ko ed">수학은,<br>사람을 더 빛나게 합니다.</div><div class="cv-rule" style="top:196mm"></div>'
-  + '<div class="bk-nm">수학강사 <b class="ed">전유리</b></div><div class="bk-bio"><ul class="ed-ul">' + bio + '</ul></div><div class="bk-org ed">MATHY YURI 수학연구소<br>대치에스플러스학원 · 분당미래탐구</div><div class="bk-url">MATHYYURI.COM</div><div class="cv-date" style="top:336mm">© 2026 MATHY YURI &nbsp;·&nbsp; ALL RIGHTS RESERVED</div>';
  var INTRO = '<div class="parthd mini"><span class="en">WRONG ANSWERS</span><b class="ed">오답 문제</b><p class="ed">' + esc(nm) + ' 학생이 틀린 문제를 교재별로 모았습니다. 한 쪽에 4문제, 풀이 칸은 남는 공간을 나누어 넉넉하게 잡았어요.</p></div>';
  return [
-  { id: 'cover', kind: 'pg', cls: 'pg full cover', html: COVER },
+  { id: 'cover', kind: 'pg', cls: 'pg full mbcover', html: coverHtml },
   { id: 'how', kind: 'pg', cls: 'pg full how', html: HOW },
   { id: 'mk-intro', kind: 'intro', html: INTRO },
   { id: 'chk', kind: 'chk', html: CHK },
-  { id: 'back', kind: 'pg', cls: 'pg full bk', html: BACK }
+  { id: 'back', kind: 'pg', cls: 'pg full mbback', html: backInner }
  ];
 }
 boot();

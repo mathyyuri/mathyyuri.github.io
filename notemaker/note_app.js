@@ -290,11 +290,11 @@
    fullPg('back');
    pages.forEach(function (p) { qa(p, '.col').forEach(function (c) { var g = 0; while (over(c) && g++ < 60) { var ss = qa(c, '.sol').filter(function (s) { return s.offsetHeight > 60 && !s.dataset.fixed; }); if (!ss.length) break; ss.forEach(function (s) { s.style.height = (s.offsetHeight - 4) + 'px'; }); } }); });
    pages.forEach(function (p, i) { var n = p.querySelector('.pn'); if (n) n.textContent = (i + 1) + ' / ' + pages.length; });
-   $('info').textContent = '총 ' + pages.length + '쪽 (B4) · 오답 ' + (nM + nT) + '문항';
+   $('info').textContent = '총 ' + pages.length + '쪽 (A4) · 오답 ' + (nM + nT) + '문항';
    setEditable(EDIT); scale(); window.scrollTo(0, sy);
   } finally { busy = false; }
  }
- function scale() { var w = Math.min(window.innerWidth - 16, 972); document.documentElement.style.setProperty('--s', Math.min(1, w / 972)); }
+ function scale() { var w = Math.min(window.innerWidth - 16, 794); document.documentElement.style.setProperty('--s', Math.min(1, w / 794)); }
  window.addEventListener('resize', scale);
  var relayT = null;
  function relayLater() { clearTimeout(relayT); relayT = setTimeout(function () { layout(); }, 350); }
