@@ -52,6 +52,7 @@ tr.exr:hover{background:#fbf6ea}
    <div class="row">
     <label>찾기 <input id="q" type="text" placeholder="이름 일부" style="width:130px"></label>
     <label>학생 <select id="stu" style="min-width:260px"></select></label>
+    <button id="clearOld" type="button" title="이 컴퓨터에 저장된 이 학생의 이전 오답노트(고친 내용)와 회차 기록을 지워요">이 학생 이전 노트 지우기</button>
     <span id="meinfo" class="muted"></span>
    </div>
   </div>
@@ -202,6 +203,15 @@ document.querySelectorAll('[data-p]').forEach(function (b) {
 function jdump(o) { return JSON.stringify(o).replace(/</g, '\\u003c'); }
 async function getText(u) { var r = await fetch(u + '?v=' + Date.now()); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); }
 function ymd(d) { return d.replace(/-/g, '. '); }
+$('#clearOld').onclick = function () {
+ var id = $('#stu').value, nm = ($('#stu').selectedOptions[0] || {}).text || '';
+ if (!id) { alert('먼저 학생을 골라 주세요.'); return; }
+ var keys = []; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf('note_v1_' + id + '_') === 0 || k === 'notemaker_round_' + id) keys.push(k); } } catch (e) { }
+ if (!keys.length) { alert('이 컴퓨터에는 ' + nm.split(' · ')[0] + ' 학생의 저장된 오답노트가 없어요.'); return; }
+ if (!confirm(nm.split(' · ')[0] + ' 학생의 이 컴퓨터 저장 노트 ' + keys.length + '건(고친 내용·회차 기록)을 지울까요?\n지우면 되돌릴 수 없어요. 서버의 시험·채점 기록은 그대로예요. 다음에 만들면 1번째 오답노트부터 새로 시작해요.')) return;
+ keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
+ alert('지웠어요. (' + keys.length + '건)');
+};
 $('#make').onclick = async function () {
  var btn = this; btn.disabled = true; var st = $('#status');
  try {
@@ -281,13 +291,10 @@ function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, rou
  var CH = 34, parts = Math.max(1, Math.ceil(rows.length / CH)), sumItems = [];
  for (var pi = 0; pi < parts; pi++) sumItems.push({ id: 'sum' + (pi + 1), kind: 'pg', cls: 'pg full mbsum ' + ((pi + 2) % 2 === 0 ? 'even' : 'odd'), html: MB.summaryHtml(info, rows.slice(pi * CH, (pi + 1) * CH), pi + 1, parts) });
  var statItem = { id: 'stat', kind: 'pg', cls: 'pg full mbsum ' + ((parts + 2) % 2 === 0 ? 'even' : 'odd'), html: MB.statsHtml(info, AT.stats) };
- var CHK = '<div class="chk"><b class="ed">오답 체크표</b><span class="ed">다시 풀어도 틀리거나 애매했던 문제의 번호를 적고, 이유에 ○ 하세요. 선생님과 함께 다음 오답노트로 이어집니다.</span><table><tr><th>교재 · 번호</th><th>개념 부족</th><th>계산 실수</th><th>조건 놓침</th><th>풀이 모름</th><th>다시 풀기</th></tr>'
-  + new Array(15).join('<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>') + '</table></div>';
  var INTRO = '<div class="parthd mini"><span class="en">WRONG ANSWERS</span><b class="ed">오답 문제</b><p class="ed">' + esc(nm) + ' 학생이 틀린 문제를 교재별로 모았습니다. 한 쪽에 2문제(왼쪽·오른쪽 단에 한 문제씩), 풀이 칸은 남는 공간을 넉넉하게 잡았어요.</p></div>';
  return [
   { id: 'cover', kind: 'pg', cls: 'pg full mbcover', html: coverHtml }].concat(sumItems, [statItem, 
   { id: 'mk-intro', kind: 'intro', html: INTRO },
-  { id: 'chk', kind: 'chk', html: CHK },
   { id: 'back', kind: 'pg', cls: 'pg full mbback', html: backInner }
  ]);
 }

@@ -265,8 +265,7 @@
     });
    });
    closeSection();
-   section('오답 체크', 1, 'one'); put(TEL['chk'], 0); closeSection();
-   while (false) {
+   while ((pages.length + 1) % 4 !== 0) {
     var m = document.createElement('div'); m.className = 'pg mempg';
     m.innerHTML = '<div class="pgh"><b>MATHY YURI</b><span>MEMO</span></div><div class="cols" style="grid-template-columns:1fr"><div class="col" style="gap:0"></div></div><div class="pgf"><em>Wrong-answer note</em><span class="pn"></span><em>' + esc(window.NOTE_NAME || '') + '</em></div>';
     var c = m.querySelector('.col'); for (var k = 0; k < 24; k++) { var d = document.createElement('div'); d.className = 'ml'; c.appendChild(d); }
