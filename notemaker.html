@@ -84,6 +84,7 @@ tr.exr:hover{background:#fbf6ea}
     <button class="g" id="hAll" type="button">전체 선택</button><button class="g" id="hNone" type="button">전체 해제</button>
     <button id="hQuick" type="button" disabled>선택한 노트 빠른 정답 모음 출력</button>
     <button class="g" id="hDel" type="button" disabled>선택한 기록 지우기</button>
+    <button class="g" id="hDelEst" type="button">복원(추정) 기록 모두 지우기</button>
     <button class="g" id="hRec" type="button" title="기록 기능이 생기기 전에 만든 노트를 이 컴퓨터에 남은 흔적과 지금의 채점 기록으로 다시 맞춰 봐요">옛 노트 기록 되살리기</button>
     <button class="g" id="hExp" type="button">기록 파일로 내려받기</button>
     <label class="g" style="display:inline-block;border-radius:8px;padding:8px 14px;background:#efe5cf;font-weight:700;cursor:pointer">기록 파일 불러오기<input id="hImp" type="file" accept=".json,application/json" style="display:none"></label>
@@ -94,7 +95,7 @@ tr.exr:hover{background:#fbf6ea}
 
   <div class="bar2">
    <span class="sumtxt" id="sum">학생을 골라 주세요</span>
-   <span class="row"><span id="status" class="muted"></span><button id="make" disabled>오답노트 만들기</button></span>
+   <span class="row"><span id="status" class="muted"></span><label class="lab" title="비워 두면 이 학생의 다음 회차로 자동 번호가 붙어요. 다시 만들 때 원래 회차로 맞추려면 직접 적으세요"><b>회차</b> <input id="roundIn" type="number" min="1" max="99" style="width:70px" placeholder="자동"></label><button id="make" disabled>오답노트 만들기</button></span>
   </div>
  </div>
 </div>
@@ -153,7 +154,7 @@ function fillStudents() {
  var cur = $('#stu').value; $('#stu').innerHTML = o; if (cur && list.some(function (s) { return s.id === cur; })) $('#stu').value = cur;
 }
 $('#q').oninput = fillStudents;
-$('#stu').onchange = function () { STU = (DATA.students || []).filter(function (s) { return s.id === $('#stu').value; })[0] || null; SEL = {}; OPEN = {}; compute(true); histRender(); };
+$('#stu').onchange = function () { STU = (DATA.students || []).filter(function (s) { return s.id === $('#stu').value; })[0] || null; SEL = {}; OPEN = {}; compute(true); histRender(); roundHint(); };
 
 /* ───────── 틀린 문제 모으기 ───────── */
 function wrongSet() { return document.querySelector('input[name=wr]:checked').value === 'XT' ? 'XT' : 'X'; }
@@ -244,6 +245,11 @@ function qaOf(o) {                                         // 빠른 정답 한 
  if (!pl || pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
  return { r: t };
 }
+function roundHint() {
+ var el = $('#roundIn'); el.value = ''; var n = 0;
+ try { if (STU) n = (parseInt(localStorage.getItem('notemaker_round_' + STU.id), 10) || 0) + 1; } catch (e) { }
+ el.placeholder = STU ? ('자동 ' + n) : '자동';
+}
 function histRender() {
  var all = histLoad(), only = $('#hOnlyStu').checked && STU ? STU.id : null;
  var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
@@ -264,6 +270,12 @@ $('#hDel').onclick = function () {
  var ids = Object.keys(HSEL); if (!ids.length) return;
  if (!confirm('선택한 기록 ' + ids.length + '건을 지울까요? (노트 파일이 아니라 이 컴퓨터의 기록 목록만 지워져요)')) return;
  histSave(histLoad().filter(function (x) { return !HSEL[x.id]; })); HSEL = {}; histRender();
+};
+$('#hDelEst').onclick = function () {
+ var all = histLoad(), n = all.filter(function (x) { return x.est; }).length;
+ if (!n) { alert('복원(추정)으로 만들어진 기록이 없어요.'); return; }
+ if (!confirm('복원(추정) 기록 ' + n + '건을 모두 지울까요? (정확하게 만든 기록은 그대로 남아요)')) return;
+ histSave(all.filter(function (x) { return !x.est; })); HSEL = {}; histRender();
 };
 $('#hExp').onclick = function () {
  var a = histLoad(); if (!a.length) { alert('내려받을 기록이 없어요.'); return; }
@@ -497,7 +509,7 @@ $('#make').onclick = async function () {
    o.hist = hs.map(function (a) { return a.c + '(' + a.md + ')'; }).join(' → ') || '-';
   });
   var theme = MB.themeFor(STU.ac, STU.cls);                     // 반별 색 (S 남색 · S+ 자주 · A+ 초록 · A 갈색)
-  var rk = 'notemaker_round_' + STU.id, round = 1; try { round = (parseInt(localStorage.getItem(rk), 10) || 0) + 1; localStorage.setItem(rk, String(round)); } catch (e) { }
+  var rk = 'notemaker_round_' + STU.id, round = 1; try { round = parseInt($('#roundIn').value, 10) || ((parseInt(localStorage.getItem(rk), 10) || 0) + 1); localStorage.setItem(rk, String(round)); } catch (e) { }
   var clsLab = String(STU.cls || '').replace(/\s+/g, ''); if (clsLab && !/반$/.test(clsLab)) clsLab += '반';
   var side = (STU.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + clsLab + ' ' + nm;      // 왼쪽 띠 위쪽에 세로로 들어가는 이름
   var coverHtml = MB.coverHtml({ side: side, round: ('0' + round).slice(-2), eyebrow: per + ' · 오답 ' + POOL.length + '문항', sub: '— Math Error Notebook —' });
