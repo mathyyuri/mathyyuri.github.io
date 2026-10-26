@@ -56,6 +56,7 @@ var BS=String.fromCharCode(92);
 var qs=new URLSearchParams(location.search);
 var EMB=qs.get('embed')==='1';if(EMB)document.documentElement.classList.add('emb');
 var RPC='https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/';
+try{var sbq=new URLSearchParams(location.search).get('sb');if(sbq&&/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(sbq))RPC=sbq}catch(e){}   // 시험용(내 컴퓨터) 서버만 허용
 var KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV',TK='acadapp_tok_v1';
 var AC={ds:'대치에스플러스학원',bd:'분당미래탐구'};
 var CCOL={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
@@ -566,10 +567,29 @@ function openNew(){
  m.innerHTML='<h3>미션 추가</h3><div class="note1">여기서는 <b>정오표만 채점하는 미션</b>을 바로 만들어요. 문제 보기·오답노트까지 연결된 미션은 교재 생성기의 [서버 저장·불러오기]에서 올려요.</div>'+
   (isAdmin()?'<div class="fld"><label>학원</label><select id="nac" class="oxin" style="max-width:260px"><option value="ds">대치에스플러스학원</option><option value="bd">분당미래탐구</option></select></div>':'')+
   '<div class="row" style="gap:6px;margin-bottom:6px"><button type="button" class="btn sec sm3" data-a="newpre">오늘 모의기출 미션으로 채우기</button></div>'+
+  '<div id="prepbox"></div>'+
   '<div class="fld"><label>미션 이름</label><input id="nnm" class="oxin" style="width:100%" placeholder="예: 교과서 미션 : 함수 (2회)" autocomplete="off"></div>'+
   '<div class="fld"><label>카테고리</label><input id="ncat" class="oxin" list="ncl" style="max-width:260px" placeholder="예: 교과서미션" autocomplete="off"><datalist id="ncl">'+catList().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist></div>'+
   '<div class="row"><div class="fld"><label>날짜</label><input id="ndt" type="date" class="oxin" value="'+ymd()+'"></div><div class="fld"><label>문항 수</label><input id="nn" type="number" min="1" max="400" class="oxin" value="20" style="width:90px"></div><div class="fld"><label>문항당 배점 (내신기출·TEST만 적용 · 비우면 100점 만점 자동)</label><input id="npt" type="number" step="0.1" min="0.1" class="oxin" value="" placeholder="자동" style="width:110px"></div></div>'+
-  '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn gold" data-a="newok">만들기</button></div>'}
+  '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn gold" data-a="newok">만들기</button></div>';loadPrep()}
+/* 준비해 둔 오늘의 미션(today_missions.json): 문제 DB와 연결된 문항으로 바로 만들어요 */
+async function loadPrep(){
+ var box=$('#prepbox');if(!box)return;
+ try{var r=await fetch('today_missions.json?v='+Date.now());if(!r.ok)throw 0;S.prep=await r.json()}catch(e){S.prep=null;box.innerHTML='';return}
+ var L=(S.prep&&S.prep.list)||[];if(!L.length){box.innerHTML='';return}
+ box.innerHTML='<div class="note1" style="margin:8px 0"><b>준비된 오늘의 미션</b> — 문제 보기·오답노트까지 연결돼요. 누르면 바로 만들고 채점 화면으로 가요.</div>'+L.map(function(m,i){return '<div class="row" style="gap:8px;margin-bottom:6px"><button type="button" class="btn gold sm3" data-a="prepmk" data-i="'+i+'">'+esc(m.name)+' 만들기</button><span class="muted sm">'+esc(m.note||(m.items.length+'문항'))+'</span></div>'}).join('')
+}
+async function prepOk(i){
+ var m=((S.prep&&S.prep.list)||[])[i];if(!m)return;
+ var dt=$('#ndt')?$('#ndt').value:ymd();
+ var args={name:m.name,short:m.short||'',cat:m.cat||'',date:dt||ymd(),items:m.items};if(isAdmin())args.ac=$('#nac').value;
+ var same=S.list.filter(function(x){return x.name===m.name&&(!args.ac||x.ac===args.ac)})[0];
+ if(same){if(!confirm('같은 이름의 미션이 이미 있어요 ('+same.date+', 채점 '+same.graded+'명).\n이 미션을 지금 준비된 문항으로 갱신할까요? (문항 순서가 바뀌면 이미 한 채점이 어긋나요)'))return;args.id=same.id}
+ else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을 만들까요?'+(isAdmin()?'\n학원: '+($('#nac').value==='bd'?'분당미래탐구':'대치에스플러스학원'):'')))return;
+ var j=await ms('create',args);
+ if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
+ var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
+ $('#md').hidden=true;await openMission(j.id,'input')}
 async function newOk(){
  var nm=$('#nnm').value.trim(),n=parseInt($('#nn').value,10),pt=parseFloat($('#npt').value)||null,cat=$('#ncat').value.trim();
  if(!nm){alert('미션 이름을 적어 주세요');return}
@@ -684,6 +704,7 @@ document.addEventListener('click',async function(ev){
   S.tok=j.token;try{localStorage.setItem(TK,S.tok)}catch(e){}await boot();return}
  if(a==='nickview'){NICK=!NICK;try{localStorage.setItem(NICKK,NICK?'1':'0')}catch(e){}render();return}
  if(a==='home'){goHome();return}
+ if(a==='prepmk'){await prepOk(+b.getAttribute('data-i'));return}
  if(a==='newpre'){$('#nnm').value='모의 기출 : '+ymd();$('#ncat').value='기출';$('#ndt').value=ymd();return}
  if(a==='out'){var tk=S.tok;S.ex=null;S.ov=false;S.hist=null;await api('logout');logout();return}
  if(a==='open'){openMission(b.getAttribute('data-id'));return}

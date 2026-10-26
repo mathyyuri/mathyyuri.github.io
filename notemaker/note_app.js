@@ -273,7 +273,7 @@
    }
    fullPg('back');
    if (window.NOTE_QA) {                                   /* 빠른 정답 (이 학생 노트에 들어간 문제만) */
-    section('빠른 정답', 1, 'sol', 0);
+    section('빠른 정답 · ' + (window.NOTE_NAME || '') + ' ' + (window.NOTE_ROUND || '') + '회차 오답노트', 1, 'sol', 0);
     var qn = 0;
     S.mk.forEach(function (g) {
      var us = g.uids.filter(item); if (!us.length) return;
@@ -295,7 +295,7 @@
     closeSection();
    }
    if (window.NOTE_SOL) {                                  /* 상세 해설 */
-    section('상세 해설', 2, 'sol', 0);
+    section('상세 해설 · ' + (window.NOTE_NAME || '') + ' ' + (window.NOTE_ROUND || '') + '회차 오답노트', 2, 'sol', 0);
     var jj = 0;
     S.mk.forEach(function (g) {
      g.uids.filter(item).forEach(function (u) {

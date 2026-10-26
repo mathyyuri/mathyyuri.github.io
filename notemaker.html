@@ -76,6 +76,21 @@ tr.exr:hover{background:#fbf6ea}
    <div style="overflow-x:auto"><table id="tbl"><thead><tr><th style="width:34px"></th><th>교재(미션)</th><th style="width:96px">날짜</th><th style="width:110px">틀린 문제</th><th style="width:60px"></th></tr></thead><tbody></tbody></table></div>
   </div>
 
+  <div class="card" id="histCard">
+   <h2>③ 만들어 둔 오답노트 기록</h2>
+   <p class="muted" style="margin:0 0 8px">이 컴퓨터에서 만든 오답노트가 쌓여요(학생 · 회차 · 만든 날 · 문항 수). 고르면 <b>빠른 정답만 모아서</b> 출력할 수 있어요. 노트 내용 자체는 저장하지 않아서, 다시 보려면 새로 만들어야 해요.</p>
+   <div class="row" style="margin-bottom:8px">
+    <label class="lab"><input type="checkbox" id="hOnlyStu"> ①에서 고른 학생만 보기</label>
+    <button class="g" id="hAll" type="button">전체 선택</button><button class="g" id="hNone" type="button">전체 해제</button>
+    <button id="hQuick" type="button" disabled>선택한 노트 빠른 정답 모음 출력</button>
+    <button class="g" id="hDel" type="button" disabled>선택한 기록 지우기</button>
+    <button class="g" id="hExp" type="button">기록 파일로 내려받기</button>
+    <label class="g" style="display:inline-block;border-radius:8px;padding:8px 14px;background:#efe5cf;font-weight:700;cursor:pointer">기록 파일 불러오기<input id="hImp" type="file" accept=".json,application/json" style="display:none"></label>
+   </div>
+   <div style="overflow-x:auto"><table id="htbl"><thead><tr><th style="width:34px"></th><th>학생</th><th style="width:70px">회차</th><th style="width:96px">만든 날</th><th style="width:70px">문항</th><th>범위</th></tr></thead><tbody></tbody></table></div>
+   <div id="hEmpty" class="muted" style="margin-top:6px"></div>
+  </div>
+
   <div class="bar2">
    <span class="sumtxt" id="sum">학생을 골라 주세요</span>
    <span class="row"><span id="status" class="muted"></span><button id="make" disabled>오답노트 만들기</button></span>
@@ -122,6 +137,7 @@ function start() {
  $('#main').classList.remove('hidden');
  $('#meinfo').textContent = DATA.me.name + ' 로 연결됨';
  fillStudents();
+ histRender();
  var ex = DATA.exams || [], withItems = ex.filter(function (e) { return e.items && e.items.length; }).length, withH = ex.filter(function (e) { return (e.items || []).some(function (i) { return i && i.h; }); }).length;
  $('#ovsum').textContent = '불러온 미션·시험 ' + ex.length + '개 (문제 번호가 있는 것 ' + withItems + '개 · 문제 DB와 연결된 것 ' + withH + '개) — 눌러서 보기';
  $('#ovlist').innerHTML = ex.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (e) {
@@ -136,7 +152,7 @@ function fillStudents() {
  var cur = $('#stu').value; $('#stu').innerHTML = o; if (cur && list.some(function (s) { return s.id === cur; })) $('#stu').value = cur;
 }
 $('#q').oninput = fillStudents;
-$('#stu').onchange = function () { STU = (DATA.students || []).filter(function (s) { return s.id === $('#stu').value; })[0] || null; SEL = {}; OPEN = {}; compute(true); };
+$('#stu').onchange = function () { STU = (DATA.students || []).filter(function (s) { return s.id === $('#stu').value; })[0] || null; SEL = {}; OPEN = {}; compute(true); histRender(); };
 
 /* ───────── 틀린 문제 모으기 ───────── */
 function wrongSet() { return document.querySelector('input[name=wr]:checked').value === 'XT' ? 'XT' : 'X'; }
@@ -207,11 +223,129 @@ $('#clearOld').onclick = function () {
  var id = $('#stu').value, nm = ($('#stu').selectedOptions[0] || {}).text || '';
  if (!id) { alert('먼저 학생을 골라 주세요.'); return; }
  var keys = []; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf('note_v1_' + id + '_') === 0 || k === 'notemaker_round_' + id) keys.push(k); } } catch (e) { }
- if (!keys.length) { alert('이 컴퓨터에는 ' + nm.split(' · ')[0] + ' 학생의 저장된 오답노트가 없어요.'); return; }
- if (!confirm(nm.split(' · ')[0] + ' 학생의 이 컴퓨터 저장 노트 ' + keys.length + '건(고친 내용·회차 기록)을 지울까요?\n지우면 되돌릴 수 없어요. 서버의 시험·채점 기록은 그대로예요. 다음에 만들면 1번째 오답노트부터 새로 시작해요.')) return;
+ var hn = histLoad().filter(function (h) { return h.sid === id; }).length;
+ if (!keys.length && !hn) { alert('이 컴퓨터에는 ' + nm.split(' · ')[0] + ' 학생의 저장된 오답노트가 없어요.'); return; }
+ if (!confirm(nm.split(' · ')[0] + ' 학생의 이 컴퓨터 저장 노트 ' + keys.length + '건(고친 내용·회차 기록)과 만든 기록 ' + hn + '건을 지울까요?\n지우면 되돌릴 수 없어요. 서버의 시험·채점 기록은 그대로예요. 다음에 만들면 1번째 오답노트부터 새로 시작해요.')) return;
  keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
- alert('지웠어요. (' + keys.length + '건)');
+ histSave(histLoad().filter(function (h) { return h.sid !== id; })); histRender();
+ alert('지웠어요. (' + (keys.length + hn) + '건)');
 };
+
+/* ───────── 만들어 둔 오답노트 기록 (이 컴퓨터) + 빠른 정답 모음 ───────── */
+var HK = 'notemaker_hist_v1', CIRC5 = '①②③④⑤', HSEL = {};
+function histLoad() { try { var a = JSON.parse(localStorage.getItem(HK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function histSave(a) { try { localStorage.setItem(HK, JSON.stringify(a.slice(-400))); } catch (e) { } }
+function histAdd(h) { var a = histLoad(); a.push(h); histSave(a); }
+function qaOf(o) {                                         // 빠른 정답 한 칸: 정답이 있으면 a, 풀이 안에 있으면 풀이 첫 줄(r)
+ var has = String(o.an == null ? '' : o.an).replace(/\s/g, '') !== '';
+ if (has) return { a: (o.ch && o.ch.length && /^[1-5]$/.test(String(o.an))) ? CIRC5.charAt(+o.an - 1) : String(o.an) };
+ var m = String(o.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(o.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
+ if (!pl || pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
+ return { r: t };
+}
+function histRender() {
+ var all = histLoad(), only = $('#hOnlyStu').checked && STU ? STU.id : null;
+ var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
+ var h = '';
+ list.forEach(function (x) {
+  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + x.round + '회차</b></td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td></tr>';
+ });
+ $('#htbl tbody').innerHTML = h;
+ $('#hEmpty').textContent = list.length ? ('기록 ' + list.length + '건' + (only ? ' (이 학생)' : '')) : (all.length ? '이 학생의 기록이 없어요' : '아직 이 컴퓨터에서 만든 기록이 없어요. 지금부터 만드는 노트부터 쌓여요.');
+ var n = Object.keys(HSEL).filter(function (k) { return all.some(function (x) { return x.id === k; }); }).length;
+ $('#hQuick').disabled = !n; $('#hDel').disabled = !n; $('#hQuick').textContent = n ? ('선택한 ' + n + '개 노트 빠른 정답 모음 출력') : '선택한 노트 빠른 정답 모음 출력';
+}
+$('#htbl').onchange = function (e) { var t = e.target; if (!t.dataset.h) return; if (t.checked) HSEL[t.dataset.h] = 1; else delete HSEL[t.dataset.h]; histRender(); };
+$('#hOnlyStu').onchange = histRender;
+$('#hAll').onclick = function () { histLoad().forEach(function (x) { if (!$('#hOnlyStu').checked || !STU || x.sid === STU.id) HSEL[x.id] = 1; }); histRender(); };
+$('#hNone').onclick = function () { HSEL = {}; histRender(); };
+$('#hDel').onclick = function () {
+ var ids = Object.keys(HSEL); if (!ids.length) return;
+ if (!confirm('선택한 기록 ' + ids.length + '건을 지울까요? (노트 파일이 아니라 이 컴퓨터의 기록 목록만 지워져요)')) return;
+ histSave(histLoad().filter(function (x) { return !HSEL[x.id]; })); HSEL = {}; histRender();
+};
+$('#hExp').onclick = function () {
+ var a = histLoad(); if (!a.length) { alert('내려받을 기록이 없어요.'); return; }
+ var b = new Blob([JSON.stringify({ kind: 'notemaker_hist', v: 1, list: a })], { type: 'application/json' }), u = URL.createObjectURL(b), l = document.createElement('a');
+ l.href = u; l.download = '오답노트_기록.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
+};
+$('#hImp').onchange = function () {
+ var f = this.files[0]; this.value = ''; if (!f) return;
+ var r = new FileReader();
+ r.onload = function () {
+  try {
+   var o = JSON.parse(r.result), list = o && o.list; if (!Array.isArray(list)) throw 0;
+   var cur = histLoad(), have = {}; cur.forEach(function (x) { have[x.id] = 1; }); var add = 0;
+   list.forEach(function (x) { if (x && x.id && x.items && !have[x.id]) { cur.push(x); have[x.id] = 1; add++; } });
+   cur.sort(function (a, b) { return String(a.id).split('_').pop() - String(b.id).split('_').pop(); }); histSave(cur); histRender(); alert('기록 ' + add + '건을 가져왔어요.');
+  } catch (e) { alert('오답노트 기록 파일이 아니에요.'); }
+ };
+ r.readAsText(f);
+};
+$('#hQuick').onclick = async function () {
+ var btn = this, all = histLoad(), pick = all.filter(function (x) { return HSEL[x.id]; });
+ if (!pick.length) return;
+ pick.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'ko') || (a.round - b.round); });
+ btn.disabled = true;
+ try { quickCollect(pick, await getText('notemaker/pdf_save.js')); } catch (e) { alert('빠른 정답 모음을 만들지 못했어요: ' + (e.message || e)); btn.disabled = false; }
+};
+function quickCollect(pick, PDFJS) {
+ var SC = '<' + '/script>', pages = [], total = 0;
+ var CAP = 262, H1 = 34, H2 = 14, CELLROW = 14.6, ROW = 8.6, SUB = 9;       // 쪽 높이(mm) 계산용 어림값
+ pick.forEach(function (x) {
+  var cells = x.items.filter(function (i) { return i.a != null && i.a !== ''; }), rows = x.items.filter(function (i) { return !(i.a != null && i.a !== ''); });
+  var chunks = [], cur = null, used = 0;
+  function newChunk() { cur = { cells: [], rows: [], subRows: false }; chunks.push(cur); used = chunks.length === 1 ? H1 : H2; }
+  newChunk();
+  for (var i = 0; i < cells.length; i += 8) {
+   if (used + CELLROW > CAP) newChunk();
+   cur.cells = cur.cells.concat(cells.slice(i, i + 8)); used += CELLROW;
+  }
+  rows.forEach(function (r, k) {
+   var need = ROW + (!cur.rows.length ? SUB : 0);
+   if (used + need > CAP) newChunk();
+   if (!cur.rows.length) { cur.subRows = true; used += SUB; }
+   cur.rows.push(r); used += ROW;
+  });
+  chunks.forEach(function (c, ci) {
+   var top = ci === 0
+    ? '<div class="ttl"><div class="eb">MATHY YURI · QUICK ANSWERS</div><h1>' + esc(x.name) + '<span> 의 ' + x.round + '회차 오답노트</span></h1><div class="meta">빠른 정답 &nbsp;|&nbsp; ' + esc((x.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + (x.cls || '')) + ' &nbsp;|&nbsp; ' + esc(x.date) + ' 제작 &nbsp;|&nbsp; ' + esc(x.per || '') + ' &nbsp;|&nbsp; 오답 ' + x.n + '문항</div></div>'
+    : '<div class="run"><b>' + esc(x.name) + ' · ' + x.round + '회차 오답노트</b><span>빠른 정답 (이어서 ' + (ci + 1) + '/' + chunks.length + ')</span></div>';
+   var body = '';
+   if (c.cells.length) body += '<div class="grid">' + c.cells.map(function (i) { return '<div class="cell"><i>' + i.n + '</i><b' + (String(i.a).replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length > 5 ? ' class="sm"' : '') + '>' + (/\\\(/.test(i.a) ? '<span class="eq">' + esc(i.a) + '</span>' : esc(String(i.a))) + '</b></div>'; }).join('') + '</div>';
+   if (c.rows.length) body += '<div class="sub2">정답이 풀이 안에 있는 문항</div><div class="rws">' + c.rows.map(function (i) { return '<div class="rw"><i>' + i.n + '</i><span class="qs">' + esc(i.s || i.m || '') + '</span><span class="qv">' + (i.r || '') + '</span></div>'; }).join('') + '</div>';
+   pages.push('<section class="pg">' + top + body + '<div class="pf"><span>' + esc(x.name) + ' · ' + x.round + '회차 오답노트 · 빠른 정답</span><span class="pn"></span></div></section>');
+  });
+ });
+ total = pages.length;
+ pages = pages.map(function (p, i) { return p.replace('<span class="pn"></span>', '<span class="pn">' + (i + 1) + ' / ' + total + '</span>'); });
+ var who = pick.length === 1 ? pick[0].name + '_' + pick[0].round + '회차' : pick.length + '개_노트';
+ var CSS = '*{box-sizing:border-box}html,body{margin:0;background:#d9dde4;font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#2a2118}'
+  + '.bar{position:sticky;top:0;z-index:9;background:#3b2a1a;color:#fff;padding:8px 14px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bar button,.bar a{border:0;background:#c9a15a;color:#2a1b0c;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer;text-decoration:none;font-size:13px}.bar button.g{background:#8a7a65;color:#fff}.bar input{padding:5px 8px;border-radius:6px;border:0}'
+  + '.stage{display:flex;flex-direction:column;align-items:center;gap:18px;padding:18px 0}'
+  + '.pg{width:210mm;height:297mm;background:#fffdf8;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:12mm 13mm 14mm;position:relative;overflow:hidden}'
+  + '.ttl{border-bottom:.5mm solid #9c5530;padding-bottom:3mm;margin-bottom:4mm}.eb{font-size:8.5pt;letter-spacing:.2em;color:#b8863a;font-weight:700}.ttl h1{margin:1mm 0 0;font:900 22pt "Noto Serif KR","Gowun Batang",serif;color:#13264a}.ttl h1 span{font-size:15pt;font-weight:700;color:#9c5530}.meta{margin-top:1.6mm;font-size:9pt;color:#7d7364}'
+  + '.run{display:flex;justify-content:space-between;border-bottom:.3mm solid #9c5530;padding-bottom:2mm;margin-bottom:4mm;font-size:9pt;color:#7d7364}.run b{color:#13264a}'
+  + '.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:1.6mm;margin-bottom:3mm}.cell{border:.25mm solid #e0d6bf;border-radius:1mm;padding:1.2mm 1mm 1.6mm;text-align:center;background:#fff;line-height:1.2;height:13mm}'
+  + '.cell i{display:block;font-style:normal;font-size:7.5pt;color:#9c5530;font-weight:700}.cell b{font-size:13pt}.cell b.sm{font-size:8.5pt}'
+  + '.sub2{font-size:9.5pt;font-weight:700;color:#9c5530;margin:2mm 0 1mm;height:6mm}.rw{display:flex;gap:2.4mm;align-items:baseline;border-bottom:.2mm solid #eee3cc;padding:1mm 0;font-size:9pt;line-height:1.5;min-height:8.6mm}'
+  + '.rw i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.rw .qs{flex:none;width:44mm;font-size:7.5pt;color:#7d7364}.rw .qv{flex:1}.rw .qv p{margin:0}.see{color:#9c5530;font-size:8pt}'
+  + '.pf{position:absolute;left:13mm;right:13mm;bottom:6mm;display:flex;justify-content:space-between;font-size:8.5pt;color:#9a8f7c;border-top:.2mm solid #e5d9c0;padding-top:1.6mm}'
+  + '.katex{font-size:.97em;white-space:nowrap}@page{size:210mm 297mm;margin:0}@media print{html,body{background:#fff}.bar{display:none}.stage{display:block;padding:0}.pg{box-shadow:none;page-break-after:always}}';
+ var doc = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>빠른 정답 모음 · ' + esc(who) + '</title>'
+  + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">'
+  + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">'
+  + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js">' + SC + '<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js">' + SC
+  + '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">' + SC + '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">' + SC
+  + '<style>' + CSS + '</style></head><body>'
+  + '<div class="bar"><a href="notemaker.html">← 오답노트 만들기로</a><b>빠른 정답 모음 · ' + esc(pick.map(function (x) { return x.name + ' ' + x.round + '회차'; }).join(', ')) + ' · A4 ' + total + '쪽</b>'
+  + '<input id="rng" type="text" placeholder="쪽 지정(비우면 전체) 예: 1-2, 4" style="width:190px"><button type="button" id="pdfBtn">PDF 저장 (여백없음)</button><button type="button" id="pngBtn" class="g">쪽별 이미지(PNG)</button><span id="chk"></span></div>'
+  + '<div class="stage">' + pages.join('') + '</div>'
+  + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify('빠른정답_' + who) + ';' + SC + '<script>' + PDFJS + SC
+  + '<script>window.addEventListener("load",function(){function go(){if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{left:"\\\\(",right:"\\\\)",display:false}],throwOnError:false});var over=[].filter.call(document.querySelectorAll(".pg"),function(p){return p.scrollHeight>p.clientHeight+2}).length;document.getElementById("chk").textContent=over?"⚠ 넘친 쪽 "+over+"개":"넘침 없음"}(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go)})' + SC
+  + '</body></html>';
+ document.open(); document.write(doc); document.close();
+}
 $('#make').onclick = async function () {
  var btn = this; btn.disabled = true; var st = $('#status');
  try {
@@ -259,6 +393,7 @@ $('#make').onclick = async function () {
   var backInner = await MB.backHtml(theme);
   var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, round);
   var key = 'note_v1_' + STU.id + '_' + Date.now();
+  histAdd({ id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
   var CSS = CSS + '\n' + MB.css(theme);
@@ -273,7 +408,7 @@ $('#make').onclick = async function () {
    + '<script type="application/json" id="slidecss">""' + SC + '<script type="application/json" id="slidejs">""' + SC
    + '<script type="application/json" id="pdfjs">' + jdump(PDFJS) + SC + '<script type="application/json" id="quickjs">' + jdump(QUICK) + SC;
   var doc = head + UI + '<div class="stage"><div class="loading">오답노트를 만드는 중이에요… 잠시만 기다려 주세요.</div></div>' + data
-   + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_QA=' + ($('#withQA').checked ? 'true' : 'false') + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
+   + '<script>window.PDF_W=210;window.PDF_H=297;window.PDFBASE=' + JSON.stringify(pdfbase) + ';window.NOTE_KEY=' + JSON.stringify(key) + ';window.NOTE_NAME=' + JSON.stringify(nm) + ';window.NOTE_ROUND=' + JSON.stringify(round) + ';window.NOTE_QA=' + ($('#withQA').checked ? 'true' : 'false') + ';window.NOTE_SOL=' + ($('#withSol').checked ? 'true' : 'false') + ';' + SC
    + '<script>' + PDFJS + SC + '<script>' + APP + SC + '</body></html>';
   if (miss) alert('문제 DB에서 찾지 못한 문제가 ' + miss + '개 있어 빼고 만들었어요.');
   document.open(); document.write(doc); document.close();
