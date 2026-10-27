@@ -396,10 +396,25 @@ $('#hOnlyStu').onchange = histRender;
 $('#reSync').onclick = function () { refreshData(true); };
 $('#hAll').onclick = function () { histLoad().forEach(function (x) { if (!$('#hOnlyStu').checked || !STU || x.sid === STU.id) HSEL[x.id] = 1; }); histRender(); };
 $('#hNone').onclick = function () { HSEL = {}; histRender(); };
-$('#hDel').onclick = function () {
+$('#hDel').onclick = async function () {
  var ids = Object.keys(HSEL); if (!ids.length) return;
- if (!confirm('선택한 기록 ' + ids.length + '건을 지울까요? (노트 파일이 아니라 이 컴퓨터의 기록 목록만 지워져요)')) return;
+ var NL = String.fromCharCode(10), sel = histLoad().filter(function (x) { return HSEL[x.id]; }), mss = [];
+ sel.forEach(function (x) {                                   // 이 기록의 채점용 미션 (서버): 저장해 둔 번호 또는 이름('오답노트 · 이름 N회차')으로 찾아요
+  var nm = '오답노트 · ' + x.name + ' ' + x.round + '회차', ex = DATA && (DATA.exams || []).filter(function (e) { return (x.mid && e.id === x.mid) || e.n === nm; })[0];
+  if (ex && mss.indexOf(ex) < 0) mss.push(ex);
+ });
+ var graded = mss.filter(function (e) { return e.ox && Object.keys(e.ox).some(function (k) { return /[OXT]/.test(e.ox[k] || ''); }); });
+ var msg = '선택한 기록 ' + sel.length + '건을 완전히 지울까요?' + NL + NL + '· 이 컴퓨터의 기록 목록에서 지워요 (노트 파일은 그대로)';
+ if (mss.length) msg += NL + '· 서버의 채점용 미션 ' + mss.length + '개도 지워요: ' + mss.map(function (e) { return e.n; }).join(', ') + (graded.length ? NL + '  ※ 이미 채점한 ○✕ 기록 ' + graded.length + '건도 함께 사라지고 되돌릴 수 없어요' : '');
+ if (!confirm(msg)) return;
+ var failed = 0;
+ if (mss.length) {
+  if (!tok) { alert('서버 미션까지 지우려면 먼저 위에서 비밀번호로 연결해 주세요'); return; }
+  for (var i = 0; i < mss.length; i++) { var j = await ms('delete', { exam_id: mss[i].id }); if (!j || !j.ok) failed++; }
+ }
  histSave(histLoad().filter(function (x) { return !HSEL[x.id]; })); HSEL = {}; histRender();
+ if (mss.length) await refreshData(false);
+ if (failed) alert('서버 미션 ' + failed + '개는 지우지 못했어요 (원장 연결을 확인해 주세요)'); else if (mss.length) alert('기록과 채점용 미션을 지웠어요. 같은 회차로 새로 만들 수 있어요');
 };
 $('#hDelEst').onclick = function () {
  var all = histLoad(), n = all.filter(function (x) { return x.est; }).length;
