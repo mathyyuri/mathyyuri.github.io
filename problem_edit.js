@@ -25,6 +25,7 @@
   try { return await r.json(); } catch (e) { return { ok: false, error: '서버 응답을 읽지 못했어요' }; }
  }
  PE.rpc = rpc;
+ PE.setToken = function (t) { tok = t || null; try { if (t) sessionStorage.setItem('pe_tok', t); } catch (e) { } };     // 이미 원장으로 로그인한 화면이 연결을 넘겨줄 때
  function needLogin(j) { return j && !j.ok && /로그인/.test(j.error || ''); }
  async function ensureLogin(force) {
   if (tok && !force) return tok;

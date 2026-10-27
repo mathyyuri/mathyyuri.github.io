@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>개인별 오답노트 만들기 · MATHY YURI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="problem_edit.js"></script>
 <style>
 :root{--ink:#2a2118;--sub:#7d7364;--gold:#b8863a;--rust:#9c5530;--line:#e5d9c0;--bg:#f6f0e3;--card:#fffdf8}
 *{box-sizing:border-box}
@@ -31,6 +34,14 @@ tr.exr:hover{background:#fbf6ea}
 .chip.on{background:var(--rust);border-color:var(--rust);color:#fff}
 .chip.ro{cursor:default}.chip .hs{display:inline-block;background:#fff;border-radius:9px;padding:0 6px;margin-left:5px;font-size:12px;letter-spacing:1px;line-height:1.5;color:#444}
 .hs i{font-style:normal}.hs .hO{color:#2e8b57}.hs .hX{color:#c0392b}.hs .hT{color:#b8863a}.hs .nt{text-decoration:underline;font-weight:900}
+.chip .pv{margin-left:6px;opacity:.8;cursor:zoom-in}.chip .pv:hover{opacity:1}
+.pvm{position:fixed;inset:0;background:rgba(20,15,10,.45);z-index:5000;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+.pvm[hidden]{display:none}.pvbox{background:var(--card);border-radius:12px;max-width:820px;width:100%;padding:16px 20px 20px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.pvh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.pvh b{font-size:16px;color:var(--rust)}.pvh .sp{flex:1}
+.pvhint{font-size:12.5px;color:var(--sub);margin:4px 0 10px;line-height:1.7}
+.pvq{position:relative;border:1px solid var(--line);border-radius:10px;padding:34px 16px 14px;background:#fff;line-height:2.1;font-size:15px}
+.pvq .ch{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;margin-top:12px}.pvq .ch>span{display:flex;gap:6px;align-items:baseline}.pvq .ch b{color:var(--rust);font-weight:500}.pvq .cv{flex:1;min-width:0}
+.pvq img.fig{max-width:60%;display:block;margin:8px 0}.pvinfo{margin:12px 0 4px;font-size:14px}.pvbox details{margin-top:8px}.pvbox summary{cursor:pointer;color:var(--rust);font-weight:700}.pvso{padding:8px 4px;line-height:2}
 .legend{font-size:12.5px;color:var(--sub);margin:2px 0 8px;line-height:1.8}.legend .hs{margin-left:2px}
 .chip.no{opacity:.45;cursor:default;text-decoration:line-through}
 .tog{cursor:pointer;color:var(--rust);font-weight:700}
@@ -109,6 +120,7 @@ tr.exr:hover{background:#fbf6ea}
  </div>
 </div>
 
+<div id="pv" class="pvm" hidden><div class="pvbox"><div class="pvh"><b id="pvTitle"></b><span id="pvHist" class="muted"></span><span class="sp"></span><button class="g" id="pvX" type="button">닫기</button></div><div class="pvhint">글·수식·그림을 눌러서 바로 고칠 수 있어요. 수식은 더블클릭, 그림은 눌러서 크기·위치를 바꿔요. 다 고친 뒤 왼쪽 아래 파란 막대의 <b>DB 등록</b>을 누르면 서버의 문제에 저장돼서 오답노트에도 그대로 들어가요. (보기·정답·단원은 <b>정보·DB</b> 버튼)</div><div id="pvBody"></div></div></div>
 <script src="notemaker/menbook.js"></script>
 <script>
 'use strict';
@@ -192,6 +204,44 @@ function compute(selectAll) {
  else { Object.keys(SEL).forEach(function (k) { var ok = ROWS.some(function (r) { return r.its.some(function (it) { return r.id + '|' + it.i === k; }); }); if (!ok) delete SEL[k]; }); }
  render();
 }
+/* 문제 미리보기 · 수정: 칸의 🔍 를 누르면 문제 DB 의 원본이 열리고, 고쳐서 서버에 등록할 수 있어요 */
+function fixEq2(t) {
+ var BS = String.fromCharCode(92), CB = BS + 'begin{cases}{', BC = BS + 'begin{cases}', EC = BS + 'end{cases}';
+ t = String(t || '');
+ if (t.indexOf(CB) >= 0) t = t.replace(new RegExp('<span class="eq">[^]*?</span>', 'g'), function (m) {          // 경우 나눔 식 (깨진 begin{cases}{ … # … end{cases}}} 정리)
+  if (m.indexOf(CB) < 0) return m;
+  m = m.split('{' + CB).join(BC).split(CB).join(BC);
+  while (m.indexOf(EC + '}') >= 0) m = m.split(EC + '}').join(EC);
+  return m.split('#').join(BS + BS).replace(/(&amp;[ 	]*){2,}/g, '&amp; ');
+ });
+ return t.replace(/\^\s*(-?\d+)/g, '^{$1}').replace(/\^\s*([a-z])\s*\+\s*(\d+)/g, '^{$1+$2}').replace(/-&gt;|-&amp;gt;/g, BS + 'rightarrow ');
+}
+var PVROOT = null;
+function closePreview(force) {
+ if (!force && window.ProblemEdit && ProblemEdit.dirty().length && !confirm('서버에 등록하지 않은 수정이 있어요. 그래도 닫을까요?')) return;
+ if (PVROOT && window.ProblemEdit) { var k = ProblemEdit.roots.indexOf(PVROOT); if (k >= 0) ProblemEdit.roots.splice(k, 1); }
+ PVROOT = null; $('#pvBody').innerHTML = ''; $('#pv').hidden = true; var b = document.querySelector('.pe-bar'); if (b) b.style.display = 'none';
+}
+$('#pvX').onclick = function () { closePreview(false); };
+async function openPreview(r, it) {
+ if (!window.ProblemEdit || !window.katex) { alert('문제 수정 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요'); return; }
+ if (PVROOT) closePreview(false); if (PVROOT) return;
+ $('#pv').hidden = false; $('#pvTitle').textContent = r.name + ' · ' + it.no + '번'; $('#pvBody').textContent = '문제를 불러오는 중…';
+ var hs = (it.h && HIST[it.h]) || [], sym = { O: '○', X: '✕', T: '△' };
+ $('#pvHist').textContent = hs.length ? '기록: ' + hs.map(function (a) { return a.md + ' ' + sym[a.c] + (a.note ? '(오답노트)' : ''); }).join(' → ') : '';
+ var j = await ms('problems', { exam_id: r.id, nos: [it.no] });
+ if (!j || !j.ok || !(j.items || []).length) { $('#pvBody').textContent = (j && j.error) || '이 문제는 문제 DB에서 찾지 못했어요'; return; }
+ var p = j.items[0], chs = p.ch || [];
+ if (ProblemEdit.setToken && tok) ProblemEdit.setToken(tok);
+ var root = document.createElement('div');
+ root.innerHTML = '<div class="q pvq" data-h="' + esc(it.h) + '"><div class="qb">' + fixEq2(p.stem) + '</div>' + (chs.length ? '<div class="ch">' + chs.map(function (c, i) { return '<span><b>' + CIRC5.charAt(i) + '</b><span class="cv">' + fixEq2(c) + '</span></span>'; }).join('') + '</div>' : '') + '</div>'
+  + '<div class="pvinfo"><b>정답</b> <span class="pvan">' + fixEq2(p.an == null ? '-' : String(p.an)) + '</span></div><details><summary>해설 보기</summary><div class="pvso">' + (p.so ? fixEq2(p.so) : '(해설이 없어요)') + '</div></details>';
+ $('#pvBody').innerHTML = ''; $('#pvBody').appendChild(root); PVROOT = root;
+ Object.keys(j.figs || {}).forEach(function (k) { ProblemEdit.figs[k] = j.figs[k]; });
+ ProblemEdit.prepare(root.querySelector('.pvan')); ProblemEdit.prepare(root.querySelector('.pvso'));
+ ProblemEdit.attach(root, { block: '.q', stem: '.qb', ch: '.ch', cv: '.cv', figs: j.figs || {} });
+ var bar = document.querySelector('.pe-bar'); if (bar) bar.style.display = '';
+}
 /* 문제 번호 칸: 칸 색 = 가장 최근 결과(초록 맞힘 · 빨강 틀림 · 금색 고침), 칸 안 ○✕△ = 지금까지 푼 순서(밑줄 = 오답노트에서 푼 것) */
 function miniName(n) { n = String(n || ''); var k = n.indexOf(' : '); return (k >= 0 ? n.slice(k + 3) : n).slice(0, 14); }
 function chipHtml(r, ri, it) {
@@ -201,7 +251,7 @@ function chipHtml(r, ri, it) {
  var from = '';
  if (/^오답노트/.test(r.name)) { var o1 = hs.filter(function (a) { return !a.note; })[0]; if (o1) from = ' ← ' + miniName(o1.name) + ' ' + o1.no + '번'; }
  var can = r.view ? it.sel : true, label = it.no + '번' + from + (it.c === 'T' ? ' (고침)' : '');
- return '<span class="chip l-' + last + (can && SEL[r.id + '|' + it.i] ? ' on' : '') + (can ? '' : ' ro') + '"' + (can ? ' data-c="' + ri + ':' + it.i + '"' : '') + ' title="' + esc((it.src ? it.src + String.fromCharCode(10) : '') + tl) + '">' + label + sh + '</span>';
+ return '<span class="chip l-' + last + (can && SEL[r.id + '|' + it.i] ? ' on' : '') + (can ? '' : ' ro') + '"' + (can ? ' data-c="' + ri + ':' + it.i + '"' : '') + ' title="' + esc((it.src ? it.src + String.fromCharCode(10) : '') + tl) + '">' + label + sh + (it.h ? '<span class="pv" data-pv="' + ri + ':' + it.i + '" title="문제 미리보기·수정">🔍</span>' : '') + '</span>';
 }
 function render() {
  var tb = $('#tbl tbody'), h = ''; HIST = STU ? attempts(STU.id).byH : {};
@@ -220,7 +270,9 @@ function render() {
 $('#tbl').onclick = function (e) {
  var t = e.target;
  if (t.dataset.o != null) { var r = ROWS[+t.dataset.o]; OPEN[r.id] = !OPEN[r.id]; render(); }
- if (t.dataset.c) { var p = t.dataset.c.split(':'), r2 = ROWS[+p[0]], k = r2.id + '|' + p[1]; if (SEL[k]) delete SEL[k]; else SEL[k] = 1; render(); }
+ if (t.dataset.pv) { var q0 = t.dataset.pv.split(':'), r0 = ROWS[+q0[0]]; var it0 = (r0.view || r0.its).filter(function (x) { return String(x.i) === q0[1]; })[0]; if (it0) openPreview(r0, it0); return; }
+ var cc = t.closest ? t.closest('[data-c]') : null;
+ if (cc) { var p = cc.dataset.c.split(':'), r2 = ROWS[+p[0]], k = r2.id + '|' + p[1]; if (SEL[k]) delete SEL[k]; else SEL[k] = 1; render(); }
 };
 $('#tbl').onchange = function (e) {
  var t = e.target; if (t.dataset.r == null) return; var r = ROWS[+t.dataset.r];
@@ -574,7 +626,7 @@ $('#make').onclick = async function () {
   await Promise.all(Object.keys(FIGS).map(function (k) { return new Promise(function (res) { var im = new Image(); im.onload = function () { if (im.naturalWidth <= 130 && im.naturalHeight <= 80) small[k] = 1; res(); }; im.onerror = res; im.src = FIGS[k]; }); }));
   function noIcon(t) { return String(t || '').replace(/<img[^>]*data-fig="([^"]+)"[^>]*>/g, function (m, n) { return small[n] ? '' : m; }); }
   // 한글에서 넘어온 수식 보정: f ^-1 → f^{-1} · ^n+1 → ^{n+1} · X -> Y → X→Y (서버 글을 고쳐 두기 전에도 제대로 보이게)
-  function fixEq(t) { return String(t || '').replace(/\^\s*(-?\d+)/g, '^{$1}').replace(/\^\s*([a-z])\s*\+\s*(\d+)/g, '^{$1+$2}').replace(/-&gt;|-&amp;gt;/g, '\\rightarrow '); }
+  function fixEq(t) { return fixEq2(t); }
   POOL.forEach(function (o) { o.st = fixEq(noIcon(o.st)); o.so = fixEq(noIcon(o.so)); o.ch = o.ch.map(function (c) { return fixEq(noIcon(c)); }); });
   POOL.forEach(function (o) { if (o.n2) o.src = o.src + ' (' + o.n2 + '번 틀림: ' + o.src2.slice(3) + ')'; delete o.n2; delete o.src2; });
   if (!POOL.length) throw new Error('가져올 수 있는 문제가 없어요 (문제 DB에 없는 미션이에요)');
