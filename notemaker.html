@@ -140,7 +140,7 @@ async function call(fn, args) {
 function api(a, args) { return call('ac_api', { p_action: a, p_token: tok, p_args: args || {} }); }
 function ms(a, args) { return call('ac_mission', { p_action: a, p_token: tok, p_args: args || {} }); }
 
-var DATA = null, STU = null, ROWS = [], OTH = [], SEL = {}, OPEN = {}, HIST = {};
+var DATA = null, STU = null, ROWS = [], OTH = [], SEL = {}, OPEN = {}, HIST = {}, REB = null;
 
 /* ───────── 로그인 · 불러오기 ───────── */
 async function boot() {
@@ -384,7 +384,7 @@ function histRender() {
  var list = all.filter(function (h) { return !only || h.sid === only; }).slice().reverse();
  var h = '';
  list.forEach(function (x) {
-  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + (x.est ? '약 ' : '') + x.round + '회차</b>' + (x.est ? '<span class="badge">복원</span>' : '') + '</td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td><td>' + gradeCell(x) + '</td></tr>';
+  h += '<tr class="exr"><td><input type="checkbox" data-h="' + esc(x.id) + '"' + (HSEL[x.id] ? ' checked' : '') + '></td><td><b>' + esc(x.name) + '</b><span class="badge">' + esc(x.cls || '') + '</span></td><td><b>' + (x.est ? '약 ' : '') + x.round + '회차</b>' + (x.est ? '<span class="badge">복원</span>' : '') + '</td><td>' + esc(x.date) + '</td><td>' + x.n + '문항</td><td class="muted">' + esc(x.per || '') + '</td><td>' + gradeCell(x) + '<br><span class="tog" data-rb="' + esc(x.id) + '" title="서버에 저장된 이 회차의 채점용 미션에서 문제를 다시 가져와 노트를 새로 만들어요">노트 다시 받기</span></td></tr>';
  });
  $('#htbl tbody').innerHTML = h;
  $('#hEmpty').textContent = list.length ? ('기록 ' + list.length + '건' + (only ? ' (이 학생)' : '')) : (all.length ? '이 학생의 기록이 없어요' : '아직 이 컴퓨터에서 만든 기록이 없어요. 지금부터 만드는 노트부터 쌓여요.');
@@ -393,6 +393,18 @@ function histRender() {
 }
 $('#htbl').onchange = function (e) { var t = e.target; if (!t.dataset.h) return; if (t.checked) HSEL[t.dataset.h] = 1; else delete HSEL[t.dataset.h]; histRender(); };
 $('#hOnlyStu').onchange = histRender;
+$('#htbl').addEventListener('click', function (e) {              // [노트 다시 받기]: 서버의 이 회차 채점용 미션에서 문제를 다시 가져와 같은 노트를 새로 만들어요
+ var b = e.target.closest && e.target.closest('[data-rb]'); if (!b) return;
+ var x = histLoad().filter(function (h) { return h.id === b.dataset.rb; })[0]; if (!x) return;
+ var stu = (DATA && DATA.students || []).filter(function (t) { return t.id === x.sid; })[0], nm = '오답노트 · ' + x.name + ' ' + x.round + '회차';
+ var ex = DATA && (DATA.exams || []).filter(function (t) { return (x.mid && t.id === x.mid) || t.n === nm; })[0];
+ if (!tok || !DATA) { alert('먼저 위에서 비밀번호로 연결해 주세요'); return; }
+ if (!stu || !ex || !ex.items || !ex.items.length) { alert('이 회차의 채점용 미션이 서버에 없어서 다시 만들 수 없어요.' + String.fromCharCode(10) + '(아래 [채점용 미션 없는 기록 모두 만들기]를 먼저 눌러 보세요)'); return; }
+ var idx = ex.items.map(function (it, i) { return { i: i, no: i + 1, c: 'X', src: it.src || '', h: it.h || '', unit: it.unit || '' }; }).filter(function (it) { return it.h; });
+ if (!idx.length) { alert('문제 DB와 연결된 문제가 없어서 다시 만들 수 없어요'); return; }
+ if (!confirm(x.name + ' ' + x.round + '회차 노트를 서버의 문제로 다시 만들까요?' + String.fromCharCode(10) + '(노트 안에서 고쳤던 글·풀이 칸 크기는 서버에 등록한 것만 남아요)')) return;
+ STU = stu; REB = { exam: ex, rec: x, idx: idx }; $('#make').onclick.call($('#make'));
+});
 $('#reSync').onclick = function () { refreshData(true); };
 $('#hAll').onclick = function () { histLoad().forEach(function (x) { if (!$('#hOnlyStu').checked || !STU || x.sid === STU.id) HSEL[x.id] = 1; }); histRender(); };
 $('#hNone').onclick = function () { HSEL = {}; histRender(); };
@@ -615,12 +627,15 @@ function quickCollect(pick, PDFJS) {
  document.open(); document.write(doc); document.close();
 }
 $('#make').onclick = async function () {
- var btn = this; btn.disabled = true; var st = $('#status');
+ var btn = this; btn.disabled = true; var st = $('#status'); var reb = REB; REB = null;
  try {
   var byEx = {};
   ROWS.forEach(function (r) { var idx = r.its.filter(function (it) { return SEL[r.id + '|' + it.i]; }); if (idx.length) byEx[r.id] = { r: r, idx: idx }; });
-  var exs = Object.keys(byEx).map(function (k) { return byEx[k]; }).sort(function (a, b) { return a.r.date < b.r.date ? -1 : a.r.date > b.r.date ? 1 : 0; });
-  var POOL = [], FIGS = {}, groups = [], seen = {}, seq = 0, miss = 0, dup = 0, dedupe = $('#dedupe').checked;
+  if (reb) {                                                     // 기록에서 노트 다시 받기: 채점용 미션의 문제를 원래 미션 이름별로 묶어 그대로 다시 불러와요
+   byEx = {}; reb.idx.forEach(function (it) { var k = it.unit || '오답'; (byEx[k] || (byEx[k] = { r: { id: reb.exam.id, name: k, date: reb.exam.date }, idx: [] })).idx.push(it); });
+  }
+  var exs = Object.keys(byEx).map(function (k) { return byEx[k]; }).sort(function (a, b) { return reb ? 0 : a.r.date < b.r.date ? -1 : a.r.date > b.r.date ? 1 : 0; });
+  var POOL = [], FIGS = {}, groups = [], seen = {}, seq = 0, miss = 0, dup = 0, dedupe = reb ? false : $('#dedupe').checked;
   for (var gi = 0; gi < exs.length; gi++) {
    var X = exs[gi]; st.textContent = '문제를 가져오는 중… (' + (gi + 1) + ' / ' + exs.length + ') ' + X.r.name;
    var j = await ms('problems', { exam_id: X.r.id, nos: X.idx.map(function (it) { return it.no; }) });
@@ -630,7 +645,7 @@ $('#make').onclick = async function () {
    var g = { id: 'g' + (gi + 1), sub: '오답', title: X.r.name, uids: [] };
    X.idx.forEach(function (it) {
     var p = by[it.no]; if (!p) { miss++; return; }
-    var from = X.r.name + ' · ' + it.no + '번' + (it.src ? ' — ' + it.src : '');
+    var from = reb ? (it.src || X.r.name) : X.r.name + ' · ' + it.no + '번' + (it.src ? ' — ' + it.src : '');
     if (dedupe && seen[it.h]) { dup++; var q = seen[it.h]; q.n2 = (q.n2 || 1) + 1; q.src2 += ' / ' + X.r.name + ' ' + it.no + '번'; return; }
     seq++; var o = { u: 'N' + seq, k: 'm', n: seq, src: from, src2: '', sub: '오답', ty: X.r.name, pt: 0, st: p.stem || '', ch: (p.ch || []).map(String), an: p.an == null ? '' : String(p.an), so: p.so || '', h: it.h };
     seen[it.h] = o; POOL.push(o); g.uids.push(o.u);
@@ -646,25 +661,25 @@ $('#make').onclick = async function () {
   POOL.forEach(function (o) { if (o.n2) o.src = o.src + ' (' + o.n2 + '번 틀림: ' + o.src2.slice(3) + ')'; delete o.n2; delete o.src2; });
   if (!POOL.length) throw new Error('가져올 수 있는 문제가 없어요 (문제 DB에 없는 미션이에요)');
   st.textContent = '노트를 조립하는 중…';
-  var nm = STU.name, dates = exs.map(function (x) { return x.r.date; }).sort(), per = dates[0] === dates[dates.length - 1] ? ymd(dates[0]) : ymd(dates[0]) + ' ~ ' + ymd(dates[dates.length - 1]);
-  var td = new Date(), today = td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
+  var nm = STU.name, dates = exs.map(function (x) { return x.r.date; }).sort(), per = reb ? reb.rec.per : dates[0] === dates[dates.length - 1] ? ymd(dates[0]) : ymd(dates[0]) + ' ~ ' + ymd(dates[dates.length - 1]);
+  var td = new Date(), today = reb ? reb.rec.date : td.getFullYear() + '. ' + ('0' + (td.getMonth() + 1)).slice(-2) + '. ' + ('0' + td.getDate()).slice(-2);
   var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js'), PEJS = await getText('problem_edit.js');
   var SC = '<' + '/script>';
-  var AT = attempts(STU.id);                                    // 이 학생이 푼 모든 기록 (문제 해시별 · 시험별)
+  var AT = attempts(STU.id, reb ? { id: reb.exam.id, date: reb.exam.date } : null);   // 이 학생이 푼 모든 기록 (문제 해시별 · 시험별)
   POOL.forEach(function (o) {
    var hs = AT.byH[o.h] || []; o.round = hs.length + 1;
    o.hist = hs.map(function (a) { return a.c + '(' + a.md + ')'; }).join(' → ') || '-';
   });
   var theme = MB.themeFor(STU.ac, STU.cls);                     // 반별 색 (S 남색 · S+ 자주 · A+ 초록 · A 갈색)
-  var rk = 'notemaker_round_' + STU.id, round = 1; try { round = parseInt($('#roundIn').value, 10) || ((parseInt(localStorage.getItem(rk), 10) || 0) + 1); localStorage.setItem(rk, String(round)); } catch (e) { }
+  var rk = 'notemaker_round_' + STU.id, round = 1; try { round = reb ? reb.rec.round : parseInt($('#roundIn').value, 10) || ((parseInt(localStorage.getItem(rk), 10) || 0) + 1); if (!reb) localStorage.setItem(rk, String(round)); } catch (e) { }
   var clsLab = String(STU.cls || '').replace(/\s+/g, ''); if (clsLab && !/반$/.test(clsLab)) clsLab += '반';
   var side = (STU.ac === 'bd' ? '분당미래탐구 ' : '대치수학2기 ') + clsLab + ' ' + nm;      // 왼쪽 띠 위쪽에 세로로 들어가는 이름
   var coverHtml = MB.coverHtml({ side: side, round: ('0' + round).slice(-2), eyebrow: per + ' · 오답 ' + POOL.length + '문항', sub: '— Math Error Notebook —' });
   var backInner = await MB.backHtml(theme);
   var TH = buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, round);
   var key = 'note_v1_' + STU.id + '_' + Date.now();
-  var mid = null;
-  if ($('#withMs').checked) {                                  // 이 학생 전용 채점 미션 (같은 이름이 있으면 갱신)
+  var mid = reb ? reb.rec.mid : null;
+  if (!reb && $('#withMs').checked) {                                  // 이 학생 전용 채점 미션 (같은 이름이 있으면 갱신)
    st.textContent = '채점용 미션을 올리는 중…';
    var mname = '오답노트 · ' + nm + ' ' + round + '회차', same = (DATA.exams || []).filter(function (e) { return e.n === mname; })[0];
    var iso = td.getFullYear() + '-' + ('0' + (td.getMonth() + 1)).slice(-2) + '-' + ('0' + td.getDate()).slice(-2);
@@ -673,7 +688,7 @@ $('#make').onclick = async function () {
    var mj = await ms('create', margs);
    if (mj && mj.ok) mid = mj.id; else alert('오답노트는 만들지만 채점용 미션은 올리지 못했어요: ' + ((mj && mj.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요. 노트에 문제 번호는 그대로예요)');
   }
-  histAdd({ mid: mid, id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
+  if (!reb) histAdd({ mid: mid, id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
   var CSS = CSS + '\n' + MB.css(theme);
@@ -714,8 +729,9 @@ function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, rou
  ]);
 }
 /* 이 학생이 푼 모든 기록: 문제(해시)별로 몇 번째 풀이인지, 시험별 · 회독별 · 단원별 정답률 */
-function attempts(sid) {
- var ex = (DATA.exams || []).filter(function (e) { return e.ox && e.ox[sid] && e.items && e.items.length; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.n < b.n ? -1 : 1); });
+function attempts(sid, cut) {                                    // cut = { id, date }: 다시 받는 노트 자기 자신과 그 뒤의 기록은 빼고 셈
+
+ var ex = (DATA.exams || []).filter(function (e) { return e.ox && e.ox[sid] && e.items && e.items.length && !(cut && (e.id === cut.id || e.date > cut.date)); }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.n < b.n ? -1 : 1); });
  var byH = {}, batch = [], unit = {};
  ex.forEach(function (e, ei) {
   var ox = e.ox[sid], ok = 0, done = 0, md = e.date.slice(5).replace('-', '/').replace(/^0/, '');
