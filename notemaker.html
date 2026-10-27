@@ -27,7 +27,11 @@ tr.exr:hover{background:#fbf6ea}
 .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#efe5cf;color:var(--rust);margin-left:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
 .chip{border:1px solid #d7c9a8;border-radius:16px;padding:3px 10px;font-size:12.5px;background:#fff;cursor:pointer;user-select:none}
+.chip.l-O{border-color:#2e8b57;background:#eefaf2}.chip.l-X{border-color:#c0392b;background:#fff3f1}.chip.l-T{border-color:#b8863a;background:#fff8e6}
 .chip.on{background:var(--rust);border-color:var(--rust);color:#fff}
+.chip.ro{cursor:default}.chip .hs{display:inline-block;background:#fff;border-radius:9px;padding:0 6px;margin-left:5px;font-size:12px;letter-spacing:1px;line-height:1.5;color:#444}
+.hs i{font-style:normal}.hs .hO{color:#2e8b57}.hs .hX{color:#c0392b}.hs .hT{color:#b8863a}.hs .nt{text-decoration:underline;font-weight:900}
+.legend{font-size:12.5px;color:var(--sub);margin:2px 0 8px;line-height:1.8}.legend .hs{margin-left:2px}
 .chip.no{opacity:.45;cursor:default;text-decoration:line-through}
 .tog{cursor:pointer;color:var(--rust);font-weight:700}
 .bar2{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 16px;margin:0 -16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;z-index:5}
@@ -69,11 +73,13 @@ tr.exr:hover{background:#fbf6ea}
     <label class="lab"><input type="radio" name="wr" value="X" checked> 틀린 것(X)만</label>
     <label class="lab"><input type="radio" name="wr" value="XT"> 틀린 것 + 고친 것(T)</label>
     <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
+    <label class="lab" title="처음 틀렸어도 그 뒤(오답노트 등)에서 맞힌 문제는 처음부터 선택에서 빼요. 칸을 눌러서 다시 넣을 수 있어요"><input type="checkbox" id="skipFixed"> 나중에 맞힌(○) 문제는 선택에서 빼기</label>
     <label class="lab"><input type="checkbox" id="withQA" checked> 빠른 정답 쪽도 함께 출력</label>
     <label class="lab"><input type="checkbox" id="withSol"> 상세 해설 쪽도 함께 출력</label>
     <label class="lab" title="이 노트의 문제들을 이 학생 전용 미션으로 올려요. 채점한 ○✕ 가 쌓여서 다음 오답노트의 회독 수·통계에 들어가요"><input type="checkbox" id="withMs" checked> 채점용 미션도 함께 만들기 (○✕ 누적)</label>
    </div>
    <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
+   <div class="legend">번호 칸 <b>색</b> = 가장 최근 결과 (<span style="color:#2e8b57">초록 맞힘</span> · <span style="color:#c0392b">빨강 아직 틀림</span> · <span style="color:#b8863a">금색 고침</span>) &nbsp;/&nbsp; 칸 안 <b>○ ✕ △</b> = 이 문제를 푼 순서대로의 기록 (<b><u>밑줄</u></b> = 오답노트로 출제해서 푼 결과). 오답노트 줄은 출제한 문제 전부와 원래 어느 미션 몇 번이었는지(← 표시)를 보여 줘요. 칸에 마우스를 올리면 날짜별 기록이 나와요.</div>
    <div id="others" class="muted" style="margin:8px 0 10px;line-height:1.9"></div>
    <div style="overflow-x:auto"><table id="tbl"><thead><tr><th style="width:34px"></th><th>교재(미션)</th><th style="width:96px">날짜</th><th style="width:110px">틀린 문제</th><th style="width:60px"></th></tr></thead><tbody></tbody></table></div>
   </div>
@@ -122,7 +128,7 @@ async function call(fn, args) {
 function api(a, args) { return call('ac_api', { p_action: a, p_token: tok, p_args: args || {} }); }
 function ms(a, args) { return call('ac_mission', { p_action: a, p_token: tok, p_args: args || {} }); }
 
-var DATA = null, STU = null, ROWS = [], OTH = [], SEL = {}, OPEN = {};
+var DATA = null, STU = null, ROWS = [], OTH = [], SEL = {}, OPEN = {}, HIST = {};
 
 /* ───────── 로그인 · 불러오기 ───────── */
 async function boot() {
@@ -169,29 +175,42 @@ function compute(selectAll) {
   if (!e.items || !e.items.length) { OTH.push({ name: e.n, date: e.date, why: '문항 정보가 비어 있어요(문제 번호·문제 연결이 없는 시험)' }); return; }
   var ox = e.ox && e.ox[STU.id];
   if (!ox) { OTH.push({ name: e.n, date: e.date, why: '이 학생의 채점 기록이 없어요' }); return; }
-  var its = [], nodata = 0;
+  var its = [], nodata = 0, view = [], isN = /^오답노트/.test(e.n);
   for (var i = 0; i < e.items.length; i++) {
-   var c = ox.charAt(i); if (ws.indexOf(c) < 0 || c === '') continue;
+   var c = ox.charAt(i); if (c === '') continue;
    var it = e.items[i] || {};
+   if (isN && 'OXT'.indexOf(c) >= 0) view.push({ i: i, no: i + 1, c: c, src: it.src || '', h: it.h || '', sel: ws.indexOf(c) >= 0 && !!it.h });
+   if (ws.indexOf(c) < 0) continue;
    if (!it.h) { nodata++; continue; }
    its.push({ i: i, no: i + 1, c: c, src: it.src || '', h: it.h, unit: it.unit || '' });
   }
-  if (!its.length && !nodata) OTH.push({ name: e.n, date: e.date, why: '틀린 문제가 없어요(전부 맞았거나 안 푼 문제만 있어요)' });
-  if (its.length || nodata) ROWS.push({ id: e.id, name: e.n, short: e.short || '', date: e.date, its: its, nodata: nodata, total: e.items.length });
+  if (!its.length && !nodata && !isN) OTH.push({ name: e.n, date: e.date, why: '틀린 문제가 없어요(전부 맞았거나 안 푼 문제만 있어요)' });
+  if (its.length || nodata || (isN && view.length)) ROWS.push({ id: e.id, name: e.n, short: e.short || '', date: e.date, its: its, nodata: nodata, total: e.items.length, view: isN ? view : null });
  });
  ROWS.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
- if (selectAll) { SEL = {}; ROWS.forEach(function (r) { r.its.forEach(function (it) { SEL[r.id + '|' + it.i] = 1; }); }); }
+ if (selectAll) { SEL = {}; var skipF = $('#skipFixed') && $('#skipFixed').checked, HH = skipF ? attempts(STU.id).byH : {}; ROWS.forEach(function (r) { r.its.forEach(function (it) { var hs = HH[it.h] || []; if (skipF && hs.length && hs[hs.length - 1].c === 'O') return; SEL[r.id + '|' + it.i] = 1; }); }); }
  else { Object.keys(SEL).forEach(function (k) { var ok = ROWS.some(function (r) { return r.its.some(function (it) { return r.id + '|' + it.i === k; }); }); if (!ok) delete SEL[k]; }); }
  render();
 }
+/* 문제 번호 칸: 칸 색 = 가장 최근 결과(초록 맞힘 · 빨강 틀림 · 금색 고침), 칸 안 ○✕△ = 지금까지 푼 순서(밑줄 = 오답노트에서 푼 것) */
+function miniName(n) { n = String(n || ''); var k = n.indexOf(' : '); return (k >= 0 ? n.slice(k + 3) : n).slice(0, 14); }
+function chipHtml(r, ri, it) {
+ var hs = (it.h && HIST[it.h]) || [], last = hs.length ? hs[hs.length - 1].c : it.c, sym = { O: '○', X: '✕', T: '△' };
+ var tl = hs.map(function (a) { return a.md + ' ' + miniName(a.name) + ' ' + a.no + '번 ' + sym[a.c]; }).join('  →  ');
+ var sh = hs.length ? '<span class="hs">' + hs.map(function (a) { return '<i class="h' + a.c + (a.note ? ' nt' : '') + '">' + sym[a.c] + '</i>'; }).join('') + '</span>' : '';
+ var from = '';
+ if (/^오답노트/.test(r.name)) { var o1 = hs.filter(function (a) { return !a.note; })[0]; if (o1) from = ' ← ' + miniName(o1.name) + ' ' + o1.no + '번'; }
+ var can = r.view ? it.sel : true, label = it.no + '번' + from + (it.c === 'T' ? ' (고침)' : '');
+ return '<span class="chip l-' + last + (can && SEL[r.id + '|' + it.i] ? ' on' : '') + (can ? '' : ' ro') + '"' + (can ? ' data-c="' + ri + ':' + it.i + '"' : '') + ' title="' + esc((it.src ? it.src + String.fromCharCode(10) : '') + tl) + '">' + label + sh + '</span>';
+}
 function render() {
- var tb = $('#tbl tbody'), h = '';
+ var tb = $('#tbl tbody'), h = ''; HIST = STU ? attempts(STU.id).byH : {};
  $('#others').innerHTML = (STU && OTH.length) ? ('<b>목록에 안 나온 미션</b> (' + OTH.length + '개) — ' + OTH.sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (o) { return esc(o.name) + ' <span style="opacity:.75">[' + esc(o.why) + ']</span>'; }).join(' &nbsp;·&nbsp; ')) : '';
  $('#empty').textContent = STU ? (ROWS.length ? '' : '이 기간에 틀린 문제 기록이 없어요') : '';
  ROWS.forEach(function (r, ri) {
   var n = r.its.filter(function (it) { return SEL[r.id + '|' + it.i]; }).length, all = n === r.its.length && n > 0;
-  h += '<tr class="exr"><td><input type="checkbox" data-r="' + ri + '"' + (all ? ' checked' : '') + (r.its.length ? '' : ' disabled') + '></td><td><b>' + esc(r.name) + '</b>' + (r.short ? '<span class="badge">' + esc(r.short) + '</span>' : '') + '</td><td>' + esc(r.date) + '</td><td>' + n + ' / ' + r.its.length + '문제' + (r.nodata ? '<br><span class="muted">자료 연결 없음 ' + r.nodata + '</span>' : '') + '</td><td><span class="tog" data-o="' + ri + '">' + (OPEN[r.id] ? '접기' : '펼치기') + '</span></td></tr>';
-  if (OPEN[r.id]) h += '<tr><td></td><td colspan="4"><div class="chips">' + r.its.map(function (it) { return '<span class="chip' + (SEL[r.id + '|' + it.i] ? ' on' : '') + '" data-c="' + ri + ':' + it.i + '" title="' + esc(it.src) + '">' + it.no + '번' + (it.c === 'T' ? ' (고침)' : '') + '</span>'; }).join('') + '</div></td></tr>';
+  h += '<tr class="exr"><td><input type="checkbox" data-r="' + ri + '"' + (all ? ' checked' : '') + (r.its.length ? '' : ' disabled') + '></td><td><b>' + esc(r.name) + '</b>' + (r.short ? '<span class="badge">' + esc(r.short) + '</span>' : '') + '</td><td>' + esc(r.date) + '</td><td>' + n + ' / ' + r.its.length + '문제' + (r.view ? '<br><span class="muted">출제 ' + r.view.length + ' · 맞음 ' + r.view.filter(function (v) { return v.c === 'O'; }).length + ' · 틀림 ' + r.view.filter(function (v) { return v.c !== 'O'; }).length + '</span>' : '') + (r.nodata ? '<br><span class="muted">자료 연결 없음 ' + r.nodata + '</span>' : '') + '</td><td><span class="tog" data-o="' + ri + '">' + (OPEN[r.id] ? '접기' : '펼치기') + '</span></td></tr>';
+  if (OPEN[r.id]) h += '<tr><td></td><td colspan="4"><div class="chips">' + (r.view || r.its).map(function (it) { return chipHtml(r, ri, it); }).join('') + '</div></td></tr>';
  });
  tb.innerHTML = h;
  var tot = Object.keys(SEL).length, ne = ROWS.filter(function (r) { return r.its.some(function (it) { return SEL[r.id + '|' + it.i]; }); }).length;
@@ -212,6 +231,7 @@ $('#noneBtn').onclick = function () { SEL = {}; render(); };
 document.querySelectorAll('input[name=wr]').forEach(function (x) { x.onchange = function () { compute(true); }; });
 $('#d1').onchange = $('#d2').onchange = function () { compute(true); };
 $('#dedupe').onchange = render;
+$('#skipFixed').onchange = function () { compute(true); };
 document.querySelectorAll('[data-p]').forEach(function (b) {
  b.onclick = function () {
   var n = +b.dataset.p, t = new Date(), f = function (d) { return d.toISOString().slice(0, 10); };
@@ -636,7 +656,7 @@ function attempts(sid) {
    var c = ox.charAt(i); if ('OXT'.indexOf(c) < 0 || c === '') continue;
    var it = e.items[i] || {}; done++; if (c === 'O') ok++;
    var un = it.unit || ''; if (un) { var u = unit[un] || (unit[un] = { ok: 0, wrong: 0 }); if (c === 'O') u.ok++; else u.wrong++; }
-   if (it.h) (byH[it.h] || (byH[it.h] = [])).push({ c: c, md: md, name: e.n });
+   if (it.h) (byH[it.h] || (byH[it.h] = [])).push({ c: c, md: md, name: e.n, no: i + 1, note: /^오답노트/.test(e.n) });
   }
   if (done) batch.push({ label: (batch.length + 1) + '회차 ' + md, pct: Math.round(100 * ok / done), text: '정답 ' + Math.round(100 * ok / done) + '% (' + ok + '/' + done + ') ' + String(e.n).slice(0, 18) });
  });
