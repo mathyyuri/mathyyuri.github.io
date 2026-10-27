@@ -553,7 +553,9 @@ $('#make').onclick = async function () {
   var small = {};                                          // 정답 표시 같은 작은 아이콘 그림은 빼요 (가로 130 · 세로 80 이하)
   await Promise.all(Object.keys(FIGS).map(function (k) { return new Promise(function (res) { var im = new Image(); im.onload = function () { if (im.naturalWidth <= 130 && im.naturalHeight <= 80) small[k] = 1; res(); }; im.onerror = res; im.src = FIGS[k]; }); }));
   function noIcon(t) { return String(t || '').replace(/<img[^>]*data-fig="([^"]+)"[^>]*>/g, function (m, n) { return small[n] ? '' : m; }); }
-  POOL.forEach(function (o) { o.st = noIcon(o.st); o.so = noIcon(o.so); o.ch = o.ch.map(noIcon); });
+  // 한글에서 넘어온 수식 보정: f ^-1 → f^{-1} · ^n+1 → ^{n+1} · X -> Y → X→Y (서버 글을 고쳐 두기 전에도 제대로 보이게)
+  function fixEq(t) { return String(t || '').replace(/\^\s*(-?\d+)/g, '^{$1}').replace(/\^\s*([a-z])\s*\+\s*(\d+)/g, '^{$1+$2}').replace(/-&gt;|-&amp;gt;/g, '\\rightarrow '); }
+  POOL.forEach(function (o) { o.st = fixEq(noIcon(o.st)); o.so = fixEq(noIcon(o.so)); o.ch = o.ch.map(function (c) { return fixEq(noIcon(c)); }); });
   POOL.forEach(function (o) { if (o.n2) o.src = o.src + ' (' + o.n2 + '번 틀림: ' + o.src2.slice(3) + ')'; delete o.n2; delete o.src2; });
   if (!POOL.length) throw new Error('가져올 수 있는 문제가 없어요 (문제 DB에 없는 미션이에요)');
   st.textContent = '노트를 조립하는 중…';
