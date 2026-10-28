@@ -290,8 +290,8 @@
        var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
        var ah = ansHtml(a);
        var apl = ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
-       if (apl > 9) rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + ah + '</span></div>';   /* 긴 정답(정의역·치역 등)은 작은 칸에 안 들어가니 줄로 */
-       else h += '<div class="qa-cell"><i>' + qn + '</i><b' + (apl > 5 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
+       if (apl > 6) rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + ah + '</span></div>';   /* 긴 정답(정의역·치역 등)은 작은 칸에 안 들어가니 줄로 */
+       else h += '<div class="qa-cell"><i>' + qn + '</i><b' + (apl > 2 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
       } else {                                           /* 교과서 문제처럼 정답이 풀이 안에 있는 것: 풀이의 첫 줄만 */
        var m = String(p.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(p.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
        if (!pl) t = '<span class="see">상세 해설 참고</span>'; else if (pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
@@ -700,7 +700,7 @@
    us.forEach(function (u) {
     var p = item(u); j++; var c = chsOf(u), a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(p.an || '-');
     var alen = String(p.an || '').replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
-    if (alen > 9 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
+    if (alen > 6 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
     else h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';
    });
    blocks += h + '</div>' + (lg.length ? '<div class="tl">' + lg.join('') + '</div>' : '') + '</div>';
@@ -715,7 +715,7 @@
    + '.stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0 40px}.stage .pg{zoom:var(--s,1)}.pg{width:210mm;height:297mm;background:#fffdf8;padding:12mm 13mm 9mm;box-shadow:0 8px 28px rgba(60,40,10,.28);position:relative;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}.cap{box-shadow:none!important;zoom:1!important}#src{position:absolute;left:-30000px;top:0;width:184mm;visibility:hidden}'
    + '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.3mm solid #a8853f;padding-bottom:1.6mm;margin-bottom:4mm}.hd b{font-family:"Playfair Display",serif;font-style:italic;font-weight:500;font-size:10pt;color:#a8853f;letter-spacing:.08em}.hd span{font-family:"Gowun Batang",serif;font-size:9pt;color:#7d7364}.bd{flex:1;min-height:0;overflow:hidden}.ft{text-align:center;font-size:8pt;color:#9c5530;border-top:.2mm solid #e4d9c2;padding-top:1.6mm;margin-top:2mm}'
    + '.blk{margin-bottom:2.6mm}.bd .blk:last-child{margin-bottom:0}.sbar{background:#2a2118;color:#f3ead7;padding:1.6mm 3mm;border-radius:1mm;margin-bottom:2.4mm}.sbar b{font-family:"Gowun Batang",serif;font-size:11pt}.gt{display:flex;align-items:baseline;gap:3mm;border-bottom:.2mm solid #e4d9c2;padding-bottom:.6mm;margin-bottom:1.2mm}.gt b{font-family:"Gowun Batang",serif;font-size:10pt;color:#9c5530}.gt em{margin-left:auto;font-style:normal;font-size:7.6pt;color:#7d7364}'
-   + '.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1mm}.cell{border:.25mm solid #e0d6bf;border-radius:1mm;padding:.5mm .6mm .7mm;text-align:center;line-height:1.2;background:#fff}.cell i{display:block;font-style:normal;font-size:6pt;color:#9a8f7c}.cell b{font-size:10pt;color:#9c5530;font-weight:700}.cell b.sm{font-size:7.4pt}.tl{columns:2;column-gap:7mm}'
+   + '.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1mm}.cell{border:.25mm solid #e0d6bf;border-radius:1mm;padding:.5mm .6mm .7mm;text-align:center;line-height:1.2;background:#fff}.cell i{display:block;font-style:normal;font-size:6pt;color:#9a8f7c}.cell b{font-size:10pt;color:#9c5530;font-weight:700}.cell b.sm{font-size:7.4pt}.cell b{word-break:keep-all}.tl{columns:2;column-gap:7mm}'
    + '.tr{display:flex;gap:2mm;align-items:baseline;border-bottom:.2mm solid #eee3cc;padding:.9mm 0;font-size:8.6pt;line-height:1.45;break-inside:avoid}.tr .n{flex:none;width:8mm;font-weight:700;color:#9c5530}.tr .s{flex:none;width:23mm;font-size:6.2pt;color:#9a8f7c;line-height:1.25}.tr .a{flex:1;min-width:0}.tr .a p{margin:0}.tr .see{color:#aaa;font-size:7.6pt}';
   return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>오답노트 · 빠른 정답 (A4)</title>'
    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@0,500;1,500&display=swap">'
