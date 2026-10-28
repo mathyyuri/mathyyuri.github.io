@@ -2367,24 +2367,28 @@ function msMergeNotes(L){
  });
  return normal.concat(virt);
 }
+const MS_DOW=['일','월','화','수','목','금','토'],MS_DC=['230,106,106','242,166,90','226,200,74','107,191,122','74,168,201','122,143,224','178,122,214'];
+function msDow(d){const m=/(\d{4})-(\d\d)-(\d\d)/.exec(String(d));return m?new Date(+m[1],+m[2]-1,+m[3]).getDay():0;}
+function msDay(d){return esc(String(d).slice(5,10).replace('-','/'))+' ('+MS_DOW[msDow(d)]+')';}
+function msDowLegend(){return [1,2,3,4,5,6,0].map(i=>'<span class="dwl dw'+i+'">'+MS_DOW[i]+'</span>').join('');}
 function msMatrix(L){
- const cols=L.filter(it=>it.roster.length).slice().sort((a,b)=>String(a.ex.date).localeCompare(String(b.ex.date))||0).slice(-40);
+ const cols=L.filter(it=>it.roster.length).slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))||0).slice(0,40);   /* 최신 기록이 왼쪽 */
  if(!cols.length)return '';
- const R={},ord={'S+':0,'S':1,'A+':2,'A':3,'B':4};
+ const dgs=[];cols.forEach(it=>{const d=String(it.ex.date).slice(0,10),g=dgs[dgs.length-1];if(g&&g.date===d)g.n++;else dgs.push({date:d,n:1,dw:msDow(d),i:0});}); let _ci=0;dgs.forEach(g=>{g.i=_ci;_ci+=g.n;});const dcl=ci=>'dw'+msDow(String(cols[ci].ex.date).slice(0,10))+(dgs.some(g=>g.i===ci)?' gb':'');const dtag=(s,ci)=>s.replace(/^<td( class="([^"]*)")?/,(m,a,c)=>'<td class="'+(c?c+' ':'')+dcl(ci)+'"'); const R={},ord={'S+':0,'S':1,'A+':2,'A':3,'B':4};
  cols.forEach(it=>{const len=it.ex.items.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
   it.roster.forEach(r=>{const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:!!r.me,cells:{},clr:0,n:0,x:0,sp:0};
    o.nm=r.me?(r.name||'나'):(pn(r)||o.nm);o.cls=r.cls||o.cls;if(r.me)o.me=true;
    const c=msCnt(r.ox,r._len||len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/(r._tot||tot);});
   if(isStaff()&&it.all)it.all.forEach(r=>{if(r.ox&&r.score!=null)return;const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:false,cells:{},clr:0,n:0,x:0,sp:0};o.nm=pn(r)||o.nm;o.cls=r.cls||o.cls;if(!o.cells[it.m.id])o.cells[it.m.id]={ns:!!r.ns,nr:!r.ns};});});
  const rows=Object.keys(R).map(k=>R[k]).sort((a,b)=>((ord[String(a.cls).replace(/반$/,'')]==null?9:ord[String(a.cls).replace(/반$/,'')])-(ord[String(b.cls).replace(/반$/,'')]==null?9:ord[String(b.cls).replace(/반$/,'')]))||(b.clr-a.clr)||String(a.nm).localeCompare(String(b.nm)));
- let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수.</div><div style="overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th>'+
-  cols.map(it=>'<th title="'+esc(it.ex.name)+'"><a href="'+(it.notes?'tbmission.html':'tbmission.html?m='+it.m.id+'&v=board')+'" style="color:inherit;text-decoration:none">'+esc(String(it.ex.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,it.notes?14:9))+'<br><span style="font-weight:400;color:#8a8f9e">'+esc(String(it.ex.date).slice(5).replace('-','/'))+'</span></a></th>').join('')+'<th>누적<br>클리어</th><th>평균<br>점수</th><th>남은<br>오답</th></tr>';
+ let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수. <b>최신 미션이 왼쪽</b>이고 같은 날짜는 한 묶음이에요. 요일 색: '+msDowLegend()+'</div><div style="overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm" rowspan="2">'+(isStaff()?'이름':'닉네임')+'</th>'+dgs.map(g=>'<th class="dg dw'+g.dw+' gb" colspan="'+g.n+'">'+msDay(g.date)+'</th>').join('')+'<th rowspan="2">누적<br>클리어</th><th rowspan="2">평균<br>점수</th><th rowspan="2">남은<br>오답</th></tr><tr>'+
+  cols.map((it,ci)=>'<th class="'+dcl(ci)+'" title="'+esc(it.ex.name)+'"><a href="'+(it.notes?'tbmission.html':'tbmission.html?m='+it.m.id+'&v=board')+'" style="color:inherit;text-decoration:none">'+esc(String(it.ex.name).replace(/^교과서 미션 : |^모의 기출 : /,'').slice(0,it.notes?14:9))+'<br><span style="font-weight:400;color:#8a8f9e">'+esc(String(it.ex.date).slice(5).replace('-','/'))+'</span></a></th>').join('')+'</tr>';
  rows.forEach(o=>{
   h+='<tr class="'+(o.me?'me':'')+'"><td class="nm"><span class="badge" style="background:'+(MSC[String(o.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(o.cls))?'#2b2f3a':'#fff')+'">'+esc(String(o.cls).replace(/반$/,''))+'</span> '+esc(o.nm)+(o.me?'(나)':'')+'</td>'+
-   cols.map(it=>{const c=o.cells[it.m.id];return c?(c.ns?(it.notes?'<td class="ns" title="교재 미제출로 미참여">미참여</td>':'<td class="ns" title="이 미션을 아직 시작하지 않았어요">미시작</td>'):c.nr?'<td class="nr" title="점수 기록이 비어 있어요 (미시작이 아니라 기록이 빠진 경우)">미기록</td>':c.clear?'<td class="ok" title="클리어"><span class="stamp xs">CLEAR</span><i>'+(Math.round(c.sc*10)/10)+'</i></td>':'<td class="no" title="남은 오답 '+c.x+'개">'+c.x+'<i>'+(Math.round(c.sc*10)/10)+'</i></td>'):'<td class="muted">-</td>';}).join('')+
+   cols.map((it,ci)=>{const c=o.cells[it.m.id];return dtag(c?(c.ns?(it.notes?'<td class="ns" title="교재 미제출로 미참여">미참여</td>':'<td class="ns" title="이 미션을 아직 시작하지 않았어요">미시작</td>'):c.nr?'<td class="nr" title="점수 기록이 비어 있어요 (미시작이 아니라 기록이 빠진 경우)">미기록</td>':c.clear?'<td class="ok" title="클리어"><span class="stamp xs">CLEAR</span><i>'+(Math.round(c.sc*10)/10)+'</i></td>':'<td class="no" title="남은 오답 '+c.x+'개">'+c.x+'<i>'+(Math.round(c.sc*10)/10)+'</i></td>'):'<td class="muted">-</td>',ci);}).join('')+
    '<td class="sm2">'+o.clr+' / '+o.n+'</td><td class="sm2">'+(o.n?(Math.round(o.sp/o.n*10)/10)+'%':'-')+'</td><td class="sm2"><span style="color:'+(o.x?'#b84a4a':'#2f7d5b')+'">'+o.x+'</span></td></tr>';});
- h+='<tr class="ft"><td class="nm">클리어 인원</td>'+cols.map(it=>{const st=msStat(it);return '<td>'+st.cl+'/'+st.n+'</td>';}).join('')+'<td></td><td></td><td></td></tr>'+
-  '<tr class="ft"><td class="nm">평균 점수</td>'+cols.map(it=>{const st=msStat(it);return '<td>'+(st.avg==null?'-':Math.round(st.avg*10)/10)+'</td>';}).join('')+'<td></td><td></td><td></td></tr></table></div>';
+ h+='<tr class="ft"><td class="nm">클리어 인원</td>'+cols.map((it,ci)=>{const st=msStat(it);return dtag('<td>'+st.cl+'/'+st.n+'</td>',ci);}).join('')+'<td></td><td></td><td></td></tr>'+
+  '<tr class="ft"><td class="nm">평균 점수</td>'+cols.map((it,ci)=>{const st=msStat(it);return dtag('<td>'+(st.avg==null?'-':Math.round(st.avg*10)/10)+'</td>',ci);}).join('')+'<td></td><td></td><td></td></tr></table></div>';
  return h;
 }
 function vMission(){
@@ -2398,11 +2402,11 @@ function vMission(){
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
  const L=msMergeNotes(MS.items.filter(it=>!grp[2]||grp[2].indexOf(msCatOf(it))>=0));
  if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
- const stu=!isStaff();
+ const stu=!isStaff();let _ld='';L.sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date)));   /* 최신 미션이 먼저, 같은 날짜는 묶음 줄 아래에 */
  if(g==='chart')return h+msMatrix(L);
  h+='<div class="note">미션을 누르면 <b>정오표</b>와 <b>분석</b>이 펼쳐져요. 클리어 = 틀린 문제를 모두 고친 상태(남은 오답 0개)예요.</div><div class="card" style="padding:8px 4px"><table class="tbl"><tr><th style="text-align:left">미션</th><th>응시</th><th>평균</th><th>클리어</th><th>남은 오답</th>'+(stu?'<th>내 상태</th>':'')+'</tr>';
  L.forEach(it=>{
-  const st=msStat(it),op=!!S.open['ms'+it.m.id],id=it.m.id;
+  const st=msStat(it),op=!!S.open['ms'+it.m.id],id=it.m.id,dd=String(it.ex.date).slice(0,10);if(dd!==_ld){_ld=dd;h+='<tr class="dgr"><td colspan="'+(stu?6:5)+'" class="dw'+msDow(dd)+'">'+msDay(dd)+'</td></tr>';}
   let mine='';
   if(stu){const me=st.me;mine='<td>'+(me?(me.clear?'<span class="badge" style="background:#2f7d5b;color:#fff">클리어 ✓</span>':'<b style="color:#b84a4a">남은 오답 '+me.c.x+'개</b>'):(st.n?'<span class="muted sm">기록 없음</span>':'<span class="muted sm">채점 전</span>'))+'</td>';}
   h+='<tr style="cursor:pointer" data-a="open" data-id="ms'+id+'"><td style="text-align:left"><b>'+esc(it.ex.name)+'</b> <span class="muted">'+(op?'▲':'▼')+'</span><div class="muted sm">'+esc(String(it.ex.date).slice(5).replace('-','/'))+' · '+esc(msCatOf(it))+'</div></td>'+
@@ -2422,7 +2426,7 @@ let STATS=undefined,PVU=null;
  'button.lchip{cursor:pointer}button.lchip.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}'+
  '.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}.vgrid .vq{font-size:12.5px;margin-top:4px}'+
  '.ytf{position:relative;aspect-ratio:16/9;background:#222 center/cover;border-radius:12px;cursor:pointer}.ytf span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.6)}.ytf iframe,iframe.ytif{width:100%;aspect-ratio:16/9;border:0;border-radius:12px}'+
- '.msx{border-collapse:separate;border-spacing:0;font-size:12.5px}.msx th,.msx td{padding:4px 6px;text-align:center;border-bottom:1px solid #eee7d8;min-width:44px;background:var(--card)}.msx th{position:sticky;top:0;z-index:2;background:#f4efe4;font-size:11.5px;font-weight:700}.msx td.nm,.msx th.nm{position:sticky;left:0;z-index:3;text-align:left;min-width:110px;border-right:1px solid var(--line);font-weight:700;background:var(--card)}.msx th.nm{background:#f4efe4;z-index:4}.msx td.ok{color:#2f7d5b;font-weight:800}.msx td.no{color:#b84a4a;font-weight:800}.msx td i{display:block;font-style:normal;font-size:10px;font-weight:400;color:#8a8f9e}.msx tr.me td{background:#fff6e0}.msx tr.ft td{background:#faf6ee;font-weight:700;font-size:11.5px}.msx td.sm2{min-width:64px;font-weight:700}.msx tr.me td.nm{box-shadow:inset 4px 0 0 #d4486a}';
+ '.msx{border-collapse:separate;border-spacing:0;font-size:12.5px}.msx th,.msx td{padding:4px 6px;text-align:center;border-bottom:1px solid #eee7d8;min-width:44px;background:var(--card)}.msx th{position:sticky;top:0;z-index:2;background:#f4efe4;font-size:11.5px;font-weight:700}.msx td.nm,.msx th.nm{position:sticky;left:0;z-index:3;text-align:left;min-width:110px;border-right:1px solid var(--line);font-weight:700;background:var(--card)}.msx th.nm{background:#f4efe4;z-index:4}.msx td.ok{color:#2f7d5b;font-weight:800}.msx td.no{color:#b84a4a;font-weight:800}.msx td i{display:block;font-style:normal;font-size:10px;font-weight:400;color:#8a8f9e}.msx tr.me td{background:#fff6e0}.msx tr.ft td{background:#faf6ee;font-weight:700;font-size:11.5px}.msx td.sm2{min-width:64px;font-weight:700}.msx tr.me td.nm{box-shadow:inset 4px 0 0 #d4486a}.msx th.dg{font-size:12px;border-bottom:0;white-space:nowrap}.msx .gb{border-left:2px solid #c3c7d3}.tbl tr.dgr td{text-align:left;font-weight:800;font-size:12.5px;padding:5px 12px;border-bottom:0}.dwl{display:inline-block;border-radius:999px;padding:0 8px;margin:0 2px;font-weight:700;font-size:11.5px}'+MS_DC.map((c,i)=>'.msx td.dw'+i+',.msx th.dw'+i+'{background-image:linear-gradient(rgba('+c+',.15),rgba('+c+',.15))}.msx th.dw'+i+'{background-image:linear-gradient(rgba('+c+',.4),rgba('+c+',.4))}.dwl.dw'+i+'{background:rgba('+c+',.35)}.tbl tr.dgr td.dw'+i+'{background:rgba('+c+',.3)}').join('');
  document.head.appendChild(st);})();
 function homeRefresh(){if(tbmOn()){const e=document.querySelector('.sapp');if(e){const d=document.createElement('div');d.innerHTML=sideApp();e.replaceWith(d.firstChild);}return;}if(S.uid)render();else if(!S.L.ac)render(0);}
 function statsEnsure(){
