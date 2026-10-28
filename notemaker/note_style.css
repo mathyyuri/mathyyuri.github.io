@@ -225,4 +225,4 @@ body.view .tools{display:none!important}
 .qa-cell b{font-size:13pt;color:#2a2118}.qa-cell b.sm{font-size:8.5pt}
 .statBarPct{flex:0 0 66mm!important}.statBarLabel{flex:0 0 22mm!important}
 .qa-rows{margin-top:3mm}.qa-row{display:flex;gap:2.4mm;align-items:baseline;border-bottom:.2mm solid #eee3cc;padding:1.2mm 0;font-size:9pt;line-height:1.5}
-.qa-row i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.qa-row .qs{flex:none;width:34mm;font-size:7.5pt;color:#7d7364}.qa-row .qv{flex:1}.qa-row .qv p{margin:0}.qa-row .see{color:#9c5530;font-size:8pt}
+.qa-row i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.qa-row .qs{flex:none;width:34mm;font-size:7.5pt;color:#7d7364}.qa-row .qv{flex:1;min-width:0}.qa-row .qv p{margin:0}.qa-row .see{color:#9c5530;font-size:8pt}

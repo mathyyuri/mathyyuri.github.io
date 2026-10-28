@@ -277,7 +277,7 @@
     var qn = 0;
     var ansHtml = function (a) {                           /* 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로 */
      a = String(a);
-     if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = '<span class="eq">' + esc(a) + '</span>'; else a = esc(a);
+     if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = String(a).split(/(\\\(.*?\\\))/).map(function (x, i) { return i % 2 ? '<span class="eq">' + esc(x) + '</span>' : esc(x); }).join(''); else a = esc(a);   /* 글 사이에 \( \) 수식이 여러 개 섞인 정답은 수식마다 따로 */
      return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
     };
     S.mk.forEach(function (g) {
@@ -289,7 +289,9 @@
       if (has) {
        var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
        var ah = ansHtml(a);
-       h += '<div class="qa-cell"><i>' + qn + '</i><b' + (ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length > 5 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
+       var apl = ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
+       if (apl > 9) rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + ah + '</span></div>';   /* 긴 정답(정의역·치역 등)은 작은 칸에 안 들어가니 줄로 */
+       else h += '<div class="qa-cell"><i>' + qn + '</i><b' + (apl > 5 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
       } else {                                           /* 교과서 문제처럼 정답이 풀이 안에 있는 것: 풀이의 첫 줄만 */
        var m = String(p.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(p.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
        if (!pl) t = '<span class="see">상세 해설 참고</span>'; else if (pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
@@ -694,11 +696,14 @@
    var h = '<div class="blk">';
    if (g.sub !== lastSub) { h += '<div class="sbar"><b>' + (first ? '오답 · ' : '') + esc(g.sub) + '</b></div>'; lastSub = g.sub; first = false; }
    h += '<div class="gt"><b>' + esc(g.title) + '</b><em>' + us.length + '문항</em></div><div class="grid">';
+   var lg = [];
    us.forEach(function (u) {
     var p = item(u); j++; var c = chsOf(u), a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(p.an || '-');
-    h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';
+    var alen = String(p.an || '').replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
+    if (alen > 9 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
+    else h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';
    });
-   blocks += h + '</div></div>';
+   blocks += h + '</div>' + (lg.length ? '<div class="tl">' + lg.join('') + '</div>' : '') + '</div>';
   });
   var rows = S.tb.filter(item).map(function (u, i) {
    var p = item(u), raw = String(p.so || ''), m = raw.match(/<p[^>]*>[\s\S]*?<\/p>/), so = (m ? m[0] : raw).replace(/<img[^>]*>/g, ' '), plain = so.replace(/<[^>]+>/g, '').trim();
