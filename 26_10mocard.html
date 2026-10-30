@@ -395,11 +395,12 @@ function ladder(score, T){
   let segs='';
   for(let g=1; g<=9; g++){
     const lo = cuts[g-1], hi = g===1 ? 100 : cuts[g-2];
-    segs += `<div class="seg" style="left:${lo}%;width:${hi-lo}%;background:${shade(g)};${g>=7?'color:#13264A':''}">${g}</div>`;
+    segs += `<div class="seg" style="left:${100-hi}%;width:${hi-lo}%;background:${shade(g)};${g>=7?'color:#13264A':''}">${g}</div>`;
   }
   const cls = p => p<14?'l':(p>86?'r':'c');
-  const me = `<div class="mk me ${cls(score)}" style="left:${score}%"><span class="tx">내 점수 ${score}점</span></div>`;
-  const tg = `<div class="tgl" style="left:${T}%"></div><div class="mk tg ${cls(T)}" style="left:${T}%"><span class="tx">수능 1등급 목표선 ${T}점</span></div>`;
+  const pS = 100-score, pT = 100-T;   // 왼쪽 = 1등급(높은 점수), 오른쪽 = 9등급
+  const me = `<div class="mk me ${cls(pS)}" style="left:${pS}%"><span class="tx">내 점수 ${score}점</span></div>`;
+  const tg = `<div class="tgl" style="left:${pT}%"></div><div class="mk tg ${cls(pT)}" style="left:${pT}%"><span class="tx">수능 1등급 목표선 ${T}점</span></div>`;
   let cu=''; for(let g=1; g<=9; g++) cu += `<div><b>${g}등급</b>${g===9?'0점~':cuts[g-1]+'점~'}</div>`;
   return `<div class="lad"><div class="base"></div>${segs}${tg}${me}</div><div class="cuts">${cu}</div>`;
 }
