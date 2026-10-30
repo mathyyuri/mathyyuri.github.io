@@ -78,6 +78,7 @@ function goHome(){
  location.href='./'}
 function postH(){try{window.parent.postMessage({tbmh:document.body.offsetHeight+16,only:ONLYH?1:0},location.origin)}catch(e){}}
 if(EMB&&window.parent!==window){if(window.ResizeObserver)new ResizeObserver(postH).observe(document.body);if(ONLYH){setInterval(postH,1200);setTimeout(postH,300)}}
+function ansTxt(a){return esc(String(a==null?'':a).replace(/<[^>]*>/g,'').trim())}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function cn(c){return String(c||'').replace(/반$/,'')}
 function cc(c){return CCOL[cn(c)]||'#a0a6b5'}
@@ -418,14 +419,14 @@ async function loadAna(nos1){
  var P=await ensureProblems(nos1.map(function(i){return i+1}));
  [].forEach.call(document.querySelectorAll('#anaList .q'),function(q){var p=P[+q.getAttribute('data-no')];q.innerHTML=probBody(p);mathIn(q)});
  [].forEach.call(document.querySelectorAll('#anaList .sol'),function(s){var p=P[+s.getAttribute('data-no')];
-  if(p&&(p.an||p.so)){s.innerHTML='<div class="an" style="border-left-color:var(--navy)"><b>정답 · 풀이</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>';mathIn(s)}
+  if(p&&(p.an||p.so)){s.innerHTML='<div class="an" style="border-left-color:var(--navy)"><b>정답 · 풀이</b> '+ansTxt(p.an)+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>';mathIn(s)}
   else s.innerHTML=isStaff()?'<div class="muted sm" style="margin-top:8px">등록된 풀이가 없어요.</div>':'<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>'})}
 function probBody(p){if(!p||p.none)return '<span class="muted sm">문제 내용이 서버 문제 DB에 없어요 (문제 SQL을 실행했는지 확인해 주세요).</span>';return fixStem(p.stem)+chHtml(p.ch)}
 async function showProb(no){
  var m=$('#mb'),it=S.C.items[no-1];$('#md').hidden=false;m.innerHTML='<h3>'+no+'번 · '+esc(it.unit)+'</h3><div class="muted sm">'+esc(it.src||'')+'</div><div class="q" id="pq"><span class="muted">불러오는 중…</span></div><div id="pa"></div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button></div>';
  var P=await ensureProblems([no]),p=P[no],q=$('#pq');if(!q)return;q.innerHTML=probBody(p);mathIn(q);
  var a='<div class="an"><b>정답률 '+rateTxt(S.C.rate[no-1])+'</b> — '+analyze(no-1)+'</div>';
- if(p&&(p.an||p.so)){a+='<div class="an"><b>정답</b> '+esc(p.an||'')+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>'}else if(!isStaff())a+='<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>';
+ if(p&&(p.an||p.so)){a+='<div class="an"><b>정답</b> '+ansTxt(p.an)+(p.so?'<div style="margin-top:6px">'+solHtml(p.so)+'</div>':'')+'</div>'}else if(!isStaff())a+='<div class="muted sm" style="margin-top:8px">풀이는 선생님이 공개하면 여기에서 볼 수 있어요.</div>';
  $('#pa').innerHTML=a;mathIn($('#pa'))}
 
 /* 오답노트 (MEN BOOK 형식) */
@@ -482,7 +483,7 @@ function noteDoc(data,withSol){
    blocks+='<div class="blk"><div class="bh"><i class="bn">'+(k+1)+'</i><span class="bs">'+esc(x.M.ex.short||x.M.ex.name)+' · '+x.no+'번 · '+esc(it.unit)+'</span><span class="br">반 정답률 '+(x.M.rates[x.no-1]==null?'-':Math.round(x.M.rates[x.no-1]*100)+'%')+'</span></div><div class="q">'+(p&&p.stem?fixS(p.stem)+chHtml(p.ch):'<span class="muted">문제 내용이 서버에 없어요 ('+esc(it.src||'')+')</span>')+'</div><div class="sol"><span>풀이 · 다시 풀기 ○ ✕</span></div></div>'});
   // 해설
   var sols=all.filter(function(x){var p=x.M.probs[x.no];return p&&(p.an||p.so)});
-  if(withSol&&sols.length){blocks+='<div class="blk sech"><b>해설 · '+esc(d.name)+'</b></div>'+sols.map(function(x){var p=x.M.probs[x.no];return '<div class="blk solb"><b class="sn">'+x.no+'번</b> <span class="muted">'+esc(x.M.ex.short||'')+'</span> 정답 <b>'+esc(p.an||'')+'</b>'+(p.so?'<div class="q sq">'+fixS(p.so)+'</div>':'')+'</div>'}).join('')}
+  if(withSol&&sols.length){blocks+='<div class="blk sech"><b>해설 · '+esc(d.name)+'</b></div>'+sols.map(function(x){var p=x.M.probs[x.no];return '<div class="blk solb"><b class="sn">'+x.no+'번</b> <span class="muted">'+esc(x.M.ex.short||'')+'</span> 정답 <b>'+ansTxt(p.an)+'</b>'+(p.so?'<div class="q sq">'+fixS(p.so)+'</div>':'')+'</div>'}).join('')}
   blocks+='<div class="brk"></div>';
  });
  var css='html,body{margin:0;background:#d9d2c3;font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#1a1a1a}.bar{position:sticky;top:0;z-index:30;background:#17284d;color:#f3ead7;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}.bar button,.bar input{border:0;border-radius:18px;padding:6px 14px;font-size:13px;font-weight:700;font-family:inherit}.bar button{background:#c9a55d;color:#1b2540;cursor:pointer}.bar button.g{background:#34518a;color:#fff}.bar input{font-weight:400;width:200px}.bar .hint{color:#cdbf9f;font-size:12px}'
