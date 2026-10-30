@@ -43,6 +43,9 @@ input,select,textarea{font:inherit;color:inherit}
 .lcard .t{font-family:var(--serif);font-size:25px;font-weight:700;letter-spacing:-.5px}
 .lcard .d{margin-top:6px;font-size:14px;color:var(--mut)}
 .lcard .cl{margin-top:16px;display:flex;gap:6px;flex-wrap:wrap}
+.omrb{display:inline-block;margin-top:14px;background:#0B1A31;color:#E6C896;border-radius:18px;padding:9px 18px;font-size:13px;font-weight:800;line-height:1.4;text-align:center}
+.omrb .m{display:none}.omrb small{font-weight:400;opacity:.8}
+@media(max-width:639px){.omrb{display:block;font-size:15px;padding:11px 12px}.omrb .m{display:inline}.omrb .nm,.omrb small{display:none}}
 .lcard::after{content:'';position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;opacity:.5}
 .lcard.ds .t{color:#9c5530}.lcard.ds::after{background:#f6e2cf}
 .lcard.bd .t{color:#2f7a67}.lcard.bd::after{background:#d9efe6}
@@ -520,7 +523,7 @@ function renderLogin(){
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
-   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div>'+(TEMP_OMR_LINK?'<span data-a="omr" role="link" style="display:inline-block;margin-top:14px;background:#0B1A31;color:#E6C896;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:800">✍️ 10모 수학 답안지 제출 <small style="font-weight:400;opacity:.8">(외부생)</small></span>':'')+'</button></div>';
+   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div>'+(TEMP_OMR_LINK?'<span class="omrb" data-a="omr" role="link">✍️ 10모 수학<br class="m"><span class="nm"> </span>답안지제출 <small>(외부생)</small></span>':'')+'</button></div>';
  }else{
   const a=AC[L.ac],role=L.role==='parent'?'parent':'student';
   h+='<div class="lsel"><div class="lsel-h"><button class="link" data-a="lback">← 학원 다시 고르기</button><span class="lsel-t">'+a.name+'</span></div>';
