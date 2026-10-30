@@ -214,6 +214,9 @@ function fixEq2(t) {
   while (m.indexOf(EC + '}') >= 0) m = m.split(EC + '}').join(EC);
   return m.split('#').join(BS + BS).replace(/(&amp;[ 	]*){2,}/g, '&amp; ');
  });
+ t = t.replace(new RegExp('<span class="eq">[^]*?</span>', 'g'), function (m) {          // 한글 수식의 짧은 키워드 ne(≠) 가 글자 그대로 남은 것 (예: a ne 0)
+  return m.replace(/(^|[^A-Za-z\\])ne(?![A-Za-z])/g, '$1' + BS + 'neq ');
+ });
  return t.replace(/\^\s*(-?\d+)/g, '^{$1}').replace(/\^\s*([a-z])\s*\+\s*(\d+)/g, '^{$1+$2}').replace(/-&gt;|-&amp;gt;/g, BS + 'rightarrow ');
 }
 var PVROOT = null;

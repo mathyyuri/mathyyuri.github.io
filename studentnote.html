@@ -932,6 +932,8 @@ const HWP_EQ_KEYWORDS_CI = (() => {
   return { map, keys: Object.keys(map).sort((a, b) => b.length - a.length) };
 })();
 function substituteSymbolsInRun(run) {
+  // HWP 수식편집기의 짧은 키워드 "ne"(≠) — hwpx-lib.js 와 같은 이유(글자 "ne" 로 남던 문제), 글자 덩어리 전체일 때만.
+  if (run.toLowerCase() === 'ne') return '\\neq ';
   const lower = run.toLowerCase();
   let out = '', i = 0;
   while (i < run.length) {

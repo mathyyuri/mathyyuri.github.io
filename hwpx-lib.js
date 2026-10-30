@@ -571,6 +571,9 @@ const HWP_EQ_KEYWORDS_CI = (() => {
 })();
 
 function substituteSymbolsInRun(run) {
+  // HWP 수식편집기의 짧은 키워드 "ne"(≠) — 위 표에는 NEQ 만 있어서 "a ne 0"·"x ne 2" 가
+  // 글자 "ne" 그대로 보이던 문제. "ne" 가 글자 덩어리 전체일 때만 바꾼다(다른 낱말 속 ne 는 건드리지 않음).
+  if (run.toLowerCase() === 'ne') return '\\neq ';
   const lower = run.toLowerCase();
   let out = '', i = 0;
   while (i < run.length) {
