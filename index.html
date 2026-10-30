@@ -511,6 +511,7 @@ function saveSession(){}
 /* 로그인 */
 function tlHtml(nohl){const si=nohl?-1:seasonIdx();
  return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'"><div class="nd">'+(i<si?'✓':i+1)+'</div><div class="en">'+x.en+'</div><div class="ko">'+x.ko+'</div></div>').join('')+'</div><div class="tlg"><span class="k"></span>시험 대비 시즌<span class="k v"></span>방학 시즌</div>';}
+const TEMP_OMR_LINK=true;   // 10모 수학 답안지 제출 임시 입구(분당 외부생용) — 필요 없어지면 false
 function renderLogin(){
  const L=S.L,si=seasonIdx(),X=SEASONS[si];
  let h='<div class="landing"><div class="lface"><img src="'+faceSrc()+'" alt=""></div><div class="lmain">'+
@@ -518,6 +519,7 @@ function renderLogin(){
   (L.ac?'<div class="snow"><span class="nowtag'+(X.vac?' vac':'')+'">NOW</span><div><div class="sen">SEASON 0'+(si+1)+' · '+X.en+'</div><div class="sko">'+X.full+'</div></div></div>':'')+tlHtml(!L.ac);
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
+  if(TEMP_OMR_LINK)h+='<a href="26_10mocard.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,#0B1A31,#13264A);color:#fff;border:2px solid #C79B63;border-radius:14px;padding:20px 22px;margin:0 0 14px;text-align:center"><div style="font-size:12px;letter-spacing:.14em;color:#E6C896">2026.10 · 고1 전국연합학력평가</div><div style="font-size:26px;font-weight:900;margin:6px 0 4px;line-height:1.3">10모 수학 답안지 제출</div><div style="font-size:13px;opacity:.85;margin-bottom:12px">분당 지역 외부생 · 로그인 없이 30문항 답을 입력하면 성적표가 바로 나와요</div><span style="display:inline-block;background:#C79B63;color:#0B1A31;font-weight:800;border-radius:999px;padding:12px 30px;font-size:16px">✍️ 답안지 제출하기</span></a>';
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
    '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button></div>';
  }else{

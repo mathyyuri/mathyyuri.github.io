@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수학 답안지 제출 — MATHY YURI</title>
+<meta name="description" content="2026학년도 10월 고1 전국연합학력평가 수학 — 정답을 입력하면 등급·상위 %·단원별 분석이 바로 나오는 성적표">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0B1A31;--navy2:#13264A;--gold:#C79B63;--gold-d:#8F6A3A;--gold-l:#E6C896;
+  --ivory:#FBF8F1;--card:#fff;--ink:#0E1B33;--mut:#5A6580;--line:#E6DCC6;--soft:#F5EFE2;
+  --ok:#2E7D5B;--ok-bg:#E6F2EC;--bad:#B23A48;--bad-bg:#F8E7E9;--warn:#A8741F;--warn-bg:#FBF0DA;
+  --r:12px;
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ivory);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:400;line-height:1.55;padding-bottom:96px;word-break:keep-all;overflow-wrap:break-word}
+button{font-family:inherit;cursor:pointer}
+.serif{font-family:'Noto Serif KR',serif}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+
+/* 머리 */
+.hero{background:var(--navy);color:#fff;text-align:center;padding:30px 16px 26px;border-bottom:3px solid var(--gold)}
+.hero .top{font-family:'Cinzel',serif;letter-spacing:.34em;font-size:11px;color:var(--gold-l)}
+.hero h1{font-family:'Noto Serif KR',serif;font-weight:900;font-size:21px;line-height:1.4;margin:10px 0 6px}
+.hero h1 em{font-style:normal;color:var(--gold-l)}
+.hero p{font-size:13px;color:#C9D2E6}
+
+/* 카드 공통 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;margin-top:14px}
+.ct{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--gold-d);margin-bottom:12px}
+.ct::after{content:'';flex:1;height:1px;background:var(--line)}
+.ct i{font-style:normal;background:var(--navy);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-grid;place-items:center;font-size:11px;letter-spacing:0}
+.hint{font-size:12px;color:var(--mut);line-height:1.6}
+
+/* 입력 */
+.nm{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:11px 12px;font:inherit;font-size:15px;color:var(--ink)}
+.nm:focus,.qi:focus,.qk:focus{outline:2px solid var(--gold);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+.fld label{display:block;font-size:12.5px;font-weight:700;color:var(--navy2);margin-bottom:4px}
+.fld label em{font-style:normal;color:var(--bad)}
+.nm.bad{outline:2px solid var(--bad);outline-offset:1px}
+.agree{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:6px;cursor:pointer}
+.agree input{width:20px;height:20px;accent-color:var(--navy)}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:13.5px;border-radius:999px;padding:10px 18px;z-index:30;max-width:92vw;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.sub{border-radius:8px;padding:9px 12px;font-size:12.5px;margin:12px 18px 0;line-height:1.55}
+.sub.ok{background:var(--ok-bg);color:#1E5A40}.sub.dup{background:var(--soft);color:var(--navy2)}.sub.fail{background:var(--bad-bg);color:var(--bad)}
+.sub button{margin-left:6px;border:1px solid currentColor;background:#fff;color:inherit;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.sec{font-size:12px;font-weight:700;color:var(--navy2);margin:14px 0 6px;display:flex;justify-content:space-between}
+.sec small{font-weight:400;color:var(--mut)}
+.qgrid{display:grid;grid-template-columns:1fr;gap:6px}
+.q{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:10px;padding:6px 8px}
+.q.done{background:#EEF3EA}
+.qn{width:26px;text-align:center;font-weight:900;font-size:15px;color:var(--navy)}
+.qp{width:30px;font-size:11px;color:var(--mut)}
+.opts{display:flex;gap:5px;flex:1;justify-content:flex-end}
+.opts button{flex:1;max-width:52px;height:40px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:16px;color:var(--ink)}
+.opts button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.qi{flex:1;height:40px;border-radius:9px;border:1px solid var(--line);background:#fff;font:inherit;font-size:16px;text-align:center;color:var(--ink);min-width:0}
+.q.sa .qi{max-width:140px;margin-left:auto}
+details.fast{margin-top:14px;font-size:13px}
+details.fast summary{cursor:pointer;color:var(--navy2);font-weight:700}
+.qk{width:100%;margin-top:8px;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:10px;font:inherit;font-size:14px;min-height:64px;color:var(--ink)}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:999px;padding:9px 16px;font-size:13px;font-weight:700}
+.btn.pri{background:var(--navy);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+
+/* 하단 바 */
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.bar .in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.prog{flex:1}
+.prog b{font-size:13px}
+.prog .tr{height:6px;background:var(--soft);border-radius:3px;margin-top:5px;overflow:hidden}
+.prog .tr i{display:block;height:100%;background:var(--gold);width:0}
+.bar .btn{padding:12px 22px;font-size:14px}
+
+/* ===== 성적표 ===== */
+#report{display:none}
+#report.show{display:block}
+.rp{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:18px}
+.rp-h{background:var(--navy);color:#fff;padding:18px 18px 16px;border-bottom:3px solid var(--gold)}
+.rp-h .l1{font-family:'Cinzel',serif;letter-spacing:.3em;font-size:10px;color:var(--gold-l)}
+.rp-h .l2{font-family:'Noto Serif KR',serif;font-weight:900;font-size:17px;margin:6px 0 2px}
+.rp-h .l3{font-size:12px;color:#C9D2E6}
+.rp-h .t1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rp-h .who{font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:var(--gold-l);white-space:nowrap}
+.blk{padding:16px 18px;border-top:1px solid var(--line)}
+.blk:first-of-type{border-top:0}
+.bt{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--gold-d);margin-bottom:10px}
+.sum{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.big{font-family:'Noto Serif KR',serif;font-weight:900;font-size:56px;line-height:1;color:var(--navy)}
+.big small{font-size:18px;font-weight:400;color:var(--mut)}
+.pill{display:inline-block;background:var(--navy);color:var(--gold-l);font-weight:900;border-radius:999px;padding:5px 16px;font-size:20px;font-family:'Noto Serif KR',serif}
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1;min-width:230px}
+.met{background:var(--soft);border-radius:10px;text-align:center;padding:8px 4px}
+.met b{display:block;font-size:19px;font-weight:900;color:var(--navy);font-family:'Noto Serif KR',serif}
+.met span{font-size:11px;color:var(--mut)}
+.tone{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:14px;line-height:1.65}
+.tone b{display:block;font-size:15px;margin-bottom:2px}
+.tone.ok{background:var(--ok-bg);color:#1E5A40}
+.tone.mid{background:var(--warn-bg);color:#6F4B0F}
+.tone.low{background:var(--soft);color:var(--navy2)}
+.tone mark{background:none;font-weight:900;color:inherit;border-bottom:2px solid var(--gold)}
+.fine{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:8px}
+
+/* 등급 사다리 */
+.lad{position:relative;margin:34px 4px 40px}
+.lad .seg{position:absolute;top:0;height:30px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;border-right:2px solid #fff}
+.lad .base{height:30px}
+.mk{position:absolute;white-space:nowrap;font-size:11.5px;font-weight:700}
+.mk.me{top:-28px;color:var(--navy)}
+.mk.me::after{content:'';display:block;width:0;height:0;border:6px solid transparent;border-top:8px solid var(--navy);border-bottom:0;margin:1px auto 0}
+.mk.tg{top:34px;color:var(--gold-d)}
+.mk.tg::before{content:'';display:block;width:0;height:0;border:6px solid transparent;border-bottom:8px solid var(--gold);border-top:0;margin:0 auto 1px}
+.mk .tx{display:block;text-align:center}
+.mk.l{transform:none}.mk.l .tx{text-align:left}.mk.l::after,.mk.l::before{margin-left:2px}
+.mk.r{transform:translateX(-100%)}.mk.r .tx{text-align:right}.mk.r::after,.mk.r::before{margin-right:2px;margin-left:auto}
+.mk.c{transform:translateX(-50%)}
+.tgl{position:absolute;top:-4px;height:38px;border-left:2px dashed var(--gold)}
+.cuts{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;margin-top:2px;text-align:center;font-size:10.5px;color:var(--mut)}
+.cuts b{display:block;color:var(--ink);font-size:11.5px}
+
+/* 막대 */
+.hb{display:grid;grid-template-columns:96px 1fr;gap:8px 10px;align-items:center;margin-bottom:12px}
+.hb .nm2{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+.hb .nm2 small{display:block;font-size:11px;font-weight:400;color:var(--mut)}
+.trk{position:relative;height:12px;background:var(--soft);border-radius:6px}
+.trk .f{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--navy2)}
+.trk .tk{position:absolute;top:-4px;bottom:-4px;border-left:2px dashed var(--gold)}
+.hb .txt{grid-column:2;font-size:12px;color:var(--mut);margin-top:-4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700}
+.chip.ok{background:var(--ok-bg);color:#1E5A40}.chip.mid{background:var(--warn-bg);color:#6F4B0F}.chip.low{background:var(--bad-bg);color:var(--bad)}
+.lg{font-size:11px;color:var(--mut);display:flex;gap:14px;flex-wrap:wrap;margin:0 0 8px}
+.lg i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--gold);vertical-align:middle;margin-right:4px}
+
+/* 문항 표 */
+.mg{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.mc{border-radius:7px;text-align:center;padding:3px 0 2px;line-height:1.2;border:1px solid transparent}
+.mc b{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.mc span{font-size:15px;font-weight:900}
+.mc.o{background:var(--ok-bg);color:var(--ok)}
+.mc.x{background:var(--bad-bg);color:var(--bad)}
+.mc.b{background:var(--soft);color:var(--mut);border:1px dashed var(--line)}
+.wl{margin-top:12px;display:grid;gap:8px}
+.w{border:1px solid var(--line);border-radius:10px;padding:10px 12px;position:relative;background:#fff}
+.w.plan{border-color:var(--gold);background:#FFFBF1}
+.w .h{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}
+.w .h .no{background:var(--bad);color:#fff;border-radius:6px;text-align:center;padding:1px 8px;font-size:13px;white-space:nowrap}
+.w .h .ti{flex:1;min-width:0;line-height:1.35}
+.w .h .rk{font-size:11px;font-weight:700;color:var(--gold-d);white-space:nowrap}
+.w .d{font-size:12.5px;color:var(--mut);margin-top:3px}
+.w .d b{color:var(--ink)}
+.dots{letter-spacing:1px;color:var(--navy2)}
+.plan-t{display:inline-block;background:var(--gold);color:var(--navy);font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+
+ul.cm{list-style:none;display:grid;gap:8px}
+ul.cm li{display:grid;grid-template-columns:70px 1fr;gap:8px;font-size:14px;line-height:1.6}
+ul.cm li>b{background:var(--soft);color:var(--navy2);border-radius:6px;text-align:center;font-size:12px;padding:3px 0;align-self:start}
+.ft{padding:12px 18px;background:var(--soft);font-size:11px;color:var(--mut);line-height:1.6}
+
+details.why{margin-top:10px;font-size:13px;background:var(--soft);border-radius:8px;padding:9px 12px}
+details.why summary{cursor:pointer;font-weight:700;color:var(--navy2)}
+details.why p{margin-top:6px;line-height:1.65}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:center}
+.tbl th{color:var(--mut);font-weight:500}
+.tbl tr.me td{background:var(--warn-bg);font-weight:700}
+
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:16px 0 4px}
+.links{text-align:center;font-size:12px;color:var(--mut);margin:10px 0 0}
+.links a{color:var(--navy2);font-weight:700}
+.pv{display:none;background:var(--warn-bg);color:#6F4B0F;font-size:12.5px;border-radius:8px;padding:8px 12px;margin-top:12px}
+.pv.show{display:block}
+
+@media(min-width:700px){
+  .hero h1{font-size:30px}
+  .two{grid-template-columns:1fr 1fr}
+  .qgrid{grid-template-columns:1fr 1fr;gap:6px 10px}
+  .mg{grid-template-columns:repeat(15,1fr)}
+}
+@media print{
+  body{padding:0;background:#fff}
+  .hero,#inp,.bar,.acts,.links,.nocap{display:none!important}
+  #report{display:block!important}
+  .rp{border:0;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+.cap .nocap{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="top">MATHY YURI</div>
+  <h1>2026학년도 10월 고1 전국연합학력평가<br><em>수학 답안지 제출</em></h1>
+  <p>30문항 답을 입력하면 등급 · 상위 % · 단원별 분석 성적표가 바로 나와요</p>
+</div>
+
+<div class="wrap">
+  <div id="inp">
+    <div class="card">
+      <div class="ct"><i>1</i>학생 정보</div>
+      <div class="two">
+        <div class="fld"><label for="name">이름 <em>*</em></label><input class="nm" id="name" type="text" maxlength="20" placeholder="실명" autocomplete="off"></div>
+        <div class="fld"><label for="school">현재 학교 <em>*</em></label><input class="nm" id="school" type="text" maxlength="20" placeholder="예) 수내중" autocomplete="off"></div>
+      </div>
+      <div class="two">
+        <div class="fld"><label for="phone">내 전화번호 <em>*</em></label><input class="nm" id="phone" type="tel" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" autocomplete="off"></div>
+        <div class="fld"><label for="pphone">학부모 전화번호 <em>*</em></label><input class="nm" id="pphone" type="tel" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" autocomplete="off"></div>
+      </div>
+      <label class="agree"><input type="checkbox" id="consent"><span>개인정보 수집·이용에 동의해요 <b>(필수)</b></span></label>
+      <details class="why">
+        <summary>동의 내용 보기</summary>
+        <p><b>수집 항목</b> 이름, 학교, 학생·학부모 전화번호, 제출한 답<br><b>이용 목적</b> 성적 분석 결과 안내, 학습 상담<br><b>보관</b> 학원 서버에 저장하며, 목적이 끝나면 지체 없이 파기하고 외부에 제공하지 않아요.<br>동의하지 않으면 성적표를 만들 수 없어요. 학부모 전화번호는 학부모님께 알린 뒤 적어 주세요.</p>
+      </details>
+      <p class="hint" style="margin-top:8px">‘성적표 보기’를 누르면 내 답이 학원에 <b>한 번</b> 제출돼요. 이름·전화번호는 성적표 화면에 나오지 않아요.</p>
+    </div>
+
+    <div class="card">
+      <div class="ct"><i>2</i>내가 고른 답 입력</div>
+      <p class="hint">객관식은 번호를 누르고(다시 누르면 지워져요), 단답형은 숫자를 적어요. 비워 둔 문제는 오답으로 계산돼요.</p>
+      <div class="sec">객관식 1~21번 <small id="cObj"></small></div>
+      <div class="qgrid" id="gObj"></div>
+      <div class="sec">단답형 22~30번 <small id="cSa"></small></div>
+      <div class="qgrid" id="gSa"></div>
+
+      <details class="fast">
+        <summary>한 줄로 붙여넣어 입력하기</summary>
+        <p class="hint" style="margin-top:6px">1번부터 순서대로 띄어쓰기로 적어요. 예) <b>3 4 2 4 2 … 8 4 48 630 …</b> (객관식은 21개 숫자를 붙여 써도 돼요)</p>
+        <textarea class="qk" id="quick" placeholder="3 4 2 4 2 2 3 1 5 4 5 5 5 3 3 2 1 4 4 5 2 8 4 48 630 39 17 32 103 72"></textarea>
+        <div class="row"><button class="btn" id="bQuick">이대로 채우기</button></div>
+      </details>
+      <div class="row"><button class="btn" id="bReset">모두 지우기</button></div>
+    </div>
+  </div>
+
+  <div id="report"></div>
+</div>
+
+<div class="bar" id="bar"><div class="in">
+  <div class="prog"><b id="pTxt">입력 0 / 30</b><div class="tr"><i id="pBar"></i></div></div>
+  <button class="btn pri" id="bGo">성적표 보기</button>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const D = {"exam":{"id":"2026-10-go1-hakpyeong","title":"2026학년도 10월 고1 전국연합학력평가","sub":"수학"},"qs":[{"n":1,"t":"obj","pt":2,"ans":3,"unit":"poly","ut":"다항식의 연산","lv":1,"pg":"p.3"},{"n":2,"t":"obj","pt":2,"ans":4,"unit":"geo","ut":"평면좌표 · 두 점 사이의 거리","lv":1,"pg":"p.3"},{"n":3,"t":"obj","pt":2,"ans":2,"unit":"mat","ut":"행렬의 상등 · 실수배","lv":1,"pg":"p.4"},{"n":4,"t":"obj","pt":3,"ans":4,"unit":"geo","ut":"직선의 방정식 · 평행","lv":1,"pg":"p.5"},{"n":5,"t":"obj","pt":3,"ans":2,"unit":"cnt","ut":"경우의 수 · 합의 법칙","lv":2,"pg":"p.6"},{"n":6,"t":"obj","pt":3,"ans":2,"unit":"eq","ut":"절댓값이 있는 부등식","lv":2,"pg":"p.7"},{"n":7,"t":"obj","pt":3,"ans":3,"unit":"eq","ut":"복소수 · 켤레복소수","lv":2,"pg":"p.8"},{"n":8,"t":"obj","pt":3,"ans":1,"unit":"geo","ut":"평면좌표 · 내분점","lv":2,"pg":"p.9"},{"n":9,"t":"obj","pt":3,"ans":5,"unit":"eq","ut":"연립이차방정식","lv":2,"pg":"p.10"},{"n":10,"t":"obj","pt":3,"ans":4,"unit":"mat","ut":"행렬의 성분 · 곱","lv":2,"pg":"p.11"},{"n":11,"t":"obj","pt":3,"ans":5,"unit":"poly","ut":"나머지정리","lv":2,"pg":"p.12"},{"n":12,"t":"obj","pt":3,"ans":5,"unit":"geo","ut":"직선의 방정식 · 점과 직선 사이의 거리","lv":3,"pg":"p.13"},{"n":13,"t":"obj","pt":3,"ans":5,"unit":"cnt","ut":"경우의 수 · 곱의 법칙","lv":3,"pg":"p.14"},{"n":14,"t":"obj","pt":4,"ans":3,"unit":"eq","ut":"여러 가지 방정식 · 허근","lv":3,"pg":"p.15"},{"n":15,"t":"obj","pt":4,"ans":3,"unit":"mat","ut":"행렬의 곱셈","lv":4,"pg":"p.16"},{"n":16,"t":"obj","pt":4,"ans":2,"unit":"eq","ut":"이차함수의 최대·최소","lv":3,"pg":"p.17"},{"n":17,"t":"obj","pt":4,"ans":1,"unit":"poly","ut":"인수분해 · 나머지정리","lv":4,"pg":"p.18"},{"n":18,"t":"obj","pt":4,"ans":4,"unit":"geo","ut":"도형의 이동 · 원의 방정식","lv":3,"pg":"p.19"},{"n":19,"t":"obj","pt":4,"ans":4,"unit":"poly","ut":"곱셈공식 · 입체도형의 길이·부피","lv":4,"pg":"p.20"},{"n":20,"t":"obj","pt":4,"ans":5,"unit":"eq","ut":"이차함수와 연립부등식","lv":5,"pg":"p.21"},{"n":21,"t":"obj","pt":4,"ans":2,"unit":"cnt","ut":"순열 · 조건이 있는 일렬 배열","lv":4,"pg":"p.22"},{"n":22,"t":"sa","pt":3,"ans":8,"unit":"eq","ut":"이차함수와 이차방정식 · 판별식","lv":1,"pg":"p.23"},{"n":23,"t":"sa","pt":3,"ans":4,"unit":"poly","ut":"다항식의 곱셈공식(전개)","lv":1,"pg":"p.24"},{"n":24,"t":"sa","pt":3,"ans":48,"unit":"mat","ut":"행렬의 덧셈·뺄셈·실수배","lv":1,"pg":"p.25"},{"n":25,"t":"sa","pt":3,"ans":630,"unit":"cnt","ut":"경우의 수 · 조합으로 나누어 주기","lv":3,"pg":"p.26"},{"n":26,"t":"sa","pt":4,"ans":39,"unit":"poly","ut":"항등식 · 나머지정리","lv":3,"pg":"p.27"},{"n":27,"t":"sa","pt":4,"ans":17,"unit":"geo","ut":"도형의 이동 · 원과 좌표축","lv":4,"pg":"p.28"},{"n":28,"t":"sa","pt":4,"ans":32,"unit":"cnt","ut":"순열 · 여사건과 차집합","lv":4,"pg":"p.29"},{"n":29,"t":"sa","pt":4,"ans":103,"unit":"geo","ut":"원과 직선 · 점과 직선 사이의 거리","lv":5,"pg":"p.30"},{"n":30,"t":"sa","pt":4,"ans":72,"unit":"eq","ut":"함수 · 방정식의 근의 개수","lv":5,"pg":"p.32"}],"units":{"poly":"다항식","eq":"방정식과 부등식","cnt":"경우의 수","mat":"행렬","geo":"도형의 방정식"},"sc":[[63,1,9,99.25],[64,1,9,98.98],[65,1,9,98.98],[66,1,9,98.98],[67,1,9,98.98],[67,2,9,98.41],[68,2,9,98.41],[69,3,9,98.22],[70,4,9,96.3],[71,4,8,96.03],[72,5,8,95.5],[73,6,8,94.83],[74,7,8,94.16],[75,10,8,91.11],[76,12,7,89.56],[77,14,7,86.68],[78,15,7,85.71],[79,16,7,84.61],[80,19,7,83.04],[81,22,7,79.37],[82,24,6,77.5],[83,26,6,75.2],[84,28,6,73.29],[85,29,6,71.22],[85,30,6,70.08],[86,32,6,69.41],[87,33,6,67.54],[88,35,6,65.73],[89,36,6,64.46],[90,37,6,63.3],[91,39,6,62.08],[92,40,5,60.17],[93,41,5,59.51],[94,42,5,58.54],[95,43,5,57.42],[96,44,5,56.64],[97,45,5,54.55],[98,47,5,54.55],[99,49,5,52.08],[100,50,5,49.82],[101,52,5,49.3],[102,54,5,47.32],[103,56,5,44.83],[103,57,5,43.88],[104,59,5,42.44],[105,60,4,40.31],[106,62,4,39.98],[107,65,4,36.77],[108,67,4,33.89],[109,68,4,32.33],[110,69,4,31.54],[111,71,4,29.65],[112,72,4,28.28],[113,73,4,27.51],[114,74,4,26.59],[115,75,4,25.74],[116,77,3,23.45],[117,79,3,22.22],[118,81,3,20.39],[119,82,3,18.23],[120,83,3,17.56],[121,83,3,17.09],[121,84,3,15.99],[122,85,3,15.07],[123,86,3,14.77],[124,87,3,14.01],[125,88,3,12.49],[126,88,3,11.82],[127,89,3,11.75],[128,90,2,11.13],[129,91,2,9.7],[130,91,2,9.07],[131,91,2,9.03],[132,93,2,8.24],[133,93,2,6.66],[134,94,2,6.49],[135,94,2,6.46],[136,95,2,5.17],[137,96,2,4.36],[138,96,2,4.3],[139,96,1,4.25],[139,97,1,3.1],[140,98,1,2.57],[141,98,1,2.42],[142,98,1,2.42],[143,99,1,1.62],[144,99,1,1.31],[145,99,1,1.29],[146,99,1,1.29],[147,99,1,0.65],[148,99,1,0.54],[149,99,1,0.54],[150,100,1,0.54],[151,100,1,0.3],[152,100,1,0.3],[153,100,1,0.28],[154,100,1,0.28],[155,100,1,0.07],[156,100,1,0.05],[156,100,1,0.05],[157,100,1,0.05]],"cut":[80,69,56,45,31,20,14,9,0],"target":{"raw":85,"pct":2.0},"stats":{"avg":39.31,"sd":21.11},"src":"이투스 고1 10월 상위누적 지원참고표(가채점)"};
+const $ = s => document.querySelector(s);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CIRC = '①②③④⑤';
+const KEY = 'mo10_card_v1';
+const SB_URL = 'https://eqllmvfbcdtzercliicy.supabase.co';
+const SB_KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
+const S = {name:'', school:'', phone:'', pphone:'', consent:false, a:Array(31).fill(null), shown:false, sub:null};
+const Q = D.qs;
+const INFO = ['name','school','phone','pphone'];
+const digits = t => String(t).replace(/\D/g,'');
+const phoneOK = t => /^01[016789]\d{7,8}$/.test(digits(t));
+function fmtPhone(t){ const d = digits(t).slice(0,11); return d.length>7 ? (d.length===11 ? d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3') : d.replace(/(\d{3})(\d{3})(\d{0,4})/,'$1-$2-$3')) : (d.length>3 ? d.replace(/(\d{3})(\d+)/,'$1-$2') : d); }
+
+/* ---------- 저장(편의용: 이 기기에만) ---------- */
+/* 전화번호는 공용 기기에 남지 않도록 저장하지 않아요 (이름·학교·답만) */
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify({name:S.name, school:S.school, a:S.a})); }catch(e){} }
+function load(){ try{ const j = JSON.parse(localStorage.getItem(KEY)||'null'); if(j && Array.isArray(j.a) && j.a.length===31){ S.a=j.a; S.name=j.name||''; S.school=j.school||''; } }catch(e){} }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('show'),2800); }
+
+/* ---------- 입력 화면 ---------- */
+function buildInputs(){
+  let o='', s='';
+  for(const q of Q){
+    if(q.t==='obj'){
+      o += `<div class="q" data-n="${q.n}"><span class="qn">${q.n}</span><span class="qp">${q.pt}점</span><div class="opts">` +
+        [1,2,3,4,5].map(v=>`<button type="button" data-v="${v}" aria-label="${q.n}번 ${v}번">${CIRC[v-1]}</button>`).join('') + `</div></div>`;
+    } else {
+      s += `<div class="q sa" data-n="${q.n}"><span class="qn">${q.n}</span><span class="qp">${q.pt}점</span><input class="qi" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="답" aria-label="${q.n}번 답"></div>`;
+    }
+  }
+  $('#gObj').innerHTML = o; $('#gSa').innerHTML = s;
+}
+function syncInputs(){
+  for(const q of Q){
+    const row = document.querySelector(`.q[data-n="${q.n}"]`), v = S.a[q.n];
+    row.classList.toggle('done', v!==null);
+    if(q.t==='obj') row.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.v===v));
+    else { const i=row.querySelector('input'); if(document.activeElement!==i) i.value = v===null ? '' : v; }
+  }
+  INFO.forEach(k=>{ const el=$('#'+k); if(document.activeElement!==el) el.value = S[k]; });
+  $('#consent').checked = S.consent;
+  const n = S.a.slice(1).filter(v=>v!==null).length;
+  const no = Q.filter(q=>q.t==='obj' && S.a[q.n]!==null).length, ns = n-no;
+  $('#pTxt').textContent = `입력 ${n} / 30`;
+  $('#pBar').style.width = (n/30*100)+'%';
+  $('#cObj').textContent = `${no} / 21`; $('#cSa').textContent = `${ns} / 9`;
+  return n;
+}
+function changed(){ save(); const n = syncInputs(); if(S.shown){ render(); } return n; }
+
+document.addEventListener('click', e=>{
+  const b = e.target.closest('.opts button'); if(!b) return;
+  const n = +b.closest('.q').dataset.n, v = +b.dataset.v;
+  S.a[n] = S.a[n]===v ? null : v; changed();
+});
+document.addEventListener('input', e=>{
+  if(INFO.includes(e.target.id)){
+    const k = e.target.id;
+    if(k==='phone' || k==='pphone'){ e.target.value = fmtPhone(e.target.value); }
+    S[k] = e.target.value; e.target.classList.remove('bad'); save();
+    if(S.shown && (k==='name'||k==='school')) render();
+    return;
+  }
+  const i = e.target.closest('.qi'); if(!i) return;
+  const n = +i.closest('.q').dataset.n, t = i.value.replace(/[^0-9]/g,'');
+  if(t!==i.value) i.value = t;
+  S.a[n] = t==='' ? null : parseInt(t,10); changed();
+});
+$('#bReset').onclick = ()=>{ if(!S.a.slice(1).some(v=>v!==null) || confirm('입력한 답을 모두 지울까요?')){ S.a = Array(31).fill(null); S.shown=false; $('#report').className=''; $('#report').innerHTML=''; changed(); } };
+$('#bQuick').onclick = ()=>{
+  let t = $('#quick').value.trim().split(/[\s,]+/).filter(Boolean);
+  if(t.length && /^[1-5]{21}$/.test(t[0])) t = t[0].split('').concat(t.slice(1));
+  const a = Array(31).fill(null);
+  t.slice(0,30).forEach((x,i)=>{ const v = parseInt(x.replace(/[^0-9]/g,''),10); if(!isNaN(v)){ const q=Q[i]; a[q.n] = (q.t==='obj' && (v<1||v>5)) ? null : v; } });
+  S.a = a; changed();
+  if(t.length!==30) alert(`답이 ${t.length}개 들어왔어요. 30개(1~30번)인지 확인해 주세요.`);
+};
+$('#consent').onchange = e=>{ S.consent = e.target.checked; };
+
+function validate(){
+  const bad = (id,msg)=>({el:$('#'+id), msg});
+  if(!S.name.trim()) return bad('name','이름을 적어 주세요');
+  if(!S.school.trim()) return bad('school','현재 학교를 적어 주세요');
+  if(!phoneOK(S.phone)) return bad('phone','내 전화번호를 010으로 시작하는 번호로 적어 주세요');
+  if(!phoneOK(S.pphone)) return bad('pphone','학부모 전화번호를 010으로 시작하는 번호로 적어 주세요');
+  if(!S.consent) return bad('consent','개인정보 수집·이용에 동의해야 성적표를 만들 수 있어요');
+  if(!S.a.slice(1).some(v=>v!==null)) return {el:$('#gObj'), msg:'답을 한 문제 이상 입력해 주세요'};
+  return null;
+}
+
+/* 학원 서버로 제출: 쓰기만 가능한 표(mo10_card_submissions)에 한 번 저장 */
+async function submit(){
+  const A = analyze();
+  const body = {exam:D.exam.id, school:S.school.trim(), name:S.name.trim(), phone:digits(S.phone), parent_phone:digits(S.pphone),
+                answers:S.a.slice(1), score:A.score, grade:A.L.grade, consent:true};
+  try{
+    const r = await fetch(SB_URL+'/rest/v1/mo10_card_submissions', {method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'}, body:JSON.stringify(body)});
+    if(r.status===409) return 'dup';
+    if(!r.ok){ let t=''; try{ t=await r.text(); }catch(e){} console.error('제출 실패', r.status, t); return 'fail'; }
+    return 'ok';
+  }catch(e){ console.error(e); return 'fail'; }
+}
+async function go(){
+  const err = validate();
+  if(err){ toast(err.msg); if(err.el.classList) err.el.classList.add('bad'); if(err.el.focus) err.el.focus(); err.el.scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  const b = $('#bGo'); b.disabled = true; b.textContent = '제출 중…';
+  if(S.sub!=='ok' && S.sub!=='dup') S.sub = await submit();
+  b.disabled = false; b.textContent = '성적표 보기';
+  S.shown = true; render(); $('#report').scrollIntoView({behavior:'smooth', block:'start'});
+}
+$('#bGo').onclick = go;
+
+/* ---------- 계산 ---------- */
+function look(s){ const r = D.sc[Math.max(0,Math.min(100,s))]; return {std:r[0], pct:r[1], grade:r[2], cum:r[3]}; }
+const fmtCum = c => c<1 ? c.toFixed(2) : (c<10 ? c.toFixed(1) : String(Math.round(c)));
+const dots = lv => '●'.repeat(lv)+'○'.repeat(5-lv);
+const lvName = lv => lv<=2 ? '쉬움' : (lv===3 ? '보통' : '어려움');
+const myTxt = q => S.a[q.n]===null ? '미응답' : (q.t==='obj' ? CIRC[S.a[q.n]-1] : String(S.a[q.n]));
+const ansTxt = q => q.t==='obj' ? CIRC[q.ans-1] : String(q.ans);
+
+function analyze(){
+  const res = Q.map(q=>{ const my=S.a[q.n]; return Object.assign({}, q, {my, blank:my===null, ok:my!==null && my===q.ans}); });
+  const score = res.reduce((s,q)=>s+(q.ok?q.pt:0),0);
+  const L = look(score), T = D.target.raw;
+  const gap = Math.max(0, T-score);
+  const wrong = res.filter(q=>!q.ok).sort((a,b)=>a.lv-b.lv||b.pt-a.pt||a.n-b.n);
+  let got=0; const plan=[];
+  for(const q of wrong){ if(got>=gap) break; plan.push(q); got+=q.pt; }
+  const units = Object.keys(D.units).map(k=>{
+    const m = res.filter(q=>q.unit===k), pt = m.reduce((s,q)=>s+q.pt,0), gt = m.filter(q=>q.ok).reduce((s,q)=>s+q.pt,0);
+    return {k, name:D.units[k], n:m.length, wrongN:m.filter(q=>!q.ok).length, pt, gt, lost:pt-gt, rate:pt?gt/pt:0};
+  });
+  const bands = [['쉬움',[1,2],'난이도 1~2'],['보통',[3],'난이도 3'],['어려움',[4,5],'난이도 4~5']].map(([nm,lvs,sub])=>{
+    const m = res.filter(q=>lvs.includes(q.lv)), pt = m.reduce((s,q)=>s+q.pt,0), gt = m.filter(q=>q.ok).reduce((s,q)=>s+q.pt,0);
+    return {nm, sub, n:m.length, wrongN:m.filter(q=>!q.ok).length, pt, gt, lost:pt-gt, rate:pt?gt/pt:0};
+  });
+  return {res, score, L, T, gap, wrong, plan, planGot:got, units, bands};
+}
+
+/* ---------- 그리기 ---------- */
+function ladder(score, T){
+  const cuts = D.cut; // 1등급..9등급 최소 원점수
+  const shade = g => ['#0B1A31','#13264A','#26407A','#3F5E98','#6580B0','#8EA3C6','#B3C1DA','#CDD7E8','#E2E8F2'][g-1];
+  let segs='';
+  for(let g=1; g<=9; g++){
+    const lo = cuts[g-1], hi = g===1 ? 100 : cuts[g-2];
+    segs += `<div class="seg" style="left:${lo}%;width:${hi-lo}%;background:${shade(g)};${g>=7?'color:#13264A':''}">${g}</div>`;
+  }
+  const cls = p => p<14?'l':(p>86?'r':'c');
+  const me = `<div class="mk me ${cls(score)}" style="left:${score}%"><span class="tx">내 점수 ${score}점</span></div>`;
+  const tg = `<div class="tgl" style="left:${T}%"></div><div class="mk tg ${cls(T)}" style="left:${T}%"><span class="tx">수능 1등급 목표선 ${T}점</span></div>`;
+  let cu=''; for(let g=1; g<=9; g++) cu += `<div><b>${g}등급</b>${g===9?'0점~':cuts[g-1]+'점~'}</div>`;
+  return `<div class="lad"><div class="base"></div>${segs}${tg}${me}</div><div class="cuts">${cu}</div>`;
+}
+
+function barRow(name, sub, rate, tick, txt, chip){
+  return `<div class="hb"><div class="nm2">${name}${sub?`<small>${sub}</small>`:''}</div><div class="trk"><div class="f" style="width:${Math.round(rate*100)}%"></div>${tick==null?'':`<div class="tk" style="left:${tick}%"></div>`}</div><div class="txt">${txt}${chip||''}</div></div>`;
+}
+
+function render(){
+  const n = S.a.slice(1).filter(v=>v!==null).length;
+  const A = analyze(), L = A.L, T = A.T;
+  const nm = S.name.trim() ? esc((S.school.trim() ? S.school.trim()+' ' : '') + S.name.trim()) : '';
+  const today = new Date(), dt = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+  const blankN = 30-n;
+  let h = `<div class="rp" id="rp"><div class="rp-h"><div class="t1"><div class="l1">MATHY YURI · SCORE REPORT</div>${nm?`<div class="who">${nm} 학생</div>`:''}</div><div class="l2">2026학년도 10월 고1 학평 · 수학</div><div class="l3">${dt} 작성 · 가채점 기반 예상 성적표</div></div>`;
+
+  if(S.sub==='ok') h += `<div class="sub ok nocap">✓ 내 답이 학원에 제출됐어요. (제출된 답은 처음 낸 것으로 저장돼요)</div>`;
+  else if(S.sub==='dup') h += `<div class="sub dup nocap">이미 제출한 학생이에요. 학원에는 처음 낸 답이 저장돼 있고, 이 성적표는 지금 입력한 답으로 보여 드려요.</div>`;
+  else if(S.sub==='fail') h += `<div class="sub fail nocap">학원에 제출하지 못했어요. 성적표는 볼 수 있어요. 인터넷을 확인하고 <button type="button" id="bRetry">다시 제출</button> 을 눌러 주세요.</div>`;
+  if(blankN>0) h += `<div class="blk" style="padding-bottom:0"><div class="pv show">미응답 ${blankN}문항은 오답으로 계산했어요. 모두 입력하면 정확해져요.</div></div>`;
+
+  /* A. 요약 */
+  h += `<div class="blk"><div class="bt">A · 내 성적</div><div class="sum"><div class="big">${A.score}<small> / 100</small></div><span class="pill">${L.grade}등급</span>
+    <div class="mets"><div class="met"><b>${fmtCum(L.cum)}%</b><span>상위 누적</span></div><div class="met"><b>${L.std}</b><span>표준점수(예상)</span></div><div class="met"><b>${L.pct}</b><span>백분위(예상)</span></div></div></div>`;
+  if(L.grade>1){ const up = D.cut[L.grade-2], need = up-A.score; h += `<p class="fine">${L.grade-1}등급까지 <b style="color:var(--ink)">${need}점</b> 남았어요 (${L.grade-1}등급 컷 ${up}점).</p>`; }
+  else h += `<p class="fine">1등급 구간이에요. 아래 ‘수능 1등급 목표선’까지 확인해 보세요.</p>`;
+  h += `</div>`;
+
+  /* B. 등급 위치 */
+  h += `<div class="blk"><div class="bt">B · 등급 위치 (9등급제)</div>${ladder(A.score, T)}</div>`;
+
+  /* C. 수능 1등급 목표 */
+  let tone, head, body;
+  const g = A.gap;
+  if(g===0){ tone='ok'; head='수능 1등급 목표선 안에 있어요'; body=`재학생 상위 ${D.target.pct}% 안(<mark>${T}점 이상</mark>)이에요. 이 점수를 수능까지 흔들리지 않게 지키는 게 과제예요. 아래 틀린 문항은 ‘실수 방지’ 관점에서 점검해요.`; }
+  else if(g<=6){ tone='mid'; head=`목표선까지 ${g}점, 한 걸음 남았어요`; body=`아래 문항 중 <mark>${A.plan.length}개</mark>만 더 맞혔다면 ${T}점선(재학생 상위 ${D.target.pct}%)에 닿아요.`; }
+  else if(g<=18){ tone='mid'; head=`목표선까지 ${g}점 남았어요`; body=`4점 문항으로 치면 약 <mark>${Math.ceil(g/4)}문항</mark> 차이예요. 쉬운 문항에서 놓친 점수부터 되찾으면 가장 빨라요.`; }
+  else { tone='low'; head=`목표선까지 ${g}점 — 단계별로 올라가요`; body=`한 번에 올리기보다 <mark>다음 등급 → 그다음 등급</mark> 순서로 차근차근 올라가요. 쉬운 문항의 실수와 개념 빈틈부터 잡아요.`; }
+  h += `<div class="blk"><div class="bt">C · 수능 1등급 목표 진단</div>
+    <div class="tone ${tone}"><b>${head}</b>${body}</div>`;
+  if(g>0 && A.plan.length){
+    const after = look(A.score + A.planGot);
+    h += `<p class="fine" style="font-size:12.5px;color:var(--ink)"><b>되찾을 문항 시나리오</b> — ${A.plan.map(q=>`${q.n}번(${q.pt}점·${lvName(q.lv)})`).join(', ')} → <b>${A.score+A.planGot}점</b>이면 상위 ${fmtCum(after.cum)}%.</p>`;
+  }
+  h += `<details class="why"><summary>왜 ‘재학생 상위 ${D.target.pct}%’ 가 기준인가요?</summary><p>수능 1등급은 응시자 전체의 상위 4% 이내예요. 그런데 수능에는 재수생·N수생이 함께 응시해서, 재학생끼리 보는 학평에서는 <b>전국 재학생 상위 약 ${D.target.pct}% 안</b>에 있어야 수능 1등급이 안정적으로 나온다고 보고 있어요(MATHY YURI 기준). 이번 시험에서는 <b>${T}점 이상</b>이 그 구간이에요.</p></details>`;
+  h += `</div>`;
+
+  /* D. 단원별 */
+  const tickPct = T;
+  const uSort = A.units.slice().sort((a,b)=>a.rate-b.rate||b.lost-a.lost);
+  h += `<div class="blk"><div class="bt">D · 단원별 분석</div><div class="lg"><span><i></i>목표선 득점률 ${T}%</span></div>`;
+  for(const u of A.units){
+    const r = Math.round(u.rate*100);
+    const chip = u.rate*100>=T ? '<span class="chip ok">✓ 목표선 이상</span>' : (u.rate>=0.6 ? '<span class="chip mid">보완</span>' : '<span class="chip low">집중 보완</span>');
+    h += barRow(u.name, `${u.n}문항 · ${u.pt}점`, u.rate, tickPct, `득점 ${u.gt}/${u.pt}점 · <b style="color:var(--ink)">${r}%</b>${u.lost?` · 잃은 점수 ${u.lost}점`:''}`, chip);
+  }
+  const wk = uSort[0];
+  if(wk.lost>0) h += `<p class="fine" style="font-size:12.5px;color:var(--ink)">가장 약한 단원은 <b>${wk.name}</b>(${Math.round(wk.rate*100)}%)이고, 잃은 ${100-A.score}점 중 <b>${wk.lost}점</b>이 여기서 나왔어요.</p>`;
+  h += `</div>`;
+
+  /* E. 난이도별 */
+  h += `<div class="blk"><div class="bt">E · 난이도별 분석 <span style="font-weight:400;letter-spacing:0;color:var(--mut)">(해설집 기준 체감 난이도)</span></div>`;
+  for(const b of A.bands){
+    const chip = b.lost===0 ? '<span class="chip ok">✓ 모두 정답</span>' : `<span class="chip ${b.nm==='어려움'?'mid':'low'}">${b.wrongN}문항 놓침</span>`;
+    h += barRow(b.nm, `${b.sub} · ${b.n}문항`, b.rate, null, `득점 ${b.gt}/${b.pt}점 · <b style="color:var(--ink)">${Math.round(b.rate*100)}%</b>`, chip);
+  }
+  const easyLost = A.bands[0].lost + A.bands[1].lost, easyN = A.bands[0].wrongN + A.bands[1].wrongN;
+  if(easyN>0) h += `<p class="fine" style="font-size:12.5px;color:var(--ink)">쉬움·보통 문항에서 <b>${easyN}문항(${easyLost}점)</b>을 놓쳤어요. 목표선에 닿으려면 이 구간이 1순위예요.</p>`;
+  h += `</div>`;
+
+  /* F. 문항별 */
+  h += `<div class="blk"><div class="bt">F · 문항별 정오표</div><div class="mg">` +
+    A.res.map(q=>`<div class="mc ${q.ok?'o':(q.blank?'b':'x')}"><b>${q.n}</b><span>${q.ok?'○':(q.blank?'–':'✕')}</span></div>`).join('') + `</div>`;
+  if(A.wrong.length){
+    const planSet = new Set(A.plan.map(q=>q.n));
+    h += `<p class="fine" style="margin-top:12px"><b style="color:var(--ink)">복습 순서</b> — 쉬운 문항부터, 같은 난이도면 배점이 큰 문항부터 되찾아요. ${A.gap>0?`<span class="plan-t">목표선 시나리오</span> 표시는 이 문항만 맞혀도 ${T}점에 닿는다는 뜻이에요.`:''}</p><div class="wl">` +
+      A.wrong.map((q,i)=>`<div class="w ${planSet.has(q.n)?'plan':''}"><div class="h"><span class="no">${q.n}번</span><span class="ti">${esc(q.ut)}</span><span class="rk">복습 ${i+1}</span></div>
+        <div class="d">${planSet.has(q.n)?'<span class="plan-t" style="margin:0 6px 0 0">★ 목표선 시나리오</span>':''}${q.pt}점 · 내 답 <b>${myTxt(q)}</b> → 정답 <b>${ansTxt(q)}</b> · 난이도 <span class="dots">${dots(q.lv)}</span> · 해설집 <b>${q.pg}</b></div></div>`).join('') + `</div>`;
+  } else h += `<div class="tone ok" style="margin-top:12px"><b>만점이에요! 🎉</b>모든 문항을 맞혔어요.</div>`;
+  h += `</div>`;
+
+  /* G. 한마디 */
+  const okQ = A.res.filter(q=>q.ok).sort((a,b)=>b.lv-a.lv||b.pt-a.pt);
+  const best = A.units.filter(u=>u.n>0).slice().sort((a,b)=>b.rate-a.rate||b.pt-a.pt)[0];
+  let good = [], less = [], next = [];
+  if(okQ.length && okQ[0].lv>=4) good.push(`난이도 ${okQ[0].lv}의 <b>${okQ[0].n}번</b>(${esc(okQ[0].ut)})을 풀어 냈어요.`);
+  if(best && best.rate>=0.7 && best.n>0) good.push(`<b>${best.name}</b> 단원은 ${Math.round(best.rate*100)}%로 든든해요.`);
+  if(!good.length) good.push(A.score>0 ? `맞힌 ${okQ.length}문항이 오늘 내 실력의 바닥이에요. 여기서부터 올라가요.` : '이제부터 시작이에요.');
+  if(easyN>0) less.push(`쉬움·보통 문항 ${easyN}개(${easyLost}점)를 놓쳤어요. 개념·계산 실수를 점검해요.`);
+  if(wk.lost>0) less.push(`<b>${wk.name}</b> 단원에서 ${wk.lost}점이 새어 나갔어요.`);
+  if(!less.length) less.push('큰 약점은 보이지 않아요. 어려운 문항 정확도를 올려 봐요.');
+  const top3 = A.wrong.slice(0,3);
+  if(top3.length) next.push(`해설집 ${top3.map(q=>`<b>${q.pg}</b>(${q.n}번)`).join(' · ')}부터 빈칸을 채우며 다시 읽어요.`);
+  next.push('해설을 덮고 내 힘으로 다시 풀어 쓴 뒤, 틀린 이유를 한 줄로 정리해요.');
+  h += `<div class="blk"><div class="bt">G · 선생님 한마디</div><ul class="cm"><li><b>잘한 점</b><span>${good.join(' ')}</span></li><li><b>아쉬운 점</b><span>${less.join(' ')}</span></li><li><b>다음 행동</b><span>${next.join(' ')}</span></li></ul></div>`;
+
+  h += `<div class="ft">· 상위 누적·등급·표준점수·백분위는 ${esc(D.src)} 기준 <b>예상값</b>이며, 확정 성적표와 다를 수 있어요. 표준점수·백분위는 참고용이에요.<br>· 정답은 MATHY YURI 풀이 기준이며, 공식 정답과 다르면 선생님께 알려 주세요. 난이도는 해설집 기준 체감 난이도예요.<br>· 등급 기준(원점수): ${D.cut.map((c,i)=>`${i+1}등급 ${c}점`).slice(0,8).join(' · ')}</div></div>`;
+
+  h += `<div class="acts nocap"><button class="btn pri" id="bImg">이미지로 저장</button><button class="btn" id="bPrint">인쇄</button><button class="btn" id="bEdit">답 고치기</button></div>`;
+  const el = $('#report'); el.innerHTML = h; el.className = 'show';
+  $('#bImg').onclick = saveImg;
+  const rt = $('#bRetry'); if(rt) rt.onclick = async ()=>{ rt.disabled = true; rt.textContent = '제출 중…'; S.sub = await submit(); render(); };
+  $('#bPrint').onclick = ()=>window.print();
+  $('#bEdit').onclick = ()=>window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- 이미지 저장 ---------- */
+function loadScript(src){ return new Promise((res,rej)=>{ if(window.html2canvas) return res(); const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function saveImg(){
+  const b = $('#bImg'); const old = b.textContent; b.textContent = '만드는 중…'; b.disabled = true;
+  try{
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    document.body.classList.add('cap');
+    const c = await html2canvas($('#rp'), {scale:2, backgroundColor:'#ffffff', useCORS:true});
+    document.body.classList.remove('cap');
+    const a = document.createElement('a'); a.download = `10월학평_수학_성적표${S.name?'_'+S.name:''}.png`; a.href = c.toDataURL('image/png'); a.click();
+  }catch(e){ document.body.classList.remove('cap'); alert('이미지로 저장하지 못했어요. 화면 캡처를 이용해 주세요.'); }
+  b.textContent = old; b.disabled = false;
+}
+
+/* ---------- 시작 ---------- */
+buildInputs(); load(); syncInputs();
+</script>
+</body>
+</html>
