@@ -158,7 +158,8 @@
   var p = item(uid), e = S.ed[uid] || {}, t = p.k === 't';
   var el = document.createElement('div'); el.className = 'pb ' + (t ? 'tb' : 'mk'); el.dataset.uid = uid;
   var chs = (e.ch && e.ch.length) ? e.ch : (p.ch || []);
-  var h = '<div class="ph2"><i class="no"></i><span class="srcl ed"></span></div><div class="q ed"></div>';
+  var rt = p.rt != null ? '<span class="rt ' + (p.rt < 50 ? 'lo' : p.rt >= 80 ? 'hi' : '') + '" title="처음 푼 결과만 센 정답률 · ' + p.rn + '명 중 ' + p.rk + '명 정답 (노트를 만든 때의 채점 기록)">정답률 ' + p.rt + '%</span>' : '';
+  var h = '<div class="ph2"><i class="no"></i>' + rt + '<span class="srcl ed"></span></div><div class="q ed"></div>';
   if (chs.length) {
    var L = 0; chs.forEach(function (c) { L = Math.max(L, plen(c)); });
    var cols = L <= 7 ? 5 : L <= 14 ? 3 : L <= 30 ? 2 : 1;

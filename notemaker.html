@@ -655,6 +655,8 @@ $('#make').onclick = async function () {
    });
    if (g.uids.length) groups.push(g);
   }
+  var FR = firstRates();                                   // 문제마다 최초 정답률 (노트를 만드는 지금의 채점 기록 기준)
+  POOL.forEach(function (o) { var r = FR[o.h]; if (r && r.n) { o.rt = Math.round(100 * r.ok / r.n); o.rn = r.n; o.rk = r.ok; } });
   var small = {};                                          // 정답 표시 같은 작은 아이콘 그림은 빼요 (가로 130 · 세로 80 이하)
   await Promise.all(Object.keys(FIGS).map(function (k) { return new Promise(function (res) { var im = new Image(); im.onload = function () { if (im.naturalWidth <= 130 && im.naturalHeight <= 80) small[k] = 1; res(); }; im.onerror = res; im.src = FIGS[k]; }); }));
   function noIcon(t) { return String(t || '').replace(/<img[^>]*data-fig="([^"]+)"[^>]*>/g, function (m, n) { return small[n] ? '' : m; }); }
@@ -730,6 +732,24 @@ function buildTheory(nm, per, today, groups, POOL, coverHtml, backInner, AT, rou
   { id: 'mk-intro', kind: 'intro', html: INTRO },
   { id: 'back', kind: 'pg', cls: 'pg full mbback', html: backInner }
  ]);
+}
+/* 문제별 "최초 정답률": 학생마다 그 문제를 처음 푼 결과 하나씩만 셈 (오답노트 재풀이는 빼요) · ○ = 정답, ✕·△(고침) = 오답 · 지금 불러온 채점 기록 기준 */
+function firstRates() {
+ var ex = (DATA.exams || []).filter(function (e) { return e.ox && e.items && e.items.length && !/^오답노트/.test(e.n || '') && String(e.cls || '').indexOf('note:') !== 0; })
+  .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.n < b.n ? -1 : 1); });
+ var seen = {}, R = {};
+ ex.forEach(function (e) {
+  Object.keys(e.ox).forEach(function (sid) {
+   var ox = e.ox[sid] || '';
+   for (var i = 0; i < e.items.length; i++) {
+    var c = ox.charAt(i); if (c === '' || 'OXT'.indexOf(c) < 0) continue;
+    var h = (e.items[i] || {}).h; if (!h) continue;
+    var k = h + '|' + sid; if (seen[k]) continue; seen[k] = 1;
+    var r = R[h] || (R[h] = { ok: 0, n: 0 }); r.n++; if (c === 'O') r.ok++;
+   }
+  });
+ });
+ return R;
 }
 /* 이 학생이 푼 모든 기록: 문제(해시)별로 몇 번째 풀이인지, 시험별 · 회독별 · 단원별 정답률 */
 function attempts(sid, cut) {                                    // cut = { id, date }: 다시 받는 노트 자기 자신과 그 뒤의 기록은 빼고 셈
