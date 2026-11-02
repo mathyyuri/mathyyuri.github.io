@@ -1,3 +1,14 @@
+function solOf(so) {                                      /* 정답 칸에 보일 풀이: 그림은 빼고 문단째 420자 안팎까지 */
+ var s = String(so || '').replace(/<img[^>]*>/g, ' '), ps = s.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [], out = '', len = 0;
+ if (!ps.length && s.replace(/<[^>]+>/g, '').trim()) ps = ['<p>' + s + '</p>'];
+ for (var i = 0; i < ps.length; i++) {
+  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl) continue;
+  if (len && len + pl > 420) { out += '<p><span class="see">… 이하는 상세 해설 참고</span></p>'; break; }
+  out += ps[i]; len += pl;
+ }
+ return out || '<span class="see">상세 해설 참고</span>';
+}
+function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == null ? '' : a)); }
 /* 개인별 오답노트 — 편집 가능한 노트 (교재 엔진 복사본, notemaker.html 이 자료를 넣어 줌)
    · 자료(문제 풀·이론·처음 배치)는 HTML 안의 JSON, 고친 내용(S)은 이 컴퓨터(localStorage) + 파일 + 서버에 저장
    · 문제 상자(.pb)는 한 번 만들어 EL 에 보관하고, 쪽 나누기(layout)는 상자를 새 쪽으로 옮기기만 한다 */
@@ -317,7 +328,7 @@
      var q = document.createElement('div'); q.className = 'blk qablk';
      var h = '<div class="qa-gt"><b>' + esc(g.title) + '</b><em>' + us.length + '문항</em></div><div class="qa-grid">', rows = '';
      us.forEach(function (u) {
-      qn++; var p = item(u), c = chsOf(u), has = p.an != null && String(p.an).replace(/\s/g, '') !== '';
+      qn++; var p = item(u), c = chsOf(u), has = p.an != null && String(p.an).replace(/\s/g, '') !== '' && !isRefAn(p.an);
       if (has) {
        var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
        var ah = ansHtml(a);
@@ -325,8 +336,7 @@
        if (apl > 6) rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + ah + '</span></div>';   /* 긴 정답(정의역·치역 등)은 작은 칸에 안 들어가니 줄로 */
        else h += '<div class="qa-cell"><i>' + qn + '</i><b' + (apl > 2 ? ' class="sm"' : '') + '>' + ah + '</b></div>';
       } else {                                           /* 교과서 문제처럼 정답이 풀이 안에 있는 것: 풀이의 첫 줄만 */
-       var m = String(p.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(p.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
-       if (!pl) t = '<span class="see">상세 해설 참고</span>'; else if (pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
+       var t = solOf(p.so);
        rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + t + '</span></div>';
       }
      });
@@ -730,7 +740,7 @@
    h += '<div class="gt"><b>' + esc(g.title) + '</b><em>' + us.length + '문항</em></div><div class="grid">';
    var lg = [];
    us.forEach(function (u) {
-    var p = item(u); j++; var c = chsOf(u), a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(p.an || '-');
+    var p = item(u); j++; var c = chsOf(u); if (isRefAn(p.an) || String(p.an == null ? '' : p.an).replace(/\s/g, '') === '') { lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + solOf(p.so) + '</span></div>'); return; } var a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(p.an || '-');
     var alen = String(p.an || '').replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
     if (alen > 6 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
     else h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';

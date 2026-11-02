@@ -319,12 +319,21 @@ var HK = 'notemaker_hist_v1', CIRC5 = '①②③④⑤', HSEL = {};
 function histLoad() { try { var a = JSON.parse(localStorage.getItem(HK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function histSave(a) { try { localStorage.setItem(HK, JSON.stringify(a.slice(-400))); } catch (e) { } }
 function histAdd(h) { var a = histLoad(); a.push(h); histSave(a); }
-function qaOf(o) {                                         // 빠른 정답 한 칸: 정답이 있으면 a, 풀이 안에 있으면 풀이 첫 줄(r)
+function solOf(so) {                                      /* 정답 칸에 보일 풀이: 그림은 빼고 문단째 420자 안팎까지 */
+ var s = String(so || '').replace(/<img[^>]*>/g, ' '), ps = s.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [], out = '', len = 0;
+ if (!ps.length && s.replace(/<[^>]+>/g, '').trim()) ps = ['<p>' + s + '</p>'];
+ for (var i = 0; i < ps.length; i++) {
+  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl) continue;
+  if (len && len + pl > 420) { out += '<p><span class="see">… 이하는 상세 해설 참고</span></p>'; break; }
+  out += ps[i]; len += pl;
+ }
+ return out || '<span class="see">상세 해설 참고</span>';
+}
+function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == null ? '' : a)); }
+function qaOf(o) {                                         // 빠른 정답 한 칸: 정답이 있으면 a, 없거나 '풀이 참조'면 풀이(r)
  var has = String(o.an == null ? '' : o.an).replace(/\s/g, '') !== '';
- if (has) return { a: (o.ch && o.ch.length && /^[1-5]$/.test(String(o.an))) ? CIRC5.charAt(+o.an - 1) : String(o.an) };
- var m = String(o.so || '').match(/<p[^>]*>[\s\S]*?<\/p>/), t = (m ? m[0] : String(o.so || '')).replace(/<img[^>]*>/g, ' '), pl = t.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '');
- if (!pl || pl.length > 90) t = '<span class="see">상세 해설 참고</span>';
- return { r: t };
+ if (has && !isRefAn(o.an)) return { a: (o.ch && o.ch.length && /^[1-5]$/.test(String(o.an))) ? CIRC5.charAt(+o.an - 1) : String(o.an) };
+ return { r: solOf(o.so) };
 }
 function roundHint() {
  var el = $('#roundIn'); el.value = ''; var n = 0;
@@ -582,9 +591,9 @@ function quickCollect(pick, PDFJS) {
  pick.forEach(function (x) {
   /* 번호 순서대로 한 줄씩(정답이 있으면 정답, 풀이 안에 있으면 풀이 첫 줄) — 두 칸(왼쪽 위→아래, 오른쪽 위→아래) */
   var list = x.items.slice().sort(function (p, q) { return (+p.n) - (+q.n); }).map(function (i) {
-   var has = i.a != null && i.a !== '', h, cost;
+   var has = i.a != null && i.a !== '' && !(isRefAn(i.a) && i.r), h, cost;
    if (has) { h = '<b class="ans">' + ansHtml(i.a) + '</b>'; cost = Math.max(9, 3.4 + 5.4 * Math.ceil(plainLen(ansHtml(i.a)) / 18)); }
-   else { h = '<span class="qv">' + (i.r || '') + '</span>'; cost = Math.max(9, 3.6 + 4.8 * Math.ceil(plainLen(i.r) / 26)); }
+   else { h = '<span class="qv">' + (i.r || '') + '</span>'; cost = Math.max(9, 3.6 + 5.6 * Math.ceil(plainLen(i.r) / 24) + 2 * ((String(i.r).match(/<p/g) || []).length)); }
    return { n: i.n, html: '<div class="rw"><i>' + i.n + '</i>' + h + '</div>', cost: cost };
   });
   var chunks = [], cur = null, used = 0, col = 0;
@@ -616,7 +625,7 @@ function quickCollect(pick, PDFJS) {
   + '.cell i{display:block;font-style:normal;font-size:7.5pt;color:#9c5530;font-weight:700}.cell b{font-size:13pt}.cell b.sm{font-size:8.5pt}'
   + '.two{display:flex;gap:9mm;align-items:flex-start}.cl{flex:1;min-width:0}.rw .ans{font-size:11.5pt;color:#9c5530;font-weight:700}.rw .ans .katex{font-size:1em}.rw{padding:1.4mm 0}.rw i{width:8mm;font-size:10pt}'
   + '.sub2{font-size:9.5pt;font-weight:700;color:#9c5530;margin:2mm 0 1mm;height:6mm}.rw{display:flex;gap:2.4mm;align-items:baseline;border-bottom:.2mm solid #eee3cc;padding:1mm 0;font-size:9pt;line-height:1.5;min-height:8.6mm}'
-  + '.rw i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.rw .qs{flex:none;width:44mm;font-size:7.5pt;color:#7d7364}.rw .qv{flex:1}.rw .qv p{margin:0}.see{color:#9c5530;font-size:8pt}'
+  + '.rw i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.rw .qs{flex:none;width:44mm;font-size:7.5pt;color:#7d7364}.rw .qv{flex:1;font-size:9pt;line-height:1.6}.rw .qv p{margin:0}.see{color:#9c5530;font-size:8pt}'
   + '.pf{position:absolute;left:13mm;right:13mm;bottom:6mm;display:flex;justify-content:space-between;font-size:8.5pt;color:#9a8f7c;border-top:.2mm solid #e5d9c0;padding-top:1.6mm}'
   + '.katex{font-size:.97em;white-space:nowrap}@page{size:210mm 297mm;margin:0}@media print{html,body{background:#fff}.bar{display:none}.stage{display:block;padding:0}.pg{box-shadow:none;page-break-after:always}}';
  var doc = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>빠른 정답 모음 · ' + esc(who) + '</title>'
@@ -697,7 +706,9 @@ $('#make').onclick = async function () {
    var mj = await ms('create', margs);
    if (mj && mj.ok) mid = mj.id; else alert('오답노트는 만들지만 채점용 미션은 올리지 못했어요: ' + ((mj && mj.error) || '') + '\n(서버에 23_오답노트채점_서버.sql 을 실행했는지 확인해 주세요. 노트에 문제 번호는 그대로예요)');
   }
-  if (!reb) histAdd({ mid: mid, id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; }) });
+  var newItems = POOL.map(function (o) { var q = qaOf(o); return { n: o.n, m: o.ty, s: String(o.src || '').replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, ''), a: q.a, r: q.r }; });
+  if (reb) { var hh = histLoad(); hh.forEach(function (h) { if (h.id === reb.rec.id) { h.items = newItems; h.n = newItems.length; } }); histSave(hh); }
+  else histAdd({ mid: mid, id: key, sid: STU.id, name: nm, ac: STU.ac, cls: clsLab, round: round, date: today, per: per, n: POOL.length, items: newItems });
   var title = '오답노트 · ' + nm + ' · ' + today;
   var pdfbase = '오답노트_' + nm + '_' + today.replace(/\. /g, '');
   var CSS = CSS + '\n' + MB.css(theme);
