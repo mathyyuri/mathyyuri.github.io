@@ -74,6 +74,7 @@
   + '.pe-sym{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.pe-sym button{border:1px solid #d7c9a8;background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer}'
   + '.pe-prev{min-height:44px;padding:8px;border:1px dashed #d7c9a8;border-radius:8px;margin:6px 0;text-align:center;font-size:18px}'
   + '.pe-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 12px}.pe-grid label{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:#7d7364}.pe-grid input,.pe-grid select{color:#2a2118}'
+  + '.pe-exp img{cursor:pointer;vertical-align:middle}.pe-exp img.pe-sel{outline:2px solid #3a6fe0;outline-offset:2px}'
   + '.pe-exp{min-height:60px;border:1px solid #d7c9a8;border-radius:8px;padding:8px;background:#fff;line-height:1.7}.pe-exp .eq{cursor:pointer}.pe-src{font-size:12.5px;color:#7d7364;max-height:84px;overflow:auto;border:1px solid #eee3cc;border-radius:8px;padding:6px 8px;background:#fbf6ea}'
   + '.pe-bar{position:fixed;left:12px;bottom:12px;z-index:9000;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#1f3258;color:#fff;border-radius:10px;padding:7px 10px;font:12.5px "Malgun Gothic",sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.4);max-width:96vw}'
   + '.pe-bar button{border:0;border-radius:6px;padding:5px 10px;background:#c9a15a;color:#1b2a4a;font-weight:700;cursor:pointer}.pe-bar button.g{background:#7a8499;color:#fff}.pe-bar button:disabled{opacity:.45;cursor:default}.cap .pe-bar{display:none}'
@@ -324,16 +325,40 @@
    + '<label>메모<input type="text" id="peNote" value="' + esc(tg.note || '') + '"></label><label style="flex-direction:row;align-items:center;gap:6px;margin-top:16px"><input type="checkbox" id="peEss"' + (tg.essential ? ' checked' : '') + '> 필수유형</label>'
    + '<label style="flex-direction:row;align-items:center;gap:6px;margin-top:16px"><input type="checkbox" id="peStemOn"' + (chg ? ' checked' : '') + (cur ? '' : ' disabled') + '> 화면에서 고친 문제 글·그림·보기도 함께 등록' + (chg ? ' (고친 곳 있음)' : '') + '</label></div>'
    + '<datalist id="peDlCourse"><option value="공통수학1"><option value="공통수학2"></datalist>'
-   + '<div style="margin-top:8px"><b style="font-size:13px">해설</b> <span class="pe-p">(글은 바로 고치고, 수식은 더블클릭하면 LaTeX 창이 열려요)</span><div class="pe-exp" id="peExp" contenteditable="true"></div></div>'
+   + '<div style="margin-top:8px"><b style="font-size:13px">해설</b> <span class="pe-p">(글은 바로 고치고, 수식은 더블클릭하면 LaTeX 창이 열려요 · 그림은 눌러서 크기 조절·지우기)</span>'
+   + '<div class="pe-row" id="peImgBar" style="display:none;margin:4px 0"><span class="pe-p" style="margin:0">그림을 골랐어요 →</span><button type="button" class="pe-b g" data-ie="sm">작게</button><button type="button" class="pe-b g" data-ie="lg">크게</button><button type="button" class="pe-b" style="background:#b3341f" data-ie="del">그림 지우기</button><span class="pe-p" style="margin:0">(Delete 키로도 지울 수 있어요)</span></div>'
+   + '<div class="pe-exp" id="peExp" contenteditable="true"></div></div>'
    + '<div class="pe-row"><button class="pe-b" id="peSave">서버 문제 DB에 등록</button><button class="pe-b g" data-c="1">닫기</button><span id="peMsg" class="pe-p"></span></div>', '860px');
   var ex = $('#peExp', m); ex.innerHTML = it.exp || '<p></p>'; prepare(ex); var expTouched = false;
   ex.addEventListener('input', function () { expTouched = true; });
+  /* 해설 안의 그림: 눌러서 고르기 → 작게·크게·지우기 (Delete 키도 가능) */
+  var imSel = null, ib = $('#peImgBar', m);
+  function imDesel() { if (imSel) imSel.classList.remove('pe-sel'); imSel = null; ib.style.display = 'none'; }
+  function imDel() {
+   if (!imSel) return; var p = imSel.parentNode; rm(imSel); imSel = null; ib.style.display = 'none';
+   if (p && p !== ex && p.tagName === 'P' && !p.querySelector('img') && !p.textContent.trim()) rm(p);
+   if (!ex.firstChild) ex.innerHTML = '<p></p>';
+   expTouched = true;
+  }
+  ex.addEventListener('click', function (e) {
+   var im = e.target.closest && e.target.closest('img'); if (!im) { imDesel(); return; }
+   if (imSel && imSel !== im) imSel.classList.remove('pe-sel');
+   imSel = im; im.classList.add('pe-sel'); ib.style.display = 'flex';
+  });
+  ex.addEventListener('keydown', function (e) { if (imSel && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); imDel(); } });
+  ib.addEventListener('click', function (e) {
+   var a = e.target.dataset && e.target.dataset.ie; if (!a || !imSel) return;
+   if (a === 'del') { imDel(); return; }
+   var w = imSel.getBoundingClientRect().width, W = ex.getBoundingClientRect().width || 1;
+   imSel.style.width = Math.max(5, Math.min(100, (a === 'sm' ? w * 0.85 : w * 1.15) / W * 100)).toFixed(1) + '%'; imSel.style.maxWidth = 'none'; imSel.style.height = 'auto'; expTouched = true;
+  });
   m.addEventListener('click', function (e) { if (e.target.dataset && e.target.dataset.c) { if (feM) return; closeDlg(m); } });
   $('#peSave', m).onclick = async function () {
    var btn = this; btn.disabled = true; $('#peMsg', m).textContent = '등록하는 중…';
    var item = { h: h, kind: $('#peKind', m).value, answer: $('#peAns', m).value.trim(), answer_note: $('#peAnsN', m).value.trim(),
     tags: { course: $('#peCourse', m).value.trim(), unit: $('#peUnit', m).value.trim(), subunit: $('#peSub', m).value.trim(), skill: $('#peSkill', m).value.trim(), level: $('#peLevel', m).value, form: $('#peForm', m).value, essential: $('#peEss', m).checked, note: $('#peNote', m).value.trim() } };
    if (cur && $('#peStemOn', m).checked) { item.stem = cur.stem; item.ch = cur.ch; }
+   imDesel();
    if (expTouched) item.exp = ser(ex);
    var r = await call('save', { items: [item] });
    btn.disabled = false;
