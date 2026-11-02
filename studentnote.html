@@ -1183,6 +1183,9 @@ function convertHwpEquationToLatex(script) {
   // on its own (digits/symbols simply aren't in the class), so dropping
   // \b only lets through matches it was wrongly blocking, not new ones.
   s = s.replace(/(?<!\\)([A-Za-z]+)/g, (m, w) => substituteSymbolsInRun(w));
+  // HWP 의 "not subset"(⊄) · "not in"(∉) 부정 표기 → \not\subset · \notin
+  s = s.replace(/(^|[^A-Za-z\\])not\s*\\in(?![A-Za-z])/g, '$1\\notin ')
+       .replace(/(^|[^A-Za-z\\])not\s*\\(subset|supset|subseteq|supseteq|ni|exists|equiv|approx|sim|parallel|perp|mid)(?![A-Za-z])/g, '$1\\not\\$2 ');
   // Safety net: a coordinate/pair like "A(1,5), B(3,a)" can be split by HWP
   // across separate <hp:equation> objects (e.g. the trailing "a" written as
   // its own equation for italic styling), so a single equation's script can

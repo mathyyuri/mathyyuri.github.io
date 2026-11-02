@@ -843,6 +843,9 @@ function convertHwpEquationToLatex(script) {
   // not just a defense for "overline", but for every backslash command this
   // file inserts earlier (\sqrt, \hat, \vec, \tilde, \ddot, \dot, \boxed, …).
   s = s.replace(/\\[A-Za-z]+|([A-Za-z]+)/g, (m, w) => w ? substituteSymbolsInRun(w) : m);
+  // HWP 의 "not subset"(⊄) · "not in"(∉) 같은 부정 표기는 낱말 "not" 이 따로 남는다 → LaTeX 의 \not\subset · \notin 으로 합친다
+  s = s.replace(/(^|[^A-Za-z\\])not\s*\\in(?![A-Za-z])/g, '$1\\notin ')
+       .replace(/(^|[^A-Za-z\\])not\s*\\(subset|supset|subseteq|supseteq|ni|exists|equiv|approx|sim|parallel|perp|mid)(?![A-Za-z])/g, '$1\\not\\$2 ');
   // Safety net: a coordinate/pair like "A(1,5), B(3,a)" can be split by HWP
   // across separate <hp:equation> objects (e.g. the trailing "a" written as
   // its own equation for italic styling), so a single equation's script can
