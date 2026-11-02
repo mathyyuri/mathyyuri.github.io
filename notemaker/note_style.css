@@ -34,6 +34,7 @@
 .q table.syn td{padding:1mm 3.6mm;font-size:10pt;min-width:9mm}.q table.syn tr:nth-child(-n+2) td:first-child{border-right:.35mm solid #2a2118}
 .q table.syn tr:nth-child(2) td:not(:first-child){border-bottom:.35mm solid #2a2118}.q table.syn p{margin:0}
 .q .choiceRow{display:none}
+.pb.inch .q .choiceRow{display:grid;gap:1mm 3mm;margin:.6mm 0 0 2mm}.pb.inch .q .choiceItem{display:block}
 .ch{display:grid;gap:1mm 2.4mm;margin-top:1.4mm;font-size:9.6pt;line-height:1.5;clear:both}.ch b{font-weight:500;margin-right:1.2mm;color:var(--rust)}
 .ch.c5{grid-template-columns:repeat(5,1fr)}.ch.c3{grid-template-columns:repeat(3,1fr)}.ch.c2{grid-template-columns:1fr 1fr}.ch.c1{grid-template-columns:1fr}
 .sol{margin-top:1.8mm;border:.25mm dashed #d6c9a8;border-radius:1.2mm;position:relative;background:#fffefb}.sol>span{position:absolute;left:2.6mm;top:1.2mm;font-family:var(--fi);font-style:italic;font-size:8.5pt;color:#c4b48c;letter-spacing:.06em}

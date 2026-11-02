@@ -158,7 +158,8 @@
   var p = item(uid), e = S.ed[uid] || {}, t = p.k === 't';
   var el = document.createElement('div'); el.className = 'pb ' + (t ? 'tb' : 'mk'); el.dataset.uid = uid;
   var chs = (e.ch && e.ch.length) ? e.ch : (p.ch || []);
-  var rt = p.rt != null ? '<span class="rt ' + (p.rt < 50 ? 'lo' : p.rt >= 80 ? 'hi' : '') + '" title="처음 푼 결과만 센 정답률 · ' + p.rn + '명 중 ' + p.rk + '명 정답 (노트를 만든 때의 채점 기록)">정답률 ' + p.rt + '%</span>' : '';
+  if (!chs.length && /choiceRow/.test(e.stem != null ? e.stem : p.st)) el.className += ' inch';      // 교과서 문제: 보기(①~⑤)가 문제 글 안에 들어 있어요 → 숨기지 않고 보여요
+  var rt =p.rt != null ? '<span class="rt ' + (p.rt < 50 ? 'lo' : p.rt >= 80 ? 'hi' : '') + '" title="처음 푼 결과만 센 정답률 · ' + p.rn + '명 중 ' + p.rk + '명 정답 (노트를 만든 때의 채점 기록)">정답률 ' + p.rt + '%</span>' : '';
   var h = '<div class="ph2"><i class="no"></i>' + rt + '<span class="srcl ed"></span></div><div class="q ed"></div>';
   if (chs.length) {
    var L = 0; chs.forEach(function (c) { L = Math.max(L, plen(c)); });
