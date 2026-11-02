@@ -162,9 +162,9 @@
   var rt =p.rt != null ? '<span class="rt ' + (p.rt < 50 ? 'lo' : p.rt >= 80 ? 'hi' : '') + '" title="처음 푼 결과만 센 정답률 · ' + p.rn + '명 중 ' + p.rk + '명 정답 (노트를 만든 때의 채점 기록)">정답률 ' + p.rt + '%</span>' : '';
   var h = '<div class="ph2"><i class="no"></i>' + rt + '<span class="srcl ed"></span></div><div class="q ed"></div>';
   if (chs.length) {
-   var L = 0; chs.forEach(function (c) { L = Math.max(L, plen(c)); });
-   var cols = L <= 7 ? 5 : L <= 14 ? 3 : L <= 30 ? 2 : 1;
-   h += '<div class="ch c' + cols + '">' + chs.map(function (c, i) { return '<span><b>' + CIRC[i] + '</b><span class="cv ed"></span></span>'; }).join('') + '</div>';
+   var L = 0, fg = false; chs.forEach(function (c) { L = Math.max(L, plen(c)); if (/<img/.test(c)) fg = true; });
+   var cols = fg ? 3 : L <= 7 ? 5 : L <= 14 ? 3 : L <= 30 ? 2 : 1;       // 보기가 그림(그래프 개형)이면 3칸
+   h += '<div class="ch c' + cols + (fg ? ' cf' : '') + '">' + chs.map(function (c, i) { return '<span><b>' + CIRC[i] + '</b><span class="cv ed"></span></span>'; }).join('') + '</div>';
   } else if (!t) h += '<div class="ans">답 <u></u></div>';
   h += '<div class="sol"><span>풀이</span><div class="ui rz" title="끌어서 풀이 칸 크기 조절 · 두 번 누르면 자동 크기"></div></div>' + TOOLS_P;
   el.innerHTML = h;
