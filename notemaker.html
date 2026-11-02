@@ -323,7 +323,7 @@ function solOf(so) {                                      /* 정답 칸에 보�
  var s = String(so || '').replace(/<img[^>]*>/g, ' '), ps = s.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [], out = '', len = 0;
  if (!ps.length && s.replace(/<[^>]+>/g, '').trim()) ps = ['<p>' + s + '</p>'];
  for (var i = 0; i < ps.length; i++) {
-  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl) continue;
+  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl || /^(풀이|해설)참[조고]\.?$/.test(ps[i].replace(/<[^>]+>/g, '').replace(/\s+/g, ''))) continue;
   if (len && len + pl > 420) { out += '<p><span class="see">… 이하는 상세 해설 참고</span></p>'; break; }
   out += ps[i]; len += pl;
  }

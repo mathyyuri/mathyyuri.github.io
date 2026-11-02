@@ -2,7 +2,7 @@ function solOf(so) {                                      /* 정답 칸에 보�
  var s = String(so || '').replace(/<img[^>]*>/g, ' '), ps = s.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [], out = '', len = 0;
  if (!ps.length && s.replace(/<[^>]+>/g, '').trim()) ps = ['<p>' + s + '</p>'];
  for (var i = 0; i < ps.length; i++) {
-  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl) continue;
+  var pl = ps[i].replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/\s+/g, '').length; if (!pl || /^(풀이|해설)참[조고]\.?$/.test(ps[i].replace(/<[^>]+>/g, '').replace(/\s+/g, ''))) continue;
   if (len && len + pl > 420) { out += '<p><span class="see">… 이하는 상세 해설 참고</span></p>'; break; }
   out += ps[i]; len += pl;
  }
@@ -745,14 +745,14 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
     if (alen > 6 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
     else h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';
    });
-   blocks += h + '</div>' + (lg.length ? '<div class="tl">' + lg.join('') + '</div>' : '') + '</div>';
+   blocks += h + '</div></div>'; for (var q = 0; q < lg.length; q += 6) blocks += '<div class="blk"><div class="tl">' + lg.slice(q, q + 6).join('') + '</div></div>';   /* 풀이는 길 수 있어 6줄씩 */
   });
   var rows = S.tb.filter(item).map(function (u, i) {
    var p = item(u), raw = String(p.so || ''), m = raw.match(/<p[^>]*>[\s\S]*?<\/p>/), so = (m ? m[0] : raw).replace(/<img[^>]*>/g, ' '), plain = so.replace(/<[^>]+>/g, '').trim();
    if (!plain) so = '<span class="see">정답표 참고</span>'; else if (plain.replace(/\\[a-zA-Z]+/g, '').length > 110) so = '<span class="see">풀이는 정답표 참고</span>';
    return '<div class="tr"><span class="n">교' + (i + 1) + '</span><span class="s">' + esc(srcOf(u).replace(/^교과서 · /, '')) + '</span><span class="a">' + so + '</span></div>';
   });
-  for (var k = 0; k < rows.length; k += 12) blocks += '<div class="blk">' + (k === 0 ? '<div class="sbar"><b>교과서편 · ' + nT + '문항</b></div>' : '') + '<div class="tl">' + rows.slice(k, k + 12).join('') + '</div></div>';
+  for (var k = 0; k < rows.length; k += 6) blocks += '<div class="blk">' + (k === 0 ? '<div class="sbar"><b>교과서편 · ' + nT + '문항</b></div>' : '') + '<div class="tl">' + rows.slice(k, k + 6).join('') + '</div></div>';
   var css = 'html,body{margin:0;background:#d9d2c3;font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#2a2118}.bar{position:sticky;top:0;z-index:30;background:#2a2118;color:#f3ead7;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}.bar b{font-family:"Gowun Batang",serif}.bar button,.bar input{border:0;border-radius:18px;padding:6px 14px;font-size:13px;font-weight:700;font-family:inherit}.bar button{background:#c9a55d;color:#2a2118;cursor:pointer}.bar button.g{background:#5b4d3b;color:#f3ead7}.bar input{font-weight:400;width:210px}.bar .hint{color:#cdbf9f;font-size:12px}'
    + '.stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0 40px}.stage .pg{zoom:var(--s,1)}.pg{width:210mm;height:297mm;background:#fffdf8;padding:12mm 13mm 9mm;box-shadow:0 8px 28px rgba(60,40,10,.28);position:relative;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}.cap{box-shadow:none!important;zoom:1!important}#src{position:absolute;left:-30000px;top:0;width:184mm;visibility:hidden}'
    + '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.3mm solid #a8853f;padding-bottom:1.6mm;margin-bottom:4mm}.hd b{font-family:"Playfair Display",serif;font-style:italic;font-weight:500;font-size:10pt;color:#a8853f;letter-spacing:.08em}.hd span{font-family:"Gowun Batang",serif;font-size:9pt;color:#7d7364}.bd{flex:1;min-height:0;overflow:hidden}.ft{text-align:center;font-size:8pt;color:#9c5530;border-top:.2mm solid #e4d9c2;padding-top:1.6mm;margin-top:2mm}'
