@@ -30,7 +30,37 @@
    harvest();
    try { localStorage.setItem(KEY, JSON.stringify(S)); stat('이 컴퓨터에 자동 저장됨 · ' + new Date().toLocaleTimeString('ko-KR')); }
    catch (e) { stat('저장 공간이 부족해요 — [파일로 내려받기]를 해 주세요'); }
+   dbSync();
   }, 600);
+ }
+ /* 노트에서 고친 문제 글·보기를 서버 문제 DB(원본)에도 자동 반영 — 원장 로그인이 이 컴퓨터에 남아 있을 때만, 처음 글은 서버가 따로 보관 */
+ var dbSent = {}, dbBusy = false, dbAgain = false;
+ function dbItems() {
+  var out = [];
+  Object.keys(S.ed).forEach(function (u) {
+   var p = BY[u], e = S.ed[u]; if (!p || !p.h || e.stem == null) return;
+   var ch = e.ch || [], key = JSON.stringify([e.stem, ch]);
+   if (e.stem === p.st && JSON.stringify(ch) === JSON.stringify(p.ch || [])) return;     // 안 고친 문제는 건드리지 않아요
+   if (dbSent[p.h] === key) return;
+   out.push({ h: p.h, stem: e.stem, ch: ch, _k: key });
+  });
+  return out;
+ }
+ async function dbSync() {
+  var ck = $('dbAuto'); if (ck && !ck.checked) return;
+  if (dbBusy) { dbAgain = true; return; }
+  var items = dbItems(); if (!items.length) return;
+  var t = null; try { t = sessionStorage.getItem('pe_tok') || sessionStorage.getItem('book_tok') || localStorage.getItem('acadapp_tok_v1'); } catch (e) { }
+  var note = ' · 서버 문제 DB에는 아직 반영 안 됨 (원장 로그인이 필요해요: [서버 저장·불러오기]에서 연결)';
+  if (!t) { stat($('stat').textContent + note); return; }
+  dbBusy = true;
+  try {
+   var j = await rpc('ac_problem', { p_action: 'save', p_token: t, p_args: { items: items.map(function (x) { return { h: x.h, stem: x.stem, ch: x.ch }; }) } });
+   if (j && j.ok) { items.forEach(function (x) { dbSent[x.h] = x._k; }); stat('이 컴퓨터에 자동 저장됨 · 서버 문제 DB에도 반영 ' + j.updated + '개 · ' + new Date().toLocaleTimeString('ko-KR')); }
+   else stat($('stat').textContent + ' · 서버 문제 DB 반영 실패: ' + ((j && j.error) || '') + (j && /로그인/.test(j.error || '') ? ' ([서버 저장·불러오기]에서 다시 연결해 주세요)' : ''));
+  } catch (e) { }
+  dbBusy = false;
+  if (dbAgain) { dbAgain = false; dbSync(); }
  }
 
  /* ───────── 되돌리기 · 다시하기 (바꾸기 직전 상태를 통째로 기억) ───────── */
