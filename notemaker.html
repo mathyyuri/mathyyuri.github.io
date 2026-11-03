@@ -770,22 +770,29 @@ function firstRates() {
 function attempts(sid, cut) {                                    // cut = { id, date }: 다시 받는 노트 자기 자신과 그 뒤의 기록은 빼고 셈
 
  var ex = (DATA.exams || []).filter(function (e) { return e.ox && e.ox[sid] && e.items && e.items.length && !(cut && (e.id === cut.id || e.date > cut.date)); }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.n < b.n ? -1 : 1); });
- var byH = {}, batch = [], unit = {};
+ var byH = {}, batch = [], note = [], unit = {};
  ex.forEach(function (e, ei) {
-  var ox = e.ox[sid], ok = 0, done = 0, md = e.date.slice(5).replace('-', '/').replace(/^0/, '');
+  var ox = e.ox[sid], ok = 0, done = 0, md = e.date.slice(5).replace('-', '/').replace(/^0/, ''), isNote = /^오답노트/.test(e.n);
   for (var i = 0; i < e.items.length; i++) {
    var c = ox.charAt(i); if ('OXT'.indexOf(c) < 0 || c === '') continue;
    var it = e.items[i] || {}; done++; if (c === 'O') ok++;
-   var un = it.unit || ''; if (un) { var u = unit[un] || (unit[un] = { ok: 0, wrong: 0 }); if (c === 'O') u.ok++; else u.wrong++; }
-   if (it.h) (byH[it.h] || (byH[it.h] = [])).push({ c: c, md: md, name: e.n, no: i + 1, note: /^오답노트/.test(e.n) });
+   var un = it.unit || ''; if (un && !isNote) { var u = unit[un] || (unit[un] = { ok: 0, wrong: 0 }); if (c === 'O') u.ok++; else u.wrong++; }   // 단원별은 처음 푼 시험만 (오답노트 재풀이는 따로 셈)
+   if (it.h) (byH[it.h] || (byH[it.h] = [])).push({ c: c, md: md, name: e.n, no: i + 1, note: isNote });
   }
-  if (done) batch.push({ label: (batch.length + 1) + '회차 ' + md, pct: Math.round(100 * ok / done), text: '정답 ' + Math.round(100 * ok / done) + '% (' + ok + '/' + done + ') ' + String(e.n).slice(0, 18) });
+  if (!done) return;
+  var pc = Math.round(100 * ok / done), allX = ok === 0 && done >= 10;
+  if (isNote) { var nn = (String(e.n).match(/(\d+)\s*회차?\s*$/) || [0, note.length + 1])[1]; note.push({ label: '오답노트 ' + nn + '회 ' + md, pct: pc, text: '고침 ' + pc + '% (' + ok + '/' + done + ')' + (done < 10 ? ' · 문항 적음' : '') }); }
+  else batch.push({ label: (batch.length + 1) + '회차 ' + md, pct: pc, text: '정답 ' + pc + '% (' + ok + '/' + done + ') ' + String(e.n).slice(0, 18) + (allX ? ' ⚠전부 ✕' : '') });
  });
+ // 회독: 1번째 = 처음 푼 것 전체, 2번째부터 = "직전에 틀렸던 문제를 다시 풀어 맞힌 비율" (틀린 문제만 다시 나오므로 처음 풀이와 바로 비교하면 안 됨)
  var rd = {};
- Object.keys(byH).forEach(function (h) { byH[h].forEach(function (a, k) { var r = rd[k + 1] || (rd[k + 1] = { ok: 0, n: 0 }); r.n++; if (a.c === 'O') r.ok++; }); });
- var round = Object.keys(rd).map(Number).sort(function (a, b) { return a - b; }).slice(0, 14).map(function (k) { var r = rd[k]; return { label: k + '번째 풀이', pct: Math.round(100 * r.ok / r.n), text: Math.round(100 * r.ok / r.n) + '% (' + r.ok + '/' + r.n + '문항)' }; });
+ Object.keys(byH).forEach(function (h) { byH[h].forEach(function (a, k) {
+  if (k > 0 && byH[h][k - 1].c === 'O') return;                        // 직전에 맞힌 문제를 또 푼 것은 '고침'이 아니라서 뺌
+  var r = rd[k + 1] || (rd[k + 1] = { ok: 0, n: 0 }); r.n++; if (a.c === 'O') r.ok++; }); });
+ var round = Object.keys(rd).map(Number).sort(function (a, b) { return a - b; }).slice(0, 14).map(function (k) { var r = rd[k], pc = Math.round(100 * r.ok / r.n);
+  return { label: k === 1 ? '처음 푼 문제' : k + '번째(틀렸던 것)', pct: pc, text: (k === 1 ? '정답 ' : '고침 ') + pc + '% (' + r.ok + '/' + r.n + '문항)' + (r.n < 10 ? ' · 문항 적음' : '') }; });
  var un = Object.keys(unit).map(function (k) { var u = unit[k], t = u.ok + u.wrong; return { label: k.length > 13 ? k.slice(0, 12) + '…' : k, pct: Math.round(100 * u.ok / t), text: Math.round(100 * u.ok / t) + '% (맞음 ' + u.ok + ' / 틀림 ' + u.wrong + ')', w: u.wrong }; }).sort(function (a, b) { return b.w - a.w; }).slice(0, 14);
- return { byH: byH, stats: { batch: batch.slice(-14), round: round, unit: un } };
+ return { byH: byH, stats: { batch: batch.slice(-14), note: note.slice(-8), round: round, unit: un } };
 }
 
 boot();

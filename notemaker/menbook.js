@@ -70,6 +70,7 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
 .statBar{position:absolute;left:0;top:0;bottom:0;background:var(--mb-teal-deep);border-radius:2px}
 .statBarUnit{background:var(--mb-orange)}
 .statBarBatch{background:var(--mb-navy)}
+.statBarNote{background:var(--mb-orange)}
 .statBarPct{flex:0 0 34mm;font-size:8px;font-weight:700;white-space:nowrap}
 .statBarPct small{font-weight:500;color:rgba(26,26,26,.55)}
 .statEmpty{font-size:9px;color:rgba(26,26,26,.5)}
@@ -138,9 +139,10 @@ table.sumTbl tr:nth-child(even) td{background:rgba(95,181,163,.08)}
  // stats = { batch:[{label,pct,text}], round:[...], unit:[...] }
  function statsHtml(info, st) {
   return '<div class="sumWrap">' + banner(info.name) + '<h1 class="sumTitle ed">' + esc(info.name) + '의 학습 통계</h1>'
-   + '<h2 class="sumSubTitle">회차별 정답률 <small>(미션 · 시험을 푼 순서대로)</small></h2><div class="statChart">' + bars(st.batch, 'statBarBatch') + '</div>'
-   + '<h2 class="sumSubTitle">몇 번째 푸는지(회독)별 정답률 <small>(같은 문제를 푼 횟수 기준 — 올라가면 오답이 잡히는 중)</small></h2><div class="statChart">' + bars(st.round) + '</div>'
-   + '<h2 class="sumSubTitle">단원 · 유형별 정답률 <small>(틀린 문제가 많은 순)</small></h2><div class="statChart">' + bars(st.unit, 'statBarUnit', 'statUnitLabel') + '</div></div>';
+   + '<h2 class="sumSubTitle">미션 · 시험 회차별 정답률 <small>(처음 푼 것만 · 푼 순서대로)</small></h2><div class="statChart">' + bars(st.batch, 'statBarBatch') + '</div>'
+   + '<h2 class="sumSubTitle">오답노트 회차별 · 틀렸던 문제를 얼마나 고쳤나 <small>(오답노트를 푼 순서대로)</small></h2><div class="statChart">' + bars(st.note, 'statBarNote') + '</div>'
+   + '<h2 class="sumSubTitle">몇 번째 푸는지(회독)별 <small>(2번째부터는 직전에 틀렸던 문제만 · 처음 푼 정답률과 바로 비교하지 마세요 · 10문항 미만은 참고만)</small></h2><div class="statChart">' + bars(st.round) + '</div>'
+   + '<h2 class="sumSubTitle">단원 · 유형별 정답률 <small>(처음 푼 시험 기준 · 틀린 문제가 많은 순)</small></h2><div class="statChart">' + bars(st.unit, 'statBarUnit', 'statUnitLabel') + '</div></div>';
  }
  window.MB = { themes: CLASS_THEMES, themeFor: themeFor, css: css, coverHtml: coverHtml, backHtml: backHtml, summaryHtml: summaryHtml, statsHtml: statsHtml };
 })();
