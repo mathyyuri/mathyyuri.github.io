@@ -155,7 +155,23 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   qa(c, '[contenteditable]').forEach(function (x) { x.removeAttribute('contenteditable'); });
   return c.innerHTML;
  }
+ /* 보기가 칸 밖으로 잘리면(5칸 → 3칸 → 2칸 → 1칸) 칸 수를 줄여요: 글자 수로 어림한 칸 수는 분수·루트가 들어가면 모자라서 */
+ function chFit(root) {
+  var order = ['c5', 'c3', 'c2', 'c1'];
+  qa(root || document, '.ch').forEach(function (ch) {
+   if (ch.classList.contains('cf')) return;
+   qa(ch, '.katex-html').forEach(function (k) { k.classList.remove('wrapok'); });
+   for (var g = 0; g < 4; g++) {
+    var cur = order.filter(function (c) { return ch.classList.contains(c); })[0];
+    if (!cur || cur === 'c1') break;
+    var bad = ch.scrollWidth > ch.clientWidth + 1 || qa(ch, '.cv').some(function (cv) { var k = cv.querySelector('.katex-html'); return (k && k.scrollWidth > cv.clientWidth + 1) || cv.scrollWidth > cv.clientWidth + 1; });
+    if (!bad) break;
+    ch.classList.remove(cur); ch.classList.add(order[order.indexOf(cur) + 1]);
+   }
+  });
+ }
  function wrapFix(root) {
+  chFit(root && root.closest ? root : document);
   qa(root || document, '.katex-html').forEach(function (k) {
    var host = k.closest('.ch .cv,.q,.tb2,.eq1,.es'); k.classList.remove('wrapok');
    if (host && k.scrollWidth > host.clientWidth + 1) k.classList.add('wrapok');
