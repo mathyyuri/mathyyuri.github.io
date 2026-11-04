@@ -491,6 +491,7 @@ const HWP_EQ_SYMBOLS = {
   // 보다 길어서 먼저 매칭되므로, 이미 있던 "int" 키워드와 부분 겹침으로
   // "SMALL∫ER"(적분 기호가 중간에 끼어드는)처럼 깨지던 것도 같이 해결됨.
   cup: '\\cup', cap: '\\cap', smallinter: '\\cap', subset: '\\subset',
+  smallunion: '\\cup', because: '\\because',   // 합집합(작은 ∪)·∵ — 표에 없어서 "(A∩B)SMALLUNIONB"·"BECAUSE" 처럼 글자 그대로 남던 것
   emptyset: '\\emptyset',
   // 원소 기호(∈/∉) — 이 표에 없어서 "1 IN A"/"5 NOTIN A" 같은 식이
   // "1INA"/"5NOTINA"처럼 글자 그대로 깨져 나오던 문제(실제 확인됨: 집합
@@ -846,6 +847,8 @@ function convertHwpEquationToLatex(script) {
   // HWP 의 "not subset"(⊄) · "not in"(∉) 같은 부정 표기는 낱말 "not" 이 따로 남는다 → LaTeX 의 \not\subset · \notin 으로 합친다
   s = s.replace(/(^|[^A-Za-z\\])not\s*\\in(?![A-Za-z])/g, '$1\\notin ')
        .replace(/(^|[^A-Za-z\\])not\s*\\(subset|supset|subseteq|supseteq|ni|exists|equiv|approx|sim|parallel|perp|mid)(?![A-Za-z])/g, '$1\\not\\$2 ');
+  // HWP 의 아래 중괄호 "underbrace{~ n 개}{ 식 }"(앞 중괄호 = 아래 글, 뒤 중괄호 = 식)는 변환기가 낱말로 남긴다 → \underbrace{식}_{n\text{개}}
+  s = s.replace(/underbrace\s*\{~?\s*([^{}]*?)\s*\}\s*\{([^{}]*)\}/gi,(m, below, body) => '\\underbrace{' + body.trim() + '}_{' + below.replace(/([가-힣]+)/g, '\\text{$1}').trim() + '}');
   // Safety net: a coordinate/pair like "A(1,5), B(3,a)" can be split by HWP
   // across separate <hp:equation> objects (e.g. the trailing "a" written as
   // its own equation for italic styling), so a single equation's script can

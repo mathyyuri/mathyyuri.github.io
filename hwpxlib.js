@@ -371,7 +371,7 @@ const HWP_EQ_SYMBOLS = {
   // ∩로 변환. 이 키워드들이 없으면 글자 그대로 남거나("SMALLINTER" 중
   // "INT"만 걸려 "∫ER"처럼 반쪽만 깨져 나옴 — 실제 오답노트에서 확인),
   // 합집합("CUP")도 그대로 남는다.
-  CAP: '\\cap', SMALLINTER: '\\cap', CUP: '\\cup', cup: '\\cup',
+  CAP: '\\cap', SMALLINTER: '\\cap', CUP: '\\cup', cup: '\\cup', SMALLUNION: '\\cup', BECAUSE: '\\because',
   SUBSET: '\\subset', SUPSET: '\\supset',
   EMPTYSET: '\\emptyset', emptyset: '\\emptyset',
 };
