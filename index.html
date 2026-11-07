@@ -413,8 +413,6 @@ const stuList=ac=>Object.values(U).filter(u=>u.role==='student'&&(!ac||u.ac===ac
 const LINKS=[
  {n:'OMR 사진 자동채점',d:'답안지 사진 → 자동 채점',u:'https://mathyyuri.com/omr.html',ic:''},
  {n:'10월 모의고사 성적 제출',d:'학생이 점수 직접 입력',u:'https://mathyyuri.com/score_form_10.html',ic:''},
- {n:'일일일모',d:'매일 1문제 · 랭킹',u:'https://mathyyuri.com/dailyquiz.html',ic:''},
- {n:'문제은행 · 오답노트',d:'틀린 문제 다시 풀기',u:'https://mathyyuri.com/problembank.html',ic:''}
 ];
 const SEASONS=[{en:'WINTER',ko:'겨울방학',full:'겨울방학 시즌',vac:1},{en:'1ST MID',ko:'1학기 중간',full:'1학기 중간고사 대비 시즌'},{en:'1ST FINAL',ko:'1학기 기말',full:'1학기 기말고사 대비 시즌'},{en:'SUMMER',ko:'여름방학',full:'여름방학 시즌',vac:1},{en:'2ND MID',ko:'2학기 중간',full:'2학기 중간고사 대비 시즌'},{en:'2ND FINAL',ko:'2학기 기말',full:'2학기 기말고사 대비 시즌'}];
 const DEF_BIO={ds:['대치에스플러스 고등부 원장','용인 보라고·신갈고·서천고 내신 전문','MATHY YURI 교재·모의고사 직접 제작'],bd:['분당미래탐구 수학 강사','분당 17개 학교 내신 분석 · S-DAY 공수내모','MATHY YURI 교재·모의고사 직접 제작']};
@@ -2202,32 +2200,21 @@ const DEF_TOOLS=[
  {id:'res10',name:'10월 전국연합 성적 통계',url:'26_10moresult.html',desc:'반별·등급 통계',grp:'미션·성적',roles:['ta','student','parent']},
  {id:'form10',name:'10월 모의고사 성적 제출',url:'score_form_10.html',desc:'학생이 점수 직접 입력',grp:'미션·성적',roles:['student','parent']},
  {id:'mo10staff',name:'10모 성적표 (강사용)',url:'mo10staff.html',desc:'이름·전 과목·반별 분포 · 이미지 저장',grp:'미션·성적',roles:[]},
- {id:'dq',name:'일일일모',url:'dailyquiz.html',desc:'매일 1문제 · 랭킹',grp:'학생 도구',roles:['ta','student','parent']},
- {id:'dqrank',name:'일일일모 랭킹',url:'dailyquizranking.html',desc:'',grp:'학생 도구',roles:['ta','student','parent']},
- {id:'dqvid',name:'일일일모 풀이영상',url:'dailyquizvideos.html',desc:'',grp:'학생 도구',roles:['ta','student','parent']},
- {id:'cs100',name:'추석특강 100제',url:'cs100.html',desc:'',grp:'학생 도구',roles:['student','parent']},
- {id:'cs100rank',name:'추석특강 100제 랭킹',url:'cs100ranking.html',desc:'',grp:'학생 도구',roles:['ta','student','parent']},
  {id:'bank',name:'문제은행 · 오답노트',url:'bank.html',desc:'틀린 문제 다시 풀기',grp:'학생 도구',roles:['student','parent']},
  {id:'planner',name:'연간 플래너',url:'planner-view.html',desc:'',grp:'학생 도구',roles:['ta','student','parent']},
  {id:'omr',name:'OMR 답안지 · 자동채점',url:'omr.html',desc:'답안지 만들기·채점',grp:'채점·오답노트',roles:['ta']},
  {id:'omrscan',name:'OMR 촬영 채점',url:'omr_scan.html',desc:'답안지 사진 → 자동 채점',grp:'채점·오답노트',roles:['ta']},
  {id:'snote',name:'학생별 오답노트 (강사용)',url:'studentnote.html',desc:'예전 오답노트',grp:'채점·오답노트',roles:['ta']},
  {id:'onote',name:'오답노트 생성기',url:'oedapnotegenerator.html',desc:'',grp:'채점·오답노트',roles:['ta']},
- {id:'dqwrong',name:'일일일모 오답노트',url:'dailyquizwrongnote.html',desc:'',grp:'채점·오답노트',roles:['ta']},
- {id:'admin',name:'관리자 모드',url:'admin.html',desc:'일일일모·자료 관리',grp:'관리',roles:[]},
- {id:'pbank',name:'교재/시험지 관리',url:'problembank.html',desc:'한글 파일 올리기·문제은행',grp:'관리',roles:[]},
  {id:'bankadmin',name:'문제은행 관리',url:'bankadmin.html',desc:'',grp:'관리',roles:[]},
- {id:'cs100admin',name:'추석특강 100제 관리',url:'cs100admin.html',desc:'',grp:'관리',roles:[]},
  {id:'analyzer',name:'내신 시험 분석기',url:'examanalyzer.html',desc:'PDF → 분석 대시보드',grp:'관리',roles:[]},
  {id:'sheetmaker',name:'내신기출 시험지 만들기',url:'examsheetmaker.html',desc:'',grp:'관리',roles:[]},
- {id:'variant',name:'AI 문제 변형',url:'mathvariant.html',desc:'',grp:'관리',roles:[]},
  {id:'picker',name:'교재 골라 담기',url:'textbookpicker.html',desc:'',grp:'관리',roles:[]},
- {id:'motest',name:'성적 대시보드',url:'motest.html',desc:'',grp:'관리',roles:[]},
  {id:'board',name:'공동 필기',url:'whiteboard.html',desc:'',grp:'관리',roles:['ta']},
  {id:'pimport',name:'문제 가져오기',url:'problemimport.html',desc:'문제 묶음 파일(.json) 올리기',grp:'관리',roles:[]},
  {id:'notemaker',name:'오답노트 만들기',url:'notemaker.html',desc:'학생별 오답노트 (표지 · 출처 · PDF)',grp:'관리',roles:[]},
- {id:'oldmain',name:'예전 메인 화면',url:'index_old.html',desc:'옛 mathyyuri.com 첫 화면',grp:'관리',roles:[]}
 ];
+const RETIRED_URLS=['26_6moresult.html','26_9moresult.html','6month_counseling_form.html','gyeol1.html','gyeol2.html','gyeol3.html','admin.html','cs100admin.html','cs100ranking.html','cs100.html','daily600.html','dailyquizranking.html','dailyquizvideos.html','dailyquizwrongnote.html','dailyquiz.html','dailyranking.html','gyeolmorankings.html','index_old.html','math-exam.html','mathvariant.html','mathy_unit_chart.html','motest.html','problembank.html','ranking.html','s+.html','s.html','score_form_9.html','score_form.html'];   // 옛 구글 스크립트용 화면 — 사이트에서 뺐으므로 서버에 저장된 도구 목록에 남아 있어도 보이지 않게 한다
 let TOOLS=undefined,TOOLS_BUSY=false;
 const NEW_TOOLS=['pimport','notemaker'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
 async function toolsApi(action,args){
@@ -2244,7 +2231,7 @@ function toolsNow(){
 function ensureTools(){
  if(TOOLS!==undefined||TOOLS_BUSY)return;
  TOOLS_BUSY=true;
- toolsApi('get').then(j=>{TOOLS=(j&&j.ok&&Array.isArray(j.tools))?j.tools:null;if(TOOLS&&me().role==='admin')NEW_TOOLS.forEach(id=>{if(!TOOLS.some(t=>t.id===id)){const d=DEF_TOOLS.find(t=>t.id===id);if(d)TOOLS=TOOLS.concat([Object.assign({},d)]);}});TOOLS_BUSY=false;render();});
+ toolsApi('get').then(j=>{TOOLS=(j&&j.ok&&Array.isArray(j.tools))?j.tools.filter(t=>RETIRED_URLS.indexOf(t.url)<0):null;if(TOOLS&&me().role==='admin')NEW_TOOLS.forEach(id=>{if(!TOOLS.some(t=>t.id===id)){const d=DEF_TOOLS.find(t=>t.id===id);if(d)TOOLS=TOOLS.concat([Object.assign({},d)]);}});TOOLS_BUSY=false;render();});
 }
 function toolLinks(){ensureTools();return toolsNow().filter(t=>t.id!=='oldmain').map(t=>({n:t.name,d:t.desc||'',u:t.url,ic:''}));}
 function vTools(){
