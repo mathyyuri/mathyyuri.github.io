@@ -1,0 +1,5 @@
+CLAUDE.md
+.claude/
+.agents/
+agent/
+out*.txt
