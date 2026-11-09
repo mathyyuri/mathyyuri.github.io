@@ -20,6 +20,14 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
  function qa(root, sel) { return [].slice.call(root.querySelectorAll(sel)); }
  function rm(n) { if (n && n.parentNode) n.parentNode.removeChild(n); }
  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+ /* 정답 글자 다듬기: 서버 정답이 \( \) 없이 수식 그대로('1 \leq k&lt; {\dfrac{5}{4}}')거나 &lt; 같은 HTML 글자가 섞여 있으면 수식 조각으로 감싸 준다 */
+ function normAns(a) {
+  a = String(a == null ? '' : a);
+  if (/<span class="eq">/.test(a)) return a;
+  a = a.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  if (/\\\(/.test(a) || !/\\[a-zA-Z]+|[\^_]\{|\{\\/.test(a)) return a;
+  return a.split(/([가-힣ㄱ-ㅎ][가-힣ㄱ-ㅎ\s,.]*)/).map(function (x, i) { return (i % 2 || !/\S/.test(x)) ? x : (/^\s*/.exec(x)[0] + '\\(' + x.trim() + '\\)' + /\s*$/.exec(x)[0]); }).join('');
+ }
  function J(id) { return JSON.parse($(id).textContent); }
  var POOL = J('pool'), FIGS = J('figs'), TH = J('theory'), INIT = J('init'), TYPES = J('types');
  var BY = {}, THBY = {};
@@ -336,7 +344,7 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
     section('빠른 정답 · ' + (window.NOTE_NAME || '') + ' ' + (window.NOTE_ROUND || '') + '회차 오답노트', 1, 'sol', 0);
     var qn = 0;
     var ansHtml = function (a) {                           /* 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로 */
-     a = String(a);
+     a = normAns(a);
      if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = String(a).split(/(\\\(.*?\\\))/).map(function (x, i) { return i % 2 ? '<span class="eq">' + esc(x) + '</span>' : esc(x); }).join(''); else a = esc(a);   /* 글 사이에 \( \) 수식이 여러 개 섞인 정답은 수식마다 따로 */
      return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
     };
@@ -757,7 +765,7 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
    h += '<div class="gt"><b>' + esc(g.title) + '</b><em>' + us.length + '문항</em></div><div class="grid">';
    var lg = [];
    us.forEach(function (u) {
-    var p = item(u); j++; var c = chsOf(u); if (isRefAn(p.an) || String(p.an == null ? '' : p.an).replace(/\s/g, '') === '') { lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + solOf(p.so) + '</span></div>'); return; } var a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(p.an || '-');
+    var p = item(u); j++; var c = chsOf(u); if (isRefAn(p.an) || String(p.an == null ? '' : p.an).replace(/\s/g, '') === '') { lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + solOf(p.so) + '</span></div>'); return; } var a = (c.length && /^[1-5]$/.test(p.an)) ? CIRC[+p.an - 1] : esc(normAns(p.an || '-'));
     var alen = String(p.an || '').replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
     if (alen > 6 && !(c.length && /^[1-5]$/.test(p.an))) lg.push('<div class="tr"><span class="n">' + j + '</span><span class="a">' + a + '</span></div>');   /* 긴 정답은 작은 칸 대신 아래 줄로 */
     else h += '<div class="cell"><i>' + j + '</i><b' + (String(p.an || '').length > 4 && !(c.length && /^[1-5]$/.test(p.an)) ? ' class="sm"' : '') + '>' + a + '</b></div>';

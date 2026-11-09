@@ -178,10 +178,11 @@ var LOGIN={ac:'ds',role:'student'};
 function guessCat(n){n=String(n||'');return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'미션'}
 function isNoteM(m){return String(m.cls||'').indexOf('note:')===0}
 function catOf(m){if(isNoteM(m))return '오답미션';return m.cat||guessCat(m.name)}
-function defCat(){if(isTa())return '';var has=S.list.some(function(m){return seasonOf(m)===S.season&&catOf(m)==='교과서미션'});return has?'교과서미션':''}
+function todayList(){var t=ymd();return S.list.filter(function(m){return !isNoteM(m)&&String(m.date).slice(0,10)===t})}   /* 오늘 출제된 미션 (시즌·카테고리와 상관없이) */
+function defCat(noToday){if(!noToday&&todayList().length)return '__today';if(isTa())return '';var has=S.list.some(function(m){return seasonOf(m)===S.season&&catOf(m)==='교과서미션'});return has?'교과서미션':''}
 var SEAS=[['fin','2학기 기말대비'],['mid','2학기 중간대비']],FIN_FROM='2026-10-15';
 function seasonOf(m){return (m.old||String(m.date)<FIN_FROM)?'mid':'fin'}
-function filtered(){return S.list.filter(function(m){return !isNoteM(m)&&seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
+function filtered(){if(S.cat==='__today'){var tl=todayList();if(tl.length)return tl;S.cat=''}return S.list.filter(function(m){return !isNoteM(m)&&seasonOf(m)===S.season&&(!S.cat||catOf(m)===S.cat)})}
 function mineHtml(m){
  var c=S.cards[m.id];
  if(c===undefined)return '<div class="muted sm" style="margin-top:10px">불러오는 중…</div>';
@@ -194,8 +195,9 @@ function seasonBar(list){
 function catBar(list){
  var cats=[],cnt={};list.filter(function(m){return seasonOf(m)===S.season}).forEach(function(m){var k=catOf(m);if(!cnt[k]){cnt[k]=0;cats.push(k)}cnt[k]++});
  var n=0;cats.forEach(function(k){n+=cnt[k]});
- if(cats.length<2)return '';
- return '<div class="seg" style="margin-bottom:12px"><button class="'+(!S.cat?'on':'')+'" data-a="cat" data-v="">전체 '+n+'</button>'+cats.map(function(k){return '<button class="'+(S.cat===k?'on':'')+'" data-a="cat" data-v="'+esc(k)+'">'+esc(k)+' '+cnt[k]+'</button>'}).join('')+'</div>'}
+ var nt=todayList().length;
+ if(cats.length<2&&!nt)return '';
+ return '<div class="seg" style="margin-bottom:12px">'+(nt?'<button class="'+(S.cat==='__today'?'on':'')+'" data-a="cat" data-v="__today" style="font-weight:800">📌 오늘의 미션 '+nt+'</button>':'')+'<button class="'+(!S.cat?'on':'')+'" data-a="cat" data-v="">전체 '+n+'</button>'+cats.map(function(k){return '<button class="'+(S.cat===k?'on':'')+'" data-a="cat" data-v="'+esc(k)+'">'+esc(k)+' '+cnt[k]+'</button>'}).join('')+'</div>'}
 function vList(){
  var ta=isTa();
  var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
@@ -261,7 +263,7 @@ function vNotes(){
 /* ───────── 기록 한눈에 (성적 그래프 · 정오표 클리어 현황) ───────── */
 function cnts(ox){var o=0,t=0,x=0;String(ox||'').split('').forEach(function(c){if(c==='O')o++;else if(c==='T')t++;else if(c==='X')x++});return {o:o,t:t,x:x,n:o+t+x}}
 function hpct(h){return h.tot>0&&h.score!=null?Math.round(h.score*1000/h.tot)/10:null}
-function ovList(){return (S.hist||[]).filter(function(h){return seasonOf(h)===S.season&&(!S.cat||catOf(h)===S.cat)})}
+function ovList(){return (S.hist||[]).filter(function(h){return seasonOf(h)===S.season&&(!S.cat||S.cat==='__today'||catOf(h)===S.cat)})}
 async function loadHist(){
  var key=isStaff()?S.ovSid:'me';S.hist=null;
  if(!key){S.hist=[];return}
@@ -672,7 +674,7 @@ async function prepGo(){
  else if(!confirm('"'+m.name+'" ('+m.items.length+'문항)을\n'+who+' 에게 만들까요?'))return;
  var j=await ms('create',args);
  if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
- var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
+ var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat=(args.date===ymd()?'__today':'');S.season=seasonOf({date:args.date})}
  if(cls){var ck2=await ms('load',{exam_id:j.id});if(ck2&&ck2.ok&&!(ck2.roster||[]).length)alert('미션은 만들었지만 채점 명단이 비어 있어요.\n반을 여러 개 고르려면 서버에 23_오답노트채점_서버.sql 을 한 번 실행해야 해요.\n(실행 전에는 반을 하나만 고르거나, 전체로 만들어 주세요)')}
  $('#md').hidden=true;await openMission(j.id,'input')}
 async function newOk(){
@@ -683,7 +685,7 @@ async function newOk(){
  var args={name:nm,cat:cat,date:$('#ndt').value||ymd(),items:items};if(isAdmin())args.ac=$('#nac').value;
  var j=await ms('create',args);
  if(!j||!j.ok){alert((j&&j.error)||'만들지 못했어요');return}
- var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat='';S.season=seasonOf({date:args.date})}
+ var l=await ms('list');if(l&&l.ok){S.list=l.list;S.cards={};S.cat=(args.date===ymd()?'__today':'');S.season=seasonOf({date:args.date})}
  $('#md').hidden=true;await openMission(j.id,'input')}
 async function saveInfo(){
  var nm=$('#inm').value.trim(),dt=$('#idt').value,cat=$('#icat').value.trim();
@@ -799,7 +801,7 @@ document.addEventListener('click',async function(ev){
  if(a==='back'){S.ex=null;if(S.fromOv){S.fromOv=false;S.ov=true}render();return}
  if(a==='gsize'){GSZ=+b.getAttribute('data-v');GPG={};render();return}
  if(a==='gpage'){GPG[S.ex.id]=+b.getAttribute('data-v');render();return}
- if(a==='season'){S.season=b.getAttribute('data-v');S.cat=defCat();S.lim=30;render();return}
+ if(a==='season'){S.season=b.getAttribute('data-v');S.cat=defCat(1);S.lim=30;render();return}
  if(a==='ov'){openOv();return}
  if(a==='ovback'){S.ov=false;render();return}
  if(a==='ovopen'){S.fromOv=true;openMission(b.getAttribute('data-id'),'my',S.ovSid);return}

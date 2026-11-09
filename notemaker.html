@@ -582,8 +582,15 @@ $('#hQuick').onclick = async function () {
  btn.disabled = true;
  try { quickCollect(pick, await getText('notemaker/pdf_save.js')); } catch (e) { alert('빠른 정답 모음을 만들지 못했어요: ' + (e.message || e)); btn.disabled = false; }
 };
+function normAns(a) {                                      // 서버 정답의 &lt; 같은 HTML 글자를 되돌리고, \( \) 없는 수식은 감싸 줌
+ a = String(a == null ? '' : a);
+ if (/<span class="eq">/.test(a)) return a;
+ a = a.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+ if (/\\\(/.test(a) || !/\\[a-zA-Z]+|[\^_]\{|\{\\/.test(a)) return a;
+ return a.split(/([가-힣ㄱ-ㅎ][가-힣ㄱ-ㅎ\s,.]*)/).map(function (x, i) { return (i % 2 || !/\S/.test(x)) ? x : (/^\s*/.exec(x)[0] + '\\(' + x.trim() + '\\)' + /\s*$/.exec(x)[0]); }).join('');
+}
 function ansHtml(a) {                                      // 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로
- a = String(a);
+ a = normAns(a);
  if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = '<span class="eq">' + esc(a) + '</span>'; else a = esc(a);
  return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
 }
