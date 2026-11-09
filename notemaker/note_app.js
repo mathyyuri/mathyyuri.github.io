@@ -1,3 +1,4 @@
+var WHY5 = '<div class="why5"><b>틀린 이유 (1개)</b><span>□ ① 조건 읽기</span><span>□ ② 개념 부족</span><span>□ ③ 계산 실수</span><span>□ ④ 시간 부족</span><span>□ ⑤ 못 풀었음 <small>(□ 해설 보면 이해 □ 봐도 모름)</small></span></div>';
 function solOf(so) {                                      /* 정답 칸에 보일 풀이: 그림은 빼고 문단째 420자 안팎까지 */
  var s = String(so || '').replace(/<img[^>]*>/g, ' '), ps = s.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [], out = '', len = 0;
  if (!ps.length && s.replace(/<[^>]+>/g, '').trim()) ps = ['<p>' + s + '</p>'];
@@ -193,7 +194,7 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
    var cols = fg ? 3 : L <= 7 ? 5 : L <= 14 ? 3 : L <= 30 ? 2 : 1;       // 보기가 그림(그래프 개형)이면 3칸
    h += '<div class="ch c' + cols + (fg ? ' cf' : '') + '">' + chs.map(function (c, i) { return '<span><b>' + CIRC[i] + '</b><span class="cv ed"></span></span>'; }).join('') + '</div>';
   } else if (!t) h += '<div class="ans">답 <u></u></div>';
-  h += '<div class="sol"><span>풀이</span><div class="ui rz" title="끌어서 풀이 칸 크기 조절 · 두 번 누르면 자동 크기"></div></div>' + TOOLS_P;
+  h += '<div class="sol"><span>풀이</span><div class="ui rz" title="끌어서 풀이 칸 크기 조절 · 두 번 누르면 자동 크기"></div></div>' + WHY5 + TOOLS_P;
   el.innerHTML = h;
   var q = el.querySelector('.q'); q.innerHTML = e.stem != null ? e.stem : p.st; prepare(q);
   qa(el, '.ch .cv').forEach(function (cv, i) { cv.innerHTML = chs[i]; prepare(cv); });

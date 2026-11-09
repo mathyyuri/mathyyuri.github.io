@@ -1,0 +1,727 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>공수내모 답안지 제출</title><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@400;700;900&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Song+Myung&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box}html,body{margin:0;background:#e3e6ec;font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#1b2233}
+.bar{position:sticky;top:0;z-index:30;background:#0B1A31;color:#fff;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.bar b{margin-right:6px}.bar button,.bar input,.bar select{border:0;border-radius:6px;padding:6px 11px;font-size:13px;font-weight:700;font-family:inherit}
+.bar button{background:#C79B63;color:#0B1A31;cursor:pointer}.bar button.g{background:#e7ebf3}.bar button.on{background:#fff;box-shadow:0 0 0 2px #C79B63 inset}.bar button:disabled{opacity:.4;cursor:default}
+.fmt{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #2a3d63;padding-top:7px;font-size:12px}
+.fmt button{padding:4px 9px;font-size:12px}.fmt input[type=number]{width:56px;padding:4px 5px;font-weight:500}.fmt input[type=color]{width:34px;height:26px;padding:0;border:0;background:none;cursor:pointer}.fmt select{padding:5px 6px;font-weight:500;max-width:150px}.fmt .sq{padding:4px 7px;border:1px solid #fff5}.fmt .lbl{color:#cfd7e8}
+.wrap{max-width:1180px;margin:0 auto;padding:12px 12px 50px}
+.panel{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
+.panel h3{margin:0 0 6px;font-size:15px;color:#13264A}.hint{font-size:12px;color:#5A6580;line-height:1.7;margin:0 0 8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12.5px}.row label{display:flex;gap:5px;align-items:center}
+.row input[type=number]{width:62px;padding:4px 6px;border:1px solid #c9ced9;border-radius:5px}.row input[type=text],.row select,.row textarea{padding:4px 6px;border:1px solid #c9ced9;border-radius:5px;font-family:inherit;font-size:12.5px}
+.row input[type=color]{width:36px;height:26px;border:0;padding:0;background:none}
+button.b{border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer;background:#13264A;color:#fff}button.b.o{background:#C79B63;color:#0B1A31}button.b.g{background:#e7ebf3;color:#13264A}
+.stage{display:flex;flex-direction:column;align-items:center;margin-top:6px;--s:1}
+.pw{width:calc(297mm*var(--s));height:calc(210mm*var(--s));position:relative;box-shadow:0 6px 24px rgba(0,0,0,.25);background:#fff}
+.pg{position:absolute;left:0;top:0;width:297mm;height:210mm;background:#fff;transform:scale(var(--s));transform-origin:0 0;overflow:hidden;color:var(--pc);font-family:"Noto Sans KR","Malgun Gothic",sans-serif}
+.cap .pg,.pg.cap{transform:none!important}.cap{box-shadow:none!important}
+.pg *{position:absolute;box-sizing:border-box}.pg i{font-style:normal}
+.pg .fid{background:#000}
+.pg .grp{left:0;top:0;width:297mm;height:210mm;pointer-events:none}.pg .grp *{pointer-events:auto}
+.pg .ed{outline:1px dashed rgba(58,123,213,.4);outline-offset:1px;cursor:text;white-space:nowrap}.pg .ed:focus{outline:2px solid #3a7bd5;background:rgba(58,123,213,.1)}.cap .ed{outline:none!important;background:none!important}
+.pg .ed.st{position:static}
+.pg .fr{border:.35mm solid var(--pc);border-radius:1mm}.pg .fr2{border:.35mm solid var(--pc)}
+.pg .dot{border:.3mm dashed var(--pc);border-radius:.6mm;opacity:.9}.pg .dot.main{border:.5mm solid var(--pc);opacity:1}
+.pg .tx{white-space:nowrap;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7pt;font-weight:700}
+.pg .tx.wr,.pg .tx.wr .ed{white-space:normal}
+.pg .tl{justify-content:flex-start;text-align:left}
+.pg .bb{border:.28mm solid var(--pc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6pt;font-weight:700;line-height:1}
+.pg .bb.fill{background:#111;color:#111;border-color:#111}
+.pg .bar1{background:var(--pc);opacity:.85}.pg .ln{background:var(--pc)}.pg .hd{background:var(--pc);color:#fff}.pg .big{font-weight:900}
+.pg .gh{display:none;border:.4mm dashed #1d6fe0;background:rgba(58,123,213,.1);cursor:move;z-index:20;color:#1d6fe0;font-size:6pt;font-weight:700;align-items:flex-start;justify-content:flex-start;padding:.6mm 1mm}
+.pg .gh.sel{background:rgba(58,123,213,.25)}.pg.moving .gh{display:flex}.cap .gh{display:none!important}
+.lg{position:relative;display:inline-block}.lg-def{display:flex;align-items:center;gap:calc(3mm*var(--lgs,1))}.lg-ic{display:block;height:calc(8mm*var(--lgs,1));width:auto}.lg-bar{display:block;height:calc(6.6mm*var(--lgs,1));border-left:1px solid #13264A;opacity:.8}
+.lg-tx{text-align:left}.lg-ko{font-size:calc(9.5pt*var(--lgs,1));font-weight:800;letter-spacing:-.4px;line-height:1.15;color:#13264A}.lg-en{font-family:"Cinzel",serif;font-size:calc(4.6pt*var(--lgs,1));letter-spacing:.3em;margin-top:.5mm;color:#8F6A3A}
+.lg-img{display:block;height:calc(9mm*var(--lgs,1));max-width:calc(60mm*var(--lgs,1));width:auto}.lg-img[hidden]{display:none}
+.pg .lgbox,.pg .lgbox *{position:static}.pg .lgbox{position:absolute}.pg .lgbox .lg{position:relative}.pg .lgbox .lgtb{position:absolute}
+
+.lgtb{position:absolute;left:0;top:-8mm;display:flex;gap:2px;opacity:0;z-index:20;white-space:nowrap;transition:opacity .12s}.lg:hover .lgtb,.lgtb:hover{opacity:1}
+.lgtb button{border:0;border-radius:4px;background:#3a7bd5;color:#fff;font:600 10px "Malgun Gothic",sans-serif;padding:3px 7px;cursor:pointer}.lgtb button.o{background:#667}
+.cap .lgtb{display:none!important}
+.lgtb input[type=color]{width:22px;height:18px;padding:0;border:0;background:none;cursor:pointer}
+html.lgc .lg-ko,html.lgc .lg-en{color:var(--lgcol)!important}html.lgc .lg-bar{border-left-color:var(--lgcol)!important}html.lgc .lgw .lg-ic{filter:none!important}
+
+.tabs button{background:#e7ebf3}
+#readPanel{display:none}
+.res{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;margin:10px 0;padding:10px;border:1px solid #dfe3ea;border-radius:8px}
+.res canvas{max-width:430px;width:100%;border:1px solid #ccd}
+.res table{border-collapse:collapse;font-size:11.5px}.res td,.res th{border:1px solid #d9dde6;padding:2px 5px;text-align:center}.res th{background:#13264A;color:#fff}
+.res td.ok{background:#e4f6ec}.res td.no{background:#fde8ec}.res td.un{background:#fff6dc}.res select{font-size:11px;padding:1px}
+.keyg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:4px 8px}.keyg label{display:flex;gap:4px;align-items:center;font-size:12px}.keyg input{width:38px;padding:2px 4px;border:1px solid #c9ced9;border-radius:4px}
+.warn{color:#c33;font-weight:700}.okc{color:#1a7a50;font-weight:700}
+body.scan .bar,body.scan #makePanel,body.scan #stageWrap,body.scan #fmt{display:none!important}
+body.scan .wrap{padding:10px;max-width:640px;margin:0 auto}
+#scanTop h2{margin:6px 0 2px;font-size:20px;color:#13264A}#scanTop p{margin:4px 0;font-size:13px;color:#4a5570;line-height:1.55}
+#scanTop .cap{display:block;width:100%;padding:20px 10px;font-size:20px;font-weight:900;border-radius:14px;background:#13264A;color:#fff;text-align:center;cursor:pointer;margin:10px 0 6px;border:0;font-family:inherit}
+#scanTop .cap.alt{background:#fff;color:#13264A;border:2px solid #13264A;padding:12px;font-size:15px;margin:4px 0}
+#scanTop .keybox{border:1px solid #dfe3ea;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fff;font-size:13px}
+.card{border-radius:14px;padding:14px;margin:12px 0;border:2px solid #2a9d6f;background:#f0faf5}.card.warn{border-color:#e0a000;background:#fff9e8}
+.card .big{font-size:46px;font-weight:900;color:#13264A;line-height:1.05}.card .big small{font-size:16px;font-weight:700;color:#556}.card .idl{font-size:14px;font-weight:700;margin:4px 0 6px;color:#1b2233}
+.card .chips{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:8px 0}.card .chips i{font-style:normal;text-align:center;font-size:11px;font-weight:700;padding:4px 0;border-radius:4px;background:#eee;color:#667}
+.card .chips i.ok{background:#cfeedd;color:#15663f}.card .chips i.no{background:#fbd5dc;color:#a3223f}.card .chips i.un{background:#ffe9b0;color:#8a5b00}
+.card .wr{font-size:14px;margin:4px 0}.card .hint2{font-size:11px;color:#7a8499;margin-top:6px}
+@media(max-width:700px){.res{flex-direction:column}.res canvas{max-width:100%}}
+@page{size:297mm 210mm;margin:0}
+@media print{html,body{background:#fff}.bar,.panel,#readPanel{display:none!important}.stage{margin:0;--s:1!important}.pw{box-shadow:none}.pg{transform:none}.pg .ed{outline:none}.pg .gh,.lgtb{display:none!important}}
+
+body.stu .keybox,body.stu #readPanel>h3,body.stu #readPanel>.row,body.stu .res .sum{display:none!important}
+body.stu .res .tb th:nth-child(n+3),body.stu .res .tb td:nth-child(n+3){display:none}
+body.stu #readPanel #scanTop>h2,body.stu #readPanel #scanTop>p{display:none}
+#stuPanel{margin:10px 0}#stuPanel h2{margin:0 0 6px}
+#stuPanel input,#stuPanel select{font:inherit;padding:9px 10px;border:1px solid #c9d0de;border-radius:8px;margin:3px 4px 3px 0;max-width:100%}
+#stuPanel button{font:inherit;font-weight:700;padding:9px 14px;border:0;border-radius:8px;background:#10294D;color:#fff;cursor:pointer;margin:3px 4px 3px 0}
+#stuPanel button.g{background:#e8edf5;color:#10294D}#stuPanel button.on{background:#B8334F}
+.stuMsg{margin-top:6px;font-weight:700}.stuMsg.err{color:#c33}.stuMsg.ok{color:#1a7a50}
+.stuBox{border:1px solid #d8dde8;border-radius:10px;padding:10px;background:#fff;margin:8px 0}
+.stuBox h3{margin:0 0 6px;font-size:15px}
+.stuChips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.stuChips i{font-style:normal;width:30px;height:30px;line-height:30px;text-align:center;border-radius:6px;background:#eef1f7;font-weight:700;font-size:13px}
+.stuChips i.o{background:#d9f2e6;color:#1a7a50}.stuChips i.x{background:#fde1e1;color:#c33}.stuChips i.b{background:#fff3cd;color:#8a6a00}
+.stuTbl{border-collapse:collapse;width:100%;font-size:13px}.stuTbl th,.stuTbl td{border:1px solid #d8dde8;padding:5px 6px;text-align:center}.stuTbl th{background:#10294D;color:#fff}
+.stuTbl td.l{text-align:left;white-space:nowrap}.stuTbl th{white-space:nowrap}.stuTbl input{width:46px;padding:4px;text-align:center}.stuTbl .no{color:#999}
+#stuModal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99;display:none;overflow:auto}#stuModal img{width:100%;display:block}#stuModal.zoom img{width:220%;max-width:none}
+#stuFix{position:fixed;inset:0;background:rgba(10,20,40,.88);z-index:98;display:none;overflow:auto}#stuFix .in{max-width:760px;margin:12px auto;background:#fff;border-radius:12px;padding:12px}
+#stuFix img{width:100%;display:block;border:1px solid #ccd;border-radius:6px}#stuFix.zoom img{width:210%;max-width:none}#stuFix .box{overflow:auto;max-height:46vh;border:1px solid #d8dde8;border-radius:6px;margin-bottom:8px}
+.fixG{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}.fixG label{display:flex;align-items:center;gap:4px;border:1px solid #d8dde8;border-radius:6px;padding:3px 5px;font-size:13px}.fixG label.ch{background:#fff3cd;border-color:#e0b100}.fixG select{font:inherit;padding:3px;flex:1}
+.bdg{display:inline-block;font-size:11px;padding:1px 6px;border-radius:9px;margin-left:3px;font-weight:700}.bdg.w{background:#fde1e1;color:#c33}.bdg.f{background:#d9e8ff;color:#1c4fa0}
+#stuModal .x{position:fixed;right:10px;top:10px;background:#fff;color:#000;border-radius:20px;padding:8px 14px;font-weight:700}
+</style><meta name="robots" content="noindex, nofollow"><script>window.__stu=1</script></head><body><div class="bar"><b>📝 OMR 답안지 · 자동채점</b><span class="tabs"><button type="button" id="t1" class="on" onclick="tab(1)">① 답안지 만들기·인쇄</button> <button type="button" id="t2" onclick="tab(2)">② 사진으로 채점</button></span><input id="rng" type="text" placeholder="쪽 지정(1쪽뿐이라 비워 두세요)" style="width:150px;font-weight:400"><button type="button" id="pdfBtn">PDF 저장 (A4 가로·여백없음)</button><button type="button" id="pngBtn" class="g">이미지(PNG)</button><button type="button" id="mvBtn" class="g" onclick="toggleMove()">박스 위치 조절</button><button type="button" id="omrSave" class="g">💾 저장파일 받기</button><button type="button" id="omrLoad" class="g">📂 저장파일 열기</button><button type="button" id="undoBtn" class="g">↶ 되돌리기</button><button type="button" id="redoBtn" class="g">↷ 다시</button><div class="fmt" id="fmt"><b>글자 서식</b><span class="lbl">고칠 글자를 드래그로 선택 → 누르세요 (선택 없이 칸만 눌러도 칸 전체에 적용)</span><span class="lbl">색</span><input type="color" id="fColor" value="#B8334F"><button class="sq" data-c="#FFFFFF" style="background:#fff;color:#000">흰</button><button class="sq" data-c="#000000" style="background:#000;color:#fff">검정</button><button class="sq" data-c="#D6336C" style="background:#D6336C;color:#fff">빨강</button><span class="lbl">크기</span><button type="button" id="fMinus">A−</button><input type="number" id="fSize" min="3" max="80" step="0.5" value="7"><button type="button" id="fPlus">A＋</button><span class="lbl">글꼴</span><select id="fFont"></select><button type="button" id="fBold"><b>B</b></button><button type="button" id="fClr" class="g">서식 지우기</button></div></div><div class="wrap"><div class="panel" id="makePanel"><h3>답안지 설정 — 시험마다 바꿔서 인쇄하세요</h3><p class="hint">답안지 위의 <b>점선 글씨(제목·교시·영역·안내문 등)를 눌러서 직접 고치세요</b>(위쪽 "글자 서식"으로 색·크기·글꼴도 바꿀 수 있어요). 아래에서 문항 수·학교/반 목록·색을 바꿉니다. <b>박스 위치 조절</b>: 위쪽 버튼을 누르면 박스마다 파란 손잡이가 생겨요 — 끌어서 옮기거나, 눌러 두고 화살표 키로 0.5mm씩 옮기세요. 채점기도 같은 위치를 쓰니, <b>인쇄한 뒤에는 위치·문항 수를 바꾸지 마세요</b>. 인쇄할 때는 반드시 <b>"실제 크기(100%)"</b>로 인쇄해야 채점 사진이 정확히 읽혀요. 학원 로고는 답안지 위쪽(제목 아래)에 마우스를 올리면 바꾸기·크기 버튼이 나와요.</p><div class="row"><label>객관식 <input type="number" id="n1" min="0" max="45"> 문항</label><label>단답형(000~999) <input type="number" id="n2" min="0" max="19"> 문항</label><label>한 칸 줄 수 <input type="number" id="rows" min="3" max="10"></label><label>수험번호 아래칸(생일) 자리 수 <input type="number" id="nd" min="0" max="4"></label><label>이름 점선 칸 수 <input type="number" id="nameN" min="0" max="8"></label><label>인쇄 색 <input type="color" id="pcolor"></label><button class="b g" type="button" onclick="resetOff()">박스 위치 처음대로</button><button class="b g" type="button" id="resetCfg">전체 처음 모양으로</button></div><div class="row"><label>학교 선택 칸 (쉼표로 구분 · 수능형 최대 10 / 내신형 최대 18, 2열) <input type="text" id="schools" style="width:420px"></label></div><div class="row"><label>반 선택 칸 (쉼표로 구분, 최대 10) <input type="text" id="classes" style="width:420px"></label></div></div><div class="panel" id="stuPanel"><h2>📮 공수내모 답안지 제출</h2>
+<div id="stuLogin" hidden>
+<p class="hint">이름과 <b>학부모님 전화번호 뒤 4자리</b>로 들어와요. (선생님은 아래 ‘선생님’)</p>
+<div><button class="on" data-r="student">학생</button><button class="g" data-r="staff">선생님</button></div>
+<div id="stuFormS"><input id="stuName" placeholder="이름" autocomplete="off"><input id="stuPin" inputmode="numeric" maxlength="4" placeholder="전화번호 뒤 4자리" autocomplete="off"></div>
+<div id="stuFormT" hidden><input id="stuPw" type="password" placeholder="선생님 비밀번호" autocomplete="off"></div>
+<button id="stuGo">들어가기</button><div id="stuMsg" class="stuMsg"></div></div>
+<div id="stuMain" hidden><div id="stuHi"></div>
+<label>시험 고르기 <select id="stuExam"></select></label><div id="stuExamInfo" class="hint"></div>
+<div id="stuStaff" hidden></div></div></div>
+<div id="stuModal"><span class="x">닫기 ✕</span><img alt=""></div>
+<div id="stuFix"><div class="in"></div></div><div class="panel" id="readPanel"><div id="scanTop"><h2>📷 OMR 촬영 채점</h2><p>답안지를 <b>밝은 곳에서 평평하게</b> 놓고, <b>네 모서리의 검은 네모가 모두 보이게</b>(왼쪽 위는 네모 2개) 화면을 크게 채워 찍으세요. 찍으면 바로 점수가 나와요.</p><div class="keybox"><b>답안지 종류</b> <select id="shType"><option value="su">수능형 (가로 1장)</option><option value="sn">내신형 (세로 앞·뒤)</option></select> <span id="shSn" style="display:none">객관식 수 <input type="number" id="sn1" min="1" max="30" style="width:56px"></span><br><b>정답·배점</b> <span id="keyStat"></span> <button class="b o" type="button" id="cKey" style="margin-top:6px;width:100%">☁ 서버에서 정답·배점 불러오기</button><div id="cKeyMsg" class="hint2"></div><details style="margin-top:6px"><summary>정답 직접 넣기 / 확인</summary><p>PC 채점기의 "폰용 링크 복사"로 보내면 자동으로 들어가요. 직접 넣으려면 줄마다 <code>번호,정답,배점</code> 으로 붙여넣으세요.</p><textarea id="keyTxt" rows="4" style="width:100%" placeholder="1,3,2&#10;2,5,2&#10;…"></textarea><button class="b o" type="button" onclick="pasteKey()">붙여넣은 정답 적용</button><div class="keyg" id="keyg"></div></details></div><div class="keybox"><b>☁ 서버 저장 (Supabase)</b> <span id="cloudStat"></span><details style="margin-top:6px"><summary>설정 · 비밀번호</summary><p>성적표 비밀번호를 넣으면, 찍을 때마다 학생 답·점수가 서버에 저장돼요(다른 학생 기록은 지우지 않아요). 비밀번호는 이 폰에만 있고 페이지 파일에는 들어 있지 않아요.</p><label style="display:block;margin:4px 0">비밀번호 <input type="password" id="cPw" autocomplete="off" style="width:60%"></label><label style="display:block;margin:4px 0">시험 구분 이름 <input id="cExam" value="gsm-tw1" style="width:50%"></label><label style="display:block;margin:4px 0"><input type="checkbox" id="cRem"> 이 폰에 비밀번호 기억</label><label style="display:block;margin:4px 0"><input type="checkbox" id="cAuto" checked> 찍을 때마다 자동 저장</label><button class="b o" type="button" id="cNow">지금 읽은 학생 모두 저장</button></details></div><label class="cap" for="fileIn">📷 답안지 사진 찍기</label><input type="file" id="fileIn" accept="image/*" capture="environment" hidden><label class="cap alt" for="fileAlb">🖼 앨범에서 고르기 (여러 장 가능)</label><input type="file" id="fileAlb" accept="image/*" multiple hidden><div id="scanLast"></div></div><h3 style="margin-top:14px">읽은 학생 목록</h3><div class="row"><button class="b o" type="button" onclick="shareCsv()">결과 CSV 공유·저장</button> <button class="b g" type="button" id="clearRes">결과 지우기</button></div><div class="panel" id="gsmRosterBox"><h3>재원생 명단 · AI 이름 읽기 <small id="gsmRosterN" style="font-weight:400"></small></h3>
+<p class="hint">① 한 줄에 한 명: <b>이름 학교</b> (예: <code>김하준 태원고</code>). 이 명단과 답안지의 학교 표시로 이름 후보를 좁혀 버튼으로 보여줘요. ② (선택) Anthropic API 키를 넣으면 이름 칸 손글씨를 <b>AI가 읽어 후보 중에서 골라줘요</b> — 키는 이 컴퓨터에만 저장돼요. 읽은 결과는 꼭 눈으로 확인하세요.</p>
+<textarea id="gsmRoster" rows="5" style="width:100%;font:inherit;padding:6px;box-sizing:border-box" placeholder="김하준 태원고&#10;이서연 한솔고"></textarea>
+<div class="row" style="margin-top:6px"><label>API 키 <input id="gsmAiKey" type="password" style="width:300px" placeholder="sk-ant-..." autocomplete="off"></label> <label><input type="checkbox" id="gsmAiAuto"> 사진 읽을 때 이름도 자동으로 읽기</label></div></div>
+<div id="resBox"></div></div><div id="stageWrap"><div class="stage"><div class="pw"><div class="pg" id="pg"></div></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script>window.PDF_W=297;window.PDF_H=210;window.PDFBASE="OMR_답안지";</script><script>
+window.Logo=(function(){
+ var P0=window.LOGO_PREFIX||'bro_logo',K=P0,KS=P0+'_s',KP=P0+'_prev',KC=P0+'_c',cb=null,cache={},alpha={};
+ function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
+ function s(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);return true}catch(e){alert('로고를 저장할 공간이 부족해요. 더 작은 이미지를 써 주세요.');return false}}
+ function tint(src,col,fn){var key=col+'|'+src.length+src.slice(-30);if(cache[key]){fn(cache[key]);return}var im=new Image();im.onload=function(){var c=document.createElement('canvas');c.width=im.width;c.height=im.height;var x=c.getContext('2d');x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,c.width,c.height);cache[key]=c.toDataURL('image/png');fn(cache[key])};im.onerror=function(){fn(src)};im.src=src}
+ function hasAlpha(src,fn){var k=src.length+src.slice(-30);if(alpha[k]!=null){fn(alpha[k]);return}var im=new Image();im.onload=function(){var c=document.createElement('canvas'),w=Math.min(im.width,120),h=Math.max(1,Math.round(im.height*w/im.width));c.width=w;c.height=h;var x=c.getContext('2d');x.drawImage(im,0,0,w,h);var d=x.getImageData(0,0,w,h).data,a=false;for(var i=3;i<d.length;i+=4)if(d[i]<250){a=true;break}alpha[k]=a;fn(a)};im.onerror=function(){fn(false)};im.src=src}
+ function apply(){var src=g(K),sc=parseFloat(g(KS))||1,col=g(KC),h=document.documentElement;h.style.setProperty('--lgs',sc);
+  if(col){h.classList.add('lgc');h.style.setProperty('--lgcol',col)}else{h.classList.remove('lgc');h.style.removeProperty('--lgcol')}
+  document.querySelectorAll('.lg').forEach(function(b){var img=b.querySelector('.lg-img'),def=b.querySelector('.lg-def'),ic=b.querySelector('.lg-ic'),ci=b.querySelector('input[data-lgc]');if(ci&&col)ci.value=col;if(!img||!def)return;
+   if(ic){if(!ic.dataset.o)ic.dataset.o=ic.getAttribute('src');if(col)tint(ic.dataset.o,col,function(u){ic.src=u});else ic.src=ic.dataset.o}
+   if(src){img.hidden=false;def.style.display='none';if(col)hasAlpha(src,function(a){if(a)tint(src,col,function(u){img.src=u});else img.src=src});else img.src=src}else{img.hidden=true;img.removeAttribute('src');def.style.display=''}})}
+ function done(){apply();if(cb)cb()}
+ function init(onChange){cb=onChange;
+  document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-lg]');if(!t)return;var a=t.dataset.lg,box=t.closest('.lg');
+   if(a==='pick'){var f=box.querySelector('input[type=file]');if(f){f.value='';f.click()}}
+   else if(a==='plus'||a==='minus'){var sc=parseFloat(g(KS))||1;sc=Math.max(.4,Math.min(3.5,+(sc+(a==='plus'?.15:-.15)).toFixed(2)));s(KS,sc===1?null:String(sc));done()}
+   else if(a==='def'){var cur=g(K);if(cur)s(KP,cur);s(K,null);s(KS,null);s(KC,null);done()}
+   else if(a==='clr'){s(KC,null);done()}
+   else if(a==='prev'){var p=g(KP);if(p==null){alert('되돌릴 이전 로고가 없어요.');return}var c=g(K)||'';if(p==='')s(K,null);else s(K,p);s(KP,c);done()}});
+  document.addEventListener('change',function(e){var f=e.target;
+   if(f&&f.dataset&&f.dataset.lgc!==undefined){s(KC,f.value);done();return}
+   if(!(f&&f.type==='file'&&f.closest&&f.closest('.lg')))return;var file=f.files&&f.files[0];if(!file)return;var rd=new FileReader();
+   rd.onload=function(){var im=new Image();im.onload=function(){var png=file.type==='image/png',k=Math.min(1,900/Math.max(im.width,im.height)),w=Math.round(im.width*k),h=Math.round(im.height*k),c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');
+     if(!png){x.fillStyle='#fff';x.fillRect(0,0,w,h)}x.drawImage(im,0,0,w,h);var src=png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.9);
+     s(KP,g(K)||'');if(s(K,src))done()};im.src=rd.result};rd.readAsDataURL(file)})}
+ function snap(){return[g(K),g(KS),g(KP),g(KC)]}
+ function restore(a){s(K,a[0]);s(KS,a[1]);s(KP,a[2]);s(KC,a[3]==null?null:a[3]);apply()}
+ return{init:init,apply:apply,snap:snap,restore:restore}
+})();
+
+window.Hist=(function(){
+ var H=[],I=-1,T=0,lock=false,cfg={};
+ function upd(){var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.disabled=I<=0;if(r)r.disabled=I>=H.length-1}
+ function push(){if(lock)return;var s=cfg.snap();if(H[I]===s)return;H=H.slice(0,I+1);H.push(s);if(H.length>15)H.shift();I=H.length-1;upd()}
+ function touch(){if(lock)return;clearTimeout(T);T=setTimeout(push,600)}
+ function go(d){clearTimeout(T);push();var j=I+d;if(j<0||j>=H.length)return;I=j;lock=true;try{cfg.restore(H[I])}finally{lock=false}upd()}
+ function init(c){cfg=c;push();var u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.addEventListener('click',function(){go(-1)});if(r)r.addEventListener('click',function(){go(1)});upd()}
+ return{init:init,touch:touch}
+})();
+
+window.Backup=(function(){
+ function save(name,obj){var d=new Date(),ds=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj)],{type:'application/json'}));a.download=name+'_저장파일_'+ds+'.json';document.body.appendChild(a);a.click();a.remove()}
+ function load(cb){var f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.onchange=function(){var r=new FileReader();r.onload=function(){var o=null;try{o=JSON.parse(r.result)}catch(e){}if(!o){alert('저장파일을 읽을 수 없어요.');return}cb(o)};if(f.files[0])r.readAsText(f.files[0])};f.click()}
+ return{save:save,load:load}
+})();
+</script><script>
+(function(){
+var SCAN=true;
+var KEY=SCAN?'gsm_omr_scan_v1':'gsm_omr_v2',ST={};try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+/* 폰 촬영 채점 페이지: PC 채점기에서 만든 링크(#k=...)로 정답·답안지 설정을 받는다 */
+if(SCAN&&location.hash.indexOf('#k=')===0){try{var PL=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(3)))));ST={cfg:Object.assign({},ST.cfg||{},PL.c||{}),key:PL.k||ST.key};localStorage.setItem(KEY,JSON.stringify(ST));history.replaceState(null,'',location.pathname);window.__gotKey=1}catch(e){}}
+var $=function(s){return document.querySelector(s)};
+var DEF={title:'대학수학능력시험 모의평가 답안지',per:'2',subj:'수학영역',school:'학교',cls:'반',name:'성 명',hand:'필 적<br>확인란',
+ sheet:'sn',sn1:25,ne:4,nef:1,snv:1,n1:21,n2:9,rows:9,nd:4,nameN:5,color:'#B8334F',schools:'보라고,신갈고,서천고,성지고,보라중,나곡중,상갈중,외부생',schoolsN:'낙생고,늘푸른고,돌마고,보평고,분당고,분당대진고,분당영덕여고,불곡고,서현고,송림고,수내고,야탑고,운중고,이매고,태원고,판교고,한솔고',classes:'S+,A+,S,A,B,외부생',off:{},
+ note:'※ 문제지 표지에 안내된 필적확인문구를 아래 「필적확인란」에 정자로 반드시 기재하여야 합니다.',
+ inst:'※ 답안지 작성(표기)은 반드시 검은색 컴퓨터용 사인펜만을 사용하고, 연필 또는 샤프 등의 필기구를 절대 사용하지 마십시오.',
+ sa:'단답형 답란<br>표 기 방 법',sa1:'십진법에 의하되, 반드시 자리에 맞추어 표기',sa2:'정답이 한 자리인 경우 일의 자리에만 표기하거나, 십의 자리에 0을 표기하고 일의 자리에 표기',
+ mon:'감독관<br>확인',mon2:'서 명<br>또는 날인',mon3:'반, 번호 등의 표기가 정확한지 반드시 확인 후 서명 또는 날인',foot:'MATHY S-DAY SYSTEM',exam:'',
+ idl:'수 험 번 호',idl1:'학교',idl2:'반',idl3:'생일 (월·일)',idm:'월',idd:'일',nmt:'성 명',nmn:'세 글자 이름은 ①②③ 칸에 왼쪽부터 한 글자씩 크고 또렷하게 써 주세요 (④⑤ 칸은 이름이 네 글자 이상일 때만)'};
+var C=Object.assign({},DEF,ST.cfg||{});C.off=C.off||{};
+if(!C.v3){if(C.nd===2)C.nd=4;if(C.idl3==='번호')C.idl3=DEF.idl3;if(/^한 칸에 한 글자씩/.test(C.nmn||''))C.nmn=DEF.nmn;C.v3=1}
+if(C.foot==='연습용 답안지')C.foot=DEF.foot;
+var KEYV=ST.key||{};KEYV.a=KEYV.a||{};KEYV.p=KEYV.p||{};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}if(window.Hist)Hist.touch()}
+function list(s,m){return String(s||'').split(/[,\n]+/).map(function(x){return x.trim()}).filter(Boolean).slice(0,m||10)}
+/* ================= 칸 위치 계산 (단위: mm) ================= */
+var FID=[{x:9,y:9},{x:9,y:20},{x:288,y:9},{x:288,y:201},{x:9,y:201}];
+function layout(c){
+ var off=c.off||{},O=function(g){return off[g]||[0,0]};
+ var L={mc:[],sa:[],fr:[],grp:{}},R=Math.max(3,c.rows|0||9),n1=c.n1|0,n2=c.n2|0;
+ var rp=9.2,hdr=8,bw=41,gap=3,bx0=96,nb=n1>0?Math.ceil(n1/R):0;
+ for(var b=0;b<nb;b++){var o=O('mc'+b),x0=bx0+b*(bw+gap)+o[0],y0=14+o[1],cnt=Math.min(R,n1-b*R),fh=hdr+cnt*rp+2;L.fr.push({k:'mc',x:x0,y:y0,w:bw,h:fh,g:'mc'+b});L.grp['mc'+b]=[x0,y0,bw,fh];
+  for(var r=0;r<cnt;r++){var q=b*R+r+1,yc=y0+hdr+rp*(r+.5),xs=[];for(var k=0;k<5;k++)xs.push(x0+11.8+k*6.1);L.mc.push({q:q,y:yc,xs:xs,r:2.3,nx:x0+4,x0:x0,bw:bw,rp:rp,last:r===cnt-1})}
+  if(b===nb-1&&cnt<R){var on=O('notice'),bx=bx0+b*(bw+gap),ny=14+hdr+cnt*rp+5;if(14+hdr+R*rp-ny>=24){var nh=Math.min(40,14+hdr+R*rp-ny);L.notice={x:bx+on[0],y:ny+on[1],w:bw,h:nh};L.grp.notice=[bx+on[0],ny+on[1],bw,nh]}}}
+ var xs0=bx0+nb*(bw+gap),pitch=18.2,top=Math.max(0,Math.min(n2,Math.floor((283-xs0+.8)/pitch))),bot=Math.min(n2-top,Math.floor((283-96)/pitch));
+ var st=O('sat'),sb=O('sab'),sx=function(x,y,q){L.fr.push({k:'sa',x:x,y:y,w:17.4,h:76,q:q});var d=[];for(var i=0;i<3;i++){var ys=[];for(var j=0;j<10;j++)ys.push(y+13+6*(j+.5));d.push({x:x+3.3+i*5.4,ys:ys})}L.sa.push({q:q,cols:d,r:2.0})};
+ for(var i=0;i<top;i++)sx(xs0+i*pitch+st[0],14+st[1],n1+i+1);
+ if(top>0)L.grp.sat=[xs0+st[0],14+st[1],top*pitch-.8,76];
+ var bxs=283-bot*pitch+.8;
+ for(var j=0;j<bot;j++)sx(bxs+j*pitch+sb[0],118+sb[1],n1+top+j+1);
+ if(bot>0)L.grp.sab=[bxs+sb[0],118+sb[1],bot*pitch-.8,76];
+ var nx1=bot>0?bxs-3:283,no=O('nm');if(nx1-96>30){L.nm={x:96+no[0],y:118+no[1],w:nx1-96,h:76};L.grp.nm=[96+no[0],118+no[1],nx1-96,76]}
+ var io=O('id'),B={x:14+io[0],y:93+io[1],w:78,h:82};L.idBox=B;L.grp.id=[B.x,B.y,B.w,B.h];
+ var sc=list(c.schools),cl=list(c.classes),nd=Math.max(0,c.nd|0),pS=Math.min(6.6,58/Math.max(1,sc.length)),pC=Math.min(6.6,58/Math.max(1,cl.length));
+ L.sch={x:B.x,w:26,opts:sc.map(function(n,i){return{name:n,x:B.x+4.5,y:B.y+13+pS*(i+.5)}}),r:1.9};
+ L.cls={x:B.x+26,w:24,opts:cl.map(function(n,i){return{name:n,x:B.x+26+5,y:B.y+13+pC*(i+.5)}}),r:1.9};
+ var nw=28,ncw=nd?Math.min(11,nw/nd):0;L.num={x:B.x+50,w:nd*ncw,cw:ncw,cols:[]};
+ for(var k=0;k<nd;k++){var ys=[];for(var m=0;m<10;m++)ys.push(B.y+19+5.4*(m+.5));L.num.cols.push({x:B.x+50+ncw*(k+.5),ys:ys,r:1.8})}
+ return L}
+window.OMR_layout=layout;
+/* 내신형 OMR 답안지(A4 세로 · 앞면+뒷면) 칸 위치 계산 — 답안지 만들기(인쇄)와 사진 채점(읽기)이 같은 계산을 쓴다. 단위 mm.
+   앞면: 위쪽 성명·수험번호(학교·반·생일)·서술형 점수란 → 객관식(최대 30) → 서술형 앞쪽 몇 문항 / 뒷면: 나머지 서술형 + 채점칸. 사진 채점은 앞면만 읽는다. */
+var FIDN = [{x: 9, y: 9}, {x: 9, y: 20}, {x: 201, y: 9}, {x: 201, y: 288}, {x: 9, y: 288}];
+function layoutN(c) {
+  var lst = function (s, m) { return String(s || '').split(/[,\n]+/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, m || 18); };
+  var n1 = Math.max(1, Math.min(30, (c.sn1 | 0) || 30)), ne = Math.max(0, Math.min(8, c.ne == null ? 4 : (c.ne | 0)));
+  var nef = Math.max(0, Math.min(ne, c.nef == null ? 1 : (c.nef | 0)));
+  var L = {sheet: 'sn', mc: [], sa: [], fr: [], fid: FIDN, pts: [[9, 14.5], [201, 9], [201, 288], [9, 288]], area: [20, 30, 190, 280], ess: [], n1: n1, ne: ne, nef: nef};
+  /* 객관식: 10문항씩 3칸 */
+  var bw = 58, gap = 4, x00 = 14, y0 = 116, hdr = 8, rp = 9, R = 10, nb = Math.ceil(n1 / R);
+  for (var b = 0; b < nb; b++) {
+    var x0 = x00 + b * (bw + gap), cnt = Math.min(R, n1 - b * R), fh = hdr + cnt * rp + 2;
+    L.fr.push({k: 'mc', x: x0, y: y0, w: bw, h: fh});
+    for (var r = 0; r < cnt; r++) {
+      var q = b * R + r + 1, yc = y0 + hdr + rp * (r + .5), xs = [];
+      for (var k = 0; k < 5; k++) xs.push(x0 + 16.4 + k * 8.8);
+      L.mc.push({q: q, y: yc, xs: xs, r: 2.4, nx: x0 + 6, x0: x0, bw: bw, rp: rp, last: r === cnt - 1});
+    }
+  }
+  /* 수험번호: 학교 · 반 · 생일(월·일 4자리) */
+  var idY = 46, sc = lst(c.schoolsN != null ? c.schoolsN : c.schools, 18);
+  L.idBox = {x: 14, y: idY, w: 82, h: 66};
+  /* 학교: 9개 넘으면 2열(왼쪽 열부터 9개씩) · 반 칸은 없음 */
+  var rows = sc.length > 9 ? Math.ceil(sc.length / 2) : Math.max(1, sc.length), pS = Math.min(5.6, 48 / rows);
+  L.sch = {x: 14, w: 27, opts: sc.map(function (n, i) { var col = Math.floor(i / rows), r = i - col * rows; return {name: n, x: 14 + col * 27 + 3.6, y: idY + 15 + pS * (r + .5)}; }), r: 1.9};
+  L.cls = {x: 68, w: 0, opts: [], r: 1.9};
+  var ncw = 6.5;
+  L.num = {x: 68, w: ncw * 4, cw: ncw, cols: []};
+  for (var kk = 0; kk < 4; kk++) {
+    var ys = [];
+    for (var m = 0; m < 10; m++) ys.push(idY + 15 + 5.0 * (m + .5));
+    L.num.cols.push({x: 68 + ncw * (kk + .5), ys: ys, r: 1.8});
+  }
+  /* 서술형 점수란: 십의 자리 · 일의 자리 · 소수 첫째 자리 (선생님이 채점 후 칠함) */
+  L.es = {x: 100, y: idY, w: 24, h: 66, cols: []};
+  for (var e = 0; e < 3; e++) {
+    var ye = [];
+    for (var mm = 0; mm < 10; mm++) ye.push(idY + 15 + 5.0 * (mm + .5));
+    L.es.cols.push({x: 100 + 4.4 + e * 6.6, ys: ye, r: 1.8});
+  }
+  L.nm = {x: 128, y: idY, w: 68, h: 32};
+  /* 시험 구분: 과목 · 구분 · 종류 · 회차(십·일의 자리) */
+  var X0 = 128, Y0 = idY + 34;
+  L.ex = {x: X0, y: Y0, w: 68, h: 32, r: 1.55, grps: [], tens: [], ones: []};
+  [['subj', '과목', ['공수1', '공수2']], ['term', '구분', ['중간', '기말']], ['kind', '종류', ['수업', '과제']]].forEach(function (g, gi) {
+    var yy = Y0 + 11 + gi * 7.6;
+    L.ex.grps.push({k: g[0], label: g[1], y: yy, opts: g[2].map(function (n, j) { return {name: n, x: X0 + 13 + j * 11, y: yy}; })});
+  });
+  for (var td = 0; td < 3; td++) L.ex.tens.push({d: td, x: X0 + 38.5 + td * 3.05, y: Y0 + 14});
+  for (var od = 0; od < 10; od++) L.ex.ones.push({d: od, x: X0 + 38.5 + od * 3.05, y: Y0 + 24.5});
+  /* 서술형 답란 상자 */
+  var fy0 = 226, fy1 = 283, by0 = 14, by1 = 262, i;
+  var nb2 = ne - nef;
+  for (i = 0; i < nef; i++) { var h1 = (fy1 - fy0) / nef; L.ess.push({side: 'f', k: i + 1, x: 14, y: fy0 + i * h1, w: 182, h: h1}); }
+  for (i = 0; i < nb2; i++) { var h2 = (by1 - by0) / nb2; L.ess.push({side: 'b', k: nef + i + 1, x: 14, y: by0 + i * h2, w: 182, h: h2}); }
+  return L;
+}
+
+function SN(){return C.sheet==='sn'}
+function Q1(){return SN()?(C.sn1||30):C.n1}
+function Q2(){return SN()?0:C.n2}
+/* ================= 답안지 그리기 ================= */
+function E(k,html,st,cls){return'<span class="ed '+(cls||'')+'" contenteditable="true" spellcheck="false" data-k="'+k+'" style="'+(st||'')+'">'+html+'</span>'}
+function el(cls,x,y,w,h,html,st){return'<i class="'+cls+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+(html||'')+'</i>'}
+function T(k,html,x,y,w,h,st,wrap){return'<i class="tx'+(wrap?' wr':'')+'" style="left:'+x+'mm;top:'+y+'mm;width:'+w+'mm;height:'+h+'mm;'+(st||'')+'">'+E(k,html,'','st')+'</i>'}
+function tintC(){var n=parseInt(C.color.slice(1),16);return'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+',.09)'}
+function bub(cx,cy,r,t,fill){return'<i class="bb'+(fill?' fill':'')+'" style="left:'+(cx-r)+'mm;top:'+(cy-r)+'mm;width:'+2*r+'mm;height:'+2*r+'mm">'+t+'</i>'}
+var GN={title:'제목',logo:'로고',per:'교시·영역',sn:'학교·성명',hand:'필적확인',mon:'감독관',inst:'안내문',foot:'하단 문구',notice:'단답형 안내',nm:'성명 큰 칸',id:'수험번호',sat:'단답형(위)',sab:'단답형(아래)'};
+var BASE={title:[14,20,78,10],logo:[14,10,50,9],per:[14,31,78,14],sn:[14,49,78,26],hand:[14,76,78,14],mon:[14,178,78,18],inst:[148,3,138,7],foot:[246,199,40,6]};
+function G(g,html){var o=C.off[g]||[0,0];return'<div class="grp" data-grp="'+g+'" style="left:'+o[0]+'mm;top:'+o[1]+'mm">'+html+'</div>'}
+var selG=null,moving=false;
+function sheet(){
+ var L=layout(C),h='',gh='';
+ FID.forEach(function(f){h+=el('fid',f.x-3,f.y-3,6,6)});
+ for(var i=0;i<12;i++)h+=el('bar1',32+i*9,3.6,1.8,4.2);
+ h+=G('title',E('title',C.title,'left:14mm;top:21mm;font-size:10.5pt;font-weight:800')+E('exam',C.exam||'','left:14mm;top:26.2mm;font-size:6.6pt;font-weight:500'));
+ h+=G('logo','<i class="lgbox" style="left:14mm;top:10mm;width:50mm;height:9mm"><div class="lg"><div class="lg-def"><span class="lg-bar"></span><div class="lg-tx"><div class="lg-ko">분당미래탐구</div><div class="lg-en">MATHY S-DAY</div></div></div><img class="lg-img" alt="학원 로고" hidden><div class="lgtb ctl"><button type="button" data-lg="pick">로고 바꾸기</button><button type="button" data-lg="minus" title="작게">−</button><button type="button" data-lg="plus" title="크게">＋</button><button type="button" class="o" data-lg="prev" title="방금 바꾸기 전 로고로">↶ 이전 로고</button><input type="color" data-lgc title="로고 색 바꾸기" value="#13264A"><button type="button" class="o" data-lg="clr" title="로고 색을 처음대로">색 처음대로</button><button type="button" class="o" data-lg="def" title="처음 로고와 크기·색으로">기본 로고로</button></div><input type="file" accept="image/*" hidden></div></i>');
+ h+=G('per','<i class="bb" style="left:14mm;top:31mm;width:13mm;height:13mm;border-width:.6mm"></i>'+T('per',C.per,14,31,13,13,'font-size:20pt;font-weight:900')+T('perl','교시',27.5,35,8,6,'font-size:7pt')+T('subj',C.subj,37,31,55,13,'font-size:21pt;font-weight:900;letter-spacing:.08em'));
+ var nn=Math.max(0,C.nameN|0),sn=el('fr',14,49,78,16)+el('ln',14+15,49,.35,16)+el('ln',14,57,78,.35)+T('school',C.school,14,49,15,8,'font-size:7pt')+T('name',C.name,14,57,15,8,'font-size:7pt');
+ if(nn){var cw=Math.min(11,(78-15-3)/nn);for(var u=0;u<nn;u++)sn+=el(u<3?'dot main':'dot',29+1.5+u*cw,58,cw-1,6,'',u<3?'background:'+tintC():'')}
+ sn+=T('note',C.note,14,66.4,78,8,'font-size:5.3pt;font-weight:500;line-height:1.35',true);
+ h+=G('sn',sn);
+ h+=G('hand',el('fr',14,76,78,14)+el('ln',14+15,76,.35,14)+T('hand',C.hand,14,76,15,14,'font-size:6.6pt;line-height:1.25',true));
+ var B=L.idBox,id=el('fr',B.x,B.y,B.w,B.h)+el('hd',B.x,B.y,B.w,7)+T('idl',C.idl,B.x,B.y,B.w,7,'color:#fff;font-size:8.5pt;letter-spacing:.2em');
+ id+=T('idl1',C.idl1,B.x,B.y+7.4,26,4.6,'font-size:5.6pt')+T('idl2',C.idl2,B.x+26,B.y+7.4,24,4.6,'font-size:5.6pt')+(L.num.w>0?T('idl3',C.idl3,B.x+50,B.y+7.4,L.num.w,4.6,'font-size:5.6pt'):'');
+ id+=el('ln',B.x+26,B.y+7,.3,B.h-8)+el('ln',B.x+50,B.y+7,.3,B.h-8);
+ if(L.num.cols.length===4){id+=T('idm',C.idm,B.x+50,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+T('idd',C.idd,B.x+50+L.num.cw*2,B.y+74.4,L.num.cw*2,5,'font-size:6.4pt')+el('ln',B.x+50+L.num.cw*2,B.y+19,.25,B.h-20)}
+ L.sch.opts.forEach(function(o){id+=bub(o.x,o.y,L.sch.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.sch.w-9)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
+ L.cls.opts.forEach(function(o){id+=bub(o.x,o.y,L.cls.r,'')+'<i class="tx tl" style="left:'+(o.x+3)+'mm;top:'+(o.y-2.4)+'mm;width:'+(L.cls.w-8)+'mm;height:4.8mm;font-size:6.6pt">'+o.name+'</i>'});
+ L.num.cols.forEach(function(c){id+=el('fr2',c.x-L.num.cw/2+.6,B.y+12.4,L.num.cw-1.2,6);for(var m=0;m<10;m++)id+=bub(c.x,c.ys[m],c.r,m)});
+ h+=id;
+ h+=G('mon',el('fr',14,178,78,18)+el('ln',14+14,178,.35,18)+el('ln',14+30,178,.35,18)+T('mon',C.mon,14,178,14,18,'font-size:6.6pt;font-weight:800;line-height:1.25',true)+T('mon2',C.mon2,44,178,14,18,'font-size:5.8pt;line-height:1.25',true)+T('mon3',C.mon3,60,178,31,18,'font-size:5.4pt;font-weight:600;line-height:1.4',true));
+ h+=G('inst',E('inst',C.inst,'left:148mm;top:5.2mm;font-size:5pt;font-weight:600;white-space:normal;width:136mm;line-height:1.3;text-align:right'));
+ L.fr.forEach(function(f){if(f.k==='mc'){h+=el('fr',f.x,f.y,f.w,f.h)+el('hd',f.x,f.y,f.w,8)+'<i class="tx" style="left:'+f.x+'mm;top:'+f.y+'mm;width:8mm;height:8mm;color:#fff;font-size:6pt">문번</i><i class="tx" style="left:'+(f.x+8)+'mm;top:'+f.y+'mm;width:'+(f.w-8)+'mm;height:8mm;color:#fff;font-size:8pt;letter-spacing:.5em">답 란</i>'}
+  else{h+=el('fr',f.x,f.y,f.w,f.h)+'<i class="tx big" style="left:'+f.x+'mm;top:'+(f.y+.8)+'mm;width:'+f.w+'mm;height:5mm;font-size:8pt">'+f.q+'번</i><i class="tx" style="left:'+f.x+'mm;top:'+(f.y+7)+'mm;width:'+f.w+'mm;height:4mm;font-size:5.4pt;letter-spacing:.3em">백 십 일</i>'+el('ln',f.x,f.y+12,f.w,.3);for(var s=1;s<3;s++)h+=el('ln',f.x+3.3+s*5.4-2.7,f.y+12,.25,f.h-12)}});
+ L.mc.forEach(function(r){var five=r.q%5===0;h+='<i class="tx" style="left:'+(r.nx-3.5)+'mm;top:'+(r.y-3)+'mm;width:7mm;height:6mm;font-size:'+(five?9.5:8.2)+'pt;font-weight:'+(five?900:500)+'">'+r.q+'</i>';r.xs.forEach(function(x,k){h+=bub(x,r.y,r.r,k+1)});
+  if(five&&!r.last&&r.q<C.n1)h+=el('ln',r.x0,r.y+r.rp/2-.15,r.bw,.3)});
+ L.sa.forEach(function(s){s.cols.forEach(function(c){for(var j=0;j<10;j++)h+=bub(c.x,c.ys[j],s.r,j)})});
+ if(L.notice){var n=L.notice;h+=el('fr',n.x,n.y,n.w,n.h)+T('sa',C.sa,n.x+1,n.y+1.4,n.w-2,10,'font-size:7.4pt;font-weight:900;line-height:1.25',true)+'<i class="tx tl wr" style="left:'+(n.x+1.6)+'mm;top:'+(n.y+12.5)+'mm;width:'+(n.w-3.2)+'mm;height:9mm;font-size:5.2pt;font-weight:500;line-height:1.35;align-items:flex-start">· '+E('sa1',C.sa1,'','st')+'</i><i class="tx tl wr" style="left:'+(n.x+1.6)+'mm;top:'+(n.y+22)+'mm;width:'+(n.w-3.2)+'mm;height:12mm;font-size:5.2pt;font-weight:500;line-height:1.35;align-items:flex-start">· '+E('sa2',C.sa2,'','st')+'</i>'}
+ if(L.nm){var m=L.nm,mh=el('fr',m.x,m.y,m.w,m.h)+el('hd',m.x,m.y,m.w,8)+T('nmt',C.nmt,m.x,m.y,m.w,8,'color:#fff;font-size:9pt;letter-spacing:.8em');
+  if(nn){var gw=Math.min(24,(m.w-8)/nn),gx=m.x+(m.w-gw*nn)/2,CN=['①','②','③','④','⑤','⑥','⑦','⑧'];for(var v=0;v<nn;v++){var chh=Math.min(26,gw*1.15);mh+=el(v<3?'dot main':'dot',gx+v*gw+1,m.y+14,gw-2,chh,'',v<3?'background:'+tintC():'')+'<i class="tx" style="left:'+(gx+v*gw+1)+'mm;top:'+(m.y+14+chh+.8)+'mm;width:'+(gw-2)+'mm;height:4mm;font-size:'+(v<3?8:6.4)+'pt;font-weight:'+(v<3?900:500)+';opacity:'+(v<3?1:.7)+'">'+CN[v]+'</i>'}}
+  mh+=T('nmn',C.nmn,m.x+2,m.y+m.h-12,m.w-4,9,'font-size:6pt;font-weight:500',true);h+=mh}
+ h+=G('foot',E('foot',C.foot,'left:250mm;top:200.6mm;font-size:5.4pt;font-weight:500'));
+ var gl={};Object.keys(BASE).forEach(function(g){var o=C.off[g]||[0,0],b=BASE[g];gl[g]=[b[0]+o[0],b[1]+o[1],b[2],b[3]]});Object.keys(L.grp).forEach(function(g){gl[g]=L.grp[g]});
+ Object.keys(gl).forEach(function(g){var b=gl[g],nm=GN[g]||(g.indexOf('mc')===0?'객관식 '+(+g.slice(2)+1)+'칸':g);gh+='<i class="gh'+(g===selG?' sel':'')+'" data-g="'+g+'" style="left:'+b[0]+'mm;top:'+b[1]+'mm;width:'+b[2]+'mm;height:'+b[3]+'mm">'+nm+'</i>'});
+ return h+gh}
+function renderSheet(){var pg=$('#pg');pg.innerHTML=sheet();pg.style.setProperty('--pc',C.color);pg.classList.toggle('moving',moving);fit();Logo.apply();
+ pg.querySelectorAll('.ed').forEach(function(e){var k=e.dataset.k;e.addEventListener('input',function(){C[k]=e.innerHTML;save()});e.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();document.execCommand('insertLineBreak')}})})}
+function fit(){var w=document.querySelector('.wrap').clientWidth-24,s=Math.min(1,w/(297*3.7795));$('.stage').style.setProperty('--s',s.toFixed(4))}
+window.addEventListener('resize',fit);
+/* ===== 박스 위치 이동 ===== */
+var drag=null,raf=0;
+function moveBy(g,dx,dy){var o=C.off[g]||[0,0];C.off[g]=[Math.round((o[0]+dx)*2)/2,Math.round((o[1]+dy)*2)/2];save();renderSheet()}
+document.addEventListener('pointerdown',function(e){var h=e.target.closest&&e.target.closest('.gh');if(!h)return;selG=h.dataset.g;var pg=$('#pg'),sc=pg.getBoundingClientRect().width/297;drag={g:selG,x:e.clientX,y:e.clientY,o:(C.off[selG]||[0,0]).slice(),k:sc};e.preventDefault();renderSheet()});
+document.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/drag.k,dy=(e.clientY-drag.y)/drag.k;C.off[drag.g]=[Math.round((drag.o[0]+dx)*2)/2,Math.round((drag.o[1]+dy)*2)/2];if(!raf)raf=requestAnimationFrame(function(){raf=0;renderSheet()})});
+document.addEventListener('pointerup',function(){if(drag){drag=null;save();renderSheet()}});
+document.addEventListener('keydown',function(e){if(!moving||!selG)return;var t=e.target;if(t.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(t.tagName))return;var d={ArrowLeft:[-.5,0],ArrowRight:[.5,0],ArrowUp:[0,-.5],ArrowDown:[0,.5]}[e.key];if(d){e.preventDefault();moveBy(selG,d[0],d[1])}});
+window.toggleMove=function(){moving=!moving;$('#mvBtn').classList.toggle('on',moving);$('#mvBtn').textContent=moving?'박스 위치 조절 끝내기':'박스 위치 조절';renderSheet()};
+window.resetOff=function(){if(confirm('모든 박스 위치를 처음 자리로 되돌릴까요?')){C.off={};selG=null;save();renderSheet()}};
+/* ================= 설정 ================= */
+function bindSet(){
+ [['n1','n1'],['n2','n2'],['rows','rows'],['nd','nd'],['nameN','nameN']].forEach(function(p){var i=$('#'+p[0]);i.value=C[p[1]];if(i._b)return;i._b=1;i.addEventListener('change',function(){var v=Math.max(0,parseInt(i.value,10)||0);if(p[0]==='n1')v=Math.min(v,45);if(p[0]==='n2')v=Math.min(v,19);if(p[0]==='rows')v=Math.max(3,Math.min(10,v));if(p[0]==='nd')v=Math.min(v,4);if(p[0]==='nameN')v=Math.min(v,8);
+  if(p[0]==='n1'||p[0]==='n2'){var tot=(p[0]==='n1'?v:C.n1)+(p[0]==='n2'?v:C.n2);if(tot>45){alert('문항은 모두 합쳐 45개까지 만들 수 있어요.');i.value=C[p[1]];return}}C[p[1]]=v;i.value=v;save();renderSheet();buildKey()})});
+ ['schools','classes'].forEach(function(k){var i=$('#'+k),kk=function(){return k==='schools'&&SN()?'schoolsN':k};i.value=C[kk()];if(i._b)return;i._b=1;i.addEventListener('change',function(){C[kk()]=list(i.value,kk()==='schoolsN'?18:10).join(',');i.value=C[kk()];save();renderSheet()})});
+ var pc=$('#pcolor');pc.value=C.color;if(!pc._b){pc._b=1;pc.addEventListener('input',function(){C.color=pc.value;save();$('#pg').style.setProperty('--pc',C.color)})}
+ var rc=$('#resetCfg');if(!rc._b){rc._b=1;rc.addEventListener('click',function(){if(confirm('답안지 글자와 문항 수·위치를 처음 모양으로 되돌릴까요?')){C=Object.assign({},DEF);C.off={};save();renderSheet();bindSet();buildKey()}})}}
+function tab(n){$('#makePanel').style.display=n===1?'':'none';$('#stageWrap').style.display=n===1?'':'none';$('#readPanel').style.display=n===2?'block':'none';$('#t1').classList.toggle('on',n===1);$('#t2').classList.toggle('on',n===2);['pdfBtn','pngBtn','rng','mvBtn','fmt'].forEach(function(id){var e=$('#'+id);if(e)e.style.display=n===1?'':'none'});if(n===1)fit()}
+/* ================= 정답 입력 ================= */
+function buildKey(){if(window.updKeyStat)setTimeout(updKeyStat,0);var h='';for(var q=1;q<=(Q1()+Q2());q++){var sa=q>Q1();h+='<label><b style="width:2.2em;text-align:right">'+q+'.</b><input data-a="'+q+'" value="'+(KEYV.a[q]==null?'':KEYV.a[q])+'" placeholder="'+(sa?'0~999':'1~5')+'"> <input data-p="'+q+'" value="'+(KEYV.p[q]==null?'':KEYV.p[q])+'" placeholder="점" style="width:30px"></label>'}$('#keyg').innerHTML=h;
+ $('#keyg').querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){if(i.dataset.a)KEYV.a[i.dataset.a]=i.value.trim();else KEYV.p[i.dataset.p]=i.value.trim();save()})})}
+function pasteKey(){var N=(Q1()+Q2()),lines=$('#keyTxt').value.split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+ var tri=lines.length>0&&lines.every(function(l,i){var p=l.split(/[,\t]+/).map(function(x){return x.trim()});return p.length>=2&&p.length<=3&&parseInt(p[0],10)===i+1});
+ if(tri){lines.forEach(function(l){var p=l.split(/[,\t]+/).map(function(x){return x.trim()}),n=parseInt(p[0],10);if(n>=1&&n<=N){KEYV.a[n]=p[1];if(p[2]!=null&&p[2]!=='')KEYV.p[n]=p[2]}})}
+ else{var q=1;lines.join(' ').split(/[\s,]+/).forEach(function(v){if(v!==''&&q<=N){KEYV.a[q]=v;q++}})}
+ save();buildKey()}
+var PRESET10=[];
+
+var GSMX={"tw1": {"label": "교재 1회", "title": "공수내모 1회 · 태원고 동형 (수업 교재)", "n1": 20, "ne": 3, "es": [4.0, 5.0, 6.0], "no": 1, "kind": "수업", "school": "태원고", "subj": "공수1", "term": "중간"}, "tw1h": {"label": "과제 1회", "title": "공수내모 과제 1회 · 태원고 동형", "n1": 20, "ne": 3, "es": [4.0, 5.0, 6.0], "no": 1, "kind": "과제", "school": "태원고", "subj": "공수1", "term": "중간"}, "hs2": {"label": "교재 2회", "title": "공수내모 2회 · 한솔고 동형 (수업 교재)", "n1": 20, "ne": 3, "es": [6.0, 7.0, 7.0], "no": 2, "kind": "수업", "school": "한솔고", "subj": "공수1", "term": "중간"}},SCHED={"1": ["태원고", "공수1", "중간"], "2": ["한솔고", "공수1", "중간"], "3": ["서현고", "공수1", "중간"], "4": ["야탑고", "공수1", "중간"], "5": ["돌마고", "공수1", "중간"], "6": ["수내고", "공수1", "중간"], "13": ["이매고", "공수1", "중간"], "15": ["판교고", "공수1", "중간"], "17": ["낙생고", "공수1", "중간"], "19": ["보평고", "공수1", "중간"], "21": ["늘푸른고", "공수1", "중간"], "23": ["분당고", "공수1", "중간"], "25": ["분당대진고", "공수1", "중간"]};
+var GK={};Object.keys(GSMX).forEach(function(k){var p=GSMX[k];if(!p.a)return;var K={a:{},p:{},n1:p.n1,es:p.es};for(var q=1;q<=p.n1;q++){K.a[q]=p.a[q-1];K.p[q]=String(p.p[q-1])}GK[k]=K});
+function exName(p){return p.no+'회 '+p.kind+' · '+p.school+' · '+p.subj+' '+p.term}
+function examOf(id){if(!id||id.no==null||id.no==='?'||id.no==='(복수)')return '';var no=+id.no,best='';Object.keys(GSMX).forEach(function(k){var p=GSMX[k];if(p.no===no&&(!id.kind||id.kind==='?'||p.kind===id.kind))best=best||k});return best}
+function keyOf(o){var k=o.exam||examOf(o.id);return k&&GK[k]?GK[k]:KEYV}
+function exInfo(o){var id=o.id||{},k=o.exam||examOf(id),p=k&&GSMX[k],q=function(v){return v==null||v===''?'?':v},hd=(id.no!=null?q(id.no)+'회 ':'')+q(id.kind)+' · '+q(id.school)+' · '+q(id.subj)+' '+q(id.term);
+ if(!p){var sc=SCHED[id.no];return'<span class="warn">⚠ 시험을 못 찾았어요</span> 답안지 표시: <b>'+hd+'</b>'+(sc?' (계획표의 '+id.no+'회는 '+sc[0]+')':'')+(id.no!=null&&id.no!=='?'?' — 이 회차의 정답이 아직 없어요':'')+' · 아래 「시험 고르기」에서 골라 주세요'}
+ var bad=[];if(id.school&&id.school!=='?'&&id.school!==p.school)bad.push('학교 '+id.school+' ≠ '+p.school);if(id.subj&&id.subj!=='?'&&id.subj!==p.subj)bad.push('과목 '+id.subj+' ≠ '+p.subj);if(id.term&&id.term!=='?'&&id.term!==p.term)bad.push('구분 '+id.term+' ≠ '+p.term);if(id.kind&&id.kind!=='?'&&id.kind!==p.kind)bad.push('종류 '+id.kind+' ≠ '+p.kind);if(id.no!=null&&String(id.no)!==String(p.no))bad.push('회차 '+id.no+' ≠ '+p.no);
+ return bad.length?'<span class="warn">⚠ 답안지 표시와 시험이 달라요 ('+bad.join(' · ')+')</span> 채점한 시험: <b>'+exName(p)+'</b>':'<span class="okc">✓ '+exName(p)+'</span>'}
+function exSel(i){var o=RES[i],cur=o.exam||examOf(o.id);return'<select class="exS" data-i="'+i+'"><option value="">시험 고르기…</option>'+Object.keys(GSMX).map(function(k){return'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+exName(GSMX[k])+'</option>'}).join('')+'</select>'}
+/* 재원생 명단 · AI 이름 읽기 */
+function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return''}}function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function roster(){return lsGet('gsm_roster_v1').split(/\r?\n/).map(function(l){var m=l.trim().split(/[\s,\t]+/);return m[0]?{name:m[0],school:m[1]||''}:null}).filter(Boolean)}
+function candNames(sch){var r=roster(),f=r.filter(function(x){return x.school&&x.school===sch});return(f.length?f:r).map(function(x){return x.name})}
+function nameUi(i){var o=RES[i],cn=candNames(o.id&&o.id.school),sch=o.id&&o.id.school,h='<span style="display:inline-block;margin:2px 0">';
+ if(cn.length)h+=cn.slice(0,14).map(function(n){return'<button type="button" class="nmC" data-i="'+i+'" data-n="'+n+'" style="margin:1px 2px;padding:3px 8px;border:1px solid '+(n===o.name?'#B8334F':'#c9d0de')+';border-radius:12px;background:'+(n===o.name?'#B8334F':'#fff')+';color:'+(n===o.name?'#fff':'#333')+';font:inherit;font-size:12px;cursor:pointer">'+n+'</button>'}).join('');
+ else h+='<span class="hint" style="font-size:11px">(위 「재원생 명단」에 이름을 넣으면 학교별 후보 버튼이 떠요)</span>';
+ return h+'</span> <button type="button" class="aiB" data-i="'+i+'" style="padding:3px 8px;border:1px solid #c9d0de;border-radius:6px;background:#eef1f7;font:inherit;font-size:12px;cursor:pointer">🤖 AI로 이름 읽기</button><span class="aiM" style="font-size:11.5px;margin-left:4px;color:'+(o.aiBad?'#b36b00':'#1a7a50')+'">'+(o.aiMsg||'')+'</span>'}
+async function aiName(i,quiet){var o=RES[i],key=lsGet('gsm_ai_key_v1');
+ if(!key){if(!quiet)alert('AI 이름 읽기를 쓰려면 위 「재원생 명단 · AI 이름 읽기」 칸에 Anthropic API 키를 넣어 주세요 (이 컴퓨터에만 저장돼요)');return}
+ var cands=candNames(o.id&&o.id.school);if(!cands.length){if(!quiet)alert('먼저 재원생 명단을 넣어 주세요');return}if(!o.nmImg)return;
+ o.aiMsg='읽는 중...';o.aiBad=0;showRes(i);
+ try{var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+   body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:300,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:o.nmImg.split(',')[1]}},
+   {type:'text',text:'시험 답안지 이름 칸 사진입니다. 칸 하나에 한 글자씩 손글씨로 쓴 한국어 이름이 있습니다. 재원생 후보 명단: '+cands.join(', ')+'. 사진에 쓰인 글자를 읽고, 후보 중 가장 비슷한 이름 하나를 고르세요. 후보 중에 확실히 없으면 name 을 빈 문자열로 하세요. 오직 JSON 한 줄로만 답하세요: {"read":"사진에서 읽은 글자","name":"고른 후보 또는 빈 문자열","confidence":0~1}'}]}]})});
+  var j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||('오류 '+r.status));
+  var t=(j.content||[]).map(function(c){return c.text||''}).join(''),m=t.match(/\{[\s\S]*\}/),d=JSON.parse(m[0]);
+  if(d.name&&cands.indexOf(d.name)>=0){o.name=d.name;o.aiMsg='AI가 「'+(d.read||d.name)+'」→ '+d.name+' 으로 읽었어요 (확신 '+Math.round((+d.confidence||0)*100)+'%) — 맞는지 확인해 주세요';o.aiBad=(+d.confidence||0)<.6}
+  else{o.aiMsg='후보 중에서 못 찾았어요 (읽은 글자: '+(d.read||'?')+') — 위 버튼에서 직접 골라 주세요';o.aiBad=1}}
+ catch(e){o.aiMsg='AI 읽기 실패: '+e.message;o.aiBad=1}
+ saveRes();showRes(i);if(SCAN)cloudSave([i])}
+function autoName(i){if(lsGet('gsm_ai_auto')==='1'&&lsGet('gsm_ai_key_v1')&&roster().length)aiName(i,true)}
+window.gsmRosterInit=function(){if(window.__gri)return;window.__gri=1;
+ if(!SCAN&&!window.__stu){var hd=function(e){if(e)e.style.display='none'},g=function(id){return document.getElementById(id)};
+  hd(g('t1'));['omrSave','omrLoad','undoBtn','redoBtn','mvBtn'].forEach(function(id){hd(g(id))});
+  if(g('shType'))hd(g('shType').closest('.row'));if(g('cExam'))hd(g('cExam').closest('.row'));if(g('keyTxt'))hd(g('keyTxt').closest('.row'));hd(g('keyg'));
+  var fm=document.querySelector('.fmt,#fmt');hd(fm);tab(2)}
+ var ta=document.getElementById('gsmRoster'),ky=document.getElementById('gsmAiKey'),au=document.getElementById('gsmAiAuto');if(!ta)return;
+ ta.value=lsGet('gsm_roster_v1');ky.value=lsGet('gsm_ai_key_v1');au.checked=lsGet('gsm_ai_auto')==='1';
+ var cnt=function(){document.getElementById('gsmRosterN').textContent=roster().length+'명'};cnt();
+ ta.addEventListener('input',function(){lsSet('gsm_roster_v1',ta.value);cnt()});ky.addEventListener('input',function(){lsSet('gsm_ai_key_v1',ky.value.trim())});au.addEventListener('change',function(){lsSet('gsm_ai_auto',au.checked?'1':'0')})};
+window.addEventListener('load',function(){gsmRosterInit()});
+
+function presetKey(){if(!PRESET10.length){alert('10모대비 정답 데이터를 찾지 못했어요');return}if(SN()||Q1()!==21||Q2()!==9){alert('10모대비 정답은 수능형(객관식 21 · 단답형 9)일 때만 쓸 수 있어요');return}PRESET10.forEach(function(r){KEYV.a[r[0]]=String(r[1]);KEYV.p[r[0]]=String(r[2])});save();buildKey();alert('10모대비 정답·배점 30문항을 넣었어요 (합계 '+PRESET10.reduce(function(a,r){return a+r[2]},0)+'점)')}
+function allPts(){var v=prompt('모든 문항의 배점을 같은 값으로 채울까요? 배점을 입력하세요 (예: 3)');if(v==null)return;for(var q=1;q<=(Q1()+Q2());q++)KEYV.p[q]=v;save();buildKey()}
+/* ================= 사진 읽기 ================= */
+function loadImg(f){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){rej(new Error('이미지를 열 수 없어요'))};im.src=URL.createObjectURL(f)})}
+function toGray(c){var w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Uint8Array(w*h);for(var i=0,j=0;i<d.length;i+=4,j++)g[j]=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000;return g}
+function paperLevel(g){var hist=new Uint32Array(256);for(var i=0;i<g.length;i+=3)hist[g[i]]++;var tot=0;for(var k=0;k<256;k++)tot+=hist[k];var acc=0;for(k=255;k>=0;k--){acc+=hist[k];if(acc>tot*.55)return k}return 200}
+function blobsIn(n,w,h,x0,y0,x1,y1,thr){var vis=new Uint8Array((x1-x0)*(y1-y0)),W=x1-x0,out=[],st=[];
+ for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){var i=(y-y0)*W+(x-x0);if(vis[i]||n[y*w+x]>=thr)continue;var minx=x,maxx=x,miny=y,maxy=y,sx=0,sy=0,a=0;st.length=0;st.push(x,y);vis[i]=1;
+  while(st.length){var cy=st.pop(),cx=st.pop();a++;sx+=cx;sy+=cy;if(cx<minx)minx=cx;if(cx>maxx)maxx=cx;if(cy<miny)miny=cy;if(cy>maxy)maxy=cy;
+   for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=cx+dx,ny=cy+dy;if(nx<x0||nx>=x1||ny<y0||ny>=y1)continue;var ii=(ny-y0)*W+(nx-x0);if(vis[ii]||n[ny*w+nx]>=thr)continue;vis[ii]=1;st.push(nx,ny)}}
+  out.push({cx:sx/a,cy:sy/a,a:a,bw:maxx-minx+1,bh:maxy-miny+1})}
+ return out}
+function validBlob(b,w,h){var r=b.bw/b.bh;return r>.6&&r<1.7&&b.a/(b.bw*b.bh)>.7&&b.a>w*h*.00002&&b.a<w*h*.004}
+function findFid(n,w,h){var thr=80,rx=Math.round(w*.3),ry=Math.round(h*.3),R=[[0,0,rx,ry],[w-rx,0,w,ry],[w-rx,h-ry,w,h],[0,h-ry,rx,h]],cn=[[0,0],[w,0],[w,h],[0,h]],res=[];
+ for(var k=0;k<4;k++){var bl=blobsIn(n,w,h,R[k][0],R[k][1],R[k][2],R[k][3],thr).filter(function(b){return validBlob(b,w,h)});
+  bl.sort(function(a,b){return Math.hypot(a.cx-cn[k][0],a.cy-cn[k][1])-Math.hypot(b.cx-cn[k][0],b.cy-cn[k][1])});if(!bl.length)throw new Error('모서리 표식을 찾지 못했어요 (사진 네 모서리의 검은 네모가 모두 보여야 해요)');
+  var a=bl[0],pair=null;for(var j=1;j<bl.length;j++){var d=Math.hypot(bl[j].cx-a.cx,bl[j].cy-a.cy),s=Math.sqrt(a.a);if(d<s*3.4&&d>s*.9&&bl[j].a>a.a*.5&&bl[j].a<a.a*2){pair=bl[j];break}}
+  res.push({x:pair?(a.cx+pair.cx)/2:a.cx,y:pair?(a.cy+pair.cy)/2:a.cy,pair:!!pair,s:Math.sqrt(a.a)})}
+ return res}
+function solve(A,b){var n=b.length;for(var i=0;i<n;i++){var p=i;for(var r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;var t=A[i];A[i]=A[p];A[p]=t;var tb=b[i];b[i]=b[p];b[p]=tb;for(r=i+1;r<n;r++){var f=A[r][i]/A[i][i];for(var c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}
+ var x=new Array(n);for(i=n-1;i>=0;i--){var s=b[i];for(c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/A[i][i]}return x}
+function homog(src,dst){var A=[],b=[];for(var i=0;i<4;i++){var x=src[i][0],y=src[i][1],u=dst[i][0],v=dst[i][1];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v)}var h=solve(A,b);h.push(1);return h}
+function mapp(H,x,y){var w=H[6]*x+H[7]*y+1;return[(H[0]*x+H[1]*y+H[2])/w,(H[3]*x+H[4]*y+H[5])/w]}
+function readSheet(canvas){
+ var w=canvas.width,h=canvas.height,g=toGray(canvas),pl=paperLevel(g),n=new Uint8Array(w*h);for(var i=0;i<g.length;i++){var v=g[i]*255/pl;n[i]=v>255?255:v}
+ var f=findFid(n,w,h),cx=0,cy=0;f.forEach(function(p){cx+=p.x/4;cy+=p.y/4});
+ var ord=f.map(function(p){return{p:p,a:Math.atan2(p.y-cy,p.x-cx)}}).sort(function(a,b){return a.a-b.a}).map(function(o){return o.p});
+ var mi=ord.findIndex(function(p){return p.pair});if(mi<0)mi=0;
+ var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);
+ var sheetPts=SN()?[[9,14.5],[201,9],[201,288],[9,288]]:[[9,14.5],[288,9],[288,201],[9,201]],H=homog(sheetPts,rot.map(function(p){return[p.x,p.y]}));
+ var gs=[],GA=SN()?[20,30,190,280]:[20,22,280,188];for(var yy=GA[1];yy<=GA[3];yy+=6)for(var xx=GA[0];xx<=GA[2];xx+=6){var pp=mapp(H,xx,yy),px=Math.round(pp[0]),py=Math.round(pp[1]);if(px>=0&&px<w&&py>=0&&py<h)gs.push(g[py*w+px])}
+ gs.sort(function(a,b){return a-b});var pl2=gs.length>50?gs[Math.floor(gs.length*.85)]:pl;   /* 종이 밝기를 '답안지 안쪽'에서 다시 잰다(책상 배경이 넓은 사진 대응) */
+ if(Math.abs(pl2-pl)>6&&pl2>40){for(var i2=0;i2<g.length;i2++){var v2=g[i2]*255/pl2;n[i2]=v2>255?255:v2}}
+ var L=SN()?layoutN(C):layout(C),sc=Math.hypot(mapp(H,10,0)[0]-mapp(H,0,0)[0],mapp(H,10,0)[1]-mapp(H,0,0)[1])/10;
+ function samp(x,y,r){var p=mapp(H,x,y),rr=r*sc*.62,x0=Math.max(0,Math.floor(p[0]-rr)),x1=Math.min(w-1,Math.ceil(p[0]+rr)),y0=Math.max(0,Math.floor(p[1]-rr)),y1=Math.min(h-1,Math.ceil(p[1]+rr)),s=0,c=0;
+  for(var yy=y0;yy<=y1;yy++)for(var xx=x0;xx<=x1;xx++){var dx=xx-p[0],dy=yy-p[1];if(dx*dx+dy*dy<=rr*rr){s+=n[yy*w+xx];c++}}return{v:c?s/c:255,px:p[0],py:p[1]}}
+ var all=[],mc=L.mc.map(function(r){var vs=r.xs.map(function(x){var s=samp(x,r.y,r.r);all.push(s.v);return s});return{q:r.q,vs:vs}});
+ var sa=L.sa.map(function(s){return{q:s.q,cols:s.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,s.r);all.push(t.v);return t})})}});
+ var sch=L.sch.opts.map(function(o){var t=samp(o.x,o.y,L.sch.r);all.push(t.v);return t}),cls=L.cls.opts.map(function(o){var t=samp(o.x,o.y,L.cls.r);all.push(t.v);return t});
+ var num=L.num.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})});
+ var ec=L.es?L.es.cols.map(function(c){return c.ys.map(function(y){var t=samp(c.x,y,c.r);all.push(t.v);return t})}):null;
+ var exs=L.ex?{g:L.ex.grps.map(function(g){return g.opts.map(function(o){var t=samp(o.x,o.y,L.ex.r);all.push(t.v);return t})}),t:L.ex.tens.map(function(o){var t=samp(o.x,o.y,L.ex.r);all.push(t.v);return t}),o:L.ex.ones.map(function(o){var t=samp(o.x,o.y,L.ex.r);all.push(t.v);return t})}:null;
+ all.sort(function(a,b){return a-b});var base=all[Math.floor(all.length*.6)],thr=Math.max(22,base*.2);
+ function pick(vs){var d=vs.map(function(s){return base-s.v}),idx=[];for(var i=0;i<d.length;i++)if(d[i]>thr)idx.push(i);if(!idx.length)return{i:-1,flag:''};idx.sort(function(a,b){return d[b]-d[a]});if(idx.length===1)return{i:idx[0],flag:''};if(d[idx[0]]-d[idx[1]]>.5*d[idx[0]])return{i:idx[0],flag:'?'};return{i:-2,flag:'복수'}}
+ var ans=[];mc.forEach(function(r){var p=pick(r.vs);ans.push({q:r.q,t:'mc',v:p.i>=0?String(p.i+1):'',flag:p.i===-2?'복수':p.flag,pts:r.vs})});
+ sa.forEach(function(s){var ds=s.cols.map(function(c){return pick(c)}),bad=ds.some(function(d){return d.i===-2}),any=ds.some(function(d){return d.i>=0});var v='';if(any&&!bad)v=String(ds.reduce(function(a,d){return a*10+(d.i>=0?d.i:0)},0));ans.push({q:s.q,t:'sa',v:v,flag:bad?'복수':'',pts:[].concat.apply([],s.cols)})});
+ var sl=SN()?list(C.schoolsN,18):list(C.schools),cl=list(C.classes),ps=pick(sch),pc=pick(cls);
+ var id={school:ps.i>=0?sl[ps.i]:(ps.i===-2?'(복수)':'?'),cls:SN()?'-':(pc.i>=0?cl[pc.i]:(pc.i===-2?'(복수)':'?')),num:num.map(function(c){var p=pick(c);return p.i>=0?String(p.i):'?'}).join('')};
+ if(exs){var gp=exs.g.map(pick),tp=pick(exs.t),op=pick(exs.o),nm3=function(p,arr){return p.i>=0?arr[p.i]:(p.i===-2?'(복수)':'?')};
+ id.subj=nm3(gp[0],['공수1','공수2']);id.term=nm3(gp[1],['중간','기말']);id.kind=nm3(gp[2],['수업','과제']);
+ if(op.i>=0&&tp.i!==-2)id.no=(tp.i>=0?tp.i:0)*10+op.i;else id.no=(op.i===-2||tp.i===-2)?'(복수)':'?'}
+ var es='';if(ec){var ed=ec.map(function(c){return pick(c)});if(ed.some(function(d){return d.i===-2}))es='?';else if(ed.some(function(d){return d.i>=0})){var tv=ed[0].i>=0?ed[0].i:0,ov=ed[1].i>=0?ed[1].i:0,dv=ed[2].i>=0?ed[2].i:0;es=String(Math.round((tv*10+ov+dv/10)*10)/10)}}
+ var nmImg='';try{if(L.nm){var nmb=L.nm,pxm=6,y0n=nmb.y+10.5,hn=17,cw=Math.round(nmb.w*pxm),ch=Math.round(hn*pxm),oc=document.createElement('canvas');oc.width=cw;oc.height=ch;var ox=oc.getContext('2d'),sd=canvas.getContext('2d').getImageData(0,0,w,h).data,od=ox.createImageData(cw,ch);
+  for(var yy2=0;yy2<ch;yy2++)for(var xx2=0;xx2<cw;xx2++){var pp2=mapp(H,nmb.x+xx2/pxm,y0n+yy2/pxm),sx2=Math.round(pp2[0]),sy2=Math.round(pp2[1]),o2=(yy2*cw+xx2)*4;if(sx2>=0&&sx2<w&&sy2>=0&&sy2<h){var s2=(sy2*w+sx2)*4;od.data[o2]=sd[s2];od.data[o2+1]=sd[s2+1];od.data[o2+2]=sd[s2+2]}else{od.data[o2]=od.data[o2+1]=od.data[o2+2]=255}od.data[o2+3]=255}
+  ox.putImageData(od,0,0);nmImg=oc.toDataURL('image/jpeg',.72)}}catch(e){}
+ return{ans:ans,es:es,id:id,nm:nmImg,H:H,sc:sc,base:base,thr:thr,layout:L,sheet:rot,w:w,h:h}}
+/* ================= 채점 화면 ================= */
+var RES=[];
+function gradeOne(a){var K=window.__K||KEYV,key=K.a[a.q],pt=parseFloat(K.p[a.q]);if(isNaN(pt))pt=0;if(key==null||key==='')return{s:'',sc:0};if(a.v==='')return{s:'un',sc:0};return String(a.v)===String(key).trim()?{s:'ok',sc:pt}:{s:'no',sc:0}}
+function drawPrev(cv,im,r){var c=cv,k=Math.min(1,430/im.width);c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);x.lineWidth=2;
+ r.sheet.forEach(function(p){x.strokeStyle='#e22';x.strokeRect(p.x*k-6,p.y*k-6,12,12)});
+ r.ans.forEach(function(a){a.pts.forEach(function(s,i){var on=a.t==='mc'&&a.v!==''&&i===parseInt(a.v,10)-1;x.beginPath();x.arc(s.px*k,s.py*k,Math.max(1.5,r.sc*k*.9),0,7);x.strokeStyle=on?'#0a8':'rgba(0,0,0,0)';x.stroke()})})}
+function idTxt(id){var n=id.num||'',b=n.length===4&&/^\d{4}$/.test(n)?(+n.slice(0,2))+'월 '+(+n.slice(2))+'일':(n||'-');return id.school+(id.cls&&id.cls!=='-'?' · '+id.cls:'')+' · 생일 '+b+(id.no!=null?' · '+id.no+'회 '+(id.kind||'')+' '+(id.subj||'')+' '+(id.term||''):'')}
+function resHtml(i){var o=RES[i];window.__K=keyOf(o);var tot=0,mx=0,h='<table><tr><th>번호</th><th>학생 답</th><th>정답</th><th>배점</th><th>점수</th></tr>';
+ o.ans.forEach(function(a){if(window.__K.n1&&a.q>window.__K.n1&&a.v==='')return;var g=gradeOne(a),pt=parseFloat(window.__K.p[a.q])||0;tot+=g.sc;mx+=pt;h+='<tr><td>'+a.q+'</td><td class="'+g.s+'">'+(a.t==='mc'?'<select data-i="'+i+'" data-q="'+a.q+'"><option value="">—</option>'+[1,2,3,4,5].map(function(v){return'<option'+(String(v)===a.v?' selected':'')+'>'+v+'</option>'}).join('')+'</select>':'<input data-i="'+i+'" data-q="'+a.q+'" value="'+a.v+'" style="width:40px">')+(a.flag?' <span class="warn">'+a.flag+'</span>':'')+'</td><td>'+(window.__K.a[a.q]==null?'':window.__K.a[a.q])+'</td><td>'+(pt||'')+'</td><td>'+(g.s==='ok'?g.sc:g.s?0:'')+'</td></tr>'});
+ o.tot=Math.round(tot*10)/10;o.mx=Math.round(mx*10)/10;return h+'</table>'}
+function showRes(i){var o=RES[i],d=document.getElementById('res'+i);d.querySelector('.tb').innerHTML=resHtml(i);d.querySelector('.sum').innerHTML=(o.nmImg?'<div style="margin:0 0 6px"><img src="'+o.nmImg+'" style="max-width:100%;max-height:70px;border:1px solid #d9dde6;border-radius:4px;background:#fff"><div style="font-size:11px;color:#8a8470">↑ 답안지의 이름 칸 — 아래 이름 버튼을 누르거나 「🤖 AI로 이름 읽기」를 눌러요</div></div>':'')+'<div style="margin:0 0 4px">'+exInfo(o)+' &nbsp;'+exSel(i)+'</div><b style="font-size:15px">'+o.tot+' / '+o.mx+'점</b> · 읽은 정보: <b>'+o.idtxt+'</b> <div style="margin:4px 0">이름 <input class="nmI" value="'+String(o.name||'').replace(/"/g,'&quot;')+'" placeholder="이름 입력" style="width:84px"> '+nameUi(i)+'</div>'+(SN()?' · 서술형 합계 <input class="esT" data-i="'+i+'" value="'+(o.es||'')+'" style="width:54px" placeholder="—">점':'');
+ d.querySelectorAll('.nmI').forEach(function(s){s.addEventListener('change',function(){o.name=s.value.trim();saveRes();if(SCAN)cloudSave([i]);showRes(i)})});
+ d.querySelectorAll('.nmC').forEach(function(s){s.addEventListener('click',function(){o.name=s.dataset.n;o.aiMsg='';saveRes();if(SCAN)cloudSave([i]);showRes(i)})});
+ d.querySelectorAll('.aiB').forEach(function(s){s.addEventListener('click',function(){aiName(i)})});
+ d.querySelectorAll('.exS').forEach(function(s){s.addEventListener('change',function(){o.exam=s.value;saveRes();showRes(i);if(SCAN)cloudSave([i])})});
+ d.querySelectorAll('.esT').forEach(function(s){s.addEventListener('change',function(){o.es=s.value.trim();saveRes();if(SCAN)cloudSave([i])})});
+ d.querySelectorAll('select:not(.exS),input:not(.esT):not(.nmI)').forEach(function(s){s.addEventListener('change',function(){var a=o.ans.filter(function(x){return String(x.q)===s.dataset.q})[0];a.v=s.value;a.flag='';showRes(i);saveRes();if(SCAN)cloudSave([i])})});if(SCAN)lastCard(i)}
+function saveRes(){if(window.__stu)return;try{localStorage.setItem(SCAN?'gsm_omr_scan_results_v1':'gsm_omr_results_v1',JSON.stringify({cfg:{n1:Q1(),n2:Q2()},key:KEYV,students:RES.filter(function(o){return !o.err}).map(function(o){return{file:o.file,school:o.id.school,cls:o.id.cls,num:o.id.num,subj:o.id.subj,term:o.id.term,kind:o.id.kind,no:o.id.no,exam:o.exam||'',answers:o.ans.map(function(a){return a.v}),es:o.es||'',nmImg:o.nmImg||'',name:o.name||'',score:o.tot,max:o.mx}})}))}catch(e){}}
+async function runFiles(files){var box=$('#resBox');for(var f of files){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><canvas></canvas><div class="warn" style="font-size:12px;margin-top:4px">읽는 중...</div></div><div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
+  try{var im=await loadImg(f),cv=document.createElement('canvas'),k=Math.min(1,2400/Math.max(im.width,im.height));cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+   var r=readSheet(cv);RES.push({file:f.name,r:r,ans:r.ans,es:r.es,id:r.id,idtxt:idTxt(r.id),nmImg:r.nm||'',name:''});drawPrev(div.querySelector('canvas'),cv,r);div.querySelector('.warn').outerHTML='<div class="okc" style="font-size:12px;margin-top:4px">'+f.name+' — 읽기 완료 (초록 원 = 읽은 답)</div>';showRes(i);if(SCAN)cloudSave([i]);autoName(i)}
+  catch(e){RES.push({file:f.name,r:null,ans:[],id:{},idtxt:'',tot:0,mx:0,err:1});div.innerHTML='<div class="warn">'+f.name+' — '+e.message+'</div>';if(SCAN)errCard(f.name,e.message)}}
+ saveRes()}
+window.exportCsv=function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점','회차','종류','과목','구분'].concat(SN()?['서술형합계']:[]).concat(Array.from({length:(Q1()+Q2())},function(_,i){return'답'+(i+1)})).concat(['이름'])];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx,o.id.no==null?'':o.id.no,o.id.kind||'',o.id.subj||'',o.id.term||''].concat(SN()?[o.es||'']:[]).concat(o.ans.map(function(a){return a.v})).concat([o.name||'']))});
+ var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='OMR_채점결과.csv';document.body.appendChild(a);a.click();a.remove()};
+window.OMR_test=function(canvas){return readSheet(canvas)};
+/* ================= 폰 촬영 채점 보조 ================= */
+function lastCard(i){if(window.__stu)return;var o=RES[i];window.__K=keyOf(o);var box=document.getElementById('scanLast');if(!box||!o||o.err)return;
+ var g=o.ans.map(function(a){return gradeOne(a)}),wrong=[],unk=[],chips='',hasKey=Object.keys(window.__K.a).some(function(k){return window.__K.a[k]!==''&&window.__K.a[k]!=null});
+ o.ans.forEach(function(a,k){var s=g[k].s;chips+='<i class="'+s+'">'+a.q+'</i>';if(s==='no'||s==='un')wrong.push(a.q);if(a.flag)unk.push(a.q+'번')});
+ var warn=unk.length||!hasKey;
+ box.innerHTML='<div class="card'+(warn?' warn':'')+'"><div class="big">'+(hasKey?o.tot:'—')+'<small> / '+(hasKey?o.mx:'?')+'점</small></div><div class="idl">'+o.idtxt+'</div>'
+  +(hasKey?'':'<div class="warn">정답이 아직 없어요 — 아래 "정답·배점"에서 넣어 주세요</div>')
+  +'<div class="chips">'+chips+'</div>'
+  +(hasKey?'<div class="wr"><b>틀린·빈 번호</b> '+(wrong.length?wrong.join(', '):'없음 🎉')+'</div>':'')
+  +(unk.length?'<div class="warn">다시 확인이 필요한 칸: '+unk.join(', ')+' (아래 표에서 고칠 수 있어요)</div>':'')
+  +'<div class="hint2">학생 '+RES.filter(function(x){return !x.err}).length+'명째 · 읽은 결과는 이 폰에 저장돼요</div></div>';
+ box.scrollIntoView({behavior:'smooth',block:'start'})}
+function errCard(name,msg){var box=document.getElementById('scanLast');if(box)box.innerHTML='<div class="card warn"><div class="warn">읽지 못했어요 😢</div><div>'+msg+'</div><div class="hint2">밝은 곳에서 답안지가 화면을 크게 채우고, 네 모서리의 검은 네모가 모두 나오게 다시 찍어 주세요.</div></div>'}
+function updKeyStat(){var e=document.getElementById('keyStat');if(!e)return;var n=0,sum=0;for(var q=1;q<=(Q1()+Q2());q++){if(KEYV.a[q]!=null&&KEYV.a[q]!==''){n++;sum+=parseFloat(KEYV.p[q])||0}}
+ e.innerHTML=n?'<span class="okc">정답 '+n+'문항 · '+sum+'점 ✓</span>':'<span class="warn">정답이 아직 없어요</span>'}
+function restoreRes(){var o;try{o=JSON.parse(localStorage.getItem('gsm_omr_scan_results_v1')||'null')}catch(e){}if(!o||!o.students)return;var box=$('#resBox');
+ o.students.forEach(function(s){var i=RES.length,div=document.createElement('div');div.className='res';div.id='res'+i;div.innerHTML='<div><div class="sum"></div><div class="tb"></div></div>';box.appendChild(div);
+  var id={school:s.school,cls:s.cls,num:s.num,subj:s.subj,term:s.term,kind:s.kind,no:s.no};RES.push({exam:s.exam||'',file:s.file,es:s.es||'',nmImg:s.nmImg||'',name:s.name||'',r:null,ans:s.answers.map(function(v,k){return{q:k+1,t:k<Q1()?'mc':'sa',v:v,flag:'',pts:[]}}),id:id,idtxt:idTxt(id)});showRes(i)})}
+var SB_URL='https://eqllmvfbcdtzercliicy.supabase.co/functions/v1/report',SB_KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';   /* 공개용 키(비밀번호는 서버가 확인) */
+function cMsg(t,ok){var e=document.getElementById('cloudStat');if(e){e.textContent=t;e.style.color=ok===1?'#1a7a50':(ok===0?'#c33':'#667');e.style.fontWeight='700'}}
+async function cloudKey(auto){var pw=$('#cPw').value,m=document.getElementById('cKeyMsg');if(!pw){if(!auto)m.innerHTML='<span class="warn">먼저 아래 "☁ 서버 저장 → 설정"에 비밀번호를 넣어 주세요</span>';return}
+ m.textContent='불러오는 중...';
+ try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'load',key:pw,exam_id:($('#cExam').value||'mo10-2026').trim()})});var d=await r.json();if(!d.ok)throw new Error(d.error||'불러오기 실패');
+  var its=(d.exam&&d.exam.items)||[];if(!its.length){m.innerHTML='<span class="warn">서버에 이 시험의 정답·배점이 아직 없어요. PC 성적표 생성기에서 "☁ 서버에 저장"을 한 번 하면 올라가요.</span>';return}
+  its=its.filter(function(it){return it.type!=='essay'});its.forEach(function(it){KEYV.a[it.no]=String(it.ans);KEYV.p[it.no]=String(it.pts)});save();buildKey();updKeyStat();
+  var n1=its.filter(function(x){return x.type==='mc'}).length;m.innerHTML='<span class="okc">서버에서 정답·배점 '+its.length+'문항을 불러왔어요 ✓</span>'+(n1!==Q1()?' <span class="warn">(객관식 수가 답안지 설정과 달라요: '+n1+' / '+Q1()+')</span>':'')}
+ catch(e){m.innerHTML='<span class="warn">불러오기 실패: '+e.message+'</span>'}}
+async function cloudSetKey(){var pw=$('#cPw').value,m=document.getElementById('cKeyMsg');if(!pw){m.innerHTML='<span class="warn">비밀번호를 넣어 주세요</span>';return}
+ var ex=($('#cExam').value||'').trim();if(!ex){m.innerHTML='<span class="warn">시험 이름을 넣어 주세요 (예: mo10-2026)</span>';return}
+ var items=[];for(var q=1;q<=(Q1()+Q2());q++){var a=KEYV.a[q],pt=KEYV.p[q];if(a==null||a==='')continue;items.push({no:q,type:q<=Q1()?'mc':'sa',pts:parseFloat(pt)||0,ans:isNaN(+a)?a:+a})}
+ if(!items.length){m.innerHTML='<span class="warn">먼저 정답·배점을 넣어 주세요</span>';return}
+ m.textContent='저장 중...';
+ try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'setkey',key:pw,exam_id:ex,title:ex,items:items})});var d=await r.json();if(!d.ok)throw new Error(d.error||'저장 실패');
+  m.innerHTML='<span class="okc">☁ 시험 "'+ex+'" 의 정답·배점 '+d.saved+'문항을 서버에 저장했어요 ✓</span>'}
+ catch(e){m.innerHTML='<span class="warn">저장 실패: '+e.message+(/알 수 없는 요청/.test(e.message)?' (서버 함수를 새 버전으로 Deploy 해야 해요)':'')+'</span>'}}
+function cInit(){var pw=$('#cPw');if(!pw)return;var kb=$('#cKey');if(kb)kb.addEventListener('click',function(){cloudKey(false)});var sv='';try{sv=localStorage.getItem('gsm_omr_cpw')||sessionStorage.getItem('gsm_omr_cpw')||''}catch(e){}if(sv){pw.value=sv;var rm0=$('#cRem');if(rm0)rm0.checked=!!localStorage.getItem('gsm_omr_cpw')}
+ try{var ex=localStorage.getItem('gsm_omr_cexam');if(ex)$('#cExam').value=ex}catch(e){}
+ function keep(){try{localStorage.removeItem('gsm_omr_cpw');sessionStorage.removeItem('gsm_omr_cpw');if(pw.value)((($('#cRem')||{}).checked)?localStorage:sessionStorage).setItem('gsm_omr_cpw',pw.value);localStorage.setItem('gsm_omr_cexam',$('#cExam').value)}catch(e){}}
+ pw.addEventListener('change',keep);if($('#cRem'))$('#cRem').addEventListener('change',keep);$('#cExam').addEventListener('change',keep);var sk=$('#cSet');if(sk)sk.addEventListener('click',cloudSetKey);
+ if($('#cNow'))$('#cNow').addEventListener('click',function(){cloudSave(RES.map(function(o,i){return i}),true)});cMsg(pw.value?'자동 저장 켜짐':'비밀번호를 넣으면 서버에 저장돼요',pw.value?1:-1);if(SCAN&&pw.value&&!Object.keys(KEYV.a).some(function(k){return KEYV.a[k]!==''&&KEYV.a[k]!=null}))cloudKey(true)}
+async function cloudSave(idxs,force){if(window.__stu){return window.__stuRead&&window.__stuRead(idxs,RES)}if(!SCAN)return;var pw=$('#cPw').value,auto=$('#cAuto').checked;if(!force&&!auto)return;if(!pw){cMsg('비밀번호를 넣으면 서버에 저장돼요',-1);return}
+ var skipped=0,list=[];idxs.forEach(function(i){var o=RES[i];if(!o||o.err)return;var bad=!o.id.school||o.id.school==='?'||o.id.school==='(복수)'||(!SN()&&(!o.id.cls||o.id.cls==='?'||o.id.cls==='(복수)'))||!/^[0-9]{4}$/.test(o.id.num||'');if(bad){skipped++;return}
+  list.push({school:o.id.school,cls:o.id.cls,num:o.id.num,name:o.name||'',answers:o.ans.map(function(a){return a.v}),esTot:o.es||'',score:Math.round(o.tot||0)})});
+ if(!list.length){cMsg(skipped?'학교·반·생일을 못 읽은 답안지는 저장하지 못했어요('+skipped+'장) — 표에서 고친 뒤 "지금 모두 저장"':'저장할 결과가 없어요',skipped?0:-1);return}
+ cMsg('☁ 저장 중...',-1);
+ try{var r=await fetch(SB_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({action:'omr',key:pw,exam_id:($('#cExam').value||'mo10-2026').trim(),title:'10모 대비',students:list})});
+  var d=await r.json();if(!d.ok)throw new Error(d.error||'저장 실패');cMsg('☁ 서버에 저장했어요 ✓ ('+d.saved+'명'+(skipped?' · 못 읽은 '+skipped+'장 제외':'')+')',1)}
+ catch(e){cMsg('저장 실패: '+e.message+' — 결과는 이 폰에 남아 있어요',0)}}
+window.shareCsv=async function(){var rows=[['파일','학교','반','생일(MMDD)','점수','만점','회차','종류','과목','구분'].concat(SN()?['서술형합계']:[]).concat(Array.from({length:(Q1()+Q2())},function(_,i){return'답'+(i+1)})).concat(['이름'])];RES.forEach(function(o){if(!o.err)rows.push([o.file,o.id.school,o.id.cls,o.id.num,o.tot,o.mx,o.id.no==null?'':o.id.no,o.id.kind||'',o.id.subj||'',o.id.term||''].concat(SN()?[o.es||'']:[]).concat(o.ans.map(function(a){return a.v})).concat([o.name||'']))});
+ var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),f=new File([csv],'OMR_채점결과.csv',{type:'text/csv'});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'OMR 채점 결과'});return}catch(e){if(e&&e.name==='AbortError')return}}exportCsv()};
+window.phoneLink=function(){var pl={c:{sheet:C.sheet,sn1:C.sn1,ne:C.ne,nef:C.nef,n1:C.n1,n2:C.n2,rows:C.rows,nd:C.nd,nameN:C.nameN,schools:C.schools,schoolsN:C.schoolsN,classes:C.classes,off:C.off,v3:1},k:KEYV};
+ var link='https://mathyyuri.com/gsm_omr_scan.html#k='+btoa(unescape(encodeURIComponent(JSON.stringify(pl))));
+ var done=function(){alert('폰용 링크를 복사했어요. 이 링크를 카톡 "나에게 보내기" 등으로 폰에 보내서 열면, 정답·배점과 답안지 설정이 폰에 자동으로 들어가요.\n(링크 안에 정답이 들어 있으니 학생에게는 보내지 마세요)')};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(link).then(done,function(){prompt('아래 링크를 복사하세요',link)});else prompt('아래 링크를 복사하세요',link)};
+/* ================= 부분 글자 서식 ================= */
+var FN=[['Noto Serif KR','Noto Serif KR (명조)'],['Nanum Myeongjo','나눔명조'],['Gowun Batang','고운바탕'],['Hahmlet','함렛'],['Song Myung','송명'],['Black Han Sans','블랙한산스(굵은 제목)'],['Do Hyeon','도현'],['Jua','주아(둥근 글씨)'],['Noto Sans KR','Noto Sans KR (고딕)'],['Nanum Gothic','나눔고딕'],['Gowun Dodum','고운돋움'],['IBM Plex Sans KR','IBM Plex Sans KR'],['Malgun Gothic','맑은 고딕']];
+var lastR=null,lastEd=null;
+document.addEventListener('selectionchange',function(){var s=getSelection();if(!s.rangeCount)return;var r=s.getRangeAt(0),n=r.commonAncestorContainer,el=n.nodeType===1?n:n.parentElement;
+ if(el&&el.closest&&el.closest('.ed')&&!el.closest('#fmt')){lastR=r.cloneRange();lastEd=el.closest('.ed');var px=parseFloat(getComputedStyle(el).fontSize);if(px){var f=$('#fSize');if(f&&document.activeElement!==f)f.value=Math.round(px*0.75*2)/2}}});
+function withSel(fn){if(!lastEd||!document.body.contains(lastEd)){alert('먼저 고칠 글자를 클릭하거나 드래그해서 선택해 주세요. (파란 점선 글씨만 고칠 수 있어요)');return}
+ lastEd.focus();var s=getSelection(),r=lastR;s.removeAllRanges();if(!r||r.collapsed){r=document.createRange();r.selectNodeContents(lastEd)}s.addRange(r);
+ try{document.execCommand('styleWithCSS',false,true)}catch(e){}fn();
+ lastEd.dispatchEvent(new Event('input',{bubbles:true}));if(s.rangeCount)lastR=s.getRangeAt(0).cloneRange()}
+function setSize(pt){withSel(function(){document.execCommand('fontSize',false,'7');lastEd.querySelectorAll('font[size="7"],span').forEach(function(n){
+  if(n.tagName==='FONT'){var sp=document.createElement('span');sp.style.fontSize=pt+'pt';while(n.firstChild)sp.appendChild(n.firstChild);n.replaceWith(sp)}else if(n.style&&n.style.fontSize==='xxx-large')n.style.fontSize=pt+'pt'})})}
+function setupFmt(){
+ $('#fFont').innerHTML='<option value="">글꼴…</option>'+FN.map(function(f,i){return'<option value="'+i+'" style="font-family:\''+f[0]+'\'">'+f[1]+'</option>'}).join('');
+ var f=$('#fmt');f.addEventListener('mousedown',function(e){if(!/SELECT|INPUT/.test(e.target.tagName))e.preventDefault()});
+ f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.c){withSel(function(){document.execCommand('foreColor',false,b.dataset.c)})}
+  else if(b.id==='fBold')withSel(function(){document.execCommand('bold')});
+  else if(b.id==='fClr')withSel(function(){document.execCommand('removeFormat');lastEd.querySelectorAll('[style]').forEach(function(n){n.removeAttribute('style')})});
+  else if(b.id==='fPlus'||b.id==='fMinus'){var v=parseFloat($('#fSize').value)||10;v=Math.max(3,Math.min(80,v+(b.id==='fPlus'?1:-1)));$('#fSize').value=v;setSize(v)}});
+ $('#fColor').addEventListener('change',function(){var c=this.value;withSel(function(){document.execCommand('foreColor',false,c)})});
+ $('#fSize').addEventListener('change',function(){var v=parseFloat(this.value);if(v>=3&&v<=80)setSize(v)});
+ $('#fFont').addEventListener('change',function(){var i=this.value;if(i==='')return;var nm=FN[+i][0];this.value='';withSel(function(){document.execCommand('fontName',false,nm)})})}
+/* ================= 시작 ================= */
+window.phoneLink=window.phoneLink;window.tab=tab;window.updKeyStat=updKeyStat;window.presetKey=presetKey;window.pasteKey=pasteKey;window.allPts=allPts;
+bindSet();Logo.init(function(){Hist.touch()});renderSheet();buildKey();setupFmt();
+$('#fileIn').addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
+var fa=$('#fileAlb');if(fa)fa.addEventListener('change',function(){if(this.files.length)runFiles([].slice.call(this.files));this.value=''});
+$('#clearRes').addEventListener('click',function(){if(SCAN&&RES.length&&!confirm('읽은 결과를 모두 지울까요? (CSV로 먼저 저장했는지 확인하세요)'))return;RES=[];$('#resBox').innerHTML='';var sl=document.getElementById('scanLast');if(sl)sl.innerHTML='';saveRes()});
+(function(){var st=$('#shType'),sw=$('#shSn'),n1=$('#sn1');if(!st)return;if(!C.sn1||!C.snv){C.snv=1;C.sn1=30}st.value=C.sheet==='sn'?'sn':'su';n1.value=C.sn1;sw.style.display=C.sheet==='sn'?'':'none';
+ st.addEventListener('change',function(){C.sheet=st.value==='sn'?'sn':'su';sw.style.display=C.sheet==='sn'?'':'none';save();buildKey();updKeyStat();try{bindSet()}catch(e){}});
+ n1.addEventListener('input',function(){C.sn1=Math.max(1,Math.min(30,parseInt(n1.value,10)||30));save();buildKey();updKeyStat()})})();
+if(!SCAN)cInit();
+if(SCAN){document.body.classList.add('scan');tab(2);restoreRes();gsmRosterInit();updKeyStat();cInit();if(window.__gotKey){var ks=document.getElementById('keyStat');if(ks)ks.insertAdjacentHTML('afterend','<div class="okc">PC에서 보낸 정답·설정을 받았어요 ✓</div>')}}
+function restoreAll(str){var o=JSON.parse(str);C=Object.assign({},DEF,o.c);C.off=C.off||{};KEYV=o.k||{a:{},p:{}};Logo.restore(o.lg);try{localStorage.setItem(KEY,JSON.stringify({cfg:C,key:KEYV}))}catch(e){}bindSet();renderSheet();buildKey()}
+Hist.init({snap:function(){return JSON.stringify({c:C,k:KEYV,lg:Logo.snap()})},restore:restoreAll});
+$('#omrSave').addEventListener('click',function(){Backup.save('OMR답안지',{app:'omr',c:C,k:KEYV,lg:Logo.snap()})});
+$('#omrLoad').addEventListener('click',function(){Backup.load(function(o){if(o.app!=='omr'){alert('OMR 답안지 저장파일이 아니에요.');return}restoreAll(JSON.stringify({c:o.c,k:o.k,lg:o.lg||[null,null,null,null]}));Hist.touch()})});
+})();
+</script><script>/* 여백없는 PDF — 쪽마다 화면 그대로 그림으로 찍어서 한 장씩 붙이는 방식(html2canvas + jsPDF).
+   브라우저 인쇄와 달리 HTML에서 보던 모양 그대로 나온다. 쪽 지정(예: 1-4, 7) 가능. */
+(function () {
+  var W = window.PDF_W || 257, H = window.PDF_H || 364;   // 용지(mm): 기본 B4, 성적표는 A4(210x297)
+  function pagesList() { return [].slice.call(document.querySelectorAll('.stage .pg')); }
+  function parse(t, n) {
+    var c = String(t).split('~').join('-').split(' ').join(''); if (!c) return null;
+    var seen = {}, out = [], ps = c.split(',');
+    for (var i = 0; i < ps.length; i++) {
+      var p = ps[i]; if (!p) continue;
+      var ab = p.split('-'), a, b;
+      if (ab.length === 1) { a = b = parseInt(ab[0], 10); } else if (ab.length === 2) { a = parseInt(ab[0], 10); b = parseInt(ab[1], 10); } else return null;
+      if (isNaN(a) || isNaN(b)) return null; if (a > b) { var x = a; a = b; b = x; }
+      if (a < 1 || b > n) return null;
+      for (var k = a; k <= b; k++) { if (!seen[k]) { seen[k] = 1; out.push(k); } }
+    }
+    out.sort(function (x, y) { return x - y; }); return out.length ? out : null;
+  }
+  function selection() {
+    var n = pagesList().length, v = (document.getElementById('rng') || { value: '' }).value.trim();
+    if (!v) { var all = []; for (var i = 1; i <= n; i++) all.push(i); return all; }
+    var s = parse(v, n); if (!s) { alert('쪽 지정이 올바르지 않아요. 예: 1-4, 7  (표지가 1쪽, 총 ' + n + '쪽)'); return null; }
+    return s;
+  }
+  async function capture(pg) {
+    var host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:-12000px;top:0;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden';
+    var clone = pg.cloneNode(true); clone.classList.add('cap'); clone.style.position = 'relative';
+    host.appendChild(clone); document.body.appendChild(host);
+    try {
+      await new Promise(function (r) { setTimeout(r, 120); });
+      var rc = host.getBoundingClientRect();
+      return await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', useCORS: true, width: Math.round(rc.width), height: Math.round(rc.height), logging: false });
+    } finally { host.remove(); }
+  }
+  async function run(btn, kind) {
+    var PW = window.PDF_PW || W, PH = window.PDF_PH || H;   // PDF 용지(레이아웃 크기와 다를 때: 그림을 용지에 맞춰 늘림)
+    var nums = selection(); if (!nums) return;
+    var orig = btn.textContent; btn.disabled = true;
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      var pdf = null, J = window.jspdf && window.jspdf.jsPDF;
+      if (kind === 'pdf' && !J) throw new Error('PDF 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      if (!window.html2canvas) throw new Error('캡처 도구를 불러오지 못했어요(인터넷 연결 확인)');
+      for (var i = 0; i < nums.length; i++) {
+        btn.textContent = '찍는 중... (' + (i + 1) + '/' + nums.length + ')';
+        var c = await capture(pagesList()[nums[i] - 1]);
+        if (kind === 'pdf') {
+          if (!pdf) pdf = new J({ orientation: PW > PH ? 'landscape' : 'portrait', unit: 'mm', format: [PW, PH] }); else pdf.addPage([PW, PH], PW > PH ? 'landscape' : 'portrait');
+          pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
+        } else {
+          var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (window.PDFBASE || 'mo10') + '_' + nums[i] + '쪽.png';
+          document.body.appendChild(a); a.click(); a.remove(); await new Promise(function (r) { setTimeout(r, 250); });
+        }
+      }
+      if (kind === 'pdf') pdf.save((window.PDFBASE || 'mo10') + '.pdf');
+    } catch (e) { alert('저장 실패: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = orig; }
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (t && t.id === 'pdfBtn') run(t, 'pdf');
+    else if (t && t.id === 'pngBtn') run(t, 'png');
+  });
+})();
+</script><script>
+(function(){
+var qs=new URLSearchParams(location.search),SBU=(qs.get('sb')||'https://eqllmvfbcdtzercliicy.supabase.co/'),RPC=SBU+'rest/v1/rpc/',KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV',TK='acadapp_tok_v1';
+var $=function(s){return document.querySelector(s)};
+var S={tok:null,list:[],ex:null,staff:false,admin:false,role:'student',rows:null,me:null};window.__stuFiles=[];
+document.body.classList.add('stu');
+try{S.tok=localStorage.getItem(TK)}catch(e){}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+async function call(fn,args){var r;try{r=await fetch(RPC+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify(args)})}catch(e){return{ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(!r.ok)return{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 40_공수내모_OMR접수_서버.sql 을 먼저 실행해 주세요':'')};try{return await r.json()}catch(e){return{ok:false,error:'서버 응답을 읽지 못했어요'}}}
+async function omr(a,args){var j=await call('ac_omr',{p_action:a,p_token:S.tok,p_args:args||{}});if(j&&j.ok===false&&/다시 로그인/.test(j.error||'')){S.tok=null;try{localStorage.removeItem(TK)}catch(e){}showLogin('로그인이 풀렸어요. 다시 들어와 주세요')}return j}
+function msg(t,c){var e=$('#stuMsg');e.textContent=t||'';e.className='stuMsg'+(c?' '+c:'')}
+function showLogin(m){$('#stuLogin').hidden=false;$('#stuMain').hidden=true;$('#readPanel').style.display='none';msg(m||'','err')}
+/* ── 로그인 ── */
+document.querySelectorAll('#stuLogin [data-r]').forEach(function(b){b.addEventListener('click',function(){S.role=b.dataset.r;document.querySelectorAll('#stuLogin [data-r]').forEach(function(x){x.className=x===b?'on':'g'});$('#stuFormS').hidden=S.role!=='student';$('#stuFormT').hidden=S.role==='student'})});
+$('#stuGo').addEventListener('click',async function(){var args={academy:'bd'};
+ if(S.role==='student'){args.role='student';args.name=$('#stuName').value.trim();args.pin=$('#stuPin').value.trim();if(!args.name||!args.pin){msg('이름과 전화번호 뒤 4자리를 넣어 주세요','err');return}}
+ else{args.role='admin';args.password=$('#stuPw').value;if(!args.password){msg('비밀번호를 넣어 주세요','err');return}}
+ this.disabled=true;msg('확인 중...');var j=await call('ac_api',{p_action:'login',p_token:null,p_args:args});
+ if((!j||!j.ok)&&S.role==='staff'){args.role='ta';j=await call('ac_api',{p_action:'login',p_token:null,p_args:args})}
+ this.disabled=false;
+ if(!j||!j.ok){msg((j&&j.error)||'로그인하지 못했어요','err');return}
+ S.tok=j.token;try{localStorage.setItem(TK,S.tok)}catch(e){}msg('');boot()});
+/* ── 시작 ── */
+async function boot(){if(!S.tok){showLogin();return}
+ var j=await omr('list');if(!j||!j.ok){if(!S.tok)return;showLogin((j&&j.error)||'불러오지 못했어요');return}
+ S.list=j.list;S.staff=j.staff;S.admin=j.admin;S.me=j.me;$('#stuLogin').hidden=true;$('#stuMain').hidden=false;
+ $('#stuHi').innerHTML=(S.staff?'<b>선생님</b> 화면':'<b>'+esc((S.me||{}).name)+'</b> 학생 · '+esc((S.me||{}).cls||''))+' <button class="g" id="stuOut">로그아웃</button>';
+ $('#stuOut').onclick=async function(){await call('ac_api',{p_action:'logout',p_token:S.tok,p_args:{}});S.tok=null;try{localStorage.removeItem(TK)}catch(e){}location.reload()};
+ var sel=$('#stuExam');sel.innerHTML=S.list.length?S.list.map(function(e,i){var m=e.mine;return'<option value="'+i+'">'+esc(e.name)+(m?' — 제출함('+m.tries+'회)':'')+(e.lock?' · 마감':'')+'</option>'}).join(''):'<option>제출할 시험이 아직 없어요</option>';
+ sel.onchange=pick;pick()}
+function pick(){var e=S.list[+$('#stuExam').value];S.ex=e||null;$('#readPanel').style.display=(!S.staff&&e&&!e.lock)?'':'none';$('#stuStaff').hidden=!S.staff;$('#scanLast').innerHTML='';
+ if(!e){$('#stuExamInfo').textContent='';return}
+ if(S.staff){staffView();return}
+ var m=e.mine,h='객관식 '+e.n+'문항'+(e.es.length?' · 서술형 '+e.es.length+'문항(선생님이 채점)':'');
+ if(e.lock)h+='<br><b style="color:#c33">제출이 마감됐어요</b>';
+ $('#stuExamInfo').innerHTML=h+mineInfo(e)}
+function mineInfo(e){var m=e.mine;if(!m)return '';return '<br>지금까지 <b>'+m.tries+'번</b> 제출했어요 (최대 5번) · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.score!=null?' · 객관식 '+m.score+'점':'')+(m.es_total!=null?' · 서술형 '+m.es_total+'점':'')}
+/* ── 학생: 사진을 읽은 뒤 확인·제출 ── */
+document.addEventListener('change',function(e){var t=e.target;if(t&&(t.id==='fileIn'||t.id==='fileAlb')){window.__stuFiles.push.apply(window.__stuFiles,[].slice.call(t.files))}},true);
+function toJpeg(file,mx,q){return new Promise(function(res,rej){var im=new Image();im.onload=function(){var k=Math.min(1,mx/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};im.onerror=function(){rej(new Error('사진을 열 수 없어요'))};im.src=URL.createObjectURL(file)})}
+async function shrink(file){var d,m=[[1700,.78],[1500,.7],[1300,.62],[1100,.55],[900,.5]];for(var i=0;i<m.length;i++){d=await toJpeg(file,m[i][0],m[i][1]);if(d.length<1700000)return d}return d}
+window.__stuRead=function(idxs,RES){var i=idxs[idxs.length-1],o=RES[i],box=$('#scanLast');if(!box)return;
+ if(!o||o.err){box.innerHTML='<div class="stuBox"><b style="color:#c33">읽지 못했어요 😢</b><br>밝은 곳에서 답안지가 화면을 크게 채우고, 네 모서리의 검은 네모가 모두 나오게 다시 찍어 주세요.</div>';return}
+ var e=S.ex;if(!e){box.innerHTML='<div class="stuBox">먼저 위에서 시험을 골라 주세요</div>';return}
+ var n=e.n,ans=o.ans.slice(0,n),bad=[],blank=[],chips='',id=o.id||{};
+ var other=-1;if(id.no!=null&&id.kind){S.list.forEach(function(x,k){var m=x.meta||{};if(other<0&&m.no===+id.no&&m.kind===id.kind)other=k})}
+ if(other>=0&&S.list[other]!==e&&!window.__stuSw){window.__stuSw=1;var sel0=$('#stuExam');sel0.value=String(other);pick();var rr=window.__stuRead(idxs,RES);window.__stuSw=0;return rr}      // 답안지에 적힌 시험으로 자동 바꾸기
+ ans.forEach(function(a){var v=a.v;if(a.flag)bad.push(a.q);else if(v==='')blank.push(a.q);chips+='<i class="'+(a.flag?'b':(v===''?'x':'o'))+'">'+a.q+'</i>'});
+ var extra=o.ans.slice(n).filter(function(a){return a.v!==''||a.flag}),wrongSize=extra.length>0,m=e.meta||{},hb=[];
+ if(id.school&&id.school!=='?'&&m.school&&id.school!==m.school)hb.push('학교 '+id.school+' ≠ '+m.school);if(id.subj&&id.subj!=='?'&&m.subj&&id.subj!==m.subj)hb.push('과목 '+id.subj+' ≠ '+m.subj);
+ if(id.term&&id.term!=='?'&&m.term&&id.term!==m.term)hb.push('구분 '+id.term+' ≠ '+m.term);if(id.kind&&id.kind!=='?'&&m.kind&&id.kind!==m.kind)hb.push('종류 '+id.kind+' ≠ '+m.kind);
+ if(id.no!=null&&id.no!=='?'&&m.no!=null&&String(id.no)!==String(m.no))hb.push('회차 '+id.no+' ≠ '+m.no);
+ var idq=['no','kind','school','subj','term'].some(function(k){return id[k]==null||id[k]==='?'||id[k]==='(복수)'});
+ box.innerHTML='<div class="stuBox"><h3>읽은 답을 확인해 주세요</h3>'
+  +(wrongSize?'<div class="stuMsg err">이 시험은 객관식 '+n+'문항인데 그 뒤 번호('+extra.map(function(a){return a.q}).join(', ')+'번)에도 표시가 있어요. 맞는 시험을 골랐는지, 표시를 잘못하지 않았는지 확인해 주세요.</div>':'')
+  +(hb.length?'<div class="stuMsg err">⚠ 답안지의 「시험 구분」 표시와 고른 시험이 달라요: '+hb.join(' · ')+'<br>맞는 시험을 골랐는지 확인하세요. 그대로 내면 선생님이 확인해요.</div>':(idq?'<div class="hint">「시험 구분」(과목·구분·종류·회차)이나 학교 표시가 잘 안 읽혔어요 — 표시를 했는지 확인해 보세요. (그대로 내도 돼요)</div>':'<div class="stuMsg ok">✓ 답안지 표시 확인: '+m.no+'회 '+m.kind+' · '+m.school+' · '+m.subj+' '+m.term+'</div>'))
+  +'<div class="stuChips">'+chips+'</div>'
+  +(bad.length?'<div class="stuMsg err">헷갈리게 읽힌 번호: '+bad.join(', ')+' — 아래 표에서 직접 고쳐 주세요</div>':'')
+  +(blank.length?'<div class="hint">빈칸으로 읽힌 번호: '+blank.join(', ')+' (안 풀었으면 그대로 두세요)</div>':'')
+  +'<p class="hint">① 아래 ‘읽은 학생 목록’ 표에서 내가 마킹한 답과 같은지 확인하고 틀린 곳은 고쳐요. ② 서술형을 쓴 <b>뒷면</b>도 있으면 사진을 골라요(선택). ③ 제출!</p>'
+  +'<label>뒷면(서술형) 사진 <input type="file" id="stuBack" accept="image/*" capture="environment"></label>'
+  +'<div><button id="stuSend"'+(wrongSize||e.lock?' disabled':'')+'>이대로 제출하기</button></div><div id="stuSendMsg" class="stuMsg"></div></div>';
+ $('#stuSend').onclick=async function(){var btn=this,m=$('#stuSendMsg');
+  if(!window.__stuNoConfirm&&!confirm('이대로 제출할까요?\n('+e.name+')'))return;btn.disabled=true;m.className='stuMsg';m.textContent='사진을 줄이는 중...';
+  try{var f=window.__stuFiles[i];if(!f)throw new Error('원본 사진을 찾지 못했어요. 다시 찍어 주세요');var front=await shrink(f),back='',bf=$('#stuBack').files[0];if(bf)back=await shrink(bf);
+   m.textContent='보내는 중...';var cur=RES[i].ans.slice(0,n).map(function(a){return a.v});
+   var j=await omr('submit',{exam_id:e.id,answers:cur,front:front,back:back,hdr:{no:id.no,kind:id.kind,school:id.school,subj:id.subj,term:id.term}});if(!j||!j.ok)throw new Error((j&&j.error)||'제출하지 못했어요');
+   var ox=j.ox.split('').map(function(c,k){return'<i class="'+(c==='O'?'o':'x')+'">'+(k+1)+'</i>'}).join('');
+   box.innerHTML='<div class="stuBox"><h3>✅ 제출 완료!</h3><div class="stuMsg ok">맞힌 개수 '+j.right+' / '+j.n+' · 객관식 '+j.score+'점 ('+j.tries+'번째 제출)</div><div class="stuChips">'+ox+'</div>'
+     +'<p class="hint">초록=맞음 · 빨강=틀림(또는 빈칸). 정답과 풀이는 선생님이 공개하면 볼 수 있어요. 서술형은 선생님이 사진을 보고 채점해요. 틀린 문제는 오답노트로 이어져요.</p>'
+     +'<p><a href="tbmission.html">내 미션·정오표 보러 가기 →</a></p></div>';
+   e.mine={tries:j.tries,ox:j.ox,score:j.score,es_total:null};var sel=$('#stuExam');sel.options[sel.selectedIndex].text=e.name+' — 제출함('+j.tries+'회)';$('#stuExamInfo').innerHTML='객관식 '+e.n+'문항'+mineInfo(e)}
+  catch(er){btn.disabled=false;m.className='stuMsg err';m.textContent=er.message}}};
+/* ── 선생님: 제출한 사진을 보며 답 고치기 ── */
+function hdrBad(r,ex){var h=r.hdr,m=ex.meta;if(!h||!m)return'';var b=[];[['no','회차'],['kind','종류'],['school','학교'],['subj','과목'],['term','구분']].forEach(function(p){var v=h[p[0]];if(v!=null&&v!=='?'&&v!=='(복수)'&&String(v)!==String(m[p[0]]))b.push(p[1]+' '+v+' ≠ '+m[p[0]])});return b.join(' · ')}
+async function fixView(r,ex){var M=$('#stuFix'),inn=M.querySelector('.in'),n=ex.n,cur=(r.answers||[]).slice(0,n),orig=(r.orig||r.answers||[]).slice(0,n);M.style.display='block';M.classList.remove('zoom');
+ inn.innerHTML='<div><b>'+esc(r.name)+'</b> · '+esc(ex.name)+' <button class="g" id="fxX" style="float:right">닫기 ✕</button></div><div class="hint">사진을 보면서 학생이 마킹한 답과 다르게 읽힌 번호만 고치세요. 사진을 누르면 크게 보여요. 고치면 점수와 정오표가 바로 다시 계산돼요.</div><div class="box"><div id="fxImg">사진 불러오는 중...</div></div>'
+  +(r.hdr?'<div class="hint">답안지의 시험 표시: '+esc((r.hdr.no||'?')+'회 '+(r.hdr.kind||'')+' · '+(r.hdr.school||'')+' · '+(r.hdr.subj||'')+' '+(r.hdr.term||''))+(hdrBad(r,ex)?' <span class="bdg w">시험 표시 다름: '+esc(hdrBad(r,ex))+'</span>':'')+'</div>':'')
+  +'<div class="fixG">'+cur.map(function(v,k){return'<label data-k="'+k+'"'+(String(v||'')!==String(orig[k]||'')?' class="ch"':'')+'><b>'+(k+1)+'</b><select><option value="">—</option>'+[1,2,3,4,5].map(function(x){return'<option'+(String(x)===String(v)?' selected':'')+'>'+x+'</option>'}).join('')+'</select></label>'}).join('')+'</div>'
+  +'<div><button id="fxSave">고쳐서 저장</button> <span id="fxMsg" class="stuMsg"></span></div>'+(r.fixed?'<div class="hint">이미 한 번 고친 기록이 있어요(처음 낸 답은 서버에 남아 있어요).</div>':'');
+ $('#fxX').onclick=function(){M.style.display='none'};
+ var p=await omr('photo',{exam_id:ex.id,sid:r.sid,side:'f'});$('#fxImg').innerHTML=p.ok?'<img alt="" src="'+p.src+'">':'<span class="stuMsg err">'+esc(p.error||'사진이 없어요')+'</span>';
+ var im=$('#fxImg img');if(im)im.onclick=function(){M.classList.toggle('zoom')};
+ inn.querySelectorAll('.fixG select').forEach(function(s){s.addEventListener('change',function(){s.parentNode.classList.toggle('ch',s.value!==String(orig[+s.parentNode.dataset.k]||''))})});
+ $('#fxSave').onclick=async function(){var vals=[].map.call(inn.querySelectorAll('.fixG select'),function(s){return s.value}),m=$('#fxMsg');m.className='stuMsg';m.textContent='저장 중...';
+  var j=await omr('fix',{exam_id:ex.id,sid:r.sid,answers:vals});if(!j||!j.ok){m.className='stuMsg err';m.textContent=(j&&j.error)||'저장하지 못했어요';return}
+  m.className='stuMsg ok';m.textContent='저장했어요 — 맞힌 개수 '+j.right+' / '+j.n+' · 객관식 '+j.score+'점';r.orig=r.orig||r.answers;r.answers=vals;r.score=j.score;r.fixed=new Date().toISOString();setTimeout(function(){M.style.display='none';staffView()},900)}}
+/* ── 선생님: 제출 현황 · 서술형 점수 · 사진 ── */
+async function staffView(){var e=S.ex,box=$('#stuStaff');box.innerHTML='불러오는 중...';
+ var j=await omr('rows',{exam_id:e.id});if(!j||!j.ok){box.innerHTML='<span class="stuMsg err">'+esc((j&&j.error)||'불러오지 못했어요')+'</span>';return}
+ S.rows=j.rows;var ex=j.exam,es=ex.es||[];
+ var h='<div class="hint">'+esc(ex.name)+' · 객관식 '+ex.n+'문항 · 서술형 '+es.length+'문항(만점 '+es.join(' / ')+') · 제출 '+j.rows.filter(function(r){return r.tries}).length+'명 / '+j.rows.length+'명</div>'
+  +'<div><button class="g" id="stuLock">'+(ex.lock?'🔓 마감 풀기':'🔒 제출 마감하기')+'</button><button class="g" id="stuCsv">📄 성적표용 CSV 받기</button><button class="g" id="stuRef">↻ 새로고침</button></div>'
+  +'<div style="overflow:auto"><table class="stuTbl"><tr><th>이름</th><th>반·학교</th><th>제출</th><th>객관식</th>'+es.map(function(m,k){return'<th>서'+(k+1)+'<br><small>/'+m+'</small></th>'}).join('')+'<th>합계</th><th>사진</th><th></th></tr>';
+ j.rows.forEach(function(r,ri){var sub=!!r.tries;h+='<tr data-i="'+ri+'"><td class="l">'+esc(r.name)+(r.fixed?'<span class="bdg f">선생님 수정</span>':'')+(hdrBad(r,ex)?'<span class="bdg w" title="'+esc(hdrBad(r,ex))+'">시험 표시 다름</span>':'')+'</td><td class="l">'+esc(r.cls)+' · '+esc(r.school)+'</td><td>'+(sub?r.tries+'회<br><small>'+new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</small>':'<span class="no">미제출</span>')+'</td><td>'+(sub&&r.score!=null?r.score:'')+'</td>';
+  es.forEach(function(m,k){h+='<td>'+(sub?'<input data-k="'+k+'" value="'+(r.es&&r.es[k]!=null?r.es[k]:'')+'">':'')+'</td>'});
+  h+='<td class="tot">'+(sub?(Math.round(((+r.score||0)+(+r.es_total||0))*10)/10):'')+'</td><td>'+(r.fp?'<button class="g ph" data-s="f">앞</button>':'')+(r.bp?'<button class="g ph" data-s="b">뒤</button>':'')+'</td><td>'+(sub?'<button class="g fx" title="사진을 보면서 이 학생의 객관식 답을 고쳐요">답 확인·수정</button> <button class="g rs" title="이 학생이 다시 제출할 수 있게 해요">재제출 허용</button>':'')+'</td></tr>'});
+ box.innerHTML=h+'</table></div>';
+ $('#stuLock').onclick=async function(){var r=await omr('lock',{exam_id:e.id,on:!ex.lock});if(r.ok){e.lock=!ex.lock;staffView()}};
+ $('#stuRef').onclick=staffView;$('#stuCsv').onclick=function(){exportCsv(ex)};
+ box.querySelectorAll('tr[data-i] input').forEach(function(inp){inp.addEventListener('change',async function(){var tr=inp.closest('tr'),r=S.rows[+tr.dataset.i],vals=[].map.call(tr.querySelectorAll('input'),function(x){return x.value.trim()});
+  var j2=await omr('es',{exam_id:e.id,sid:r.sid,es:vals});if(!j2.ok){alert(j2.error);staffView();return}r.es=vals.map(function(v){return v===''?null:+v});r.es_total=j2.es_total;tr.querySelector('.tot').textContent=Math.round(((+r.score||0)+j2.es_total)*10)/10})});
+ box.querySelectorAll('.ph').forEach(function(b){b.addEventListener('click',async function(){var r=S.rows[+b.closest('tr').dataset.i];b.textContent='…';var p=await omr('photo',{exam_id:e.id,sid:r.sid,side:b.dataset.s});b.textContent=b.dataset.s==='f'?'앞':'뒤';if(!p.ok){alert(p.error);return}var m=$('#stuModal');m.querySelector('img').src=p.src;m.classList.remove('zoom');m.style.display='block'})});
+ box.querySelectorAll('.fx').forEach(function(b){b.addEventListener('click',function(){fixView(S.rows[+b.closest('tr').dataset.i],ex)})});
+ box.querySelectorAll('.rs').forEach(function(b){b.addEventListener('click',async function(){var r=S.rows[+b.closest('tr').dataset.i];if(!confirm(r.name+' 학생이 다시 제출할 수 있게 할까요?'))return;var x=await omr('reset',{exam_id:e.id,sid:r.sid});alert(x.ok?'다시 제출할 수 있어요':x.error)})})}
+$('#stuModal').addEventListener('click',function(ev){if(ev.target.classList.contains('x')){this.style.display='none';return}this.classList.toggle('zoom')});
+function exportCsv(ex){var rows=[['파일','학교','반','생일(MMDD)','점수','만점','서술형합계'].concat(Array.from({length:ex.n},function(_,i){return'답'+(i+1)})).concat(['이름'])],k=0;
+ var mx=(ex.items||[]).reduce(function(a,x){return a+(+x.pts||0)},0);
+ S.rows.forEach(function(r){if(!r.tries)return;k++;rows.push(['제출',r.school,r.cls,r.p4||('9'+String(k).padStart(3,'0')),r.score==null?'':r.score,Math.round(mx*10)/10,r.es_total==null?'':r.es_total].concat((r.answers||[]).map(String)).concat([r.name]))});
+ var csv='﻿'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='공수내모_제출결과_'+ex.name.replace(/[^가-힣A-Za-z0-9]+/g,'_')+'.csv';document.body.appendChild(a);a.click();a.remove()}
+window.__stuBoot=boot;boot();
+})();
+</script></body></html>

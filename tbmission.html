@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="whycheck.js?v=2"></script>
 <style>
 :root{--navy:#1f3a6e;--navy2:#17284d;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#f4f1ea;--card:#fff;--ok:#2f7d5b;--fk:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif;--fd:"Playfair Display",serif}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-text-size-adjust:100%}
@@ -164,9 +165,9 @@ function render(){
  if(!S.tok||!S.me){a.innerHTML=vLogin();return}
  var h=EMB?'<div class="wrap">':'<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>교과서 미션</h1><span class="sp"></span><span class="chipu">'+esc(S.me.name||'')+(isStaff()?' · '+(isAdmin()?'원장':'운영진'):(S.me.role==='parent'?' · 학부모':' · 학생'))+'</span>'+
   (!isStaff()?'<button class="tb g" data-a="nick">'+(S.ex?'이 미션 닉네임':'기본 닉네임')+'</button>':'')+(isAdmin()?'<button class="tb g" data-a="imp">이전 기록 가져오기</button><button class="tb g" data-a="stu">학생 관리</button>':'')+''+(isStaff()?'<button class="tb g" data-a="nickview">'+(NICK?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="tb g" data-a="home">🏠 홈</button><button class="tb" data-a="out">로그아웃</button></div></div><div class="wrap">';
- h+=S.ex?(ONLYH?vAna():vDetail()):S.ov?vOverview():vList();
+ h+=S.ex?(ONLYH?vAna():vDetail()):S.ov?vOverview():S.wv?whyView():vList();
  a.innerHTML=h+'</div>';
- if(S.ex)after();else if(!S.ov)loadCards()}
+ if(S.ex)after();else if(!S.ov&&!S.wv)loadCards()}
 function vLogin(){
  return '<div class="login"><div class="card"><div class="logo" style="color:#a8853f">MATHY YURI</div><h2>교과서 미션</h2><div class="muted sm" style="margin-bottom:12px">정오표 · 정답률 · 오답노트</div>'+
  '<div class="fld"><label>학원</label><div class="seg" id="lac"><button class="on" data-ac="ds">대치에스플러스</button><button data-ac="bd">분당미래탐구</button></div></div>'+
@@ -198,6 +199,7 @@ function catBar(list){
 function vList(){
  var ta=isTa();
  var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
+ h+='<div class="row" style="margin-bottom:10px"><button class="btn" data-w="open">'+(isStaff()?'오답 원인 분석 (5단계 체크)':'나의 오답 스타일 보기')+'</button></div>';
  if(!ta)h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 추가</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
  if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return !S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length)h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><b>오늘의 미션이 준비돼 있어요</b> — 누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요.<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div></div>'}
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
@@ -337,6 +339,7 @@ function vMy(){
  var cl=C.cls[r.cls]||[],cavg=cl.length?cl.reduce(function(a,x){return a+x.s},0)/cl.length:0;
  h+='<div class="card"><h3>'+((isStaff()&&!NICK||r.me)?esc(r.name)+' · ':'')+esc(r.nick)+' '+badge(r.cls)+'</h3><div class="kpis"><div class="kp n"><b>'+r.s+' / '+C.tot+'</b><span>점수</span></div><div class="kp r"><b>'+r.rk+'위 <small style="font-size:13px">/ '+C.G.length+'</small></b><span>전체 순위</span></div><div class="kp"><b>'+r.crk+'위 <small style="font-size:13px">/ '+cl.length+'</small></b><span>'+esc(cn(r.cls))+'반 순위</span></div><div class="kp"><b>'+pct(ok,n)+'%</b><span>정답률 ('+ok+'/'+n+')</span></div><div class="kp"><b>'+(r.s-cavg>=0?'+':'')+(r.s-cavg).toFixed(1)+'</b><span>반 평균('+cavg.toFixed(1)+') 대비</span></div><div class="kp r"><b>'+wr.length+'개</b><span>틀린 문항</span></div></div></div>';
  h+='<div class="card"><h3>내 정오표 <span class="muted sm" style="font-weight:400">○ 맞음 · ✕ 틀림 · △ 틀렸다가 고침 · 아래 숫자 = 전체 정답률 · 누르면 문제 보기</span></h3><div class="oxg">'+C.items.map(function(it,i){var v=okAt(r,i);return '<button class="ox '+(v===1?'o':v===0?(r.ox[i]==='T'?'t':'x'):'')+'" data-a="prob" data-no="'+(i+1)+'"><i>'+(i+1)+'</i><b>'+(v===1?'○':v===0?(r.ox[i]==='T'?'△':'✕'):'-')+'</b><span>'+rateTxt(C.rate[i])+'</span></button>'}).join('')+'</div></div>';
+ h+=whyMyCard(r);
  var gs=groups('unit').map(function(g){var w=g.idx.filter(function(i){return okAt(r,i)===0}).length;return {k:g.k,t:g.idx.length,w:w}}).sort(function(a,b){return b.w/b.t-a.w/a.t});
  h+='<div class="grid2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px"><div class="card"><h3>단원·유형별 약점</h3>'+gs.map(function(x){return '<div class="ub"><span class="nm">'+esc(x.k)+'</span><div class="bar"><i style="width:'+pct(x.w,x.t)+'%"></i></div><b>'+x.w+'/'+x.t+' 틀림</b></div>'}).join('')+'<div class="muted sm">막대가 길수록 많이 틀린 단원이에요.</div></div>'+
  '<div class="card"><h3>틀린 문항 ('+wr.length+')</h3>'+(wr.length?wr.map(function(i){var it=C.items[i];return '<div class="row" style="padding:7px 0;border-bottom:1px solid #eef0f5"><b style="color:var(--rose);width:44px">'+(i+1)+'번</b><span class="sp sm">'+esc(it.src||it.unit)+'</span><span class="tag '+rateCls(C.rate[i])+'">정답률 '+rateTxt(C.rate[i])+'</span><button class="btn sec sm3" data-a="prob" data-no="'+(i+1)+'">문제</button></div>'}).join('')+'<div style="margin-top:12px"><button class="btn gold" data-a="mknote" data-k="'+r.k+'">이 학생 오답노트 만들기</button></div>':'<div class="empty">모두 맞혔어요! 🎉</div>')+'</div></div>';
@@ -481,7 +484,7 @@ function noteDoc(data,withSol){
   full+='<div class="pg sum"><div class="ph">MEN BOOK · '+esc(d.name)+'</div><h2>그동안의 학습 통계</h2><h3>미션별 정답률</h3>'+mrows+'<h3>단원·유형별 정답률 · 오답 분포</h3>'+urows+'</div>';
   // 문제
   all.forEach(function(x,k){var p=x.M.probs[x.no],it=x.M.ex.items[x.no-1];
-   blocks+='<div class="blk"><div class="bh"><i class="bn">'+(k+1)+'</i><span class="bs">'+esc(x.M.ex.short||x.M.ex.name)+' · '+x.no+'번 · '+esc(it.unit)+'</span><span class="br">반 정답률 '+(x.M.rates[x.no-1]==null?'-':Math.round(x.M.rates[x.no-1]*100)+'%')+'</span></div><div class="q">'+(p&&p.stem?fixS(p.stem)+chHtml(p.ch):'<span class="muted">문제 내용이 서버에 없어요 ('+esc(it.src||'')+')</span>')+'</div><div class="sol"><span>풀이 · 다시 풀기 ○ ✕</span></div></div>'});
+   blocks+='<div class="blk"><div class="bh"><i class="bn">'+(k+1)+'</i><span class="bs">'+esc(x.M.ex.short||x.M.ex.name)+' · '+x.no+'번 · '+esc(it.unit)+'</span><span class="br">반 정답률 '+(x.M.rates[x.no-1]==null?'-':Math.round(x.M.rates[x.no-1]*100)+'%')+'</span></div><div class="q">'+(p&&p.stem?fixS(p.stem)+chHtml(p.ch):'<span class="muted">문제 내용이 서버에 없어요 ('+esc(it.src||'')+')</span>')+'</div><div class="sol"><span>풀이 · 다시 풀기 ○ ✕</span></div>'+whyPrintRow()+'</div>'});
   // 해설
   var sols=all.filter(function(x){var p=x.M.probs[x.no];return p&&(p.an||p.so)});
   if(withSol&&sols.length){blocks+='<div class="blk sech"><b>해설 · '+esc(d.name)+'</b></div>'+sols.map(function(x){var p=x.M.probs[x.no];return '<div class="blk solb"><b class="sn">'+x.no+'번</b> <span class="muted">'+esc(x.M.ex.short||'')+'</span> 정답 <b>'+ansTxt(p.an)+'</b>'+(p.so?'<div class="q sq">'+fixS(p.so)+'</div>':'')+'</div>'}).join('')}
@@ -561,6 +564,7 @@ function vInput(){
   h+='<div class="gw"><table class="gt"><tr><th class="gn">학생 \\ 문항 번호</th>'+S.C.items.map(function(_,i){return '<th class="'+(i%5===4?'g5':'')+'">'+(i+1)+'</th>'}).join('')+'</tr>'+
    rs.map(function(r){var k=r.k;return '<tr data-row="'+k+'"'+(gDirty(k)?' class="dirty"':'')+'><td class="gn">'+badge(r.cls)+' <b>'+esc(r.name)+'</b>'+btns(k)+'<div class="gs" data-gs="'+k+'">'+gSum(k)+'</div></td>'+S.G[k].map(function(c,i){return '<td class="c-'+c+(i%5===4?' g5':'')+'" data-a="cell" data-k="'+k+'" data-i="'+i+'" title="'+esc(r.name)+' · '+(i+1)+'번">'+gSym(c)+'</td>'}).join('')+'</tr>'}).join('')+'</table></div>';
  }
+ h+='<div style="margin-top:12px">'+whyInputCard()+'</div>';
  h+='<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">이번 미션 닉네임 (선택)</summary><div class="muted sm" style="margin:6px 0">비우면 기본 닉네임이 보여요.</div><table class="tbl">'+rs.map(function(r){return '<tr><td>'+badge(r.cls)+'</td><td class="l"><b>'+esc(r.name)+'</b></td><td><input class="oxin" style="min-width:120px;letter-spacing:0;font-family:inherit" data-nk="'+r.k+'" maxlength="10" value="'+esc(S.GN[r.k]!==undefined?S.GN[r.k]:(r.enick||''))+'" placeholder="'+esc(r.nick)+'" autocomplete="off"></td></tr>'}).join('')+'</table></details>';
  return h}
 function gPaint(el,c){
@@ -568,6 +572,7 @@ function gPaint(el,c){
  else{var g5=el.classList.contains('g5');el.className='c-'+c+(g5?' g5':'');el.textContent=gSym(c)}}
 function gNs(k){if(nsEff(k)){S.NS[k]=false}else{S.NS[k]=true;S.G[k]=S.G[k].map(function(){return '-'});[].forEach.call(document.querySelectorAll('[data-a="cell"][data-k="'+k+'"]'),function(el){gPaint(el,'-')})}gRefresh(k)}
 function gRefresh(k){
+ if(window.whyPaint)whyPaint();
  [].forEach.call(document.querySelectorAll('[data-a="gns"][data-k="'+k+'"]'),function(b){b.classList.toggle('on',nsEff(k))});
  [].forEach.call(document.querySelectorAll('[data-gs="'+k+'"]'),function(e){e.innerHTML=gSum(k)});
  var tr=document.querySelector('tr[data-row="'+k+'"]');if(tr)tr.classList.toggle('dirty',gDirty(k));
@@ -581,13 +586,16 @@ async function saveOx(){
  Object.keys(S.G).forEach(function(k){if(!gDirty(k))return;var v=S.G[k].join('');if(/^-+$/.test(v)){var m=(map[k]=map[k]||{sid:k});if(nsEff(k))m.ns=true;else{if(/[OXT]/.test(S.G0[k]))m.clear=true;if(S.NS0[k])m.ns=false}return}(map[k]=map[k]||{sid:k}).ox=v});
  [].forEach.call(document.querySelectorAll('.oxin[data-nk]'),function(inp){var k=inp.getAttribute('data-nk'),r=S.R.filter(function(x){return x.k===k})[0],v=inp.value.trim();if(!r||v===(r.enick||''))return;(map[k]=map[k]||{sid:k}).nick=v});
  var rows=Object.keys(map).map(function(k){return map[k]});
- if(!rows.length){alert('바뀐 입력이 없어요');return}
- var j=await ms('ox',{exam_id:S.ex.id,rows:rows});
+ var wdn=window.whyDirtyN?whyDirtyN():0;
+ if(!rows.length&&!wdn){alert('바뀐 입력이 없어요');return}
+ var j=rows.length?await ms('ox',{exam_id:S.ex.id,rows:rows}):{ok:true,n:0};
  if(!j||!j.ok){alert((j&&j.error)||'저장하지 못했어요');return}
  var nclr=rows.filter(function(x){return x.clear}).length;
  if(nclr&&j.cleared===undefined){alert('채점 지우기를 저장하려면 서버에 15_채점지우기_서버.sql 을 먼저 실행해 주세요');return}
  if(rows.some(function(x){return x.ns!==undefined})&&j.nsn===undefined){alert('미시작 표시를 저장하려면 서버에 18_미시작구분_서버.sql 을 먼저 실행해 주세요');return}
- S.Gex=null;S.G=null;try{window.parent.postMessage({tbmsaved:1},location.origin)}catch(e){}await openMission(S.ex.id,'input');alert('저장했어요 (정오표 '+j.n+'명'+(j.cleared?' · 지움 '+j.cleared+'명':'')+(j.nsn?' · 미시작 표시 '+j.nsn+'명':'')+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
+ var wr=window.whySaveAll?await whySaveAll():{saved:0,err:'',n:0},wmiss=0;
+ if(window.whyMissingAll)wmiss=whyMissingAll();
+ S.Gex=null;S.G=null;try{window.parent.postMessage({tbmsaved:1},location.origin)}catch(e){}await openMission(S.ex.id,'input');alert((wr.err?'⚠ 원인 체크를 저장하지 못했어요: '+wr.err+'\n\n':'')+(wmiss?'⚠ 원인을 안 고른 ✕ 가 '+wmiss+'개 있어요. 화면 아래 빨간 칸에서 골라 저장해 주세요.\n\n':'')+'저장했어요 (원인 체크 '+wr.saved+'개 · 정오표 '+j.n+'명'+(j.cleared?' · 지움 '+j.cleared+'명':'')+(j.nsn?' · 미시작 표시 '+j.nsn+'명':'')+(j.nicks?' · 닉네임 '+j.nicks+'명':'')+')')}
 function openPaste(){
  var m=$('#mb');$('#md').hidden=false;m.innerHTML='<h3>정오표 붙여넣기</h3><div class="muted sm" style="margin-bottom:8px">한 줄에 한 명: <b>이름 O/X문자열 닉네임(있으면)</b> — 숫자도 돼요: <b>1 맞음 · 2 틀림 · 3 고침 · 0 안 푼 문제(= 기록 안 함)</b> (예: 홍길동 1121310) (탭·공백·쉼표 모두 가능). 닉네임은 이번 미션에서만 써요. 이름이 같은 학생이 여러 명이면 위 표에서 직접 입력해 주세요.</div><textarea id="pst" placeholder="김하준 OOXOOOXO... 번개\n이서윤 OXOXOOOO... 별똥별"></textarea><div id="pres" class="sm" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sec" data-a="close">닫기</button><button class="btn" data-a="pasteok">입력칸에 넣기</button></div>'}
 function pasteOk(){
@@ -844,6 +852,7 @@ document.addEventListener('change',function(ev){var t=ev.target;
  if(t.id==='ovsel'){S.ovSid=t.value;S.hist=null;render();loadHist().then(render)}
  if(t.id==='impf'&&t.files&&t.files[0])readImp(t.files[0]);});
 document.addEventListener('input',function(ev){var t=ev.target;if(t.getAttribute&&t.getAttribute('data-nk')&&S.GN)S.GN[t.getAttribute('data-nk')]=t.value;if(t.classList&&t.classList.contains('oxin')&&t.getAttribute('data-k')){var k=t.getAttribute('data-k'),v=normOx(t.value),n=S.C?S.C.n:0,L=document.querySelector('[data-len="'+k+'"]');if(L)L.innerHTML=v?'<span style="color:'+(v.length===n?'#2f7d5b':'#b84a4a')+'">'+v.length+'/'+n+'</span>':''}});
+if(window.whyInit)whyInit({S:S,esc:esc,call:call,guard:guard,isStaff:isStaff,render:render,openMission:openMission,badge:badge,cn:cn,ms:ms,gRows:gRows});
 render();if(S.tok)boot();
 })();
 </script></body></html>
