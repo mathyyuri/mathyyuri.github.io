@@ -431,21 +431,40 @@ function targetsOf(p){return Object.values(U).filter(u=>{
 /* ════════ 서버 연결 ════════ */
 const SBQ=(()=>{try{const q=new URLSearchParams(location.search).get('sb');return q&&/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(q)?q:null;}catch(e){return null;}})();   // 시험용(내 컴퓨터) 서버만 허용
 const API_URL=(SBQ||'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/')+'ac_api', API_KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
-const TOKEN_KEY='acadapp_tok_v1',KEYF='acadapp_face_v1';
-let TOKEN=null;try{TOKEN=localStorage.getItem(TOKEN_KEY);}catch(e){}
+const TOKEN_KEY='acadapp_tok_v1',KEYF='acadapp_face_v1',DEV_KEY='acadapp_dev_v1',DSEC_KEY='acadapp_dsec_v1',ROT_KEY='acadapp_rot_v1';
+/* ── 자동 로그인: 로그인 열쇠를 한 군데에만 두지 않고 localStorage + IndexedDB 두 곳에 보관 ── */
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+const IDB={
+ open(){return new Promise((res,rej)=>{try{const q=indexedDB.open('mathy_auth',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}catch(e){rej(e);}});},
+ async get(k){try{const d=await this.open();return await new Promise(r=>{const g=d.transaction('kv').objectStore('kv').get(k);g.onsuccess=()=>r(g.result==null?null:g.result);g.onerror=()=>r(null);});}catch(e){return null;}},
+ async set(k,v){try{const d=await this.open();await new Promise(r=>{const tx=d.transaction('kv','readwrite');if(v==null)tx.objectStore('kv').delete(k);else tx.objectStore('kv').put(v,k);tx.oncomplete=()=>r();tx.onerror=()=>r();tx.onabort=()=>r();});}catch(e){}}
+};
+let TOKEN=lsGet(TOKEN_KEY);
+function tokStore(tok){TOKEN=tok;lsSet(TOKEN_KEY,tok);IDB.set('tok',tok);}
+function tokClear(){TOKEN=null;lsSet(TOKEN_KEY,null);IDB.set('tok',null);}
+async function tokRestore(){   // localStorage 가 비었는데 IndexedDB 에 남아 있으면 되살려요 (폰이 한쪽만 지웠을 때)
+ if(TOKEN)return;const t=await IDB.get('tok');if(t){TOKEN=t;lsSet(TOKEN_KEY,t);}
+}
+window.addEventListener('storage',e=>{if(e.key===TOKEN_KEY&&e.newValue&&!(typeof VIEW!=='undefined'&&VIEW))TOKEN=e.newValue;});   // 다른 창이 열쇠를 새것으로 바꿨으면 따라가요
 let PUB={season:5,face:null,ok:true};
 const IMGS={};
 const clone=o=>JSON.parse(JSON.stringify(o));
-async function api(action,args){
+async function api(action,args,_again){
  let r;
  try{r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});}
- catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'};}
- if(!r.ok)return {ok:false,error:'서버에 연결하지 못했어요 ('+r.status+')',status:r.status};
- let j;try{j=await r.json();}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'};}
- if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN)forceLogout();
+ catch(e){return {ok:false,net:true,error:'인터넷 연결을 확인해 주세요'};}
+ if(!r.ok)return {ok:false,net:true,error:'서버에 연결하지 못했어요 ('+r.status+')',status:r.status};
+ let j;try{j=await r.json();}catch(e){return {ok:false,net:true,error:'서버 응답을 읽지 못했어요'};}
+ if(j&&j.ok===false&&j.error&&j.error.indexOf('다시 로그인')>=0&&action!=='login'&&action!=='public'&&TOKEN){
+  /* 서버가 "이 열쇠는 무효"라고 분명히 말했을 때만 로그아웃해요. 그 전에, 다른 창이 새 열쇠로 바꿔 두었는지 한 번 확인 */
+  const isView=typeof VIEW!=='undefined'&&VIEW;
+  if(!_again&&!isView){const t=lsGet(TOKEN_KEY)||await IDB.get('tok');if(t&&t!==TOKEN){TOKEN=t;return api(action,args,true);}}
+  forceLogout();
+ }
  return j;
 }
-function forceLogout(){if(typeof VIEW!=='undefined'&&VIEW){viewEnd(true);return;}TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
+function forceLogout(){if(typeof VIEW!=='undefined'&&VIEW){viewEnd(true);return;}TOKEN=null;TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;tokClear();S.uid=null;S.L={ac:null,role:null};render(0);toast('다시 로그인해 주세요');}
 function applySync(j){
  const m=j.me;
  Object.keys(U).forEach(k=>delete U[k]);
@@ -459,7 +478,7 @@ function applySync(j){
  S.uid=m.uid;
  if(m.role==='ta')S.ac=m.academy;else if(m.role==='admin'&&!S.ac)S.ac='ds';
 }
-async function resync(){const j=await api('sync');if(j.ok){applySync(j);return true;}return false;}
+async function resync(){const j=await api('sync');if(j&&j.ok){applySync(j);return true;}return false;}   // 실패해도 로그인 열쇠는 지우지 않아요 (열쇠 삭제는 api() 가 서버의 '다시 로그인' 응답을 받았을 때만)
 function applyClasses(c){['ds','bd'].forEach(k=>{if(c&&Array.isArray(c[k])&&c[k].length)AC[k].classes=c[k].slice();});}
 async function mut(action,args,opt){
  opt=opt||{};
@@ -1012,25 +1031,25 @@ function pickFace(){
   r.readAsDataURL(f);};
  i.click();}
 async function startSession(tok){
- TOKEN=tok;try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
+ tokStore(tok);
  TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;
  const ok=await resync();
- if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}
- S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);
+ if(!ok){if(TOKEN){bootRetry();return;}S.L.err='불러오지 못했어요. 다시 해 주세요.';S.L.busy=false;render(0);return;}   // 인터넷 문제면 방금 받은 로그인은 지우지 않고 다시 시도
+ S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';S.L={ac:null,role:null};render(0);afterLogin();
 }
 async function doLogin(){
  const L=S.L;if(L.busy)return;
  L.nm=$('#lname').value.trim();const pin=$('#lpin')?$('#lpin').value.trim():'';L.busy=true;L.err='';render(0);
- const j=await api('login',{academy:L.ac,role:L.role==='parent'?'parent':'student',name:L.nm,pin:pin});
+ const j=await api('login',{academy:L.ac,role:L.role==='parent'?'parent':'student',name:L.nm,pin:pin,dev:devLabel(),dev_id:lsGet(DEV_KEY)||undefined});
  if(!j||!j.ok){L.busy=false;L.err=(j&&j.error)||'로그인하지 못했어요';render(0);return;}
- L.nm='';await startSession(j.token);
+ L.nm='';if(j.dev_id){lsSet(DEV_KEY,j.dev_id);IDB.set('dev',j.dev_id);}await startSession(j.token);
 }
 async function doStaff(){
  const L=S.L;if(L.busy)return;
  const pw=$('#lpw').value;L.busy=true;L.err='';render(0);
- const j=await api('login',{academy:L.ac,role:L.staff,password:pw});
+ const j=await api('login',{academy:L.ac,role:L.staff,password:pw,dev:devLabel(),dev_id:lsGet(DEV_KEY)||undefined});
  if(!j||!j.ok){L.busy=false;L.err=(j&&j.error)||'로그인하지 못했어요';render(0);return;}
- const v=L.ac;S.ac=v;L.staff=null;await startSession(j.token);
+ const v=L.ac;S.ac=v;L.staff=null;if(j.dev_id){lsSet(DEV_KEY,j.dev_id);IDB.set('dev',j.dev_id);}await startSession(j.token);
 }
 document.addEventListener('submit',e=>{const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();if(f.dataset.form==='login')doLogin();else doStaff();});
 function markMsg(key){const p=key.split(':');api('msg_read',{sid:p[0],kind:p[1]});}
@@ -1586,15 +1605,16 @@ async function pushOn(){
  try{
   const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
   if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
-  const k=sub.toJSON(),j=await pushApi('subscribe',{endpoint:k.endpoint,p256dh:k.keys.p256dh,auth:k.keys.auth});
+  const k=sub.toJSON(),j=await pushRegister(k);
   if(!j||!j.ok){toast((j&&j.error)||'알림을 켜지 못했어요 (10_앱알림_서버.sql 을 실행했는지 확인해 주세요)');return;}
-  PUSH_ON=true;PUSHMARKED=false;pushMark();toast('이 기기에서 알림을 받아요');homeRefresh();
+  lsSet('acadapp_pushreg_v1',String(Date.now()));PUSH_ON=true;PUSHMARKED=false;pushMark();toast('이 기기에서 알림을 받아요');homeRefresh();
  }catch(e){toast('알림을 켜지 못했어요: '+(e&&e.message||''));}
 }
-async function pushOff(){
- try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+async function pushOff(quiet){
+ try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,no)=>setTimeout(no,3000))]),sub=await reg.pushManager.getSubscription();   // 서비스워커가 없어도 로그아웃이 멈추지 않게 3초만 기다려요
   if(sub){await pushApi('unsubscribe',{endpoint:sub.endpoint});await sub.unsubscribe();}
-  PUSH_ON=false;toast('알림을 껐어요');homeRefresh();}catch(e){toast('알림을 끄지 못했어요');}
+  lsSet('acadapp_pushreg_v1',null);
+  PUSH_ON=false;if(!quiet){toast('알림을 껐어요');homeRefresh();}}catch(e){if(!quiet)toast('알림을 끄지 못했어요');}
 }
 
 function diagRes(l){
@@ -1628,12 +1648,102 @@ function appCard(side){
  else steps.push('<span class="muted">브라우저 메뉴(⋮) → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></span>');
  if(S.uid){
   if(!PUSH_OK||(IS_IOS&&!IS_APP))steps.push('<span class="muted">알림은 '+(IS_IOS?'홈 화면에 추가한 앱에서':'알림을 지원하는 브라우저에서')+' 켤 수 있어요.</span>');
-  else{pushStatus();steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <button class="btn sm3 sec" data-a="pushtest" type="button">테스트 알림</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요'+(PUSH_READY===false?'<br><b style="color:#b84a4a">서버 알림 설정이 아직 안 끝났어요 (원장님: 앱알림_설정방법 2~4단계)</b>':'')+'</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
+  else{pushStatus();if(Notification.permission==='denied')steps.push('<span class="muted"><b style="color:#b84a4a">알림이 막혀 있어요.</b> 휴대폰(또는 브라우저) 설정에서 이 앱의 알림을 <b>허용</b>으로 바꿔 주세요.</span>');steps.push(PUSH_ON===undefined?'<span class="muted">알림 상태 확인 중…</span>':PUSH_ON?'<button class="btn sm3 gh" data-a="pushoff" type="button">알림 끄기</button> <button class="btn sm3 sec" data-a="pushtest" type="button">테스트 알림</button> <span class="muted">이 기기에서 새 소식·메시지 알림을 받아요 (로그아웃해도 계속 받아요)'+(PUSH_READY===false?'<br><b style="color:#b84a4a">서버 알림 설정이 아직 안 끝났어요 (원장님: 앱알림_설정방법 2~4단계)</b>':'')+'</span>':'<button class="btn sm3 gold" data-a="pushon" type="button">알림 켜기</button>');}
  }else steps.push('<span class="muted">로그인하면 알림을 켤 수 있어요.</span>');
  if(S.uid&&isStaff()&&me().role==='admin')steps.push('<button class="btn sm3 sec" data-a="pushdiag" type="button">알림 점검</button>');
+ if(S.uid&&!(typeof VIEW!=='undefined'&&VIEW))steps.push('<button class="btn sm3 gh" data-a="devices" type="button">로그인된 기기 · 모든 기기 로그아웃</button>');
  return side?h+steps.join('<div style="height:6px"></div>')+'</div>':h+'<div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+steps.join('')+'</div></div>';
 }
 function sideApp(){return appCard(true);}
+
+/* ── 자동 로그인 · 열쇠 갱신 · 알림 자동 복구 · 기기 관리 (42_자동로그인_서버.sql) ── */
+const SESS_URL=API_URL.replace('ac_api','ac_session');
+async function sessApi(action,args){
+ try{const r=await fetch(SESS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false,status:r.status};}catch(e){return {ok:false,net:true};}
+}
+function devLabel(){
+ const u=navigator.userAgent;
+ const os=/iphone/i.test(u)?'아이폰':/ipad/i.test(u)?'아이패드':/android/i.test(u)?'안드로이드':/windows/i.test(u)?'윈도우 PC':/macintosh|mac os/i.test(u)?'맥':'기기';
+ const br=/edg\//i.test(u)?'엣지':/samsungbrowser/i.test(u)?'삼성인터넷':/chrome|crios/i.test(u)?'크롬':/firefox|fxios/i.test(u)?'파이어폭스':/safari/i.test(u)?'사파리':'';
+ return os+' '+(IS_APP?'앱':(br||'웹'));
+}
+/* 하루에 한 번 조용히 로그인 열쇠를 새것으로 바꿔요 (서버가 옛 열쇠도 7일은 인정해서, 응답을 놓치거나 창이 여러 개여도 풀리지 않아요) */
+async function sessRefresh(force){
+ if(!TOKEN||(typeof VIEW!=='undefined'&&VIEW))return;
+ if(!force&&Date.now()-(+lsGet(ROT_KEY)||0)<20*3600*1000)return;
+ const sent=TOKEN;const j=await sessApi('refresh',{});
+ if(j&&j.ok){
+  lsSet(ROT_KEY,String(Date.now()));
+  if(j.dev_id&&!lsGet(DEV_KEY)){lsSet(DEV_KEY,j.dev_id);IDB.set('dev',j.dev_id);}
+  if(j.token){const now=lsGet(TOKEN_KEY);if(!now||now===sent||now===TOKEN)tokStore(j.token);}   // 그 사이 다른 창이 더 새 열쇠를 저장했으면 그걸 존중
+ }
+}
+async function devSecret(){
+ let x=lsGet(DSEC_KEY);if(!x)x=await IDB.get('dsec');
+ if(!x){const a=new Uint8Array(24);crypto.getRandomValues(a);x=Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');}
+ lsSet(DSEC_KEY,x);IDB.set('dsec',x);return x;   // 서비스워커(sw.js)가 읽을 수 있도록 IndexedDB 에도 둬요
+}
+async function pushRegister(k){
+ const sec=await devSecret();
+ let j=await sessApi('push_sub',{endpoint:k.endpoint,p256dh:k.keys.p256dh,auth:k.keys.auth,dev_secret:sec});
+ if(!j||!j.ok)j=await pushApi('subscribe',{endpoint:k.endpoint,p256dh:k.keys.p256dh,auth:k.keys.auth});   // 42번 SQL 을 아직 안 돌렸으면 옛 방식으로
+ return j;
+}
+/* 알림 허용이 이미 되어 있는데 기기 등록이 빠졌거나(폰 저장소 정리·서버가 만료로 지움) 알림 주소가 바뀐 경우 → 말없이 다시 등록 */
+let PUSH_AUTO_AT=0;
+async function pushAuto(force){
+ if(!PUSH_OK||!TOKEN||!S.uid||(typeof VIEW!=='undefined'&&VIEW))return;
+ if(IS_IOS&&!IS_APP)return;
+ if(Notification.permission!=='granted')return;
+ if(!force&&Date.now()-PUSH_AUTO_AT<3600*1000)return;PUSH_AUTO_AT=Date.now();
+ try{
+  const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
+  const k=sub.toJSON(),st=await pushApi('status',{endpoint:k.endpoint});
+  if(!st||!st.ok)return;   // 인터넷 문제면 건드리지 않아요
+  const fresh=Date.now()-(+lsGet('acadapp_pushreg_v1')||0)<7*86400*1000;
+  if(st.on&&fresh){if(PUSH_ON!==true){PUSH_ON=true;PUSH_READY=st.ready;homeRefresh();}return;}
+  const j=await pushRegister(k);
+  if(j&&j.ok){lsSet('acadapp_pushreg_v1',String(Date.now()));const was=PUSH_ON;PUSH_ON=true;PUSHMARKED=false;pushMark();if(was!==true)homeRefresh();}
+ }catch(e){}
+}
+/* 알림을 아직 안 켠 사람에게 쉬운 말로 한 번 물어봐요 (나중에 → 7일 뒤 다시) */
+(function(){const st=document.createElement('style');st.textContent='#pushbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9000;background:#17284d;color:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(0,0,0,.28);max-width:560px;margin:0 auto}#pushbar>div{flex:1 1 220px;font-size:13.5px;line-height:1.45}#pushbar b{display:block;font-size:14.5px}#pushbar button{border:0;border-radius:999px;padding:8px 14px;font-weight:700;font-family:inherit;cursor:pointer;background:#c9a55d;color:#17284d;font-size:13.5px}#pushbar button.x{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}.dvrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.dvcur{display:inline-block;font-size:11px;font-weight:700;background:#dce7fb;color:#1f3a6e;border-radius:999px;padding:1px 8px;margin-left:4px}';document.head.appendChild(st);})();
+function pushBar(){
+ if(!PUSH_OK||!S.uid||(typeof VIEW!=='undefined'&&VIEW)||document.getElementById('pushbar'))return;
+ if(IS_IOS&&!IS_APP)return;
+ if(Notification.permission!=='default')return;
+ if(Date.now()-(+lsGet('acadapp_pushask_v1')||0)<7*86400*1000)return;
+ const b=document.createElement('div');b.id='pushbar';
+ b.innerHTML='<div><b>알림을 켜 둘까요?</b>새 소식·메시지가 오면 앱을 닫아 두어도 바로 알려 드려요.</div><button type="button" data-a="pushbaron">알림 켜기</button><button type="button" class="x" data-a="pushbarno">나중에</button>';
+ document.body.appendChild(b);
+}
+function pushBarOff(){const b=document.getElementById('pushbar');if(b)b.remove();}
+/* 알림을 눌러 앱을 열면 그 화면(소식·메시지·지시사항)으로 */
+function handleGo(go){
+ if(!go||!S.uid)return;
+ try{const q=new URLSearchParams(location.search);if(q.has('go')){q.delete('go');const qs=q.toString();history.replaceState(null,'',location.pathname+(qs?'?'+qs:''));}}catch(e){}
+ if(typeof tabsNow==='function'&&tabsNow().some(x=>x[0]===go)){S.tab=go;S.thread=null;render(0);}
+}
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='go')handleGo(e.data.go);});
+function afterLogin(){
+ if(!TOKEN||!S.uid||(typeof VIEW!=='undefined'&&VIEW))return;
+ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}   // 폰이 저장소를 함부로 지우지 않도록 요청
+ sessRefresh();pushAuto();setTimeout(pushBar,2500);
+ try{handleGo(new URLSearchParams(location.search).get('go'));}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&TOKEN&&S.uid){sessRefresh();pushAuto();}});
+function localLogout(){
+ TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;TODOE=null;ATD=undefined;ATDR={};ATDD=null;ATDC='';PRF={cls:'',only:false};tokClear();S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;pushBarOff();render(0);
+}
+async function showDevices(){
+ openModal('<h3>로그인된 기기</h3><div class="muted sm" style="margin:8px 0">불러오는 중…</div>');
+ const j=await sessApi('devices');
+ if(!j||!j.ok){openModal('<h3>로그인된 기기</h3><div class="muted" style="margin:10px 0">'+(j&&j.status===404?'서버에 42_자동로그인_서버.sql 을 먼저 실행해 주세요':'불러오지 못했어요. 잠시 뒤 다시 해 주세요.')+'</div><button class="btn gh" type="button" onclick="closeModal()">닫기</button>');return;}
+ const rows=(j.devices||[]).map(d=>'<div class="dvrow"><div><b>'+esc(d.label||'기기')+'</b>'+(d.cur?'<span class="dvcur">이 기기</span>':'')+'<div class="muted sm">마지막 사용 '+esc(String(d.last||'').slice(0,16).replace('T',' '))+'</div></div><button class="btn sm3 gh" type="button" data-a="devout" data-id="'+esc(d.id)+'" data-cur="'+(d.cur?1:0)+'">로그아웃</button></div>').join('')||'<div class="muted sm" style="margin:8px 0">기록이 없어요.</div>';
+ openModal('<h3>로그인된 기기</h3><div class="muted sm" style="margin:4px 0 6px;line-height:1.5">내 계정에 로그인돼 있는 기기예요. 모르는 기기가 있거나 휴대폰을 잃어버렸다면 로그아웃하세요.</div>'+rows+'<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn sm3" type="button" data-a="logoutall" style="background:#b84a4a;border-color:#b84a4a">모든 기기에서 로그아웃</button><button class="btn sm3 gh" type="button" onclick="closeModal()">닫기</button></div>');
+}
+
 
 /* ── 학생·학부모 홈: 소식 → 선생님 한마디 → 누적 성적 그래프 → 미션 클리어 현황 / 오른쪽 달력·일정 ── */
 let SH=undefined,SHB=false;
@@ -2049,7 +2159,7 @@ async function saveStaff(id){
 }
 async function savePw(){
  const j=await mut('my_password',{old:$('#pw0').value,new:$('#pw1').value},{sync:false,render:false});
- if(j&&j.ok){$('#pw0').value='';$('#pw1').value='';toast('비밀번호를 바꿨어요');}
+ if(j&&j.ok){$('#pw0').value='';$('#pw1').value='';forceLogout();toast('비밀번호를 바꿨어요. 새 비밀번호로 다시 로그인해 주세요');}
 }
 function saveNotif(){return mut('settings_set',{key:'notif',value:DB.set.notif},{sync:false,render:false});}
 
@@ -2068,7 +2178,15 @@ document.addEventListener('click',async e=>{
  case 'ntgl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}const r=DB.set.notif.rules[+t.dataset.i];r.on=!r.on;render();await saveNotif();break;}
  case 'ntpl':{if(me().role!=='admin'){toast('원장만 바꿀 수 있어요');break;}DB.set.notif.tpl=$('#ntpl').value;const j=await saveNotif();if(j&&j.ok)toast('문구를 저장했어요');break;}
  case 'ptgl':{const u=me(),cur=DB.set.pref[u.id]||{sms:true},nv={sms:cur.sms===false};DB.set.pref[u.id]=nv;render();await api('pref_set',{value:nv});break;}
- case 'logout':{if(VIEW){await viewEnd();break;}await api('logout');TOKEN=null;TODO=undefined;PR=undefined;TODOD=null;TODOE=null;ATD=undefined;ATDR={};ATDD=null;ATDC='';PRF={cls:'',only:false};try{localStorage.removeItem(TOKEN_KEY);}catch(e){}S.uid=null;S.L={ac:null,role:null};TOOLS=undefined;TOOLS_BUSY=false;MS=null;MS_BUSY=false;RMS=null;RMSG={};RME=null;RDRAFT={};S.room=null;PUSH_ON=undefined;SH=undefined;SHB=false;RP=undefined;RPK=null;RPB=false;render(0);break;}
+ case 'logout':{if(VIEW){await viewEnd();break;}
+  openModal('<h3>로그아웃</h3><div class="muted" style="margin:8px 0 14px;line-height:1.65">로그아웃해도 <b>이 기기로 새 소식·메시지 알림은 계속 와요.</b><br>'+(PUSH_ON?'알림까지 끄고 싶다면 두 번째 버튼을 눌러 주세요.':'')+'</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-a="logout2">로그아웃</button>'+(PUSH_ON?'<button class="btn sec" type="button" data-a="logout3">알림도 끄고 로그아웃</button>':'')+'<button class="btn gh" type="button" onclick="closeModal()">취소</button></div>');break;}
+ case 'logout2':case 'logout3':{closeModal();if(a==='logout3')await pushOff(true);await api('logout');localLogout();break;}
+ case 'logoutall':{if(!confirm('모든 기기에서 로그아웃할까요?\n이 계정의 알림도 모든 기기에서 꺼져요. (휴대폰을 잃어버렸을 때 쓰세요)'))break;closeModal();await pushOff(true);const j=await sessApi('logout_all',{push:true});if(!j||!j.ok){toast('모든 기기 로그아웃에 실패했어요. 인터넷을 확인하고 다시 해 주세요');break;}localLogout();toast('모든 기기에서 로그아웃했어요');break;}
+ case 'devices':showDevices();break;
+ case 'devout':{if(!confirm('이 기기를 로그아웃할까요?'))break;const j=await sessApi('logout_dev',{id});if(!j||!j.ok){toast('로그아웃하지 못했어요');break;}if(t.dataset.cur==='1'){localLogout();}else{toast('로그아웃했어요');showDevices();}break;}
+ case 'bootretry':boot();break;
+ case 'pushbaron':pushBarOff();await pushOn();break;
+ case 'pushbarno':lsSet('acadapp_pushask_v1',String(Date.now()));pushBarOff();break;
  case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':{if(S.tab==='att'&&atdDirtyN()&&!confirm('저장하지 않은 출석 기록이 있어요. 저장하지 않고 이동할까요?'))break;if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
  case 'cls':S.cls=v;S.thread=null;render();break;
@@ -2542,12 +2660,31 @@ document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]
 
 /* 시작 */
 const _st=document.createElement('style');_st.textContent='@media(min-width:900px){.hide-pc{display:none}}';document.head.appendChild(_st);
-(async function init(){
+let BOOTING=false,BOOT_T=null,BOOT_FAIL=false,IDB_DEV_OK=false;
+function bootRetry(){
+ BOOT_FAIL=true;
+ $('#app').innerHTML='<div class="landing"><div class="lmain"><h1 class="big">MATHY <i>YURI</i></h1><div class="syslbl">SYSTEM</div><div class="sko" style="margin-top:14px">인터넷 연결이 불안정해요.<br>로그인은 그대로 유지돼 있어요. 연결되면 다시 시도해 주세요.</div><button class="btn" data-a="bootretry" type="button" style="margin-top:16px">다시 시도</button></div></div>';
+ clearTimeout(BOOT_T);BOOT_T=setTimeout(boot,6000);
+}
+window.addEventListener('online',()=>{if(BOOT_FAIL)boot();});
+async function boot(){
+ if(BOOTING)return;BOOTING=true;
+ try{
+  if(!TOKEN)await tokRestore();else IDB.set('tok',TOKEN);
+  if(!IDB_DEV_OK){IDB_DEV_OK=true;const d=lsGet(DEV_KEY);if(d)IDB.set('dev',d);else{const x=await IDB.get('dev');if(x)lsSet(DEV_KEY,x);}}
+  const p=await api('public');
+  if(p&&p.ok){PUB.season=p.season;PUB.face=p.face||null;applyClasses(p.classes);PUB.pv=Array.isArray(p.pastvideos)?p.pastvideos:[];PUB.ok=true;}else PUB.ok=false;
+  if(TOKEN){
+   const ok=await resync();
+   if(!ok&&TOKEN){bootRetry();return;}   // 인터넷·서버 문제일 때: 로그인 정보는 그대로 두고 잠시 뒤 다시 시도
+  }
+  BOOT_FAIL=false;clearTimeout(BOOT_T);
+  render(0);afterLogin();
+ }finally{BOOTING=false;}
+}
+(function init(){
  $('#app').innerHTML='<div class="landing"><div class="lmain"><h1 class="big">MATHY <i>YURI</i></h1><div class="syslbl">SYSTEM</div><div class="sko" style="margin-top:14px">불러오는 중…</div></div></div>';
- const p=await api('public');
- if(p&&p.ok){PUB.season=p.season;PUB.face=p.face||null;applyClasses(p.classes);PUB.pv=Array.isArray(p.pastvideos)?p.pastvideos:[];PUB.ok=true;}else PUB.ok=false;
- if(TOKEN&&PUB.ok){const ok=await resync();if(!ok){TOKEN=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}}}
- render(0);
+ boot();
 })();
 </script>
 </body>

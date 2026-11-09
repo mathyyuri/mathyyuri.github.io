@@ -2,6 +2,7 @@
   "name": "MATHY YURI SYSTEM",
   "short_name": "MATHY",
   "description": "대치에스플러스 · 분당미래탐구 학원 관리",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
