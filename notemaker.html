@@ -81,8 +81,8 @@ tr.exr:hover{background:#fbf6ea}
     <span class="row" style="gap:6px"><button class="g" data-p="30">최근 1개월</button><button class="g" data-p="90">최근 3개월</button><button class="g" data-p="0">전체</button></span>
    </div>
    <div class="row" style="margin-bottom:8px">
-    <label class="lab"><input type="radio" name="wr" value="X" checked> 틀린 것(X)만</label>
-    <label class="lab"><input type="radio" name="wr" value="XT"> 틀린 것 + 고친 것(T)</label>
+    <label class="lab"><input type="radio" name="wr" value="X"> 틀린 것(X)만</label>
+    <label class="lab"><input type="radio" name="wr" value="XT" checked> 틀린 것 + 고친 것(T)</label>
     <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
     <label class="lab" title="처음 틀렸어도 그 뒤(오답노트 등)에서 맞힌 문제는 처음부터 선택에서 빼요. 칸을 눌러서 다시 넣을 수 있어요"><input type="checkbox" id="skipFixed"> 나중에 맞힌(○) 문제는 선택에서 빼기</label>
     <label class="lab"><input type="checkbox" id="withQA" checked> 빠른 정답 쪽도 함께 출력</label>
@@ -91,7 +91,7 @@ tr.exr:hover{background:#fbf6ea}
    </div>
    <div class="row" style="margin-bottom:6px"><button class="g" id="allBtn">전체 선택</button><button class="g" id="noneBtn">전체 해제</button><span id="empty" class="muted"></span></div>
    <div class="legend">번호 칸 <b>색</b> = 가장 최근 결과 (<span style="color:#2e8b57">초록 맞힘</span> · <span style="color:#c0392b">빨강 아직 틀림</span> · <span style="color:#b8863a">금색 고침</span>) &nbsp;/&nbsp; 칸 안 <b>○ ✕ △</b> = 이 문제를 푼 순서대로의 기록 (<b><u>밑줄</u></b> = 오답노트로 출제해서 푼 결과). 오답노트 줄은 출제한 문제 전부와 원래 어느 미션 몇 번이었는지(← 표시)를 보여 줘요. 칸에 마우스를 올리면 날짜별 기록이 나와요.</div>
-   <div id="others" class="muted" style="margin:8px 0 10px;line-height:1.9"></div>
+   <div id="others" class="muted" style="display:none;margin:8px 0 10px;line-height:1.9"></div>
    <div style="overflow-x:auto"><table id="tbl"><thead><tr><th style="width:34px"></th><th>교재(미션)</th><th style="width:96px">날짜</th><th style="width:110px">틀린 문제</th><th style="width:60px"></th></tr></thead><tbody></tbody></table></div>
   </div>
 
@@ -542,7 +542,7 @@ $('#hRec').onclick = async function () {
    for (var ci = 0; ci < cand.length; ci++) {
     var C = cand[ci]; st.textContent = '추정해서 되살리는 중… (' + (ci + 1) + ' / ' + cand.length + ') ' + C.stu.name;
     STU = C.stu; SEL = {};
-    document.querySelector('input[name=wr][value=X]').checked = true; $('#d1').value = ''; $('#d2').value = ''; compute(true);
+    document.querySelector('input[name=wr][value=XT]').checked = true; $('#d1').value = ''; $('#d2').value = ''; compute(true);
     var byEx2 = {};
     ROWS.forEach(function (r) { var ix = r.its.filter(function (t) { return SEL[r.id + '|' + t.i]; }); if (ix.length) byEx2[r.id] = { r: r, idx: ix }; });
     var exs2 = Object.keys(byEx2).map(function (k) { return byEx2[k]; }).sort(function (a, b) { return a.r.date < b.r.date ? -1 : a.r.date > b.r.date ? 1 : 0; });
