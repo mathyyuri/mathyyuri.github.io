@@ -231,3 +231,4 @@ body.view .tools{display:none!important}
 .qa-row i{flex:none;width:7mm;font-style:normal;font-weight:700;color:#9c5530}.qa-row .qs{flex:none;width:34mm;font-size:7.5pt;color:#7d7364}.qa-row .qv{flex:1;min-width:0}.qa-row .qv p{margin:0}.qa-row .see{color:#9c5530;font-size:8pt}
 
 .why5{display:flex;flex-wrap:wrap;gap:.8mm 3.2mm;align-items:center;margin-top:1.8mm;padding:1.1mm 2.4mm;border:.25mm solid #e5d9c0;border-radius:1.2mm;background:#fffefa;font-size:7.6pt;color:#5a5140;line-height:1.5}.why5 b{color:#9c5530;font-weight:700}.why5 small{font-size:6.8pt;color:#8a7f6a}
+body.hideCh .ch{visibility:hidden}

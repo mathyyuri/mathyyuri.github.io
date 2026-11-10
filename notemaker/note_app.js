@@ -534,6 +534,12 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   var s = document.createElement('span'); s.className = 'eq'; s.dataset.tex = ''; s.setAttribute('contenteditable', 'false');
   lastRange.collapse(false); lastRange.insertNode(s); openFormula(s, true);
  });
+ /* 보기 숨기기: 객관식 보기를 잠깐 가려요 (자리는 그대로, 저장되지 않는 일시 기능 — 이 상태로 PDF·PNG 를 만들면 보기가 빠진 채로 나와요) */
+ $('bHideCh').addEventListener('click', function () {
+  var on = document.body.classList.toggle('hideCh'); this.classList.toggle('on', on);
+  this.textContent = on ? '보기 숨김 중 · 다시 보이기' : '보기 숨기기';
+  stat(on ? '객관식 보기를 가렸어요. 다시 누르면 보여요 (이 상태로 PDF·PNG 를 저장하면 보기가 빠져요)' : '객관식 보기를 다시 보여요');
+ });
  /* 네모 넣기 · 상자 넣기 (교과서 전체 모음 교재 엔진에서 가져옴) */
  function bogiBoxHtml(lines) { return '<div class="cbox"><div class="cc tt">&lt;보기&gt;</div>' + lines.map(function (l) { return '<div class="cc">' + l + '</div>'; }).join('') + '</div>'; }
  $('bBlank').addEventListener('mousedown', function (e) { e.preventDefault(); });
