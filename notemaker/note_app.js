@@ -286,7 +286,7 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
  }
 
  async function layout() {
-  if (busy) return; busy = true;
+  if (busy) return; busy = true; var refit = false;
   try {
    harvest(); deselect();
    needAll(); await decodeAll();
@@ -387,8 +387,27 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
    pages.forEach(function (p) { qa(p, '.col').forEach(function (c) { var g = 0; while (over(c) && g++ < 60) { var ss = qa(c, '.sol').filter(function (s) { return s.offsetHeight > 60 && !s.dataset.fixed; }); if (!ss.length) break; ss.forEach(function (s) { s.style.height = (s.offsetHeight - 4) + 'px'; }); } }); });
    pages.forEach(function (p, i) { var n = p.querySelector('.pn'); if (n) n.textContent = (i + 1) + ' / ' + pages.length; });
    $('info').textContent = '총 ' + pages.length + '쪽 (A4) · 오답 ' + (nM + nT) + '문항';
+   refit = fitChoices();                                   /* 확대 비율이 1일 때 재야 정확해요 */
    setEditable(EDIT); scale(); window.scrollTo(0, sy);
   } finally { busy = false; }
+  if (refit) layout();
+ }
+ /* 보기 칸 수 맞추기: 한 줄에 안 들어가 줄바꿈되는 보기가 있으면 칸을 줄여요 (5칸→3칸→2칸→1칸). 바뀌면 쪽 나누기를 한 번 더 해요 */
+ function fitChoices() {
+  var changed = false, nxt = { 5: 3, 3: 2, 2: 1 };
+  qa(document, '.pb .ch').forEach(function (c) {
+   if (c.classList.contains('cf')) return;
+   var m = c.className.match(/\bc([1235])\b/); if (!m) return;
+   var n = +m[1], cvs = qa(c, '.cv'); if (!cvs.length || !c.offsetWidth) return;
+   var nat = cvs.map(function (v) {                         /* 줄바꿈 없이 쓰면 필요한 가로 길이 */
+    var t = v.cloneNode(true); t.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;display:inline-block;width:auto;flex:none'; v.parentNode.appendChild(t);
+    var w = t.getBoundingClientRect().width; v.parentNode.removeChild(t); return w;
+   });
+   var lab = c.querySelector('b').getBoundingClientRect().width + 6, gp = parseFloat(getComputedStyle(c).columnGap) || 0;
+   function wraps() { var cell = (c.clientWidth - gp * (n - 1)) / n - lab; return nat.some(function (w) { return w > cell + 1; }); }
+   while (n > 1 && wraps()) { n = nxt[n]; c.className = c.className.replace(/\bc[1235]\b/, 'c' + n); changed = true; }
+  });
+  return changed;
  }
  function scale() { var w = Math.min(window.innerWidth - 16, 794); document.documentElement.style.setProperty('--s', Math.min(1, w / 794)); }
  window.addEventListener('resize', scale);
