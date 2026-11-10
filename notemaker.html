@@ -262,6 +262,21 @@ function chipHtml(r, ri, it) {
  var can = r.view ? it.sel : true, label = it.no + '번' + from + (it.c === 'T' ? ' (고침)' : '');
  return '<span class="chip l-' + last + (can && SEL[r.id + '|' + it.i] ? ' on' : '') + (can ? '' : ' ro') + '"' + (can ? ' data-c="' + ri + ':' + it.i + '"' : '') + ' title="' + esc((it.src ? it.src + String.fromCharCode(10) : '') + tl) + '">' + label + sh + (it.h ? '<span class="pv" data-pv="' + ri + ':' + it.i + '" title="문제 미리보기·수정">🔍</span>' : '') + '</span>';
 }
+/* 고른 문제 중 같은 문제(문제 DB 의 같은 h)가 두 번 이상 들어 있는 것 찾기 — [{list:[{name,no,src}]}] */
+function dupGroups() {
+ var by = {}, out = [];
+ ROWS.forEach(function (r) { r.its.forEach(function (it) { if (!SEL[r.id + '|' + it.i] || !it.h) return; (by[it.h] || (by[it.h] = [])).push({ name: r.name, no: it.no, src: it.src || '' }); }); });
+ Object.keys(by).forEach(function (h) { if (by[h].length > 1) out.push({ h: h, list: by[h] }); });
+ return out;
+}
+function dupMsg(dg) {
+ if (!dg.length) return '';
+ var less = 0; dg.forEach(function (g) { less += g.list.length - 1; });
+ var m = '\n\n▶ 같은 문제가 겹쳐요: ' + dg.length + '가지 (' + less + '문항)\n   ' + ($('#dedupe').checked ? '「같은 문제는 한 번만」이 켜져 있어서 노트에는 한 번씩만 들어가요. 그만큼 문제가 줄어요.' : '「같은 문제는 한 번만」이 꺼져 있어서 노트에 그대로 겹쳐서 들어가요.') + '\n';
+ dg.slice(0, 15).forEach(function (g) { m += '\n● ' + g.list.map(function (x) { return x.name + ' ' + x.no + '번'; }).join('  =  ') + (g.list[0].src ? '\n   (' + g.list[0].src.replace(/^.*? — /, '') + ')' : ''); });
+ if (dg.length > 15) m += '\n   … 외 ' + (dg.length - 15) + '가지';
+ return m + '\n\n겹친 만큼 다른 문제를 목록에서 더 골라 주세요.';
+}
 function render() {
  var tb = $('#tbl tbody'), h = ''; HIST = STU ? attempts(STU.id).byH : {};
  $('#others').innerHTML = (STU && OTH.length) ? ('<b>목록에 안 나온 미션</b> (' + OTH.length + '개) — ' + OTH.sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (o) { return esc(o.name) + ' <span style="opacity:.75">[' + esc(o.why) + ']</span>'; }).join(' &nbsp;·&nbsp; ')) : '';
@@ -273,7 +288,7 @@ function render() {
  });
  tb.innerHTML = h;
  var tot = Object.keys(SEL).length, ne = ROWS.filter(function (r) { return r.its.some(function (it) { return SEL[r.id + '|' + it.i]; }); }).length;
- $('#sum').textContent = STU ? ('교재 ' + ne + '개 · 문제 ' + tot + '개 선택' + ($('#dedupe').checked ? ' (같은 문제는 합쳐서 더 줄 수 있어요)' : '')) : '학생을 골라 주세요';
+ $('#sum').textContent = STU ? ('교재 ' + ne + '개 · 문제 ' + tot + '개 선택' + (function () { var dg = dupGroups(), less = 0; dg.forEach(function (g) { less += g.list.length - 1; }); return $('#dedupe').checked && less ? ' → 겹친 ' + less + '문항을 빼면 노트는 ' + (tot - less) + '문제 (겹친 문제는 DB 확인 버튼으로 봐요)' : ''; })()) : '학생을 골라 주세요';
  $('#make').disabled = !tot; $('#chk').disabled = !tot;
 }
 $('#tbl').onclick = function (e) {
@@ -676,8 +691,9 @@ $('#chk').onclick = async function () {
    var by = {}; (j.items || []).forEach(function (p) { by[p.no] = p; });
    X.idx.forEach(function (it) { total++; if (!by[it.no]) bad.push({ m: X.r.name, no: it.no, src: it.src || '', h: it.h }); });
   }
-  if (!bad.length) { alert('고른 ' + total + '문항이 모두 서버 문제 DB에 있어요. 오답노트를 만들 수 있어요.'); return; }
-  alert(missMsg(total, bad));
+  var dm = dupMsg(dupGroups());
+  if (!bad.length) { alert('고른 ' + total + '문항이 모두 서버 문제 DB에 있어요. 오답노트를 만들 수 있어요.' + dm); return; }
+  alert(missMsg(total, bad) + dm);
  } catch (e) { alert('DB 확인 실패: ' + (e.message || e)); }
  finally { st.textContent = ''; btn.disabled = false; }
 };
