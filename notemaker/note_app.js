@@ -534,6 +534,24 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   var s = document.createElement('span'); s.className = 'eq'; s.dataset.tex = ''; s.setAttribute('contenteditable', 'false');
   lastRange.collapse(false); lastRange.insertNode(s); openFormula(s, true);
  });
+ /* 네모 넣기 · 상자 넣기 (교과서 전체 모음 교재 엔진에서 가져옴) */
+ function bogiBoxHtml(lines) { return '<div class="cbox"><div class="cc tt">&lt;보기&gt;</div>' + lines.map(function (l) { return '<div class="cc">' + l + '</div>'; }).join('') + '</div>'; }
+ $('bBlank').addEventListener('mousedown', function (e) { e.preventDefault(); });
+ $('bBlank').addEventListener('click', function () {                /* 네모 넣기: 빈칸 □ (수식 \boxed 빈 상자, 더블클릭하면 크기·모양을 고칠 수 있어요) */
+  if (!lastRange || !EDIT) { stat('먼저 글 안에서 네모를 넣을 자리를 한 번 클릭해 주세요'); return; }
+  snap(); var s = document.createElement('span'); s.className = 'eq'; s.dataset.tex = BS + 'boxed{' + BS + 'phantom{XX}}'; s.setAttribute('contenteditable', 'false');
+  lastRange.collapse(false); lastRange.insertNode(s); renderEq(s); markDirty(s); if (overflowAny()) relayLater(); stat('네모를 넣었어요');
+ });
+ $('bBox').addEventListener('mousedown', function (e) { e.preventDefault(); });
+ $('bBox').addEventListener('click', function () {                  /* 상자 넣기: 커서가 있는 줄 아래에 빈 보기 상자(ㄱ. ㄴ. ㄷ.) */
+  if (!lastRange || !EDIT) { stat('먼저 문제 글 안에서 상자를 넣을 자리를 한 번 클릭해 주세요'); return; }
+  var n = lastRange.startContainer; n = n.nodeType === 1 ? n : n.parentNode; var q = n.closest && n.closest('.q');
+  if (!q) { stat('문제 글 안에서만 상자를 넣을 수 있어요'); return; }
+  var blk = n; while (blk.parentNode && blk.parentNode !== q) blk = blk.parentNode;
+  snap(); var tmp = document.createElement('div'); tmp.innerHTML = bogiBoxHtml(['ㄱ. ', 'ㄴ. ', 'ㄷ. ']); var box = tmp.firstChild;
+  if (blk === q) q.appendChild(box); else q.insertBefore(box, blk.nextSibling);
+  markDirty(q); if (overflowAny()) relayLater(); stat('보기 상자를 넣었어요');
+ });
  document.addEventListener('paste', function (e) {
   var t = e.target; if (!t.closest || !t.closest('.ed')) return; e.preventDefault();
   var tx = (e.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, tx);
