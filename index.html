@@ -2388,14 +2388,14 @@ async function saveTools(){
 let MS=null,MS_BUSY=false;
 const MS_URL=API_URL.replace('ac_api','ac_mission');
 const MSC={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
-const MS_GROUPS=[['chart','성적차트',null],['prog','진도미션',['교과서미션','진도미션']],['wrong','오답미션',['오답미션']],['test','TEST미션',['TEST']],['past','기출미션',['기출']]];
+const MS_GROUPS=[['chart','성적차트',null],['prog','진도미션',['교과서미션','진도미션']],['wrong','오답미션',['오답미션']],['test','TEST미션',['TEST']],['past','기출미션',['기출']],['naesin','내신기출',['내신기출']]];
 async function msApi(a,args){
  try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
 }
 function msCatOf(it){
  if(it.notes||String(it.m.cls||'').indexOf('note:')===0)return '오답미션';const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
- return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
+ return n.indexOf('내신')>=0?'내신기출':n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
 }
 function msEnsure(){
  if(MS||MS_BUSY)return;MS_BUSY=true;

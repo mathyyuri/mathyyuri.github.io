@@ -175,7 +175,7 @@ function vLogin(){
  '<div class="fld" id="fname"><label>이름</label><input id="lname" autocomplete="off"></div><div class="fld"><label id="lpl">학부모 전화번호 뒤 4자리</label><input id="lpin" type="password" autocomplete="off" inputmode="numeric"></div>'+
  '<button class="btn" style="width:100%;margin-top:6px" data-a="login">들어가기</button><div class="err" id="lerr"></div></div></div>'}
 var LOGIN={ac:'ds',role:'student'};
-function guessCat(n){n=String(n||'');return n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'미션'}
+function guessCat(n){n=String(n||'');return n.indexOf('내신')>=0?'내신기출':n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'미션'}
 function isNoteM(m){return String(m.cls||'').indexOf('note:')===0}
 function catOf(m){if(isNoteM(m))return '오답미션';return m.cat||guessCat(m.name)}
 function todayList(){var t=ymd();return S.list.filter(function(m){return !isNoteM(m)&&String(m.date).slice(0,10)===t})}   /* 오늘 출제된 미션 (시즌·카테고리와 상관없이) */
