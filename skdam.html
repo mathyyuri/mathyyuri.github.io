@@ -262,6 +262,12 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
         </div>
       </div>
 
+      <div class="field" data-f="parentName">
+        <label class="lbl" for="parentName">학부모 이름<span class="req">*</span></label>
+        <input type="text" id="parentName" autocomplete="name" maxlength="20" placeholder="학부모님 성함">
+        <div class="err" hidden></div>
+      </div>
+
       <div class="row">
         <div class="field" data-f="parentPhone">
           <label class="lbl" for="parentPhone">학부모 전화번호<span class="req">*</span></label>
@@ -495,7 +501,7 @@ function clearErrs(){
   $$('.err').forEach(x => x.hidden = true);
   $('#formerr').hidden = true;
 }
-['studentName','school','grade','parentPhone','consent'].forEach(id => {
+['studentName','school','grade','parentName','parentPhone','consent'].forEach(id => {
   const el = $('#'+id);
   el.addEventListener('input', () => { const w = el.closest('[data-f]'); w.classList.remove('invalid'); $('.err', w).hidden = true; });
   el.addEventListener('change', () => { const w = el.closest('[data-f]'); w.classList.remove('invalid'); $('.err', w).hidden = true; });
@@ -521,11 +527,13 @@ $('#f').addEventListener('submit', async ev => {
   const studentName = $('#studentName').value.trim();
   const school = $('#school').value.trim();
   const grade = $('#grade').value;
+  const parentName = $('#parentName').value.trim();
   const pp = $('#parentPhone').value.trim();
   const ppDigits = pp.replace(/\D/g,'');
   if(!studentName) bad($('#studentName'), $('[data-f="studentName"]'), '학생 이름을 적어 주세요.');
   if(!school) bad($('#school'), $('[data-f="school"]'), '중학교를 적어 주세요.');
   if(!grade) bad($('#grade'), $('[data-f="grade"]'), '학년을 골라 주세요.');
+  if(!parentName) bad($('#parentName'), $('[data-f="parentName"]'), '학부모님 이름을 적어 주세요.');
   if(!ppDigits) bad($('#parentPhone'), $('[data-f="parentPhone"]'), '연락 가능한 번호를 적어 주세요.');
   else if(ppDigits.length < 10) bad($('#parentPhone'), $('[data-f="parentPhone"]'), '전화번호를 다시 확인해 주세요.');
   if(!$('#consent').checked) bad($('#consent'), $('[data-f="consent"]'), '동의해 주셔야 제출할 수 있어요.');
@@ -554,6 +562,7 @@ $('#f').addEventListener('submit', async ev => {
     studentName,
     school,
     grade,
+    parentName,
     parentPhone: pp,
     studentPhone: $('#studentPhone').value.trim(),
     classes: $$('input[name="classes"]:checked').map(x => x.value).join(', '),
@@ -579,6 +588,7 @@ $('#f').addEventListener('submit', async ev => {
           student_name: payload.studentName,
           school: payload.school,
           grade: payload.grade,
+          parent_name: payload.parentName,
           parent_phone: payload.parentPhone,
           student_phone: payload.studentPhone || null,
           classes: payload.classes || null,
@@ -612,7 +622,8 @@ function showDone(p, demo){
   const rows = [
     ['참석', p.attendance + (p.leaveInfo ? ' · ' + p.leaveInfo : '')],
     ['음료', p.drink1 + (p.drink2 ? '<br>+ ' + p.drink2 : '')],
-    ['학생', p.studentName + ' · ' + p.school + ' ' + p.grade]
+    ['학생', p.studentName + ' · ' + p.school + ' ' + p.grade],
+    ['학부모', p.parentName]
   ];
   if(p.classes) rows.push(['관심 반', p.classes]);
   $('#recap').innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>${r[0]==='음료' ? esc(r[1]).replace(/&lt;br&gt;/g,'<br>') : esc(r[1])}</span></div>`).join('');

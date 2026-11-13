@@ -232,12 +232,15 @@ function markLatest(){ const seen = new Set(); rows.forEach(r => { const k = key
 const normName = n => String(n||'').replace(/\s/g,'').toLowerCase();
 const key4 = (name, phone) => normName(name) + '|' + String(phone||'').replace(/\D/g,'').slice(-4);
 function linkConfirms(){
-  const latest = new Map();
-  confs.forEach(c => { const k = key4(c.student_name, c.phone4); if(!latest.has(k)) latest.set(k, c); });   // confs 는 최신순
+  const byKey = new Map();                                              // confs 는 최신순
+  confs.forEach(c => { const k = key4(c.student_name, c.phone4); if(!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(c); });
+  const sameParent = (a, b) => !a || !b || normName(a) === normName(b);   // 학부모 이름이 없는 예전 기록은 이름+뒤4자리만 비교
   const used = new Set();
   rows.forEach(r => {
-    const k = key4(r.student_name, r.parent_phone), c = latest.get(k) || null;
-    r._conf = c; if(c) used.add(k);
+    const k = key4(r.student_name, r.parent_phone);
+    const ms = (byKey.get(k) || []).filter(x => sameParent(x.parent_name, r.parent_name)), c = ms[0] || null;
+    ms.forEach(x => used.add(x.id));
+    r._conf = c;
     const changed = c && c.status === '확정' && c.drink_changed && c.drink;
     r._effDrink = changed ? c.drink : r.drink1;
     r._drinkChanged = !!changed;
@@ -246,7 +249,7 @@ function linkConfirms(){
     // 최종 상태: 확정 기록이 있으면 그것, 없으면 신청 때 참석 여부
     r._eff = c ? c.status : (r.attendance === '참석 어려움' ? '참석 어려움' : '');
   });
-  orphanConfs = Array.from(latest.entries()).filter(([k]) => !used.has(k)).map(([,c]) => c);
+  orphanConfs = []; const seenO = new Set(); confs.forEach(c => { if(used.has(c.id)) return; const k = key4(c.student_name, c.phone4) + '|' + normName(c.parent_name); if(!seenO.has(k)){ seenO.add(k); orphanConfs.push(c); } });
 }
 function buildGradeFilter(){
   const cur = $('#fGrade').value;
@@ -275,7 +278,7 @@ function renderConfirm(act){
   $('#confMissing').innerHTML = confMissingTable
     ? '<span style="color:var(--pink-d)">확정 표가 아직 없어요. 서버에 skdam_confirm_setup.sql 을 Run 해 주세요.</span>'
     : (pending.length ? '<b>아직 확정하지 않은 분 ' + pending.length + '가정</b><br>' + pending.map(r => `${esc(r.student_name)} <span style="color:var(--muted)">(${esc(r.attendance)} · ${esc(r.parent_phone)})</span>`).join('<br>') : '<span style="color:var(--mint-d)">신청한 분 모두 확정했어요 🎉</span>');
-  $('#confNote').innerHTML = orphanConfs.length ? '<b>설문과 이어지지 않은 확정 ' + orphanConfs.length + '건</b> (이름이나 번호가 설문과 다르게 입력됐을 수 있어요)<br>' + orphanConfs.map(c => `${esc(c.student_name)} (뒤 4자리 ${esc(c.phone4)}) · ${esc(c.status)}`).join('<br>') : '';
+  $('#confNote').innerHTML = orphanConfs.length ? '<b>설문과 이어지지 않은 확정 ' + orphanConfs.length + '건</b> (이름이나 번호가 설문과 다르게 입력됐을 수 있어요)<br>' + orphanConfs.map(c => `${esc(c.student_name)} ${c.parent_name ? '· 학부모 ' + esc(c.parent_name) + ' ' : ''}(뒤 4자리 ${esc(c.phone4)}) · ${esc(c.status)}`).join('<br>') : '';
 }
 
 function renderSummary(){
@@ -334,7 +337,7 @@ function filtered(){
     if(fg && r.grade !== fg) return false;
     if(un && r.checked) return false;
     if(q){
-      const hay = [r.student_name,r.school,r.parent_phone,r.student_phone,r.opinion].join(' ').toLowerCase();
+      const hay = [r.student_name,r.parent_name,r.school,r.parent_phone,r.student_phone,r.opinion].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
@@ -362,7 +365,7 @@ function renderList(){
         <div class="rtime">${esc(fmt(r.created_at))}</div>
       </div>
       <dl class="kv">
-        <dt>학부모</dt><dd><a href="tel:${esc((r.parent_phone||'').replace(/\D/g,''))}">${esc(r.parent_phone)}</a></dd>
+        <dt>학부모</dt><dd>${r.parent_name ? esc(r.parent_name) + ' · ' : ''}<a href="tel:${esc((r.parent_phone||'').replace(/\D/g,''))}">${esc(r.parent_phone)}</a></dd>
         ${r.student_phone ? `<dt>학생</dt><dd><a href="tel:${esc(r.student_phone.replace(/\D/g,''))}">${esc(r.student_phone)}</a></dd>` : ''}
         ${r.leave_info ? `<dt>참석 방식</dt><dd>${esc(r.leave_info)}</dd>` : ''}
         <dt>음료</dt><dd>${esc(r._effDrink||'-')}${r._drinkChanged ? ' <span class="badge b-maybe">확정 때 바꿈</span><br><span style="color:var(--muted)">처음 신청: ' + esc(r.drink1||'-') + '</span>' : ''}${r.drink2 ? '<br>+ ' + esc(r.drink2) : ''}</dd>
@@ -419,7 +422,7 @@ $('#copyDrinks').addEventListener('click', async () => {
   catch(_){ toast('복사가 막혀 있어요. 직접 선택해서 복사해 주세요'); }
 });
 $('#csv').addEventListener('click', () => {
-  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['worries','걱정'],['conf_status','전날확정'],['eff_drink','최종음료'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
+  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['parent_name','학부모이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['worries','걱정'],['conf_status','전날확정'],['eff_drink','최종음료'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
   const body = filtered().map(r => cols.map(([k]) => q(k==='checked' ? (r.checked?'O':'') : r[k])).join(',')).join('\n');
   const blob = new Blob(['﻿' + cols.map(c=>q(c[1])).join(',') + '\n' + body], {type:'text/csv;charset=utf-8'});

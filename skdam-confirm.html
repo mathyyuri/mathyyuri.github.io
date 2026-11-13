@@ -197,8 +197,9 @@ main.wrap{margin-top:-30px;position:relative;z-index:3;padding-bottom:50px}
   <section class="card" id="stepFind">
     <div class="no">01</div>
     <h2>신청하신 분을 확인할게요</h2>
-    <p class="desc">설문에 적어 주신 학생 이름과, 학부모님 전화번호 뒤 4자리를 입력해 주세요.</p>
+    <p class="desc">설문에 적어 주신 <b>학생 이름, 학부모님 이름, 학부모님 전화번호 뒤 4자리</b>를 입력해 주세요.</p>
     <div class="field"><label class="lbl" for="nm">학생 이름</label><input type="text" id="nm" autocomplete="off" maxlength="40" placeholder="이름"></div>
+    <div class="field"><label class="lbl" for="pn">학부모님 이름</label><input type="text" id="pn" autocomplete="off" maxlength="40" placeholder="학부모님 성함"></div>
     <div class="field"><label class="lbl" for="p4">학부모님 전화번호 뒤 4자리</label><input type="tel" id="p4" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="예: 1234"></div>
     <div class="err" id="findErr" hidden></div>
     <div class="btns"><button class="btn" id="findBtn" type="button">내 신청 내용 확인하기</button></div>
@@ -355,8 +356,8 @@ updateDday();
 
 /* ---------- 서버 ---------- */
 const H = {'apikey':SUPABASE_KEY, 'Content-Type':'application/json'};
-async function lookup(name, p4){
-  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/skdam_lookup', {method:'POST', headers:H, body: JSON.stringify({p_name:name, p_phone4:p4})});
+async function lookup(name, p4, parent){
+  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/skdam_lookup', {method:'POST', headers:H, body: JSON.stringify({p_name:name, p_phone4:p4, p_parent:parent})});
   if(!r.ok) throw new Error('lookup ' + r.status);
   return r.json();
 }
@@ -382,6 +383,7 @@ function renderMine(){
   if(c) st = c.status === '확정' ? '<span class="badge ok">확정 완료 · ' + fmt(c.at) + '</span>' : '<span class="badge no">참석 어려움 · ' + fmt(c.at) + '</span>';
   $('#mine').innerHTML =
     '<div><span>학생</span><span>' + esc(me.name) + '</span></div>' +
+    '<div><span>학부모</span><span>' + esc(me.parent) + '</span></div>' +
     '<div><span>처음 신청</span><span>' + esc(i.attendance || '-') + '</span></div>' +
     '<div><span>음료</span><span>' + esc(currentDrink(i)) + '</span></div>' +
     '<div><span>현재 상태</span><span>' + st + '</span></div>';
@@ -392,18 +394,18 @@ function renderMine(){
 }
 
 $('#findBtn').addEventListener('click', async () => {
-  const name = $('#nm').value.trim(), p4 = $('#p4').value.trim();
+  const name = $('#nm').value.trim(), parent = $('#pn').value.trim(), p4 = $('#p4').value.trim();
   const err = $('#findErr'); err.hidden = true;
-  if(!name || !/^[0-9]{4}$/.test(p4)){ err.textContent = '학생 이름과 전화번호 뒤 4자리(숫자)를 입력해 주세요.'; err.hidden = false; return; }
+  if(!name || !parent || !/^[0-9]{4}$/.test(p4)){ err.textContent = '학생 이름, 학부모님 이름, 전화번호 뒤 4자리(숫자)를 모두 입력해 주세요.'; err.hidden = false; return; }
   const b = $('#findBtn'); b.disabled = true; b.textContent = '확인 중…';
   try{
-    const info = await lookup(name, p4);
+    const info = await lookup(name, p4, parent);
     if(!info || !info.found){
-      err.innerHTML = '신청 내용을 찾지 못했어요.<br>설문에 적으신 이름과 번호가 맞는지 확인해 주세요. 아직 설문을 안 하셨다면 <a href="skdam.html" style="color:var(--pink-d);font-weight:700">설문 먼저 작성</a>해 주세요.';
+      err.innerHTML = '신청 내용을 찾지 못했어요.<br>설문에 적으신 학생 이름, 학부모님 이름, 번호가 맞는지 확인해 주세요. 아직 설문을 안 하셨다면 <a href="skdam.html" style="color:var(--pink-d);font-weight:700">설문 먼저 작성</a>해 주세요.';
       err.hidden = false; return;
     }
-    me = {name, p4, info};
-    try{ localStorage.setItem('skdam_confirm_who', JSON.stringify({name, p4})); }catch(_){}
+    me = {name, parent, p4, info};
+    try{ localStorage.setItem('skdam_confirm_who', JSON.stringify({name, parent, p4})); }catch(_){}
     renderMine(); show('stepAct'); window.scrollTo({top:0, behavior:'smooth'});
   }catch(e){ err.textContent = '확인에 실패했어요. 잠시 후 다시 시도해 주세요.'; err.hidden = false; }
   finally{ b.disabled = false; b.textContent = '내 신청 내용 확인하기'; }
@@ -433,7 +435,7 @@ async function submit(status, changed){
   }
   const btns = $$('#stepAct .btn'); btns.forEach(b => b.disabled = true);
   try{
-    await sendConfirm({student_name: me.name, phone4: me.p4, status, drink, drink_changed: !!changed});
+    await sendConfirm({student_name: me.name, parent_name: me.parent, phone4: me.p4, status, drink, drink_changed: !!changed});
     me.info.confirm = {status, drink, changed: !!changed, at: new Date().toISOString()};
     showDone(status, changed ? drink : (me.info.drink || '음료 신청 없음'));
   }catch(e){
@@ -450,7 +452,7 @@ $('#saveChangeBtn').addEventListener('click', () => submit('확정', true));
 $('#againBtn').addEventListener('click', () => { if(me){ renderMine(); show('stepAct'); window.scrollTo({top:0, behavior:'smooth'}); } });
 
 /* 같은 폰이면 지난번 입력한 이름·번호를 채워 둬요 */
-try{ const w = JSON.parse(localStorage.getItem('skdam_confirm_who') || 'null'); if(w){ $('#nm').value = w.name || ''; $('#p4').value = w.p4 || ''; } }catch(_){}
+try{ const w = JSON.parse(localStorage.getItem('skdam_confirm_who') || 'null'); if(w){ $('#nm').value = w.name || ''; $('#pn').value = w.parent || ''; $('#p4').value = w.p4 || ''; } }catch(_){}
 </script>
 </body>
 </html>
