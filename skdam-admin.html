@@ -143,7 +143,7 @@ footer{height:50px}
     <div class="filters">
       <input type="text" id="q" placeholder="이름·학교·전화 검색">
       <select id="fAtt"><option value="">참석 전체</option><option>참석 확정</option><option>고민 중</option><option>참석 어려움</option></select>
-      <select id="fCls"><option value="">관심 반 전체</option><option>공수내모</option><option>예비고1 정규반</option><option>중2 대수 기초반</option><option>아직 고민 중</option></select>
+      <select id="fCls"><option value="">관심 반 전체</option><option>공수내모</option><option>예비고1 T-CLASS</option><option>(선행) 대수 기초반</option><option>아직 고민 중</option></select>
       <select id="fGrade"><option value="">학년 전체</option></select>
     </div>
     <div class="chk-row">
@@ -239,9 +239,9 @@ function renderSummary(){
     <div class="stat"><div class="n">${no.length}<small>가정</small></div><div class="l">참석 어려움</div></div>
     <div class="stat"><div class="n">${unchecked}</div><div class="l">미확인</div></div>`;
 
-  const cls = {'공수내모':0,'예비고1 정규반':0,'중2 대수 기초반':0,'아직 고민 중':0};
+  const cls = {'공수내모':0,'예비고1 T-CLASS':0,'(선행) 대수 기초반':0,'아직 고민 중':0};
   act.forEach(r => splitList(r.classes).forEach(c => { if(c in cls) cls[c]++; }));
-  $('#interest').innerHTML = Object.entries(cls).map(([k,v],i)=>`<div class="stat ${k==='중2 대수 기초반'?'hl':''}"><div class="n">${v}</div><div class="l">${esc(k)}</div></div>`).join('');
+  $('#interest').innerHTML = Object.entries(cls).map(([k,v],i)=>`<div class="stat ${k==='(선행) 대수 기초반'?'hl':''}"><div class="n">${v}</div><div class="l">${esc(k)}</div></div>`).join('');
 
   const orderRows = act.filter(r => r.attendance !== '참석 어려움');
   const base = s => (s||'').split(' / 요청:')[0].trim();

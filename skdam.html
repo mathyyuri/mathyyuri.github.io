@@ -141,6 +141,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--mint-d);box-shadow:0 
 
 footer{background:var(--black);color:var(--cream-2);text-align:center;padding:30px 16px 36px;font-size:12.5px}
 footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);font-size:12px;margin-bottom:6px}
+footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px solid rgba(246,239,226,.3);border-radius:999px;color:rgba(246,239,226,.6);font-size:11.5px;text-decoration:none}footer .adm:hover{color:var(--cream);border-color:var(--cream)}
 </style>
 </head>
 <body>
@@ -216,14 +217,6 @@ footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);fon
       </p>
       <div id="drink1"></div>
 
-      <div class="second-toggle">
-        <label class="mini-chk"><input type="checkbox" id="second"> 함께 오시는 분이 있어요 (음료 한 잔 더)</label>
-      </div>
-      <div id="drink2wrap" hidden>
-        <div class="sub-title">함께 오시는 분의 음료</div>
-        <div id="drink2"></div>
-      </div>
-
       <div class="field">
         <label class="lbl" for="coffeeNote">음료 요청사항 <span style="font-weight:400;color:var(--muted)">(선택)</span></label>
         <input type="text" id="coffeeNote" placeholder="예: 샷 추가, 덜 달게, 우유 대신 두유" maxlength="80">
@@ -279,8 +272,8 @@ footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);fon
       <p class="desc">여러 개 골라도 괜찮아요. 아직 고민 중이시면 마지막 항목을 골라 주세요.</p>
       <div class="opts">
         <label class="opt chk"><input type="checkbox" name="classes" value="공수내모"><span class="box"><span class="t">공수내모 (공통수학 내신동형 모의고사)</span><span class="s">11월 28일 개강 · 매주 토요일 1:30–5:30 · 총 52회</span></span></label>
-        <label class="opt chk"><input type="checkbox" name="classes" value="예비고1 정규반"><span class="box"><span class="t">예비고1 정규반</span><span class="s">인원이 확정되면 개강해요</span></span></label>
-        <label class="opt chk"><input type="checkbox" name="classes" value="중2 대수 기초반"><span class="box"><span class="t">중2 대수 기초반 (화·목)</span><span class="s">12개월 로드맵 · 신청 인원에 맞춰 개설을 결정해요</span></span></label>
+        <label class="opt chk"><input type="checkbox" name="classes" value="예비고1 T-CLASS"><span class="box"><span class="t">예비고1 T-CLASS</span><span class="s">인원이 확정되면 개강해요</span></span></label>
+        <label class="opt chk"><input type="checkbox" name="classes" value="(선행) 대수 기초반"><span class="box"><span class="t">(선행) 대수 기초반</span><span class="s">12개월 로드맵 · 신청 인원에 맞춰 개설을 결정해요</span></span></label>
         <label class="opt chk"><input type="checkbox" name="classes" value="아직 고민 중"><span class="box"><span class="t">아직 모르겠어요, 먼저 이야기를 듣고 싶어요</span></span></label>
       </div>
     </section>
@@ -345,6 +338,7 @@ footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);fon
 <footer>
   <div class="brand">MATHY YURI</div>
   분당미래탐구 · 스커담 사전조사
+  <div><a class="adm" href="skdam-admin.html">관리자</a></div>
 </footer>
 
 <script>
@@ -352,9 +346,18 @@ footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);fon
 const SUPABASE_URL = "https://eqllmvfbcdtzercliicy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV";
 
+/* 음료마다 고를 수 있는 온도(h=HOT, i=ICED)와 디카페인 가능 여부. 스타벅스 매장·시즌에 따라 달라질 수 있어요 */
 const DRINKS = [
-  "아메리카노","카페 라떼","카푸치노","카라멜 마키아토","카페 모카","돌체 라떼","콜드 브루",
-  "자몽 허니 블랙 티","유자 민트 티","제주 말차 라떼"
+  {n:"아메리카노",        t:["HOT","ICED"], d:true},
+  {n:"카페 라떼",         t:["HOT","ICED"], d:true},
+  {n:"카푸치노",          t:["HOT","ICED"], d:true},
+  {n:"카라멜 마키아토",   t:["HOT","ICED"], d:true},
+  {n:"카페 모카",         t:["HOT","ICED"], d:true},
+  {n:"돌체 라떼",         t:["HOT","ICED"], d:true},
+  {n:"콜드 브루",         t:["ICED"],       d:false},
+  {n:"자몽 허니 블랙 티", t:["HOT","ICED"], d:false},
+  {n:"유자 민트 티",      t:["HOT","ICED"], d:false},
+  {n:"제주 말차 라떼",    t:["HOT","ICED"], d:false}
 ];
 
 const $ = (s, r=document) => r.querySelector(s);
@@ -364,43 +367,55 @@ const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 function buildDrink(n){
   const box = $('#drink'+n);
   const chips = DRINKS.map(d =>
-    `<label class="chip"><input type="radio" name="drink${n}" value="${d}"><span>${d}</span></label>`
+    `<label class="chip"><input type="radio" name="drink${n}" value="${d.n}"><span>${d.n}</span></label>`
   ).join('');
   box.innerHTML = `
     <div class="chips">
       ${chips}
-      <label class="chip"><input type="radio" name="drink${n}" value="기타"><span>기타 (직접 입력)</span></label>
+      <label class="chip"><input type="radio" name="drink${n}" value="기타"><span>다른 음료 요청하기</span></label>
       <label class="chip none"><input type="radio" name="drink${n}" value="음료 없음"><span>음료는 괜찮아요</span></label>
     </div>
     <div class="field" id="other${n}wrap" hidden>
-      <input type="text" id="other${n}" placeholder="원하시는 음료를 적어 주세요" maxlength="40">
+      <input type="text" id="other${n}" placeholder="원하시는 스타벅스 음료를 적어 주세요 (예: 바닐라 크림 콜드 브루)" maxlength="40">
     </div>
     <div class="drink-opts" id="opts${n}" hidden>
-      <div class="seg">
-        <label><input type="radio" name="temp${n}" value="HOT" checked><span>HOT</span></label>
-        <label><input type="radio" name="temp${n}" value="ICED"><span>ICED</span></label>
-      </div>
-      <label class="mini-chk"><input type="checkbox" id="decaf${n}"> 디카페인 (가능한 음료만)</label>
+      <div class="seg" id="seg${n}"></div>
+      <span class="hint" id="onlytemp${n}" hidden></span>
+      <label class="mini-chk" id="decafwrap${n}"><input type="checkbox" id="decaf${n}"> 디카페인</label>
     </div>
     <div class="err" hidden></div>`;
+  const setTemps = (temps) => {
+    const seg = $('#seg'+n), only = $('#onlytemp'+n);
+    if(temps.length === 1){
+      seg.innerHTML = `<label><input type="radio" name="temp${n}" value="${temps[0]}" checked><span>${temps[0]}</span></label>`;
+      only.textContent = temps[0] === 'ICED' ? '이 음료는 ICED로만 나와요' : '이 음료는 HOT으로만 나와요';
+      only.hidden = false;
+    } else {
+      seg.innerHTML = temps.map((t,i) => `<label><input type="radio" name="temp${n}" value="${t}"${i===0?' checked':''}><span>${t}</span></label>`).join('');
+      only.hidden = true;
+    }
+  };
   $$('input[name="drink'+n+'"]', box).forEach(r => r.addEventListener('change', () => {
     const v = r.value;
     $('#opts'+n).hidden = (v === '음료 없음');
     $('#other'+n+'wrap').hidden = (v !== '기타');
+    const info = DRINKS.find(d => d.n === v);
+    setTemps(info ? info.t : ['HOT','ICED']);        // 다른 음료 요청 → HOT/ICED 둘 다 고를 수 있게
+    $('#decafwrap'+n).hidden = info ? !info.d : false;
+    if(info && !info.d) $('#decaf'+n).checked = false;
     box.classList.remove('invalid');
     $('.err', box).hidden = true;
   }));
 }
-buildDrink(1); buildDrink(2);
+buildDrink(1);
 
-$('#second').addEventListener('change', e => { $('#drink2wrap').hidden = !e.target.checked; });
 
 function drinkText(n){
   const sel = $('input[name="drink'+n+'"]:checked');
   if(!sel) return '';
   let name = sel.value;
   if(name === '음료 없음') return '음료 없음';
-  if(name === '기타') name = '기타: ' + ($('#other'+n).value.trim() || '(미입력)');
+  if(name === '기타') name = '다른 음료 요청: ' + ($('#other'+n).value.trim() || '(미입력)');
   const temp = $('input[name="temp'+n+'"]:checked').value;
   const decaf = $('#decaf'+n).checked ? ' · 디카페인' : '';
   return `${name} · ${temp}${decaf}`;
@@ -475,10 +490,6 @@ $('#f').addEventListener('submit', async ev => {
 
   if(!$('input[name="drink1"]:checked')) bad($('#sec-coffee'), $('#drink1'), '음료를 골라 주세요. 필요 없으시면 "음료는 괜찮아요"를 골라 주세요.');
   else if($('input[name="drink1"]:checked').value === '기타' && !$('#other1').value.trim()) bad($('#other1'), $('#drink1'), '원하시는 음료를 적어 주세요.');
-  if($('#second').checked){
-    if(!$('input[name="drink2"]:checked')) bad($('#drink2'), $('#drink2'), '함께 오시는 분의 음료도 골라 주세요.');
-    else if($('input[name="drink2"]:checked').value === '기타' && !$('#other2').value.trim()) bad($('#other2'), $('#drink2'), '원하시는 음료를 적어 주세요.');
-  }
 
   const studentName = $('#studentName').value.trim();
   const school = $('#school').value.trim();
@@ -505,7 +516,7 @@ $('#f').addEventListener('submit', async ev => {
     leaveInfo = stay === '끝까지' ? '끝까지' : ('중간에 먼저 나감' + ($('#leaveTime').value.trim() ? ' (' + $('#leaveTime').value.trim() + ')' : ''));
   }
 
-  const drink2 = $('#second').checked ? drinkText(2) : '';
+  const drink2 = '';
   const note = $('#coffeeNote').value.trim();
 
   const payload = {
