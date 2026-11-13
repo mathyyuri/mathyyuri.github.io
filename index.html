@@ -2318,23 +2318,18 @@ const DEF_TOOLS=[
  {id:'res10',name:'10월 전국연합 성적 통계',url:'26_10moresult.html',desc:'반별·등급 통계',grp:'미션·성적',roles:['ta','student','parent']},
  {id:'form10',name:'10월 모의고사 성적 제출',url:'score_form_10.html',desc:'학생이 점수 직접 입력',grp:'미션·성적',roles:['student','parent']},
  {id:'mo10staff',name:'10모 성적표 (강사용)',url:'mo10staff.html',desc:'이름·전 과목·반별 분포 · 이미지 저장',grp:'미션·성적',roles:[]},
- {id:'bank',name:'문제은행 · 오답노트',url:'bank.html',desc:'틀린 문제 다시 풀기',grp:'학생 도구',roles:['student','parent']},
  {id:'planner',name:'연간 플래너',url:'planner-view.html',desc:'',grp:'학생 도구',roles:['ta','student','parent']},
  {id:'omr',name:'OMR 답안지 · 자동채점',url:'omr.html',desc:'답안지 만들기·채점',grp:'채점·오답노트',roles:['ta']},
  {id:'omrscan',name:'OMR 촬영 채점',url:'omr_scan.html',desc:'답안지 사진 → 자동 채점',grp:'채점·오답노트',roles:['ta']},
- {id:'snote',name:'학생별 오답노트 (강사용)',url:'studentnote.html',desc:'예전 오답노트',grp:'채점·오답노트',roles:['ta']},
- {id:'onote',name:'오답노트 생성기',url:'oedapnotegenerator.html',desc:'',grp:'채점·오답노트',roles:['ta']},
- {id:'bankadmin',name:'문제은행 관리',url:'bankadmin.html',desc:'',grp:'관리',roles:[]},
- {id:'analyzer',name:'내신 시험 분석기',url:'examanalyzer.html',desc:'PDF → 분석 대시보드',grp:'관리',roles:[]},
- {id:'sheetmaker',name:'내신기출 시험지 만들기',url:'examsheetmaker.html',desc:'',grp:'관리',roles:[]},
  {id:'picker',name:'교재 골라 담기',url:'textbookpicker.html',desc:'',grp:'관리',roles:[]},
  {id:'board',name:'공동 필기',url:'whiteboard.html',desc:'',grp:'관리',roles:['ta']},
  {id:'pimport',name:'문제 가져오기',url:'problemimport.html',desc:'문제 묶음 파일(.json) 올리기',grp:'관리',roles:[]},
  {id:'notemaker',name:'오답노트 만들기',url:'notemaker.html',desc:'학생별 오답노트 (표지 · 출처 · PDF)',grp:'관리',roles:[]},
+ {id:'dbadmin',name:'DB 관리 (문제 현황·정리)',url:'dbadmin.html',desc:'범주·출처·단원별 문제 현황, 단원 정리',grp:'관리',roles:[]},
 ];
-const RETIRED_URLS=['26_6moresult.html','26_9moresult.html','6month_counseling_form.html','gyeol1.html','gyeol2.html','gyeol3.html','admin.html','cs100admin.html','cs100ranking.html','cs100.html','daily600.html','dailyquizranking.html','dailyquizvideos.html','dailyquizwrongnote.html','dailyquiz.html','dailyranking.html','gyeolmorankings.html','index_old.html','math-exam.html','mathvariant.html','mathy_unit_chart.html','motest.html','problembank.html','ranking.html','s+.html','s.html','score_form_9.html','score_form.html'];   // 옛 구글 스크립트용 화면 — 사이트에서 뺐으므로 서버에 저장된 도구 목록에 남아 있어도 보이지 않게 한다
+const RETIRED_URLS=['26_6moresult.html','26_9moresult.html','6month_counseling_form.html','gyeol1.html','gyeol2.html','gyeol3.html','admin.html','cs100admin.html','cs100ranking.html','cs100.html','daily600.html','dailyquizranking.html','dailyquizvideos.html','dailyquizwrongnote.html','dailyquiz.html','dailyranking.html','gyeolmorankings.html','index_old.html','math-exam.html','mathvariant.html','mathy_unit_chart.html','motest.html','problembank.html','ranking.html','s+.html','s.html','score_form_9.html','score_form.html','bank.html','bankadmin.html','studentnote.html','oedapnotegenerator.html','setbook_template.html','hwpx-test.html','S+BLACK.html','examanalyzer.html','examsheet.html','examsolution.html','examsheetmaker.html'];   // 옛 구글 스크립트용 화면 — 사이트에서 뺐으므로 서버에 저장된 도구 목록에 남아 있어도 보이지 않게 한다
 let TOOLS=undefined,TOOLS_BUSY=false;
-const NEW_TOOLS=['pimport','notemaker'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
+const NEW_TOOLS=['pimport','notemaker','dbadmin'];   // 나중에 추가된 도구: 이미 저장된 목록에 없으면 원장 화면에 자동으로 붙여요
 async function toolsApi(action,args){
  try{const r=await fetch(TOOLS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:action,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 5_이전데이터_도구모음_서버.sql 을 먼저 실행해 주세요':'')};
