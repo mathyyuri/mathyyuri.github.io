@@ -126,6 +126,9 @@ footer{height:50px}
     <div class="sec-title">어떤 반에 관심이 있을까요 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(중복 선택 포함)</span></div>
     <div class="grid" id="interest"></div>
 
+    <div class="sec-title">어떤 학교에 관심이 있을까요 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(중복 선택 · 학교별 분석 우선순위)</span></div>
+    <div class="panel"><ul class="tally" id="schoolTally"></ul></div>
+
     <div class="sec-title">전날 확정 현황 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(신청한 분이 확정 링크를 눌렀는지)</span></div>
     <div class="grid" id="confStats"></div>
     <div class="panel" style="margin-top:12px">
@@ -154,6 +157,7 @@ footer{height:50px}
       <select id="fAtt"><option value="">참석 전체</option><option>참석 확정</option><option>고민 중</option><option>참석 어려움</option></select>
       <select id="fCls"><option value="">관심 반 전체</option><option>공수내모</option><option>예비고1 T-CLASS</option><option>(선행) 대수 기초반</option><option>아직 고민 중</option></select>
       <select id="fGrade"><option value="">학년 전체</option></select>
+      <select id="fSchool"><option value="">관심 학교 전체</option><option>낙생고</option><option>늘푸른고</option><option>돌마고</option><option>보평고</option><option>분당고</option><option>분당대진고</option><option>불곡고</option><option>서현고</option><option>송림고</option><option>수내고</option><option>야탑고</option><option>영덕여고</option><option>운중고</option><option>이매고</option><option>태원고</option><option>판교고</option><option>한솔고</option><option>외대부고</option><option>북일고</option><option>김천고</option><option>외고</option></select>
       <select id="fConf"><option value="">확정 상태 전체</option><option value="ok">확정 완료</option><option value="pending">미확정</option><option value="no">참석 어려움으로 변경</option></select>
     </div>
     <div class="chk-row">
@@ -318,6 +322,7 @@ function renderSummary(){
   $('#drinkNotes').innerHTML = notes.length ? '<b>요청사항</b><br>' + notes.map(esc).join('<br>') : '';
   drinkTextForCopy = dt.map(([k,v])=>`${k} x ${v}`).join('\n') + (notes.length ? '\n\n[요청사항]\n' + notes.join('\n') : '');
 
+  $('#schoolTally').innerHTML = liHtml(tally(act.flatMap(r=>splitList(r.schools))), '아직 선택한 학교가 없어요');
   $('#worries').innerHTML = liHtml(tally(act.flatMap(r=>splitList(r.worries))));
   $('#grades').innerHTML = liHtml(tally(act.map(r=>r.grade)));
 }
@@ -326,8 +331,9 @@ function renderSummary(){
 function filtered(){
   const q = $('#q').value.trim().toLowerCase();
   const fa = $('#fAtt').value, fc = $('#fCls').value, fg = $('#fGrade').value;
-  const un = $('#fUnchecked').checked, lt = $('#fLatest').checked, fcf = $('#fConf').value;
+  const un = $('#fUnchecked').checked, lt = $('#fLatest').checked, fcf = $('#fConf').value, fs = $('#fSchool').value;
   return rows.filter(r => {
+    if(fs && !splitList(r.schools).includes(fs)) return false;
     if(fcf === 'ok' && !(r._conf && r._conf.status === '확정')) return false;
     if(fcf === 'no' && r._eff !== '참석 어려움') return false;
     if(fcf === 'pending' && (r._conf || r.attendance === '참석 어려움')) return false;
@@ -337,7 +343,7 @@ function filtered(){
     if(fg && r.grade !== fg) return false;
     if(un && r.checked) return false;
     if(q){
-      const hay = [r.student_name,r.parent_name,r.school,r.parent_phone,r.student_phone,r.opinion].join(' ').toLowerCase();
+      const hay = [r.student_name,r.parent_name,r.school,r.schools,r.parent_phone,r.student_phone,r.opinion].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
@@ -370,6 +376,7 @@ function renderList(){
         ${r.leave_info ? `<dt>참석 방식</dt><dd>${esc(r.leave_info)}</dd>` : ''}
         <dt>음료</dt><dd>${esc(r._effDrink||'-')}${r._drinkChanged ? ' <span class="badge b-maybe">확정 때 바꿈</span><br><span style="color:var(--muted)">처음 신청: ' + esc(r.drink1||'-') + '</span>' : ''}${r.drink2 ? '<br>+ ' + esc(r.drink2) : ''}</dd>
         <dt>관심 반</dt><dd>${esc(r.classes||'-')}</dd>
+        <dt>관심 학교</dt><dd>${esc(r.schools||'-')}</dd>
         <dt>걱정</dt><dd>${esc(r.worries||'-')}</dd>
       </dl>
       ${r.opinion ? `<div class="opinion">${esc(r.opinion)}</div>` : ''}
@@ -406,7 +413,7 @@ $('#list').addEventListener('focusout', async e => {
 });
 
 /* ---------- 필터·버튼 ---------- */
-['q','fAtt','fCls','fGrade','fUnchecked','fLatest','fConf'].forEach(id => {
+['q','fAtt','fCls','fGrade','fUnchecked','fLatest','fConf','fSchool'].forEach(id => {
   $('#'+id).addEventListener(id==='q'?'input':'change', renderList);
 });
 $('#refresh').addEventListener('click', () => { load(); toast('새로고침했어요'); });
@@ -422,7 +429,7 @@ $('#copyDrinks').addEventListener('click', async () => {
   catch(_){ toast('복사가 막혀 있어요. 직접 선택해서 복사해 주세요'); }
 });
 $('#csv').addEventListener('click', () => {
-  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['parent_name','학부모이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['worries','걱정'],['conf_status','전날확정'],['eff_drink','최종음료'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
+  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['parent_name','학부모이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['schools','관심학교'],['worries','걱정'],['conf_status','전날확정'],['eff_drink','최종음료'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
   const body = filtered().map(r => cols.map(([k]) => q(k==='checked' ? (r.checked?'O':'') : r[k])).join(',')).join('\n');
   const blob = new Blob(['﻿' + cols.map(c=>q(c[1])).join(',') + '\n' + body], {type:'text/csv;charset=utf-8'});

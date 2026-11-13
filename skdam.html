@@ -294,9 +294,44 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
       </div>
     </section>
 
-    <!-- 05 걱정 -->
-    <section class="card" id="sec-worry">
+    <!-- 05 관심 학교 -->
+    <section class="card" id="sec-school">
       <div class="no">05</div>
+      <h2>관심 있는 고등학교를 골라 주세요</h2>
+      <p class="desc">고르신 학교의 내신 분석을 우선 준비할게요. 여러 개 골라도 괜찮아요. <span style="color:var(--muted)">(선택)</span></p>
+      <div class="sub-title">분당 17개교</div>
+      <div class="chips" id="schoolsBd">
+        <label class="chip"><input type="checkbox" name="schools" value="낙생고"><span>낙생고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="늘푸른고"><span>늘푸른고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="돌마고"><span>돌마고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="보평고"><span>보평고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="분당고"><span>분당고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="분당대진고"><span>분당대진고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="불곡고"><span>불곡고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="서현고"><span>서현고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="송림고"><span>송림고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="수내고"><span>수내고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="야탑고"><span>야탑고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="영덕여고"><span>영덕여고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="운중고"><span>운중고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="이매고"><span>이매고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="태원고"><span>태원고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="판교고"><span>판교고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="한솔고"><span>한솔고</span></label>
+      </div>
+      <div class="sub-title">그 밖의 학교</div>
+      <div class="chips" id="schoolsEtc">
+        <label class="chip"><input type="checkbox" name="schools" value="외대부고"><span>외대부고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="북일고"><span>북일고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="김천고"><span>김천고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="외고"><span>외고</span></label>
+      </div>
+      <p class="hint">목록에 없는 학교는 맨 아래 '하고 싶은 말'에 적어 주세요.</p>
+    </section>
+
+    <!-- 06 걱정 -->
+    <section class="card" id="sec-worry">
+      <div class="no">06</div>
       <h2>요즘 가장 마음에 걸리는 것은?</h2>
       <p class="desc">최대 2개까지 골라 주세요.</p>
       <div class="chips" id="worries">
@@ -312,9 +347,9 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
       <div class="hint" id="worry-hint" hidden>최대 2개까지 선택할 수 있어요.</div>
     </section>
 
-    <!-- 06 의견 -->
+    <!-- 07 의견 -->
     <section class="card" id="sec-opinion">
-      <div class="no">06</div>
+      <div class="no">07</div>
       <h2>하고 싶은 말, 궁금한 점</h2>
       <p class="desc">자유롭게 적어 주세요. 그날 가장 먼저 이야기 나눌게요.</p>
       <textarea id="opinion" maxlength="1000" placeholder="예: 지금 다니는 학원에서 우리 아이가 어느 정도인지 잘 모르겠어요."></textarea>
@@ -566,6 +601,7 @@ $('#f').addEventListener('submit', async ev => {
     parentPhone: pp,
     studentPhone: $('#studentPhone').value.trim(),
     classes: $$('input[name="classes"]:checked').map(x => x.value).join(', '),
+    schools: $$('input[name="schools"]:checked').map(x => x.value).join(', '),
     worries: $$('input[name="worries"]:checked').map(x => x.value).join(', '),
     opinion: $('#opinion').value.trim()
   };
@@ -592,6 +628,7 @@ $('#f').addEventListener('submit', async ev => {
           parent_phone: payload.parentPhone,
           student_phone: payload.studentPhone || null,
           classes: payload.classes || null,
+          schools: payload.schools || null,
           worries: payload.worries || null,
           opinion: payload.opinion || null
         })
@@ -626,6 +663,7 @@ function showDone(p, demo){
     ['학부모', p.parentName]
   ];
   if(p.classes) rows.push(['관심 반', p.classes]);
+  if(p.schools) rows.push(['관심 학교', p.schools]);
   $('#recap').innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>${r[0]==='음료' ? esc(r[1]).replace(/&lt;br&gt;/g,'<br>') : esc(r[1])}</span></div>`).join('');
   window.scrollTo({top:0, behavior:'smooth'});
 }
