@@ -261,7 +261,9 @@ function vNotes(){
   +'<div class="nmxw"><table class="nmx"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'}
 
 /* ───────── 기록 한눈에 (성적 그래프 · 정오표 클리어 현황) ───────── */
-function cnts(ox){var o=0,t=0,x=0;String(ox||'').split('').forEach(function(c){if(c==='O')o++;else if(c==='T')t++;else if(c==='X')x++});return {o:o,t:t,x:x,n:o+t+x}}
+function cnts(ox,sk){var o=0,t=0,x=0;String(ox||'').split('').forEach(function(c,i){if(sk&&sk.indexOf(i)>=0)return;if(c==='O')o++;else if(c==='T')t++;else if(c==='X')x++});return {o:o,t:t,x:x,n:o+t+x}}
+/* 클리어 제외 문항(note==='클리어 제외'): 번호는 그대로, 클리어·남은 오답 판정에서만 뺀다 */
+function skipOf(){var a=[];((S.ex&&S.ex.items)||[]).forEach(function(x,i){if(x&&x.note==='클리어 제외')a.push(i)});return a}
 function hpct(h){return h.tot>0&&h.score!=null?Math.round(h.score*1000/h.tot)/10:null}
 function ovList(){return (S.hist||[]).filter(function(h){return seasonOf(h)===S.season&&(!S.cat||S.cat==='__today'||catOf(h)===S.cat)})}
 async function loadHist(){
@@ -359,8 +361,8 @@ function barChart(){
  U.forEach(function(r,j){var i=R.length+j,x=pl+i*BW+5,w=BW-10;g+='<rect x="'+x+'" y="'+(Y(0)-3)+'" width="'+w+'" height="3" rx="1.5" fill="#d8b4b4"/><text x="'+(x+w/2)+'" y="'+(Y(0)-8)+'" text-anchor="middle" font-size="10" fill="'+(r.ns?'#b84a4a':'#8a8f9e')+'">'+(r.ns?'미시작':'미기록')+'</text><text x="'+(x+w/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="10.5" fill="'+(r.ns?'#b84a4a':'#8a8f9e')+'">'+esc(String(sn(r)||'').slice(0,4))+'</text>'});
  g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+Y(avg)+'" y2="'+Y(avg)+'" stroke="#d4486a" stroke-dasharray="5 4" stroke-width="1.6"/><text x="'+(W-10)+'" y="'+(Y(avg)-5)+'" text-anchor="end" font-size="11" fill="#d4486a">평균 '+(Math.round(avg*10)/10)+'</text>';
  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto;display:block">'+g+'</svg></div>'}
-function xCount(r){return cnts(r.ox).x}
-function isClear(r){var c=cnts(r.ox);return c.x===0&&c.o+c.t>=S.C.n&&c.o+c.t>0}
+function xCount(r){return cnts(r.ox,skipOf()).x}
+function isClear(r){var sk=skipOf(),c=cnts(r.ox,sk);return c.x===0&&c.o+c.t>=S.C.n-sk.length&&c.o+c.t>0}
 function vBoard(){
  var C=S.C,h='<div class="card"><h3>반별 현황</h3><div class="row">'+Object.keys(C.cls).sort().map(function(k){var l=C.cls[k],av=l.reduce(function(a,r){return a+r.s},0)/l.length;return '<div class="kp" style="border-left-color:'+cc(k)+';min-width:150px"><b>'+badge(k)+' '+av.toFixed(1)+'점</b><span>'+l.length+'명 · 최고 '+l[0].s+'점</span></div>'}).join('')+'</div></div>';
  var ncl=C.G.filter(isClear).length;

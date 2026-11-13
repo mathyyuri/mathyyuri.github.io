@@ -1466,7 +1466,7 @@ function vExamAll(){
  // 미션별·반별 정답률 요약 표
  const cls=[...new Set(L.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),sum={},tot={o:0,t:0};
  const rows=L.map(it=>{const len=it.ex.items.length,by={},t0={o:0,t:0,n:0,sc:0};
-  it.roster.forEach(r=>{const c=msCnt(r.ox,len),k=String(r.cls),b=by[k]=by[k]||{o:0,t:0,n:0,sc:0},t=c.o+c.x+c.t;b.o+=c.o;b.t+=t;b.n++;b.sc+=(+r.score);t0.o+=c.o;t0.t+=t;t0.n++;t0.sc+=(+r.score);
+  it.roster.forEach(r=>{const c=msCnt(r.ox,len,skipIdx(it.ex.items)),k=String(r.cls),b=by[k]=by[k]||{o:0,t:0,n:0,sc:0},t=c.o+c.x+c.t;b.o+=c.o;b.t+=t;b.n++;b.sc+=(+r.score);t0.o+=c.o;t0.t+=t;t0.n++;t0.sc+=(+r.score);
    const s2=sum[k]=sum[k]||{o:0,t:0};s2.o+=c.o;s2.t+=t;tot.o+=c.o;tot.t+=t;});
   return {it:it,by:by,t0:t0};});
  const pc=(o,t)=>t?Math.round(o*100/t):null,cell=(o,t,n,sc)=>{const p=pc(o,t);return '<td style="'+heatSt(p)+'">'+(p==null?'-':p+'%')+(n?'<small style="display:block;font-weight:400;opacity:.85">'+n+'명 · '+(Math.round(sc/n*10)/10)+'점</small>':'')+'</td>';};
@@ -1794,7 +1794,7 @@ function shEnsure(){
   SH={hist:H,note:(n&&n.ok&&n.body)?n:null};SHB=false;render();})();
 }
 function pctOf(h){return h.tot>0&&h.score!=null?h.score*100/h.tot:null;}
-function hCnt(h){return msCnt(h.ox,h.n||String(h.ox||'').length);}
+function hCnt(h){return msCnt(h.ox,h.n||String(h.ox||'').length,(typeof SKIPS!=='undefined'&&SKIPS)?SKIPS[h.id]:null);}
 const GRAPH_FROM='2026-10-22';   // 누적 성적 그래프·자동 한마디는 이 날짜 이후 기록부터
 function autoNote(name,H){
  const L=(H||[]).filter(h=>h.tot>0&&h.score!=null&&!h.old&&String(h.date)>=GRAPH_FROM);
@@ -1890,7 +1890,7 @@ function openMNote(id){
 async function rpLoadDet(){
  const ids=(RP.hist||[]).slice(-12).map(h=>h.id),key=RPK;
  for(let i=0;i<ids.length;i+=4){
-  await Promise.all(ids.slice(i,i+4).map(async id=>{if(RP.det[id])return;const x=await msApi('load',{exam_id:id});if(x&&x.ok)RP.det[id]={items:x.exam.items,roster:x.roster.filter(r=>r.ox)};}));
+  await Promise.all(ids.slice(i,i+4).map(async id=>{if(RP.det[id])return;const x=await msApi('load',{exam_id:id});if(x&&x.ok){RP.det[id]={items:x.exam.items,roster:x.roster.filter(r=>r.ox)};SKIPS[id]=skipIdx(x.exam.items);}}));
   if(RPK!==key)return;render();
  }
 }
@@ -2405,15 +2405,18 @@ function msEnsure(){
   const cand=l.list.filter(m=>!m.old).slice(0,150),items=[];
   await Promise.all(cand.map(async m=>{
    if(!(m.graded>0)&&!isStaff()){items.push({m:m,ex:{id:m.id,name:m.name,date:m.date,cat:m.cat,items:new Array(m.n).fill({pts:1})},roster:[]});return;}
-   const x=await msApi('load',{exam_id:m.id});if(x&&x.ok)items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null),all:isStaff()?x.roster:null});}));
+   const x=await msApi('load',{exam_id:m.id});if(x&&x.ok){SKIPS[m.id]=skipIdx(x.exam.items);items.push({m:m,ex:x.exam,roster:x.roster.filter(r=>r.ox&&r.score!=null),all:isStaff()?x.roster:null});}}));
   items.sort((a,b)=>cand.indexOf(a.m)-cand.indexOf(b.m));
   MS={items:items,n:l.list.length};MS_BUSY=false;render();
  })();
 }
-function msCnt(ox,len){let o=0,x=0,t=0;String(ox||'').split('').forEach(ch=>{if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;});return {o:o,x:x,t:t,b:Math.max(0,len-o-x-t)};}
+/* 클리어 제외 문항(미션 문항의 note==='클리어 제외'): 번호는 그대로 두고 클리어·남은 오답 판정에서만 뺀다 */
+var SKIPS={};
+function skipIdx(items){const a=[];(items||[]).forEach((x,i)=>{if(x&&x.note==='클리어 제외')a.push(i);});return a;}
+function msCnt(ox,len,sk){let o=0,x=0,t=0;const S0=sk&&sk.length?sk:null;String(ox||'').split('').forEach((ch,i)=>{if(S0&&S0.indexOf(i)>=0)return;if(ch==='O')o++;else if(ch==='X')x++;else if(ch==='T')t++;});return {o:o,x:x,t:t,b:Math.max(0,len-(S0?S0.length:0)-o-x-t)};}
 function msStat(it){
- const len=it.ex.items.length;let cl=0,xs=0,sc=0;
- const rows=it.roster.map(r=>{const c=msCnt(r.ox,r._len||len),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
+ const len=it.ex.items.length,sk=skipIdx(it.ex.items);let cl=0,xs=0,sc=0;
+ const rows=it.roster.map(r=>{const c=msCnt(r.ox,r._len||len,sk),clear=c.x===0&&c.b===0&&c.o+c.t>0;if(clear)cl++;xs+=c.x;sc+=(+r.score);return {r:r,c:c,clear:clear};});
  const n=rows.length;return {n:n,cl:cl,xs:xs,avg:n?sc/n:null,rows:rows,me:rows.find(x=>x.r.me)};
 }
 function msChart(it){
@@ -2439,7 +2442,7 @@ function chunkBar(id,n){
 function chunkRange(id,n){if(!GSZ||n<=GSZ)return [0,n];const pg=Math.min(GPG[id]||0,Math.ceil(n/GSZ)-1);return [pg*GSZ,Math.min(n,(pg+1)*GSZ)];}
 function msRanks(R){let k=0;return R.map((r,i)=>{if(i===0||+r.score!==+R[i-1].score)k=i+1;return k;});}
 function msDetail(it,st){
- const items=it.ex.items,n=items.length,R=it.roster.slice().sort((a,b)=>b.score-a.score),rk=msRanks(R);
+ const items=it.ex.items,n=items.length,SKI=skipIdx(items),R=it.roster.slice().sort((a,b)=>b.score-a.score),rk=msRanks(R);
  const rate=items.map((_,i)=>{let o=0,t=0;R.forEach(r=>{const c=r.ox[i];if(c==='O'||c==='X'||c==='T'){t++;if(c==='O')o++;}});return t?o/t:null;});
  const U=isStaff()&&it.all?it.all.filter(r=>!(r.ox&&r.score!=null)).sort((a,b)=>String(a.cls+a.name).localeCompare(b.cls+b.name)):[];
  const sym={O:'○',X:'✕',T:'△'},rg=chunkRange(it.m.id,n),cols=[];for(let q=rg[0];q<rg[1];q++)cols.push(q);
@@ -2447,7 +2450,7 @@ function msDetail(it,st){
  h+='<div style="margin:0 0 6px"><b>전체 정오표</b> <span class="muted sm">○ 맞음 · ✕ 틀림 · △ 틀렸다 고침 · 도장 = 클리어'+(isStaff()?'':' · 내 줄은 노란 바탕')+'</span></div>'+chunkBar(it.m.id,n);
  h+='<div class="mxs"><table class="mxg"><tr><th class="rk">순위</th><th class="nm">'+(isStaff()?'이름':'닉네임')+'</th><th class="sc">점수</th><th class="cl">클리어</th>'+cols.map(i=>'<th>'+(i+1)+'</th>').join('')+'</tr>';
  h+=msRateRows(R,cols,n);
- R.forEach((r,i)=>{const c=msCnt(r.ox,r._len||n),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
+ R.forEach((r,i)=>{const c=msCnt(r.ox,r._len||n,SKI),clear=c.x===0&&c.b===0&&c.o+c.t>0,nm=r.me?(r.name||'나')+'(나)':pn(r);
   h+='<tr class="'+(r.me?'me':'')+'"><td class="rk">'+rk[i]+'</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(nm)+'</td><td class="sc">'+(Math.round(r.score*10)/10)+'</td><td class="cl">'+(clear?'<span class="stamp xs">CLEAR</span>':(c.x?'<span style="color:#b84a4a;font-size:11px">남은 '+c.x+' ('+Math.round(c.x*100/n)+'%)</span>':''))+'</td>'+
    cols.map(q=>{const ch=r.ox[q];return '<td class="g'+(ch==='O'||ch==='X'||ch==='T'?ch:'N')+'">'+(sym[ch]||'')+'</td>';}).join('')+'</tr>';});
  U.forEach(r=>{h+='<tr class="'+(r.ns?'ns':'nr')+'"><td class="rk">-</td><td class="nm"><span class="badge" style="background:'+(MSC[String(r.cls).replace(/반$/,'')]||'#a0a6b5')+';color:'+(/^(A\+|B)/.test(String(r.cls))?'#2b2f3a':'#fff')+'">'+esc(String(r.cls).replace(/반$/,''))+'</span> '+esc(pn(r))+'</td><td class="sc">-</td><td class="cl">'+(r.ns?'<span class="nsb">미시작</span>':'<span class="nrb">미기록</span>')+'</td>'+cols.map(()=>'<td class="gN"></td>').join('')+'</tr>';});
@@ -2485,10 +2488,10 @@ function msMatrix(L){
  const cols=L.filter(it=>it.roster.length).slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))||0).slice(0,40);   /* 최신 기록이 왼쪽 */
  if(!cols.length)return '';
  const dgs=[];cols.forEach(it=>{const d=String(it.ex.date).slice(0,10),g=dgs[dgs.length-1];if(g&&g.date===d)g.n++;else dgs.push({date:d,n:1,dw:msDow(d),i:0});}); let _ci=0;dgs.forEach(g=>{g.i=_ci;_ci+=g.n;});const dcl=ci=>'dw'+msDow(String(cols[ci].ex.date).slice(0,10))+(dgs.some(g=>g.i===ci)?' gb':'');const dtag=(s,ci)=>s.replace(/^<td( class="([^"]*)")?/,(m,a,c)=>'<td class="'+(c?c+' ':'')+dcl(ci)+'"'); const R={},ord={'S+':0,'S':1,'A+':2,'A':3,'B':4};
- cols.forEach(it=>{const len=it.ex.items.length,tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
+ cols.forEach(it=>{const len=it.ex.items.length,sk=skipIdx(it.ex.items),tot=Math.round(it.ex.items.reduce((a,x)=>a+(+x.pts||1),0)*10)/10||1;
   it.roster.forEach(r=>{const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:!!r.me,cells:{},clr:0,n:0,x:0,sp:0};
    o.nm=r.me?(r.name||'나'):(pn(r)||o.nm);o.cls=r.cls||o.cls;if(r.me)o.me=true;
-   const c=msCnt(r.ox,r._len||len),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/(r._tot||tot);});
+   const c=msCnt(r.ox,r._len||len,sk),clear=c.x===0&&c.b===0&&c.o+c.t>0;o.cells[it.m.id]={clear:clear,x:c.x,sc:+r.score};o.n++;if(clear)o.clr++;o.x+=c.x;o.sp+=(+r.score)*100/(r._tot||tot);});
   if(isStaff()&&it.all)it.all.forEach(r=>{if(r.ox&&r.score!=null)return;const o=R[r.k]=R[r.k]||{k:r.k,nm:'',cls:r.cls,me:false,cells:{},clr:0,n:0,x:0,sp:0};o.nm=pn(r)||o.nm;o.cls=r.cls||o.cls;if(!o.cells[it.m.id])o.cells[it.m.id]={ns:!!r.ns,nr:!r.ns};});});
  const rows=Object.keys(R).map(k=>R[k]).sort((a,b)=>((ord[String(a.cls).replace(/반$/,'')]==null?9:ord[String(a.cls).replace(/반$/,'')])-(ord[String(b.cls).replace(/반$/,'')]==null?9:ord[String(b.cls).replace(/반$/,'')]))||(b.clr-a.clr)||String(a.nm).localeCompare(String(b.nm)));
  let h='<div class="note" style="margin-bottom:8px"><b>전체 현황</b> · 한 줄이 학생 한 명이에요. <b style="color:#d4486a">도장</b> = 클리어, <b style="color:#b84a4a">빨간 숫자</b> = 남은 오답 수, 아래 작은 숫자 = 점수. <b>최신 미션이 왼쪽</b>이고 같은 날짜는 한 묶음이에요. 요일 색: '+msDowLegend()+'</div><div style="overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:14px;margin-bottom:14px"><table class="msx"><tr><th class="nm" rowspan="2">'+(isStaff()?'이름':'닉네임')+'</th>'+dgs.map(g=>'<th class="dg dw'+g.dw+' gb" colspan="'+g.n+'">'+msDay(g.date)+'</th>').join('')+'<th rowspan="2">누적<br>클리어</th><th rowspan="2">평균<br>점수</th><th rowspan="2">남은<br>오답</th></tr><tr>'+
