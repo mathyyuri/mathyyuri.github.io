@@ -179,6 +179,8 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
     <p class="sign">분당미래탐구 수학강사 전유리 드림</p>
   </section>
 
+  <div class="notice mint" id="restoredNote" hidden style="margin-top:18px">지난번에 제출하신 내용을 불러왔어요. <b>바꾸실 부분만 고쳐서 다시 제출</b>하시면 가장 최근 응답으로 확인할게요.</div>
+
   <form id="f" novalidate>
 
     <!-- 01 참석 -->
@@ -208,10 +210,10 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
       </div>
 
       <div class="notice" id="absent-note" hidden>
-        참석이 어려워지시면 <b>전날(11월 16일)까지</b> 알려 주세요. 궁금하신 점은 맨 아래 '하고 싶은 말'에 남겨 주시면 따로 답해 드릴게요.
+        참석이 어려워지시면 <b>당일 오후 3시까지</b> 알려 주세요. (전날 확정 문자의 링크에서도 바꾸실 수 있어요.) 궁금하신 점은 맨 아래 '하고 싶은 말'에 남겨 주시면 따로 답해 드릴게요.
       </div>
       <div class="notice mint" id="plan-note">
-        일정이 바뀌어도 괜찮습니다. 전날까지 이 페이지를 다시 제출하시면 <b>가장 최근 응답</b>으로 확인할게요.
+        미리 신청해 두시면 <b>전날 확정 문자</b>를 한 번 더 드려요. 그때 링크에서 <b>[참석 확정]</b>을 눌러 주세요. 일정이 바뀌어도 괜찮아요. 이 페이지를 다시 제출하시면 <b>가장 최근 응답</b>으로 확인할게요.
       </div>
     </section>
 
@@ -221,7 +223,7 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
       <h2>오늘의 커피를 골라 주세요<span class="req">*</span></h2>
       <p class="desc">
         <svg class="cup" viewBox="0 0 24 24" fill="none" stroke="#2d7a64" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3c0 1.2 1 1.2 1 2.4M12 3c0 1.2 1 1.2 1 2.4"/></svg>
-        음료는 제가 준비해 둘게요. 당일 낮 12시까지 입력해 주세요.
+        음료는 제가 준비해 둘게요. 미리 골라 두시고, 전날 확정 문자에서 한 번 더 확인하실 수 있어요. <b>당일 오후 3시까지</b> 바꾸시거나 취소하셔도 괜찮아요.
       </p>
       <div id="drink1"></div>
 
@@ -586,6 +588,7 @@ $('#f').addEventListener('submit', async ev => {
       });
       if(!res.ok) throw new Error('save failed ' + res.status);
     }
+    if(!demo) saveForm();
     showDone(payload, demo);
   }catch(err){
     btn.disabled = false; btn.innerHTML = '제출하기<span class="arrow">→</span>';
@@ -601,8 +604,8 @@ function showDone(p, demo){
   $('#done').style.display = 'block';
   $('#demoBanner').hidden = !demo;
   const msgs = {
-    '참석 확정': '참석해 주셔서 감사해요.<br>11월 17일(화) 오후 7시, 분당미래탐구에서<br>따뜻한 커피와 함께 뵙겠습니다.',
-    '고민 중': '고민해 주셔서 감사해요.<br>마음이 정해지시면 전날까지 편하게 알려 주세요.<br>오시지 않아도 남겨 주신 이야기는 소중하게 읽을게요.',
+    '참석 확정': '참석해 주셔서 감사해요.<br>11월 17일(화) 오후 7시, 분당미래탐구에서<br>따뜻한 커피와 함께 뵙겠습니다.<br><br><b>전날(16일)에 확정 문자를 한 번 더 드려요.</b><br>그때 링크에서 [참석 확정]을 눌러 주세요.<br>당일 컨디션에 따라 <b>오후 3시까지</b> 음료 변경·취소도 괜찮아요.',
+    '고민 중': '고민해 주셔서 감사해요.<br>전날(16일)에 확정 문자를 드릴게요. 그때 링크에서 [참석 확정]을 눌러 주세요.<br>당일 오후 3시까지는 바꾸실 수 있고, 오시지 않아도 남겨 주신 이야기는 소중하게 읽을게요.',
     '참석 어려움': '미리 알려 주셔서 감사해요.<br>궁금하신 점은 DM으로 편하게 남겨 주세요.'
   };
   $('#doneMsg').innerHTML = msgs[p.attendance];
@@ -615,6 +618,45 @@ function showDone(p, demo){
   $('#recap').innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>${r[0]==='음료' ? esc(r[1]).replace(/&lt;br&gt;/g,'<br>') : esc(r[1])}</span></div>`).join('');
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
+/* ---------- 같은 폰이면 지난번 입력을 불러와요 (수정·취소를 쉽게) ---------- */
+const FORM_KEY = 'skdam_form_v1';
+function saveForm(){
+  try{
+    const o = {n:{}, i:{}};
+    $$('#f input, #f select, #f textarea').forEach(el => {
+      if(el.type === 'radio' || el.type === 'checkbox'){
+        if(el.name){ (o.n[el.name] = o.n[el.name] || []); if(el.checked) o.n[el.name].push(el.value); }
+        else if(el.id){ o.i[el.id] = el.checked; }
+      } else if(el.id){ o.i[el.id] = el.value; }
+    });
+    localStorage.setItem(FORM_KEY, JSON.stringify(o));
+  }catch(_){}
+}
+function restoreForm(){
+  let o = null;
+  try{ o = JSON.parse(localStorage.getItem(FORM_KEY) || 'null'); }catch(_){}
+  if(!o) return;
+  const fire = el => el.dispatchEvent(new Event('change', {bubbles:true}));
+  // 1) 선택지(라디오·체크) — 음료 온도·디카페인은 음료를 고른 뒤에 만들어지므로 나중에
+  $$('#f input[type=radio], #f input[type=checkbox]').forEach(el => {
+    if(!el.name || /^temp/.test(el.name)) return;
+    const vals = o.n[el.name]; if(!vals) return;
+    const want = vals.indexOf(el.value) >= 0;
+    if(el.checked !== want){ el.checked = want; if(want) fire(el); }
+  });
+  // 2) 글 입력칸·선택칸·이름 없는 체크칸
+  Object.keys(o.i).forEach(id => {
+    const el = document.getElementById(id); if(!el || /^decaf/.test(id)) return;
+    if(el.type === 'checkbox') el.checked = !!o.i[id]; else el.value = o.i[id];
+    if(el.tagName === 'SELECT') fire(el);
+  });
+  // 3) 음료 온도·디카페인
+  (o.n.temp1 || []).forEach(v => { const el = $$('input[name="temp1"]').find(x => x.value === v); if(el) el.checked = true; });
+  if(o.i.decaf1 && $('#decaf1')) $('#decaf1').checked = true;
+  $('#restoredNote').hidden = false;
+}
+restoreForm();
 </script>
 </body>
 </html>

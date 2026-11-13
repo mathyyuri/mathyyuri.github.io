@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>스커담 참석 확정 | MATHY YURI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0d0d0d;
+  --ink:#1a1816;
+  --cream:#f6efe2;
+  --cream-2:#ede3cf;
+  --card:#fbf7ee;
+  --mint:#a8dcc8;
+  --mint-d:#2d7a64;
+  --pink:#eab4c0;
+  --pink-d:#b8566d;
+  --line:#d9ccb3;
+  --muted:#7b7467;
+  --serif:'Noto Serif KR','Playfair Display',serif;
+  --disp:'Playfair Display','Noto Serif KR',serif;
+  --sans:'Noto Sans KR',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:16px}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+/* HERO */
+.hero{background:var(--black);color:var(--cream);padding:44px 0 64px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-120px;top:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(168,220,200,.22),transparent 70%)}
+.hero::after{content:"";position:absolute;left:-100px;bottom:-140px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(234,180,192,.18),transparent 70%)}
+.hero .wrap{position:relative;z-index:1;text-align:center}
+.eyebrow{font-family:var(--disp);letter-spacing:.28em;font-size:11px;text-transform:uppercase;color:var(--mint)}
+.portrait-wrap{width:132px;height:132px;margin:26px auto 22px;position:relative}
+.portrait-wrap::before{content:"";position:absolute;inset:-8px;border:1px solid rgba(246,239,226,.35);border-radius:50%}
+.portrait-wrap::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid transparent;border-top-color:var(--pink);border-right-color:var(--mint);transform:rotate(25deg)}
+.portrait,.monogram{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+.portrait{object-fit:cover;object-position:center 20%;z-index:2;background:var(--ink)}
+.monogram{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#222,#111);font-family:var(--disp);font-style:italic;font-size:54px;color:var(--cream)}
+.hero h1{font-family:var(--disp);font-weight:700;font-size:54px;line-height:1.05;letter-spacing:.02em}
+.hero .sub{font-family:var(--serif);font-size:17px;margin-top:10px;color:var(--cream-2);font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px}
+.pill{border:1px solid rgba(246,239,226,.35);border-radius:999px;padding:7px 14px;font-size:13px;letter-spacing:.02em;color:var(--cream)}
+.pill b{color:var(--mint);font-weight:700}
+.dday{margin:26px auto 0;display:inline-flex;flex-direction:column;align-items:center;padding:14px 34px 16px;border:1px solid rgba(168,220,200,.45);border-radius:22px;background:rgba(168,220,200,.08)}
+.dday .dd-label{font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--pink)}
+.dday .dd-num{font-family:var(--disp);font-weight:700;font-size:68px;line-height:1.05;color:var(--mint);letter-spacing:.02em}
+.dday .dd-sub{font-size:13.5px;color:var(--cream-2);margin-top:2px}
+.dday.today .dd-num{color:var(--pink)}
+.dday.done .dd-num{font-size:30px;padding:14px 0 6px;color:var(--cream)}
+@media(max-width:480px){.dday .dd-num{font-size:56px}}
+.cup{width:22px;height:22px;vertical-align:-4px;margin-right:6px}
+
+/* LETTER */
+.letter{margin:-34px auto 0;position:relative;z-index:3;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px;box-shadow:0 14px 40px rgba(0,0,0,.10)}
+.letter p{font-family:var(--serif);font-size:15.5px;line-height:1.9}
+.letter p+p{margin-top:12px}
+.letter .sign{font-family:var(--disp);font-style:italic;margin-top:16px;color:var(--muted);font-size:15px;text-align:right}
+
+/* FORM */
+form{padding:26px 0 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 20px;margin-top:18px}
+.card .no{font-family:var(--disp);font-style:italic;color:var(--pink-d);font-size:14px;letter-spacing:.1em}
+.card h2{font-family:var(--serif);font-weight:700;font-size:20px;margin:2px 0 4px}
+.card .desc{color:var(--muted);font-size:14px;margin-bottom:16px}
+.req{color:var(--pink-d);margin-left:3px}
+.field{margin-top:16px}
+.field>label.lbl{display:block;font-size:14px;font-weight:700;margin-bottom:7px}
+input[type=text],input[type=tel],textarea,select{
+  width:100%;font-family:var(--sans);font-size:16px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 14px;outline:none;transition:.15s;-webkit-appearance:none;appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 20px) 55%,calc(100% - 14px) 55%;background-size:6px 6px;background-repeat:no-repeat;padding-right:36px}
+textarea{min-height:120px;resize:vertical;line-height:1.6}
+input:focus,textarea:focus,select:focus{border-color:var(--mint-d);box-shadow:0 0 0 3px rgba(168,220,200,.45)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* choice cards */
+.opts{display:grid;gap:10px}
+.opt{position:relative;display:block;cursor:pointer}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .box{display:block;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px 16px 14px 46px;position:relative;transition:.15s}
+.opt .box::before{content:"";position:absolute;left:16px;top:17px;width:18px;height:18px;border:1.5px solid var(--muted);border-radius:50%;background:#fff;transition:.15s}
+.opt.chk .box::before{border-radius:5px}
+.opt input:checked+.box{border-color:var(--black);background:var(--cream-2)}
+.opt input:checked+.box::before{background:var(--black);border-color:var(--black);box-shadow:inset 0 0 0 3px #fff}
+.opt.chk input:checked+.box::before{background:var(--black) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f6efe2' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center/12px no-repeat;box-shadow:none}
+.opt input:focus-visible+.box{box-shadow:0 0 0 3px rgba(168,220,200,.7)}
+.opt .t{display:block;font-weight:700;font-size:15px}
+.opt .s{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 15px;font-size:14px;transition:.15s}
+.chip input:checked+span{background:var(--black);border-color:var(--black);color:var(--cream)}
+.chip input:focus-visible+span{box-shadow:0 0 0 3px rgba(168,220,200,.7)}
+.chip.none span{border-style:dashed;color:var(--muted)}
+.chip.none input:checked+span{color:var(--cream)}
+.drink-opts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding:12px 14px;background:var(--cream-2);border-radius:12px}
+.seg{display:inline-flex;border:1px solid var(--black);border-radius:999px;overflow:hidden}
+.seg label{cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:7px 16px;font-size:13px;font-weight:700;font-family:var(--disp);letter-spacing:.06em}
+.seg input:checked+span{background:var(--black);color:var(--cream)}
+.mini-chk{display:inline-flex;gap:7px;align-items:center;font-size:14px;cursor:pointer}
+.mini-chk input{width:18px;height:18px;accent-color:var(--black)}
+.second-toggle{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.sub-title{font-family:var(--disp);font-style:italic;color:var(--pink-d);font-size:14px;margin:16px 0 8px}
+[hidden]{display:none!important}
+
+.notice{background:#fff;border:1px dashed var(--pink-d);border-radius:12px;padding:12px 14px;font-size:13.5px;margin-top:12px;color:var(--ink)}
+.notice.mint{border-color:var(--mint-d)}
+
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.6}
+.consent input{width:20px;height:20px;margin-top:2px;accent-color:var(--black);flex:none}
+.privacy{font-size:12.5px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+
+.err{color:var(--pink-d);font-size:13px;margin-top:6px;font-weight:500}
+.invalid input[type=text],.invalid input[type=tel],.invalid select,.invalid textarea{border-color:var(--pink-d)}
+.invalid .box{border-color:var(--pink-d)!important}
+
+.submit{width:100%;margin-top:26px;border:0;background:var(--black);color:var(--cream);font-family:var(--serif);font-weight:700;font-size:17px;padding:17px;border-radius:14px;cursor:pointer;transition:.15s;letter-spacing:.04em}
+.submit:hover{background:#262626}
+.submit:active{transform:scale(.99)}
+.submit[disabled]{opacity:.6;cursor:wait}
+.submit .arrow{color:var(--mint);margin-left:6px}
+.formerr{margin-top:12px;color:var(--pink-d);font-size:14px;text-align:center}
+
+/* DONE */
+#done{display:none;padding:34px 0 70px}
+#done .card{text-align:center;padding:34px 22px}
+#done h2{font-family:var(--disp);font-size:38px;font-weight:700}
+#done .msg{font-family:var(--serif);font-size:16px;line-height:1.9;margin-top:12px}
+.recap{margin:22px auto 0;max-width:420px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 16px}
+.recap div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.recap div:last-child{border-bottom:0}
+.recap span:first-child{color:var(--muted);flex:none}
+.recap span:last-child{text-align:right;font-weight:500}
+.demo{background:#fff3f5;border:1px solid var(--pink-d);color:var(--pink-d);border-radius:12px;padding:12px 14px;font-size:13.5px;margin-bottom:16px;text-align:left}
+
+footer{background:var(--black);color:var(--cream-2);text-align:center;padding:30px 16px 36px;font-size:12.5px}
+footer .brand{font-family:var(--disp);letter-spacing:.24em;color:var(--mint);font-size:12px;margin-bottom:6px}
+footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px solid rgba(246,239,226,.3);border-radius:999px;color:rgba(246,239,226,.6);font-size:11.5px;text-decoration:none}footer .adm:hover{color:var(--cream);border-color:var(--cream)}
+
+.hero{background:var(--black);color:var(--cream);padding:34px 0 60px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-120px;top:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(168,220,200,.22),transparent 70%)}
+.hero .wrap{position:relative;z-index:1;text-align:center}
+.hero .eyebrow{font-family:var(--disp);letter-spacing:.24em;font-size:11px;color:var(--mint)}
+.hero h1{font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.25;margin-top:10px}
+.hero .sub{font-size:14px;margin-top:8px;color:var(--cream-2)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+.pill{border:1px solid rgba(246,239,226,.35);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--cream)}
+.pill b{color:var(--mint)}
+main.wrap{margin-top:-30px;position:relative;z-index:3;padding-bottom:50px}
+.btn{width:100%;border:0;background:var(--black);color:var(--cream);font-family:var(--serif);font-weight:700;font-size:16.5px;padding:15px;border-radius:14px;cursor:pointer}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn.mint{background:var(--mint);color:var(--black)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--black)}
+.btn.warn{background:#fff;color:var(--pink-d);border:1px solid var(--pink-d)}
+.btns{display:grid;gap:10px;margin-top:18px}
+.mine{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 16px;margin-top:14px}
+.mine div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line);font-size:14.5px}
+.mine div:last-child{border-bottom:0}
+.mine span:first-child{color:var(--muted);flex:none}
+.mine span:last-child{text-align:right;font-weight:700}
+.badge{display:inline-block;border-radius:999px;padding:3px 11px;font-size:12.5px;font-weight:700}
+.badge.ok{background:var(--mint);color:var(--black)}
+.badge.no{background:#f7d6dc;color:var(--pink-d)}
+.badge.wait{background:var(--cream-2);color:var(--muted)}
+.closed{background:#fff3f5;border:1px solid var(--pink-d);color:var(--pink-d);border-radius:12px;padding:14px;font-size:14.5px;text-align:center;margin-top:14px}
+.dday{margin:18px auto 0;display:inline-flex;flex-direction:column;align-items:center;padding:8px 26px 10px;border:1px solid rgba(168,220,200,.45);border-radius:18px;background:rgba(168,220,200,.08)}
+.dday .dd-num{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1.1;color:var(--mint)}
+.dday .dd-sub{font-size:12.5px;color:var(--cream-2)}
+.dday.today .dd-num{color:var(--pink)}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">MATHY YURI · 분당미래탐구</div>
+    <h1>스커담 참석 확정</h1>
+    <p class="sub">신청하신 내용을 확인하고 한 번 더 확정해 주세요</p>
+    <div class="pills"><span class="pill"><b>11월 17일 (화)</b></span><span class="pill"><b>오후 7시</b></span><span class="pill">분당미래탐구</span></div>
+    <div><div class="dday" id="dday" hidden><span class="dd-num" id="ddNum"></span><span class="dd-sub" id="ddSub"></span></div></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 1단계: 본인 확인 -->
+  <section class="card" id="stepFind">
+    <div class="no">01</div>
+    <h2>신청하신 분을 확인할게요</h2>
+    <p class="desc">설문에 적어 주신 학생 이름과, 학부모님 전화번호 뒤 4자리를 입력해 주세요.</p>
+    <div class="field"><label class="lbl" for="nm">학생 이름</label><input type="text" id="nm" autocomplete="off" maxlength="40" placeholder="이름"></div>
+    <div class="field"><label class="lbl" for="p4">학부모님 전화번호 뒤 4자리</label><input type="tel" id="p4" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="예: 1234"></div>
+    <div class="err" id="findErr" hidden></div>
+    <div class="btns"><button class="btn" id="findBtn" type="button">내 신청 내용 확인하기</button></div>
+  </section>
+
+  <!-- 2단계: 확정 -->
+  <section class="card" id="stepAct" hidden>
+    <div class="no">02</div>
+    <h2>이대로 확정할까요?</h2>
+    <div class="mine" id="mine"></div>
+    <div class="closed" id="closedBox" hidden>확정 접수가 마감됐어요. 문의가 있으시면 DM으로 알려 주세요.</div>
+
+    <div id="actBtns">
+      <div class="btns">
+        <button class="btn mint" id="okBtn" type="button">이대로 확정</button>
+        <button class="btn ghost" id="changeBtn" type="button">음료 바꿔서 확정</button>
+        <button class="btn warn" id="noBtn" type="button">참석이 어려워졌어요</button>
+      </div>
+      <p class="hint" style="text-align:center;margin-top:12px">당일 오후 3시까지는 이 페이지에서 몇 번이든 다시 바꾸실 수 있어요.</p>
+    </div>
+
+    <div id="drinkPick" hidden>
+      <div class="sub-title">바꾸실 음료를 골라 주세요</div>
+      <div id="drink1"></div>
+      <div class="field">
+        <label class="lbl" for="coffeeNote">음료 요청사항 <span style="font-weight:400;color:var(--muted)">(선택)</span></label>
+        <input type="text" id="coffeeNote" placeholder="예: 샷 추가, 덜 달게, 우유 대신 두유" maxlength="80">
+        <p class="hint">매장 사정에 따라 비슷한 음료로 바뀔 수 있어요.</p>
+      </div>
+      <div class="err" id="pickErr" hidden></div>
+      <div class="btns">
+        <button class="btn mint" id="saveChangeBtn" type="button">이 음료로 확정</button>
+        <button class="btn ghost" id="backBtn" type="button">돌아가기</button>
+      </div>
+    </div>
+    <div class="err" id="actErr" hidden style="text-align:center"></div>
+  </section>
+
+  <!-- 완료 -->
+  <section class="card" id="stepDone" hidden style="text-align:center">
+    <h2 id="doneTitle" style="font-size:26px"></h2>
+    <p class="desc" id="doneMsg" style="margin-top:8px"></p>
+    <div class="mine" id="doneMine" style="text-align:left"></div>
+    <div class="btns"><button class="btn ghost" id="againBtn" type="button">내용 다시 바꾸기</button></div>
+  </section>
+</main>
+
+<footer>
+  <div class="brand">MATHY YURI</div>
+  분당미래탐구 · 스커담 참석 확정
+</footer>
+
+<script>
+const SUPABASE_URL = "https://eqllmvfbcdtzercliicy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV";
+const CLOSE_AT = Date.UTC(2026, 10, 17, 6, 0, 0);   // 11월 17일 오후 3시(한국 시간) = 06:00 UTC
+const isClosed = () => Date.now() >= CLOSE_AT;
+
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+/* 음료마다 고를 수 있는 온도(h=HOT, i=ICED)와 디카페인 가능 여부. 스타벅스 매장·시즌에 따라 달라질 수 있어요 */
+const DRINKS = [
+  {n:"아메리카노",        t:["HOT","ICED"], d:true},
+  {n:"카페 라떼",         t:["HOT","ICED"], d:true},
+  {n:"카푸치노",          t:["HOT","ICED"], d:true},
+  {n:"카라멜 마키아토",   t:["HOT","ICED"], d:true},
+  {n:"카페 모카",         t:["HOT","ICED"], d:true},
+  {n:"돌체 라떼",         t:["HOT","ICED"], d:true},
+  {n:"콜드 브루",         t:["ICED"],       d:false},
+  {n:"자몽 허니 블랙 티", t:["HOT","ICED"], d:false},
+  {n:"유자 민트 티",      t:["HOT","ICED"], d:false},
+  {n:"제주 말차 라떼",    t:["HOT","ICED"], d:false}
+];
+
+
+
+
+
+
+/* ---------- 음료 선택 블록 만들기 ---------- */
+function buildDrink(n){
+  const box = $('#drink'+n);
+  const chips = DRINKS.map(d =>
+    `<label class="chip"><input type="radio" name="drink${n}" value="${d.n}"><span>${d.n}</span></label>`
+  ).join('');
+  box.innerHTML = `
+    <div class="chips">
+      ${chips}
+      <label class="chip"><input type="radio" name="drink${n}" value="기타"><span>다른 음료 요청하기</span></label>
+      <label class="chip none"><input type="radio" name="drink${n}" value="음료 없음"><span>음료는 괜찮아요</span></label>
+    </div>
+    <div class="field" id="other${n}wrap" hidden>
+      <input type="text" id="other${n}" placeholder="원하시는 스타벅스 음료를 적어 주세요 (예: 바닐라 크림 콜드 브루)" maxlength="40">
+    </div>
+    <div class="drink-opts" id="opts${n}" hidden>
+      <div class="seg" id="seg${n}"></div>
+      <span class="hint" id="onlytemp${n}" hidden></span>
+      <label class="mini-chk" id="decafwrap${n}"><input type="checkbox" id="decaf${n}"> 디카페인</label>
+    </div>
+    <div class="err" hidden></div>`;
+  const setTemps = (temps) => {
+    const seg = $('#seg'+n), only = $('#onlytemp'+n);
+    if(temps.length === 1){
+      seg.innerHTML = `<label><input type="radio" name="temp${n}" value="${temps[0]}" checked><span>${temps[0]}</span></label>`;
+      only.textContent = temps[0] === 'ICED' ? '이 음료는 ICED로만 나와요' : '이 음료는 HOT으로만 나와요';
+      only.hidden = false;
+    } else {
+      seg.innerHTML = temps.map((t,i) => `<label><input type="radio" name="temp${n}" value="${t}"${i===0?' checked':''}><span>${t}</span></label>`).join('');
+      only.hidden = true;
+    }
+  };
+  $$('input[name="drink'+n+'"]', box).forEach(r => r.addEventListener('change', () => {
+    const v = r.value;
+    $('#opts'+n).hidden = (v === '음료 없음');
+    $('#other'+n+'wrap').hidden = (v !== '기타');
+    const info = DRINKS.find(d => d.n === v);
+    setTemps(info ? info.t : ['HOT','ICED']);        // 다른 음료 요청 → HOT/ICED 둘 다 고를 수 있게
+    $('#decafwrap'+n).hidden = info ? !info.d : false;
+    if(info && !info.d) $('#decaf'+n).checked = false;
+    box.classList.remove('invalid');
+    $('.err', box).hidden = true;
+  }));
+}
+buildDrink(1);
+
+
+function drinkText(n){
+  const sel = $('input[name="drink'+n+'"]:checked');
+  if(!sel) return '';
+  let name = sel.value;
+  if(name === '음료 없음') return '음료 없음';
+  if(name === '기타') name = '다른 음료 요청: ' + ($('#other'+n).value.trim() || '(미입력)');
+  const temp = $('input[name="temp'+n+'"]:checked').value;
+  const decaf = $('#decaf'+n).checked ? ' · 디카페인' : '';
+  return `${name} · ${temp}${decaf}`;
+}
+
+
+
+/* ---------- D-day ---------- */
+function updateDday(){
+  const k = new Date(Date.now() + 9*3600*1000);
+  const today = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
+  const diff = Math.round((Date.UTC(2026, 10, 17) - today) / 86400000);
+  const box = $('#dday'), num = $('#ddNum'), sub = $('#ddSub');
+  box.className = 'dday';
+  if(diff > 0){ num.textContent = 'D-' + diff; sub.textContent = '11월 17일 화요일 오후 7시'; }
+  else if(diff === 0){ box.classList.add('today'); num.textContent = 'D-DAY'; sub.textContent = k.getUTCHours() < 19 ? '오늘 저녁 7시에 만나요' : '지금 스커담이 열리고 있어요'; }
+  else { num.textContent = '스커담이 끝났어요'; sub.textContent = ''; }
+  box.hidden = false;
+}
+updateDday();
+
+/* ---------- 서버 ---------- */
+const H = {'apikey':SUPABASE_KEY, 'Content-Type':'application/json'};
+async function lookup(name, p4){
+  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/skdam_lookup', {method:'POST', headers:H, body: JSON.stringify({p_name:name, p_phone4:p4})});
+  if(!r.ok) throw new Error('lookup ' + r.status);
+  return r.json();
+}
+async function sendConfirm(row){
+  const r = await fetch(SUPABASE_URL + '/rest/v1/skdam_confirm', {method:'POST', headers:{...H, 'Prefer':'return=minimal'}, body: JSON.stringify(row)});
+  if(!r.ok) { const e = new Error('confirm ' + r.status); e.status = r.status; throw e; }
+}
+
+/* ---------- 화면 ---------- */
+let me = null;       // {name, p4, info}
+const show = id => ['stepFind','stepAct','stepDone'].forEach(x => $('#'+x).hidden = (x !== id));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = iso => { const d = new Date(new Date(iso).getTime() + 9*3600*1000); return (d.getUTCMonth()+1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0'); };
+
+function currentDrink(info){
+  const c = info.confirm;
+  if(c && c.changed && c.drink) return c.drink;
+  return info.drink || '음료 신청 없음';
+}
+function renderMine(){
+  const i = me.info, c = i.confirm;
+  let st = '<span class="badge wait">아직 확정 전</span>';
+  if(c) st = c.status === '확정' ? '<span class="badge ok">확정 완료 · ' + fmt(c.at) + '</span>' : '<span class="badge no">참석 어려움 · ' + fmt(c.at) + '</span>';
+  $('#mine').innerHTML =
+    '<div><span>학생</span><span>' + esc(me.name) + '</span></div>' +
+    '<div><span>처음 신청</span><span>' + esc(i.attendance || '-') + '</span></div>' +
+    '<div><span>음료</span><span>' + esc(currentDrink(i)) + '</span></div>' +
+    '<div><span>현재 상태</span><span>' + st + '</span></div>';
+  const closed = isClosed();
+  $('#closedBox').hidden = !closed;
+  $('#actBtns').hidden = closed;
+  $('#drinkPick').hidden = true;
+}
+
+$('#findBtn').addEventListener('click', async () => {
+  const name = $('#nm').value.trim(), p4 = $('#p4').value.trim();
+  const err = $('#findErr'); err.hidden = true;
+  if(!name || !/^[0-9]{4}$/.test(p4)){ err.textContent = '학생 이름과 전화번호 뒤 4자리(숫자)를 입력해 주세요.'; err.hidden = false; return; }
+  const b = $('#findBtn'); b.disabled = true; b.textContent = '확인 중…';
+  try{
+    const info = await lookup(name, p4);
+    if(!info || !info.found){
+      err.innerHTML = '신청 내용을 찾지 못했어요.<br>설문에 적으신 이름과 번호가 맞는지 확인해 주세요. 아직 설문을 안 하셨다면 <a href="skdam.html" style="color:var(--pink-d);font-weight:700">설문 먼저 작성</a>해 주세요.';
+      err.hidden = false; return;
+    }
+    me = {name, p4, info};
+    try{ localStorage.setItem('skdam_confirm_who', JSON.stringify({name, p4})); }catch(_){}
+    renderMine(); show('stepAct'); window.scrollTo({top:0, behavior:'smooth'});
+  }catch(e){ err.textContent = '확인에 실패했어요. 잠시 후 다시 시도해 주세요.'; err.hidden = false; }
+  finally{ b.disabled = false; b.textContent = '내 신청 내용 확인하기'; }
+});
+
+function showDone(status, drinkText){
+  const ok = status === '확정';
+  $('#doneTitle').textContent = ok ? '참석이 확정되었어요' : '참석 어려움으로 전달했어요';
+  $('#doneMsg').innerHTML = ok ? '11월 17일(화) 오후 7시, 분당미래탐구에서 뵙겠습니다.<br>일정이 바뀌어도 당일 오후 3시까지 이 페이지에서 다시 바꾸실 수 있어요.'
+                               : '알려 주셔서 감사해요. 마음이 바뀌시면 당일 오후 3시까지 이 페이지에서 다시 확정하실 수 있어요.';
+  $('#doneMine').innerHTML = '<div><span>학생</span><span>' + esc(me.name) + '</span></div>' +
+    '<div><span>상태</span><span>' + (ok ? '확정' : '참석 어려움') + '</span></div>' +
+    (ok ? '<div><span>음료</span><span>' + esc(drinkText) + '</span></div>' : '');
+  show('stepDone'); window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function submit(status, changed){
+  const err = $('#actErr'); err.hidden = true;
+  if(isClosed()){ renderMine(); return; }
+  let drink = null;
+  if(changed){
+    const sel = $('input[name="drink1"]:checked'), pe = $('#pickErr'); pe.hidden = true;
+    if(!sel){ pe.textContent = '음료를 골라 주세요. 필요 없으시면 "음료는 괜찮아요"를 골라 주세요.'; pe.hidden = false; return; }
+    if(sel.value === '기타' && !$('#other1').value.trim()){ pe.textContent = '원하시는 음료를 적어 주세요.'; pe.hidden = false; return; }
+    const note = $('#coffeeNote').value.trim();
+    drink = drinkText(1) + (note ? ' / 요청: ' + note : '');
+  }
+  const btns = $$('#stepAct .btn'); btns.forEach(b => b.disabled = true);
+  try{
+    await sendConfirm({student_name: me.name, phone4: me.p4, status, drink, drink_changed: !!changed});
+    me.info.confirm = {status, drink, changed: !!changed, at: new Date().toISOString()};
+    showDone(status, changed ? drink : (me.info.drink || '음료 신청 없음'));
+  }catch(e){
+    if(e.status === 401 || e.status === 403){ $('#closedBox').hidden = false; $('#actBtns').hidden = true; $('#drinkPick').hidden = true; }
+    else { err.textContent = '전송에 실패했어요. 잠시 후 다시 시도해 주시거나 DM으로 알려 주세요.'; err.hidden = false; }
+  }finally{ btns.forEach(b => b.disabled = false); }
+}
+
+$('#okBtn').addEventListener('click', () => submit('확정', false));
+$('#noBtn').addEventListener('click', () => { if(confirm('참석이 어려우시다고 전달할까요?')) submit('참석 어려움', false); });
+$('#changeBtn').addEventListener('click', () => { $('#actBtns').hidden = true; $('#drinkPick').hidden = false; $('#drinkPick').scrollIntoView({behavior:'smooth', block:'start'}); });
+$('#backBtn').addEventListener('click', () => { $('#drinkPick').hidden = true; $('#actBtns').hidden = false; });
+$('#saveChangeBtn').addEventListener('click', () => submit('확정', true));
+$('#againBtn').addEventListener('click', () => { if(me){ renderMine(); show('stepAct'); window.scrollTo({top:0, behavior:'smooth'}); } });
+
+/* 같은 폰이면 지난번 입력한 이름·번호를 채워 둬요 */
+try{ const w = JSON.parse(localStorage.getItem('skdam_confirm_who') || 'null'); if(w){ $('#nm').value = w.name || ''; $('#p4').value = w.p4 || ''; } }catch(_){}
+</script>
+</body>
+</html>
