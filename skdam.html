@@ -48,6 +48,13 @@ body{background:var(--cream);color:var(--ink);font-family:var(--sans);line-heigh
 .pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px}
 .pill{border:1px solid rgba(246,239,226,.35);border-radius:999px;padding:7px 14px;font-size:13px;letter-spacing:.02em;color:var(--cream)}
 .pill b{color:var(--mint);font-weight:700}
+.dday{margin:26px auto 0;display:inline-flex;flex-direction:column;align-items:center;padding:14px 34px 16px;border:1px solid rgba(168,220,200,.45);border-radius:22px;background:rgba(168,220,200,.08)}
+.dday .dd-label{font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--pink)}
+.dday .dd-num{font-family:var(--disp);font-weight:700;font-size:68px;line-height:1.05;color:var(--mint);letter-spacing:.02em}
+.dday .dd-sub{font-size:13.5px;color:var(--cream-2);margin-top:2px}
+.dday.today .dd-num{color:var(--pink)}
+.dday.done .dd-num{font-size:30px;padding:14px 0 6px;color:var(--cream)}
+@media(max-width:480px){.dday .dd-num{font-size:56px}}
 .cup{width:22px;height:22px;vertical-align:-4px;margin-right:6px}
 
 /* LETTER */
@@ -161,6 +168,7 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
       <span class="pill"><b>오후 7시</b></span>
       <span class="pill">분당미래탐구</span>
     </div>
+    <div><div class="dday" id="dday" hidden><span class="dd-label">COUNTDOWN</span><span class="dd-num" id="ddNum"></span><span class="dd-sub" id="ddSub"></span></div></div>
   </div>
 </header>
 
@@ -359,6 +367,23 @@ const DRINKS = [
   {n:"유자 민트 티",      t:["HOT","ICED"], d:false},
   {n:"제주 말차 라떼",    t:["HOT","ICED"], d:false}
 ];
+
+/* ---------- D-day (한국 시간 기준, 11월 17일 화요일 오후 7시) ---------- */
+function updateDday(){
+  const k = new Date(Date.now() + 9*3600*1000);                       // 한국 시각 (UTC 필드로 읽기)
+  const today = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
+  const diff = Math.round((Date.UTC(2026, 10, 17) - today) / 86400000);
+  const box = document.getElementById('dday'), num = document.getElementById('ddNum'), sub = document.getElementById('ddSub');
+  box.className = 'dday';
+  if(diff > 0){ num.textContent = 'D-' + diff; sub.textContent = '11월 17일 화요일 오후 7시'; }
+  else if(diff === 0){
+    box.classList.add('today');
+    if(k.getUTCHours() < 19){ num.textContent = 'D-DAY'; sub.textContent = '오늘 저녁 7시에 만나요'; }
+    else { num.textContent = 'D-DAY'; sub.textContent = '지금 스커담이 열리고 있어요'; }
+  } else { box.classList.add('done'); num.textContent = '스커담이 끝났어요'; sub.textContent = '와 주셔서 감사합니다'; }
+  box.hidden = false;
+}
+updateDday(); setInterval(updateDday, 60000);
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
