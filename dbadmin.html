@@ -184,6 +184,7 @@ function vUnit(){
  var h='<div class="card"><h2>단원 정리</h2><div class="muted">① 아래 표나 목록에서 <b>대상 선택</b>을 누르고 ② 바꿀 값을 적은 뒤 ③ <b>미리보기</b>로 몇 개가 바뀌는지 보고 ④ 맞으면 <b>적용</b>하세요. 문제 글·정답은 바뀌지 않고, 적용하면 [기록]에서 언제든 <b>되돌릴 수 있어요</b>.</div>';
  var T=TOOL;
  var all=Object.keys(S).map(function(k){return S[k]}).sort(function(a,b){return a.t<b.t?-1:1});
+ h+=ufCard();
  h+='<h3>단원 바꾸기 도구</h3><div class="note">비워 두면 그 조건은 쓰지 않아요. <b>(비어 있음)</b> 이라고 적으면 "비어 있는 문제"만 골라요. 바꿀 값에 <b>-</b> 한 글자를 적으면 그 칸을 비워요. 바꿀 값을 비워 두면 그 칸은 그대로 둬요.</div>'+
   '<div class="row"><label class="k">대상 과목<input type="text" id="fc" list="dlc" value="'+esc(T.fc||'')+'" style="width:130px"></label><label class="k">대상 단원<input type="text" id="fu" list="dlu" value="'+esc(T.fu||'')+'" style="width:150px"></label><label class="k">대상 소단원<input type="text" id="fs" value="'+esc(T.fs||'')+'" style="width:170px"></label>'+
   '<label class="k">대상 출처<select id="fsrc" style="max-width:230px"><option value="">(전체)</option>'+all.map(function(x){return '<option value="'+x.id+'"'+(T.fsrc===x.id?' selected':'')+'>'+esc(x.t)+'</option>'}).join('')+'</select></label>'+
@@ -204,6 +205,56 @@ function vUnit(){
  ULIST=UL;
  return h+'</table></div>'+(D.units.length>400?'<div class="muted">검색어로 줄여서 보세요(앞 400줄만 표시).</div>':'')+'</div>'}
 var NS=[],ULIST=[];
+/* ── 단원 채우기 파일 올리기 (SQL 52번) ── */
+var UF=null;
+function ufCard(){
+ var h='<h3>단원 채우기 파일 올리기 <span class="muted" style="font-weight:400">(빈 단원을 한꺼번에 채울 때)</span></h3><div class="note">Claude 가 만들어 준 <b>unit_fill.json</b> 파일을 고르면, 그 안의 "문제 해시 + 단원"을 서버와 맞춰 봐요. <b>이미 단원이 있는 문제는 절대 바꾸지 않고</b>, 빈 문제에만 채워요(과목 표시도 단원에 맞춰 바로잡아요). 적용 뒤 [기록]에서 되돌릴 수 있어요. 파일에는 문제 글이 들어 있지 않아요.</div>'+
+  '<div class="row"><input type="file" id="ufile" accept=".json,application/json"></div>';
+ if(UF){
+  var ks=Object.keys(UF.cnt).sort(function(a,b){return UF.cnt[b]-UF.cnt[a]});
+  h+='<div class="note"><b>'+esc(UF.name)+'</b> — 문제 '+fmt(UF.items.length)+'개<br>'+ks.map(function(u){return '<span class="chip">'+esc(u)+' '+fmt(UF.cnt[u])+'</span>'}).join('')+'</div><div class="row"><button data-act="ufprev">서버와 맞춰 보기(미리보기)</button></div>';
+ }
+ return h}
+async function ufApi(items,dry,label){
+ var r;try{r=await fetch(RPC+'mathy_unitfill',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify({p_token:tok,p_arg:{items:items,dry:dry,label:label}})})}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(r.status===404)return {ok:false,error:'52_단원채우기_서버.sql 을 먼저 실행해 주세요'};
+ if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
+ try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+function ufChunks(){var o=[],n=1000;for(var i=0;i<UF.items.length;i+=n)o.push(UF.items.slice(i,i+n));return o}
+async function ufPrev(){
+ if(!UF)return;var ch=ufChunks(),T={total:0,found:0,not_found:0,has_unit:0,todo:0,course_change:0},G={};
+ for(var i=0;i<ch.length;i++){
+  toast('서버와 맞추는 중… '+(i+1)+'/'+ch.length);
+  var j=await ufApi(ch[i],true);
+  if(!j||!j.ok){toast((j&&j.error)||'미리보기를 못 불러왔어요',true);return}
+  Object.keys(T).forEach(function(k){T[k]+=j[k]||0});
+  (j.groups||[]).forEach(function(g){var k=g.c+'|'+g.u;G[k]=(G[k]||0)+g.n})}
+ var rows=Object.keys(G).sort(function(a,b){return G[b]-G[a]}).map(function(k){var p=k.split('|');return '<tr><td>'+esc(p[0])+'</td><td>'+esc(p[1])+'</td><td class="n">'+fmt(G[k])+'</td></tr>'}).join('');
+ if(!T.todo){modal('<h2>채울 문제가 없어요</h2><p>서버에서 찾은 문제 '+fmt(T.found)+'개 중 단원이 비어 있는 것이 없어요(이미 채웠거나, 해시가 서버와 달라요).</p><p class="muted">서버에 없는 문제 '+fmt(T.not_found)+'개</p>');return}
+ modal('<h2>이렇게 채울까요?</h2><p><b>단원이 비어 있는 문제 '+fmt(T.todo)+'개</b>에 단원을 채워요. 그중 <b>'+fmt(T.course_change)+'개</b>는 과목 표시도 바로잡아요.</p>'+
+  '<div class="scroll"><table><tr><th>과목</th><th>단원</th><th class="n">채울 문제</th></tr>'+rows+'</table></div>'+
+  '<div class="note">이미 단원이 있어서 건드리지 않는 문제 '+fmt(T.has_unit)+'개 · 서버에 없는 문제(파일에만 있음) '+fmt(T.not_found)+'개<br>문제 글·정답·해설은 바뀌지 않아요. [기록]에서 되돌릴 수 있어요(나눠서 적용하므로 기록이 여러 줄 생겨요).</div>',
+  async function(){
+   var ok=0,fail=false;
+   for(var i=0;i<ch.length;i++){
+    toast('적용하는 중… '+(i+1)+'/'+ch.length);
+    var k=await ufApi(ch[i],false,UF.name+' ('+(i+1)+'/'+ch.length+')');
+    if(!k||!k.ok){toast((k&&k.error)||'적용하지 못했어요',true);fail=true;break}
+    ok+=k.n||0}
+   if(!fail)toast('단원을 채웠어요: '+fmt(ok)+'개');
+   UF=null;LOG=null;await reload()},'채우기')}
+function ufLoad(f){
+ if(!f)return;var rd=new FileReader();
+ rd.onload=function(){
+  try{var J=JSON.parse(rd.result);
+   if(!J||!Array.isArray(J.items)||!J.codes)throw 0;
+   var items=[],cnt={};
+   J.items.forEach(function(p){var c=J.codes[p[1]];if(!c||!p[0])return;items.push([p[0],c[1]]);cnt[c[1]]=(cnt[c[1]]||0)+1});
+   if(!items.length)throw 0;
+   UF={name:f.name,items:items,cnt:cnt}
+  }catch(e){UF=null;toast('단원 채우기 파일 모양이 아니에요(unit_fill.json 을 골라 주세요)',true)}
+  render()};
+ rd.readAsText(f)}
 function vLog(){
  var h='<div class="card"><h2>변경 기록 · 되돌리기</h2><div class="muted">범주나 단원을 바꾼 기록이에요. [되돌리기]를 누르면 바꾸기 전 상태로 돌아가요(이미 되돌린 건 한 번 더 못 해요).</div>';
  if(!LOG)return h+'<div class="muted" style="margin-top:8px">불러오는 중…</div></div>';
@@ -235,9 +286,11 @@ document.addEventListener('click',async function(e){
  else if(a==='csv')csv();
  else if(a==='catset'||a==='catclear')catAct(a);
  else if(a==='uprev')uPrev();
+ else if(a==='ufprev')ufPrev();
  else if(a==='ureset'){TOOL={};render()}});
 document.addEventListener('change',function(e){
  var t=e.target;
+ if(t.id==='ufile'){ufLoad(t.files&&t.files[0]);return}
  if(t.dataset&&t.dataset.sel){SEL[t.dataset.sel]=t.checked;bulkBar();return}
  if(t.id==='fcat'){F.cat=t.value;render()}else if(t.id==='fcourse'){F.course=t.value;render()}else if(t.id==='fempty'){F.empty=t.checked;render()}});
 document.addEventListener('input',function(e){
