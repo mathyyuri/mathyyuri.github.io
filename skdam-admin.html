@@ -282,7 +282,7 @@ function renderConfirm(act){
   $('#confMissing').innerHTML = confMissingTable
     ? '<span style="color:var(--pink-d)">확정 표가 아직 없어요. 서버에 skdam_confirm_setup.sql 을 Run 해 주세요.</span>'
     : (pending.length ? '<b>아직 확정하지 않은 분 ' + pending.length + '가정</b><br>' + pending.map(r => `${esc(r.student_name)} <span style="color:var(--muted)">(${esc(r.attendance)} · ${esc(r.parent_phone)})</span>`).join('<br>') : '<span style="color:var(--mint-d)">신청한 분 모두 확정했어요 🎉</span>');
-  $('#confNote').innerHTML = orphanConfs.length ? '<b>설문과 이어지지 않은 확정 ' + orphanConfs.length + '건</b> (이름이나 번호가 설문과 다르게 입력됐을 수 있어요)<br>' + orphanConfs.map(c => `${esc(c.student_name)} ${c.parent_name ? '· 학부모 ' + esc(c.parent_name) + ' ' : ''}(뒤 4자리 ${esc(c.phone4)}) · ${esc(c.status)}`).join('<br>') : '';
+  $('#confNote').innerHTML = orphanConfs.length ? '<b>설문과 이어지지 않은 확정 ' + orphanConfs.length + '건</b> (이름이나 번호가 설문과 다르게 입력됐을 수 있어요)<br>' + orphanConfs.map(c => `${esc(c.student_name)} ${c.parent_name ? '· 학부모 ' + esc(c.parent_name) + ' ' : ''}(뒤 4자리 ${esc(c.phone4)}) · ${esc(c.status)} <button class="btn ghost sm" data-odel="${esc(c.id)}" type="button" style="padding:2px 9px;font-size:12px;color:var(--pink-d);border-color:var(--pink-d)">지우기</button>`).join('<br>') : '';
 }
 
 function renderSummary(){
@@ -383,6 +383,7 @@ function renderList(){
       <div class="ractions">
         <button class="btn ${r.checked?'ghost':''} sm" data-act="toggle">${r.checked ? '확인 취소' : '확인 완료'}</button>
         <textarea data-act="memo" placeholder="메모 (통화 내용 등)" rows="1">${esc(r.admin_memo||'')}</textarea>
+        <button class="btn ghost sm" data-act="del" type="button" style="color:var(--pink-d);border-color:var(--pink-d)">삭제</button>
       </div>
     </article>`).join('');
 }
@@ -410,6 +411,32 @@ $('#list').addEventListener('focusout', async e => {
   if((row.admin_memo||'') === t.value) return;
   const ok = await patch(id, {admin_memo: t.value || null});
   if(ok){ row.admin_memo = t.value || null; toast('메모를 저장했어요'); } else toast('메모 저장에 실패했어요');
+});
+
+/* ---------- 삭제 (관리자만 · 되돌릴 수 없어요) ---------- */
+async function delRow(table, id){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {method:'DELETE', headers:{...hdr(token),'Prefer':'return=representation'}});
+  if(r.status === 401 || r.status === 403){ logout(); return false; }
+  if(!r.ok) return false;
+  const gone = await r.json().catch(() => []);
+  return Array.isArray(gone) && gone.length > 0;          // 0건이면 권한 때문에 안 지워진 것
+}
+$('#list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act="del"]'); if(!b) return;
+  const id = b.closest('.rcard').dataset.id;
+  const row = rows.find(x => x.id === id); if(!row) return;
+  if(!confirm(`'${row.student_name}' (${row.parent_name || row.parent_phone}) 신청을 지울까요?\n\n지우면 되돌릴 수 없어요.`)) return;
+  b.disabled = true;
+  if(await delRow(TABLE, id)){
+    rows = rows.filter(x => x.id !== id); markLatest(); buildGradeFilter(); render(); toast('지웠어요');
+  } else { b.disabled = false; toast('지우지 못했어요. 로그인이 만료됐거나 권한이 없어요'); }
+});
+$('#confNote').addEventListener('click', async e => {
+  const b = e.target.closest('[data-odel]'); if(!b) return;
+  const c = confs.find(x => x.id === b.dataset.odel); if(!c) return;
+  if(!confirm(`'${c.student_name}' 확정 기록을 지울까요? 되돌릴 수 없어요.`)) return;
+  if(await delRow('skdam_confirm', c.id)){ confs = confs.filter(x => x.id !== c.id); markLatest(); render(); toast('지웠어요'); }
+  else toast('지우지 못했어요');
 });
 
 /* ---------- 필터·버튼 ---------- */
