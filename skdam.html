@@ -325,8 +325,13 @@ footer .adm{display:inline-block;margin-top:14px;padding:5px 12px;border:1px sol
         <label class="chip"><input type="checkbox" name="schools" value="북일고"><span>북일고</span></label>
         <label class="chip"><input type="checkbox" name="schools" value="김천고"><span>김천고</span></label>
         <label class="chip"><input type="checkbox" name="schools" value="외고"><span>외고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="중앙과학고"><span>중앙과학고</span></label>
+        <label class="chip"><input type="checkbox" name="schools" value="기타"><span>기타 (직접 입력)</span></label>
       </div>
-      <p class="hint">목록에 없는 학교는 맨 아래 '하고 싶은 말'에 적어 주세요.</p>
+      <div class="field" id="schoolOtherWrap" hidden>
+        <input type="text" id="schoolOther" maxlength="30" placeholder="관심 있는 학교 이름을 적어 주세요 (예: 대원외고)">
+      </div>
+      <div class="err" hidden></div>
     </section>
 
     <!-- 06 걱정 -->
@@ -562,6 +567,7 @@ $('#f').addEventListener('submit', async ev => {
   const studentName = $('#studentName').value.trim();
   const school = $('#school').value.trim();
   const grade = $('#grade').value;
+  if($('input[name="schools"][value="기타"]').checked && !$('#schoolOther').value.trim()) bad($('#schoolOther'), $('#sec-school'), '기타로 고르신 학교 이름을 적어 주세요.');
   const parentName = $('#parentName').value.trim();
   const pp = $('#parentPhone').value.trim();
   const ppDigits = pp.replace(/\D/g,'');
@@ -601,7 +607,7 @@ $('#f').addEventListener('submit', async ev => {
     parentPhone: pp,
     studentPhone: $('#studentPhone').value.trim(),
     classes: $$('input[name="classes"]:checked').map(x => x.value).join(', '),
-    schools: $$('input[name="schools"]:checked').map(x => x.value).join(', '),
+    schools: $$('input[name="schools"]:checked').map(x => x.value === '기타' ? '기타: ' + ($('#schoolOther').value.trim().replace(/[,，]/g, ' ') || '(미입력)') : x.value).join(', '),
     worries: $$('input[name="worries"]:checked').map(x => x.value).join(', '),
     opinion: $('#opinion').value.trim()
   };
@@ -667,6 +673,13 @@ function showDone(p, demo){
   $('#recap').innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>${r[0]==='음료' ? esc(r[1]).replace(/&lt;br&gt;/g,'<br>') : esc(r[1])}</span></div>`).join('');
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
+/* 관심 학교 '기타' → 학교 이름 입력칸 */
+$$('input[name="schools"]').forEach(cb => cb.addEventListener('change', () => {
+  const on = $('input[name="schools"][value="기타"]').checked;
+  $('#schoolOtherWrap').hidden = !on;
+  const sec = $('#sec-school'); sec.classList.remove('invalid'); $('.err', sec).hidden = true;
+}));
 
 /* ---------- 같은 폰이면 지난번 입력을 불러와요 (수정·취소를 쉽게) ---------- */
 const FORM_KEY = 'skdam_form_v1';

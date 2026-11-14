@@ -157,7 +157,7 @@ footer{height:50px}
       <select id="fAtt"><option value="">참석 전체</option><option>참석 확정</option><option>고민 중</option><option>참석 어려움</option></select>
       <select id="fCls"><option value="">관심 반 전체</option><option>공수내모</option><option>예비고1 T-CLASS</option><option>(선행) 대수 기초반</option><option>아직 고민 중</option></select>
       <select id="fGrade"><option value="">학년 전체</option></select>
-      <select id="fSchool"><option value="">관심 학교 전체</option><option>낙생고</option><option>늘푸른고</option><option>돌마고</option><option>보평고</option><option>분당고</option><option>분당대진고</option><option>불곡고</option><option>서현고</option><option>송림고</option><option>수내고</option><option>야탑고</option><option>영덕여고</option><option>운중고</option><option>이매고</option><option>태원고</option><option>판교고</option><option>한솔고</option><option>외대부고</option><option>북일고</option><option>김천고</option><option>외고</option></select>
+      <select id="fSchool"><option value="">관심 학교 전체</option><option>낙생고</option><option>늘푸른고</option><option>돌마고</option><option>보평고</option><option>분당고</option><option>분당대진고</option><option>불곡고</option><option>서현고</option><option>송림고</option><option>수내고</option><option>야탑고</option><option>영덕여고</option><option>운중고</option><option>이매고</option><option>태원고</option><option>판교고</option><option>한솔고</option><option>외대부고</option><option>북일고</option><option>김천고</option><option>외고</option><option>중앙과학고</option><option value="기타">기타 (직접 입력)</option></select>
       <select id="fConf"><option value="">확정 상태 전체</option><option value="ok">확정 완료</option><option value="pending">미확정</option><option value="no">참석 어려움으로 변경</option></select>
     </div>
     <div class="chk-row">
@@ -333,7 +333,7 @@ function filtered(){
   const fa = $('#fAtt').value, fc = $('#fCls').value, fg = $('#fGrade').value;
   const un = $('#fUnchecked').checked, lt = $('#fLatest').checked, fcf = $('#fConf').value, fs = $('#fSchool').value;
   return rows.filter(r => {
-    if(fs && !splitList(r.schools).includes(fs)) return false;
+    if(fs && !splitList(r.schools).some(x => fs === '기타' ? x.indexOf('기타') === 0 : x === fs)) return false;
     if(fcf === 'ok' && !(r._conf && r._conf.status === '확정')) return false;
     if(fcf === 'no' && r._eff !== '참석 어려움') return false;
     if(fcf === 'pending' && (r._conf || r.attendance === '참석 어려움')) return false;
