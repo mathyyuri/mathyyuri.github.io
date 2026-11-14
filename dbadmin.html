@@ -209,7 +209,8 @@ var NS=[],ULIST=[];
 var UF=null;
 function ufCard(){
  var h='<h3>단원 채우기 파일 올리기 <span class="muted" style="font-weight:400">(빈 단원을 한꺼번에 채울 때)</span></h3><div class="note">Claude 가 만들어 준 <b>unit_fill.json</b> 파일을 고르면, 그 안의 "문제 해시 + 단원"을 서버와 맞춰 봐요. <b>이미 단원이 있는 문제는 절대 바꾸지 않고</b>, 빈 문제에만 채워요(과목 표시도 단원에 맞춰 바로잡아요). 적용 뒤 [기록]에서 되돌릴 수 있어요. 파일에는 문제 글이 들어 있지 않아요.</div>'+
-  '<div class="row"><input type="file" id="ufile" accept=".json,application/json"></div>';
+  '<div class="row"><input type="file" id="ufile" accept=".json,application/json"></div>'+
+  '<div class="note">서버에만 있는 <b>단원이 빈 문제</b>는 Claude 가 글을 볼 수 없어요. <b>[단원이 빈 문제 내려받기]</b> 로 받은 파일(문제 글 포함, 읽기만 함)을 Claude 에게 주면 단원을 붙인 파일을 만들어 줘요. (SQL 53번을 한 번 실행해야 해요)</div><div class="row"><button class="g" data-act="uexport">단원이 빈 문제 내려받기</button></div>';
  if(UF){
   var ks=Object.keys(UF.cnt).sort(function(a,b){return UF.cnt[b]-UF.cnt[a]});
   h+='<div class="note"><b>'+esc(UF.name)+'</b> — 문제 '+fmt(UF.items.length)+'개<br>'+ks.map(function(u){return '<span class="chip">'+esc(u)+' '+fmt(UF.cnt[u])+'</span>'}).join('')+'</div><div class="row"><button data-act="ufprev">서버와 맞춰 보기(미리보기)</button></div>';
@@ -220,6 +221,14 @@ async function ufApi(items,dry,label){
  if(r.status===404)return {ok:false,error:'52_단원채우기_서버.sql 을 먼저 실행해 주세요'};
  if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
  try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+async function uExport(){
+ var r;try{r=await fetch(RPC+'mathy_unitexport',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify({p_token:tok,p_arg:{limit:3000}})})}catch(e){toast('인터넷 연결을 확인해 주세요',true);return}
+ if(r.status===404){toast('53_빈단원문제_내려받기_서버.sql 을 먼저 실행해 주세요',true);return}
+ if(!r.ok){toast('서버 오류 '+r.status,true);return}
+ var j;try{j=await r.json()}catch(e){toast('서버 응답을 읽지 못했어요',true);return}
+ if(!j||!j.ok){toast((j&&j.error)||'내려받지 못했어요',true);return}
+ var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(j)],{type:'application/json'}));a.download='단원빈문제_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();
+ toast('단원이 빈 문제 '+fmt(j.n)+'개(서버 전체 '+fmt(j.total)+'개)를 내려받았어요')}
 function ufChunks(){var o=[],n=1000;for(var i=0;i<UF.items.length;i+=n)o.push(UF.items.slice(i,i+n));return o}
 async function ufPrev(){
  if(!UF)return;var ch=ufChunks(),T={total:0,found:0,not_found:0,has_unit:0,todo:0,course_change:0},G={};
@@ -287,6 +296,7 @@ document.addEventListener('click',async function(e){
  else if(a==='catset'||a==='catclear')catAct(a);
  else if(a==='uprev')uPrev();
  else if(a==='ufprev')ufPrev();
+ else if(a==='uexport')uExport();
  else if(a==='ureset'){TOOL={};render()}});
 document.addEventListener('change',function(e){
  var t=e.target;
