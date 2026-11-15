@@ -5,6 +5,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DB 관리 · MATHY YURI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <style>
 :root{--navy:#1f3a6e;--gold:#a8853f;--rose:#b76e79;--bg:#f5f1e8;--line:#e3dccb;--ink:#2b2f3a;--mut:#7c8190;--ok:#2f7d5b;--bad:#b84a4a;--soft:#eef1f8}
 *{box-sizing:border-box}
@@ -42,6 +44,25 @@ tr.src:hover{background:#fbf9f3}tr.src td.t{cursor:pointer}
 .note{background:#fff8e6;border:1px solid #ecd9a4;border-radius:12px;padding:9px 12px;font-size:13.5px;margin:8px 0}
 .mx td.c{text-align:center;cursor:pointer}.mx td.c:hover{background:#fbf3dc}.mx td.z{color:#ccc;text-align:center}
 label.k{display:flex;flex-direction:column;font-size:12.5px;color:var(--mut);gap:2px}
+/* ── 문제 카드 ── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px}
+.pc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 11px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.pc.sel{border-color:var(--navy);box-shadow:0 0 0 2px rgba(31,58,110,.18)}
+.pc.g1{border-left:5px solid #c9a15a}.pc.g2{border-left:5px solid #7aa0c9}
+.pch{display:flex;align-items:center;gap:7px;font-size:14px}.pch b{font-size:14.5px}.pch .sp{flex:1}
+.pq{background:#fbfbfd;border:1px solid #eceff5;border-radius:10px;padding:9px 10px;height:225px;overflow:auto;font-size:13.5px;line-height:1.85}
+.pq p{margin:0 0 4px}.pq img{max-width:100%;height:auto;vertical-align:middle}.pq .katex{font-size:1em}
+.pqc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 10px;margin-top:8px;font-size:13px}.pqc>span{display:flex;gap:4px;align-items:baseline;min-width:0}.pqc b{color:var(--rose);font-weight:500}
+.pcm{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.pci{font-size:12.5px;line-height:1.7;display:flex;gap:6px;align-items:flex-start}.pci>b{flex:0 0 34px;color:var(--navy)}.pci>div{flex:1;min-width:0}
+.sc{display:inline-block;border-radius:7px;padding:0 6px;margin:1px 3px 1px 0;font-size:12px;cursor:pointer;background:#eef1f8;color:#3a4a73;border:1px solid transparent}.sc:hover{border-color:var(--gold)}
+.sc.c1{background:#e6eefc;color:#234a96}.sc.c2{background:#e3f4f1;color:#18695d}.sc.c3{background:#f8efd6;color:#7a5c14}.sc.c4{background:#e6f4e3;color:#2f6b27}.sc.c5{background:#efe6f7;color:#5d3a85}.sc.c6{background:#fbe9ec;color:#9a3b4f}.sc.c8{background:#eee;color:#666}
+.tg{display:inline-block;border-radius:7px;padding:0 6px;margin:1px 3px 1px 0;font-size:12px;background:#f1f2f6;color:#4b5266}.tg.e{background:#fbe6e6;color:var(--bad)}.tg.l{background:#fff1d6;color:#8a5a00}.tg.sk{background:#e6f0ec;color:#2b6b55}
+.dupb{display:inline-block;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:700;cursor:pointer;border:0}.dupb.s{background:#fde3e3;color:#a53b3b}.dupb.f{background:#e7eefb;color:#2b4d99}
+.pbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+#mbody.w{max-width:1100px}
+.sc.mrg{border:1px dashed #8a8fa3}.tg.fam{background:#e9e6f7;color:#4a3f8a;cursor:pointer}.dmg .pgrid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.mini .pq{height:170px}
 </style>
 </head>
 <body>
@@ -90,6 +111,7 @@ $('#loginBtn').onclick=async function(){
  tok=j.token;try{localStorage.setItem(TK,tok)}catch(e){}
  $('#pw').value='';await init()};
 $('#pw').onkeydown=function(e){if(e.key==='Enter')$('#loginBtn').click()};
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&TAB==='문제 보기'&&e.target&&/^p(q|sq|sub|sk)$/.test(e.target.id||'')){pvRead();pvLoad()}});
 async function init(){
  if(!tok){show(false);return}
  var j=await api('overview');
@@ -100,12 +122,13 @@ function prep(){
  S={};D.srcs.forEach(function(x){x.n=0;x.nu=0;x.units={};S[x.id]=x});
  D.su.forEach(function(r){var x=S[r.s];if(!x)return;x.n+=r.n;if(!r.u)x.nu+=r.n;var k=r.u||'(단원 없음)';x.units[k]=(x.units[k]||0)+r.n})}
 /* ── 화면 ── */
-var TABS=['현황','출처 목록','내신기출','교재 단원','단원 정리','기록'];
+var TABS=['현황','문제 보기','출처 목록','내신기출','교재 단원','단원 정리','기록'];
 function render(){
  $('#tabs').innerHTML=TABS.map(function(t){return '<button class="'+(t===TAB?'on':'')+'" data-tab="'+t+'">'+t+'</button>'}).join('');
  var v=$('#view');
- v.innerHTML=({'현황':vHome,'출처 목록':vList,'내신기출':vNae,'교재 단원':vBook,'단원 정리':vUnit,'기록':vLog})[TAB]();
+ v.innerHTML=({'현황':vHome,'문제 보기':vPv,'출처 목록':vList,'내신기출':vNae,'교재 단원':vBook,'단원 정리':vUnit,'기록':vLog})[TAB]();
  bulkBar();
+ if(TAB==='문제 보기')pvEnter();
  if(TAB==='기록'&&!LOG)loadLog()}
 function srcCountByCat(){var m={};D.srcs.forEach(function(x){m[x.cat]=(m[x.cat]||0)+1});return m}
 function vHome(){
@@ -159,6 +182,11 @@ function openBody(x){
  return h}
 function bulkBar(){
  var ids=Object.keys(SEL).filter(function(k){return SEL[k]&&S[k]}),b=$('#bulk');
+ if(TAB==='문제 보기'){
+  var pn=Object.keys(PV.sel).filter(function(k){return PV.sel[k]}).length;
+  if(!pn){b.classList.add('hidden');return}
+  b.classList.remove('hidden');
+  b.innerHTML='<b>문제 '+fmt(pn)+'개 선택</b> <button data-act="pvbulk">단원·유형·난이도 고치기</button> <button class="g" data-act="pvselnone">선택 해제</button>';return}
  if(TAB!=='출처 목록'||!ids.length){b.classList.add('hidden');return}
  b.classList.remove('hidden');
  b.innerHTML='<b>'+ids.length+'개 선택</b> → 범주 <select id="bcat">'+CATS.map(function(c){return '<option>'+c+'</option>'}).join('')+'</select> 세부 <input type="text" id="bsub" placeholder="(선택) 세부 이름" style="width:150px"> <button data-act="catset">미리보기</button> <button class="g" data-act="catclear">자동 판단으로 되돌리기</button> <button class="g" data-act="selnone">선택 해제</button>'}
@@ -264,16 +292,255 @@ function ufLoad(f){
   }catch(e){UF=null;toast('단원 채우기 파일 모양이 아니에요(unit_fill.json 을 골라 주세요)',true)}
   render()};
  rd.readAsText(f)}
+/* ── 문제 보기(카드) · 분류 고치기 · 같은 문제 찾기 (SQL 54번) ── */
+var PV={f:{},page:0,size:24,data:null,sel:{},fac:null,started:false,busy:false,figs:{},items:{},err:'',srcLabel:''};
+var UNITS_ALL=STD['공통수학1'].concat(STD['공통수학2']),COURSE_OF={};
+Object.keys(STD).forEach(function(c){STD[c].forEach(function(u){COURSE_OF[u]=c})});
+var KIND={mc:'객관식',short:'단답형',essay:'서술형'},LVS=['하','중하','중','중상','상','킬러'],FMS=['일반','조건형','보기형','그림'];
+var CATC={'내신기출':'c1','모의고사 기출':'c2','시중교재':'c3','교과서':'c4','변형문제':'c5','자체제작':'c6','정리 대상':'c8'};
+async function pvApi(act,arg){
+ var r;try{r=await fetch(RPC+'mathy_problemview',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify({p_token:tok,p_act:act,p_arg:arg||{}})})}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(r.status===404)return {ok:false,error:'54_문제카드보기_서버.sql 을 먼저 실행해 주세요',nf:true};
+ if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
+ try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+function fixEq2(t){
+ var BS=String.fromCharCode(92),CB=BS+'begin{cases}{',BC=BS+'begin{cases}',EC=BS+'end{cases}',RX='<span class="eq">[^]*?</span>';
+ t=String(t||'');
+ if(t.indexOf(CB)>=0)t=t.replace(new RegExp(RX,'g'),function(m){if(m.indexOf(CB)<0)return m;m=m.split('{'+CB).join(BC).split(CB).join(BC);while(m.indexOf(EC+'}')>=0)m=m.split(EC+'}').join(EC);return m.split('#').join(BS+BS).replace(/(&amp;[ \t]*){2,}/g,'&amp; ')});
+ t=t.replace(new RegExp(RX,'g'),function(m){return m.replace(/SMALLUNION/g,BS+'cup ').replace(/BECAUSE/g,BS+'because ').replace(/UNDERBRACE\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,function(x,b,body){return BS+'underbrace{'+body.trim()+'}_{'+b.replace(/([가-힣]+)/g,BS+'text{$1}').trim()+'}'})});
+ t=t.replace(new RegExp(RX,'g'),function(m){return m.replace(/(^|[^A-Za-z\\])ne(?![A-Za-z])/g,'$1'+BS+'neq ')});
+ t=t.replace(new RegExp(RX,'g'),function(m){return m.replace(/(^|[^A-Za-z\\])not\s*\\in(?![A-Za-z])/g,'$1'+BS+'notin ').replace(/(^|[^A-Za-z\\])not\s*\\(subset|supset|subseteq|supseteq|ni|exists|equiv|approx|sim|parallel|perp|mid)(?![A-Za-z])/g,'$1'+BS+'not'+BS+'$2 ')});
+ return t.replace(/\^\s*(-?\d+)/g,'^{$1}').replace(/\^\s*([a-z])\s*\+\s*(\d+)/g,'^{$1+$2}').replace(/-&gt;|-&amp;gt;/g,BS+'rightarrow ')}
+function pvPaint(root){
+ root=root||$('#view');
+ [].forEach.call(root.querySelectorAll('img[data-fig]'),function(im){var u=PV.figs[im.getAttribute('data-fig')];if(u&&!im.getAttribute('src'))im.src=u});
+ if(!window.katex)return;
+ var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),L=[],n;
+ while((n=w.nextNode())){if(n.nodeValue.indexOf('\\(')>=0&&!(n.parentNode.closest&&n.parentNode.closest('.eq,.katex')))L.push(n)}
+ L.forEach(function(n){var f=document.createDocumentFragment(),t=n.nodeValue,last=0,m,rx=/\\\(([\s\S]*?)\\\)/g;
+  while((m=rx.exec(t))){if(m.index>last)f.appendChild(document.createTextNode(t.slice(last,m.index)));var sp=document.createElement('span');sp.className='eq';sp.dataset.tex=m[1];f.appendChild(sp);last=m.index+m[0].length}
+  if(last<t.length)f.appendChild(document.createTextNode(t.slice(last)));n.parentNode.replaceChild(f,n)});
+ [].forEach.call(root.querySelectorAll('span.eq'),function(s){
+  if(s.dataset.rendered)return;
+  var tex=s.dataset.tex!=null?s.dataset.tex:s.textContent.replace(/^\s*\\\(/,'').replace(/\\\)\s*$/,'');
+  s.dataset.tex=tex;s.textContent='';try{katex.render(tex,s,{throwOnError:false})}catch(e){s.textContent=tex}s.dataset.rendered='1'})}
+function pvMerge(j){Object.keys(j.figs||{}).forEach(function(k){PV.figs[k]=j.figs[k]});(j.items||[]).forEach(function(x){PV.items[x.id]=x})}
+function pvEnter(){if(!PV.started){PV.started=true;pvInit();return}pvPaint($('#view'))}
+async function pvInit(){
+ PV.err='';
+ var j=await pvApi('facets');
+ if(!j||!j.ok){PV.err=(j&&j.error)||'불러오지 못했어요';render();return}
+ var g=0;
+ while(j.pending>0&&g++<30){toast('같은 문제를 찾을 준비 중… (남은 문제 '+fmt(j.pending)+'개)');var k=await pvApi('norm_fill');if(!k||!k.ok)break;j.pending=k.pending}
+ var j2=await pvApi('facets');PV.fac=(j2&&j2.ok)?j2:j;
+ await pvLoad()}
+function pvArgs(){
+ var f=PV.f,a={page:PV.page,size:PV.size};
+ if(f.q)a.q=f.q;if(f.src_q)a.src_q=f.src_q;if(f.source_id)a.source_id=f.source_id;if(f.cat)a.cat=f.cat;
+ if(f.unit)a.unit=f.unit==='__e'?'':f.unit;
+ if(f.subunit)a.subunit=f.subunit==='(비어 있음)'?'':f.subunit;
+ if(f.skill)a.skill=f.skill==='(비어 있음)'?'':f.skill;
+ ['level','form','kind','fig','expl','dup','sort'].forEach(function(k){if(f[k])a[k]=f[k]});
+ if(f.show)a.show_merged='1';
+ return a}
+async function pvLoad(){
+ PV.busy=true;PV.err='';render();
+ var j=await pvApi('list',pvArgs());
+ PV.busy=false;
+ if(!j||!j.ok){PV.err=(j&&j.error)||'문제를 불러오지 못했어요';render();return}
+ pvMerge(j);PV.data=j;PV.page=j.page;render()}
+function pvRead(){
+ var g=function(id){var e=$('#'+id);return e?e.value.trim():''},f=PV.f;
+ f.show=!!($('#pshow')&&$('#pshow').checked);f.q=g('pq');f.src_q=g('psq');f.cat=g('pcat');f.unit=g('punit');f.subunit=g('psub');f.skill=g('psk');f.level=g('plv');f.form=g('pfm');f.kind=g('pkd');f.fig=g('pfig');f.expl=g('pex');f.dup=g('pdup');f.sort=g('psort');PV.page=0}
+function pvOpts(list,cur,first){return '<option value="">'+first+'</option>'+list.map(function(x){var v=Array.isArray(x)?x[0]:x,l=Array.isArray(x)?x[1]:x;return '<option value="'+esc(v)+'"'+(String(cur)===String(v)?' selected':'')+'>'+esc(l)+'</option>'}).join('')}
+function vPv(){
+ if(PV.mode==='review')return vDm();
+ var f=PV.f,d=PV.data,fac=PV.fac;
+ var units=UNITS_ALL.slice();if(f.unit&&f.unit!=='__e'&&units.indexOf(f.unit)<0)units.push(f.unit);
+ var sbs={};D.units.forEach(function(r){if(r.sb&&(!f.unit||f.unit==='__e'||r.u===f.unit))sbs[r.sb]=1});
+ var h='<div class="card"><h2>문제 보기</h2><div class="muted">문제를 카드로 보면서 출처·단원·유형을 확인하고 고쳐요. 카드의 <b>✎</b> 로 한 문제, 왼쪽 체크로 여러 문제를 골라 아래 막대에서 한꺼번에 고쳐요. 문제 글·정답은 바뀌지 않고, 고친 것은 [기록]에서 되돌릴 수 있어요.</div>'+
+  '<div class="row"><label class="k">문제 글 검색<input type="text" id="pq" value="'+esc(f.q||'')+'" style="width:170px" placeholder="예: 연립방정식"></label>'+
+  '<label class="k">출처 이름 포함<input type="text" id="psq" value="'+esc(f.src_q||'')+'" style="width:170px" placeholder="예: 낙생고 2025"></label>'+
+  '<label class="k">범주<select id="pcat">'+pvOpts(CATS,f.cat,'전체')+'</select></label>'+
+  '<label class="k">단원<select id="punit">'+pvOpts([['__e','(단원 비어 있음)']].concat(units),f.unit,'전체')+'</select></label>'+
+  '<label class="k">소단원<input type="text" id="psub" list="dlsb" value="'+esc(f.subunit||'')+'" style="width:140px" placeholder="(비어 있음)도 가능"></label>'+
+  '<label class="k">유형<input type="text" id="psk" list="dlsk" value="'+esc(f.skill||'')+'" style="width:150px" placeholder="(비어 있음)도 가능"></label></div>'+
+  '<div class="row"><label class="k">난이도<select id="plv">'+pvOpts(LVS,f.level,'전체')+'</select></label>'+
+  '<label class="k">형태<select id="pfm">'+pvOpts(FMS,f.form,'전체')+'</select></label>'+
+  '<label class="k">종류<select id="pkd">'+pvOpts([['mc','객관식'],['short','단답형'],['essay','서술형']],f.kind,'전체')+'</select></label>'+
+  '<label class="k">그림<select id="pfig">'+pvOpts([['1','그림 있는 문제'],['0','그림 없는 문제']],f.fig,'전체')+'</select></label>'+
+  '<label class="k">해설<select id="pex">'+pvOpts([['1','해설 있음'],['0','해설 없음']],f.expl,'전체')+'</select></label>'+
+  '<label class="k">중복<select id="pdup">'+pvOpts([['multi','여러 출처에 나온 문제'],['same','같은 문제 후보'],['frame','같은 틀 후보(숫자만 다름)'],['merged','다른 문제를 합친 대표'],['nosrc','출처 기록이 없는 문제']],f.dup,'전체')+'</select></label>'+
+  '<label style="align-self:flex-end"><input type="checkbox" id="pshow"'+(f.show?' checked':'')+'> 합쳐진 문제도 보기</label>'+
+  '<label class="k">정렬<select id="psort">'+pvOpts([['new','새로 들어온 순']],f.sort,'출처·번호 순')+'</select></label>'+
+  '<button data-act="pvsearch" style="align-self:flex-end">검색</button> <button class="g" data-act="pvreset" style="align-self:flex-end">조건 지우기</button></div>'+
+  '<datalist id="dlsb">'+Object.keys(sbs).sort().map(function(x){return '<option>'+esc(x)+'</option>'}).join('')+'<option>(비어 있음)</option></datalist>'+
+  '<datalist id="dlsk">'+((fac&&fac.skills)||[]).map(function(x){return '<option>'+esc(x[0])+'</option>'}).join('')+'<option>(비어 있음)</option></datalist>';
+ if(f.source_id)h+='<div class="row"><span class="chip">출처: '+esc(PV.srcLabel||f.source_id)+'</span><button class="g s" data-act="pvnosrc">출처 조건 풀기</button></div>';
+ if(fac&&fac.dup){var u=fac.dup;h+='<div class="row"><span class="muted">중복 점검:</span>'+
+  '<button class="dupb s" data-pdup="same">같은 문제 후보 '+fmt(u.same_groups)+'묶음 · '+fmt(u.same_problems)+'문제</button>'+
+  '<button class="dupb f" data-pdup="frame">같은 틀 후보 '+fmt(u.frame_groups)+'묶음 · '+fmt(u.frame_problems)+'문제</button>'+
+  '<button class="g s" data-pdup="multi">여러 출처에 나온 문제 '+fmt(u.multi)+'</button><button class="g s" data-pdup="nosrc">출처 없는 문제 '+fmt(u.nosrc)+'</button>'+
+  (u.merged?'<button class="g s" data-pdup="merged">합친 대표 '+fmt(u.merged)+'</button>':'')+
+  '<button data-act="dmopen">같은 문제 검토하기(합치기)</button></div>'}
+ h+='</div>';
+ if(PV.err)return h+'<div class="card"><div class="err">'+esc(PV.err)+'</div><div class="row"><button data-act="pvretry">다시 시도</button></div></div>';
+ if(!d)return h+'<div class="card muted">'+(PV.busy?'문제를 불러오는 중…':'아직 불러오지 않았어요')+'</div>';
+ var pages=Math.max(1,Math.ceil(d.total/d.size)),pg=d.page+1;
+ var pager='<div class="pbar"><button class="g s" data-ppage="-1"'+(d.page<=0?' disabled':'')+'>◀ 이전</button><b>'+pg+' / '+pages+'쪽</b><button class="g s" data-ppage="1"'+(pg>=pages?' disabled':'')+'>다음 ▶</button><span class="muted">조건에 맞는 문제 '+fmt(d.total)+'개 · 한 쪽 '+d.size+'개'+(PV.busy?' · 불러오는 중…':'')+'</span><button class="g s" data-act="pvselpage">이 쪽 모두 선택</button></div>';
+ h+=pager+(d.items.length?'<div class="pgrid">'+d.items.map(function(it){return pvCard(it,false)}).join('')+'</div>':'<div class="card muted">조건에 맞는 문제가 없어요.</div>')+pager;
+ return h}
+function pvLoc(tg){var p=[];if(tg.c)p.push(tg.c);if(tg.u)p.push(tg.u);if(tg.sb)p.push(tg.sb);return p}
+function pvCard(it,mini,extra){
+ var tg=it.tg||{},s0=(it.src||[])[0],g=it.same>0?'g1':(it.frame>0?'g2':'');
+ var chs=Array.isArray(it.ch)?it.ch:[];
+ var chh=chs.length?'<div class="pqc">'+chs.map(function(c,i){return '<span><b>'+'①②③④⑤⑥'.charAt(i)+'</b><span>'+fixEq2(String(c))+'</span></span>'}).join('')+'</div>':'';
+ var src=(it.src||[]).map(function(x){return '<span class="sc '+(CATC[x.cat]||'')+(x.m?' mrg':'')+'" data-psrc="'+x.id+'" data-pt="'+esc(x.t)+'" title="'+esc(x.cat)+' · 누르면 이 출처의 문제만 봐요">'+esc(x.t)+' #'+esc(x.no)+(x.pt!=null?' · '+Number(x.pt)+'점':'')+(x.m?' (합침)':'')+'</span>'}).join('');
+ if(it.ns>(it.src||[]).length)src+='<span class="muted">외 '+(it.ns-it.src.length)+'곳</span>';
+ if(!it.ns)src='<span class="tg e">출처 기록 없음</span>';
+ var loc=pvLoc(tg),tags='';
+ if(tg.sk)tags+='<span class="tg sk">'+esc(tg.sk)+'</span>';
+ if(tg.lv)tags+='<span class="tg l">난이도 '+esc(tg.lv)+'</span>';
+ if(tg.fm)tags+='<span class="tg">'+esc(tg.fm)+'</span>';
+ if(tg.es)tags+='<span class="tg l">필수유형</span>';
+ if(tg.nt)tags+='<span class="tg" title="'+esc(tg.nt)+'">메모</span>';
+ if(it.fam)tags+='<span class="tg fam" data-famren="'+it.famid+'" data-famt="'+esc(it.fam)+'" title="누르면 같은 틀 묶음 이름을 바꿔요">같은 틀: '+esc(it.fam)+' ('+it.famn+')</span>';
+ if(it.mg)tags+='<span class="tg l">합친 문제 '+it.mg+'개</span>';
+ var dup='';
+ if(it.al)dup+='<span class="dupb s" style="cursor:default">다른 문제와 합쳐짐</span> <button class="g s" data-dmun="'+it.id+'">합침 풀기</button> ';
+ if(it.same>0)dup+='<button class="dupb s" data-pgrp="'+it.id+'" data-mode="same">같은 문제 후보 '+it.same+'개 ▸</button> ';
+ if(it.frame>0)dup+='<button class="dupb f" data-pgrp="'+it.id+'" data-mode="frame">같은 틀 '+it.frame+'개 ▸</button>';
+ return '<div class="pc '+g+(PV.sel[it.id]?' sel':'')+'" data-pid="'+it.id+'"><div class="pch">'+(extra?extra:mini?'':'<input type="checkbox" data-psel="'+it.id+'"'+(PV.sel[it.id]?' checked':'')+'>')+
+  '<b>'+esc(s0?s0.no:'-')+'</b><span class="muted">'+esc(KIND[it.kind]||it.kind)+'</span><span class="sp"></span><button class="g s" data-pedit="'+it.id+'" title="이 문제의 단원·유형·난이도 고치기">✎ 고치기</button></div>'+
+  '<div class="pq"><div>'+fixEq2(it.stem)+'</div>'+chh+'</div>'+
+  '<div class="pcm"><button class="g s" data-pone="'+it.id+'">정답'+(it.ex?' · 해설':'')+'</button>'+(it.an!=null&&it.an!==''?'<span class="tg">정답 '+esc(String(it.an).slice(0,12))+'</span>':'<span class="tg e">정답 없음</span>')+(it.fig?'<span class="tg">그림</span>':'')+(it.ex?'':'<span class="tg e">해설 없음</span>')+tags+'</div>'+
+  '<div class="pci"><b>출처</b><div>'+src+'</div></div>'+
+  '<div class="pci"><b>분류</b><div>'+(loc.length?loc.map(esc).join(' › '):'<span class="tg e">단원 비어 있음</span>')+'</div></div>'+
+  (dup?'<div>'+dup+'</div>':'')+'</div>'}
+async function pvGroup(id,mode){
+ var j=await pvApi('group',{id:id,mode:mode});
+ if(!j||!j.ok){toast((j&&j.error)||'불러오지 못했어요',true);return}
+ pvMerge(j);
+ modal('<h2>'+(mode==='frame'?'같은 틀 후보':'같은 문제 후보')+' — '+fmt(j.total)+'개'+(j.total>j.items.length?' (앞 '+j.items.length+'개만)':'')+'</h2><div class="muted">'+
+  (mode==='frame'?'숫자·식만 다른 문제들이에요(같은 틀). 보기만 하고 지우거나 합치지 않아요.':'글자 모양(띄어쓰기·기호)만 다르고 내용이 같은 문제들이에요. 어느 출처에 나왔는지 비교해 보세요. 합치려면 [같은 문제 검토하기]에서 해요.')+'</div>'+(mode==='frame'?'<div class="row"><button data-pfam="'+id+'">같은 틀 묶음으로 묶기</button></div>':'')+'<div class="pgrid mini" style="margin-top:10px">'+j.items.map(function(x){return pvCard(x,true)}).join('')+'</div>',null,null,true);
+ pvPaint($('#mbody'))}
+async function pvOne(id){
+ var it=PV.items[id],j=await pvApi('one',{id:id});
+ if(!j||!j.ok){toast((j&&j.error)||'불러오지 못했어요',true);return}
+ pvMerge(j);
+ modal('<h2>정답 · 해설 · 출처</h2><p><b>정답</b> <span>'+(it&&it.an!=null&&it.an!==''?fixEq2(String(it.an)):'(없음)')+'</span></p>'+
+  (j.so?'<h3>해설</h3><div class="pq" style="height:auto;max-height:330px">'+fixEq2(j.so)+'</div>':'<div class="note">이 문제는 해설이 아직 없어요.</div>')+
+  '<h3>나온 곳 '+(j.srcs||[]).length+'곳</h3><div class="scroll"><table><tr><th>범주</th><th>출처</th><th>번호</th><th class="n">배점</th><th>메모</th></tr>'+(j.srcs||[]).map(function(x){return '<tr><td>'+esc(x.cat)+'</td><td>'+esc(x.t)+'</td><td>'+esc(x.no)+'</td><td class="n">'+(x.pt!=null?Number(x.pt):'')+'</td><td>'+esc(x.note||'')+'</td></tr>'}).join('')+'</table></div>');
+ pvPaint($('#mbody'))}
+function pvEditForm(ids){
+ var single=ids.length===1,it=single?PV.items[ids[0]]:null,tg=it?(it.tg||{}):{};
+ var units=UNITS_ALL.slice();if(tg.u&&units.indexOf(tg.u)<0)units.push(tg.u);
+ var sel=function(id,list,cur,blank,clear){return '<select id="'+id+'"><option value="">'+blank+'</option>'+(clear?'<option value="-">'+clear+'</option>':'')+list.map(function(x){return '<option'+(cur===x?' selected':'')+'>'+esc(x)+'</option>'}).join('')+'</select>'};
+ var B=single?'(비어 있음)':'(바꾸지 않음)',C=single?null:'(비우기)';
+ return '<h2>'+(single?'이 문제의 분류 고치기':fmt(ids.length)+'개 문제의 분류 고치기')+'</h2><div class="muted">'+(single?'바꿀 칸만 고치세요. 과목은 단원에 맞춰 자동으로 바뀌어요.':'바꿀 칸만 채우세요. 비워 두면 그 칸은 그대로이고, <b>-</b> 한 글자를 적으면 그 칸을 비워요. 과목은 단원에 맞춰 자동으로 바뀌어요.')+'</div>'+
+  '<div class="row"><label class="k">단원'+sel('eu',units,tg.u||'',B,C)+'</label><label class="k">소단원<input type="text" id="es" list="dlsb" value="'+esc(tg.sb||'')+'" style="width:170px"></label><label class="k">유형(어떤 문제인지)<input type="text" id="ek" list="dlsk" value="'+esc(tg.sk||'')+'" style="width:210px" placeholder="예: 판별식으로 근의 개수"></label></div>'+
+  '<div class="row"><label class="k">난이도'+sel('el',LVS,tg.lv||'',B,C)+'</label><label class="k">형태'+sel('ef',FMS,tg.fm||'',B,C)+'</label>'+
+  '<label class="k">필수유형<select id="ee"><option value="">'+(single?'':'(바꾸지 않음)')+'</option><option value="1"'+(single&&tg.es?' selected':'')+'>예</option><option value="0">아니오</option></select></label>'+
+  '<label class="k">메모<input type="text" id="en" value="'+esc(tg.nt||'')+'" style="width:210px"></label></div>'}
+function pvCollect(single,tg){
+ var def=[['unit','eu',tg.u],['subunit','es',tg.sb],['skill','ek',tg.sk],['level','el',tg.lv],['form','ef',tg.fm],['note','en',tg.nt]],set={};
+ def.forEach(function(d){var v=($('#'+d[1]).value||'').trim();
+  if(single){if(v!==(d[2]||''))set[d[0]]=v==='-'?'':v}
+  else if(v!=='')set[d[0]]=v==='-'?'':v});
+ var ee=$('#ee').value;
+ if(single){if((ee==='1')!==!!tg.es)set.essential=(ee==='1')}else if(ee)set.essential=(ee==='1');
+ if(set.unit&&COURSE_OF[set.unit])set.course=COURSE_OF[set.unit];
+ return set}
+async function pvAfterEdit(){PV.sel={};await pvLoad();api('overview').then(function(j){if(j&&j.ok){D=j;prep()}});LOG=null}
+function pvEdit(ids){
+ if(!ids.length)return;
+ var single=ids.length===1,tg=single&&PV.items[ids[0]]?(PV.items[ids[0]].tg||{}):{};
+ modal(pvEditForm(ids),async function(){
+  var set=pvCollect(single,tg);
+  if(!Object.keys(set).length){toast('바뀐 칸이 없어요',true);return}
+  if(single){var k=await pvApi('tag_set',{ids:ids,set:set});if(k&&k.ok){toast('고쳤어요. [기록]에서 되돌릴 수 있어요');await pvAfterEdit()}else toast((k&&k.error)||'고치지 못했어요',true);return}
+  var j=await pvApi('tag_set',{ids:ids,set:set,dry:true});
+  if(!j||!j.ok){toast((j&&j.error)||'미리보기를 못 불러왔어요',true);return}
+  setTimeout(function(){modal('<h2>이렇게 바꿀까요?</h2><p><b>'+esc(j.message)+'</b></p><div class="muted">지금 값(많은 순 30개)</div><div class="scroll"><table><tr><th>과목</th><th>단원</th><th>소단원</th><th>유형</th><th class="n">문제</th></tr>'+(j.groups||[]).map(function(g){return '<tr><td>'+esc(g.c)+'</td><td>'+esc(g.u||'(없음)')+'</td><td>'+esc(g.sb)+'</td><td>'+esc(g.sk)+'</td><td class="n">'+g.n+'</td></tr>'}).join('')+'</table></div><div class="note">문제 글·정답은 그대로예요. [기록]에서 되돌릴 수 있어요.</div>',async function(){
+   var k2=await pvApi('tag_set',{ids:ids,set:set});
+   if(k2&&k2.ok){toast(k2.message);await pvAfterEdit()}else toast((k2&&k2.error)||'바꾸지 못했어요',true)},'적용')},0)},single?'저장':'미리보기')}
+/* ── 같은 문제 검토 · 합치기(표시만) · 같은 틀 묶기 (SQL 55번) ── */
+var DM={status:'todo',page:0,data:null,busy:false,err:''};
+var DM_TABS=[['todo','검토할 것'],['conflict','정답 확인 필요'],['merged','합친 것'],['skipped','서로 다른 문제로 표시']];
+async function dmApi(act,arg){
+ var r;try{r=await fetch(RPC+'mathy_dupmerge',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify({p_token:tok,p_act:act,p_arg:arg||{}})})}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(r.status===404)return {ok:false,error:'55_중복합치기_서버.sql 을 먼저 실행해 주세요',nf:true};
+ if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
+ try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+async function dmLoad(){
+ DM.busy=true;DM.err='';render();
+ var j=await dmApi('review',{status:DM.status,page:DM.page,size:5});
+ DM.busy=false;
+ if(!j||!j.ok){DM.err=(j&&j.error)||'불러오지 못했어요';render();return}
+ pvMerge(j);DM.data=j;DM.page=j.page;render()}
+async function dmRefresh(){var f=await pvApi('facets');if(f&&f.ok)PV.fac=f;LOG=null;await dmLoad()}
+function vDm(){
+ var d=DM.data,h='<div class="card"><h2>같은 문제 검토 · 합치기</h2><div class="muted">글·보기·그림이 모두 같은 문제 묶음이에요. <b>대표</b> 하나를 고르고 [합치기]를 누르면 나머지는 "대표와 같음"으로 <b>표시만</b> 돼요. 문제·출처·미션은 하나도 지워지거나 옮겨지지 않아요. 합친 뒤에도 [합침 풀기]나 [기록]의 되돌리기로 언제든 원래대로 돌아가요. 정답이 서로 다른 묶음은 합칠 수 없고, 먼저 정답을 확인해야 해요.</div>'+
+  '<div class="row"><button class="g" data-act="dmclose">← 카드 보기로</button></div><div class="tabs">'+DM_TABS.map(function(t){var c=d&&d.counts&&d.counts[t[0]]||0;return '<button class="'+(DM.status===t[0]?'on':'')+'" data-dmtab="'+t[0]+'">'+t[1]+(d?' '+fmt(c):'')+'</button>'}).join('')+'</div></div>';
+ if(DM.err)return h+'<div class="card"><div class="err">'+esc(DM.err)+'</div><div class="row"><button data-act="dmretry">다시 시도</button></div></div>';
+ if(!d)return h+'<div class="card muted">'+(DM.busy?'불러오는 중…':'')+'</div>';
+ var pages=Math.max(1,Math.ceil(d.total/d.size)),pg=d.page+1;
+ var pager='<div class="pbar"><button class="g s" data-dmpage="-1"'+(d.page<=0?' disabled':'')+'>◀ 이전</button><b>'+pg+' / '+pages+'쪽</b><button class="g s" data-dmpage="1"'+(pg>=pages?' disabled':'')+'>다음 ▶</button><span class="muted">묶음 '+fmt(d.total)+'개'+(DM.busy?' · 불러오는 중…':'')+'</span></div>';
+ h+=pager;
+ if(!d.groups.length)h+='<div class="card muted">'+({todo:'검토할 같은 문제 묶음이 없어요.',conflict:'정답 확인이 필요한 묶음이 없어요.',merged:'합친 묶음이 없어요.',skipped:'"서로 다른 문제"로 표시한 묶음이 없어요.'})[DM.status]+'</div>';
+ d.groups.forEach(function(g){
+  var its=g.ids.map(function(id){return PV.items[id]}).filter(Boolean),k=g.k;
+  var act=its.filter(function(x){return !x.al}),canPick=(DM.status==='todo');
+  h+='<div class="card dmg" data-dmk="'+k+'"><div class="row"><b>문제 '+g.total+'개</b><span class="muted">'+(g.total-g.active?'(이미 합친 '+(g.total-g.active)+'개 포함)':'')+'</span>'+
+    (g.answers.length>1?'<span class="tg e">정답이 서로 달라요: '+g.answers.map(esc).join(' / ')+'</span>':'<span class="tg sk">정답 '+(g.answers.length?esc(g.answers[0]):'없음')+'</span>')+'</div>'+
+    '<div class="pgrid mini">'+its.map(function(it,i){
+      var radio=canPick&&!it.al?'<label style="display:flex;gap:4px;align-items:center"><input type="radio" name="dmk_'+k+'" value="'+it.id+'"'+(i===0?' checked':'')+'> <b>대표'+(i===0?' ★추천':'')+'</b></label>':'';
+      var inner=pvCard(it,true,radio||(it.al?'<span class="tg">합쳐짐</span>':''));
+      if(DM.status==='conflict')inner=inner.replace(/<\/div>$/,'<div class="row"><input type="text" id="dma_'+it.id+'" value="'+esc(it.an||'')+'" style="width:90px" placeholder="정답"><button class="g s" data-dmans="'+it.id+'">정답 저장</button></div></div>');
+      return inner}).join('')+'</div>';
+  if(canPick)h+='<div class="row" style="margin-top:8px"><label><input type="checkbox" id="dmfill_'+k+'" checked> 대표의 빈 단원·유형·난이도·정답·해설을 합치는 문제 것으로 채우기</label><button data-dmmerge="'+k+'">대표로 정하고 합치기</button><button class="g" data-dmskip="'+k+'">서로 다른 문제예요</button></div>';
+  if(DM.status==='conflict')h+='<div class="note">정답이 다른 문제는 합칠 수 없어요. 어느 쪽이 맞는지 확인해 위 칸에서 정답을 고치면, 정답이 같아지는 대로 [검토할 것]으로 옮겨져요. 정말 서로 다른 문제라면 [서로 다른 문제예요].</div><div class="row"><button class="g" data-dmskip="'+k+'">서로 다른 문제예요</button></div>';
+  if(DM.status==='skipped')h+='<div class="row" style="margin-top:8px"><button class="g" data-dmunskip="'+k+'">다시 후보로 돌리기</button></div>';
+  h+='</div>'});
+ return h+pager}
+function dmGroup(k){return DM.data&&DM.data.groups.filter(function(g){return g.k===k})[0]}
+async function dmMerge(k){
+ var g=dmGroup(k);if(!g)return;
+ var rd=document.querySelector('input[name="dmk_'+k+'"]:checked'),keeper=rd&&rd.value;
+ if(!keeper){toast('대표 문제를 골라 주세요',true);return}
+ var losers=g.ids.filter(function(id){var x=PV.items[id];return id!==keeper&&x&&!x.al});
+ if(!losers.length){toast('합칠 문제가 없어요',true);return}
+ var fill=!!($('#dmfill_'+k)&&$('#dmfill_'+k).checked);
+ var j=await dmApi('merge',{keeper:keeper,losers:losers,fill:fill,dry:true});
+ if(!j||!j.ok){toast((j&&j.error)||'합칠 수 없어요',true);return}
+ modal('<h2>이렇게 합칠까요?</h2><p><b>'+esc(j.message)+'</b></p><div class="note">표시만 해요. 문제·출처·미션은 그대로이고, [합침 풀기] 또는 [기록]에서 되돌릴 수 있어요. 합친 문제는 [문제 보기]에서 대표 카드에 출처가 함께 보여요.</div>',async function(){
+  var r=await dmApi('merge',{keeper:keeper,losers:losers,fill:fill});
+  if(r&&r.ok){toast(r.message);await dmRefresh()}else toast((r&&r.error)||'합치지 못했어요',true)},'합치기')}
+async function dmSimple(act,arg,okMsg){
+ var r=await dmApi(act,arg);
+ if(r&&r.ok){toast(okMsg||r.message);await dmRefresh()}else toast((r&&r.error)||'처리하지 못했어요',true)}
+function pvFamAsk(id){
+ modal('<h2>같은 틀 묶음으로 묶기</h2><div class="muted">숫자·식만 다른 문제들을 하나의 "같은 틀"로 묶어 둬요(필수유형을 고를 때 몇 개 학교가 냈는지 세는 기준이 돼요). 문제는 합쳐지지 않고, [기록]에서 되돌릴 수 있어요.</div><div class="row"><label class="k">묶음 이름(비워 두면 나중에 붙여도 돼요)<input type="text" id="famt" style="width:300px" placeholder="예: x−a로 나눈 나머지"></label></div>',async function(){
+  var title=($('#famt').value||'').trim(),j=await dmApi('family_set',{frame_of:id,title:title,dry:true});
+  if(!j||!j.ok){toast((j&&j.error)||'묶지 못했어요',true);return}
+  setTimeout(function(){modal('<h2>이렇게 묶을까요?</h2><p><b>'+esc(j.message)+'</b></p>',async function(){
+   var r=await dmApi('family_set',{frame_of:id,title:title});
+   if(r&&r.ok){toast(r.message);LOG=null;if(PV.mode!=='review')await pvLoad()}else toast((r&&r.error)||'묶지 못했어요',true)},'묶기')},0)},'다음')}
+function pvFamRename(id,old){
+ modal('<h2>같은 틀 묶음 이름</h2><div class="row"><input type="text" id="famn" value="'+esc(old)+'" style="width:320px"></div>',async function(){
+  var r=await dmApi('family_rename',{family_id:id,title:($('#famn').value||'').trim()});
+  if(r&&r.ok){toast(r.message);LOG=null;await pvLoad()}else toast((r&&r.error)||'바꾸지 못했어요',true)},'저장')}
 function vLog(){
  var h='<div class="card"><h2>변경 기록 · 되돌리기</h2><div class="muted">범주나 단원을 바꾼 기록이에요. [되돌리기]를 누르면 바꾸기 전 상태로 돌아가요(이미 되돌린 건 한 번 더 못 해요).</div>';
  if(!LOG)return h+'<div class="muted" style="margin-top:8px">불러오는 중…</div></div>';
  h+='<div class="scroll"><table><tr><th>번호</th><th>언제</th><th>내용</th><th></th></tr>'+LOG.map(function(l){
-  return '<tr><td>'+l.id+'</td><td class="muted">'+esc(String(l.at).slice(0,16).replace('T',' '))+'</td><td>'+esc(l.summary)+'</td><td>'+(l.undone?'<span class="muted">되돌림</span>':(l.undoable?'<button class="g s" data-undo="'+l.id+'">되돌리기</button>':''))+'</td></tr>'}).join('')+(LOG.length?'':'<tr><td colspan="4" class="muted">아직 기록이 없어요.</td></tr>')+'</table></div></div>';
+  return '<tr><td>'+l.id+'</td><td class="muted">'+esc(String(l.at).slice(0,16).replace('T',' '))+'</td><td>'+esc(l.summary)+'</td><td>'+(l.undone?'<span class="muted">되돌림</span>':(l.undoable?'<button class="g s" data-undo="'+l.id+'" data-uact="'+esc(l.act)+'">되돌리기</button>':''))+'</td></tr>'}).join('')+(LOG.length?'':'<tr><td colspan="4" class="muted">아직 기록이 없어요.</td></tr>')+'</table></div></div>';
  return h}
 async function loadLog(){var j=await api('log');if(j&&j.ok){LOG=j.rows;if(TAB==='기록')render()}else toast((j&&j.error)||'기록을 불러오지 못했어요',true)}
 /* ── 창(미리보기 확인) ── */
-function modal(html,onOk,okLabel){
- $('#mbody').innerHTML=html+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="g" id="mno">취소</button>'+(onOk?'<button id="myes">'+(okLabel||'적용')+'</button>':'')+'</div>';
+function modal(html,onOk,okLabel,wide){
+ $('#mbody').classList.toggle('w',!!wide);
+ $('#mbody').innerHTML=html+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="g" id="mno">'+(onOk?'취소':'닫기')+'</button>'+(onOk?'<button id="myes">'+(okLabel||'적용')+'</button>':'')+'</div>';
  $('#modal').classList.remove('hidden');$('#mno').onclick=closeModal;
  if(onOk)$('#myes').onclick=async function(){this.disabled=true;await onOk();closeModal()}}
 function closeModal(){$('#modal').classList.add('hidden')}
@@ -288,7 +555,22 @@ document.addEventListener('click',async function(e){
  if((el=t.closest('[data-pick]'))){var r=NS[+el.dataset.pick];TOOL={fc:r.c,fu:r.u};TAB='단원 정리';render();scrollTo(0,0);return}
  if((el=t.closest('[data-pickall]'))){var r2=ULIST[+el.dataset.pickall];TOOL={fc:r2.c?r2.c:'(비어 있음)',fu:r2.u?r2.u:'(비어 있음)',fs:r2.sb||''};render();scrollTo(0,0);return}
  if((el=t.closest('[data-fill]'))){TOOL={fsrc:el.dataset.fill,fe:true};render();scrollTo(0,0);return}
- if((el=t.closest('[data-undo]'))){var uid=+el.dataset.undo;modal('<h2>되돌릴까요?</h2><p>기록 '+uid+'번을 바꾸기 전 상태로 돌려요.</p>',async function(){var j2=await api('undo',{id:uid});if(j2&&j2.ok){toast(j2.message);LOG=null;await reload()}else toast((j2&&j2.error)||'되돌리지 못했어요',true)},'되돌리기');return}
+ if((el=t.closest('[data-dmtab]'))){DM.status=el.dataset.dmtab;DM.page=0;DM.data=null;dmLoad();return}
+ if((el=t.closest('[data-dmpage]'))){DM.page=Math.max(0,DM.page+(+el.dataset.dmpage));dmLoad();scrollTo(0,0);return}
+ if((el=t.closest('[data-dmmerge]'))){dmMerge(el.dataset.dmmerge);return}
+ if((el=t.closest('[data-dmskip]'))){dmSimple('skip',{k:el.dataset.dmskip},'서로 다른 문제로 표시했어요(되돌리기는 [기록])');return}
+ if((el=t.closest('[data-dmunskip]'))){dmSimple('unskip',{k:el.dataset.dmunskip});return}
+ if((el=t.closest('[data-dmans]'))){var aid=el.dataset.dmans;dmSimple('answer_set',{id:aid,answer:($('#dma_'+aid).value||'').trim()});return}
+ if((el=t.closest('[data-dmun]'))){var uid2=el.dataset.dmun;modal('<h2>합침을 풀까요?</h2><p>이 문제를 대표와 같다는 표시에서 빼요. 문제·출처는 그대로예요.</p>',async function(){var r=await dmApi('unmerge',{ids:[uid2]});if(r&&r.ok){toast(r.message);LOG=null;if(PV.mode==='review')await dmRefresh();else await pvLoad()}else toast((r&&r.error)||'풀지 못했어요',true)},'합침 풀기');return}
+ if((el=t.closest('[data-pfam]'))){pvFamAsk(el.dataset.pfam);return}
+ if((el=t.closest('[data-famren]'))){pvFamRename(el.dataset.famren,el.dataset.famt||'');return}
+ if((el=t.closest('[data-psrc]'))){PV.f.source_id=el.dataset.psrc;PV.srcLabel=el.dataset.pt||'';PV.page=0;closeModal();pvLoad();scrollTo(0,0);return}
+ if((el=t.closest('[data-pedit]'))){pvEdit([el.dataset.pedit]);return}
+ if((el=t.closest('[data-pone]'))){pvOne(el.dataset.pone);return}
+ if((el=t.closest('[data-pgrp]'))){pvGroup(el.dataset.pgrp,el.dataset.mode);return}
+ if((el=t.closest('[data-pdup]'))){pvRead();PV.f.dup=el.dataset.pdup;PV.f.sort='';pvLoad();return}
+ if((el=t.closest('[data-ppage]'))){PV.page=Math.max(0,PV.page+(+el.dataset.ppage));pvLoad();scrollTo(0,0);return}
+ if((el=t.closest('[data-undo]'))){var uid=+el.dataset.undo,uact=el.dataset.uact;modal('<h2>되돌릴까요?</h2><p>기록 '+uid+'번을 바꾸기 전 상태로 돌려요.</p>',async function(){var j2=uact==='tag_set'?await pvApi('tag_undo',{id:uid}):/^(dup|fam)_/.test(uact)?await dmApi('undo',{id:uid}):await api('undo',{id:uid});if(j2&&j2.ok){toast(j2.message);LOG=null;PV.data=null;PV.started=false;await reload()}else toast((j2&&j2.error)||'되돌리지 못했어요',true)},'되돌리기');return}
  var a=t.closest('[data-act]');if(!a)return;a=a.dataset.act;
  if(a==='selall'){D.srcs.filter(passF).forEach(function(x){SEL[x.id]=true});render()}
  else if(a==='selnone'){SEL={};render()}
@@ -297,10 +579,22 @@ document.addEventListener('click',async function(e){
  else if(a==='uprev')uPrev();
  else if(a==='ufprev')ufPrev();
  else if(a==='uexport')uExport();
+ else if(a==='pvsearch'){pvRead();pvLoad()}
+ else if(a==='pvreset'){PV.f={};PV.srcLabel='';PV.page=0;pvLoad()}
+ else if(a==='pvnosrc'){pvRead();PV.f.source_id='';PV.srcLabel='';pvLoad()}
+ else if(a==='pvretry'){PV.started=false;render()}
+ else if(a==='pvselpage'){((PV.data&&PV.data.items)||[]).forEach(function(x){PV.sel[x.id]=true});render()}
+ else if(a==='pvselnone'){PV.sel={};render()}
+ else if(a==='dmopen'){PV.mode='review';DM.data=null;dmLoad()}
+ else if(a==='dmclose'){PV.mode='';pvLoad()}
+ else if(a==='dmretry')dmLoad()
+ else if(a==='pvbulk')pvEdit(Object.keys(PV.sel).filter(function(k){return PV.sel[k]}));
  else if(a==='ureset'){TOOL={};render()}});
 document.addEventListener('change',function(e){
  var t=e.target;
  if(t.id==='ufile'){ufLoad(t.files&&t.files[0]);return}
+ if(t.dataset&&t.dataset.psel){PV.sel[t.dataset.psel]=t.checked;var pc=t.closest('.pc');if(pc)pc.classList.toggle('sel',t.checked);bulkBar();return}
+ if(TAB==='문제 보기'&&/^p(cat|unit|lv|fm|kd|fig|ex|dup|sort|show)$/.test(t.id||'')){pvRead();pvLoad();return}
  if(t.dataset&&t.dataset.sel){SEL[t.dataset.sel]=t.checked;bulkBar();return}
  if(t.id==='fcat'){F.cat=t.value;render()}else if(t.id==='fcourse'){F.course=t.value;render()}else if(t.id==='fempty'){F.empty=t.checked;render()}});
 document.addEventListener('input',function(e){
