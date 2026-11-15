@@ -266,8 +266,8 @@ function buildGradeFilter(){
 function tally(list){ const m = {}; list.forEach(x => { if(x) m[x] = (m[x]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function liHtml(entries, empty){ return entries.length ? entries.map(([k,v])=>`<li><span>${esc(k)}</span><b>${v}</b></li>`).join('') : `<li style="color:var(--muted)">${empty||'아직 없어요'}</li>`; }
 const splitList = s => (s||'').split(',').map(x=>x.trim()).filter(Boolean);
-/* 관심 학교: '기타'로 직접 적은 이름 중 같은 학교는 하나로 합쳐서 셉니다 (동국과 → 동탄국제고) */
-const SCHOOL_ALIAS = [[/동탄|동국과/, '동탄국제고']];
+/* 관심 학교: '기타'로 직접 적은 이름 중 같은 학교는 하나로 합쳐서 셉니다 (동국과·동국고 → 동탄국제고) */
+const SCHOOL_ALIAS = [[/동탄|동국과|동국고/, '동탄국제고']];
 const schoolList = r => splitList(r.schools).map(x => {
   if(x.indexOf('기타') !== 0) return x;
   const hit = SCHOOL_ALIAS.find(([re]) => re.test(x)); return hit ? hit[1] : x;
