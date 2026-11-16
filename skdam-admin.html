@@ -129,12 +129,18 @@ footer{height:50px}
     <div class="sec-title">어떤 학교에 관심이 있을까요 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(중복 선택 · 학교별 분석 우선순위)</span></div>
     <div class="panel"><ul class="tally" id="schoolTally"></ul></div>
 
-    <div class="sec-title">전날 확정 현황 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(신청한 분이 확정 링크를 눌렀는지)</span></div>
+    <div class="sec-title">확정 현황 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(신청한 분이 확정 링크를 눌렀는지)</span></div>
     <div class="grid" id="confStats"></div>
     <div class="panel" style="margin-top:12px">
       <div id="confMissing" style="font-size:14px;line-height:1.8"></div>
       <button class="btn ghost sm" id="copyMissing" style="margin-top:12px">미확정 명단 복사 (이름·전화)</button>
       <div class="note-list" id="confNote"></div>
+    </div>
+
+    <div class="sec-title">확정하면서 답해 주신 것 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(11/4 설명회 · 내신비교자료집 · 선행진도 · 확정 질문에 답한 분 기준)</span></div>
+    <div class="two">
+      <div class="panel"><ul class="tally" id="qTally"></ul></div>
+      <div class="panel"><ul class="tally" id="progTally"></ul></div>
     </div>
 
     <div class="sec-title">커피 주문표 <span style="color:var(--muted);font-family:var(--sans);font-style:normal;font-size:12px">(참석 어려움은 뺌 · 확정 때 바꾼 음료가 있으면 그것으로)</span></div>
@@ -158,6 +164,7 @@ footer{height:50px}
       <select id="fCls"><option value="">관심 반 전체</option><option>공수내모</option><option>예비고1 T-CLASS</option><option>(선행) 대수 기초반</option><option>아직 고민 중</option></select>
       <select id="fGrade"><option value="">학년 전체</option></select>
       <select id="fSchool"><option value="">관심 학교 전체</option><option>낙생고</option><option>늘푸른고</option><option>돌마고</option><option>보평고</option><option>분당고</option><option>분당대진고</option><option>불곡고</option><option>서현고</option><option>송림고</option><option>수내고</option><option>야탑고</option><option>영덕여고</option><option>운중고</option><option>이매고</option><option>태원고</option><option>판교고</option><option>한솔고</option><option>외대부고</option><option>북일고</option><option>김천고</option><option>외고</option><option>중앙과학고</option><option>동탄국제고</option><option value="기타">기타 (직접 입력)</option></select>
+      <select id="fAns"><option value="">확정 질문 전체</option><option value="nobrief">설명회 불참</option><option value="nocmp">자료집 못 받음</option><option value="none">아직 선행 전</option><option value="unans">질문 미응답</option></select>
       <select id="fConf"><option value="">확정 상태 전체</option><option value="ok">확정 완료</option><option value="pending">미확정</option><option value="no">참석 어려움으로 변경</option></select>
     </div>
     <div class="chk-row">
@@ -245,6 +252,9 @@ function linkConfirms(){
     const ms = (byKey.get(k) || []).filter(x => sameParent(x.parent_name, r.parent_name)), c = ms[0] || null;
     ms.forEach(x => used.add(x.id));
     r._conf = c;
+    const ci = ms.find(x => x.briefing || x.compare_book || x.prior) || null;     // 가장 최근에 질문에 답한 기록
+    r._ci = ci;
+    r.briefing = ci ? (ci.briefing || '') : ''; r.compare_book = ci ? (ci.compare_book || '') : ''; r.prior = ci ? (ci.prior || '') : '';
     const changed = c && c.status === '확정' && c.drink_changed && c.drink;
     r._effDrink = changed ? c.drink : r.drink1;
     r._drinkChanged = !!changed;
@@ -273,6 +283,22 @@ const schoolList = r => splitList(r.schools).map(x => {
   const hit = SCHOOL_ALIAS.find(([re]) => re.test(x)); return hit ? hit[1] : x;
 });
 let drinkTextForCopy = '';
+
+const PROG_COURSES = ['공수1','공수2','대수','미적1','기하','확통','미적2'];
+function renderAnswers(act){
+  const ans = act.filter(r => r._ci && r._eff !== '참석 어려움');
+  const cnt = (f, v) => ans.filter(r => r._ci[f] === v).length;
+  const none = ans.filter(r => r._ci.prior === '아직 선행 전').length;
+  $('#qTally').innerHTML =
+    `<li style="color:var(--muted)"><span>답해 주신 분</span><b>${ans.length}가정</b></li>` +
+    `<li><span>11/4 설명회 참석</span><b>${cnt('briefing','참석')}</b></li><li><span>11/4 설명회 불참</span><b>${cnt('briefing','불참')}</b></li>` +
+    `<li><span>내신비교자료집 받은 적 있음</span><b>${cnt('compare_book','받음')}</b></li><li><span>내신비교자료집 받은 적 없음</span><b>${cnt('compare_book','못 받음')}</b></li>`;
+  const lv = (k, l) => ans.filter(r => (r._ci.prior || '').split(', ').some(p => p.indexOf(k + ' ') === 0 && p.split(' ')[1].split('·').includes(l))).length;
+  $('#progTally').innerHTML =
+    `<li style="color:var(--muted)"><span>선행진도 (과목별)</span><b>기본 · 응용</b></li>` +
+    PROG_COURSES.map(k => `<li><span>${k}</span><b>${lv(k,'기본')} · ${lv(k,'응용')}</b></li>`).join('') +
+    `<li><span>아직 선행 전</span><b>${none}</b></li>`;
+}
 
 let missingList = [];
 function renderConfirm(act){
@@ -309,6 +335,7 @@ function renderSummary(){
   $('#interest').innerHTML = Object.entries(cls).map(([k,v],i)=>`<div class="stat ${k==='(선행) 대수 기초반'?'hl':''}"><div class="n">${v}</div><div class="l">${esc(k)}</div></div>`).join('');
 
   renderConfirm(act);
+  renderAnswers(act);
 
   const onlyConf = $('#drinkBase').value === 'conf';
   const orderRows = act.filter(r => r._eff !== '참석 어려움' && (!onlyConf || r._eff === '확정'));
@@ -337,8 +364,12 @@ function renderSummary(){
 function filtered(){
   const q = $('#q').value.trim().toLowerCase();
   const fa = $('#fAtt').value, fc = $('#fCls').value, fg = $('#fGrade').value;
-  const un = $('#fUnchecked').checked, lt = $('#fLatest').checked, fcf = $('#fConf').value, fs = $('#fSchool').value;
+  const un = $('#fUnchecked').checked, lt = $('#fLatest').checked, fcf = $('#fConf').value, fs = $('#fSchool').value, fa2 = $('#fAns').value;
   return rows.filter(r => {
+    if(fa2 === 'nobrief' && !(r._ci && r._ci.briefing === '불참')) return false;
+    if(fa2 === 'nocmp' && !(r._ci && r._ci.compare_book === '못 받음')) return false;
+    if(fa2 === 'none' && !(r._ci && r._ci.prior === '아직 선행 전')) return false;
+    if(fa2 === 'unans' && r._ci) return false;
     if(fs && !schoolList(r).some(x => fs === '기타' ? x.indexOf('기타') === 0 : x === fs)) return false;
     if(fcf === 'ok' && !(r._conf && r._conf.status === '확정')) return false;
     if(fcf === 'no' && r._eff !== '참석 어려움') return false;
@@ -381,6 +412,7 @@ function renderList(){
         ${r.student_phone ? `<dt>학생</dt><dd><a href="tel:${esc(r.student_phone.replace(/\D/g,''))}">${esc(r.student_phone)}</a></dd>` : ''}
         ${r.leave_info ? `<dt>참석 방식</dt><dd>${esc(r.leave_info)}</dd>` : ''}
         <dt>음료</dt><dd>${esc(r._effDrink||'-')}${r._drinkChanged ? ' <span class="badge b-maybe">확정 때 바꿈</span><br><span style="color:var(--muted)">처음 신청: ' + esc(r.drink1||'-') + '</span>' : ''}${r.drink2 ? '<br>+ ' + esc(r.drink2) : ''}</dd>
+        ${r._ci ? `<dt>확정 질문</dt><dd>설명회 ${esc(r._ci.briefing||'-')} · 자료집 ${esc(r._ci.compare_book||'-')}<br>선행: ${esc(r._ci.prior||'-')}</dd>` : ''}
         <dt>관심 반</dt><dd>${esc(r.classes||'-')}</dd>
         <dt>관심 학교</dt><dd>${esc(r.schools||'-')}</dd>
         <dt>걱정</dt><dd>${esc(r.worries||'-')}</dd>
@@ -446,7 +478,7 @@ $('#confNote').addEventListener('click', async e => {
 });
 
 /* ---------- 필터·버튼 ---------- */
-['q','fAtt','fCls','fGrade','fUnchecked','fLatest','fConf','fSchool'].forEach(id => {
+['q','fAtt','fCls','fGrade','fUnchecked','fLatest','fConf','fSchool','fAns'].forEach(id => {
   $('#'+id).addEventListener(id==='q'?'input':'change', renderList);
 });
 $('#refresh').addEventListener('click', () => { load(); toast('새로고침했어요'); });
@@ -462,7 +494,7 @@ $('#copyDrinks').addEventListener('click', async () => {
   catch(_){ toast('복사가 막혀 있어요. 직접 선택해서 복사해 주세요'); }
 });
 $('#csv').addEventListener('click', () => {
-  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['parent_name','학부모이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['schools','관심학교'],['worries','걱정'],['conf_status','전날확정'],['eff_drink','최종음료'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
+  const cols = [['created_at','접수시간'],['attendance','참석'],['leave_info','참석방식'],['student_name','학생이름'],['parent_name','학부모이름'],['school','중학교'],['grade','학년'],['parent_phone','학부모전화'],['student_phone','학생전화'],['drink1','음료1'],['drink2','음료2'],['classes','관심반'],['schools','관심학교'],['worries','걱정'],['conf_status','확정'],['eff_drink','최종음료'],['briefing','설명회(11/4)'],['compare_book','내신비교자료집'],['prior','선행진도'],['opinion','의견'],['checked','확인'],['admin_memo','메모']];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
   const body = filtered().map(r => cols.map(([k]) => q(k==='checked' ? (r.checked?'O':'') : r[k])).join(',')).join('\n');
   const blob = new Blob(['﻿' + cols.map(c=>q(c[1])).join(',') + '\n' + body], {type:'text/csv;charset=utf-8'});
