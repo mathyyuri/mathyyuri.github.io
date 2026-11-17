@@ -84,6 +84,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--mint-d);box-shadow:0 
 .kv dt{color:var(--muted)}
 .kv dd{word-break:break-word}
 .kv a{color:var(--mint-d);font-weight:700;text-decoration:none}
+.ptab{border-collapse:collapse;font-size:13px;margin-top:2px}
+.ptab th,.ptab td{border:1px solid var(--line);padding:4px 7px;text-align:center;min-width:34px;white-space:nowrap}
+.ptab th{background:#fff;color:var(--muted);font-weight:700}
+.ptab td.on{background:var(--mint);color:var(--black);font-weight:800}
+.ptab td.off{color:#c9bfae}
+.ptab-none{display:inline-block;background:#ddd;color:#555;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700}
 .opinion{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;white-space:pre-wrap}
 .ractions{display:flex;gap:8px;align-items:flex-start;margin-top:12px;flex-wrap:wrap}
 .ractions textarea{flex:1;min-width:180px;min-height:44px;font-size:14px;padding:9px 11px}
@@ -285,6 +291,16 @@ const schoolList = r => splitList(r.schools).map(x => {
 let drinkTextForCopy = '';
 
 const PROG_COURSES = ['공수1','공수2','대수','미적1','기하','확통','미적2'];
+// 선행진도 글자("공수1 기본·응용, 대수 기본")를 과목별 표로 보여 주기
+function progTable(prior){
+  if(!prior) return '-';
+  if(prior === '아직 선행 전') return '<span class="ptab-none">아직 선행 전</span>';
+  const m = {};
+  prior.split(', ').forEach(p => { const sp = p.split(' '); m[sp[0]] = (sp[1] || '').split('·'); });
+  const cell = (k, lv) => (m[k] || []).includes(lv) ? '<td class="on">●</td>' : '<td class="off">-</td>';
+  return '<div style="overflow-x:auto"><table class="ptab"><tr><th></th>' + PROG_COURSES.map(k => `<th>${k}</th>`).join('') + '</tr>' +
+    ['기본','응용'].map(lv => `<tr><th>${lv}</th>${PROG_COURSES.map(k => cell(k, lv)).join('')}</tr>`).join('') + '</table></div>';
+}
 function renderAnswers(act){
   const ans = act.filter(r => r._ci && r._eff !== '참석 어려움');
   const cnt = (f, v) => ans.filter(r => r._ci[f] === v).length;
@@ -412,7 +428,7 @@ function renderList(){
         ${r.student_phone ? `<dt>학생</dt><dd><a href="tel:${esc(r.student_phone.replace(/\D/g,''))}">${esc(r.student_phone)}</a></dd>` : ''}
         ${r.leave_info ? `<dt>참석 방식</dt><dd>${esc(r.leave_info)}</dd>` : ''}
         <dt>음료</dt><dd>${esc(r._effDrink||'-')}${r._drinkChanged ? ' <span class="badge b-maybe">확정 때 바꿈</span><br><span style="color:var(--muted)">처음 신청: ' + esc(r.drink1||'-') + '</span>' : ''}${r.drink2 ? '<br>+ ' + esc(r.drink2) : ''}</dd>
-        ${r._ci ? `<dt>확정 질문</dt><dd>설명회 ${esc(r._ci.briefing||'-')} · 자료집 ${esc(r._ci.compare_book||'-')}<br>선행: ${esc(r._ci.prior||'-')}</dd>` : ''}
+        ${r._ci ? `<dt>확정 질문</dt><dd>설명회 ${esc(r._ci.briefing||'-')} · 자료집 ${esc(r._ci.compare_book||'-')}</dd><dt>선행진도</dt><dd>${progTable(r._ci.prior)}</dd>` : ''}
         <dt>관심 반</dt><dd>${esc(r.classes||'-')}</dd>
         <dt>관심 학교</dt><dd>${esc(r.schools||'-')}</dd>
         <dt>걱정</dt><dd>${esc(r.worries||'-')}</dd>
