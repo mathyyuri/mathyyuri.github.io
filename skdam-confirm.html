@@ -276,7 +276,7 @@ main.wrap{margin-top:-30px;position:relative;z-index:3;padding-bottom:50px}
         <button class="btn mint" id="okBtn" type="button">참석 확정하기</button>
         <button class="btn warn" id="noBtn" type="button">참석이 어려워졌어요</button>
       </div>
-      <p class="hint" style="text-align:center;margin-top:12px">당일 오후 3시까지는 이 페이지에서 몇 번이든 다시 바꾸실 수 있어요.</p>
+      <p class="hint" style="text-align:center;margin-top:12px">당일 오후 6시 30분까지는 이 페이지에서 몇 번이든 다시 바꾸실 수 있어요.</p>
     </div>
   </section>
 
@@ -297,7 +297,7 @@ main.wrap{margin-top:-30px;position:relative;z-index:3;padding-bottom:50px}
 <script>
 const SUPABASE_URL = "https://eqllmvfbcdtzercliicy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV";
-const CLOSE_AT = Date.UTC(2026, 10, 17, 6, 0, 0);   // 11월 17일 오후 3시(한국 시간) = 06:00 UTC
+const CLOSE_AT = Date.UTC(2026, 10, 17, 9, 30, 0);   // 11월 17일 오후 6시 30분(한국 시간) = 09:30 UTC
 const isClosed = () => Date.now() >= CLOSE_AT;
 
 const $ = (s, r=document) => r.querySelector(s);
@@ -499,8 +499,8 @@ $('#findBtn').addEventListener('click', async () => {
 function showDone(status, drinkText, extra){
   const ok = status === '확정';
   $('#doneTitle').textContent = ok ? '참석이 확정되었어요' : '참석 어려움으로 전달했어요';
-  $('#doneMsg').innerHTML = ok ? '11월 17일(화) 오후 7시, 분당미래탐구에서 뵙겠습니다.<br>일정이 바뀌어도 당일 오후 3시까지 이 페이지에서 다시 바꾸실 수 있어요.'
-                               : '알려 주셔서 감사해요. 마음이 바뀌시면 당일 오후 3시까지 이 페이지에서 다시 확정하실 수 있어요.';
+  $('#doneMsg').innerHTML = ok ? '11월 17일(화) 오후 7시, 분당미래탐구에서 뵙겠습니다.<br>일정이 바뀌어도 당일 오후 6시 30분까지 이 페이지에서 다시 바꾸실 수 있어요.'
+                               : '알려 주셔서 감사해요. 마음이 바뀌시면 당일 오후 6시 30분까지 이 페이지에서 다시 확정하실 수 있어요.';
   $('#doneMine').innerHTML = '<div><span>학생</span><span>' + esc(me.name) + '</span></div>' +
     '<div><span>상태</span><span>' + (ok ? '확정' : '참석 어려움') + '</span></div>' +
     (ok ? '<div><span>음료</span><span>' + esc(drinkText) + '</span></div>' +

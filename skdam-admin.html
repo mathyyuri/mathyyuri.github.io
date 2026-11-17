@@ -90,6 +90,33 @@ input:focus,textarea:focus,select:focus{border-color:var(--mint-d);box-shadow:0 
 .ptab td.on{background:var(--mint);color:var(--black);font-weight:800}
 .ptab td.off{color:#c9bfae}
 .ptab-none{display:inline-block;background:#ddd;color:#555;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700}
+/* 카드 인쇄 화면 (A4 가로 · 한 쪽에 4명) */
+#printView{position:fixed;inset:0;z-index:200;background:#6b665c;overflow:auto}
+.pv-bar{position:sticky;top:0;z-index:5;background:var(--black);color:var(--cream);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pv-bar b{font-size:14px}.pv-bar .pv-info{font-size:12.5px;color:var(--mint)}
+.pv-bar input{width:210px;padding:8px 10px;font-size:14px}
+.pv-bar .sp{flex:1}
+.stage{padding:16px 0 40px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.pg{position:relative;width:297mm;height:210mm;background:#fff;color:#111;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;overflow:hidden;font-family:var(--sans)}
+.pg .pn{position:absolute;right:3mm;bottom:1.5mm;font-size:8px;color:#aaa}
+.pc{position:relative;border-right:1px dashed #c8c8c8;border-bottom:1px dashed #c8c8c8;overflow:hidden}
+.pc:nth-child(2n){border-right:0}.pc:nth-child(n+3){border-bottom:0}
+.pc-in{height:100%;padding:7mm 9mm 6mm;overflow:hidden;font-size:11pt;line-height:1.45}
+.pc-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:1.5px solid #111;padding-bottom:4px;margin-bottom:5px}
+.pc-name{font-family:var(--serif);font-weight:700;font-size:1.7em;line-height:1.2}
+.pc-name span{font-family:var(--sans);font-weight:400;font-size:.6em;color:#555;margin-left:6px}
+.pc-badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:55%}
+.pc-badges i{font-style:normal;font-size:.75em;font-weight:700;border-radius:99px;padding:1px 8px;background:#d7efe5;color:#0d3d30;white-space:nowrap}
+.pc-badges i.no{background:#f4cdd5;color:#6b2536}.pc-badges i.mb{background:#eee;color:#333}
+.pc-kv{display:grid;grid-template-columns:3.6em 1fr;gap:1px 8px}
+.pc-kv dt{color:#777;font-size:.9em}.pc-kv dd{word-break:break-word}
+.pc .ptab{font-size:.88em;margin:1px 0}
+.pc .ptab th,.pc .ptab td{padding:0 4px;min-width:24px;border-color:#bbb}
+.pc .ptab td.on{background:#bfe6d6}
+.pg.cap .pn{display:none}
+.ovf{position:absolute;left:4mm;top:3mm;font-size:10px;color:#fff;background:#c0392b;border-radius:4px;padding:0 5px;z-index:2}
+.pg.cap .ovf{display:none}
+@media print{body>*:not(#printView){display:none!important}#printView{position:static;background:#fff}.pv-bar{display:none}.stage{padding:0;gap:0;zoom:1!important}@page{size:A4 landscape;margin:0}}
 .opinion{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;white-space:pre-wrap}
 .ractions{display:flex;gap:8px;align-items:flex-start;margin-top:12px;flex-wrap:wrap}
 .ractions textarea{flex:1;min-width:180px;min-height:44px;font-size:14px;padding:9px 11px}
@@ -120,6 +147,7 @@ footer{height:50px}
       <div class="acts">
         <button class="btn mint sm" id="refresh">새로고침</button>
         <button class="btn ghost sm" id="csv">엑셀(CSV) 받기</button>
+        <button class="btn ghost sm" id="printCards">카드 인쇄(PDF)</button>
         <button class="btn ghost sm" id="logout">로그아웃</button>
       </div>
     </div>
@@ -183,7 +211,24 @@ footer{height:50px}
   <footer></footer>
 </div>
 
+<div id="printView" hidden>
+  <div class="pv-bar">
+    <b>카드 인쇄 · A4 가로 · 한 쪽에 4명 · 가나다순</b>
+    <span class="pv-info" id="pvInfo"></span>
+    <span class="sp"></span>
+    <input type="text" id="rng" placeholder="쪽 지정 (예: 1-3, 5) · 비우면 전체">
+    <button class="btn mint sm" id="pdfBtn">PDF 저장 (여백없음)</button>
+    <button class="btn ghost sm" id="pvClose" style="color:var(--cream);border-color:rgba(246,239,226,.5)">닫기</button>
+  </div>
+  <div class="stage" id="pvStage"></div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>window.PDF_W = 297; window.PDF_H = 210; window.PDFBASE = '스커담_학생카드';</script>
+<script src="skdam_pdf_save.js"></script>
 
 <script>
 /* ★★★ Supabase 주소와 키를 여기에 붙여넣으세요 (skdam.html과 같은 값) ★★★ */
@@ -192,6 +237,7 @@ const SUPABASE_KEY = "sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV";
 const TABLE = "skdam_survey";
 
 const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let token = null, rows = [], confs = [], confMissingTable = false, orphanConfs = [];
 
@@ -517,6 +563,60 @@ $('#csv').addEventListener('click', () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'skdam_survey.csv'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 });
+
+/* ---------- 카드 인쇄 (A4 가로 · 한 쪽에 4명 · 가나다순) ---------- */
+const PER_PAGE = 4;
+function pcard(r){
+  const conf = r._conf
+    ? (r._conf.status === '확정' ? `<i>✔ 확정 ${esc(fmt(r._conf.created_at))}</i>` : `<i class="no">참석 어려움으로 변경</i>`)
+    : (r.attendance === '참석 어려움' ? '' : '<i class="mb">미확정</i>');
+  const att = `<i class="${r.attendance === '참석 확정' ? '' : r.attendance === '고민 중' ? 'mb' : 'no'}">${esc(r.attendance)}</i>`;
+  const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
+  return `<div class="pc"><div class="pc-in">
+    <div class="pc-h"><div class="pc-name">${esc(r.student_name)}<span>${esc(r.school)} ${esc(r.grade)}</span></div><div class="pc-badges">${att}${conf}</div></div>
+    <dl class="pc-kv">
+      ${row('학부모', (r.parent_name ? esc(r.parent_name) + ' · ' : '') + esc(r.parent_phone))}
+      ${row('학생', esc(r.student_phone))}
+      ${row('참석 방식', esc(r.leave_info))}
+      ${row('음료', esc(r._effDrink || '-') + (r._drinkChanged ? ' (확정 때 변경)' : '') + (r.drink2 ? ' + ' + esc(r.drink2) : ''))}
+      ${r._ci ? row('확정 질문', `설명회 ${esc(r._ci.briefing||'-')} · 자료집 ${esc(r._ci.compare_book||'-')}`) + row('선행진도', progTable(r._ci.prior)) : ''}
+      ${row('관심 반', esc(r.classes))}
+      ${row('관심 학교', esc(r.schools))}
+      ${row('걱정', esc(r.worries))}
+      ${row('의견', esc(r.opinion))}
+      ${row('메모', esc(r.admin_memo))}
+    </dl></div></div>`;
+}
+function openPrint(){
+  const list = filtered().filter(r => r._latest).slice().sort((a, b) =>
+    String(a.student_name).localeCompare(String(b.student_name), 'ko') || String(a.school).localeCompare(String(b.school), 'ko'));
+  if(!list.length){ toast('인쇄할 카드가 없어요'); return; }
+  const pages = Math.ceil(list.length / PER_PAGE);
+  let h = '';
+  for(let p = 0; p < pages; p++){
+    const cells = list.slice(p * PER_PAGE, (p + 1) * PER_PAGE).map(pcard);
+    while(cells.length < PER_PAGE) cells.push('<div class="pc"></div>');
+    h += `<div class="pg">${cells.join('')}<span class="pn">${p + 1} / ${pages}</span></div>`;
+  }
+  const st = $('#pvStage'); st.style.zoom = 1; st.innerHTML = h;
+  $('#pvInfo').textContent = `${list.length}명 · ${pages}쪽 (지금 화면의 필터 기준, 이전 응답은 뺐어요)`;
+  $('#printView').hidden = false; document.body.style.overflow = 'hidden';
+  // 칸이 넘치면 글자를 조금씩 줄여서 맞춰요
+  let over = 0;
+  $$('#pvStage .pc-in').forEach(el => {
+    let fs = 11; el.style.fontSize = fs + 'pt';
+    while(el.scrollHeight > el.clientHeight + 1 && fs > 6.5){ fs -= 0.25; el.style.fontSize = fs + 'pt'; }
+    if(el.scrollHeight > el.clientHeight + 1){ over++; el.parentNode.insertAdjacentHTML('afterbegin', '<span class="ovf">내용이 길어 잘렸어요</span>'); }
+  });
+  if(over) toast(`${over}장은 내용이 길어 일부가 잘려요`);
+  fitStage();
+}
+function fitStage(){
+  $('#pvStage').style.zoom = Math.min(1, (window.innerWidth - 24) / (297 * 3.7795));
+}
+window.addEventListener('resize', () => { if(!$('#printView').hidden) fitStage(); });
+$('#printCards').addEventListener('click', openPrint);
+$('#pvClose').addEventListener('click', () => { $('#printView').hidden = true; $('#pvStage').innerHTML = ''; document.body.style.overflow = ''; });
 
 /* ---------- 시작 ---------- */
 (function init(){
