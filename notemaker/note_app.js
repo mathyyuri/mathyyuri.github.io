@@ -196,7 +196,9 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   var chs = (e.ch && e.ch.length) ? e.ch : (p.ch || []);
   if (!chs.length && /choiceRow/.test(e.stem != null ? e.stem : p.st)) el.className += ' inch';      // 교과서 문제: 보기(①~⑤)가 문제 글 안에 들어 있어요 → 숨기지 않고 보여요
   var rt =p.rt != null ? '<span class="rt ' + (p.rt < 50 ? 'lo' : p.rt >= 80 ? 'hi' : '') + '" title="처음 푼 결과만 센 정답률 · ' + p.rn + '명 중 ' + p.rk + '명 정답 (노트를 만든 때의 채점 기록)">정답률 ' + p.rt + '%</span>' : '';
-  var h = '<div class="ph2"><i class="no"></i>' + rt + '<span class="srcl ed"></span></div><div class="q ed"></div>';
+  var hcTag = (p.hh && chs.length) ? '<span class="ui hchTag" title="이 학생이 이 문제를 여러 번 풀어서 보기를 가렸어요. 누르면 보여요(다시 누르면 가려요). 보기를 가린 채로 PDF·PNG 를 저장하면 보기가 빠져요">보기 숨김</span>' : '';
+  if (hcTag) el.className += ' hch';
+  var h = '<div class="ph2"><i class="no"></i>' + rt + hcTag + '<span class="srcl ed"></span></div><div class="q ed"></div>';
   if (chs.length) {
    var L = 0, fg = false; chs.forEach(function (c) { L = Math.max(L, plen(c)); if (/<img/.test(c)) fg = true; });
    var cols = fg ? 3 : L <= 7 ? 5 : L <= 14 ? 3 : L <= 30 ? 2 : 1;       // 보기가 그림(그래프 개형)이면 3칸
@@ -554,6 +556,11 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   lastRange.collapse(false); lastRange.insertNode(s); openFormula(s, true);
  });
  /* 보기 숨기기: 객관식 보기를 잠깐 가려요 (자리는 그대로, 저장되지 않는 일시 기능 — 이 상태로 PDF·PNG 를 만들면 보기가 빠진 채로 나와요) */
+ document.addEventListener('click', function (e) {                /* 문제마다 '보기 숨김' 표시: 누르면 그 문제 보기만 보였다 가렸다 */
+  var t = e.target; if (!t.classList || !t.classList.contains('hchTag')) return;
+  var pb = t.closest('.pb'); if (!pb) return; var on = pb.classList.toggle('hch'); t.textContent = on ? '보기 숨김' : '보기 보임';
+  t.classList.toggle('off', !on);
+ });
  $('bHideCh').addEventListener('click', function () {
   var on = document.body.classList.toggle('hideCh'); this.classList.toggle('on', on);
   this.textContent = on ? '보기 숨김 중 · 다시 보이기' : '보기 숨기기';

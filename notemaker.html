@@ -85,6 +85,7 @@ tr.exr:hover{background:#fbf6ea}
     <label class="lab"><input type="radio" name="wr" value="XT" checked> 틀린 것 + 고친 것(T)</label>
     <label class="lab"><input type="checkbox" id="dedupe" checked> 같은 문제는 한 번만</label>
     <label class="lab" title="처음 틀렸어도 그 뒤(오답노트 등)에서 맞힌 문제는 처음부터 선택에서 빼요. 칸을 눌러서 다시 넣을 수 있어요"><input type="checkbox" id="skipFixed"> 나중에 맞힌(○) 문제는 선택에서 빼기</label>
+    <label class="lab" title="그 학생이 같은 문제를 여러 번 풀어서 답을 외웠을 수 있을 때 써요. 숫자는 '몇 번 이상 풀었는지'예요. 오답노트 화면에서 문제마다 '보기 숨김' 표시를 눌러 다시 보이게 할 수도 있어요"><input type="checkbox" id="hideMany"> 같은 문제를 <input type="number" id="hideN" value="3" min="2" max="20" style="width:46px"> 번 이상 푼 문제는 <b>객관식 보기 숨기기</b></label>
     <label class="lab"><input type="checkbox" id="withQA" checked> 빠른 정답 쪽도 함께 출력</label>
     <label class="lab"><input type="checkbox" id="withSol"> 상세 해설 쪽도 함께 출력</label>
     <label class="lab" title="이 노트의 문제들을 이 학생 전용 미션으로 올려요. 채점한 ○✕ 가 쌓여서 다음 오답노트의 회독 수·통계에 들어가요"><input type="checkbox" id="withMs" checked> 채점용 미션도 함께 만들기 (○✕ 누적)</label>
@@ -742,8 +743,10 @@ $('#make').onclick = async function () {
   var CSS = await getText('notemaker/note_style.css'), APP = await getText('notemaker/note_app.js'), UI = await getText('notemaker/note_ui.html'), PDFJS = await getText('notemaker/pdf_save.js'), QUICK = await getText('notemaker/quick_pages.js'), PEJS = await getText('problem_edit.js');
   var SC = '<' + '/script>';
   var AT = attempts(STU.id, reb ? { id: reb.exam.id, date: reb.exam.date } : null);   // 이 학생이 푼 모든 기록 (문제 해시별 · 시험별)
+  var hideN = $('#hideMany').checked ? Math.max(2, parseInt($('#hideN').value, 10) || 3) : 0;      // 같은 문제를 이만큼 이상 푼 학생에게는 객관식 보기를 가려요
   POOL.forEach(function (o) {
    var hs = AT.byH[o.h] || []; o.round = hs.length + 1;
+   if (hideN && o.ch.length && hs.length >= hideN) o.hh = 1;
    o.hist = hs.map(function (a) { return a.c + '(' + a.md + ')'; }).join(' → ') || '-';
   });
   var theme = MB.themeFor(STU.ac, STU.cls);                     // 반별 색 (S 남색 · S+ 자주 · A+ 초록 · A 갈색)

@@ -232,3 +232,4 @@ body.view .tools{display:none!important}
 
 .why5{display:flex;flex-wrap:wrap;gap:.8mm 3.2mm;align-items:center;margin-top:1.8mm;padding:1.1mm 2.4mm;border:.25mm solid #e5d9c0;border-radius:1.2mm;background:#fffefa;font-size:7.6pt;color:#5a5140;line-height:1.5}.why5 b{color:#9c5530;font-weight:700}.why5 small{font-size:6.8pt;color:#8a7f6a}
 body.hideCh .ch{visibility:hidden}
+.pb.hch .ch{visibility:hidden}.hchTag{white-space:nowrap;flex:none;font-size:7.5pt;font-weight:600;color:#9a3b3b;background:#fbeaea;border:.2mm solid #e3b6b6;border-radius:3mm;padding:.3mm 2mm;margin-left:2mm;cursor:pointer;user-select:none}.hchTag.off{color:#46704f;background:#e8f3ea;border-color:#b6d6bc}
