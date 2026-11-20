@@ -1104,11 +1104,14 @@ function arrowLayer(p, mi, first, rows, kind){   // 달력 위에 얹는 층: �
 }
 /* 주(줄) 높이는 모두 같게 두고, 겹친 학교가 많은 주가 칸에 안 들어가면 화살표 줄·글자를 그 달 전체 같은 비율로 줄인다 */
 function fitArrows(){
-  document.querySelectorAll('.cal-arrows').forEach(layer => {
-    layer.style.removeProperty('--f');
-    const rows = [...layer.querySelectorAll('.ca-row')]; if (!rows.length) return;
+  const calc = layer => { layer.style.removeProperty('--f'); const rows = [...layer.querySelectorAll('.ca-row')]; if (!rows.length) return 1;
     const rowPx = layer.clientHeight / rows.length; let f = 1;
     rows.forEach(r => { const fp = parseFloat(getComputedStyle(r).fontSize) || 10, lanes = +r.dataset.lem || 0; if (lanes) f = Math.min(f, Math.max(0, (rowPx - 1.8 * fp)) / (lanes * fp)); });
+    return f; };
+  document.querySelectorAll('.cal-arrows').forEach(layer => {
+    const mb = layer.closest('.mb'); if (mb) mb.classList.remove('arwm');
+    let f = calc(layer);
+    if (f < .55 && mb && mb.classList.contains('p')) { mb.classList.add('arwm'); f = calc(layer); }   // 많이 겹칠 때만 달력을 더 높게
     if (f < 1) layer.style.setProperty('--f', Math.max(.4, f - .02).toFixed(3));
   });
 }
@@ -1147,7 +1150,7 @@ function monthPage(p, i){
     ed(m, 'exam', '시험·평가', 'mh-ex'),
     H('button', {class: 'xbtn ctl', type: 'button', style: 'opacity:1;align-self:flex-start;font-size:12px', text: '× 이 달 지우기', onclick: () => askDropMonth(i)}),
   ]));
-  const body = H('div', {class: 'mb ' + (ORI === 'l' ? 'l' : 'p') + (arrowKind(p) ? ' arwm' : '')});
+  const body = H('div', {class: 'mb ' + (ORI === 'l' ? 'l' : 'p')});
   const tbody = H('tbody');
   const drawWeeks = () => {
     tbody.innerHTML = '';
