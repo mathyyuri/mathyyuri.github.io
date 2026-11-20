@@ -202,8 +202,9 @@ ul.bl li .ed{flex:1}
 .cal-g{position:relative}
 .cal-arrows{position:absolute;inset:0;display:grid;pointer-events:none}
 .ca-row{display:grid;grid-template-columns:repeat(7,1fr);align-content:start;min-height:0;font-size:.82em}
-.arw{display:flex;align-items:center;min-width:0;padding:0 .12em;color:#fff}
-.arw .nm{flex:none;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700;line-height:1.25;padding:0 .35em;border-radius:3px;background:var(--c)}
+.arw{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:0 .12em;color:#fff}
+.arw .nm{align-self:flex-start;max-width:100%;overflow:hidden;font-weight:700;line-height:1.15;padding:.05em .35em;border-radius:3px;background:var(--c);word-break:keep-all}
+.arw .ar{display:flex;align-items:center;min-width:0;margin-top:.12em}
 .arw .ln{flex:1;min-width:0;height:max(2px,.16em);background:var(--c)}
 .arw .hd{flex:none;width:0;height:0;border-left:.6em solid var(--c);border-top:.34em solid transparent;border-bottom:.34em solid transparent}
 .cal-lg{display:flex;gap:.9em;padding:.3em .7em;border-top:1px solid #EFE8D6;font-size:.78em;color:var(--ink2)}
@@ -1078,7 +1079,7 @@ function arrowSpans(p, kind){
   else (p.midSchools || []).forEach((s, si) => { const t = ((p.midExams || {})[s] || {})[kind === 'm3' ? 'f2' : 'g2f2']; if (t) out.push(mk(shortMid(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], [[t, 'first']])); });
   return out;
 }
-function arrowLayer(p, mi, first, rows, kind){   // 달력 위에 얹는 층: 주(줄)마다 학교별 화살표 한 줄씩
+function arrowLayer(p, mi, first, rows, kind){   // 달력 위에 얹는 층: 주(줄)마다 화살표 — 날짜가 같은 학교는 화살표 하나에 이름을 여러 개 적는다
   const mS = new Date(mi.y, mi.m - 1, 1), mE = new Date(mi.y, mi.m, 0), segs = Array.from({length: rows}, () => []);
   arrowSpans(p, kind).forEach(sp => sp.runs.forEach(([a, b]) => {
     if (b < mS || a > mE) return;
@@ -1087,11 +1088,17 @@ function arrowLayer(p, mi, first, rows, kind){   // 달력 위에 얹는 층: �
   }));
   const layer = H('div', {class: 'cal-arrows'}), ws = [];
   segs.forEach(list => {
-    list.sort((x, y) => x.c1 - y.c1 || x.name.localeCompare(y.name)); const lane = []; 
-    list.forEach(sg => { let k = lane.findIndex(e => e < sg.c1); if (k < 0) { k = lane.length; lane.push(-1); } lane[k] = sg.c2; sg.k = k; });
-    const L = lane.length, fs = L <= 8 ? 1 : L <= 12 ? .9 : .8; ws.push(1 + 1.2 * L);   // 겹치는 학교가 많은 주는 줄 높이를 더 준다
-    const row = H('div', {class: 'ca-row', style: `grid-template-rows:1.55em repeat(${Math.max(L, 1)},minmax(0,1.8em))`});
-    list.forEach(sg => row.append(H('div', {class: 'arw' + (sg.tail ? ' st' : ''), style: `grid-column:${sg.c1 + 1}/${sg.c2 + 2};grid-row:${sg.k + 2};font-size:${fs}em;--c:${sg.color}`, title: sg.name}, [H('span', {class: 'nm', text: sg.name}), H('i', {class: 'ln'}), sg.head ? H('i', {class: 'hd'}) : null])));
+    const g = new Map();   // 같은 칸~칸·같은 이어짐이면 한 화살표로 합친다
+    list.forEach(sg => { const key = [sg.c1, sg.c2, sg.head ? 1 : 0, sg.tail ? 1 : 0].join('|'); if (!g.has(key)) g.set(key, {c1: sg.c1, c2: sg.c2, head: sg.head, tail: sg.tail, color: sg.color, names: []}); g.get(key).names.push(sg.name); });
+    const items = [...g.values()].sort((x, y) => x.c1 - y.c1 || x.c2 - y.c2); const lane = [];
+    items.forEach(it => { it.txt = it.names.join(', '); it.w = it.names.reduce((n, x) => n + x.length + .6, 0); let k = lane.findIndex(e => e < it.c1); if (k < 0) { k = lane.length; lane.push(-1); } lane[k] = it.c2; it.k = k; });
+    const calc = fs => { const lh = lane.map(() => 1); items.forEach(it => { it.lines = Math.max(1, Math.ceil(it.w / ((it.c2 - it.c1 + 1) * 7.2 / fs))); lh[it.k] = Math.max(lh[it.k], it.lines); }); return lh; };
+    let fs = 1, lh = calc(fs), tot = () => lh.reduce((a, b) => a + b * 1.2 + .7, 0);
+    for (const [f, lim] of [[.9, 12], [.8, 15], [.7, 19]]) { if (tot() <= lim) break; fs = f; lh = calc(fs); }
+    const L = lane.length;
+    ws.push(1 + tot() * .8);   // 겹치는 학교가 많은 주는 줄 높이를 더 준다
+    const row = H('div', {class: 'ca-row', style: `grid-template-rows:1.55em ${lh.map(n => (n * 1.2 + .7).toFixed(2) + 'fr').join(' ')}`});
+    items.forEach(it => row.append(H('div', {class: 'arw' + (it.tail ? ' st' : ''), style: `grid-column:${it.c1 + 1}/${it.c2 + 2};grid-row:${it.k + 2};font-size:${fs}em;--c:${it.color}`, title: it.txt}, [H('span', {class: 'nm', text: it.txt}), H('div', {class: 'ar'}, [H('i', {class: 'ln'}), it.head ? H('i', {class: 'hd'}) : null])])));
     layer.append(row);
   });
   const tmpl = ws.map(w => w.toFixed(2) + 'fr').join(' '); layer.style.gridTemplateRows = tmpl;
