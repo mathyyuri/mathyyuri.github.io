@@ -199,6 +199,13 @@ ul.bl li .ed{flex:1}
 .mb.l.m3{grid-template-rows:1fr .7fr .8fr .5fr}
 .mb.l.m3 .midp{grid-column:2;grid-row:3}.mb.l.m3 .memo{grid-column:2;grid-row:4}
 .midp .cb{font-size:.78em;line-height:1.5}.midp .ml{padding:.12em 0;border-bottom:1px dashed #EFE8D6}.midp .ml b{color:#5D7A6C}
+.cal-g{position:relative}
+.cal-arrows{position:absolute;inset:0;display:grid;pointer-events:none}
+.ca-row{display:grid;grid-template-columns:repeat(7,1fr);align-content:start;min-height:0;font-size:.82em}
+.arw{display:flex;align-items:center;min-width:0;padding:0 .12em;color:#fff}
+.arw .nm{flex:none;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700;line-height:1.25;padding:0 .35em;border-radius:3px;background:var(--c)}
+.arw .ln{flex:1;min-width:0;height:max(2px,.16em);background:var(--c)}
+.arw .hd{flex:none;width:0;height:0;border-left:.6em solid var(--c);border-top:.34em solid transparent;border-bottom:.34em solid transparent}
 .cal-lg{display:flex;gap:.9em;padding:.3em .7em;border-top:1px solid #EFE8D6;font-size:.78em;color:var(--ink2)}
 .cal-lg i{display:inline-block;width:.8em;height:.8em;border-radius:2px;margin-right:.35em;vertical-align:-.1em}
 .wt.ext{table-layout:fixed;height:auto;flex:none}
@@ -995,11 +1002,15 @@ function parseDates(text, p, pref){
   }
   return out;
 }
-const shortMid = s => String(s).replace(/중학교$/, '').replace(/중$/, '') || s;
+const shortMid = s => (/중학교$/.test(s) ? String(s).replace(/중학교$/, '') : String(s).replace(/중$/, '')) || s;   // '운중중학교' → '운중'
+/* 보기 선택: 고1 · 중3 · 중2 중 고른 것만 달력·옆 상자에 보인다. 하나만 고르면 학교마다 시험 시작~끝을 화살표로 이어 그린다 */
+const VIEW_KINDS = [['h', '고1'], ['m3', '중3'], ['m2', '중2']];
+const viewOf = p => { const v = p.view || {}; return {h: v.h !== false, m3: v.m3 !== false, m2: v.m2 !== false}; };
+const arrowKind = p => { const v = viewOf(p), on = VIEW_KINDS.filter(([k]) => v[k]); return on.length === 1 ? on[0][0] : null; };
 function examBadges(p){   // {'y-m': {day: [{text,color}]}}  — 학교가 많으면 "N개교"로 묶어서 보여준다
-  const map = {}, many = p.schools.length > 6;
+  const map = {}, many = p.schools.length > 6, vw = viewOf(p), arrow = arrowKind(p) !== null;
   const put = (y, m, d, text, color, names) => { const k = y + '-' + m; ((map[k] = map[k] || {})[d] = (map[k][d] || [])).push({text, color, names}); };
-  if (!many) {
+  if (!vw.h || arrow) { /* 고1을 안 보거나 화살표로 따로 그린다 */ } else if (!many) {
     p.schools.forEach((s, si) => { const ex = p.exams[s] || {}; EXAM_COLS.forEach(([key, label]) => { if (ex[key]) parseDates(ex[key], p, key === 'f2' ? 'last' : 'first').forEach(x => put(x.y, x.m, x.d, `${shortSchool(s)} ${label.replace('1학기 ', '').replace('2학기 ', '')}`, SCHOOL_COLORS[si % SCHOOL_COLORS.length])); }); });
   } else {
     EXAM_COLS.forEach(([key, label]) => {
@@ -1011,13 +1022,13 @@ function examBadges(p){   // {'y-m': {day: [{text,color}]}}  — 학교가 많�
   const mids = p.midSchools || [], cF = {}, cG = {}, cW = {};
   const addN = (o, id, nm) => { (o[id] = o[id] || []).push(nm); };
   mids.forEach(s => { const mx = (p.midExams || {})[s] || {}, nm = shortMid(s);
-    if (mx.f2) parseDates(mx.f2, p, 'first').forEach(x => addN(cF, `${x.y}-${x.m}-${x.d}`, nm));
-    if (mx.g2f2) parseDates(mx.g2f2, p, 'first').forEach(x => addN(cG, `${x.y}-${x.m}-${x.d}`, nm));
-    if (mx.win) { const d = parseDates(mx.win, p, 'first')[0]; if (d) addN(cW, `${d.y}-${d.m}-${d.d}`, nm); } });
+    if (mx.f2 && vw.m3 && !arrow) parseDates(mx.f2, p, 'first').forEach(x => addN(cF, `${x.y}-${x.m}-${x.d}`, nm));
+    if (mx.g2f2 && vw.m2 && !arrow) parseDates(mx.g2f2, p, 'first').forEach(x => addN(cG, `${x.y}-${x.m}-${x.d}`, nm));
+    if (mx.win && (vw.m2 || vw.m3)) { const d = parseDates(mx.win, p, 'first')[0]; if (d) addN(cW, `${d.y}-${d.m}-${d.d}`, nm); } });
   Object.keys(cF).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중3 기말 ${cF[id].length}개교`, '#8FA89A', cF[id].join(', ')); });
   Object.keys(cG).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중2 기말 ${cG[id].length}개교`, MID2_COLOR, cG[id].join(', ')); });
   Object.keys(cW).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중등 겨울방학 ${cW[id].length}개교`, '#7FA8C9', cW[id].join(', ')); });
-  p.common.forEach(c => { if (c.date) parseDates(c.date, p, 'first').forEach(x => put(x.y, x.m, x.d, c.label.replace('학력평가', '학평'), COMMON_COLOR)); });
+  if (vw.h) p.common.forEach(c => { if (c.date) parseDates(c.date, p, 'first').forEach(x => put(x.y, x.m, x.d, c.label.replace('학력평가', '학평'), COMMON_COLOR)); });
   return map;
 }
 
@@ -1057,6 +1068,35 @@ function examPage(p){
   return pg;
 }
 
+/* 화살표 모드: 학교별 시험 기간 [{name, color, runs:[[시작Date, 끝Date]]}] — 이어진 날짜끼리 한 묶음 */
+function arrowSpans(p, kind){
+  const mk = (name, color, texts) => { const days = []; texts.forEach(([t, pref]) => parseDates(t, p, pref).forEach(x => days.push(new Date(x.y, x.m - 1, x.d).getTime())));
+    const u = [...new Set(days)].sort((a, b) => a - b), runs = []; u.forEach(t => { const r = runs[runs.length - 1]; if (r && t - r[1] <= 864e5 + 36e5) r[1] = t; else runs.push([t, t]); });
+    return {name, color, runs: runs.map(r => [new Date(r[0]), new Date(r[1])])}; };
+  const out = [];
+  if (kind === 'h') p.schools.forEach((s, si) => { const ex = p.exams[s] || {}, tx = EXAM_COLS.filter(([k]) => ex[k]).map(([k]) => [ex[k], k === 'f2' ? 'last' : 'first']); if (tx.length) out.push(mk(shortSchool(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], tx)); });
+  else (p.midSchools || []).forEach((s, si) => { const t = ((p.midExams || {})[s] || {})[kind === 'm3' ? 'f2' : 'g2f2']; if (t) out.push(mk(shortMid(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], [[t, 'first']])); });
+  return out;
+}
+function arrowLayer(p, mi, first, rows, kind){   // 달력 위에 얹는 층: 주(줄)마다 학교별 화살표 한 줄씩
+  const mS = new Date(mi.y, mi.m - 1, 1), mE = new Date(mi.y, mi.m, 0), segs = Array.from({length: rows}, () => []);
+  arrowSpans(p, kind).forEach(sp => sp.runs.forEach(([a, b]) => {
+    if (b < mS || a > mE) return;
+    const ca = a < mS ? mS : a, cb = b > mE ? mE : b, ia = first + ca.getDate() - 1, ib = first + cb.getDate() - 1, ra = Math.floor(ia / 7), rb = Math.floor(ib / 7);
+    for (let r = ra; r <= rb; r++) segs[r].push({c1: r === ra ? ia % 7 : 0, c2: r === rb ? ib % 7 : 6, name: sp.name, color: sp.color, head: r === rb && b <= mE, tail: r === ra && a >= mS});
+  }));
+  const layer = H('div', {class: 'cal-arrows'}), ws = [];
+  segs.forEach(list => {
+    list.sort((x, y) => x.c1 - y.c1 || x.name.localeCompare(y.name)); const lane = []; 
+    list.forEach(sg => { let k = lane.findIndex(e => e < sg.c1); if (k < 0) { k = lane.length; lane.push(-1); } lane[k] = sg.c2; sg.k = k; });
+    const L = lane.length, fs = L <= 8 ? 1 : L <= 12 ? .9 : .8; ws.push(1 + 1.2 * L);   // 겹치는 학교가 많은 주는 줄 높이를 더 준다
+    const row = H('div', {class: 'ca-row', style: `grid-template-rows:1.55em repeat(${Math.max(L, 1)},minmax(0,1.8em))`});
+    list.forEach(sg => row.append(H('div', {class: 'arw' + (sg.tail ? ' st' : ''), style: `grid-column:${sg.c1 + 1}/${sg.c2 + 2};grid-row:${sg.k + 2};font-size:${fs}em;--c:${sg.color}`, title: sg.name}, [H('span', {class: 'nm', text: sg.name}), H('i', {class: 'ln'}), sg.head ? H('i', {class: 'hd'}) : null])));
+    layer.append(row);
+  });
+  const tmpl = ws.map(w => w.toFixed(2) + 'fr').join(' '); layer.style.gridTemplateRows = tmpl;
+  return {layer, tmpl};
+}
 function calendarBlock(p, i){
   const m = p.months[i], mi = monthInfo(p, i), first = new Date(mi.y, mi.m - 1, 1).getDay(), days = new Date(mi.y, mi.m, 0).getDate();
   const rows = Math.ceil((first + days) / 7), badges = (examBadges(p)[mi.y + '-' + mi.m]) || {};
@@ -1070,14 +1110,15 @@ function calendarBlock(p, i){
     cell.append(ed(m.days, String(day), ''));
     grid.append(cell);
   }
+  const ak = arrowKind(p); if (ak) { const al = arrowLayer(p, mi, first, rows, ak); grid.style.gridTemplateRows = al.tmpl; grid.append(al.layer); }
   const legend = H('div', {class: 'cal-lg'}, [...p.schools.map((s, si) => H('span', {}, [H('i', {style: `background:${SCHOOL_COLORS[si % SCHOOL_COLORS.length]}`}), shortSchool(s)])), (p.common.some(c => c.date) ? H('span', {}, [H('i', {style: `background:${COMMON_COLOR}`}), '공통']) : null)]);
-  return H('div', {class: 'cal'}, [head, grid, p.schools.length && p.schools.length <= 6 ? legend : null]);
+  return H('div', {class: 'cal'}, [head, grid, p.schools.length && p.schools.length <= 6 && viewOf(p).h && !ak ? legend : null]);
 }
 
 function midLines(p, i){   // 이 달에 시작하는 중3 기말·겨울방학 → [{when, names}]
   const mi = monthInfo(p, i), groups = new Map();
   (p.midSchools || []).forEach(s => { const mx = (p.midExams || {})[s] || {};
-    [['f2', '중3 기말'], ['g2f2', '중2 기말'], ['win', '겨울방학']].forEach(([k, label]) => { const t = mx[k]; if (!t) return; const d0 = parseDates(t, p, 'first')[0]; if (!d0 || d0.y !== mi.y || d0.m !== mi.m) return;
+    const vw = viewOf(p); [['f2', '중3 기말'], ['g2f2', '중2 기말'], ['win', '겨울방학']].forEach(([k, label]) => { if ((k === 'f2' && !vw.m3) || (k === 'g2f2' && !vw.m2) || (k === 'win' && !vw.m2 && !vw.m3)) return; const t = mx[k]; if (!t) return; const d0 = parseDates(t, p, 'first')[0]; if (!d0 || d0.y !== mi.y || d0.m !== mi.m) return;
       const id = label + '|' + t; if (!groups.has(id)) groups.set(id, {label, when: t, names: [], d: d0.d}); groups.get(id).names.push(shortMid(s)); }); });
   return [...groups.values()].sort((a, b) => a.d - b.d || a.label.localeCompare(b.label));
 }
@@ -1110,7 +1151,7 @@ function monthPage(p, i){
   body.append(calendarBlock(p, i), wk, sch);
   if (ml.length) {
     body.classList.add('m3');
-    body.append(H('div', {class: 'side midp'}, [H('div', {class: 'ch', text: '중학교 (중3·중2) 학교별 일정'}), H('div', {class: 'cb'}, ml.map(g => H('div', {class: 'ml'}, [H('b', {text: `${g.label} ${g.when}`}), H('span', {text: ' · ' + g.names.join(', ') + ` (${g.names.length}개교)`})])))]));
+    body.append(H('div', {class: 'side midp'}, [H('div', {class: 'ch', text: '중학교 (' + [viewOf(p).m3 ? '중3' : '', viewOf(p).m2 ? '중2' : ''].filter(Boolean).join('·') + ') 학교별 일정'}), H('div', {class: 'cb'}, ml.map(g => H('div', {class: 'ml'}, [H('b', {text: `${g.label} ${g.when}`}), H('span', {text: ' · ' + g.names.join(', ') + ` (${g.names.length}개교)`})])))]));
   }
   body.append(memo);
   pg.body.append(body); return pg;
@@ -1265,6 +1306,7 @@ function renderPlanBar(){
   const b = (t, fn, cls) => { const x = H('button', {class: 'btn ' + (cls || 'sec') + ' sm', type: 'button', text: t}); x.addEventListener('click', fn); return x; };
   bar.append(H('span', {class: 'lbl', text: '플랜'}), sel, b('+ 새 플랜', openNew), b('복제', () => { const c = deser(ser(cur())); c.id = uid(); c.name += ' (복사)'; DB.plans.push(c); DB.cur = c.id; save(true); D.sel = new Set(); render(); }),
     b('플랜 설정', openSettings), b('디자인 (색·글꼴·박스·번호)', toggleDesign, 'pri'), b('달 관리 (지우기)', openMonths), b('학사일정 불러오기', openNeis, 'pri'), b('로드맵 편집', openRoadmap), b('삭제', () => { if (DB.plans.length < 2) { alert('플랜이 하나뿐이라 지울 수 없어요.'); return; } if (!confirm(`"${cur().name}" 플랜을 지울까요? (되돌릴 수 없어요)`)) return; DB.plans = DB.plans.filter(p => p.id !== DB.cur); DB.cur = DB.plans[0].id; save(true); D.sel = new Set(); render(); }),
+    H('span', {class: 'lbl', style: 'margin-left:10px', text: '보기'}), ...VIEW_KINDS.map(([k, t]) => { const on = viewOf(cur())[k], x = H('button', {class: 'btn ' + (on ? 'pri' : 'sec') + ' sm', type: 'button', text: (on ? '✓ ' : '') + t, title: '눌러서 켜고 끄기 — 하나만 켜면 학교별 시험 기간이 화살표로 보여요'}); x.addEventListener('click', () => { const q = cur(); q.view = viewOf(q); q.view[k] = !q.view[k]; save(true); render(true); }); return x; }),
     b('내보내기(JSON)', () => download(new Blob([ser(cur(), 1)], {type: 'application/json'}), `플랜_${cur().name}.json`)),
     b('가져오기', () => $('#impFile').click()));
   bar.append(H('input', {type: 'file', id: 'impFile', accept: '.json,application/json', hidden: true, onchange: async e => { const f = e.target.files[0]; if (!f) return; try { const j = deser(await f.text()); if (!j.months || !j.months.length) throw new Error('플랜 파일이 아니에요'); j.id = uid(); DB.plans.push(j); DB.cur = j.id; save(true); D.sel = new Set(); render(); } catch(err) { alert('가져오기 실패: ' + err.message); } e.target.value = ''; }}));
