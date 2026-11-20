@@ -628,6 +628,10 @@ function migrate(){   // 한 번만: 시작이 2026년 11월인 플랜에서 11�
     DB.plans.forEach(p => { if (p.neisAt) p.neisAt = 0; });
     DB.mig7 = 1; save(true);
   }
+  if (!DB.mig8) {   // 중학교 '내년 중3 1년'(1학기 중간·기말, 2학기 중간·기말) 칸 추가 — 자동 갱신이 한 번 다시 읽도록 마지막 불러온 시각만 지운다
+    DB.plans.forEach(p => { if (p.neisAt) p.neisAt = 0; });
+    DB.mig8 = 1; save(true);
+  }
 }
 const periodText = p => { const a = monthInfo(p, 0), b = monthInfo(p, nOf(p) - 1); return `${a.y}.${String(a.m).padStart(2, '0')} – ${b.y}.${String(b.m).padStart(2, '0')}`; };
 let SEAS = ['#7FC8B4', '#E6D08E', '#E58BA4', '#7088B5'];
@@ -1006,8 +1010,12 @@ function parseDates(text, p, pref){
 }
 const shortMid = s => (/중학교$/.test(s) ? String(s).replace(/중학교$/, '') : String(s).replace(/중$/, '')) || s;   // '운중중학교' → '운중'
 /* 보기 선택: 고1 · 중3 · 중2 중 고른 것만 달력·옆 상자에 보인다. 하나만 고르면 학교마다 시험 시작~끝을 화살표로 이어 그린다 */
-const VIEW_KINDS = [['h', '고1'], ['m3', '중3'], ['m2', '중2']];
-const viewOf = p => { const v = p.view || {}; return {h: v.h !== false, m3: v.m3 !== false, m2: v.m2 !== false}; };
+const VIEW_KINDS = [['h', '고1'], ['m3', '중3 기말'], ['m2', '중2 기말'], ['n3', '내년 중3 1년']];
+const viewOf = p => { const v = p.view || {}; return {h: v.h !== false, m3: v.m3 !== false, m2: v.m2 !== false, n3: v.n3 !== false}; };
+/* 내년 중3(= 지금 중2) 1년 시험: 1학기 중간·기말, 2학기 중간·기말 (학교마다 midExams[학교].n1m·n1f·n2m·n2f) */
+const NEXT_COLS = [['n1m', '1학기 중간'], ['n1f', '1학기 기말'], ['n2m', '2학기 중간'], ['n2f', '2학기 기말']];
+const NEXT_COLOR = '#5A9A9E';
+const nextPref = k => k === 'n2f' ? 'last' : 'first';   // 12월 같은 달이 플랜에 두 번 나오면 2학기 기말은 뒤쪽(내년) 해로
 const arrowKind = p => { const v = viewOf(p), on = VIEW_KINDS.filter(([k]) => v[k]); return on.length === 1 ? on[0][0] : null; };
 function examBadges(p){   // {'y-m': {day: [{text,color}]}}  — 학교가 많으면 "N개교"로 묶어서 보여준다
   const map = {}, many = p.schools.length > 6, vw = viewOf(p), arrow = arrowKind(p) !== null;
@@ -1027,6 +1035,9 @@ function examBadges(p){   // {'y-m': {day: [{text,color}]}}  — 학교가 많�
     if (mx.f2 && vw.m3 && !arrow) parseDates(mx.f2, p, 'first').forEach(x => addN(cF, `${x.y}-${x.m}-${x.d}`, nm));
     if (mx.g2f2 && vw.m2 && !arrow) parseDates(mx.g2f2, p, 'first').forEach(x => addN(cG, `${x.y}-${x.m}-${x.d}`, nm));
     if (mx.win && (vw.m2 || vw.m3)) { const d = parseDates(mx.win, p, 'first')[0]; if (d) addN(cW, `${d.y}-${d.m}-${d.d}`, nm); } });
+  if (vw.n3 && !arrow) NEXT_COLS.forEach(([k, label]) => { const cn = {};
+    mids.forEach(s => { const t = ((p.midExams || {})[s] || {})[k]; if (t) parseDates(t, p, nextPref(k)).forEach(x => addN(cn, `${x.y}-${x.m}-${x.d}`, shortMid(s))); });
+    Object.keys(cn).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `내년중3 ${label.replace('학기 ', '')} ${cn[id].length}개교`, NEXT_COLOR, cn[id].join(', ')); }); });
   Object.keys(cF).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중3 기말 ${cF[id].length}개교`, '#8FA89A', cF[id].join(', ')); });
   Object.keys(cG).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중2 기말 ${cG[id].length}개교`, MID2_COLOR, cG[id].join(', ')); });
   Object.keys(cW).forEach(id => { const [y, m, d] = id.split('-').map(Number); put(y, m, d, `중등 겨울방학 ${cW[id].length}개교`, '#7FA8C9', cW[id].join(', ')); });
@@ -1043,6 +1054,17 @@ function midPage(p){
   rows.forEach(s => { const mx = (p.midExams[s] = p.midExams[s] || {}); tbody.append(H('tr', {}, [H('td', {class: 'sn'}, [H('b', {text: s})]), H('td', {}, [ed(mx, 'f2', '예) 11/18~11/20')]), H('td', {}, [ed(mx, 'g2f2', '예) 12/10~12/12')]), H('td', {}, [ed(mx, 'win', '예) 12/24~2/28')]), H('td', {}, [ed(mx, 'memo', '메모')])])); });
   const thc = (t, c) => H('th', {text: t, style: c ? `border-top:4px solid ${c}` : ''});
   pg.body.append(H('div', {class: 'cd'}, [H('div', {class: 'ch', text: `중학교 ${rows.length}개교 · 중3 · 중2 2학기 기말 / 겨울방학`}), H('table', {class: 'wt ext ' + (dense ? 'dn' : '')}, [H('thead', {}, [H('tr', {}, [thc('학교'), thc('중3 2학기 기말', MID3_COLOR), thc('중2 2학기 기말', MID2_COLOR), thc('겨울방학'), thc('메모')])]), tbody])]));
+  return pg;
+}
+
+/* 내년 중3(지금 중2) 1년 시험 일정 표 — 학교마다 1학기 중간·기말, 2학기 중간·기말 */
+function mid3Page(p){
+  ensurePlan(p);
+  const pg = newPage('내년 중3 시험 일정', '', 'mid3');
+  pg.body.append(secHead('NEXT YEAR · GRADE 9', '내년 중3', 'Exam Schedule', '지금 중2 학생들이 중3이 되는 1년 동안의 중간·기말고사 (내년 일정은 학교가 올리기 전이라 올해 날짜로 예상)'));
+  const rows = p.midSchools, dense = rows.length > 14, tbody = H('tbody');
+  rows.forEach(s => { const mx = (p.midExams[s] = p.midExams[s] || {}); tbody.append(H('tr', {}, [H('td', {class: 'sn'}, [H('b', {text: s})]), ...NEXT_COLS.map(([k]) => H('td', {}, [ed(mx, k, '예) 4/22~4/26')])), H('td', {}, [ed(mx, 'memo3', '메모')])])); });
+  pg.body.append(H('div', {class: 'cd'}, [H('div', {class: 'ch', text: `중학교 ${rows.length}개교 · 내년 중3 1년 시험`}), H('table', {class: 'wt ext ' + (dense ? 'dn' : '')}, [H('thead', {}, [H('tr', {}, [H('th', {text: '학교'}), ...NEXT_COLS.map(([, l]) => H('th', {text: '중3 ' + l, style: `border-top:4px solid ${NEXT_COLOR}`})), H('th', {text: '메모'})])]), tbody])]));
   return pg;
 }
 
@@ -1077,6 +1099,7 @@ function arrowSpans(p, kind){
     return {name, color, runs: runs.map(r => [new Date(r[0]), new Date(r[1])])}; };
   const out = [];
   if (kind === 'h') p.schools.forEach((s, si) => { const ex = p.exams[s] || {}, tx = EXAM_COLS.filter(([k]) => ex[k]).map(([k]) => [ex[k], k === 'f2' ? 'last' : 'first']); if (tx.length) out.push(mk(shortSchool(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], tx)); });
+  else if (kind === 'n3') (p.midSchools || []).forEach((s, si) => { const mx = (p.midExams || {})[s] || {}, tx = NEXT_COLS.filter(([k]) => mx[k]).map(([k]) => [mx[k], nextPref(k)]); if (tx.length) out.push(mk(shortMid(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], tx)); });
   else (p.midSchools || []).forEach((s, si) => { const t = ((p.midExams || {})[s] || {})[kind === 'm3' ? 'f2' : 'g2f2']; if (t) out.push(mk(shortMid(s), SCHOOL_COLORS[si % SCHOOL_COLORS.length], [[t, 'first']])); });
   return out;
 }
@@ -1136,7 +1159,7 @@ function calendarBlock(p, i){
 function midLines(p, i){   // 이 달에 시작하는 중3 기말·겨울방학 → [{when, names}]
   const mi = monthInfo(p, i), groups = new Map();
   (p.midSchools || []).forEach(s => { const mx = (p.midExams || {})[s] || {};
-    const vw = viewOf(p); [['f2', '중3 기말'], ['g2f2', '중2 기말'], ['win', '겨울방학']].forEach(([k, label]) => { if ((k === 'f2' && !vw.m3) || (k === 'g2f2' && !vw.m2) || (k === 'win' && !vw.m2 && !vw.m3)) return; const t = mx[k]; if (!t) return; const d0 = parseDates(t, p, 'first')[0]; if (!d0 || d0.y !== mi.y || d0.m !== mi.m) return;
+    const vw = viewOf(p); [['f2', '중3 기말'], ['g2f2', '중2 기말'], ['win', '겨울방학'], ...NEXT_COLS.map(([k, l]) => [k, '내년 중3 ' + l])].forEach(([k, label]) => { if ((k === 'f2' && !vw.m3) || (k === 'g2f2' && !vw.m2) || (k === 'win' && !vw.m2 && !vw.m3) || (/^n[12][mf]$/.test(k) && !vw.n3)) return; const t = mx[k]; if (!t) return; const d0 = parseDates(t, p, /^n/.test(k) ? nextPref(k) : 'first')[0]; if (!d0 || d0.y !== mi.y || d0.m !== mi.m) return;
       const id = label + '|' + t; if (!groups.has(id)) groups.set(id, {label, when: t, names: [], d: d0.d}); groups.get(id).names.push(shortMid(s)); }); });
   return [...groups.values()].sort((a, b) => a.d - b.d || a.label.localeCompare(b.label));
 }
@@ -1169,7 +1192,7 @@ function monthPage(p, i){
   body.append(calendarBlock(p, i), wk, sch);
   if (ml.length) {
     body.classList.add('m3');
-    body.append(H('div', {class: 'side midp'}, [H('div', {class: 'ch', text: '중학교 (' + [viewOf(p).m3 ? '중3' : '', viewOf(p).m2 ? '중2' : ''].filter(Boolean).join('·') + ') 학교별 일정'}), H('div', {class: 'cb'}, ml.map(g => H('div', {class: 'ml'}, [H('b', {text: `${g.label} ${g.when}`}), H('span', {text: ' · ' + g.names.join(', ') + ` (${g.names.length}개교)`})])))]));
+    body.append(H('div', {class: 'side midp'}, [H('div', {class: 'ch', text: '중학교 (' + [viewOf(p).m3 ? '중3' : '', viewOf(p).m2 ? '중2' : '', viewOf(p).n3 ? '내년 중3' : ''].filter(Boolean).join('·') + ') 학교별 일정'}), H('div', {class: 'cb'}, ml.map(g => H('div', {class: 'ml'}, [H('b', {text: `${g.label} ${g.when}`}), H('span', {text: ' · ' + g.names.join(', ') + ` (${g.names.length}개교)`})])))]));
   }
   body.append(memo);
   pg.body.append(body); return pg;
@@ -1193,7 +1216,7 @@ function render(keep){
   D.stage = H('div', {class: 'stage'});
   D.stage.style.setProperty('--pw', PW + 'px'); D.stage.style.setProperty('--ph', PH + 'px');
   host.append(H('div', {class: 'stage-host'}, [D.stage]));
-  ensurePlan(p); SEAS = themeColors(p).s; coverPage(p); roadmapPage(p); yearPage(p); examPage(p); if (p.midSchools.length) midPage(p); for (let i = 0; i < nOf(p); i++) monthPage(p, i);
+  ensurePlan(p); SEAS = themeColors(p).s; coverPage(p); roadmapPage(p); yearPage(p); examPage(p); if (p.midSchools.length) { midPage(p); mid3Page(p); } for (let i = 0; i < nOf(p); i++) monthPage(p, i);
   D.pages.forEach(pg => { const pn = $('.pn', pg.rp); if (pn) pn.textContent = `${pg.idx + 1} / ${D.pages.length}`; freeLayer(pg); });
   host.insertBefore(buildBar(), host.firstChild);
   layout();
@@ -1534,19 +1557,29 @@ async function runNeis(p, opts){
   }
   // 중학교: 이 플랜 첫 달부터 다음 해 2월까지 (2학기 기말 · 겨울방학)
   const mTo = new Date(planFrom.getFullYear() + 1, 2, 0), mPrevFrom = new Date(planFrom.getFullYear() - 1, planFrom.getMonth(), 1), mPrevTo = new Date(planFrom.getFullYear(), 2, 0);
-  let midOk = 0, midNone = 0;
+  // 내년 중3 1년: 내년 3월~플랜 끝 = 진짜 일정(학교가 올렸다면), 올해 3~12월 = 없을 때 예상에 쓰는 올해 중3 일정
+  const nxFrom = new Date(planFrom.getFullYear() + 1, 2, 1), thisFrom = new Date(planFrom.getFullYear(), 2, 1), thisTo = new Date(planFrom.getFullYear(), 11, 31);
+  const nxKey = {m1: 'n1m', f1: 'n1f', m2: 'n2m', f2: 'n2f'};
+  let midOk = 0, midNone = 0, nxReal = 0, nxEst = 0;
   for (const name of p.midSchools) {
     opts.onProg && opts.onProg(++done, total, name);
     const sc = await neisFindSchool(p, name, '중학교');
     if (!sc) { miss.push(name); continue; }
-    const ev = await neisSchedule(sc, ymd(mPrevFrom), ymd(mTo), 0);
+    const ev = await neisSchedule(sc, ymd(mPrevFrom), ymd(planTo), 0);
     const inCur = e => { const d = ymdDate(e.AA_YMD); return d >= planFrom && d <= mTo; };
-    const f2 = {cur: [], prev: []}, g2 = {cur: [], prev: []}, win = {cur: [], prev: []};
-    ev.forEach(e => { const m = +e.AA_YMD.slice(4, 6), side = inCur(e) ? 'cur' : (ymdDate(e.AA_YMD) <= mPrevTo ? 'prev' : null); if (!side) return;
-      if (examKeyOf(e.EVENT_NM, m) === 'f2' && m >= 10) { if (midGrade(e, 3)) f2[side].push(e.AA_YMD); if (midGrade(e, 2)) g2[side].push(e.AA_YMD); }
-      else if (midGrade(e, 3) && /방학/.test(e.EVENT_NM) && !/식$/.test(e.EVENT_NM) && (/동계|겨울/.test(e.EVENT_NM) || m >= 12 || m <= 2)) win[side].push(e.AA_YMD); });
+    const f2 = {cur: [], prev: []}, g2 = {cur: [], prev: []}, win = {cur: [], prev: []}, nx = {n1m: {cur: [], prev: []}, n1f: {cur: [], prev: []}, n2m: {cur: [], prev: []}, n2f: {cur: [], prev: []}};
+    ev.forEach(e => { const m = +e.AA_YMD.slice(4, 6), d = ymdDate(e.AA_YMD), side = inCur(e) ? 'cur' : (d <= mPrevTo ? 'prev' : null);
+      if (side) {
+        if (examKeyOf(e.EVENT_NM, m) === 'f2' && m >= 10) { if (midGrade(e, 3)) f2[side].push(e.AA_YMD); if (midGrade(e, 2)) g2[side].push(e.AA_YMD); }
+        else if (midGrade(e, 3) && /방학/.test(e.EVENT_NM) && !/식$/.test(e.EVENT_NM) && (/동계|겨울/.test(e.EVENT_NM) || m >= 12 || m <= 2)) win[side].push(e.AA_YMD); }
+      const k = nxKey[examKeyOf(e.EVENT_NM, m)];   // 중3 학년 일정만 (3~12월)
+      if (k && m >= 3 && midGrade(e, 3)) { if (d >= nxFrom && d <= planTo) nx[k].cur.push(e.AA_YMD); else if (d >= thisFrom && d <= thisTo) nx[k].prev.push(e.AA_YMD); } });
     const mx = (p.midExams[name] = p.midExams[name] || {}); mx._auto = mx._auto || {};
     let got = 0;
+    Object.keys(nx).forEach(k => { const g = nx[k]; let text = '', pre = '', real = false;
+      if (g.cur.length) { text = groupRanges(g.cur, true); real = true; } else if (g.prev.length && opts.estimate !== false) { text = groupRanges(g.prev, true); pre = yTag(g.prev[0]); }
+      if (!text) return; const val = pre + text;
+      if (!mx[k] || mx[k] === mx._auto[k]) { mx[k] = val; mx._auto[k] = val; got++; real ? nxReal++ : nxEst++; } });
     [['f2', f2], ['g2f2', g2], ['win', win]].forEach(([k, g]) => {
       let text = '', pre = '';
       if (g.cur.length) text = groupRanges(g.cur, true); else if (g.prev.length && opts.estimate !== false) { text = groupRanges(g.prev, true); pre = yTag(g.prev[0]); }
@@ -1564,6 +1597,7 @@ async function runNeis(p, opts){
   const hs = p.schools.filter(s => { const ex = p.exams[s] || {}; return EXAM_COLS.some(([k]) => ex[k]); }).length;
   if (p.schools.length > 6) log.splice(0, log.length, `고등학교 ${p.schools.length}개교 중 ${hs}개교의 시험 일정을 채웠어요. (나머지는 아직 학교가 나이스에 올리지 않았어요)`);
   if (p.midSchools.length) log.push(`중학교 ${p.midSchools.length}개교 중 ${midOk}개교의 중3·중2 기말·겨울방학 일정을 채웠어요${midNone ? ` (${midNone}개교는 아직 없음)` : ''}.`);
+  if (p.midSchools.length) log.push(`내년 중3 1년 시험: 학교가 올린 내년 일정 ${nxReal}건 · 아직 없어서 올해 날짜로 예상한 것 ${nxEst}건`);
   if (miss.length) log.push(`나이스에서 못 찾은 학교: ${miss.join(', ')}`);
   log.push(`공통 일정: ${[...commons.entries()].map(([l, v]) => `${l} ${v.pre || ''}${v.date}`).join(' · ') || '불러온 것이 없어요'}`);
   return log;
