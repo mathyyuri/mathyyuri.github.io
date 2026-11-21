@@ -1454,7 +1454,7 @@ function vExamAll(){
  msEnsure();
  if(!MS)return '<div class="card"><h3>전체 통계</h3><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return '<div class="card"><h3>전체 통계</h3><div class="empty">미션을 불러오지 못했어요</div></div>';
- const all=MS.items.filter(it=>it.roster.length),cats=[...new Set(all.map(msCatOf))],cat=S.sub.eacat||'',clsAll=[...new Set(all.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),clsSel=S.sub.eacls||'';
+ const all=MS.items.filter(it=>msVis(it)&&it.roster.length),cats=[...new Set(all.map(msCatOf))],cat=S.sub.eacat||'',clsAll=[...new Set(all.flatMap(it=>it.roster.map(r=>String(r.cls))))].sort(ordCls),clsSel=S.sub.eacls||'';
  let h='<div class="chips"><span class="lbl">분류</span><button class="chip '+(!cat?'on':'')+'" data-a="sub" data-k="eacat" data-v="">전체</button>'+cats.map(c=>'<button class="chip '+(cat===c?'on':'')+'" data-a="sub" data-k="eacat" data-v="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>'+
   '<div class="chips"><span class="lbl">보는 범위</span><button class="chip '+(!clsSel?'on':'')+'" data-a="sub" data-k="eacls" data-v="">전체 학생</button>'+clsAll.map(k=>'<button class="chip '+(clsSel===k?'on':'')+'" data-a="sub" data-k="eacls" data-v="'+esc(k)+'">'+esc(k)+'만</button>').join('')+'</div>';
  const L=all.filter(it=>!cat||msCatOf(it)===cat).sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,30);
@@ -1979,7 +1979,7 @@ function missionStatusCard(){
  msEnsure();
  if(!MS)return '<div class="card"><h3>미션 현황</h3><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return '<div class="card"><h3>미션 현황</h3><div class="empty">미션을 불러오지 못했어요</div></div>';
- const L=MS.items.slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,8);
+ const L=MS.items.filter(msVis).slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,8);
  if(!L.length)return '<div class="card"><h3>미션 현황</h3><div class="empty">아직 미션이 없어요</div></div>';
  return '<div class="card"><h3>미션 현황<button class="more" data-a="tab" data-v="mission">전체 ›</button></h3><div style="overflow:auto"><table class="tbl"><tr><th style="text-align:left">미션</th><th>응시</th><th>평균</th><th>클리어</th><th>미시작</th><th>미기록</th></tr>'+
   L.map(it=>{const st=msStat(it),U=(it.all||[]).filter(r=>!(r.ox&&r.score!=null)),ns=U.filter(r=>r.ns).length,nr=U.length-ns;
@@ -2388,6 +2388,8 @@ async function msApi(a,args){
  try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
 }
+/* 선생님 화면: 위에서 고른 학원(대치/분당)과 반(전체·T-Class·공수내모)에 해당하는 미션만 보여요 (오답노트는 학원만 구분) */
+function msVis(it){if(!isStaff())return true;const ac=curAc(),a=it.m.ac;if(a&&a!=='all'&&a!==ac)return false;if(S.cls!=='all'){const c=String(it.m.cls||'');if(c&&c!=='all'&&c.indexOf('note:')!==0&&c!==S.cls)return false;}return true;}
 function msCatOf(it){
  if(it.notes||String(it.m.cls||'').indexOf('note:')===0)return '오답미션';const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
  return n.indexOf('내신')>=0?'내신기출':n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
@@ -2507,7 +2509,7 @@ const GSM_CATS=['내모미션','과제미션'],GSM_ONLY=['nemo','hw','wrong'],GS
 function gsmCdf(z){const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
 function gsmEval(school,sc){const s=GSM_ST[school];if(!s||sc==null||isNaN(sc))return null;const pct=gsmCdf((sc-s[0])/s[1])*100,g=sc>=s[2]?1:sc>=s[3]?2:sc>=s[4]?3:sc>=s[5]?4:5;return {pct:pct,top:100-pct,grade:g};}
 function gsmTopTxt(e){const t=e.top;return t<1?'상위 1% 이내':'상위 '+Math.round(t)+'%';}
-function gsmItems(){return MS&&MS.items?MS.items.filter(it=>GSM_CATS.indexOf(msCatOf(it))>=0):[];}
+function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
 function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*동형/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
 function gsmWeekOf(dd){const i=GSM_DATES.indexOf(dd);return i>=0?i+1:0;}
 function gsmGroups(){const has=gsmItems().length>0;if(has&&!isStaff())return MS_GROUPS.filter(x=>GSM_ONLY.indexOf(x[0])>=0);return MS_GROUPS.filter(x=>!x[3]||has);}
@@ -2543,7 +2545,7 @@ function vMission(){
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
- const L=msMergeNotes(MS.items.filter(it=>!grp[2]||grp[2].indexOf(msCatOf(it))>=0));
+ const L=msMergeNotes(MS.items.filter(it=>msVis(it)&&(!grp[2]||grp[2].indexOf(msCatOf(it))>=0)));
  if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
  const stu=!isStaff();let _ld='';L.sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date)));   /* 최신 미션이 먼저, 같은 날짜는 묶음 줄 아래에 */
  if(g==='chart')return h+msMatrix(L);
