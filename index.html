@@ -405,7 +405,7 @@ function ph(txt,c1,c2){const svg="<svg xmlns='http://www.w3.org/2000/svg' width=
 /* ════════ 학원·사용자 ════════ */
 const AC={
  ds:{id:'ds',name:'대치에스플러스',short:'대치S+',classes:['S+반','S반','A+반','A반','B반']},
- bd:{id:'bd',name:'분당미래탐구',short:'분당',classes:['T-Class','공수내모']}
+ bd:{id:'bd',name:'분당미래탐구',short:'분당',classes:['MATHY 11','공수내모']}
 };
 const ROLE={student:'학생',parent:'학부모',ta:'운영진',admin:'원장'};
 const U={};                                   // 서버에서 받은 사람들 (로그인한 사람 기준)
@@ -2388,7 +2388,7 @@ async function msApi(a,args){
  try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
 }
-/* 선생님 화면: 위에서 고른 학원(대치/분당)과 반(전체·T-Class·공수내모)에 해당하는 미션만 보여요 (오답노트는 학원만 구분) */
+/* 선생님 화면: 위에서 고른 학원(대치/분당)과 반(전체·MATHY 11·공수내모)에 해당하는 미션만 보여요 (오답노트는 학원만 구분) */
 function msVis(it){if(!isStaff())return true;const ac=curAc(),a=it.m.ac;if(a&&a!=='all'&&a!==ac)return false;if(S.cls!=='all'){const c=String(it.m.cls||'');if(c&&c!=='all'&&c.indexOf('note:')!==0&&c!==S.cls)return false;}return true;}
 function msCatOf(it){
  if(it.notes||String(it.m.cls||'').indexOf('note:')===0)return '오답미션';const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
@@ -2512,7 +2512,8 @@ function gsmTopTxt(e){const t=e.top;return t<1?'상위 1% 이내':'상위 '+Math
 function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
 function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*동형/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
 function gsmWeekOf(dd){const i=GSM_DATES.indexOf(dd);return i>=0?i+1:0;}
-function gsmGroups(){const has=gsmItems().length>0;if(has&&!isStaff())return MS_GROUPS.filter(x=>GSM_ONLY.indexOf(x[0])>=0);return MS_GROUPS.filter(x=>!x[3]||has);}
+function gsmOnly(){return gsmItems().length>0&&(!isStaff()||S.cls==='공수내모');}
+function gsmGroups(){const has=gsmItems().length>0;if(gsmOnly())return MS_GROUPS.filter(x=>GSM_ONLY.indexOf(x[0])>=0);return MS_GROUPS.filter(x=>!x[3]||has);}
 function gsmMine(it,inf,stu){
  const st=msStat(it);if(!st.n)return '<span class="muted sm">채점 전</span>';
  let sc=null,extra='';
@@ -2537,7 +2538,7 @@ function gsmTrendCard(){
 }
 function vMission(){
  let g=S.sub.mission;
- const gonly=gsmItems().length>0&&!isStaff();if(gonly&&GSM_ONLY.indexOf(g)<0){g='nemo';S.sub.mission='nemo';}
+ const gonly=gsmOnly();if(gonly&&GSM_ONLY.indexOf(g)<0){g='nemo';S.sub.mission='nemo';}
  const chips='<div class="chips">'+gsmGroups().map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+(gonly?'':'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button>')+'</div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
