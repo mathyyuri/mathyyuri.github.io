@@ -391,7 +391,7 @@ function vPv(){
  h+=pager+(d.items.length?'<div class="pgrid">'+d.items.map(function(it){return pvCard(it,false)}).join('')+'</div>':'<div class="card muted">조건에 맞는 문제가 없어요.</div>')+pager;
  return h}
 function pvLoc(tg){var p=[];if(tg.c)p.push(tg.c);if(tg.u)p.push(tg.u);if(tg.sb)p.push(tg.sb);return p}
-function pvCard(it,mini,extra){
+function pvCard(it,mini,extra,del){
  var tg=it.tg||{},s0=(it.src||[])[0],g=it.same>0?'g1':(it.frame>0?'g2':'');
  var chs=Array.isArray(it.ch)?it.ch:[];
  var chh=chs.length?'<div class="pqc">'+chs.map(function(c,i){return '<span><b>'+'①②③④⑤⑥'.charAt(i)+'</b><span>'+fixEq2(String(c))+'</span></span>'}).join('')+'</div>':'';
@@ -410,6 +410,7 @@ function pvCard(it,mini,extra){
  if(it.al)dup+='<span class="dupb s" style="cursor:default">다른 문제와 합쳐짐</span> <button class="g s" data-dmun="'+it.id+'">합침 풀기</button> ';
  if(it.same>0)dup+='<button class="dupb s" data-pgrp="'+it.id+'" data-mode="same">같은 문제 후보 '+it.same+'개 ▸</button> ';
  if(it.frame>0)dup+='<button class="dupb f" data-pgrp="'+it.id+'" data-mode="frame">같은 틀 '+it.frame+'개 ▸</button>';
+ if(del)dup+=' <button class="g s" style="color:#a53b3b;border-color:#e3b4b4" data-pdel="'+it.id+'" title="이 문제를 지우고 출처·묶음은 남길 문제로 옮겨요">🗑 이 문제 지우기</button>';
  return '<div class="pc '+g+(PV.sel[it.id]?' sel':'')+'" data-pid="'+it.id+'"><div class="pch">'+(extra?extra:mini?'':'<input type="checkbox" data-psel="'+it.id+'"'+(PV.sel[it.id]?' checked':'')+'>')+
   '<b>'+esc(s0?s0.no:'-')+'</b><span class="muted">'+esc(KIND[it.kind]||it.kind)+'</span><span class="sp"></span><button class="g s" data-pedit="'+it.id+'" title="이 문제의 단원·유형·난이도 고치기">✎ 고치기</button></div>'+
   '<div class="pq"><div>'+fixEq2(it.stem)+'</div>'+chh+'</div>'+
@@ -420,9 +421,9 @@ function pvCard(it,mini,extra){
 async function pvGroup(id,mode){
  var j=await pvApi('group',{id:id,mode:mode});
  if(!j||!j.ok){toast((j&&j.error)||'불러오지 못했어요',true);return}
- pvMerge(j);
+ pvMerge(j);PV.grp=j.items.map(function(x){return x.id});
  modal('<h2>'+(mode==='frame'?'같은 틀 후보':'같은 문제 후보')+' — '+fmt(j.total)+'개'+(j.total>j.items.length?' (앞 '+j.items.length+'개만)':'')+'</h2><div class="muted">'+
-  (mode==='frame'?'숫자·식만 다른 문제들이에요(같은 틀). 보기만 하고 지우거나 합치지 않아요.':'글자 모양(띄어쓰기·기호)만 다르고 내용이 같은 문제들이에요. 어느 출처에 나왔는지 비교해 보세요. 합치려면 [같은 문제 검토하기]에서 해요.')+'</div>'+(mode==='frame'?'<div class="row"><button data-pfam="'+id+'">같은 틀 묶음으로 묶기</button></div>':'')+'<div class="pgrid mini" style="margin-top:10px">'+j.items.map(function(x){return pvCard(x,true)}).join('')+'</div>',null,null,true);
+  (mode==='frame'?'숫자·식만 다른 문제들이에요(같은 틀). 보기만 하고 지우거나 합치지 않아요.':'글자 모양(띄어쓰기·기호)만 다르고 내용이 같은 문제들이에요. 어느 출처에 나왔는지 비교해 보세요. 합치려면 [같은 문제 검토하기]에서 해요.')+'</div>'+(mode==='frame'?'<div class="row"><button data-pfam="'+id+'">같은 틀 묶음으로 묶기</button></div>':'')+'<div class="pgrid mini" style="margin-top:10px">'+j.items.map(function(x){return pvCard(x,true,null,mode!=='frame'&&j.items.length>1)}).join('')+'</div>',null,null,true);
  pvPaint($('#mbody'))}
 async function pvOne(id){
  var it=PV.items[id],j=await pvApi('one',{id:id});
@@ -538,6 +539,26 @@ function vLog(){
  return h}
 async function loadLog(){var j=await api('log');if(j&&j.ok){LOG=j.rows;if(TAB==='기록')render()}else toast((j&&j.error)||'기록을 불러오지 못했어요',true)}
 /* ── 창(미리보기 확인) ── */
+async function pdApi(act,arg){
+ var r;try{r=await fetch(RPC+'mathy_problemdelete',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify({p_token:tok,p_act:act,p_arg:arg||{}})})}catch(e){return {ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(r.status===404)return {ok:false,error:'60_문제지우기_서버.sql 을 먼저 실행해 주세요',nf:true};
+ if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
+ try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+/* 같은 문제 하나 지우기: 지울 문제 id → 남길 문제 고르기 → 옮길 것 미리보기 → 지우기 */
+async function pdelAsk(id){
+ var ids=(PV.grp||[]).filter(function(x){return x!==id});
+ if(!ids.length){toast('남길 문제가 없어요',true);return}
+ var sc=function(x){var it=PV.items[x]||{};return (it.ns||0)*4+(it.ex?2:0)+(it.an!=null&&it.an!==''?1:0)+(it.tg&&it.tg.u?1:0)};
+ var best=ids.slice().sort(function(a,b){return sc(b)-sc(a)})[0];
+ var lab=function(x){var it=PV.items[x]||{},s0=(it.src||[])[0];return (s0?s0.t+' #'+s0.no:'출처 없음')+(it.ns>1?' 외 '+(it.ns-1)+'곳':'')+' · '+(it.an!=null&&it.an!==''?'정답 '+String(it.an).slice(0,8):'정답 없음')+' · '+(it.ex?'해설 있음':'해설 없음')};
+ var pv=async function(k){var j=await pdApi('preview',{loser:id,keeper:k});return j&&j.ok?esc(j.message):'<span style="color:#b33">'+esc((j&&j.error)||'확인하지 못했어요')+'</span>'};
+ var first=await pv(best);
+ modal('<h2>이 문제를 지울까요?</h2><p>지울 문제: <b>'+esc(lab(id))+'</b></p><p>같은 문제 중 <b>남길 문제</b>를 고르세요. 지울 문제에 붙어 있던 출처·묶음·풀이 기록은 남길 문제로 옮기고, 남길 문제의 빈 칸(단원·정답·해설)은 지울 문제 것으로 채워요.</p>'+
+  '<select id="pdk" style="width:100%;margin-bottom:8px">'+ids.map(function(x){return '<option value="'+x+'"'+(x===best?' selected':'')+'>'+esc(lab(x))+'</option>'}).join('')+'</select>'+
+  '<div class="note" id="pdinfo">'+first+'</div><p class="muted">지운 문제는 [기록]에서 <b>되돌릴 수 있어요</b>. 같은 파일을 나중에 다시 올려도 지운 문제가 되살아나지 않고, 남길 문제에 출처만 붙어요.</p>',
+  async function(){var kp=$('#pdk').value;var j=await pdApi('apply',{loser:id,keeper:kp});
+   if(j&&j.ok){toast(j.message);PV.data=null;PV.started=false;LOG=null;await reload()}else toast((j&&j.error)||'지우지 못했어요',true)},'지우기');
+ $('#pdk').onchange=async function(){$('#pdinfo').innerHTML=await pv(this.value)}}
 function modal(html,onOk,okLabel,wide){
  $('#mbody').classList.toggle('w',!!wide);
  $('#mbody').innerHTML=html+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="g" id="mno">'+(onOk?'취소':'닫기')+'</button>'+(onOk?'<button id="myes">'+(okLabel||'적용')+'</button>':'')+'</div>';
@@ -567,10 +588,11 @@ document.addEventListener('click',async function(e){
  if((el=t.closest('[data-psrc]'))){PV.f.source_id=el.dataset.psrc;PV.srcLabel=el.dataset.pt||'';PV.page=0;closeModal();pvLoad();scrollTo(0,0);return}
  if((el=t.closest('[data-pedit]'))){pvEdit([el.dataset.pedit]);return}
  if((el=t.closest('[data-pone]'))){pvOne(el.dataset.pone);return}
+ if((el=t.closest('[data-pdel]'))){pdelAsk(el.dataset.pdel);return}
  if((el=t.closest('[data-pgrp]'))){pvGroup(el.dataset.pgrp,el.dataset.mode);return}
  if((el=t.closest('[data-pdup]'))){pvRead();PV.f.dup=el.dataset.pdup;PV.f.sort='';pvLoad();return}
  if((el=t.closest('[data-ppage]'))){PV.page=Math.max(0,PV.page+(+el.dataset.ppage));pvLoad();scrollTo(0,0);return}
- if((el=t.closest('[data-undo]'))){var uid=+el.dataset.undo,uact=el.dataset.uact;modal('<h2>되돌릴까요?</h2><p>기록 '+uid+'번을 바꾸기 전 상태로 돌려요.</p>',async function(){var j2=uact==='tag_set'?await pvApi('tag_undo',{id:uid}):/^(dup|fam)_/.test(uact)?await dmApi('undo',{id:uid}):await api('undo',{id:uid});if(j2&&j2.ok){toast(j2.message);LOG=null;PV.data=null;PV.started=false;await reload()}else toast((j2&&j2.error)||'되돌리지 못했어요',true)},'되돌리기');return}
+ if((el=t.closest('[data-undo]'))){var uid=+el.dataset.undo,uact=el.dataset.uact;modal('<h2>되돌릴까요?</h2><p>기록 '+uid+'번을 바꾸기 전 상태로 돌려요.</p>',async function(){var j2=uact==='tag_set'?await pvApi('tag_undo',{id:uid}):uact==='prob_delete'?await pdApi('undo',{id:uid}):/^(dup|fam)_/.test(uact)?await dmApi('undo',{id:uid}):await api('undo',{id:uid});if(j2&&j2.ok){toast(j2.message);LOG=null;PV.data=null;PV.started=false;await reload()}else toast((j2&&j2.error)||'되돌리지 못했어요',true)},'되돌리기');return}
  var a=t.closest('[data-act]');if(!a)return;a=a.dataset.act;
  if(a==='selall'){D.srcs.filter(passF).forEach(function(x){SEL[x.id]=true});render()}
  else if(a==='selnone'){SEL={};render()}
