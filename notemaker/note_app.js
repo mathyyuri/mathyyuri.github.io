@@ -188,7 +188,7 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
  }
 
  /* ───────── 상자 만들기 ───────── */
- var TOOLS_P = '<span class="ui tools"><button data-a="up" title="앞으로">↑</button><button data-a="dn" title="뒤로">↓</button><button data-a="add" title="이 문제 뒤에 문제 추가">추가</button><button data-a="meta" title="종류·정답·단원·난이도·해설 고치기, 고친 문제를 서버 문제 DB에 등록">정보·DB</button><button data-a="rst" title="고친 내용을 원래대로">원래대로</button><button data-a="del" class="red" title="이 문제를 교재에서 빼기">빼기</button></span>';
+ var TOOLS_P = '<span class="ui tools"><button data-a="up" title="앞으로">↑</button><button data-a="dn" title="뒤로">↓</button><button data-a="add" title="이 문제 뒤에 문제 추가">추가</button><button data-a="split" title="(1)(2)… 소문항으로 쪼개서 따로 문제로 만들기">쪼개기</button><button data-a="bogi" title="(1)(2)… 줄을 ㄱ. ㄴ. ㄷ. 보기 상자로 바꾸고, 줄이 없으면 빈 보기 상자를 넣어요">보기 상자</button><button data-a="merge" title="쪼개기로 만든 소문항을 원래 한 문제로 되돌리기">합치기</button><button data-a="meta" title="종류·정답·단원·난이도·해설 고치기, 고친 문제를 서버 문제 DB에 등록">정보·DB</button><button data-a="rst" title="고친 내용을 원래대로">원래대로</button><button data-a="del" class="red" title="이 문제를 교재에서 빼기">빼기</button></span>';
  var TOOLS_T = '<span class="ui tools"><button data-a="tdel" class="red" title="이 덩어리를 교재에서 빼기">빼기</button></span>';
  function mkProblem(uid) {
   var p = item(uid), e = S.ed[uid] || {}, t = p.k === 't';
@@ -358,6 +358,8 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
       qn++; var p = item(u), c = chsOf(u), has = p.an != null && String(p.an).replace(/\s/g, '') !== '' && !isRefAn(p.an);
       if (has) {
        var a = (c.length && /^[1-5]$/.test(String(p.an))) ? CIRC[+p.an - 1] : p.an;
+       var hid = c.length && /^[1-5]$/.test(String(p.an)) && c[+p.an - 1] != null && ((EL[u] && EL[u].classList.contains('hch')) || document.body.classList.contains('hideCh'));
+       if (hid) a = CIRC[+p.an - 1] + ' ' + String(c[+p.an - 1]);        /* 보기를 가린 문제는 채점할 수 있게 번호 옆에 그 보기의 내용도 같이 */
        var ah = ansHtml(a);
        var apl = ah.replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}\\()\s]/g, '').length;
        if (apl > 6) rows += '<div class="qa-row"><i>' + qn + '</i><span class="qs">' + esc(srcOf(u).replace(/^.*? — /, '').replace(/\s*\(\d+번 틀림[^)]*\)\s*$/, '')) + '</span><span class="qv ss tb2">' + ah + '</span></div>';   /* 긴 정답(정의역·치역 등)은 작은 칸에 안 들어가니 줄로 */
@@ -560,14 +562,113 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   var t = e.target; if (!t.classList || !t.classList.contains('hchTag')) return;
   var pb = t.closest('.pb'); if (!pb) return; var on = pb.classList.toggle('hch'); t.textContent = on ? '보기 숨김' : '보기 보임';
   t.classList.toggle('off', !on);
+  relayLater();                                           /* 빠른 정답 쪽의 보기 내용 표시를 갱신 */
  });
  $('bHideCh').addEventListener('click', function () {
   var on = document.body.classList.toggle('hideCh'); this.classList.toggle('on', on);
   this.textContent = on ? '보기 숨김 중 · 다시 보이기' : '보기 숨기기';
+  relayLater();
   stat(on ? '객관식 보기를 가렸어요. 다시 누르면 보여요 (이 상태로 PDF·PNG 를 저장하면 보기가 빠져요)' : '객관식 보기를 다시 보여요');
  });
  /* 네모 넣기 · 상자 넣기 (교과서 전체 모음 교재 엔진에서 가져옴) */
  function bogiBoxHtml(lines) { return '<div class="cbox"><div class="cc tt">&lt;보기&gt;</div>' + lines.map(function (l) { return '<div class="cc">' + l + '</div>'; }).join('') + '</div>'; }
+ /* ───────── 문제 쪼개기: 한 문제를 (1)(2)(3) 소문항 여러 개로 나누어 따로 문제로 만들고, 문제 DB 에 새 문제로 등록 ───────── */
+ function splitStemHtml(html) {                       /* 문제 글: (1) (2) … 가 줄(문단)마다 시작하는 곳에서 나눈다 */
+  var d = document.createElement('div'); d.innerHTML = html || '';
+  var kids = Array.prototype.slice.call(d.children), head = [], subs = [], cur = null;
+  kids.forEach(function (k) {
+   var m = /^\s*\((\d+)\)/.exec(k.textContent || '');
+   if (m) { cur = { label: '(' + m[1] + ')', html: [k.outerHTML] }; subs.push(cur); }
+   else if (cur) cur.html.push(k.outerHTML); else head.push(k.outerHTML);
+  });
+  return { head: head.join(''), subs: subs };
+ }
+ function splitSolHtml(html, labels) {                /* 풀이: 한 문단 안에 (1) … (2) … 가 이어진 것도 나눈다 (수식 안의 (1) 은 건드리지 않음). 못 나누면 null */
+  var keep = [], t = String(html || '').replace(/<span class="eq"[^>]*>[\s\S]*?<\/span>/g, function (m) { keep.push(m); return '\u0001' + (keep.length - 1) + '\u0002'; });
+  var re = /\((\d+)\)/g, pos = [], m;
+  while ((m = re.exec(t))) pos.push({ i: m.index, l: m[0] });
+  var at = -1, idx = [];
+  labels.forEach(function (lb) { for (var j = at + 1; j < pos.length; j++) if (pos[j].l === lb) { idx.push(pos[j].i); at = j; return; } });
+  if (idx.length !== labels.length) return null;
+  var out = {};
+  labels.forEach(function (lb, n) {
+   var piece = t.slice(idx[n], n + 1 < idx.length ? idx[n + 1] : t.length).replace(/\u0001(\d+)\u0002/g, function (x, k) { return keep[+k]; });
+   var d = document.createElement('div'); d.innerHTML = piece;
+   var h = d.innerHTML.trim(); if (!/^<(p|div|table)/i.test(h)) h = '<p>' + h + '</p>';
+   out[lb] = h;
+  });
+  return out;
+ }
+ function splitProblem(u) {
+  harvest(); var p = item(u), e = S.ed[u] || {}; if (!p) return;
+  var st = e.stem != null ? e.stem : p.st, r = splitStemHtml(st);
+  if (r.subs.length < 2) { alert('이 문제에는 (1) (2) … 처럼 줄이 나뉜 소문항이 2개 이상 보이지 않아요.\n문제 글을 (1) (2) 모양으로 줄을 나눈 뒤 다시 눌러 주세요.'); return; }
+  var labels = r.subs.map(function (s) { return s.label; });
+  if (!confirm((looksChoice(st) ? '※ 보기를 고르는 선택형 문제처럼 보여요. (1)(2)가 소문항이 아니라 보기라면 [취소]하고, 문제 위의 [보기 상자]로 ㄱ. ㄴ. ㄷ. 상자로 바꾸세요.\n\n' : '') + '이 문제를 소문항 ' + labels.length + '개로 쪼갤까요?  ' + labels.join(' ') + '\n· 앞의 공통 글(그림 포함)은 소문항마다 붙여요\n· 풀이는 (1)(2)…로 나눠 붙이고, 나눌 수 없으면 같은 풀이를 복사해요\n· 원래 문제는 교재에서 빠지고(서버의 원래 문제는 그대로), 쪼갠 문제는 \'직접 만든 문제\'로 들어가요\n· 서버 문제 DB에는 [서버 저장·불러오기]의 [쪼갠 문제 DB 등록]을 눌러야 올라가요')) return;
+  snap(); splitOne(u); save(); layout();
+ }
+ function shortAns(so) {                              /* 풀이 조각이 짧은 값(숫자·집합·식·낱말)이면 그것을 정답으로. 문장 풀이면 빈 칸(빠른 정답에 풀이 첫 줄이 보임) */
+  var t = String(so || '').replace(/<span class="eq"[^>]*>([\s\S]*?)<\/span>/g, '$1').replace(/<img[^>]*>/g, '').replace(/<[^>]+>/g, ' ')
+   .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  t = t.replace(/^\s*\(\d+\)\s*/, '').replace(/\s+/g, ' ').trim();
+  var plain = t.replace(/\\\(|\\\)/g, '');
+  if (!t || plain.length > 30 || /[가-힣]{6,}/.test(plain)) return '';
+  return t;
+ }
+ function splitOne(u) {                               /* 확인 없이 한 문제를 쪼갠다 (처리했으면 true) */
+  var p = item(u), e = S.ed[u] || {}; if (!p) return false;
+  var st = e.stem != null ? e.stem : p.st, r = splitStemHtml(st);
+  if (r.subs.length < 2) return false;
+  var labels = r.subs.map(function (s) { return s.label; });
+  var sols = splitSolHtml(p.so, labels), ids = [], base = e.src != null ? e.src : p.src;
+  r.subs.forEach(function (s, i) {
+   var c = 'C' + (S.seq++), so = sols ? sols[labels[i]] : (p.so || '');
+   S.custom[c] = { u: c, k: p.k || 't', n: 0, src: base + ' ' + s.label, sub: p.sub, ty: p.ty, pt: 0, st: r.head + s.html.join(''), ch: [], an: sols ? shortAns(so) : '', so: so, h: '', parent: p.h || '', part: s.label };
+   ids.push(c);
+  });
+  var pl = findPlace(u);
+  if (pl && pl.t === 'mk') Array.prototype.splice.apply(S.mk[pl.g].uids, [pl.i, 1].concat(ids));
+  else if (pl && pl.t === 'tb') Array.prototype.splice.apply(S.tb, [pl.i, 1].concat(ids));
+  delete S.ed[u]; delete EL[u]; return true;
+ }
+ function looksChoice(html) {                         /* (1)(2)… 앞의 글이 '…고르시오 / …찾으시오 / …인 것은?' 이면 소문항이 아니라 보기를 고르는 선택형으로 본다 */
+  var d = document.createElement('div'); d.innerHTML = html || ''; var head = '';
+  for (var i = 0; i < d.children.length; i++) { var k = d.children[i]; if (/^\s*\(\d+\)/.test(k.textContent || '')) break; head += ' ' + k.textContent; }
+  return /(고르시오|고르세요|찾으시오|찾고|찾아|것은\?|인 것|아닌 것|옳은 것|하나는\?)/.test(head.replace(/\s+/g, ' '));
+ }
+ /* ───────── 보기 상자: (1)(2)(3) 줄을 ㄱ. ㄴ. ㄷ. 상자로 바꾸거나, 빈 상자를 넣는다 ───────── */
+ var KOR = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ'];
+ function bogiBoxHtml(lines) { return '<div class="cbox"><div class="cc tt">&lt;보기&gt;</div>' + lines.map(function (l) { return '<div class="cc">' + l + '</div>'; }).join('') + '</div>'; }
+ function toBogiHtml(html) {
+  var d = document.createElement('div'); d.innerHTML = html || '';
+  var kids = Array.prototype.slice.call(d.children), head = [], groups = [], cur = null;
+  kids.forEach(function (k) {
+   var m = /^\s*\((\d+)\)\s*/.exec(k.textContent || '');
+   if (m) { k.innerHTML = k.innerHTML.replace(/^\s*\(\d+\)\s*/, ''); cur = { first: k.innerHTML, rest: [] }; groups.push(cur); }
+   else if (cur) { if ((k.textContent || '').replace(/\s/g, '') || k.querySelector('img,.eq')) cur.rest.push(k.outerHTML); }
+   else head.push(k.outerHTML);
+  });
+  if (groups.length < 2) return html + bogiBoxHtml(['ㄱ. ', 'ㄴ. ', 'ㄷ. ']);       /* (1)(2) 줄이 없으면 빈 상자를 맨 끝에 */
+  return head.join('') + bogiBoxHtml(groups.map(function (g, i) { return (KOR[i] || '·') + '. ' + g.first + g.rest.join(''); }));
+ }
+ function bogiProblem(u) {
+  harvest(); var p = item(u), e = S.ed[u] || {}; if (!p) return;
+  snap(); var st = e.stem != null ? e.stem : p.st, had = splitStemHtml(st).subs.length >= 2;
+  S.ed[u] = { stem: toBogiHtml(st), src: e.src != null ? e.src : p.src }; if (e.ch) S.ed[u].ch = e.ch; if (e.sh) S.ed[u].sh = e.sh;
+  delete EL[u]; save(); layout(); stat(had ? '(1)(2)… 줄을 ㄱ. ㄴ. ㄷ. 보기 상자로 바꿨어요' : '빈 보기 상자를 넣었어요 — 상자 안에 ㄱ. ㄴ. ㄷ. 내용을 적어 주세요');
+ }
+ function mergeSplit(u) {                              /* 쪼갠 문제를 원래 한 문제로 되돌린다 (아직 DB에 등록하지 않은 것만) */
+  var c = S.custom[u]; if (!c || !c.part) { alert('쪼개기로 만든 소문항에서만 쓸 수 있어요.'); return; }
+  var sibs = Object.keys(S.custom).filter(function (k) { return S.custom[k].part && S.custom[k].parent === c.parent; });
+  var par = null; Object.keys(BY).forEach(function (k) { if (c.parent && BY[k].h === c.parent) par = k; });
+  if (!par) { alert('원래 문제를 찾지 못했어요 (서버에서 불러온 문제는 합칠 수 없어요). Ctrl+Z 로 되돌려 보세요.'); return; }
+  if (sibs.some(function (k) { return S.custom[k].h; })) { alert('이미 문제 DB에 등록한 소문항이 있어 합칠 수 없어요. (DB 에서 지우는 건 따로 부탁해 주세요)'); return; }
+  if (!confirm('이 문제의 소문항 ' + sibs.length + '개를 합쳐서 원래 한 문제로 되돌릴까요?\n(소문항에서 고친 글은 사라져요)')) return;
+  snap(); var pl = findPlace(sibs[0]);
+  if (pl && pl.t === 'mk') S.mk[pl.g].uids.splice(pl.i, 1, par); else if (pl && pl.t === 'tb') S.tb.splice(pl.i, 1, par);
+  sibs.forEach(function (k) { removePb(k); delete S.custom[k]; delete S.ed[k]; delete EL[k]; });
+  delete S.ed[par]; delete EL[par]; save(); layout(); stat('원래 한 문제로 합쳤어요');
+ }
  $('bBlank').addEventListener('mousedown', function (e) { e.preventDefault(); });
  $('bBlank').addEventListener('click', function () {                /* 네모 넣기: 빈칸 □ (수식 \boxed 빈 상자, 더블클릭하면 크기·모양을 고칠 수 있어요) */
   if (!lastRange || !EDIT) { stat('먼저 글 안에서 네모를 넣을 자리를 한 번 클릭해 주세요'); return; }
@@ -584,9 +685,41 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   if (blk === q) q.appendChild(box); else q.insertBefore(box, blk.nextSibling);
   markDirty(q); if (overflowAny()) relayLater(); stat('보기 상자를 넣었어요');
  });
+/* 복사·잘라내기: 글 안에서 고른 부분의 수식을 \( … \) 표시로 바꿔 담는다 (붙일 때 다시 수식으로 바뀜 · 다른 곳에 붙여도 수식 원문이 보임) */
+ function selEdText() {
+  var s = window.getSelection(); if (!s || !s.rangeCount || s.isCollapsed) return null;
+  var r = s.getRangeAt(0), a = r.commonAncestorContainer; a = a.nodeType === 1 ? a : a.parentNode;
+  if (!a || !a.closest || !a.closest('.ed')) return null;
+  var d = document.createElement('div');
+  var one = a.closest('.eq');
+  if (one) { d.appendChild(one.cloneNode(true)); } else { d.appendChild(r.cloneContents()); }
+  qa(d, 'span.eq').forEach(function (q) { q.parentNode.replaceChild(document.createTextNode(BS + '(' + (q.dataset.tex || '') + BS + ')'), q); });
+  qa(d, 'br').forEach(function (b) { b.parentNode.replaceChild(document.createTextNode('\n'), b); });
+  qa(d, 'p,div,li,tr').forEach(function (b) { b.appendChild(document.createTextNode('\n')); });
+  qa(d, '.ui').forEach(rm);
+  return d.textContent.replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
+ }
+ function onCopyCut(e) {
+  var tx = selEdText(); if (tx == null) return;
+  e.clipboardData.setData('text/plain', tx); e.preventDefault();
+  if (e.type === 'cut') { snap(); document.execCommand('delete'); }
+ }
+ document.addEventListener('copy', onCopyCut);
+ document.addEventListener('cut', onCopyCut);
  document.addEventListener('paste', function (e) {
   var t = e.target; if (!t.closest || !t.closest('.ed')) return; e.preventDefault();
-  var tx = (e.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, tx);
+  var tx = (e.clipboardData || window.clipboardData).getData('text/plain');
+  /* 다른 곳에서 가져온 $식$ 도 수식으로 (\( \) 가 이미 있으면 그대로) */
+  if (/\$[^$\n]+\$/.test(tx)) tx = tx.replace(/\\\([\s\S]*?\\\)|\$([^$\n]+)\$/g, function (m, x) { return x != null ? BS + '(' + x + BS + ')' : m; });
+  snap();
+  document.execCommand('insertText', false, tx);
+  if (tx.indexOf(BS + '(') >= 0) {
+   var ed = t.closest('.ed'); texify(ed);
+   var fresh = qa(ed, 'span.eq').filter(function (q) { return !q.querySelector('.katex') && q.dataset.tex; });
+   fresh.forEach(renderEq); wrapFix(ed);
+   if (fresh.length) { var z = fresh[fresh.length - 1], rg = document.createRange(); rg.setStartAfter(z); rg.collapse(true); var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(rg); }
+   markDirty(ed); if (overflowAny()) relayLater();
+  }
  });
 
  /* ───────── 문제 추가 창 ───────── */
@@ -652,6 +785,9 @@ function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == nu
   if (pb) {
    var u = pb.dataset.uid;
    if (a === 'meta') { openMeta(u); return; }
+   if (a === 'split') { splitProblem(u); return; }
+   if (a === 'bogi') { bogiProblem(u); return; }
+   if (a === 'merge') { mergeSplit(u); return; }
    if (a === 'up') { snap(); movePb(u, -1); } else if (a === 'dn') { snap(); movePb(u, 1); }
    else if (a === 'del') { snap(); removePb(u); }
    else if (a === 'rst') { if (!confirm('이 문제에서 고친 글·수식·그림을 모두 원래대로 되돌릴까요?')) return; snap(); delete S.ed[u]; delete EL[u]; }
