@@ -206,9 +206,47 @@ function compute(selectAll) {
  render();
 }
 /* 문제 미리보기 · 수정: 칸의 🔍 를 누르면 문제 DB 의 원본이 열리고, 고쳐서 서버에 등록할 수 있어요 */
+/* 한글 수식 'A over B'(분수)가 글자 그대로 남은 것 → 분수로 · 'overl\in e{AB}'(윗줄) → \overline{AB}  (서버 글을 고쳐 두기 전에도 다른 교재처럼 보이게. 규칙은 fix_over.py 와 같아요) */
+function fixOverTex(s) {
+ var BS = String.fromCharCode(92), STOP = ' \t\n=,<>&;';
+ s = s.replace(/overl\\in\s*e/g, BS + 'overline');
+ function findOver(from) { for (var k = s.indexOf('over', from); k >= 0; k = s.indexOf('over', k + 1)) { var pc = k ? s.charAt(k - 1) : ''; if (!/[A-Za-z\\]/.test(pc)) return k; } return -1; }
+ function stripBr(x) { x = x.trim(); if (x.charAt(0) === '{' && x.charAt(x.length - 1) === '}') { var d = 0; for (var k = 0; k < x.length; k++) { d += (x.charAt(k) === '{') - (x.charAt(k) === '}'); if (d === 0 && k < x.length - 1) return x; } return x.slice(1, -1); } return x; }
+ function leftOp(p) {
+  var e = p; while (e > 0 && (s.charAt(e - 1) === ' ' || s.charAt(e - 1) === '\t')) e--;
+  var i = e, d = 0; if (i === 0) return null;
+  if (s.charAt(i - 1) === '}') {
+   while (i > 0) { i--; var ch = s.charAt(i); if (ch === '}') d++; else if (ch === '{') { d--; if (d === 0) break; } }
+   var m = /\\[A-Za-z]+$/.exec(s.slice(0, i)); if (m) i = m.index; return [i, e];
+  }
+  while (i > 0) { var c = s.charAt(i - 1); if (c === ')') d++; else if (c === '(') { if (d === 0) break; d--; } else if (d === 0 && (STOP.indexOf(c) >= 0 || c === '{')) break; i--; }
+  return [i, e];
+ }
+ function rightOp(p) {
+  var b = p + 4; while (b < s.length && (s.charAt(b) === ' ' || s.charAt(b) === '\t')) b++;
+  var i = b, d = 0; if (i >= s.length) return null;
+  if (s.charAt(i) === '{') { while (i < s.length) { if (s.charAt(i) === '{') d++; else if (s.charAt(i) === '}') { d--; if (d === 0) { i++; break; } } i++; } return [b, i]; }
+  while (i < s.length) { var c = s.charAt(i); if (s.indexOf(BS + 'right', i) === i && d === 0) break; if (c === '(') d++; else if (c === ')') { if (d === 0) break; d--; } else if (c === '}' && d === 0) break; else if (d === 0 && STOP.indexOf(c) >= 0) break; i++; }
+  return [b, i];
+ }
+ for (var n = 0; n < 40; n++) {
+  var p = findOver(0); if (p < 0) break;
+  var L = leftOp(p), R = rightOp(p); if (!L || !R || L[0] >= L[1] || R[0] >= R[1]) break;
+  s = s.slice(0, L[0]) + '{' + BS + 'dfrac{' + stripBr(s.slice(L[0], L[1])) + '}{' + stripBr(s.slice(R[0], R[1])) + '}}' + s.slice(R[1]);
+ }
+ return s;
+}
+/* 정의역 정답 {x | x ≠ k 인 실수} 가 '\($ \{\) x \mid x$  $eq 3\text \(\left\{ 인 실수 \right\}\) $\}' 처럼 깨져 저장된 것(교과서 유사문제) → 제대로 된 수식으로 */
+function fixAnsGarbled(a) {
+ var BS = String.fromCharCode(92);
+ return String(a == null ? '' : a).replace(/\\\(\$ \\\{\\\)\s*(\w) \\mid \1\$\s+\$eq\s*([^\s\\]+)\\text\s*\\\(\\left\\\{\s*([^\\]*?)\s*\\right\\\}\\\)\s*\$\\\}/g, function (m, v, k, w) {
+  return BS + '(' + BS + '{ ' + v + ' ' + BS + 'mid ' + v + ' ' + BS + 'neq ' + k + BS + 'text{ ' + w.trim() + '} ' + BS + '}' + BS + ')';
+ });
+}
 function fixEq2(t) {
  var BS = String.fromCharCode(92), CB = BS + 'begin{cases}{', BC = BS + 'begin{cases}', EC = BS + 'end{cases}';
- t = String(t || '');
+ t = fixAnsGarbled(t);
+ if (t.indexOf('over') >= 0) t = t.replace(new RegExp('<span class="eq">[^]*?</span>', 'g'), function (m) { return m.indexOf('over') < 0 ? m : m.replace(/\\\(([^]*?)\\\)/g, function (x, b) { return BS + '(' + fixOverTex(b) + BS + ')'; }); });
  if (t.indexOf(CB) >= 0) t = t.replace(new RegExp('<span class="eq">[^]*?</span>', 'g'), function (m) {          // 경우 나눔 식 (깨진 begin{cases}{ … # … end{cases}}} 정리)
   if (m.indexOf(CB) < 0) return m;
   m = m.split('{' + CB).join(BC).split(CB).join(BC);
@@ -734,7 +772,7 @@ $('#make').onclick = async function () {
   function noIcon(t) { return String(t || '').replace(/<img[^>]*data-fig="([^"]+)"[^>]*>/g, function (m, n) { return small[n] ? '' : m; }); }
   // 한글에서 넘어온 수식 보정: f ^-1 → f^{-1} · ^n+1 → ^{n+1} · X -> Y → X→Y (서버 글을 고쳐 두기 전에도 제대로 보이게)
   function fixEq(t) { return fixEq2(t); }
-  POOL.forEach(function (o) { o.st = fixEq(noIcon(o.st)); o.so = fixEq(noIcon(o.so)); o.ch = o.ch.map(function (c) { return fixEq(c); }); });   // 보기의 그림(그래프 개형 등)은 작아도 지우지 않아요 — 작은 아이콘 제거는 문제 글·해설만
+  POOL.forEach(function (o) { o.st = fixEq(noIcon(o.st)); o.so = fixEq(noIcon(o.so)); o.an = fixAnsGarbled(o.an); o.ch = o.ch.map(function (c) { return fixEq(c); }); });   // 보기의 그림(그래프 개형 등)은 작아도 지우지 않아요 — 작은 아이콘 제거는 문제 글·해설만
   POOL.forEach(function (o) { if (o.n2) o.src = o.src + ' (' + o.n2 + '번 틀림: ' + o.src2.slice(3) + ')'; delete o.n2; delete o.src2; });
   if (!POOL.length) throw new Error('가져올 수 있는 문제가 없어요 (문제 DB에 없는 미션이에요)');
   st.textContent = '노트를 조립하는 중…';

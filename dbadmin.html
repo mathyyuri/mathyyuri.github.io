@@ -303,9 +303,39 @@ async function pvApi(act,arg){
  if(r.status===404)return {ok:false,error:'54_문제카드보기_서버.sql 을 먼저 실행해 주세요',nf:true};
  if(!r.ok)return {ok:false,error:'서버 오류 '+r.status};
  try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
+/* 한글 수식 'A over B'(분수)가 글자 그대로 남은 것 → 분수로 · 'overl\in e{AB}'(윗줄) → \overline{AB} (notemaker.html 의 fixOverTex 와 같아요) */
+function fixOverTex(s){
+ var BS=String.fromCharCode(92),STOP=' \t\n=,<>&;';
+ s=s.replace(/overl\\in\s*e/g,BS+'overline');
+ function findOver(from){for(var k=s.indexOf('over',from);k>=0;k=s.indexOf('over',k+1)){var pc=k?s.charAt(k-1):'';if(!/[A-Za-z\\]/.test(pc))return k}return -1}
+ function stripBr(x){x=x.trim();if(x.charAt(0)==='{'&&x.charAt(x.length-1)==='}'){var d=0;for(var k=0;k<x.length;k++){d+=(x.charAt(k)==='{')-(x.charAt(k)==='}');if(d===0&&k<x.length-1)return x}return x.slice(1,-1)}return x}
+ function leftOp(p){
+  var e=p;while(e>0&&(s.charAt(e-1)===' '||s.charAt(e-1)==='\t'))e--;
+  var i=e,d=0;if(i===0)return null;
+  if(s.charAt(i-1)==='}'){
+   while(i>0){i--;var ch=s.charAt(i);if(ch==='}')d++;else if(ch==='{'){d--;if(d===0)break}}
+   var m=/\\[A-Za-z]+$/.exec(s.slice(0,i));if(m)i=m.index;return [i,e]}
+  while(i>0){var c=s.charAt(i-1);if(c===')')d++;else if(c==='('){if(d===0)break;d--}else if(d===0&&(STOP.indexOf(c)>=0||c==='{'))break;i--}
+  return [i,e]}
+ function rightOp(p){
+  var b=p+4;while(b<s.length&&(s.charAt(b)===' '||s.charAt(b)==='\t'))b++;
+  var i=b,d=0;if(i>=s.length)return null;
+  if(s.charAt(i)==='{'){while(i<s.length){if(s.charAt(i)==='{')d++;else if(s.charAt(i)==='}'){d--;if(d===0){i++;break}}i++}return [b,i]}
+  while(i<s.length){var c=s.charAt(i);if(s.indexOf(BS+'right',i)===i&&d===0)break;if(c==='(')d++;else if(c===')'){if(d===0)break;d--}else if(c==='}'&&d===0)break;else if(d===0&&STOP.indexOf(c)>=0)break;i++}
+  return [b,i]}
+ for(var n=0;n<40;n++){
+  var p=findOver(0);if(p<0)break;
+  var L=leftOp(p),R=rightOp(p);if(!L||!R||L[0]>=L[1]||R[0]>=R[1])break;
+  s=s.slice(0,L[0])+'{'+BS+'dfrac{'+stripBr(s.slice(L[0],L[1]))+'}{'+stripBr(s.slice(R[0],R[1]))+'}}'+s.slice(R[1])}
+ return s}
+/* 정의역 정답 {x | x ≠ k 인 실수} 가 깨져 저장된 것(교과서 유사문제) → 제대로 된 수식으로 (notemaker.html 과 같아요) */
+function fixAnsGarbled(a){
+ var BS=String.fromCharCode(92);
+ return String(a==null?'':a).replace(/\\\(\$ \\\{\\\)\s*(\w) \\mid \1\$\s+\$eq\s*([^\s\\]+)\\text\s*\\\(\\left\\\{\s*([^\\]*?)\s*\\right\\\}\\\)\s*\$\\\}/g,function(m,v,k,w){return BS+'('+BS+'{ '+v+' '+BS+'mid '+v+' '+BS+'neq '+k+BS+'text{ '+w.trim()+'} '+BS+'}'+BS+')'})}
 function fixEq2(t){
  var BS=String.fromCharCode(92),CB=BS+'begin{cases}{',BC=BS+'begin{cases}',EC=BS+'end{cases}',RX='<span class="eq">[^]*?</span>';
- t=String(t||'');
+ t=fixAnsGarbled(t);
+ if(t.indexOf('over')>=0)t=t.replace(new RegExp(RX,'g'),function(m){return m.indexOf('over')<0?m:m.replace(/\\\(([^]*?)\\\)/g,function(x,b){return BS+'('+fixOverTex(b)+BS+')'})});
  if(t.indexOf(CB)>=0)t=t.replace(new RegExp(RX,'g'),function(m){if(m.indexOf(CB)<0)return m;m=m.split('{'+CB).join(BC).split(CB).join(BC);while(m.indexOf(EC+'}')>=0)m=m.split(EC+'}').join(EC);return m.split('#').join(BS+BS).replace(/(&amp;[ \t]*){2,}/g,'&amp; ')});
  t=t.replace(new RegExp(RX,'g'),function(m){return m.replace(/SMALLUNION/g,BS+'cup ').replace(/BECAUSE/g,BS+'because ').replace(/UNDERBRACE\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,function(x,b,body){return BS+'underbrace{'+body.trim()+'}_{'+b.replace(/([가-힣]+)/g,BS+'text{$1}').trim()+'}'})});
  t=t.replace(new RegExp(RX,'g'),function(m){return m.replace(/(^|[^A-Za-z\\])ne(?![A-Za-z])/g,'$1'+BS+'neq ')});
