@@ -14,6 +14,9 @@
   function kind() {
     try { var u = me(); if (!u) return false; if (u.role === 'admin') return curAc() === 'bd'; return u.role === 'ta' && u.ac === 'bd'; } catch (e) { return false; }
   }
+  function isM(c) { c = String(c || ''); return c === 'MATHY CLASS' || c.indexOf('MATHY CLASS · ') === 0; }
+  function clsTxt(c) { return isM(c) ? 'MATHY CLASS' : c; }
+  function collapse(a) { var out = [], mc = false; (a || []).forEach(function (c) { if (isM(c)) mc = true; else out.push(c); }); if (mc) out.push('MATHY CLASS'); return out; }
   var ICON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.3-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>';
   window.sinfoTab = function (list) {
     if (!kind()) return list;
@@ -46,7 +49,7 @@
     var j = await sapi('search', { q: Q.q, cls: Q.cls });
     Q.loading = false; if (tok !== TOKEN) return;
     Q.tok = tok; Q.listAt = Date.now();
-    if (!j || !j.ok) { Q.err = (j && j.error) || '불러오지 못했어요'; Q.list = null; } else { Q.err = null; Q.list = j.list; Q.classes = j.classes || []; }
+    if (!j || !j.ok) { Q.err = (j && j.error) || '불러오지 못했어요'; Q.list = null; } else { Q.err = null; Q.list = j.list; Q.classes = collapse(j.classes); }
     if (S.tab === 'sinfo' && !Q.sid) { var el = document.getElementById('smlist'); if (el) el.innerHTML = listHtml(); else render(); }
   }
   async function loadFeed() {
@@ -95,7 +98,7 @@
       if (s.pin > 0) b += '<span class="smb" style="background:#fdecea;color:#a8453a">⚠ 특이 ' + s.pin + '</span>';
       if (s.follow > 0) b += '<span class="smb" style="background:#fbf3dc;color:#b57c12">후속 ' + s.follow + '</span>';
       if (s.last) b += '<span class="muted sm">' + esc(dstr(s.last)) + '</span>';
-      return '<button class="smrow" type="button" data-sm="open" data-v="' + esc(s.id) + '"><span class="nm">' + esc(s.name) + '</span><span class="muted mt">' + esc(s.cls) + (s.school ? ' · ' + esc(s.school) : '') + ' · ☎' + esc(s.p4 || '') + '</span><span class="r">' + b + '</span></button>';
+      return '<button class="smrow" type="button" data-sm="open" data-v="' + esc(s.id) + '"><span class="nm">' + esc(s.name) + '</span><span class="muted mt">' + esc(clsTxt(s.cls)) + (s.school ? ' · ' + esc(s.school) : '') + ' · ☎' + esc(s.p4 || '') + '</span><span class="r">' + b + '</span></button>';
     }).join('');
   }
   function feedHtml() {
@@ -132,7 +135,7 @@
     var st = d.stu, notes = d.notes || [], sp = notes.filter(function (n) { return n.kind === 'special'; }), co = notes.filter(function (n) { return n.kind === 'consult'; }), ev = notes.filter(function (n) { return n.kind === 'eval'; });
     var pins = sp.filter(function (n) { return n.pinned; }), h = '';
     h += '<button class="btn gh sm3" data-sm="back" type="button">← 목록으로</button>';
-    h += '<div class="card" style="margin-top:10px"><div class="smhd"><h2>' + esc(st.name) + '</h2><span class="badge">' + esc(st.cls) + '</span><span class="muted">' + esc(st.school || '') + '</span>' + (st.active ? '' : '<span class="smb" style="background:#eee;color:#777">퇴원/비활성</span>') + '</div>';
+    h += '<div class="card" style="margin-top:10px"><div class="smhd"><h2>' + esc(st.name) + '</h2><span class="badge">' + esc(clsTxt(st.cls)) + '</span><span class="muted">' + esc(st.school || '') + '</span>' + (st.active ? '' : '<span class="smb" style="background:#eee;color:#777">퇴원/비활성</span>') + '</div>';
     if (st.phone) h += '<div class="smbtn"><a class="btn rose" href="tel:' + esc(tel(st.phone)) + '" style="text-decoration:none">📞 학부모 ' + esc(st.phone) + '</a><button class="btn gh" data-sm="copy" data-v="' + esc(st.phone) + '" type="button">번호 복사</button></div>';
     else h += '<div class="muted sm" style="margin-top:6px">등록된 학부모 전화번호가 없어요</div>';
     h += '<div class="smbtn"><button class="btn" data-sm="new" data-v="consult" type="button">+ 상담 기록</button><button class="btn sec" data-sm="new" data-v="special" type="button">+ 특이사항</button><button class="btn sec" data-sm="new" data-v="eval" type="button">+ 조교평가</button></div></div>';

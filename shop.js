@@ -19,7 +19,7 @@
       if (u.role === 'admin') return curAc() === 'bd' ? 'adm' : null;
       if (u.role === 'ta') return null;
       var st = stuOf(u); if (!st || st.ac !== 'bd') return null;
-      return st.cls === '공수내모' ? 'stu' : st.cls === 'MATHY CLASS' ? 'mc' : null;
+      return st.cls === '공수내모' ? 'stu' : (st.cls === 'MATHY CLASS' || String(st.cls).indexOf('MATHY CLASS · ') === 0) ? 'mc' : null;
     } catch (e) { return null; }
   }
   var ICON = '<svg viewBox="0 0 24 24"><path d="M3 4h2.2l2.1 10.2a1 1 0 0 0 1 .8h8.4a1 1 0 0 0 1-.8L19.5 8H6.2M9.5 19.5h.01M16.5 19.5h.01"/></svg>';

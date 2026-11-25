@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;0,900;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;0,900;1,600&display=swap" rel="stylesheet">
 <style>
 :root{--font:'Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;--serif:'Gowun Batang','Noto Serif KR',Batang,serif;--disp:'Playfair Display','Noto Serif KR',serif;--it:'Cormorant Garamond','Playfair Display',serif}
 body{--bg:#f5efe4;--bg2:#efe6d6;--card:#fffdf8;--ink:#33281f;--mut:#8b7d6c;--line:#e8dfcf;--ok:#3f8f6b;--warn:#c98a1b;--bad:#c2503f;--sh:0 8px 28px rgba(86,60,28,.07);
@@ -336,7 +336,7 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .seg button.on{background:var(--ink);color:var(--bg)}
 .lcls{font-family:var(--it);font-style:italic;font-size:17px;color:var(--acc);margin-top:10px}
 .landing .plist{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin-top:6px}
-.mclink{margin-top:18px;text-align:center}.mclink button{position:relative;display:inline-block;border:0;background:none;box-shadow:none;padding:8px 22px;cursor:pointer;text-align:center;transition:transform .3s}.mclink .mcw{display:block;font-family:var(--serif);font-weight:400;font-size:clamp(17px,4.8vw,24px);letter-spacing:.16em;margin-right:-.16em;line-height:1.2;background:linear-gradient(105deg,#e4e8ef 0%,#f6f4ee 28%,#ffffff 46%,#f8f3e6 58%,#e0e5ed 80%,#f3f1ea 100%);background-size:260% 100%;background-position:130% 0;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 rgba(118,128,152,.85)) drop-shadow(0 2px 3px rgba(96,106,132,.42)) drop-shadow(0 0 7px rgba(150,172,215,.55));animation:mcshine 5.2s ease-in-out infinite,mcglow 3.4s ease-in-out infinite alternate}.mclink button::before,.mclink button::after{content:'✦';position:absolute;top:50%;color:#a9b4c6;font-size:9px;line-height:1;text-shadow:0 0 6px rgba(160,185,235,.9);opacity:0;animation:mctw 3.2s ease-in-out infinite}.mclink button::before{left:3px;margin-top:-13px}.mclink button::after{right:3px;margin-top:5px;font-size:7px;animation-delay:1.5s}@keyframes mcshine{0%{background-position:130% 0}55%,100%{background-position:-30% 0}}@keyframes mcglow{from{filter:drop-shadow(0 1px 0 rgba(118,128,152,.85)) drop-shadow(0 2px 3px rgba(96,106,132,.42)) drop-shadow(0 0 4px rgba(150,172,215,.35))}to{filter:drop-shadow(0 1px 0 rgba(118,128,152,.85)) drop-shadow(0 2px 3px rgba(96,106,132,.42)) drop-shadow(0 0 11px rgba(150,172,215,.8))}}@keyframes mctw{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(45deg)}}.mclink button:hover,.mclink button:focus-visible{transform:translateY(-2px)}.mclink button:hover .mcw{animation-duration:2.2s,1.6s}@media(prefers-reduced-motion:reduce){.mclink .mcw,.mclink button::before,.mclink button::after{animation:none}.mclink button::before,.mclink button::after{opacity:.7}.mclink .mcw{background-position:40% 0}}
+.mclink{margin-top:20px;text-align:center}.mclink button{position:relative;display:inline-flex;align-items:center;gap:16px;border:0;background:none;box-shadow:none;padding:10px 8px;cursor:pointer;transition:transform .35s}.mclink .mcw{font-family:'Cinzel','Cormorant Garamond','Playfair Display',serif;font-weight:500;font-size:clamp(14px,3.9vw,18px);letter-spacing:.3em;margin-right:-.3em;line-height:1.2;white-space:nowrap;background:linear-gradient(105deg,#c9ced8 0%,#e8e7e2 26%,#ffffff 45%,#f3efe3 57%,#c6ccd6 80%,#e2e3e0 100%);background-size:260% 100%;background-position:130% 0;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:.45px rgba(112,122,148,.8);filter:drop-shadow(0 0 6px rgba(165,185,230,.5));animation:mcshine 6s ease-in-out infinite,mcglow 4s ease-in-out infinite alternate}.mclink .mcl{display:block;width:clamp(22px,8vw,44px);height:1px;background:linear-gradient(90deg,rgba(150,160,182,0),rgba(150,160,182,.85));position:relative}.mclink .mcl.r{background:linear-gradient(90deg,rgba(150,160,182,.85),rgba(150,160,182,0))}.mclink .mcl::after{content:'';position:absolute;top:-2px;right:0;width:5px;height:5px;background:#c3cad8;transform:rotate(45deg);box-shadow:0 0 6px rgba(170,190,235,.9);animation:mctw 3.6s ease-in-out infinite}.mclink .mcl.r::after{right:auto;left:0;animation-delay:1.8s}@keyframes mcshine{0%{background-position:130% 0}55%,100%{background-position:-30% 0}}@keyframes mcglow{from{filter:drop-shadow(0 0 3px rgba(165,185,230,.3))}to{filter:drop-shadow(0 0 9px rgba(165,185,230,.75))}}@keyframes mctw{0%,100%{opacity:.25;transform:rotate(45deg) scale(.7)}50%{opacity:1;transform:rotate(45deg) scale(1.15)}}.mclink button:hover,.mclink button:focus-visible{transform:translateY(-2px)}.mclink button:hover .mcw{animation-duration:2.4s,1.8s}@media(prefers-reduced-motion:reduce){.mclink .mcw,.mclink .mcl::after{animation:none}.mclink .mcw{background-position:40% 0}}
 .lsel.mc{background:#1b2232;border-color:#2c3550;color:#e9e3d6}.lsel.mc .lsel-t{color:#d8c28a;letter-spacing:.28em;font-size:16px}.lsel.mc .link{color:#aeb4c6}.mcnote{margin:8px 0 2px;font-size:12px;color:#8f98b3;letter-spacing:.06em}
 .lsel.mc .fld label{color:#aeb4c6}.lsel.mc .fld input{background:#121826;border-color:#3a4566;color:#fff}.lsel.mc .btn{background:#d8c28a;color:#1b2232}.lsel.mc .seg{background:#121826;border-color:#3a4566}.lsel.mc .seg button{color:#aeb4c6}.lsel.mc .seg button.on{background:#d8c28a;color:#1b2232}.lsel.mc .lerr{color:#ff9d8f}
 .staffln{margin-top:16px;font-size:12.5px;color:var(--mut);text-align:right}
@@ -413,6 +413,9 @@ const AC={
 const ROLE={student:'학생',parent:'학부모',ta:'운영진',admin:'원장'};
 const U={};                                   // 서버에서 받은 사람들 (로그인한 사람 기준)
 const stuList=ac=>Object.values(U).filter(u=>u.role==='student'&&(!ac||u.ac===ac));
+/* MATHY CLASS = 개별 수업: 수강생 한 명이 반 하나('MATHY CLASS · 이름'). 옛 이름 'MATHY CLASS' 도 같은 취급 */
+const isMc=c=>{c=String(c||'');return c==='MATHY CLASS'||c.indexOf('MATHY CLASS · ')===0;};
+const mcLabel=c=>String(c).replace(/^MATHY CLASS · /,'')||'MATHY CLASS';
 const LINKS=[
  {n:'OMR 사진 자동채점',d:'답안지 사진 → 자동 채점',u:'https://mathyyuri.com/omr.html',ic:''},
  {n:'10월 모의고사 성적 제출',d:'학생이 점수 직접 입력',u:'https://mathyyuri.com/score_form_10.html',ic:''},
@@ -518,7 +521,7 @@ function clsOk(it){const st=stuOf();if(st){return !(it.cls&&it.cls!=='all'&&it.c
 function postVis(p){if(!inAc(p))return false;const st=stuOf();
  if(p.sid){if(st)return st.id===p.sid;return S.cls==='all'||(U[p.sid]&&U[p.sid].cls===S.cls);}
  return clsOk(p);}
-const classesNow=()=>AC[curAc()].classes;
+const classesNow=()=>{const b=AC[curAc()].classes.filter(c=>!isMc(c));if(curAc()!=='bd')return b;return b.concat([...new Set(stuList('bd').map(x=>x.cls).filter(isMc))].sort());};
 
 
 /* ════════ 렌더링 ════════ */
@@ -544,7 +547,7 @@ function renderLogin(){
  if(!L.ac){
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
    '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div>'+(TEMP_OMR_LINK?'<span class="omrb" data-a="omr" role="link">✍️ 10모 수학<br class="m"><span class="nm"> </span>답안지제출 <small>(외부생)</small></span>':'')+'</button></div>'+
-   '<div class="mclink"><button type="button" data-a="lmc" aria-label="MATHY CLASS 수강생 입구"><span class="mcw">MATHY&nbsp;CLASS</span></button></div>';
+   '<div class="mclink"><button type="button" data-a="lmc" aria-label="MATHY CLASS 수강생 입구"><span class="mcl"></span><span class="mcw">MATHY&nbsp;CLASS</span><span class="mcl r"></span></button></div>';
  }else{
   const a=AC[L.ac],role=L.role==='parent'?'parent':'student';
   const mc=!!L.mc;
@@ -584,8 +587,8 @@ function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'�
 function renderMain(){
  if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'&&S.tab!=='sinfo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
  const u=me(),a=AC[curAc()],st=stuOf(u);
- const dn=(st&&st.cls==='MATHY CLASS')?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
- const sub=isStaff()?(ROLE[u.role]+' · '+a.name):(st.cls+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
+ const dn=(st&&isMc(st.cls))?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
+ const sub=isStaff()?(ROLE[u.role]+' · '+a.name):((isMc(st.cls)?'MATHY CLASS':st.cls)+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
  const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'</div>':'';
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
  const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend,shop:(typeof vShop==='function'?vShop:()=>''),sinfo:(typeof vSinfo==='function'?vSinfo:()=>'')})[S.tab]();
@@ -596,7 +599,7 @@ function renderMain(){
  '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
 }
 function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att'||S.tab==='shop'||S.tab==='sinfo')return '';
- return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+c+'">'+c+'</button>').join('')+'</div>';}
+ return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+esc(c)+'">'+(isMc(c)?'✦ '+esc(mcLabel(c)):esc(c))+'</button>').join('')+'</div>';}
 const comBadge=it=>it.ac==='all'?' <span class="badge com">공통</span>':'';
 
 /* ── 홈 ── */
@@ -1051,7 +1054,7 @@ async function doLogin(){
  if(!j||!j.ok){L.busy=false;L.err=(j&&j.error)||'로그인하지 못했어요';render(0);return;}
  const wantMc=!!L.mc;
  L.nm='';if(j.dev_id){lsSet(DEV_KEY,j.dev_id);IDB.set('dev',j.dev_id);}await startSession(j.token);
- if(wantMc&&S.uid){const st=stuOf();if(!st||st.cls!=='MATHY CLASS'){await api('logout');localLogout();S.L={ac:'bd',role:'student',mc:1,err:'MATHY CLASS 수강생이 아니에요. 학원 로그인으로 들어가 주세요.'};render(0);}}   /* 이 입구는 MATHY CLASS 반만 */
+ if(wantMc&&S.uid){const st=stuOf();if(!st||!isMc(st.cls)){await api('logout');localLogout();S.L={ac:'bd',role:'student',mc:1,err:'MATHY CLASS 수강생이 아니에요. 학원 로그인으로 들어가 주세요.'};render(0);}}   /* 이 입구는 MATHY CLASS 반만 */
 }
 async function doStaff(){
  const L=S.L;if(L.busy)return;
@@ -2112,24 +2115,33 @@ function vAdmin(){
  }
  const ac=curAc(),L=stuList(ac);
  h+='<div class="note">학생·학부모 로그인은 "이름 + 학부모 전화번호 뒤 4자리"예요. 이름과 전화번호는 원장님 화면에만 보여요. 같은 학원에서 같은 이름·같은 뒤 4자리는 둘 이상 만들 수 없어요.</div><div class="row wrap" style="margin-bottom:12px"><button class="btn" data-a="stuform">학생 추가</button><button class="btn sec" data-a="stuimport">여러 명 한번에 추가</button></div>';
- AC[ac].classes.forEach(c=>{const l=L.filter(s=>s.cls===c);
+ AC[ac].classes.filter(c=>!isMc(c)).forEach(c=>{const l=L.filter(s=>s.cls===c);
   h+='<div class="card"><h3>'+c+' <span class="badge">'+l.length+'명</span></h3>'+(l.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+l.map(s=>'<tr><td>'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+'</td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 학생이 없어요</div>')+'</div>';});
- const known=AC[ac].classes,odd=L.filter(s=>known.indexOf(s.cls)<0);
+ if(ac==='bd'){const m=L.filter(s=>isMc(s.cls));h+='<div class="card"><h3>MATHY CLASS <span class="badge">'+m.length+'명</span> <span class="muted sm" style="font-weight:400">개별 수업 · 한 명이 반 하나</span></h3>'+(m.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+m.map(s=>'<tr><td>'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+'</td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 수강생이 없어요 (반 관리 → MATHY CLASS 에서 등록해요)</div>')+'</div>';}
+ const known=AC[ac].classes,odd=L.filter(s=>known.indexOf(s.cls)<0&&!isMc(s.cls));
  if(odd.length)h+='<div class="card"><h3>목록에 없는 반 <span class="badge">'+odd.length+'명</span></h3><div class="note">[반 관리]에서 지운 반에 아직 학생이 남아 있어요. 학생을 눌러 반을 바꿔 주세요.</div><table class="tbl"><tr><th>반</th><th>이름</th><th>학교</th><th></th></tr>'+odd.map(s=>'<tr><td>'+esc(s.cls)+'</td><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button></td></tr>').join('')+'</table></div>';
  return h;
 }
 function vClasses(){
  let h='<div class="note">반 이름을 추가하거나 지워요. 학생이 남아 있는 반은 지울 수 없어요(학생 탭에서 먼저 옮겨 주세요). 순서는 추가한 순서대로예요.</div>';
  Object.values(AC).forEach(a=>{
-  h+='<div class="card"><h3>'+esc(a.name)+'</h3><div class="row wrap" style="margin-bottom:12px">'+a.classes.map(c=>{const n=stuList(a.id).filter(s=>s.cls===c).length;return '<span class="badge" style="font-size:14px;padding:7px 12px">'+esc(c)+' · '+n+'명 '+(n?'':'<button class="btn sm3 dng" style="margin-left:6px" data-a="clsdel" data-ac="'+a.id+'" data-c="'+esc(c)+'">삭제</button>')+'</span>';}).join('')+'</div><div class="row"><input type="text" id="cn_'+a.id+'" maxlength="12" placeholder="새 반 이름 (예: A+반)" style="border:1px solid var(--line);border-radius:16px;padding:10px 14px"><button class="btn" data-a="clsadd" data-ac="'+a.id+'">추가</button></div></div>';});
+  h+='<div class="card"><h3>'+esc(a.name)+'</h3><div class="row wrap" style="margin-bottom:12px">'+a.classes.filter(c=>!isMc(c)).map(c=>{const n=stuList(a.id).filter(s=>s.cls===c).length;return '<span class="badge" style="font-size:14px;padding:7px 12px">'+esc(c)+' · '+n+'명 '+(n?'':'<button class="btn sm3 dng" style="margin-left:6px" data-a="clsdel" data-ac="'+a.id+'" data-c="'+esc(c)+'">삭제</button>')+'</span>';}).join('')+'</div><div class="row"><input type="text" id="cn_'+a.id+'" maxlength="12" placeholder="새 반 이름 (예: A+반)" style="border:1px solid var(--line);border-radius:16px;padding:10px 14px"><button class="btn" data-a="clsadd" data-ac="'+a.id+'">추가</button></div></div>';});
+ h+=vMcBox();
  return h;
+}
+function vMcBox(){
+ const L=stuList('bd').filter(s=>isMc(s.cls)).sort((x,y)=>String(x.name).localeCompare(String(y.name),'ko'));
+ const inp='style="border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0"';
+ return '<div class="card mcbox" style="border-color:#c9cfdb;background:linear-gradient(180deg,#fbfcfe,#f4f6fa)"><h3 style="font-family:var(--it);letter-spacing:.24em;font-weight:600;color:#566078">MATHY CLASS</h3><div class="muted sm" style="margin:-6px 0 12px">개별 수업 · 수강생 한 명이 반 하나예요. 이름을 누르면 학생 정보가 열려요.</div>'+
+  '<div class="row wrap" style="margin-bottom:12px">'+(L.length?L.map(s=>'<span class="badge" style="font-size:14px;padding:7px 12px;background:#e9edf4;color:#3d4760">'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+(s.school?' <span class="muted sm">'+esc(s.school)+'</span>':'')+' <button class="btn sm3 dng" style="margin-left:6px" data-a="studel" data-id="'+s.id+'">삭제</button></span>').join(''):'<span class="muted sm">아직 수강생이 없어요</span>')+'</div>'+
+  '<div class="row wrap" style="gap:8px"><input type="text" id="mc_n" maxlength="12" placeholder="수강생 이름" '+inp+'><input type="text" id="mc_s" maxlength="20" placeholder="학교" '+inp+'><input type="text" id="mc_p" inputmode="numeric" placeholder="학부모 전화 010-1234-5678" '+inp+'><button class="btn" data-a="mcadd">수강생 등록</button></div></div>';
 }
 async function saveClasses(){
  const v={};Object.values(AC).forEach(a=>{v[a.id]=a.classes.slice();});
  const j=await mut('settings_set',{key:'classes',value:v});
  return j&&j.ok;
 }
-function classOpts(ac,sel){return AC[ac].classes.map(c=>'<option'+(sel===c?' selected':'')+'>'+c+'</option>').join('');}
+function classOpts(ac,sel){let h=AC[ac].classes.filter(c=>!isMc(c)).map(c=>'<option'+(sel===c?' selected':'')+'>'+c+'</option>').join('');if(ac==='bd')h+='<option value="MATHY CLASS"'+(isMc(sel)?' selected':'')+'>MATHY CLASS (개별반)</option>';return h;}
 function openStu(id){
  const s=id?U[id]:null,ac=s?s.ac:curAc();
  openModal('<h3>'+(s?'학생 수정':'학생 추가')+'</h3><div class="fld"><label>학원</label><select id="sf_a" data-ch="stuac">'+Object.values(AC).map(a=>'<option value="'+a.id+'"'+(a.id===ac?' selected':'')+'>'+a.name+'</option>').join('')+'</select></div>'+
@@ -2137,7 +2149,8 @@ function openStu(id){
   '<div class="fld"><label>학부모 전화번호 (뒤 4자리가 로그인 번호예요)</label><input type="text" id="sf_p" inputmode="numeric" value="'+esc(s?s.phone:'')+'" placeholder="010-1234-5678"></div><div class="row"><button class="btn gh sp" data-a="closemodal">취소</button><button class="btn sp" data-a="stusave" data-id="'+(id||'')+'">저장</button></div>');
 }
 async function saveStu(id){
- const j=await mut('student_upsert',{id:id||null,academy:$('#sf_a').value,cls:$('#sf_c').value,name:$('#sf_n').value,school:$('#sf_s').value,phone:$('#sf_p').value},{render:false});
+ let cls=$('#sf_c').value;const nm0=$('#sf_n').value.trim();if(isMc(cls)&&$('#sf_a').value==='bd')cls='MATHY CLASS · '+nm0;   /* 개별반: 반 이름이 수강생 이름을 따라가요 */
+ const j=await mut('student_upsert',{id:id||null,academy:$('#sf_a').value,cls:cls,name:$('#sf_n').value,school:$('#sf_s').value,phone:$('#sf_p').value},{render:false});
  if(j&&j.ok){closeModal();render();toast('저장했어요');}
 }
 function openStuImport(){
@@ -2313,6 +2326,7 @@ document.addEventListener('click',async e=>{
   const arr=(PUB.pv||[]).concat([{unit:u,title:ti,url:l}]);await savePv(arr);break;}
  case 'pvdel':{const i=+t.dataset.i;if(!confirm('이 영상을 목록에서 지울까요?'))break;const arr=(PUB.pv||[]).filter((_,k)=>k!==i);await savePv(arr);break;}
  case 'pvmv':{const i=+t.dataset.i,d=+t.dataset.d,arr=(PUB.pv||[]).slice(),u=arr[i].unit;let j=i+d;while(j>=0&&j<arr.length&&arr[j].unit!==u)j+=d;if(j<0||j>=arr.length)break;const x=arr[i];arr[i]=arr[j];arr[j]=x;await savePv(arr);break;}
+ case 'mcadd':{const nm=($('#mc_n').value||'').trim(),sc=($('#mc_s').value||'').trim(),ph=($('#mc_p').value||'').trim();if(!nm){toast('수강생 이름을 적어 주세요');break;}if(nm.length>12){toast('이름이 너무 길어요');break;}const j=await mut('student_upsert',{id:null,academy:'bd',cls:'MATHY CLASS · '+nm,name:nm,school:sc,phone:ph});if(j&&j.ok)toast('수강생을 등록했어요');break;}
  case 'clsadd':{const ac=t.dataset.ac,i=$('#cn_'+ac),nm=(i.value||'').trim();if(!nm){toast('반 이름을 적어 주세요');break;}if(AC[ac].classes.indexOf(nm)>=0){toast('이미 있는 반이에요');break;}if(AC[ac].classes.length>=12){toast('반은 12개까지예요');break;}AC[ac].classes.push(nm);if(!(await saveClasses())){AC[ac].classes.pop();render();}break;}
  case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuList(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
  case 'tooladd':readToolsEdit();TEDIT.push({id:'t'+Date.now().toString(36),name:'새 도구',url:'',grp:'기타',desc:'',roles:[]});renderToolsEdit();break;
