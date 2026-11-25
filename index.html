@@ -336,6 +336,9 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .seg button.on{background:var(--ink);color:var(--bg)}
 .lcls{font-family:var(--it);font-style:italic;font-size:17px;color:var(--acc);margin-top:10px}
 .landing .plist{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin-top:6px}
+.mclink{text-align:right;margin-top:14px}.mclink button{border:0;background:none;color:#a99d8c;font-family:var(--serif);font-size:10.5px;letter-spacing:.2em;padding:8px 4px;opacity:.65;transition:.2s}.mclink button:hover,.mclink button:focus-visible{opacity:1;color:#1d2433}
+.lsel.mc{background:#1b2232;border-color:#2c3550;color:#e9e3d6}.lsel.mc .lsel-t{color:#d8c28a;letter-spacing:.28em;font-size:16px}.lsel.mc .link{color:#aeb4c6}.mcnote{margin:8px 0 2px;font-size:12px;color:#8f98b3;letter-spacing:.06em}
+.lsel.mc .fld label{color:#aeb4c6}.lsel.mc .fld input{background:#121826;border-color:#3a4566;color:#fff}.lsel.mc .btn{background:#d8c28a;color:#1b2232}.lsel.mc .seg{background:#121826;border-color:#3a4566}.lsel.mc .seg button{color:#aeb4c6}.lsel.mc .seg button.on{background:#d8c28a;color:#1b2232}.lsel.mc .lerr{color:#ff9d8f}
 .staffln{margin-top:16px;font-size:12.5px;color:var(--mut);text-align:right}
 .staffln .link{font-size:12.5px;color:var(--ink);font-weight:700}
 .lfoot{margin-top:18px;display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--mut);align-items:flex-start}
@@ -524,7 +527,7 @@ function render(y){
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
  else{document.body.dataset.ac=curAc();renderMain();}
  window.scrollTo(0,keep);
- setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();
+ setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();setTimeout(()=>{if(typeof shopAfter==='function')shopAfter();},0);
 }
 function saveSession(){}
 
@@ -540,16 +543,18 @@ function renderLogin(){
  if(!PUB.ok)h+='<div class="note">서버에 연결하지 못했어요. 인터넷을 확인하거나, 서버 만들기(SQL)를 아직 안 하셨다면 먼저 해 주세요.</div>';
  if(!L.ac){
   h+='<div class="lgrid"><button class="lcard ds" data-a="lac" data-v="ds"><div class="t">대치에스플러스</div><div class="cl">'+AC.ds.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div></button>'+
-   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div>'+(TEMP_OMR_LINK?'<span class="omrb" data-a="omr" role="link">✍️ 10모 수학<br class="m"><span class="nm"> </span>답안지제출 <small>(외부생)</small></span>':'')+'</button></div>';
+   '<button class="lcard bd" data-a="lac" data-v="bd"><div class="t">분당미래탐구</div><div class="cl">'+AC.bd.classes.map(c=>'<span class="badge">'+esc(c)+'</span>').join('')+'</div>'+(TEMP_OMR_LINK?'<span class="omrb" data-a="omr" role="link">✍️ 10모 수학<br class="m"><span class="nm"> </span>답안지제출 <small>(외부생)</small></span>':'')+'</button></div>'+
+   '<div class="mclink"><button type="button" data-a="lmc" aria-label="MATHY CLASS 수강생 입구">M A T H Y &nbsp; C L A S S</button></div>';
  }else{
   const a=AC[L.ac],role=L.role==='parent'?'parent':'student';
-  h+='<div class="lsel"><div class="lsel-h"><button class="link" data-a="lback">← 학원 다시 고르기</button><span class="lsel-t">'+a.name+'</span></div>';
+  const mc=!!L.mc;
+  h+='<div class="lsel'+(mc?' mc':'')+'"><div class="lsel-h"><button class="link" data-a="lback">'+(mc?'← 돌아가기':'← 학원 다시 고르기')+'</button><span class="lsel-t">'+(mc?'MATHY CLASS':a.name)+'</span></div>'+(mc?'<div class="mcnote">초대받은 수강생 전용 입구예요</div>':'');
   if(!L.staff){
    h+='<div class="seg"><button class="'+(role==='student'?'on':'')+'" data-a="lrole" data-v="student">학생</button><button class="'+(role==='parent'?'on':'')+'" data-a="lrole" data-v="parent">학부모</button></div>'+
     '<form class="lform" data-form="login" autocomplete="off"><div class="fld"><label>'+(role==='parent'?'자녀 이름':'내 이름')+'</label><input type="text" id="lname" placeholder="이름" autocomplete="off" value="'+esc(L.nm||'')+'"></div>'+
     '<div class="fld"><label>학부모님 전화번호 뒤 4자리</label><input type="password" id="lpin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></div>'+
     '<div class="lerr">'+esc(L.err||'')+'</div><button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'들어가기')+'</button></form>'+
-    '<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">운영진</button> 로그인</div>';
+    (mc?'':'<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">운영진</button> 로그인</div>');
   }else{
    h+='<form class="lform" data-form="staff" autocomplete="off"><div class="fld"><label>'+(L.staff==='admin'?'원장':'운영진')+' 비밀번호</label><input type="password" id="lpw" placeholder="비밀번호" autocomplete="off"></div><div class="lerr">'+esc(L.err||'')+'</div>'+
     '<button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'로그인')+'</button></form><div class="staffln"><button class="link" data-a="lstaffback">← 학생 · 학부모 로그인으로</button></div>';
@@ -564,7 +569,8 @@ function renderLogin(){
 /* 메인 틀 */
 const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','누적성적'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
 const TAB_ORDER=['home','feed','mission','exam','lesson','msg'];TABS.sort((a,b)=>TAB_ORDER.indexOf(a[0])-TAB_ORDER.indexOf(b[0]));
-const tabsNow=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
+const tabsBase=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
+const tabsNow=()=>{const L=tabsBase();return typeof shopTab==='function'?shopTab(L):L;};   /* 공수내모 반 '교재 구매' 탭은 shop.js 가 끼워 넣어요 */
 function badgeFor(t){const u=me();
  if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
  if(t==='msg')return unreadMsgs();return 0;}
@@ -573,22 +579,23 @@ function unreadMsgs(){const u=me();let n=0;
   if(isStaff()){if(st.ac!==curAc())return;if(S.cls!=='all'&&st.cls!==S.cls)return;DB.msgs[k].forEach(m=>{if(m.f==='u'&&!m.rdS)n++;});}
   else{const my=stuOf(u);if(my.id!==sid||(u.role==='student'?'student':'parent')!==kind)return;DB.msgs[k].forEach(m=>{if(m.f==='s'&&!m.rdU)n++;});}});
  return n;}
-const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
-function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크'}[t];}
+const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',shop:'books',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
+function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크',shop:(typeof shopTitle==='function'?shopTitle():'교재 구매')}[t];}
 function renderMain(){
  if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
  const u=me(),a=AC[curAc()],st=stuOf(u);
+ const dn=(st&&st.cls==='MATHY CLASS')?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
  const sub=isStaff()?(ROLE[u.role]+' · '+a.name):(st.cls+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
  const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'</div>':'';
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
- const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend})[S.tab]();
+ const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend,shop:(typeof vShop==='function'?vShop:()=>'')})[S.tab]();
  $('#app').innerHTML=
- '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+a.name+'</div>'+acsw+''+viewAsNav()+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
- '<div><div class="top"><div class="brand">'+a.name+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
+ '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+dn+'</div>'+acsw+''+viewAsNav()+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
+ '<div><div class="top"><div class="brand">'+dn+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
  '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+EB[S.tab]+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
  '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
 }
-function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att')return '';
+function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att'||S.tab==='shop')return '';
  return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+c+'">'+c+'</button>').join('')+'</div>';}
 const comBadge=it=>it.ac==='all'?' <span class="badge com">공통</span>':'';
 
@@ -1042,7 +1049,9 @@ async function doLogin(){
  L.nm=$('#lname').value.trim();const pin=$('#lpin')?$('#lpin').value.trim():'';L.busy=true;L.err='';render(0);
  const j=await api('login',{academy:L.ac,role:L.role==='parent'?'parent':'student',name:L.nm,pin:pin,dev:devLabel(),dev_id:lsGet(DEV_KEY)||undefined});
  if(!j||!j.ok){L.busy=false;L.err=(j&&j.error)||'로그인하지 못했어요';render(0);return;}
+ const wantMc=!!L.mc;
  L.nm='';if(j.dev_id){lsSet(DEV_KEY,j.dev_id);IDB.set('dev',j.dev_id);}await startSession(j.token);
+ if(wantMc&&S.uid){const st=stuOf();if(!st||st.cls!=='MATHY CLASS'){await api('logout');localLogout();S.L={ac:'bd',role:'student',mc:1,err:'MATHY CLASS 수강생이 아니에요. 학원 로그인으로 들어가 주세요.'};render(0);}}   /* 이 입구는 MATHY CLASS 반만 */
 }
 async function doStaff(){
  const L=S.L;if(L.busy)return;
@@ -2172,6 +2181,7 @@ document.addEventListener('click',async e=>{
  case 'omr':location.href='26_10mocard.html';break;
  case 'lrole':S.L.role=v;S.L.err='';render(0);break;
  case 'lback':S.L={ac:null,role:null};render(0);break;
+ case 'lmc':S.L={ac:'bd',role:'student',mc:1};render(0);break;
  case 'lstaff':S.L.staff=v;S.L.err='';render(0);break;
  case 'lstaffback':S.L.staff=null;S.L.err='';render(0);break;
  case 'facepick':if(S.uid&&me().role==='admin')pickFace();break;
@@ -2724,5 +2734,6 @@ async function boot(){
  boot();
 })();
 </script>
+<script src="shop.js"></script>
 </body>
 </html>
