@@ -24,12 +24,12 @@
   }
   var ICON = '<svg viewBox="0 0 24 24"><path d="M3 4h2.2l2.1 10.2a1 1 0 0 0 1 .8h8.4a1 1 0 0 0 1-.8L19.5 8H6.2M9.5 19.5h.01M16.5 19.5h.01"/></svg>';
   window.shopTab = function (list) {
-    var k = kind(); if (!k) return list;
+    var k = kind(); if (!k) return list; P.area = (k === 'adm' && S.mc) ? 'lec' : 'book';
     var out = list.slice(), i = out.map(function (t) { return t[0]; }).indexOf('exam');
-    out.splice(i < 0 ? out.length : i + 1, 0, ['shop', ICON, k === 'adm' ? '교재·강의' : k === 'mc' ? '강의신청' : '교재구매']);
+    out.splice(i < 0 ? out.length : i + 1, 0, ['shop', ICON, k === 'adm' ? (S.mc ? '강의 주문' : '교재 주문') : k === 'mc' ? '강의신청' : '교재구매']);
     return out;
   };
-  window.shopTitle = function () { var k = kind(); return k === 'adm' ? '교재 · 강의 주문' : k === 'mc' ? '강의 신청' : '교재 구매'; };
+  window.shopTitle = function () { var k = kind(); return k === 'adm' ? (S.mc ? '강의 주문' : '교재 주문') : k === 'mc' ? '강의 신청' : '교재 구매'; };
 
   /* ── 서버 부르기 ── */
   async function sapi(a, args) {
@@ -331,13 +331,14 @@
 
   /* ── 원장 화면 ── */
   function areaChips() {
+    return '';
     return '<div class="chips"><button class="chip ' + (P.area !== 'lec' ? 'on' : '') + '" data-sa="area" data-v="book" type="button">📘 교재 (공수내모)</button><button class="chip ' + (P.area === 'lec' ? 'on' : '') + '" data-sa="area" data-v="lec" type="button">🎓 MATHY CLASS 강의</button></div>';
   }
   function vLecAdm(d) {
     var L = LA.list, pend = L && L.orders ? L.orders.filter(function (o) { return o.status === 'pending'; }).length : 0;
     var chips = [['students', '학생별 강의'], ['orders', '주문 확인' + (pend ? ' (' + pend + ')' : '')], ['set', '설정']];
     var h = '<div class="chips">' + chips.map(function (c) { return '<button class="chip ' + (LA.sub === c[0] ? 'on' : '') + '" data-sa="lsub" data-v="' + c[0] + '" type="button">' + esc(c[1]) + '</button>'; }).join('') + '</div>';
-    if (!d.bank_ready) h += '<div class="note"><b>입금 계좌가 아직 비어 있어요.</b> [📘 교재 → 설정]에서 은행·계좌번호·예금주를 넣으면 강의 신청에도 같은 계좌가 쓰여요.</div>';
+    if (!d.bank_ready) h += '<div class="note"><b>입금 계좌가 아직 비어 있어요.</b> 분당미래탐구 화면의 [교재 주문 → 설정]에서 은행·계좌번호·예금주를 넣으면 강의 신청에도 같은 계좌가 쓰여요.</div>';
     if (!L) return h + '<div class="card"><div class="empty">불러오는 중…</div></div>';
     if (L.err) return h + '<div class="note">' + esc(L.err) + '</div>';
     return h + (LA.sub === 'orders' ? lecOrders(L) : LA.sub === 'set' ? lecSet(L) : lecStudents(L));
@@ -397,7 +398,7 @@
   }
   function lecSet(L) {
     var c = L.cfg || {};
-    return '<div class="card"><h3 style="margin:0 0 4px">MATHY CLASS 설정</h3><div class="muted sm" style="margin-bottom:12px">입금 계좌는 교재 구매와 같은 계좌를 써요([📘 교재 → 설정]에서 바꿔요).</div>' +
+    return '<div class="card"><h3 style="margin:0 0 4px">MATHY CLASS 설정</h3><div class="muted sm" style="margin-bottom:12px">입금 계좌는 교재 구매와 같은 계좌를 써요(분당미래탐구 화면의 [교재 주문 → 설정]에서 바꿔요).</div>' +
       '<div class="fld"><label>회당 기본 가격 (원) — 앞으로 추가하는 강의의 기본값</label><input type="text" inputmode="numeric" id="lcs_price" value="' + esc(String(c.price || 125000)) + '"></div>' +
       '<div class="fld"><label>학생에게 보여 줄 안내문 (환불 기준 등, 500자까지)</label><textarea id="lcs_note" maxlength="500" style="min-height:110px">' + esc(c.note || '') + '</textarea></div>' +
       '<div class="fld"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="lcs_open"' + (c.open === false ? '' : ' checked') + ' style="width:20px;height:20px;accent-color:var(--acc)"> 신청 받기 (끄면 학생이 신청할 수 없어요)</label></div>' +
@@ -466,7 +467,7 @@
     return false;
   }
 
-  function vAdm(d) { return areaChips() + (P.area === 'lec' ? vLecAdm(d) : vAdmBook(d)); }
+  function vAdm(d) { P.area = S.mc ? 'lec' : 'book'; return (S.mc ? vLecAdm(d) : vAdmBook(d)); }
 
   window.vShop = function () {
     var k = kind();

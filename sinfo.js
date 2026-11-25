@@ -46,15 +46,15 @@
   /* ── 불러오기 ── */
   async function loadList() {
     if (Q.loading) return; Q.loading = true; var tok = TOKEN;
-    var j = await sapi('search', { q: Q.q, cls: Q.cls });
+    var j = await sapi('search', { q: Q.q, cls: S.mc ? 'MATHY CLASS' : Q.cls });
     Q.loading = false; if (tok !== TOKEN) return;
     Q.tok = tok; Q.listAt = Date.now();
-    if (!j || !j.ok) { Q.err = (j && j.error) || '불러오지 못했어요'; Q.list = null; } else { Q.err = null; Q.list = j.list; Q.classes = collapse(j.classes); }
+    if (!j || !j.ok) { Q.err = (j && j.error) || '불러오지 못했어요'; Q.list = null; } else { Q.err = null; Q.list = (j.list || []).filter(function (x) { return !!S.mc === isM(x.cls); }); Q.classes = S.mc ? [] : collapse(j.classes).filter(function (c) { return c !== 'MATHY CLASS'; }); }
     if (S.tab === 'sinfo' && !Q.sid) { var el = document.getElementById('smlist'); if (el) el.innerHTML = listHtml(); else render(); }
   }
   async function loadFeed() {
     var tok = TOKEN, j = await sapi('feed'); if (tok !== TOKEN) return;
-    Q.feed = j && j.ok ? j : { follows: [], recent: [] };
+    Q.feed = j && j.ok ? { follows: (j.follows || []).filter(function (x) { return !!S.mc === isM(x.cls); }), recent: (j.recent || []).filter(function (x) { return !!S.mc === isM(x.cls); }) } : { follows: [], recent: [] };
     if (S.tab === 'sinfo' && !Q.sid) { var el = document.getElementById('smfeed'); if (el) el.innerHTML = feedHtml(); }
   }
   async function loadCard(keep) {
@@ -65,6 +65,7 @@
   }
   window.sinfoAfter = function () {
     if (S.tab !== 'sinfo' || !kind()) return;
+    if (Q.mcv !== !!S.mc) { Q.mcv = !!S.mc; Q.list = null; Q.feed = null; Q.sid = null; Q.card = null; Q.cls = ''; Q.q = ''; }
     if (Q.tok !== TOKEN && !Q.loading) { Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; loadList(); loadFeed(); return; }
     if (Q.sid) { if (!Q.card && !Q.cardBusy) loadCard(); return; }
     if (!Q.list && !Q.loading) loadList();
@@ -118,7 +119,7 @@
     return h;
   }
   function vList() {
-    var chips = '<div class="chips"><button class="chip ' + (!Q.cls ? 'on' : '') + '" data-sm="cls" data-v="" type="button">전체</button>' + (Q.classes || []).map(function (c) { return '<button class="chip ' + (Q.cls === c ? 'on' : '') + '" data-sm="cls" data-v="' + esc(c) + '" type="button">' + esc(c) + '</button>'; }).join('') + '</div>';
+    var chips = S.mc ? '' : '<div class="chips"><button class="chip ' + (!Q.cls ? 'on' : '') + '" data-sm="cls" data-v="" type="button">전체</button>' + (Q.classes || []).map(function (c) { return '<button class="chip ' + (Q.cls === c ? 'on' : '') + '" data-sm="cls" data-v="' + esc(c) + '" type="button">' + esc(c) + '</button>'; }).join('') + '</div>';
     return '<div class="card"><div class="fld" style="margin:0 0 8px"><input type="text" id="smq" value="' + esc(Q.q) + '" placeholder="이름 · 학교 · 학부모 전화 뒤 4자리" autocomplete="off" data-si="smq" style="font-size:16px"></div>' +
       '<div class="muted sm" style="margin-bottom:6px">전화가 왔을 땐 번호 뒤 4자리를 입력하면 바로 찾아요.</div>' + chips + '<div id="smlist">' + listHtml() + '</div></div>' +
       '<div id="smfeed">' + feedHtml() + '</div>' +

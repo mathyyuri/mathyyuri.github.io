@@ -79,7 +79,8 @@ input,select,textarea{font:inherit;color:inherit}
 .ph h1{margin:0;font-family:var(--serif);font-weight:700;font-size:28px;letter-spacing:-.6px;line-height:1.25}
 .ph .s{color:var(--mut);font-size:13.5px;margin-top:4px}
 .acsw{display:flex;gap:6px;margin-bottom:12px;background:var(--bg2);border-radius:24px;padding:4px}
-.acsw button{flex:1;border:0;background:none;border-radius:20px;padding:8px;font-weight:700;font-size:13px;color:var(--mut)}
+.acsw{flex-wrap:wrap}.acsw button{flex:1 1 auto;border:0;background:none;border-radius:20px;padding:8px 6px;font-weight:700;font-size:12.5px;color:var(--mut);white-space:nowrap}
+body[data-ac="mc"]{--pri:#1b2232;--pri2:#8d97ab;--acc:#4a5670;--soft:#e9edf4;--soft2:#f1f3f8}
 .acsw button.on{background:var(--ink);color:var(--bg)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -412,10 +413,14 @@ const AC={
 };
 const ROLE={student:'학생',parent:'학부모',ta:'운영진',admin:'원장'};
 const U={};                                   // 서버에서 받은 사람들 (로그인한 사람 기준)
-const stuList=ac=>Object.values(U).filter(u=>u.role==='student'&&(!ac||u.ac===ac));
+const stuListAll=ac=>Object.values(U).filter(u=>u.role==='student'&&(!ac||u.ac===ac));
+const stuList=ac=>stuListAll(ac).filter(u=>scopeOk(u.cls));
 /* MATHY CLASS = 개별 수업: 수강생 한 명이 반 하나('MATHY CLASS · 이름'). 옛 이름 'MATHY CLASS' 도 같은 취급 */
 const isMc=c=>{c=String(c||'');return c==='MATHY CLASS'||c.indexOf('MATHY CLASS · ')===0;};
 const mcLabel=c=>String(c).replace(/^MATHY CLASS · /,'')||'MATHY CLASS';
+/* 운영진 화면 범위: S.mc(원장이 MATHY CLASS 를 고름)면 개별반만, 아니면 개별반은 빼요. 반 이름이 없거나 'all'(학원 전체)인 것은 어느 쪽에서나 보여요 */
+const scopeOk=c=>{try{if(!S.uid||!U[S.uid]||!isStaff())return true;}catch(e){return true;}c=String(c||'');if(!c||c==='all')return true;return isMc(c)===!!S.mc;};
+const inMc=()=>{try{const u=me();if(!u)return false;if(isStaff(u))return !!S.mc;const st=stuOf(u);return !!st&&isMc(st.cls);}catch(e){return false;}};
 const LINKS=[
  {n:'OMR 사진 자동채점',d:'답안지 사진 → 자동 채점',u:'https://mathyyuri.com/omr.html',ic:''},
  {n:'10월 모의고사 성적 제출',d:'학생이 점수 직접 입력',u:'https://mathyyuri.com/score_form_10.html',ic:''},
@@ -517,18 +522,19 @@ const stuOf=(u=me())=>u.role==='student'?u:(u.role==='parent'?U[u.child]:null);
 const curAc=()=>{const u=me();if(u.role==='ta')return u.ac;const s=stuOf(u);return s?s.ac:S.ac;};
 const inAc=it=>it.ac==='all'||it.ac===curAc();
 function clsOk(it){const st=stuOf();if(st){return !(it.cls&&it.cls!=='all'&&it.cls!==st.cls);}
+ if(!scopeOk(it.cls))return false;
  return !(S.cls!=='all'&&it.cls&&it.cls!=='all'&&it.cls!==S.cls);}
-function postVis(p){if(!inAc(p))return false;const st=stuOf();
+function postVis(p){if(!inAc(p))return false;if(isStaff()&&!scopeOk(p.sid&&U[p.sid]?U[p.sid].cls:p.cls))return false;const st=stuOf();
  if(p.sid){if(st)return st.id===p.sid;return S.cls==='all'||(U[p.sid]&&U[p.sid].cls===S.cls);}
  return clsOk(p);}
-const classesNow=()=>{const b=AC[curAc()].classes.filter(c=>!isMc(c));if(curAc()!=='bd')return b;return b.concat([...new Set(stuList('bd').map(x=>x.cls).filter(isMc))].sort());};
+const classesNow=()=>{const b=AC[curAc()].classes.filter(c=>!isMc(c));if(curAc()!=='bd')return b;const m=[...new Set(stuListAll('bd').map(x=>x.cls).filter(isMc))].sort();return (isStaff()&&S.mc)?m:b;};
 
 
 /* ════════ 렌더링 ════════ */
 function render(y){
  const keep=y===undefined?window.scrollY:y;
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
- else{document.body.dataset.ac=curAc();renderMain();}
+ else{document.body.dataset.ac=inMc()?'mc':curAc();renderMain();}
  window.scrollTo(0,keep);
  setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();setTimeout(()=>{if(typeof shopAfter==='function')shopAfter();if(typeof sinfoAfter==='function')sinfoAfter();},0);
 }
@@ -579,7 +585,7 @@ function badgeFor(t){const u=me();
  if(t==='msg')return unreadMsgs();return 0;}
 function unreadMsgs(){const u=me();let n=0;
  Object.keys(DB.msgs).forEach(k=>{const [sid,kind]=k.split(':');const st=U[sid];
-  if(isStaff()){if(st.ac!==curAc())return;if(S.cls!=='all'&&st.cls!==S.cls)return;DB.msgs[k].forEach(m=>{if(m.f==='u'&&!m.rdS)n++;});}
+  if(isStaff()){if(st.ac!==curAc())return;if(!scopeOk(st.cls))return;if(S.cls!=='all'&&st.cls!==S.cls)return;DB.msgs[k].forEach(m=>{if(m.f==='u'&&!m.rdS)n++;});}
   else{const my=stuOf(u);if(my.id!==sid||(u.role==='student'?'student':'parent')!==kind)return;DB.msgs[k].forEach(m=>{if(m.f==='s'&&!m.rdU)n++;});}});
  return n;}
 const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',shop:'books',sinfo:'students',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
@@ -587,9 +593,9 @@ function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'�
 function renderMain(){
  if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'&&S.tab!=='sinfo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
  const u=me(),a=AC[curAc()],st=stuOf(u);
- const dn=(st&&isMc(st.cls))?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
- const sub=isStaff()?(ROLE[u.role]+' · '+a.name):((isMc(st.cls)?'MATHY CLASS':st.cls)+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
- const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'</div>':'';
+ const dn=inMc()?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
+ const sub=isStaff()?(ROLE[u.role]+' · '+dn):((isMc(st.cls)?'MATHY CLASS':st.cls)+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
+ const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()&&!S.mc?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'<button class="'+(S.mc?'on':'')+'" data-a="ac" data-v="mc">MATHY CLASS</button></div>':'';
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
  const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend,shop:(typeof vShop==='function'?vShop:()=>''),sinfo:(typeof vSinfo==='function'?vSinfo:()=>'')})[S.tab]();
  $('#app').innerHTML=
@@ -1073,7 +1079,7 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();}
 function scopeObj(sc){const ac=curAc(),p={ac:ac,cls:'all'};if(sc==='all')p.ac='all';else if(sc.startsWith('c:'))p.cls=sc.slice(2);else if(sc.startsWith('s:')){p.sid=sc.slice(2);p.cls=U[p.sid].cls;}return p;}
 function openWrite0(type){
  const u=me(),ac=curAc();S.tmpImg=null;
- let sc='<option value="ac">'+AC[ac].name+' 전체</option>'+AC[ac].classes.map(c=>'<option value="c:'+c+'"'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+stuList(ac).map(s=>'<option value="s:'+s.id+'">개인 · '+s.name+' ('+s.cls+')</option>').join('')+(u.role==='admin'?'<option value="all">두 학원 공통</option>':'');
+ let sc='<option value="ac">'+AC[ac].name+' 전체</option>'+classesNow().map(c=>'<option value="c:'+c+'"'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+stuList(ac).map(s=>'<option value="s:'+s.id+'">개인 · '+s.name+' ('+s.cls+')</option>').join('')+(u.role==='admin'?'<option value="all">두 학원 공통</option>':'');
  openModal('<h3>글쓰기</h3><div class="fld"><label>종류</label><select id="wt">'+POST_TYPES.map(t=>'<option'+(t===(type||'공지')?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
  '<div class="fld"><label>보낼 대상</label><select id="ws" data-ch="wscope">'+sc+'</select></div><div class="fld"><label>제목</label><input type="text" id="wh" placeholder="제목"></div><div class="fld"><label>내용</label><textarea id="wb" placeholder="내용을 입력하세요"></textarea></div>'+
  '<div class="fld"><label>사진 (선택)</label><input type="file" accept="image/*" data-ch="wimg"><div id="wpv"></div></div>'+
@@ -1084,7 +1090,7 @@ function openWrite0(type){
 function openReads(id){const p=DB.posts.find(x=>x.id===id),tg=targetsOf(p),r=tg.filter(t=>p.reads.includes(t.id)),n=tg.filter(t=>!p.reads.includes(t.id));
  openModal('<h3>읽음 확인</h3><div class="muted sm" style="margin-bottom:8px">'+esc(p.title)+'</div><div class="fld"><label>읽음 ('+r.length+')</label>'+(r.map(t=>'<span class="badge" style="background:#dcf5e8;color:#127046;margin:2px">'+esc(t.name)+'</span>').join('')||'<span class="muted sm">없음</span>')+'</div><div class="fld"><label>아직 안 읽음 ('+n.length+')</label>'+(n.map(t=>'<span class="badge" style="background:#ffe3e3;color:#b02a2a;margin:2px">'+esc(t.name)+'</span>').join('')||'<span class="muted sm">모두 읽었어요 </span>')+'</div><button class="btn" style="width:100%" data-a="closemodal">닫기</button>');}
 function openNewMission(){const ac=curAc();
- openModal('<h3>＋ 미션 추가</h3><div class="fld"><label>종류</label><select id="nk"><option>진도</option><option>오답</option><option>TEST</option><option>공통</option></select></div><div class="fld"><label>대상 반</label><select id="nc">'+AC[ac].classes.map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'<option value="all">'+AC[ac].name+' 전체</option></select></div><div class="fld"><label>제목</label><input type="text" id="nt"></div><div class="fld"><label>설명</label><input type="text" id="nd"></div><div class="fld"><label>마감일</label><input type="date" id="ndu" value="'+TODAY+'"></div><div class="row"><button class="btn gh sp" data-a="closemodal">취소</button><button class="btn sp" data-a="msave">추가</button></div>');}
+ openModal('<h3>＋ 미션 추가</h3><div class="fld"><label>종류</label><select id="nk"><option>진도</option><option>오답</option><option>TEST</option><option>공통</option></select></div><div class="fld"><label>대상 반</label><select id="nc">'+classesNow().map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'<option value="all">'+AC[ac].name+' 전체</option></select></div><div class="fld"><label>제목</label><input type="text" id="nt"></div><div class="fld"><label>설명</label><input type="text" id="nd"></div><div class="fld"><label>마감일</label><input type="date" id="ndu" value="'+TODAY+'"></div><div class="row"><button class="btn gh sp" data-a="closemodal">취소</button><button class="btn sp" data-a="msave">추가</button></div>');}
 
 /* ════════ 동작 (모두 서버에 저장) ════════ */
 async function postBodyFromEditor(){
@@ -2028,7 +2034,7 @@ function fldHtml(f){const k=f[0],label=f[1],type=f[2],opts=f[3];let inner;
 function openCForm(k){
  const F=FORMS[k],u=me(),ac=curAc();S.cfk=k;
  openModal('<h3>'+F.t+'</h3><div class="fld"><label>대상 학원</label><select id="cf_ac"><option value="'+ac+'">'+AC[ac].name+'</option>'+(u.role==='admin'?'<option value="all">두 학원 공통</option>':'')+'</select></div>'+
-  '<div class="fld"><label>대상 반</label><select id="cf_cls"><option value="all">학원 전체</option>'+AC[ac].classes.map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
+  '<div class="fld"><label>대상 반</label><select id="cf_cls"><option value="all">학원 전체</option>'+classesNow().map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
   F.f.map(fldHtml).join('')+'<div class="row"><button class="btn gh sp" data-a="closemodal">취소</button><button class="btn sp" data-a="csave">저장</button></div>');
  if(k==='event'||k==='lesson'){const d=$('#cf_date');if(d)d.value=S.csel||TODAY;}
 }
@@ -2052,7 +2058,7 @@ function openVideo(id){const v=DB.videos.find(x=>x.id===id);if(!v)return;
 function openNewExam(){
  const u=me(),ac=curAc();
  openModal('<h3>시험 만들기</h3><div class="fld"><label>학원</label><select id="xa"><option value="'+ac+'">'+AC[ac].name+'</option>'+(u.role==='admin'?'<option value="all">두 학원 공통 (전국연합 등)</option>':'')+'</select></div>'+
-  '<div class="fld"><label>대상 반</label><select id="xc"><option value="">학원 전체</option>'+AC[ac].classes.map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
+  '<div class="fld"><label>대상 반</label><select id="xc"><option value="">학원 전체</option>'+classesNow().map(c=>'<option'+(S.cls===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
   '<div class="fld"><label>시험 이름</label><input type="text" id="xn" placeholder="예) 주간 TEST 3"></div><div class="fld"><label>짧은 이름 (그래프 아래 글씨)</label><input type="text" id="xs" placeholder="예) TEST3"></div>'+
   '<div class="fld"><label>시험 날짜</label><input type="date" id="xd" value="'+TODAY+'"></div>'+
   '<div class="fld"><label>문항 수 (점수만 입력할 시험이면 0)</label><input type="number" id="xq" min="0" max="60" value="20"></div><div class="fld"><label>문항당 배점</label><input type="number" id="xp" min="1" max="100" step="0.5" value="5"></div>'+
@@ -2115,22 +2121,22 @@ function vAdmin(){
  }
  const ac=curAc(),L=stuList(ac);
  h+='<div class="note">학생·학부모 로그인은 "이름 + 학부모 전화번호 뒤 4자리"예요. 이름과 전화번호는 원장님 화면에만 보여요. 같은 학원에서 같은 이름·같은 뒤 4자리는 둘 이상 만들 수 없어요.</div><div class="row wrap" style="margin-bottom:12px"><button class="btn" data-a="stuform">학생 추가</button><button class="btn sec" data-a="stuimport">여러 명 한번에 추가</button></div>';
- AC[ac].classes.filter(c=>!isMc(c)).forEach(c=>{const l=L.filter(s=>s.cls===c);
+ (S.mc?[]:AC[ac].classes.filter(c=>!isMc(c))).forEach(c=>{const l=L.filter(s=>s.cls===c);
   h+='<div class="card"><h3>'+c+' <span class="badge">'+l.length+'명</span></h3>'+(l.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+l.map(s=>'<tr><td>'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+'</td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 학생이 없어요</div>')+'</div>';});
- if(ac==='bd'){const m=L.filter(s=>isMc(s.cls));h+='<div class="card"><h3>MATHY CLASS <span class="badge">'+m.length+'명</span> <span class="muted sm" style="font-weight:400">개별 수업 · 한 명이 반 하나</span></h3>'+(m.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+m.map(s=>'<tr><td>'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+'</td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 수강생이 없어요 (반 관리 → MATHY CLASS 에서 등록해요)</div>')+'</div>';}
- const known=AC[ac].classes,odd=L.filter(s=>known.indexOf(s.cls)<0&&!isMc(s.cls));
+ if(ac==='bd'&&S.mc){const m=L.filter(s=>isMc(s.cls));h+='<div class="card"><h3>MATHY CLASS <span class="badge">'+m.length+'명</span> <span class="muted sm" style="font-weight:400">개별 수업 · 한 명이 반 하나</span></h3>'+(m.length?'<table class="tbl"><tr><th>이름</th><th>학교</th><th>학부모 전화</th><th></th></tr>'+m.map(s=>'<tr><td>'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+'</td><td>'+esc(s.school)+'</td><td>'+esc(s.phone||'')+'</td><td><button class="btn sm3 gh" data-a="stunote" data-id="'+s.id+'">멘트</button> <button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button> <button class="btn sm3 dng" data-a="studel" data-id="'+s.id+'">삭제</button></td></tr>').join('')+'</table>':'<div class="empty">아직 수강생이 없어요 (반 관리 → MATHY CLASS 에서 등록해요)</div>')+'</div>';}
+ const known=AC[ac].classes,odd=S.mc?[]:L.filter(s=>known.indexOf(s.cls)<0&&!isMc(s.cls));
  if(odd.length)h+='<div class="card"><h3>목록에 없는 반 <span class="badge">'+odd.length+'명</span></h3><div class="note">[반 관리]에서 지운 반에 아직 학생이 남아 있어요. 학생을 눌러 반을 바꿔 주세요.</div><table class="tbl"><tr><th>반</th><th>이름</th><th>학교</th><th></th></tr>'+odd.map(s=>'<tr><td>'+esc(s.cls)+'</td><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.school)+'</td><td><button class="btn sm3 gh" data-a="stuform" data-id="'+s.id+'">수정</button></td></tr>').join('')+'</table></div>';
  return h;
 }
 function vClasses(){
  let h='<div class="note">반 이름을 추가하거나 지워요. 학생이 남아 있는 반은 지울 수 없어요(학생 탭에서 먼저 옮겨 주세요). 순서는 추가한 순서대로예요.</div>';
  Object.values(AC).forEach(a=>{
-  h+='<div class="card"><h3>'+esc(a.name)+'</h3><div class="row wrap" style="margin-bottom:12px">'+a.classes.filter(c=>!isMc(c)).map(c=>{const n=stuList(a.id).filter(s=>s.cls===c).length;return '<span class="badge" style="font-size:14px;padding:7px 12px">'+esc(c)+' · '+n+'명 '+(n?'':'<button class="btn sm3 dng" style="margin-left:6px" data-a="clsdel" data-ac="'+a.id+'" data-c="'+esc(c)+'">삭제</button>')+'</span>';}).join('')+'</div><div class="row"><input type="text" id="cn_'+a.id+'" maxlength="12" placeholder="새 반 이름 (예: A+반)" style="border:1px solid var(--line);border-radius:16px;padding:10px 14px"><button class="btn" data-a="clsadd" data-ac="'+a.id+'">추가</button></div></div>';});
+  h+='<div class="card"><h3>'+esc(a.name)+'</h3><div class="row wrap" style="margin-bottom:12px">'+a.classes.filter(c=>!isMc(c)).map(c=>{const n=stuListAll(a.id).filter(s=>s.cls===c).length;return '<span class="badge" style="font-size:14px;padding:7px 12px">'+esc(c)+' · '+n+'명 '+(n?'':'<button class="btn sm3 dng" style="margin-left:6px" data-a="clsdel" data-ac="'+a.id+'" data-c="'+esc(c)+'">삭제</button>')+'</span>';}).join('')+'</div><div class="row"><input type="text" id="cn_'+a.id+'" maxlength="12" placeholder="새 반 이름 (예: A+반)" style="border:1px solid var(--line);border-radius:16px;padding:10px 14px"><button class="btn" data-a="clsadd" data-ac="'+a.id+'">추가</button></div></div>';});
  h+=vMcBox();
  return h;
 }
 function vMcBox(){
- const L=stuList('bd').filter(s=>isMc(s.cls)).sort((x,y)=>String(x.name).localeCompare(String(y.name),'ko'));
+ const L=stuListAll('bd').filter(s=>isMc(s.cls)).sort((x,y)=>String(x.name).localeCompare(String(y.name),'ko'));
  const inp='style="border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0"';
  return '<div class="card mcbox" style="border-color:#c9cfdb;background:linear-gradient(180deg,#fbfcfe,#f4f6fa)"><h3 style="font-family:var(--it);letter-spacing:.24em;font-weight:600;color:#566078">MATHY CLASS</h3><div class="muted sm" style="margin:-6px 0 12px">개별 수업 · 수강생 한 명이 반 하나예요. 이름을 누르면 학생 정보가 열려요.</div>'+
   '<div class="row wrap" style="margin-bottom:12px">'+(L.length?L.map(s=>'<span class="badge" style="font-size:14px;padding:7px 12px;background:#e9edf4;color:#3d4760">'+(typeof sinfoName==='function'?sinfoName(s.id,s.name):'<b>'+esc(s.name)+'</b>')+(s.school?' <span class="muted sm">'+esc(s.school)+'</span>':'')+' <button class="btn sm3 dng" style="margin-left:6px" data-a="studel" data-id="'+s.id+'">삭제</button></span>').join(''):'<span class="muted sm">아직 수강생이 없어요</span>')+'</div>'+
@@ -2210,7 +2216,7 @@ document.addEventListener('click',async e=>{
  case 'bootretry':boot();break;
  case 'pushbaron':pushBarOff();await pushOn();break;
  case 'pushbarno':lsSet('acadapp_pushask_v1',String(Date.now()));pushBarOff();break;
- case 'ac':S.ac=v;S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
+ case 'ac':if(v==='mc'){S.ac='bd';S.mc=true;}else{S.ac=v;S.mc=false;}S.cls='all';S.thread=null;S.exsel=null;S.rex=null;S.rstu='';render(0);break;
  case 'tab':{if(S.tab==='att'&&atdDirtyN()&&!confirm('저장하지 않은 출석 기록이 있어요. 저장하지 않고 이동할까요?'))break;if(tbmOn()||dataStale(45000))await refreshAll();S.tab=v;S.thread=null;render(0);break;}
  case 'cls':S.cls=v;S.thread=null;render();break;
  case 'ftype':S.ftype=v;render();break;
@@ -2328,7 +2334,7 @@ document.addEventListener('click',async e=>{
  case 'pvmv':{const i=+t.dataset.i,d=+t.dataset.d,arr=(PUB.pv||[]).slice(),u=arr[i].unit;let j=i+d;while(j>=0&&j<arr.length&&arr[j].unit!==u)j+=d;if(j<0||j>=arr.length)break;const x=arr[i];arr[i]=arr[j];arr[j]=x;await savePv(arr);break;}
  case 'mcadd':{const nm=($('#mc_n').value||'').trim(),sc=($('#mc_s').value||'').trim(),ph=($('#mc_p').value||'').trim();if(!nm){toast('수강생 이름을 적어 주세요');break;}if(nm.length>12){toast('이름이 너무 길어요');break;}const j=await mut('student_upsert',{id:null,academy:'bd',cls:'MATHY CLASS · '+nm,name:nm,school:sc,phone:ph});if(j&&j.ok)toast('수강생을 등록했어요');break;}
  case 'clsadd':{const ac=t.dataset.ac,i=$('#cn_'+ac),nm=(i.value||'').trim();if(!nm){toast('반 이름을 적어 주세요');break;}if(AC[ac].classes.indexOf(nm)>=0){toast('이미 있는 반이에요');break;}if(AC[ac].classes.length>=12){toast('반은 12개까지예요');break;}AC[ac].classes.push(nm);if(!(await saveClasses())){AC[ac].classes.pop();render();}break;}
- case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuList(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
+ case 'clsdel':{const ac=t.dataset.ac,c=t.dataset.c;if(stuListAll(ac).some(s=>s.cls===c)){toast('학생이 있는 반은 지울 수 없어요');break;}if(AC[ac].classes.length<=1){toast('반이 하나는 있어야 해요');break;}if(!confirm('"'+c+'" 반을 목록에서 지울까요?'))break;const old=AC[ac].classes.slice();AC[ac].classes=old.filter(x=>x!==c);if(!(await saveClasses())){AC[ac].classes=old;render();}break;}
  case 'tooladd':readToolsEdit();TEDIT.push({id:'t'+Date.now().toString(36),name:'새 도구',url:'',grp:'기타',desc:'',roles:[]});renderToolsEdit();break;
  case 'tooldel':readToolsEdit();TEDIT.splice(+t.dataset.i,1);renderToolsEdit();break;
  case 'toolreset':if(confirm('기본 도구 목록으로 되돌릴까요? (저장 전까지는 바뀌지 않아요)')){TEDIT=DEF_TOOLS.map(x=>Object.assign({},x,{roles:x.roles.slice()}));renderToolsEdit();}break;
@@ -2413,7 +2419,7 @@ async function msApi(a,args){
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
 }
 /* 선생님 화면: 위에서 고른 학원(대치/분당)과 반(전체·MATHY 11·공수내모)에 해당하는 미션만 보여요 (오답노트는 학원만 구분) */
-function msVis(it){if(!isStaff())return true;const ac=curAc(),a=it.m.ac;if(a&&a!=='all'&&a!==ac)return false;if(S.cls!=='all'){const c=String(it.m.cls||'');if(c&&c!=='all'&&c.indexOf('note:')!==0&&c!==S.cls)return false;}return true;}
+function msVis(it){if(!isStaff())return true;const ac=curAc(),a=it.m.ac;if(a&&a!=='all'&&a!==ac)return false;{const c0=String(it.m.cls||'');if(c0&&c0!=='all'&&c0.indexOf('note:')!==0&&!scopeOk(c0))return false;}if(S.cls!=='all'){const c=String(it.m.cls||'');if(c&&c!=='all'&&c.indexOf('note:')!==0&&c!==S.cls)return false;}return true;}
 function msCatOf(it){
  if(it.notes||String(it.m.cls||'').indexOf('note:')===0)return '오답미션';const c=it.ex.cat||it.m.cat;if(c)return c;const n=it.ex.name||'';
  return n.indexOf('내신')>=0?'내신기출':n.indexOf('기출')>=0?'기출':n.indexOf('교과서')>=0?'교과서미션':n.indexOf('오답')>=0?'오답미션':/test/i.test(n)?'TEST':n.indexOf('진도')>=0?'진도미션':'기타';
