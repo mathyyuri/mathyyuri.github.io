@@ -194,9 +194,9 @@ textarea.inp{min-height:110px;resize:vertical}
 
   /* ── 로그인 화면 ── */
   function vLogin() {
-    return '<div class="login"><h1>학생 상담</h1><p class="s">전유리T · 학생 정보</p><form data-f="login" class="card" autocomplete="on">' +
+    return '<div class="login"><h1>학생 상담</h1><p class="s">전유리T · 학생 정보</p><form data-f="login" class="card" autocomplete="off">' +
       (S.loginErr ? '<div class="note" style="margin-bottom:10px">' + esc(S.loginErr) + '</div>' : '') +
-      '<label class="lbl" style="margin-top:0">이름</label><input class="inp" name="name" autocomplete="username" required placeholder="예: 김지은" value="' + esc(S.pname) + '">' +
+      '<label class="lbl" style="margin-top:0">이름</label><input class="inp" name="name" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="예: 김지은" value="' + esc(S.pname) + '">' +
       '<label class="lbl">전화번호 뒤 4자리</label><input class="inp" name="secret" type="tel" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required placeholder="예: 1234">' +
       '<button class="btn" style="width:100%;margin-top:16px;font-size:17px;padding:13px" type="submit"' + (S.busy ? ' disabled' : '') + '>들어가기</button>' +
       '<div class="muted sm" style="margin-top:10px;line-height:1.6">원장님이 보내 주신 <b>전용 링크</b>를 열면 이 과정 없이 바로 들어가요. 한 번 들어오면 이 기기에서는 계속 로그인된 상태예요.</div></form></div>';
@@ -558,12 +558,12 @@ textarea.inp{min-height:110px;resize:vertical}
   }
   async function boot() {
     var key = keyFromUrl();                                           // 전용 링크로 열었으면 바로 로그인 (주소창에서는 열쇠를 지워요)
-    try { S.tok = localStorage.getItem(TK); S.pname = localStorage.getItem('cs_name_v1') || ''; } catch (e) { S.tok = null; }
+    try { S.tok = localStorage.getItem(TK); localStorage.removeItem('cs_name_v1'); } catch (e) { S.tok = null; }      // 로그인 이름은 기기에 남기지 않아요(공용 컴퓨터에서 이름이 보이지 않게). 예전에 저장된 이름도 지워요
     if (!S.tok && !key) { var bt = await idbGet(TK); if (bt) { S.tok = bt; try { localStorage.setItem(TK, bt); } catch (e) {} } }       // localStorage 가 비었으면 IndexedDB 에서 복구
     if (S.tok && !key) idbSet(TK, S.tok);      // 반대로 IndexedDB 가 비었으면 채워 두기
     if (key) {
       var jl = await api('login', { key: key }, true);
-      if (jl && jl.ok) { saveTok(jl.token); S.me = jl.name; S.title = jl.title || ''; try { localStorage.setItem('cs_name_v1', jl.name); } catch (e) {} enter(); return; }
+      if (jl && jl.ok) { saveTok(jl.token); S.me = jl.name; S.title = jl.title || ''; enter(); return; }
       if (jl && jl.net) { S.view = 'retry'; S.err = jl.error; try { sessionStorage.setItem('cs_key_retry', key); } catch (e) {} render(); return; }
       S.view = 'login'; S.loginErr = (jl && jl.error) || ''; render(); return;
     }
@@ -585,7 +585,7 @@ textarea.inp{min-height:110px;resize:vertical}
     if (S.busy || f.dataset.f !== 'login') return; var fd = new FormData(f);
     S.busy = true; S.pname = String(fd.get('name') || '').trim(); var j = await api('login', { name: S.pname, secret: String(fd.get('secret') || '').trim() }, true); S.busy = false;
     if (!j.ok) { S.loginErr = j.error || '로그인하지 못했어요'; render(); return; }
-    S.loginErr = ''; saveTok(j.token); S.me = j.name; S.title = j.title || ''; try { localStorage.setItem('cs_name_v1', j.name); } catch (er) {} enter();
+    S.loginErr = ''; saveTok(j.token); S.me = j.name; S.title = j.title || ''; enter();
   });
   window.addEventListener('popstate', function () { if (S.sid || S.pv || S.lid || S.hv) { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.hv = false; S.card = null; S.err = null; render(); } });
   function pick(sid) {
