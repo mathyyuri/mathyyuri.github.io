@@ -1997,7 +1997,7 @@ function missionStatusCard(){
  msEnsure();
  if(!MS)return '<div class="card"><h3>미션 현황</h3><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return '<div class="card"><h3>미션 현황</h3><div class="empty">미션을 불러오지 못했어요</div></div>';
- const L=MS.items.filter(msVis).slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,8);
+ const L=MS.items.filter(it=>msVis(it)&&gsmShow2(it)).slice().sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date))).slice(0,8);
  if(!L.length)return '<div class="card"><h3>미션 현황</h3><div class="empty">아직 미션이 없어요</div></div>';
  return '<div class="card"><h3>미션 현황<button class="more" data-a="tab" data-v="mission">전체 ›</button></h3><div style="overflow:auto"><table class="tbl"><tr><th style="text-align:left">미션</th><th>응시</th><th>평균</th><th>클리어</th><th>미시작</th><th>미기록</th></tr>'+
   L.map(it=>{const st=msStat(it),U=(it.all||[]).filter(r=>!(r.ox&&r.score!=null)),ns=U.filter(r=>r.ns).length,nr=U.length-ns;
@@ -2539,7 +2539,11 @@ const GSM_CATS=['내모미션','과제미션'],GSM_ONLY=['nemo','hw','wrong'],GS
 function gsmCdf(z){const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
 function gsmEval(school,sc){const s=GSM_ST[school];if(!s||sc==null||isNaN(sc))return null;const pct=gsmCdf((sc-s[0])/s[1])*100,g=sc>=s[2]?1:sc>=s[3]?2:sc>=s[4]?3:sc>=s[5]?4:5;return {pct:pct,top:100-pct,grade:g};}
 function gsmTopTxt(e){const t=e.top;return t<1?'상위 1% 이내':'상위 '+Math.round(t)+'%';}
-function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
+/* 학생 화면: 아직 시작 안 한 주차(수업일 3일 전보다 이른 것)는 숨겨요. 선생님은 전부 보여요. */
+function gsmOpenDate(){const d=new Date();d.setDate(d.getDate()+3);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function gsmShown(it){if(isStaff())return true;const dd=String(it.ex&&it.ex.date||'').slice(0,10);return !dd||dd<=gsmOpenDate();}
+function gsmShow2(it){return GSM_CATS.indexOf(msCatOf(it))<0||gsmShown(it);}
+function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&gsmShown(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
 function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*동형/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
 function gsmWeekOf(dd){const i=GSM_DATES.indexOf(dd);return i>=0?i+1:0;}
 function gsmOnly(){return gsmItems().length>0&&(!isStaff()||S.cls==='공수내모');}
@@ -2576,7 +2580,7 @@ function vMission(){
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
- const L=msMergeNotes(MS.items.filter(it=>msVis(it)&&(!grp[2]||grp[2].indexOf(msCatOf(it))>=0)));
+ const L=msMergeNotes(MS.items.filter(it=>msVis(it)&&gsmShow2(it)&&(!grp[2]||grp[2].indexOf(msCatOf(it))>=0)));
  if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
  const stu=!isStaff();let _ld='';L.sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date)));   /* 최신 미션이 먼저, 같은 날짜는 묶음 줄 아래에 */
  if(g==='chart')return h+msMatrix(L);
