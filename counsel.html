@@ -84,6 +84,14 @@ textarea.inp{min-height:110px;resize:vertical}
 .sd.inq{background:#e8eef9;color:#3b5a9a}.sd.booked{background:#fbf3dc;color:#a8760f}.sd.done{background:#e3f1ea;color:#2f7a67}.sd.enrolled{background:#2f7a67;color:#fff}.sd.hold{background:#eee;color:#777}.sd.lost{background:#f4e0dd;color:#a8453a}
 .it.lead{flex-wrap:wrap;row-gap:2px}.it.lead .r{flex-wrap:wrap;justify-content:flex-end}.it.lead .n{font-size:15px}.it .nx{font-size:11.5px;color:var(--mut)}.it .nx.due{color:var(--bad);font-weight:800}.it.on .nx{color:#d8efe6}
 .stb{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.stb button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;font-weight:700;cursor:pointer;font-size:13px}.stb button.on{border-color:var(--acc);background:var(--acc);color:#fff}
+.pstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:linear-gradient(135deg,#21493f,#2f7a67);color:#fff;border-radius:18px;padding:12px 16px;margin-bottom:12px;cursor:pointer;box-shadow:var(--sh)}
+.pstrip b{font-family:var(--serif);font-size:16px}.pstrip .go{margin-left:auto;font-size:12.5px;opacity:.9;white-space:nowrap}
+.dh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 4px 10px}.dh h2{margin:0;font-family:var(--serif);font-size:26px}
+.tsec{margin-bottom:12px}.tsec h3{margin:0 0 4px}.tsec .cn{background:var(--bad);color:#fff;border-radius:10px;padding:0 9px;font-size:13px}.tsec .cn.g{background:var(--acc)}.tsec .cn.w{background:var(--warn)}
+.td{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.td:first-of-type{border-top:0}
+.td .m{flex:1;min-width:0}.td .nm{font-weight:800;font-size:16px;cursor:pointer;background:none;border:0;padding:0;text-align:left}.td .sb{font-size:12.5px;color:var(--mut);margin-top:1px}.td .fw{font-weight:700;margin-top:1px}
+.td .ac{display:flex;gap:6px;flex:none}
+.more{display:block;margin:6px auto 0;border:0;background:none;color:var(--mut);text-decoration:underline;cursor:pointer;font-size:12.5px}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin-top:6px}.kv span:nth-child(odd){color:var(--mut)}
 
 
@@ -113,7 +121,7 @@ textarea.inp{min-height:110px;resize:vertical}
   var EV = [['tae', '태도'], ['hw', '숙제'], ['und', '이해도'], ['att', '출결']];
   var LST = { inq: '문의', booked: '상담예약', done: '상담완료', enrolled: '등록', hold: '보류', lost: '미등록' }, LSRC = { phone: '전화', msg: '문자·카톡', visit: '방문', intro: '지인 소개', etc: '기타' };
   var ATT = { present: '출석', late: '지각', early: '조퇴', absent: '결석' };
-  var S = { leads: null, lid: null, lcard: null, lopen: false, lall: false, plan: null, pcls: '', pv: false, tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
+  var S = { todo: null, hv: false, tmore: {}, leads: null, lid: null, lcard: null, lopen: false, lall: false, plan: null, pcls: '', pv: false, tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function nl(t) { return esc(t).replace(/\n/g, '<br>'); }
@@ -298,10 +306,51 @@ textarea.inp{min-height:110px;resize:vertical}
   }
   function vDetail() {
     if (S.lid) return vLead();
-    if (!S.sid) return vPlan();
+    if (!S.sid) return S.pv ? vPlan() : vHome();
     if (S.card) return '<div class="pane">' + vCard(S.card) + '</div>';
     if (S.err) return '<div class="pane"><button class="btn gh s3 back" data-a="back" type="button">← 명단</button><div class="note">' + esc(S.err) + '</div></div>';
     return '<div class="pane"><button class="btn gh s3 back" data-a="back" type="button">← 명단</button><div class="empty">불러오는 중…</div></div>';
+  }
+
+  /* ── 메인: 오늘 할 일 ── */
+  function todoCount() { var T = S.todo; return T ? T.leads.length + T.follows.length + T.absent.length + T.gap.length + T.hw.length : 0; }
+  function tsec(key, title, cls, arr, row) {
+    if (!arr.length) return '';
+    var lim = S.tmore[key] ? arr.length : 8;
+    return '<div class="card tsec"><h3>' + title + ' <span class="cn ' + cls + '">' + arr.length + '</span></h3>' + arr.slice(0, lim).map(row).join('') +
+      (arr.length > lim ? '<button type="button" class="more" data-a="tmore" data-v="' + key + '">' + (arr.length - lim) + '명 더 보기</button>' : '') + '</div>';
+  }
+  function telBtn(ph) { return ph ? '<a class="btn rose s3" href="tel:' + esc(tel(ph)) + '" title="학부모에게 전화">📞</a>' : ''; }
+  function vHome() {
+    var back = '<button class="btn gh s3 back" data-a="back" type="button">← 명단</button>', T = S.todo, h = '<div class="pane">' + back;
+    if (S.plan && S.plan.classes && S.plan.classes.length) {
+      var pc = S.pcls && planOf(S.pcls) ? S.pcls : (S.plan.classes.filter(function (x) { return x.cls === '공수내모'; })[0] || S.plan.classes[0]).cls;
+      h += '<button type="button" class="pstrip" data-a="toplan" data-v="' + esc(pc) + '"><b>' + esc(pc) + '</b><span>' + esc(planLine(pc)) + '</span><span class="go">수업 진행표 ›</span></button>';
+    }
+    var td = S.plan ? S.plan.today : (T ? T.today : '');
+    h += '<div class="dh"><h2>오늘 할 일</h2><span class="muted">' + (td ? esc(dstr(td)) : '') + (T ? ' · ' + todoCount() + '건' : '') + '</span></div>';
+    if (!T) return h + '<div class="empty">' + (S.todoErr ? esc(S.todoErr) : '불러오는 중…') + '</div></div>';
+    if (!todoCount()) return h + '<div class="card"><div class="empty" style="padding:26px">오늘 할 일이 없어요 👍<br><span class="sm">연락할 문의·후속 조치·결석 연락·상담 공백이 모두 정리됐어요</span></div></div></div>';
+    h += tsec('leads', '오늘 연락할 문의 학생', '', T.leads, function (l) {
+      var late = l.late > 0 ? l.late + '일 지남' : '오늘';
+      return '<div class="td"><div class="m"><button type="button" class="nm" data-a="lopen" data-v="' + esc(l.id) + '">' + esc(l.name) + '</button> <span class="sd ' + esc(l.status) + '">' + esc(LST[l.status] || '') + '</span><div class="sb">' + esc([l.grade, l.school].filter(Boolean).join(' · ')) + (l.interest ? ' · 관심 ' + esc(l.interest) : '') + ' · <b style="color:var(--bad)">연락 ' + esc(late) + '</b></div>' +
+        (l.last ? '<div class="sb">마지막 통화(' + esc(dstr(l.last_date)) + '): ' + esc(l.last) + '</div>' : '<div class="sb">아직 통화 기록이 없어요</div>') + '</div><div class="ac">' + telBtn(l.phone) + '</div></div>';
+    });
+    h += tsec('follows', '후속 조치', 'w', T.follows, function (f) {
+      var open = f.k === 'lead' ? 'lopen' : 'open', id = f.k === 'lead' ? f.lid : f.sid;
+      return '<div class="td"><div class="m"><button type="button" class="nm" data-a="' + open + '" data-v="' + esc(id) + '">' + esc(f.name) + '</button> <span class="muted sm">' + esc(f.k === 'lead' ? '문의' : clsTxt(f.cls)) + '</span><div class="fw">' + esc(f.follow) + '</div><div class="sb">' + esc(dstr(f.date)) + ' 상담 · ' + esc(f.author) + '</div></div>' +
+        '<div class="ac"><button type="button" class="btn sec s3" data-a="tfollow" data-k="' + f.k + '" data-v="' + f.nid + '">완료</button></div></div>';
+    });
+    h += tsec('absent', '결석·지각 학부모 연락', '', T.absent, function (x) {
+      return '<div class="td"><div class="m"><button type="button" class="nm" data-a="open" data-v="' + esc(x.sid) + '">' + esc(x.name) + '</button> <span class="muted sm">' + esc(clsTxt(x.cls)) + '</span><div class="sb"><b style="color:var(--bad)">' + esc(dstr(x.day)) + ' ' + esc(ATT[x.status] || x.status) + '</b>' + (x.reason ? ' · ' + esc(x.reason) : '') + ' · 이후 상담 기록 없음</div></div><div class="ac">' + telBtn(x.phone) + '</div></div>';
+    });
+    h += tsec('gap', '상담 공백 (30일 이상)', 'g', T.gap, function (x) {
+      return '<div class="td"><div class="m"><button type="button" class="nm" data-a="open" data-v="' + esc(x.sid) + '">' + esc(x.name) + '</button> <span class="muted sm">' + esc(clsTxt(x.cls)) + '</span><div class="sb">' + (x.last ? '마지막 상담 ' + x.days + '일 전 (' + esc(dstr(x.last)) + ')' : '<b>상담 기록이 아직 없어요</b>') + '</div></div></div>';
+    });
+    h += tsec('hw', '과제 미완료 (최근 2달 절반 넘게)', 'g', T.hw, function (x) {
+      return '<div class="td"><div class="m"><button type="button" class="nm" data-a="open" data-v="' + esc(x.sid) + '">' + esc(x.name) + '</button> <span class="muted sm">' + esc(clsTxt(x.cls)) + '</span><div class="sb">과제 ' + x.done + ' / ' + x.total + '개 완료</div></div></div>';
+    });
+    return h + '</div>';
   }
 
   /* ── 수업 진행표 (메인 화면: 회차 목차) ── */
@@ -374,8 +423,9 @@ textarea.inp{min-height:110px;resize:vertical}
     if (S.view === 'boot') h = '<div class="empty" style="margin-top:20vh">불러오는 중…</div>';
     else if (S.view === 'retry') h = '<div class="card" style="max-width:420px;margin:14vh auto 0;text-align:center"><div class="note">' + esc(S.err || '연결하지 못했어요') + '</div><button class="btn" style="margin-top:14px" data-a="retry" type="button">다시 시도</button></div>';
     else if (S.view === 'login') h = vLogin();
-    else h = '<div class="app' + ((S.sid || S.pv || S.lid) ? ' det' : '') + '"><aside class="side"><div class="hd0"><div class="ttl">전유리T · 학생 상담</div><div class="who"><span>' + esc(S.me) + (S.title ? ' ' + esc(S.title) : '') + '님</span><button data-a="logout" type="button">로그아웃</button></div></div>' +
-      '<button class="sidebtn' + (!S.sid && !S.lid ? ' on' : '') + '" type="button" data-a="toplan">수업 진행표 <span style="font-weight:600;font-size:12.5px;opacity:.85;margin-left:auto">' + esc(sideLine()) + '</span></button><div class="sq"><input class="inp" id="q" value="' + esc(S.q) + '" placeholder="이름 · 학교 · 전화 뒤 4자리" autocomplete="off" data-i="q"></div><div class="lst" id="lst">' + listHtml() + '</div></aside><main class="main" id="main">' + vDetail() + '</main></div>';
+    else h = '<div class="app' + ((S.sid || S.pv || S.lid || S.hv) ? ' det' : '') + '"><aside class="side"><div class="hd0"><div class="ttl">전유리T · 학생 상담</div><div class="who"><span>' + esc(S.me) + (S.title ? ' ' + esc(S.title) : '') + '님</span><button data-a="logout" type="button">로그아웃</button></div></div>' +
+      '<button class="sidebtn' + (!S.sid && !S.lid && !S.pv ? ' on' : '') + '" type="button" data-a="tohome">오늘 할 일 <span style="font-weight:700;font-size:12.5px;margin-left:auto;' + (todoCount() && (S.sid || S.lid || S.pv) ? 'background:var(--bad);color:#fff;border-radius:10px;padding:0 9px' : 'opacity:.85') + '">' + (S.todo ? todoCount() + '건' : '') + '</span></button>' +
+      '<button class="sidebtn' + (S.pv && !S.sid && !S.lid ? ' on' : '') + '" type="button" data-a="toplan">수업 진행표 <span style="font-weight:600;font-size:12.5px;opacity:.85;margin-left:auto">' + esc(sideLine()) + '</span></button><div class="sq"><input class="inp" id="q" value="' + esc(S.q) + '" placeholder="이름 · 학교 · 전화 뒤 4자리" autocomplete="off" data-i="q"></div><div class="lst" id="lst">' + listHtml() + '</div></aside><main class="main" id="main">' + vDetail() + '</main></div>';
     el.innerHTML = h;
     var m2 = document.querySelector('.main'), l2 = document.querySelector('.lst'); if (S.keepY) { if (m2) m2.scrollTop = mainY; S.keepY = false; } if (l2) l2.scrollTop = listY;
   }
@@ -385,6 +435,7 @@ textarea.inp{min-height:110px;resize:vertical}
     var j = await api('list'); if (!j) return;
     if (!j.ok) { S.err = j.error; S.list = null; } else { S.err = null; S.list = (j.list || []).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'ko') || String(a.cls).localeCompare(String(b.cls), 'ko'); }); S.me = j.me || S.me; S.title = j.title || S.title; }
     if (S.view === 'main') { var e = document.getElementById('lst'); if (e) { var y = e.scrollTop; e.innerHTML = listHtml(); e.scrollTop = y; } else render(); }
+    if (S.todo) loadTodo();
   }
   async function loadCard(keep) {
     var sid = S.sid, j = await api('card', { sid: sid }); if (S.sid !== sid) return;
@@ -396,17 +447,24 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!j.ok) { S.planErr = j.error || '진행표를 불러오지 못했어요'; S.plan = null; } else { S.planErr = null; S.plan = j; }
     if (S.view === 'main') { var y = (document.getElementById('main') || {}).scrollTop; render(); var m = document.getElementById('main'); if (m && y) m.scrollTop = y; }
   }
+  async function loadTodo() {
+    var j = await api('todo'); if (!j) return;
+    if (j.ok) { S.todo = j; S.todoErr = null; } else { S.todoErr = j.error || '할 일을 불러오지 못했어요'; }
+    if (S.view === 'main' && !S.sid && !S.lid && !S.pv) { var m = document.getElementById('main'), y = m ? m.scrollTop : 0; if (m) { m.innerHTML = vDetail(); m.scrollTop = y; } }
+    var sb = document.querySelector('[data-a=tohome] span'); if (sb && S.todo) sb.textContent = todoCount() + '건';
+  }
   async function loadLeads() {
     var j = await api('ld_list'); if (!j) return;
     if (j.ok) { S.leads = j.list || []; S.ltoday = j.today; }
     if (S.view === 'main') { var e = document.getElementById('lst'); if (e) { var y = e.scrollTop; e.innerHTML = listHtml(); e.scrollTop = y; } }
+    if (S.todo) loadTodo();
   }
   async function loadLCard(keep) {
     var id = S.lid, j = await api('ld_card', { id: id }); if (S.lid !== id) return;
     if (!j.ok) { S.err = j.error; S.lcard = null; } else { S.err = null; S.lcard = j; S.ltoday = S.ltoday || ''; }
     S.keepY = !!keep; render();
   }
-  async function enter() { S.view = 'main'; S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.list = null; render(); loadList(); loadPlan(); loadLeads(); }
+  async function enter() { S.view = 'main'; S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.hv = false; S.card = null; S.list = null; render(); loadList(); loadPlan(); loadLeads(); loadTodo(); }
   function keyFromUrl() {
     try { var u = new URL(location.href), k = u.searchParams.get('k'); if (k) { u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } return k ? String(k).trim() : ''; } catch (e) { return ''; }
   }
@@ -439,14 +497,14 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!j.ok) { S.loginErr = j.error || '로그인하지 못했어요'; render(); return; }
     S.loginErr = ''; saveTok(j.token); S.me = j.name; S.title = j.title || ''; try { localStorage.setItem('cs_name_v1', j.name); } catch (er) {} enter();
   });
-  window.addEventListener('popstate', function () { if (S.sid || S.pv || S.lid) { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.err = null; render(); } });
+  window.addEventListener('popstate', function () { if (S.sid || S.pv || S.lid || S.hv) { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.hv = false; S.card = null; S.err = null; render(); } });
   function pick(sid) {
-    S.sid = sid; S.card = null; S.err = null; S.pv = false; S.lid = null; S.lcard = null;
+    S.sid = sid; S.card = null; S.err = null; S.pv = false; S.hv = false; S.lid = null; S.lcard = null;
     if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} }
     render(); var m = document.getElementById('main'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); loadCard();
   }
   function pickLead(id) {
-    S.lid = id; S.lcard = null; S.err = null; S.pv = false; S.sid = null; S.card = null;
+    S.lid = id; S.lcard = null; S.err = null; S.pv = false; S.hv = false; S.sid = null; S.card = null;
     if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} }
     render(); var m = document.getElementById('main'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); loadLCard();
   }
@@ -454,6 +512,9 @@ textarea.inp{min-height:110px;resize:vertical}
     var t = e.target.closest && e.target.closest('[data-a]'); if (!t) return;
     var a = t.dataset.a, v = t.dataset.v, j;
     if (a === 'fchk' || a === 'lnextdate') return;
+    if (a === 'tohome') { e.preventDefault(); S.sid = null; S.card = null; S.lid = null; S.lcard = null; S.err = null; S.pv = false; S.hv = true; if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} } render(); var mh = document.getElementById('main'); if (mh) mh.scrollTop = 0; window.scrollTo(0, 0); loadTodo(); return; }
+    if (a === 'tmore') { S.tmore[v] = true; var mm2 = document.getElementById('main'), y2 = mm2 ? mm2.scrollTop : 0; if (mm2) { mm2.innerHTML = vDetail(); mm2.scrollTop = y2; } return; }
+    if (a === 'tfollow') { j = await api(t.dataset.k === 'lead' ? 'ldn_follow' : 'follow', { id: v, done: true }); if (!j.ok) { toast(j.error || '체크하지 못했어요'); return; } toast('완료했어요'); loadTodo(); loadList(); loadLeads(); return; }
     if (a === 'lopen') { e.preventDefault(); pickLead(v); return; }
     if (a === 'ltoggle') { if (e.target.closest('[data-a=lnew]')) return; S.lopen = !S.lopen; var le = document.getElementById('lst'); if (le) { var yy = le.scrollTop; le.innerHTML = listHtml(); le.scrollTop = yy; } return; }
     if (a === 'lall') { S.lall = !S.lall; var le2 = document.getElementById('lst'); if (le2) le2.innerHTML = listHtml(); return; }
@@ -480,8 +541,8 @@ textarea.inp{min-height:110px;resize:vertical}
       j = await api('ld_del', { id: S.lid }); if (!j.ok) { toast(j.error || '지우지 못했어요'); return; } toast('지웠어요'); S.lid = null; S.lcard = null; S.pv = false; if (history.state && history.state.c) history.back(); else render(); loadLeads(); return;
     }
     if (a === 'open') { e.preventDefault(); pick(v); return; }
-    if (a === 'back') { if (history.state && history.state.c) history.back(); else { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.err = null; render(); } return; }
-    if (a === 'toplan') { e.preventDefault(); if (v) S.pcls = v; S.sid = null; S.card = null; S.lid = null; S.lcard = null; S.err = null; S.pv = true; if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} } render(); var mm = document.getElementById('main'); if (mm) mm.scrollTop = 0; window.scrollTo(0, 0); return; }
+    if (a === 'back') { if (history.state && history.state.c) history.back(); else { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.hv = false; S.card = null; S.err = null; render(); } return; }
+    if (a === 'toplan') { e.preventDefault(); if (v) S.pcls = v; S.sid = null; S.card = null; S.lid = null; S.lcard = null; S.err = null; S.pv = true; S.hv = true; if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} } render(); var mm = document.getElementById('main'); if (mm) mm.scrollTop = 0; window.scrollTo(0, 0); return; }
     if (a === 'pcls') { S.pcls = v; render(); return; }
     if (a === 'copy') { try { await navigator.clipboard.writeText(v); toast('복사했어요'); } catch (er) { toast('길게 눌러 직접 복사해 주세요'); } return; }
     if (a === 'retry') { S.view = 'boot'; render(); boot(); return; }
@@ -508,7 +569,7 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!j.ok) { toast(j.error || '체크하지 못했어요'); t.checked = !t.checked; return; }
     if (S.lid) { loadLCard(true); loadLeads(); } else { loadCard(true); loadList(); }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view === 'main' && !document.getElementById('ov')) { loadList(); loadPlan(); loadLeads(); if (S.sid) loadCard(true); if (S.lid) loadLCard(true); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view === 'main' && !document.getElementById('ov')) { loadList(); loadPlan(); loadLeads(); loadTodo(); if (S.sid) loadCard(true); if (S.lid) loadLCard(true); } });
   boot();
 })();
 </script>
