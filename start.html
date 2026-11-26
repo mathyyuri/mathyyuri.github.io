@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex"><meta name="googlebot" content="noindex, nofollow">
+<title>공수내모 시작하기 | MATHY YURI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0B1A31;--navy2:#13264A;--gold:#C79B63;--gold1:#E8CD9C;--goldd:#8F6A3A;--cream:#f6efe2;--card:#fffdf8;--ink:#1a1816;--muted:#6e6a5f;--line:#e0d4bb;--acc:#C4423A;--ok:#2f7d5b;
+ --serif:'Noto Serif KR','Playfair Display',serif;--disp:'Playfair Display','Noto Serif KR',serif;--sans:'Noto Sans KR',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-text-size-adjust:100%}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:16px}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+.hero{background:var(--navy);color:#fff;padding:30px 0 0;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,205,156,.22),transparent 70%)}
+.hero .wrap{position:relative;display:flex;align-items:flex-end;gap:6px}
+.hero .tx{flex:1;padding-bottom:26px}
+.eyebrow{font-family:var(--disp);letter-spacing:.26em;font-size:11px;color:var(--gold1);text-transform:uppercase}
+.hero h1{margin-top:8px;font-family:var(--serif);font-size:24px;line-height:1.4;font-weight:900;letter-spacing:-.5px;word-break:keep-all}.hero h1 em{font-style:normal;color:var(--gold1)}
+.hero p{margin-top:8px;font-size:13.5px;color:#cfd7e8}
+.hero img{width:132px;height:156px;object-fit:contain;object-position:right bottom;flex:0 0 auto;display:block}
+.prog{display:flex;gap:6px;margin:16px 0 4px}.prog i{flex:1;height:5px;border-radius:3px;background:#e5dac3}.prog i.on{background:var(--navy2)}.prog i.done{background:var(--gold)}
+.pl{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.step{display:none;animation:in .25s ease}.step.on{display:block}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-family:var(--serif);font-size:22px;line-height:1.45;color:var(--navy);margin:6px 0 8px;font-weight:900;word-break:keep-all}
+.lead{font-size:15.5px;color:#3a362f;word-break:keep-all;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px;margin:12px 0;box-shadow:0 1px 3px rgba(60,40,10,.05)}
+.card h3{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:8px}
+.big{display:flex;gap:12px;align-items:center}.big .ic{flex:0 0 44px;width:44px;height:44px;border-radius:12px;background:var(--navy2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px}
+.big b{display:block;font-family:var(--serif);font-size:18px;color:var(--navy)}.big span{font-size:14px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:15px 16px;font-size:16.5px;font-weight:700;font-family:inherit;background:var(--navy);color:#fff;text-align:center;text-decoration:none;cursor:pointer;margin-top:10px}
+.btn.gold{background:var(--gold);color:var(--navy)}.btn.gh{background:#fff;color:var(--navy);border:1.5px solid var(--line)}.btn.sm{padding:11px 14px;font-size:14.5px}
+.nav{display:flex;gap:10px;margin-top:14px}.nav .btn{margin-top:0}.nav .btn.gh{flex:0 0 32%}
+.pick{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px 16px;margin-top:10px;font-family:inherit;cursor:pointer}
+.pick b{display:block;font-family:var(--serif);font-size:19px;color:var(--navy)}.pick span{font-size:13.5px;color:var(--muted)}.pick.on{border-color:var(--navy2);background:#eef2fa}.pick .me{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:700;color:#fff;background:var(--acc);border-radius:10px;padding:1px 8px;vertical-align:2px}
+ol.s{list-style:none;counter-reset:s;margin:6px 0 0}ol.s li{counter-increment:s;display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed #e8dcc2;font-size:16px;word-break:keep-all}ol.s li:last-child{border:0}
+ol.s li:before{content:counter(s);flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:700;font-size:14px;line-height:30px;text-align:center;margin-top:1px}
+ol.s b{color:var(--navy)}ol.s u{text-decoration:none;color:var(--acc);font-weight:900}ol.s small{display:block;color:var(--muted);font-size:13.5px}
+.warn{background:#fdeeee;border:1px solid #efc5c5;border-radius:14px;padding:12px 14px;font-size:14.5px;color:#8a2a2a;margin:12px 0;word-break:keep-all}.warn b{color:#6d1c1c}
+.tip{background:#fbf5e4;border-left:4px solid var(--gold);border-radius:10px;padding:12px 14px;font-size:14.5px;margin:12px 0;word-break:keep-all}
+.star{background:var(--acc);color:#fff;border-radius:16px;padding:16px;text-align:center;margin:12px 0}.star b{display:block;font-family:var(--serif);font-size:19px}.star span{font-size:14px;opacity:.95}
+table{width:100%;border-collapse:collapse;font-size:14.5px}th,td{border-bottom:1px solid #ecdfc3;padding:8px 6px;text-align:center}th{background:#f3ead7;font-size:12.5px;color:#5f573f}td.l{text-align:left}tr.cur td{background:#fff3d6;font-weight:700}
+.chk{display:flex;gap:12px;align-items:flex-start;background:#fff;border:2px solid var(--line);border-radius:14px;padding:13px 14px;margin-top:10px;cursor:pointer;word-break:keep-all}.chk input{width:24px;height:24px;margin-top:2px;accent-color:var(--navy2)}.chk b{color:var(--navy)}.chk small{display:block;color:var(--muted);font-size:13.5px}.chk.done{border-color:#9ccab4;background:#f3faf6}
+.foot{text-align:center;font-family:var(--disp);letter-spacing:.2em;font-size:11px;color:var(--goldd);padding:26px 0 40px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#232733;color:#fff;border-radius:20px;padding:10px 18px;font-size:14px;z-index:9;max-width:90%;text-align:center}
+</style></head><body>
+<div class="hero"><div class="wrap"><div class="tx"><div class="eyebrow">MATHY YURI · 분당미래탐구</div><h1>공수내모에<br><em>함께해 주셔서 감사합니다</em></h1><p>차근차근 따라오시면 가입까지 5분이면 끝나요</p></div><img src="start_director.png" alt="" width="132" height="156"></div></div>
+<div class="wrap">
+ <div class="prog" id="prog"></div><div class="pl" id="pl"></div>
+
+ <!-- 1. 인사 · 개강 확인 -->
+ <section class="step" id="s0">
+  <h2>안녕하세요, 분당미래탐구 수학 강사 전유리입니다 🙂</h2>
+  <p class="lead">공수내모와 함께해 주셔서 감사합니다. 먼저 <b>개강일과 시간</b>을 확인해 주세요.</p>
+  <div class="card"><div class="big"><div class="ic">📅</div><div><b>11월 28일(토) 개강</b><span>매주 토요일 · 오후 1:30 ~ 5:30</span></div></div>
+   <a class="btn gold sm" href="gsm_open_day.ics">내 캘린더에 개강일 넣기</a>
+   <a class="btn gh sm" href="gsm_schedule.ics">13주 수업 일정 전체 넣기</a></div>
+  <p class="tip">버튼을 누르면 휴대폰 캘린더에 저장하는 화면이 열려요. (설 연휴 2/6은 쉬어요)</p>
+  <div class="nav"><button class="btn" data-go="1" type="button">다음 →</button></div>
+ </section>
+
+ <!-- 2. 11월 수업 · 교재비 -->
+ <section class="step" id="s1">
+  <h2>11월은 <u style="text-decoration:none;color:var(--acc)">1회</u> 수업이에요</h2>
+  <p class="lead">11월에는 <b>11/28(토) 1회 수업</b>이 있고, <b>교재비 5,000원</b>이 발생해요.</p>
+  <div class="card"><h3>1회 수업 교재 (주당 5,000원)</h3>
+   <ol class="s"><li><span>해설집 2권</span></li><li><span>시험지 2개 · 동형모의고사 2회</span></li><li><span>첫날 추가문제</span></li></ol></div>
+  <div class="card"><h3>교재는 이렇게 주문해요</h3>
+   <p style="font-size:15.5px;word-break:keep-all"><b>mathyyuri.com에 가입</b>하신 뒤 <b>앱의 [교재구매]</b>에서 주문해 주시면 돼요. 입금은 계좌이체이고, 계좌는 <b>가입 후 교재구매 화면</b>에서 확인하실 수 있어요.</p></div>
+  <div class="card"><h3>월별 교재비 한눈에 (참고)</h3><div id="months"></div><p style="font-size:13px;color:var(--muted);margin-top:8px">교재구매 화면에서 월별로 주문하고 내용을 확인할 수 있어요.</p></div>
+  <div class="nav"><button class="btn gh" data-go="0" type="button">← 이전</button><button class="btn" data-go="2" type="button">다음 →</button></div>
+ </section>
+
+ <!-- 3. 휴대폰 고르기 -->
+ <section class="step" id="s2">
+  <h2>지금 쓰시는 휴대폰은 무엇인가요?</h2>
+  <p class="lead">휴대폰에 맞는 가입 방법을 안내해 드려요.</p>
+  <button class="pick" data-dev="android" type="button"><b>안드로이드 <em class="me" id="me-android" hidden>지금 이 기기</em></b><span>갤럭시 · 엘지 · 샤오미 등</span></button>
+  <button class="pick" data-dev="ios" type="button"><b>아이폰 <em class="me" id="me-ios" hidden>지금 이 기기</em></b><span>iPhone (사파리로 설치해요)</span></button>
+  <button class="pick" data-dev="other" type="button"><b>컴퓨터 · 태블릿 · 잘 모르겠어요</b><span>바로 접속해서 가입할 수 있어요</span></button>
+  <div class="nav"><button class="btn gh" data-go="1" type="button">← 이전</button></div>
+ </section>
+
+ <!-- 4. 기기별 안내 -->
+ <section class="step" id="s3">
+  <h2 id="s3t"></h2>
+  <div id="warn"></div>
+  <a class="btn gold" id="open" href="https://mathyyuri.com/">mathyyuri.com 열기</a>
+  <button class="btn gh sm" id="copy" type="button">주소 복사하기</button>
+  <div class="card"><h3>이렇게 해 주세요</h3><div id="how"></div></div>
+  <div class="card"><h3>로그인 정보</h3>
+   <ol class="s"><li><span><b>'분당미래탐구'</b> 선택 → <b>학생(또는 학부모)</b> 로그인</span></li>
+   <li><span>이름 : <b>학생 이름</b><br>번호 : <b>학부모님 전화번호 뒤 4자리</b><small>학부모님도 같은 이름·번호로 로그인하시면 아이의 진행 상황을 함께 보실 수 있어요</small></span></li></ol></div>
+  <div class="star"><b>★ [알림 켜기]는 꼭 해 주세요! ★</b><span>과제 마감, 수업 소식, 선생님 메시지가 알림으로 도착해요.<br>학부모님 폰에서도 켜 두시면 함께 받으실 수 있어요.</span></div>
+  <div class="nav"><button class="btn gh" data-go="2" type="button">← 이전</button><button class="btn" data-go="4" type="button">가입했어요 →</button></div>
+ </section>
+
+ <!-- 5. 가입 뒤 해 볼 것 -->
+ <section class="step" id="s4">
+  <h2>가입하셨다면, 이것만 해 주세요</h2>
+  <p class="lead">누르면 체크돼요. 하나씩 따라 해 보세요.</p>
+  <label class="chk" data-k="login"><input type="checkbox"><span><b>① 로그인 확인</b><small>앱에서 학생 이름과 반(공수내모)이 보이면 성공이에요</small></span></label>
+  <label class="chk" data-k="push"><input type="checkbox"><span><b>② [알림 켜기] 누르고 '허용'</b><small>과제 마감·수업 소식을 알려 드려요</small></span></label>
+  <label class="chk" data-k="shop"><input type="checkbox"><span><b>③ 11월 교재 주문 (5,000원)</b><small>앱 → <b>교재구매</b> → 11월 → 주문 → 입금자명은 <b>학생 이름</b>으로 계좌이체 → 확인되면 '결제 완료'로 바뀌어요</small></span></label>
+  <label class="chk" data-k="video"><input type="checkbox"><span><b>④ (선택) 예습영상 보기</b><small>앱 → 미션 → 내모미션 → 예습영상. <b>안 보고 와도 전혀 상관없어요</b></small></span></label>
+  <div class="card" style="margin-top:16px"><h3>학생 안내</h3>
+   <ol class="s"><li><span>첫날(11/28) 수업 시간에 선생님이 학생들 <b>가입(로그인·알림 켜기)</b>까지 도와줘요</span></li><li><span>가입을 마친 뒤에는 수업에 집중할 수 있도록 <b>학생 휴대폰을 수거</b>해 보관하고, 수업이 끝나면 돌려줘요</span></li></ol></div>
+  <p class="tip">문의는 앱의 <b>'메시지'</b>로 편하게 남겨 주세요. 11월 28일(토)에 만나요! 감사합니다 🙂</p>
+  <div class="nav"><button class="btn gh" data-go="3" type="button">← 이전</button><a class="btn" href="https://mathyyuri.com/">앱 열기</a></div>
+ </section>
+ <div class="foot">MATHY YURI · 분당미래탐구</div>
+</div>
+<script>
+(function(){
+ var ua=navigator.userAgent||'',IS_IOS=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),IS_AND=/Android/.test(ua);
+ var INAPP=/KAKAOTALK|NAVER\(inapp|FBAN|FBAV|Instagram|Line\/|DaumApps|Whale.*inapp/i.test(ua);
+ var IOS_SAFARI=IS_IOS&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS|OPiOS|KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps/i.test(ua);
+ var URL_='https://mathyyuri.com/',N=5,cur=0,dev=null;
+ function $(s){return document.querySelector(s)}function $$(s){return [].slice.call(document.querySelectorAll(s))}
+ function toast(t){var e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(function(){e.remove()},2200)}
+ function go(n){cur=n;$$('.step').forEach(function(s,i){s.classList.toggle('on',i===n)});
+  $('#prog').innerHTML=[0,1,2,3,4].map(function(i){return '<i class="'+(i<n?'done':i===n?'on':'')+'"></i>'}).join('');
+  $('#pl').textContent=['1/5 · 개강 확인','2/5 · 11월 수업과 교재비','3/5 · 휴대폰 고르기','4/5 · 가입 방법','5/5 · 가입 뒤 해 볼 것'][n];window.scrollTo({top:0,behavior:'smooth'});try{sessionStorage.setItem('gsm_start_step',n)}catch(e){}}
+ // 월별 교재비(주당 5,000원)
+ var W=['2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-13','2027-02-20','2027-02-27'],M={};
+ W.forEach(function(d){var k=+d.slice(5,7);M[k]=(M[k]||0)+1});
+ var order=[11,12,1,2];$('#months').innerHTML='<table><tr><th>달</th><th>수업 횟수</th><th>교재비</th></tr>'+order.map(function(k){return '<tr'+(k===11?' class="cur"':'')+'><td>'+k+'월'+(k===2?' <small>(설 연휴 2/6 휴강)</small>':'')+'</td><td>'+M[k]+'회</td><td>'+(M[k]*5000).toLocaleString('ko-KR')+'원</td></tr>'}).join('')+'</table>';
+ // 기기 안내
+ var HOW={
+  android:{t:'안드로이드 가입 방법',steps:['<span><b>크롬</b>(또는 삼성 인터넷)으로 위 <b>[mathyyuri.com 열기]</b>를 눌러요</span>','<span>로그인한 뒤 오른쪽 위 <b>⋮ 메뉴</b> → <b>\'홈 화면에 추가\'</b> (또는 \'앱 설치\')</span>','<span>홈 화면에 생긴 앱을 열고 <u>[알림 켜기]</u> → <b>\'허용\'</b></span>'],note:'알림이 켜지지 않으면 크롬으로 열어 주세요.'},
+  ios:{t:'아이폰 가입 방법',steps:['<span>반드시 <b>사파리(Safari)</b>로 열어요<small>카카오톡·크롬에서는 설치가 안 돼요</small></span>','<span>아래 가운데 <b>공유 버튼(□↑)</b> → <b>\'홈 화면에 추가\'</b></span>','<span>홈 화면의 <b>앱 아이콘으로 열어</b> 로그인한 뒤 <u>[알림 켜기]</u> → <b>\'허용\'</b><small>iOS 16.4 이상이어야 알림이 와요</small></span>'],note:''},
+  other:{t:'컴퓨터·태블릿 가입 방법',steps:['<span>위 <b>[mathyyuri.com 열기]</b>를 눌러요</span>','<span>로그인한 뒤 <u>[알림 켜기]</u> → <b>\'허용\'</b> (크롬·엣지 권장)</span>'],note:'휴대폰으로도 가입해 두시면 알림을 받기 좋아요.'}
+ };
+ function showDev(d){dev=d;var h=HOW[d];$('#s3t').textContent=h.t;
+  $('#how').innerHTML='<ol class="s">'+h.steps.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ol>'+(h.note?'<p style="margin-top:8px;font-size:14px;color:var(--muted)">'+h.note+'</p>':'');
+  var w='';
+  if(d==='ios'&&IS_IOS&&!IOS_SAFARI)w='<div class="warn"><b>지금은 사파리가 아닌 곳에서 보고 계세요.</b><br>아래 <b>[주소 복사하기]</b>를 누른 뒤, <b>사파리</b>를 열어 주소창에 붙여 넣고 이동해 주세요. (카카오톡·크롬에서는 앱 설치가 안 돼요)</div>';
+  if(d==='android'&&IS_AND&&INAPP)w='<div class="warn"><b>지금은 카카오톡·네이버 같은 앱 안에서 보고 계세요.</b><br>오른쪽 위 <b>⋮ 메뉴 → \'다른 브라우저로 열기\'</b>(또는 아래 <b>[주소 복사하기]</b> 후 크롬에 붙여넣기)로 열어 주세요.</div>';
+  if(d==='ios'&&!IS_IOS)w='<div class="warn"><b>아이폰으로 이 주소를 열어 주세요.</b><br>지금 보고 계신 기기는 아이폰이 아니에요. [주소 복사하기]로 주소를 아이폰의 <b>사파리</b>에 보내 주세요.</div>';
+  $('#warn').innerHTML=w;go(3)}
+ $$('[data-dev]').forEach(function(b){b.addEventListener('click',function(){$$('.pick').forEach(function(x){x.classList.toggle('on',x===b)});showDev(b.dataset.dev)})});
+ $$('[data-go]').forEach(function(b){b.addEventListener('click',function(){go(+b.dataset.go)})});
+ $('#copy').addEventListener('click',function(){var done=function(){toast('주소를 복사했어요')};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(URL_).then(done,function(){prompt('이 주소를 복사해 주세요',URL_)});
+  else{var t=document.createElement('textarea');t.value=URL_;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){prompt('이 주소를 복사해 주세요',URL_)}t.remove()}});
+ // 지금 기기 표시
+ if(IS_IOS)$('#me-ios').hidden=false;else if(IS_AND)$('#me-android').hidden=false;
+ // 체크리스트 (이 기기에만 저장)
+ var K='gsm_start_chk_v1',S={};try{S=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+ $$('.chk').forEach(function(c){var k=c.dataset.k,i=c.querySelector('input');i.checked=!!S[k];c.classList.toggle('done',i.checked);i.addEventListener('change',function(){S[k]=i.checked;c.classList.toggle('done',i.checked);try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}})});
+ go(0);
+})();
+</script></body></html>
