@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta name="robots" content="noindex, nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>공수내모 과제 · MATHY YURI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{--navy:#1f3a6e;--navy2:#17284d;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#f6f0e4;--card:#fffdf8;--ok:#2f7d5b;--bad:#b84a4a;--fk:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif;--fd:"Playfair Display",serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-text-size-adjust:100%}
+button{font-family:inherit;cursor:pointer}input,select{font-family:inherit;font-size:14px}
+.top{background:linear-gradient(135deg,#17284d,#243f77);color:#fff}.top .in{max-width:860px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-family:var(--fd);font-style:italic;font-weight:700;font-size:19px;letter-spacing:.06em;color:#e8cd9c}.top h1{margin:0;font-family:var(--fk);font-size:17px}.top .sp{flex:1}.top .who{font-size:12.5px;opacity:.9}
+.top .tb{border:0;border-radius:14px;padding:5px 12px;font-size:12px;font-weight:700;background:rgba(255,255,255,.16);color:#fff}
+.wrap{max-width:860px;margin:0 auto;padding:14px 14px 90px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(40,30,10,.05)}
+.card h3{margin:0 0 6px;font-family:var(--fk);font-size:17px}
+.muted{color:var(--mute)}.sm{font-size:12.5px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;background:var(--navy);color:#fff}.btn.rose{background:var(--rose)}.btn.gh{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn.sm3{padding:6px 12px;font-size:12.5px;border-radius:10px}.btn:disabled{opacity:.45;cursor:default}
+.badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:11.5px;font-weight:700;background:#e9edf4;color:#3d4760}.badge.bad{background:#f7dede;color:#9a2f2f}.badge.ok{background:#dcefe5;color:#1d6a47}.badge.gold{background:#f4e9cf;color:#7a5a12}.badge.gr{background:#ececec;color:#777}
+.guide{border-left:4px solid var(--gold);background:#fbf5e4}.guide ol{margin:6px 0 0;padding-left:20px;line-height:1.9;font-size:14px}
+.hwc .t{font-weight:700;font-size:15.5px}.hwc .m{font-size:12.5px;color:var(--mute);margin:3px 0 8px}
+.bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0 6px;margin:0 0 6px;border-bottom:1px solid #e4dccb}
+.bar .pg{height:7px;background:#e8e0cf;border-radius:5px;overflow:hidden;margin-top:6px}.bar .pg i{display:block;height:100%;background:var(--navy);width:0;transition:width .25s}
+.qc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;margin-bottom:12px}
+.qc.o{border-color:#9ccab4;background:#f7fcf9}.qc.x{border-color:#e3b4b4;background:#fdf8f8}
+.qh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.qh .no{font-family:var(--fk);font-size:19px;font-weight:700;color:var(--navy)}.qh .pt{font-size:12px;color:var(--rose)}.qh .mk{margin-left:auto;font-weight:700;font-size:13px}
+.q{font-size:15px;line-height:1.85;word-break:keep-all}.q p{margin:0 0 6px}.q img.fig{max-width:100%;max-height:260px;display:block;margin:6px auto}.q .cbox{border:1px solid #6f6450;padding:8px 12px;margin:8px 0;border-radius:4px}.q table.syn{margin:6px auto;border-collapse:collapse}
+.chs{display:grid;gap:7px;margin-top:10px}
+.chs button{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1.5px solid #d9d2c2;border-radius:12px;padding:10px 12px;font-size:15px;min-height:46px;color:var(--ink)}
+.chs button b{flex:0 0 26px;height:26px;border-radius:50%;border:1.5px solid #bdb5a3;display:flex;align-items:center;justify-content:center;font-size:13px;color:#7d7364}
+.chs button.on{border-color:var(--navy);background:#eaf0fb}.chs button.on b{background:var(--navy);border-color:var(--navy);color:#fff}
+.chs .ct{flex:1;min-width:0}.chs .ct p{margin:0}
+.cf{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}.cf .lb{font-size:12.5px;color:var(--mute);margin-right:2px}
+.cf button{border:1.5px solid #d9d2c2;background:#fff;border-radius:16px;padding:6px 13px;font-size:13px;font-weight:700;color:#6b6556}
+.cf button.on.s{background:#dcefe5;border-color:#6fb08c;color:#1d6a47}.cf button.on.u{background:#fbefcf;border-color:#d9b24f;color:#7a5a12}.cf button.on.n{background:#f7dede;border-color:#d98c8c;color:#9a2f2f}
+.ph{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:flex-start}
+.ph .th{position:relative;width:92px;height:92px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#eee}.ph .th img{width:100%;height:100%;object-fit:cover}.ph .th button{position:absolute;right:2px;top:2px;border:0;border-radius:50%;width:22px;height:22px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:1}
+.ph .add{width:92px;height:92px;border:2px dashed #bdb5a3;border-radius:10px;background:#fff;color:#7d7364;font-size:12.5px;font-weight:700}
+.sub{position:fixed;left:0;right:0;bottom:0;background:rgba(246,240,228,.96);border-top:1px solid #e4dccb;padding:10px 14px;z-index:30}.sub .in{max-width:860px;margin:0 auto;display:flex;gap:10px;align-items:center}.sub .tx{flex:1;font-size:12.5px;color:var(--mute);line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px;margin:10px 0}.grid span{border-radius:10px;padding:6px 0;text-align:center;font-size:13px;font-weight:700}.grid .o{background:#dcefe5;color:#1d6a47}.grid .x{background:#f7dede;color:#9a2f2f}
+.big{font-family:var(--fk);font-size:34px;font-weight:700;color:var(--navy)}
+.err{background:#fdeeee;border:1px solid #efc5c5;color:#8a2a2a;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:10px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th,.tbl td{border-bottom:1px solid #eadfca;padding:7px 6px;text-align:left;vertical-align:middle}.tbl th{background:#f3ead7;font-size:12px;color:#5f573f;white-space:nowrap}
+.sc{overflow-x:auto}.tbl input.es{width:54px;padding:4px 5px;border:1px solid #d9d2c2;border-radius:8px;font-size:13px}
+.pbtn{border:1px solid #d9d2c2;background:#fff;border-radius:8px;padding:3px 8px;font-size:12px;margin:0 3px 3px 0}
+.mini{display:flex;gap:2px;align-items:flex-end;height:46px;margin-top:6px}.mini i{flex:1;background:#8aa4d6;border-radius:2px 2px 0 0;min-height:2px;position:relative}.mini i.lo{background:#d98c8c}
+.modal{position:fixed;inset:0;background:rgba(10,14,24,.72);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px}.modal .bx{background:#fff;border-radius:16px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:14px}.modal img{max-width:100%;display:block;margin:8px auto;border-radius:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;background:#232733;color:#fff;border-radius:20px;padding:10px 18px;font-size:13.5px;z-index:60;max-width:90%;text-align:center}
+.lg{max-width:420px;margin:40px auto}.lg input{width:100%;padding:12px;border:1px solid #d9d2c2;border-radius:12px;margin:6px 0;font-size:16px}
+.lg .tabs{display:flex;gap:6px;margin-bottom:8px}.lg .tabs button{flex:1}
+</style></head><body>
+<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>공수내모 과제</h1><span class="sp"></span><span class="who" id="who"></span></div></div>
+<div class="wrap" id="app"></div>
+<div id="layer"></div>
+<script>
+var qs=new URLSearchParams(location.search),SBU=(qs.get('sb')||'https://eqllmvfbcdtzercliicy.supabase.co/'),RPC=SBU+'rest/v1/rpc/',KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV',TK='acadapp_tok_v1',BS=String.fromCharCode(92);
+var S={tok:null,list:null,staff:false,admin:false,me:null,view:'list',ex:null,ess:[],figs:{},probs:{},ans:[],conf:[],photos:{},thumbs:{},mine:null,res:null,rows:null,skew:0,busy:false};
+try{S.tok=localStorage.getItem(TK)}catch(e){}
+function $(s,r){return (r||document).querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function nowMs(){return Date.now()+S.skew}
+async function call(fn,args){var r;try{r=await fetch(RPC+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify(args)})}catch(e){return{ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(!r.ok)return{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 68_공수내모_과제제출_서버.sql 을 먼저 실행해 주세요':'')};try{return await r.json()}catch(e){return{ok:false,error:'서버 응답을 읽지 못했어요'}}}
+async function api(a,args){var j=await call('ac_hw',{p_action:a,p_token:S.tok,p_args:args||{}});if(j&&j.now)S.skew=Date.parse(j.now)-Date.now();
+ if(j&&j.ok===false&&/다시 로그인/.test(j.error||'')){S.tok=null;try{localStorage.removeItem(TK)}catch(e){}S.view='login';render('로그인이 풀렸어요. 다시 들어와 주세요')}return j}
+async function ms(a,args){return call('ac_mission',{p_action:a,p_token:S.tok,p_args:args||{}})}
+function toast(t){var e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+/* ── 날짜 (한국 시간) ── */
+function kst(iso){var d=new Date(iso),p={};new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d).forEach(function(x){p[x.type]=x.value});return p.weekday+' '+p.month+'/'+p.day+' '+p.hour.replace(/^24$/,'00')+':'+p.minute}
+function left(iso){var ms=Date.parse(iso)-nowMs();if(ms<=0)return '마감';var m=Math.floor(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d>0?d+'일 '+h+'시간 남음':h>0?h+'시간 '+(m%60)+'분 남음':(m%60)+'분 남음'}
+/* ── 문제 글 다듬기 (HWP 변환 흔적) — tbmission.html 과 같은 방식 ── */
+function fixTex(t){t=t.split(String.fromCharCode(0xe04d)).join(' '+BS+'mid ');t=t.replace(/\^\s*(-?\d+)/g,function(m,d){return '^{'+d+'}'}).replace(/-&gt;|->/g,BS+'rightarrow ');
+ if(t.indexOf(BS+'begin{cases}{')>=0){t=t.replace(/\{?\\begin\{cases\}\{/g,BS+'begin{cases}').replace(/\\end\{cases\}\}+/g,BS+'end{cases}').split('#').join(BS+BS).replace(/(?:&amp;\s*){2,}/g,'&amp; ')}
+ return t.replace(/(?:_\{\s*\})+/g,'')}
+function fixStem(h){h=String(h||'').replace(new RegExp(BS+BS+'\\((.*?)'+BS+BS+'\\)','gs'),function(m,t){return BS+'('+fixTex(t)+BS+')'});return h.replace(/\s*\[\s*\d+(?:\.\d+)?\s*점\s*\]/g,'').replace(/<p>\s*<\/p>/g,'')}
+function emp(td){return td.textContent.replace(/\s/g,'')===''&&!td.querySelector('img,table,.katex')}
+function fixTables(root){[].slice.call(root.querySelectorAll('table.hwpTbl')).reverse().forEach(function(t){if(!root.contains(t))return;var rows=[].slice.call(t.rows),nested=!!t.querySelector('table');
+  var syn=!nested&&rows.length===3&&rows[0].cells.length>=4&&rows.every(function(r){return r.cells.length===rows[0].cells.length})&&emp(rows[1].cells[0])&&emp(rows[2].cells[0]);if(syn){t.className='syn';return}
+  var tds=[].slice.call(t.querySelectorAll('td')).filter(function(td){return td.closest('table')===t}),ne=tds.filter(function(td){return !emp(td)});
+  if(!ne.length&&!nested){t.parentNode.removeChild(t);return}
+  if(!nested&&ne.length>2&&!t.querySelector('.hwpBogi')){t.className='grid2';t.style.cssText='border-collapse:collapse;margin:8px auto';tds.forEach(function(td){td.style.cssText='border:1px solid #8a7f68;padding:4px 10px;text-align:center'});return}
+  var box=document.createElement('div');box.className='cbox';ne.forEach(function(td){var d=document.createElement('div');d.innerHTML=td.innerHTML;box.appendChild(d)});t.parentNode.replaceChild(box,t)})}
+function mathIn(root){[].forEach.call(root.querySelectorAll('img[data-fig]'),function(im){var f=S.figs[im.getAttribute('data-fig')];if(f)im.src=f;im.className='fig'});fixTables(root);
+ try{renderMathInElement(root,{delimiters:[{left:BS+'(',right:BS+')',display:false}],throwOnError:false})}catch(e){}}
+var CIRC=['①','②','③','④','⑤'];
+/* ── 그림 ── */
+function render(msg){var a=$('#app');
+ if(S.view==='login'){a.innerHTML=vLogin(msg);bindLogin();return}
+ if(S.view==='solve'){a.innerHTML=vSolve();mathIn(a);afterSolve();return}
+ if(S.view==='result'){a.innerHTML=vResult();return}
+ if(S.view==='rows'){a.innerHTML=vRows();return}
+ a.innerHTML=vList();window.scrollTo(0,0)}
+/* ── 로그인 ── */
+function vLogin(msg){return '<div class="card lg"><h3>로그인</h3><div class="muted sm" style="margin-bottom:8px">mathyyuri.com 에 이미 로그인했다면 자동으로 열려요. 아니면 아래에 넣어 주세요.</div>'+(msg?'<div class="err">'+esc(msg)+'</div>':'')+
+ '<div class="tabs"><button class="btn" data-r="student" type="button">학생·학부모</button><button class="btn gh" data-r="admin" type="button">선생님</button></div>'+
+ '<div id="fs"><input id="nm" placeholder="학생 이름"><input id="pin" inputmode="numeric" maxlength="4" placeholder="학부모 전화번호 뒤 4자리"></div><div id="ft" hidden><input id="pw" type="password" placeholder="비밀번호"></div><button class="btn" id="go" type="button" style="width:100%;margin-top:6px">들어가기</button></div>'}
+var ROLE='student';
+function bindLogin(){document.querySelectorAll('[data-r]').forEach(function(b){b.onclick=function(){ROLE=b.dataset.r;document.querySelectorAll('[data-r]').forEach(function(x){x.className='btn'+(x===b?'':' gh')});$('#fs').hidden=ROLE!=='student';$('#ft').hidden=ROLE==='student'}});
+ $('#go').onclick=async function(){var args={academy:'bd'};if(ROLE==='student'){args.role='student';args.name=$('#nm').value.trim();args.pin=$('#pin').value.trim();if(!args.name||!args.pin){toast('이름과 뒤 4자리를 넣어 주세요');return}}else{args.role='admin';args.password=$('#pw').value;if(!args.password){toast('비밀번호를 넣어 주세요');return}}
+  this.disabled=true;var j=await call('ac_api',{p_action:'login',p_token:null,p_args:args});if((!j||!j.ok)&&ROLE==='admin'){args.role='ta';j=await call('ac_api',{p_action:'login',p_token:null,p_args:args})}this.disabled=false;
+  if(!j||!j.ok){toast((j&&j.error)||'로그인하지 못했어요');return}S.tok=j.token;try{localStorage.setItem(TK,S.tok)}catch(e){}boot()}}
+/* ── 시작 ── */
+async function boot(){if(!S.tok){S.view='login';render();return}
+ var j=await api('list');if(!j||!j.ok){if(S.view!=='login'){S.view='login';render((j&&j.error)||'불러오지 못했어요')}return}
+ S.list=j.list;S.staff=j.staff;S.admin=j.admin;S.me=j.me;
+ $('#who').innerHTML=(S.staff?'선생님':esc((S.me||{}).name)+' 학생')+' <button class="tb" id="out" type="button">로그아웃</button>';
+ $('#out').onclick=async function(){await call('ac_api',{p_action:'logout',p_token:S.tok,p_args:{}});S.tok=null;try{localStorage.removeItem(TK)}catch(e){}location.reload()};
+ S.view='list';render();var want=qs.get('exam');if(want&&S.list.some(function(x){return x.id===want})){S.staff?openRows(want):openExam(want)}}
+/* ── 목록 ── */
+var GUIDE='<div class="card guide"><b>이렇게 제출해요</b><ol><li>문제를 읽고 <b>답(①~⑤)</b>을 눌러요.</li><li>그 답을 얼마나 <b>확신</b>하는지 눌러요 (확실 · 긴가민가 · 모름). 모르면 답은 비워 둬도 돼요.</li><li><b>서술형</b>은 노트에 푼 풀이를 <b>사진</b>으로 찍어 올려요 (한 문제에 3장까지).</li><li>맨 아래 <b>[제출하기]</b>를 눌러요. 마감 전에는 다시 제출할 수 있어요 (최대 5번).</li></ol><div class="muted sm" style="margin-top:6px">마감은 화요일·목요일 밤 11:59예요. 마감 전날과 당일에 알림이 와요.</div></div>';
+function status(e){var m=e.mine,t=nowMs(),due=Date.parse(e.due),open=e.open?Date.parse(e.open):0;
+ if(t>due||e.lock)return m?{c:'ok',t:'제출함 · 마감'}:{c:'gr',t:'미제출 · 마감'};
+ if(open&&t<open)return {c:'gold',t:'수업 후 열려요'};
+ return m?{c:'ok',t:'제출함 ('+m.tries+'번)'}:{c:'bad',t:'미제출'}}
+function vList(){var t=nowMs(),L=(S.list||[]).filter(function(e){return S.staff||!e.open||Date.parse(e.open)-3*86400e3<=t});   /* 학생에게는 수업 3일 전부터 보여요 */
+ L.sort(function(a,b){var ao=Date.parse(a.due)>=t,bo=Date.parse(b.due)>=t;if(ao!==bo)return ao?-1:1;return ao?Date.parse(a.due)-Date.parse(b.due):Date.parse(b.due)-Date.parse(a.due)});
+ var h=S.staff?'<div class="card"><b>과제 제출 현황</b><div class="muted sm">과제를 누르면 누가 냈는지, 서술형 사진, 점수 입력, 독촉을 볼 수 있어요.</div></div>':GUIDE;
+ if(!L.length)return h+'<div class="card"><div class="muted">지금 풀 수 있는 과제가 없어요.</div></div>';
+ return h+L.map(function(e){var st=status(e),m=e.mine,over=Date.parse(e.due)<t||e.lock,op=e.open&&t<Date.parse(e.open);
+  var sub=S.staff?'<span class="badge">제출 '+((e.stat||{}).done||0)+'/'+((e.stat||{}).total||0)+'명</span>':'<span class="badge '+st.c+'">'+st.t+'</span>';
+  return '<div class="card hwc"><div class="row"><div class="t">'+esc(e.name)+'</div><span class="sp"></span>'+sub+'</div><div class="m">객관식 '+e.n+(e.es.length?' · 서술형 '+e.es.length:'')+' · 마감 <b>'+kst(e.due)+'</b>'+(over?'':' · '+left(e.due))+(op?' · '+kst(e.open)+'부터 열려요':'')+'</div>'+
+   (m&&!S.staff&&m.score!=null?'<div class="sm" style="margin-bottom:8px">객관식 <b>'+m.score+'점</b> · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.es_total!=null?' · 서술형 '+m.es_total+'점':'')+'</div>':'')+
+   '<button class="btn" data-open="'+e.id+'" '+(op&&!S.staff?'disabled':'')+' type="button">'+(S.staff?'현황 보기':op?'아직 안 열렸어요':over?(m?'내 제출 보기':'보기'):m?'다시 풀기 · 고치기':'과제 풀기')+'</button></div>'}).join('')}
+/* ── 학생: 과제 풀기 ── */
+async function openExam(id){var j=await api('open',{exam_id:id});if(!j||!j.ok){toast((j&&j.error)||'열지 못했어요');return}
+ S.ex=j.exam;S.ess=(j.essays&&j.essays.items)||[];S.figs=Object.assign({},(j.essays&&j.essays.figs)||{});S.mine=j.mine;S.photos=j.photos||{};S.thumbs={};S.probs={};S.res=null;
+ var n=S.ex.n,dr=null;try{dr=JSON.parse(localStorage.getItem('hw_dr_'+id)||'null')}catch(e){}
+ var a=new Array(n).fill(''),c=new Array(n).fill('');
+ if(S.mine&&S.mine.answers){a=S.mine.answers.slice();c=(S.mine.conf||[]).slice();while(c.length<n)c.push('')}
+ if(dr&&dr.a&&dr.a.length===n&&(!S.mine||dr.t>Date.parse(S.mine.at))){a=dr.a;c=dr.c||c}
+ S.ans=a;S.conf=c;$('#app').innerHTML='<div class="card"><div class="muted">문제를 불러오는 중...</div></div>';
+ var p=await ms('problems',{exam_id:id});if(p&&p.ok){(p.items||[]).forEach(function(x){S.probs[x.no]=x});Object.keys(p.figs||{}).forEach(function(k){S.figs[k]=p.figs[k]})}
+ S.view='solve';render();loadThumbs()}
+function closed(){return !S.ex||nowMs()>Date.parse(S.ex.due)||S.ex.lock}
+function vSolve(){var e=S.ex,cl=closed(),ox=(S.mine&&S.mine.ox)||(S.res&&S.res.ox)||'',h='';
+ h+='<div class="bar"><div class="row"><button class="btn gh sm3" data-back="1" type="button">← 목록</button><b style="font-size:14px">'+esc(e.name)+'</b><span class="sp"></span><span class="badge '+(cl?'gr':'gold')+'" id="lf">'+(cl?'마감됨':'마감 '+kst(e.due)+' · '+left(e.due))+'</span></div><div class="row sm muted" style="margin-top:4px"><span id="cnt"></span></div><div class="pg"><i id="pgb"></i></div></div>';
+ if(cl)h+='<div class="err">마감되어 더 이상 고칠 수 없어요. 내가 낸 답만 볼 수 있어요.</div>';
+ else if(S.mine)h+='<div class="card guide" style="padding:10px 14px"><b>이미 '+S.mine.tries+'번 제출했어요.</b> <span class="muted sm">○✕를 보고 틀린 문제를 다시 풀어서 고쳐 낼 수 있어요 (최대 5번). 맨 처음 낸 답(1차)은 따로 기록돼요.</span></div>';
+ else h+=GUIDE;
+ for(var i=1;i<=e.n;i++){var pr=S.probs[i],mk=ox?ox[i-1]:'',a=S.ans[i-1],cf=S.conf[i-1];
+  h+='<div class="qc'+(mk==='O'?' o':mk==='X'?' x':'')+'" data-q="'+i+'"><div class="qh"><span class="no">'+i+'</span><span class="mk">'+(mk==='O'?'<span style="color:var(--ok)">○ 정답</span>':mk==='X'?'<span style="color:var(--bad)">✕ 다시 생각해 봐요</span>':'')+'</span></div>';
+  h+=pr&&pr.stem?'<div class="q">'+fixStem(pr.stem)+'</div>':'<div class="muted sm">문제 내용을 불러오지 못했어요. 나눠 받은 시험지를 보고 풀어 주세요.</div>';
+  h+='<div class="chs">';for(var k=1;k<=5;k++){var ch=pr&&pr.ch&&pr.ch[k-1];h+='<button type="button" data-a="'+i+'" data-v="'+k+'" class="'+(String(a)===String(k)?'on':'')+'" '+(cl?'disabled':'')+'><b>'+CIRC[k-1]+'</b><span class="ct">'+(ch?fixStem(typeof ch==='string'?ch:(ch.html||'')):'')+'</span></button>'}h+='</div>';
+  h+='<div class="cf"><span class="lb">확신 정도</span>'+[['s','확실'],['u','긴가민가'],['n','모름']].map(function(x){return '<button type="button" data-c="'+i+'" data-v="'+x[0]+'" class="'+x[0]+(cf===x[0]?' on':'')+'" '+(cl?'disabled':'')+'>'+x[1]+'</button>'}).join('')+'</div></div>'}
+ (S.ess||[]).forEach(function(es){var q=es.q;h+='<div class="qc"><div class="qh"><span class="no">'+esc(es.label)+'</span><span class="pt">서술형 · '+es.pts+'점 (선생님이 사진을 보고 채점해요)</span></div>'+(es.stem?'<div class="q">'+fixStem(es.stem)+'</div>':'<div class="muted sm">문제 내용을 불러오지 못했어요. 나눠 받은 시험지를 보고 풀어 주세요.</div>')+'<div class="muted sm" style="margin-top:8px">노트에 푼 풀이를 사진으로 찍어 올려요 (한 문제에 3장까지). 글씨가 잘 보이게 밝은 곳에서 찍어 주세요.</div><div class="ph" id="ph'+q+'">'+phHtml(q)+'</div></div>'});
+ if(!cl)h+='<div class="sub"><div class="in"><div class="tx" id="stx"></div><button class="btn rose" id="subm" type="button">'+(S.mine?'다시 제출하기':'제출하기')+'</button></div></div>';
+ return h}
+function phHtml(q){var ns=S.photos[q]||[],cl=closed(),h=ns.map(function(n){var s=S.thumbs[q+'_'+n];return '<div class="th">'+(s?'<img src="'+s+'" data-big="'+q+'_'+n+'">':'<div class="muted sm" style="padding:30px 6px">불러오는 중</div>')+(cl?'':'<button type="button" data-pd="'+q+'_'+n+'">✕</button>')+'</div>'}).join('');
+ if(!cl&&ns.length<3)h+='<label class="add" style="display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer">📷<br>사진 올리기<input type="file" accept="image/*" data-pf="'+q+'" hidden></label>';return h}
+function afterSolve(){upd()}
+function upd(){var n=S.ex.n,a=S.ans.filter(function(x){return x!==''}).length,c=S.conf.filter(function(x){return x!==''}).length,cn=$('#cnt');if(cn)cn.textContent='답 '+a+'/'+n+' · 확신 표시 '+c+'/'+n;var pb=$('#pgb');if(pb)pb.style.width=Math.round((a+c)/(2*n)*100)+'%';
+ var ph=(S.ess||[]).filter(function(e){return !(S.photos[e.q]||[]).length}).length,stx=$('#stx');
+ if(stx){var m=[];if(a<n)m.push('답 안 고른 문제 '+(n-a)+'개');if(c<n)m.push('확신 안 누른 문제 '+(n-c)+'개');if(ph)m.push('사진 없는 서술형 '+ph+'개');stx.innerHTML=m.length?m.join(' · ')+' <span class="muted">(그래도 낼 수 있어요)</span>':'모두 채웠어요! 제출해 볼까요?'}
+ try{localStorage.setItem('hw_dr_'+S.ex.id,JSON.stringify({a:S.ans,c:S.conf,t:Date.now()}))}catch(e){}}
+async function loadThumbs(){if(!S.ex)return;var id=S.ex.id;for(var q in S.photos){for(var n of S.photos[q]){var k=q+'_'+n;if(S.thumbs[k])continue;var j=await api('photo',{exam_id:id,q:+q,n:n});if(S.ex&&S.ex.id===id&&j&&j.ok){S.thumbs[k]=j.src;var b=$('#ph'+q);if(b)b.innerHTML=phHtml(+q)}}}}
+async function shrink(file){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();im.onerror=function(){URL.revokeObjectURL(u);rej(new Error('사진을 열 수 없어요'))};im.onload=function(){var T=[[1600,.72],[1400,.65],[1200,.58],[1000,.5]],d;for(var i=0;i<T.length;i++){var k=Math.min(1,T[i][0]/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);d=c.toDataURL('image/jpeg',T[i][1]);if(d.length<900000)break}URL.revokeObjectURL(u);res(d)};im.src=u})}
+async function addPhoto(q,file){if(!file)return;toast('사진을 올리는 중...');var d;try{d=await shrink(file)}catch(e){toast(e.message);return}
+ var j=await api('photo_add',{exam_id:S.ex.id,q:q,data:d});if(!j||!j.ok){toast((j&&j.error)||'올리지 못했어요');return}
+ (S.photos[q]=S.photos[q]||[]).push(j.n);S.thumbs[q+'_'+j.n]=d;var b=$('#ph'+q);if(b)b.innerHTML=phHtml(q);upd();toast('올렸어요')}
+async function delPhoto(key){var p=key.split('_'),q=+p[0],n=+p[1];if(!confirm('이 사진을 지울까요?'))return;var j=await api('photo_del',{exam_id:S.ex.id,q:q,n:n});if(!j||!j.ok){toast((j&&j.error)||'지우지 못했어요');return}
+ S.photos[q]=(S.photos[q]||[]).filter(function(x){return x!==n});delete S.thumbs[key];var b=$('#ph'+q);if(b)b.innerHTML=phHtml(q);upd()}
+async function submit(){if(S.busy)return;var n=S.ex.n,a=S.ans.filter(function(x){return x!==''}).length,ph=(S.ess||[]).filter(function(e){return !(S.photos[e.q]||[]).length}).length,warn=[];
+ if(a<n)warn.push('답을 안 고른 문제가 '+(n-a)+'개');if(ph)warn.push('사진이 없는 서술형이 '+ph+'개');
+ if(!confirm((warn.length?warn.join(', ')+' 있어요.\n그래도 제출할까요?':'제출할까요?')+'\n(마감 전에는 다시 낼 수 있어요)'))return;
+ S.busy=true;var b=$('#subm');if(b){b.disabled=true;b.textContent='제출 중...'}
+ var j=await api('submit',{exam_id:S.ex.id,answers:S.ans,conf:S.conf});S.busy=false;if(b){b.disabled=false}
+ if(!j||!j.ok){toast((j&&j.error)||'제출하지 못했어요');if(b)b.textContent=S.mine?'다시 제출하기':'제출하기';return}
+ S.res=j;S.mine=Object.assign({},S.mine||{},{tries:j.tries,ox:j.ox,score:j.score,answers:S.ans.slice(),conf:S.conf.slice(),at:new Date().toISOString()});
+ var it=(S.list||[]).find(function(x){return x.id===S.ex.id});if(it)it.mine={tries:j.tries,score:j.score,ox:j.ox};
+ try{localStorage.removeItem('hw_dr_'+S.ex.id)}catch(e){}S.view='result';render()}
+function vResult(){var r=S.res,e=S.ex,left_=5-r.tries,wrong=r.ox.split('').filter(function(c){return c==='X'}).length;
+ return '<div class="card" style="text-align:center"><div class="muted sm">제출했어요 🎉 ('+r.tries+'번째)</div><div class="big">'+r.right+' / '+r.n+'</div><div class="muted">객관식 '+r.score+'점</div></div>'+
+ '<div class="card"><b>문제별 결과</b><div class="grid">'+r.ox.split('').map(function(c,i){return '<span class="'+(c==='O'?'o':'x')+'">'+(i+1)+' '+(c==='O'?'○':'✕')+'</span>'}).join('')+'</div>'+
+ '<div class="sm muted">정답과 풀이는 마감 뒤에 열려요. 서술형은 선생님이 올려 준 사진을 보고 채점해요.'+(r.photos?'':'<br><b style="color:var(--bad)">서술형 풀이 사진이 아직 없어요.</b> 마감 전에 올려 주세요.')+'</div></div>'+
+ (wrong&&left_>0&&!closed()?'<div class="card guide"><b>틀린 문제가 '+wrong+'개 있어요.</b> 다시 풀어서 고쳐 낼 수 있어요 (남은 횟수 '+left_+'번). 맨 처음 낸 답은 따로 기록돼요.</div>':'')+
+ '<div class="row"><button class="btn" data-again="1" type="button">'+(wrong&&left_>0&&!closed()?'틀린 문제 다시 풀기':'문제 다시 보기')+'</button><button class="btn gh" data-back="1" type="button">목록으로</button></div>'}
+/* ── 선생님: 제출 현황 ── */
+async function openRows(id){var j=await api('rows',{exam_id:id});if(!j||!j.ok){toast((j&&j.error)||'불러오지 못했어요');return}S.rows=j;S.view='rows';render()}
+function vRows(){var j=S.rows,e=j.exam,rows=j.rows,done=rows.filter(function(r){return r.tries}),un=rows.filter(function(r){return !r.tries}),n=e.n,h='';
+ h+='<div class="row" style="margin-bottom:10px"><button class="btn gh sm3" data-back="1" type="button">← 목록</button><b>'+esc(e.name)+'</b><span class="sp"></span><span class="badge">마감 '+kst(e.due)+'</span>'+(e.lock?'<span class="badge bad">잠김</span>':'')+'</div>';
+ h+='<div class="card"><div class="row"><div><b>제출 '+done.length+'/'+rows.length+'명</b> <span class="muted sm">미제출 '+un.length+'명'+(un.length?' — '+un.map(function(r){return esc(r.name)}).join(', '):'')+'</span></div><span class="sp"></span><button class="btn rose sm3" data-nudge="1" type="button" '+(un.length&&Date.parse(e.due)>nowMs()?'':'disabled')+'>독촉 보내기</button><button class="btn gh sm3" data-lock="'+(e.lock?0:1)+'" type="button">'+(e.lock?'제출 다시 열기':'제출 잠그기')+'</button></div>'+
+  (S.admin?'<div class="row" style="margin-top:10px"><span class="sm muted">마감 바꾸기</span><input type="datetime-local" id="dueIn" value="'+localIn(e.due)+'"><button class="btn gh sm3" data-due="1" type="button">저장</button><span class="muted sm">(한국 시간 · 바꾸면 자동 독촉도 새로 시작해요)</span></div>':'')+'</div>';
+ var cnt=new Array(n).fill(0),tot=new Array(n).fill(0);done.forEach(function(r){(r.ox||'').split('').forEach(function(c,i){tot[i]++;if(c==='O')cnt[i]++})});
+ if(done.length){h+='<div class="card"><b>문항별 정답률</b> <span class="muted sm">(낮은 문항은 빨간색)</span><div class="mini">'+cnt.map(function(c,i){var p=tot[i]?c/tot[i]:0;return '<i class="'+(p<.5?'lo':'')+'" style="height:'+Math.max(4,Math.round(p*46))+'px" title="'+(i+1)+'번 '+Math.round(p*100)+'%"></i>'}).join('')+'</div><div class="muted sm" style="display:flex;justify-content:space-between"><span>1번</span><span>'+n+'번</span></div></div>'}
+ h+='<div class="card sc"><table class="tbl"><tr><th>이름</th><th>상태</th><th>객관식</th><th>1차</th><th>확신</th><th>서술형 사진 · 점수</th></tr>'+rows.map(function(r,ri){
+  var cf=(r.conf||[]).reduce(function(o,c){if(c)o[c]=(o[c]||0)+1;return o},{}),first=r.first_ox?(r.first_ox.match(/O/g)||[]).length:null,es=e.es.map(function(mx,qi){var q=qi+1,np=(r.photos||{})[q]||0,v=r.es&&r.es[qi]!=null?r.es[qi]:'';
+   return '<div style="margin-bottom:4px"><button class="pbtn" data-ps="'+r.sid+'_'+q+'" type="button" '+(np?'':'disabled')+'>서'+q+' 📷'+np+'</button><input class="es" data-es="'+ri+'_'+qi+'" type="number" step="0.5" min="0" max="'+mx+'" value="'+v+'" placeholder="/'+mx+'" '+(r.tries?'':'disabled')+'></div>'}).join('');
+  return '<tr><td><b>'+esc(r.name)+'</b><div class="muted sm">'+esc(r.school||'')+'</div></td><td>'+(r.tries?'<span class="badge ok">제출 '+r.tries+'번</span>':'<span class="badge bad">미제출</span>')+'</td><td>'+(r.score!=null?'<b>'+r.score+'</b>점<div class="muted sm">'+((r.ox||'').match(/O/g)||[]).length+'/'+n+'</div>':'-')+'</td><td>'+(first!=null?first+'/'+n:'-')+'</td><td class="sm">'+(r.conf?'확실 '+(cf.s||0)+'<br>긴가민가 '+(cf.u||0)+'<br>모름 '+(cf.n||0):'-')+'</td><td>'+es+(r.tries&&e.es.length?'<button class="btn sm3" data-ess="'+ri+'" type="button">점수 저장</button>':'')+'</td></tr>'}).join('')+'</table></div>';
+ return h}
+function localIn(iso){var d=new Date(Date.parse(iso)+9*3600e3);return d.toISOString().slice(0,16)}
+async function viewPhotos(sid,q){var e=S.rows.exam,h='<div class="modal" data-close="1"><div class="bx"><div class="row"><b>서'+q+' 풀이 사진</b><span class="sp"></span><button class="btn gh sm3" data-close="1" type="button">닫기</button></div><div id="pbox" class="muted sm">불러오는 중...</div></div></div>';$('#layer').innerHTML=h;var out='';
+ for(var n=1;n<=3;n++){var j=await api('photo',{exam_id:e.id,sid:sid,q:q,n:n});if(j&&j.ok)out+='<img src="'+j.src+'">'}
+ var b=$('#pbox');if(b)b.innerHTML=out||'사진이 없어요'}
+/* ── 클릭 처리 ── */
+document.addEventListener('click',async function(ev){var t=ev.target.closest('button,img,[data-close]'),el=ev.target;if(!t)return;
+ if(t.dataset.open){S.staff?openRows(t.dataset.open):openExam(t.dataset.open);return}
+ if(t.dataset.back){S.view='list';S.ex=null;S.rows=null;render();return}
+ if(t.dataset.again){S.view='solve';render();loadThumbs();return}
+ if(t.dataset.a){var i=+t.dataset.a,v=t.dataset.v;S.ans[i-1]=S.ans[i-1]===v?'':v;var box=t.closest('.qc');[].forEach.call(box.querySelectorAll('.chs button'),function(b){b.className=b.dataset.v===S.ans[i-1]?'on':''});
+  if(S.ans[i-1]===''||S.conf[i-1]!=='')upd();else{upd()}return}
+ if(t.dataset.c){var i2=+t.dataset.c,v2=t.dataset.v;S.conf[i2-1]=S.conf[i2-1]===v2?'':v2;[].forEach.call(t.closest('.cf').querySelectorAll('button'),function(b){b.className=b.dataset.v+(b.dataset.v===S.conf[i2-1]?' on':'')});upd();return}
+ if(t.dataset.pd){delPhoto(t.dataset.pd);return}
+ if(t.id==='subm'){submit();return}
+ if(t.dataset.big){var src=t.getAttribute('src');$('#layer').innerHTML='<div class="modal" data-close="1"><div class="bx"><div class="row"><span class="sp"></span><button class="btn gh sm3" data-close="1" type="button">닫기</button></div><img src="'+src+'"></div></div>';return}
+ if(t.dataset.close||(el.classList&&el.classList.contains('modal'))){$('#layer').innerHTML='';return}
+ if(t.dataset.ps){var p=t.dataset.ps.split('_');viewPhotos(p[0],+p[1]);return}
+ if(t.dataset.nudge){if(!confirm('아직 안 낸 학생과 학부모에게 알림을 보낼까요?'))return;var j=await api('nudge',{exam_id:S.rows.exam.id});toast(j&&j.ok?(j.devices?j.sent+'명에게 알림을 보냈어요 (기기 '+j.devices+'대)':j.sent+'명이 미제출인데, 알림을 켠 기기가 없어서 보내지 못했어요. 학생·학부모가 앱에서 [알림 켜기]를 눌러야 해요'):((j&&j.error)||'보내지 못했어요'));return}
+ if(t.dataset.lock!==undefined){var jl=await call('ac_omr',{p_action:'lock',p_token:S.tok,p_args:{exam_id:S.rows.exam.id,on:t.dataset.lock==='1'}});if(jl&&jl.ok){openRows(S.rows.exam.id);toast(t.dataset.lock==='1'?'잠갔어요':'다시 열었어요')}else toast((jl&&jl.error)||'바꾸지 못했어요');return}
+ if(t.dataset.due){var iv=$('#dueIn').value;if(!iv){toast('날짜를 골라 주세요');return}var jd=await api('due',{exam_id:S.rows.exam.id,due:iv+':00+09:00'});if(jd&&jd.ok){toast('마감을 바꿨어요');openRows(S.rows.exam.id)}else toast((jd&&jd.error)||'바꾸지 못했어요');return}
+ if(t.dataset.ess!==undefined){var r=S.rows.rows[+t.dataset.ess],vals=S.rows.exam.es.map(function(m,qi){var inp=$('[data-es="'+t.dataset.ess+'_'+qi+'"]');return inp&&inp.value!==''?+inp.value:null});
+  var je=await call('ac_omr',{p_action:'es',p_token:S.tok,p_args:{exam_id:S.rows.exam.id,sid:r.sid,es:vals}});toast(je&&je.ok?'저장했어요 (서술형 합계 '+je.es_total+'점)':((je&&je.error)||'저장하지 못했어요'))}});
+document.addEventListener('change',function(ev){var t=ev.target;if(t&&t.dataset&&t.dataset.pf){addPhoto(+t.dataset.pf,t.files&&t.files[0]);t.value=''}});
+setInterval(function(){var lf=$('#lf');if(lf&&S.ex&&S.view==='solve'&&!closed())lf.textContent='마감 '+kst(S.ex.due)+' · '+left(S.ex.due)},30000);
+boot();
+</script></body></html>

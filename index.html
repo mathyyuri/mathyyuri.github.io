@@ -2570,13 +2570,15 @@ function gsmTrendCard(){
  const pts=[];gsmItems().forEach(it=>{const inf=gsmInfo(it);if(!inf.n)return;const me=msStat(it).me;pts.push({n:inf.n,hw:inf.hw,sc:me?Math.round(+me.r.score*10)/10:null});});
  const t=gsmTrend(pts);return t?'<div class="card" style="padding:12px 16px;margin-bottom:10px"><b>내 점수 추이</b> <span class="muted sm">회차별 점수 (한 주에 내모 2회 + 과제 2회)</span>'+t+'</div>':'';
 }
+/* 과제미션: 일일일모 방식으로 풀고 제출하는 화면(homework.html)으로 가는 카드 */
+function hwCard(){const st=isStaff();return '<div class="card" style="border-left:4px solid #c9a55d;background:#fbf5e4;margin-bottom:12px"><div class="row"><div><b>'+(st?'과제 제출 현황':'과제 풀고 제출하기')+'</b><div class="muted sm">'+(st?'누가 냈는지 · 서술형 사진 · 점수 입력 · 미제출 독촉':'문제를 보고 답과 확신 정도를 누르고, 서술형은 풀이 사진을 올려요. 마감은 화·목 밤 11:59예요.')+'</div></div><span class="sp"></span><a class="btn" style="text-decoration:none" href="homework.html">'+(st?'현황 보기':'과제 풀러 가기')+'</a></div></div>';}
 function vMission(){
  let g=S.sub.mission;
  const gonly=gsmOnly();if(gonly&&GSM_ONLY.indexOf(g)<0){g='nemo';S.sub.mission='nemo';}
  const chips='<div class="chips">'+gsmGroups().map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+(gonly?'':'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button>')+'</div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h=chips+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+(g==='hw'?hwCard():'')+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
