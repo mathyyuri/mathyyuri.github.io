@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex"><meta name="googlebot" content="noindex, nofollow">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>공수내모 예습영상 · MATHY YURI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap">
+<style>
+:root{--navy:#1f3a6e;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#f6f0e4;--card:#fffdf8;--ok:#2f7d5b;--bad:#b84a4a;--fk:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif;--fd:"Playfair Display",serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-text-size-adjust:100%}
+button{font-family:inherit;cursor:pointer}input,select,textarea{font-family:inherit;font-size:14px}
+.top{background:linear-gradient(135deg,#17284d,#243f77);color:#fff}.top .in{max-width:900px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-family:var(--fd);font-style:italic;font-weight:700;font-size:19px;letter-spacing:.06em;color:#e8cd9c}.top h1{margin:0;font-family:var(--fk);font-size:17px}.top .sp{flex:1}.top .who{font-size:12.5px;opacity:.9}
+.top .tb{border:0;border-radius:14px;padding:5px 12px;font-size:12px;font-weight:700;background:rgba(255,255,255,.16);color:#fff}
+.wrap{max-width:900px;margin:0 auto;padding:14px 14px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(40,30,10,.05)}
+.card h3{margin:0 0 6px;font-family:var(--fk);font-size:17px}
+.muted{color:var(--mute)}.sm{font-size:12.5px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;background:var(--navy);color:#fff}.btn.rose{background:var(--rose)}.btn.gh{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn.sm3{padding:6px 12px;font-size:12.5px;border-radius:10px}.btn.dng{background:#fff;color:var(--bad);border:1px solid #e3b4b4}.btn:disabled{opacity:.45;cursor:default}
+.badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:11.5px;font-weight:700;background:#e9edf4;color:#3d4760}.badge.gold{background:#f4e9cf;color:#7a5a12}.badge.ok{background:#dcefe5;color:#1d6a47}
+.guide{border-left:4px solid var(--gold);background:#fbf5e4}
+.wk{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}.wk b{font-family:var(--fk);font-size:18px;color:var(--navy)}
+.vid{border:1px solid #eadfca;border-radius:12px;padding:10px 12px;margin-top:8px;background:#fff}.vid .t{font-weight:700;font-size:14.5px}.vid .n{font-size:12.5px;color:var(--mute);margin-top:2px}
+.player{position:relative;width:100%;padding-top:56.25%;margin-top:10px;border-radius:12px;overflow:hidden;background:#000}.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.err{background:#fdeeee;border:1px solid #efc5c5;color:#8a2a2a;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:10px}
+.tabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--mute)}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th,.tbl td{border-bottom:1px solid #eadfca;padding:6px 5px;text-align:center;vertical-align:middle}.tbl th{background:#f3ead7;font-size:11.5px;color:#5f573f;white-space:nowrap}.tbl td.l,.tbl th.l{text-align:left}
+.sc{overflow-x:auto}.tbl input[type=checkbox]{width:18px;height:18px}
+.frm{display:grid;gap:8px;margin-top:10px}.frm input,.frm select,.frm textarea{width:100%;padding:9px 10px;border:1px solid #d9d2c2;border-radius:10px}
+.chk{background:#fff;border:1px dashed #cdbf9a;border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.8}
+.lg{max-width:420px;margin:40px auto}.lg input{width:100%;padding:12px;border:1px solid #d9d2c2;border-radius:12px;margin:6px 0;font-size:16px}.lg .tabs button{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:30px;background:#232733;color:#fff;border-radius:20px;padding:10px 18px;font-size:13.5px;z-index:60;max-width:90%;text-align:center}
+</style></head><body>
+<div class="top"><div class="in"><span class="logo">MATHY YURI</span><h1>공수내모 예습영상</h1><span class="sp"></span><span class="who" id="who"></span></div></div>
+<div class="wrap" id="app"></div>
+<script>
+var qs=new URLSearchParams(location.search),SBU=(qs.get('sb')||'https://eqllmvfbcdtzercliicy.supabase.co/'),RPC=SBU+'rest/v1/rpc/',KEY='sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV',TK='acadapp_tok_v1';
+var DATES=['11/28','12/05','12/12','12/19','12/26','01/02','01/09','01/16','01/23','01/30','02/13','02/20','02/27'];
+var S={tok:null,staff:false,admin:false,me:null,view:'list',videos:[],weeks:null,tab:'vid',enr:null,log:null,play:{}};
+try{S.tok=localStorage.getItem(TK)}catch(e){}
+function $(s,r){return (r||document).querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+async function call(fn,args){var r;try{r=await fetch(RPC+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify(args)})}catch(e){return{ok:false,error:'인터넷 연결을 확인해 주세요'}}
+ if(!r.ok)return{ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 69_공수내모_부분수강_예습영상_서버.sql 을 먼저 실행해 주세요':'')};try{return await r.json()}catch(e){return{ok:false,error:'서버 응답을 읽지 못했어요'}}}
+async function api(a,args){var j=await call('ac_gsm',{p_action:a,p_token:S.tok,p_args:args||{}});
+ if(j&&j.ok===false&&/다시 로그인/.test(j.error||'')){S.tok=null;try{localStorage.removeItem(TK)}catch(e){}S.view='login';render('로그인이 풀렸어요. 다시 들어와 주세요')}return j}
+function toast(t){var e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+var ROLE='student';
+function vLogin(msg){return '<div class="card lg"><h3>로그인</h3><div class="muted sm" style="margin-bottom:8px">mathyyuri.com 에 이미 로그인했다면 자동으로 열려요. 아니면 아래에 넣어 주세요.</div>'+(msg?'<div class="err">'+esc(msg)+'</div>':'')+
+ '<div class="tabs"><button class="on" data-r="student" type="button">학생·학부모</button><button data-r="admin" type="button">선생님</button></div>'+
+ '<div id="fs"><input id="nm" placeholder="학생 이름"><input id="pin" inputmode="numeric" maxlength="4" placeholder="학부모 전화번호 뒤 4자리"></div><div id="ft" hidden><input id="pw" type="password" placeholder="비밀번호"></div><button class="btn" id="go" type="button" style="width:100%;margin-top:6px">들어가기</button></div>'}
+function bindLogin(){document.querySelectorAll('[data-r]').forEach(function(b){b.onclick=function(){ROLE=b.dataset.r;document.querySelectorAll('[data-r]').forEach(function(x){x.className=x===b?'on':''});$('#fs').hidden=ROLE!=='student';$('#ft').hidden=ROLE==='student'}});
+ $('#go').onclick=async function(){var args={academy:'bd'};if(ROLE==='student'){args.role='student';args.name=$('#nm').value.trim();args.pin=$('#pin').value.trim();if(!args.name||!args.pin){toast('이름과 뒤 4자리를 넣어 주세요');return}}else{args.role='admin';args.password=$('#pw').value;if(!args.password){toast('비밀번호를 넣어 주세요');return}}
+  this.disabled=true;var j=await call('ac_api',{p_action:'login',p_token:null,p_args:args});if((!j||!j.ok)&&ROLE==='admin'){args.role='ta';j=await call('ac_api',{p_action:'login',p_token:null,p_args:args})}this.disabled=false;
+  if(!j||!j.ok){toast((j&&j.error)||'로그인하지 못했어요');return}S.tok=j.token;try{localStorage.setItem(TK,S.tok)}catch(e){}boot()}}
+async function boot(){if(!S.tok){S.view='login';render();return}
+ var j=await api('me');if(!j||!j.ok){if(S.view!=='login'){S.view='login';render((j&&j.error)||'불러오지 못했어요')}return}
+ S.staff=j.staff;S.admin=j.admin;S.videos=j.videos||[];S.weeks=j.weeks;S.me=j.name||null;
+ $('#who').innerHTML=(S.staff?'선생님':esc(S.me)+' 학생')+' <button class="tb" id="out" type="button">로그아웃</button>';
+ $('#out').onclick=async function(){await call('ac_api',{p_action:'logout',p_token:S.tok,p_args:{}});S.tok=null;try{localStorage.removeItem(TK)}catch(e){}location.reload()};
+ S.view='list';render()}
+function weekHead(w){return '<div class="wk"><b>'+w+'주차</b><span class="muted sm">'+(DATES[w-1]?DATES[w-1]+' (토) 수업':'')+'</span></div>'}
+function vidHtml(v){var open=S.play[v.id];
+ return '<div class="vid"><div class="row"><div><div class="t">'+esc(v.title)+'</div>'+(v.note?'<div class="n">'+esc(v.note)+'</div>':'')+'</div><span class="sp"></span><button class="btn sm3'+(open?' gh':'')+'" data-play="'+v.id+'" type="button">'+(open?'닫기':'▶ 영상 보기')+'</button></div>'+
+  (open?'<div class="player"><iframe src="https://www.youtube-nocookie.com/embed/'+esc(v.yt)+'?rel=0&modestbranding=1&playsinline=1" allow="accelerometer;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="'+esc(v.title)+'"></iframe></div>':'')+'</div>'}
+function vStudent(){var by={};S.videos.forEach(function(v){(by[v.week]=by[v.week]||[]).push(v)});
+ var ws=S.weeks===null?[1,2,3,4,5,6,7,8,9,10,11,12,13]:S.weeks.slice();
+ var h='<div class="card guide"><b>수업 전에 꼭 보세요</b><div class="muted sm" style="margin-top:4px;line-height:1.7">토요일 수업 전에 <b>원문제 풀이·해설 영상</b>을 보고 와요. 내가 등록한 수업의 영상만 보여요. 영상 주소는 다른 사람에게 알려 주거나 퍼뜨리면 안 돼요. (누가 언제 열었는지 기록돼요)</div></div>';
+ var any=false;
+ ws.forEach(function(w){var L=by[w]||[];if(!L.length&&S.weeks===null)return;any=true;h+='<div class="card">'+weekHead(w)+(L.length?L.map(vidHtml).join(''):'<div class="muted sm">아직 영상이 올라오지 않았어요. 수업 전에 올라와요.</div>')+'</div>'});
+ if(!any)h+='<div class="card"><div class="muted">아직 올라온 영상이 없어요.</div></div>';
+ if(S.weeks!==null&&!S.weeks.length)h='<div class="card"><div class="muted">등록된 수업이 없어요. 선생님께 문의해 주세요.</div></div>';
+ return h}
+function vStaff(){
+ var tabs='<div class="tabs"><button data-tab="vid" class="'+(S.tab==='vid'?'on':'')+'" type="button">영상 관리</button><button data-tab="enr" class="'+(S.tab==='enr'?'on':'')+'" type="button">수강 등록(부분수강)</button><button data-tab="log" class="'+(S.tab==='log'?'on':'')+'" type="button">시청 기록</button></div>';
+ if(S.tab==='enr')return tabs+vEnr();if(S.tab==='log')return tabs+vLog();
+ var by={};S.videos.forEach(function(v){(by[v.week]=by[v.week]||[]).push(v)});
+ var h=tabs+(S.admin?'<div class="card"><h3>영상 올리기</h3><div class="chk"><b>유튜브에 올릴 때 이렇게 설정해 주세요</b><br>① 공개 상태 = <b>일부 공개</b> (공개 ✕ · 비공개 ✕) &nbsp; ② <b>재생목록·채널 홈에 넣지 않기</b> &nbsp; ③ 댓글 끄기 · 퍼가기 허용 끄기(가능하면) &nbsp; ④ 제목에 학교·학원 이름 넣지 않기<br><span class="muted">일부 공개 영상은 검색에 나오지 않지만 <b>주소를 아는 사람은 누구나</b> 볼 수 있어요. 이 사이트는 등록한 학생에게만 주소를 내려 주고, 열람 기록을 남겨요.</span></div>'+
+  '<div class="frm"><div class="row"><select id="vw">'+DATES.map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'주차 · '+d+'</option>'}).join('')+'</select><input id="vt" placeholder="제목 (예: 1주차 예습 · 태원고 원문제 풀이해설)" style="flex:1;min-width:200px"></div><input id="vu" placeholder="유튜브 주소 (youtu.be/… 또는 youtube.com/watch?v=…)"><input id="vn" placeholder="메모 (선택, 학생에게 보여요)"><button class="btn" id="vadd" type="button">올리기</button></div></div>':'');
+ for(var w=1;w<=13;w++){var L=by[w]||[];h+='<div class="card">'+weekHead(w)+(L.length?L.map(function(v){return vidHtml(v)+(S.admin?'<div class="row" style="margin:4px 0 0 4px"><button class="btn gh sm3" data-vedit="'+v.id+'" type="button">제목·메모 고치기</button><button class="btn dng sm3" data-vdel="'+v.id+'" type="button">지우기</button></div>':'')}).join(''):'<div class="muted sm">영상 없음</div>')+'</div>'}
+ return h}
+function vEnr(){if(!S.enr)return '<div class="card"><div class="muted">불러오는 중…</div></div>';
+ var h='<div class="card guide"><b>수강 등록(부분수강)</b><div class="muted sm" style="margin-top:4px;line-height:1.7">학생마다 <b>등록한 수업(주차)</b>를 체크해요. 체크하지 않은 수업의 <b>미션·과제·문제·오답분석·예습영상은 서버가 아예 내려주지 않아요.</b> <b>[전체]</b>는 정규(모든 수업)예요. 새로 등록한 학생은 기본이 전체예요.'+(S.admin?'':' (바꾸는 건 원장만 가능해요)')+'</div></div>';
+ h+='<div class="card sc"><table class="tbl"><tr><th class="l">이름</th><th>전체</th>'+DATES.map(function(d,i){return '<th>'+(i+1)+'<br><span style="font-weight:400">'+d+'</span></th>'}).join('')+'<th></th></tr>'+
+  S.enr.map(function(r,ri){var all=r.weeks===null;return '<tr><td class="l"><b>'+esc(r.name)+'</b><div class="muted sm">'+esc(r.school||'')+'</div></td><td><input type="checkbox" data-eall="'+ri+'" '+(all?'checked':'')+' '+(S.admin?'':'disabled')+'></td>'+
+   DATES.map(function(d,i){var on=all||(r.weeks||[]).indexOf(i+1)>=0;return '<td><input type="checkbox" data-ew="'+ri+'_'+(i+1)+'" '+(on?'checked':'')+' '+(all||!S.admin?'disabled':'')+'></td>'}).join('')+
+   '<td>'+(S.admin?'<button class="btn sm3" data-esave="'+ri+'" type="button">저장</button>':'')+'</td></tr>'}).join('')+'</table></div>';return h}
+function vLog(){if(!S.log)return '<div class="card"><div class="muted">불러오는 중…</div></div>';
+ var h='<div class="card sc"><b>영상별 열람</b><table class="tbl" style="margin-top:6px"><tr><th>주차</th><th class="l">제목</th><th>본 학생 수</th><th>열람 횟수</th><th>마지막</th></tr>'+(S.log.videos.map(function(v){return '<tr><td>'+v.week+'</td><td class="l">'+esc(v.title)+'</td><td>'+v.viewers+'</td><td>'+v.opens+'</td><td class="sm">'+(v.last?new Date(v.last).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'-')+'</td></tr>'}).join('')||'<tr><td colspan="5" class="muted">아직 영상이 없어요</td></tr>')+'</table></div>';
+ h+='<div class="card sc"><b>최근 열람 60건</b><table class="tbl" style="margin-top:6px"><tr><th class="l">학생</th><th>주차</th><th class="l">영상</th><th>때</th></tr>'+(S.log.recent.map(function(r){return '<tr><td class="l">'+esc(r.name)+'</td><td>'+r.week+'</td><td class="l">'+esc(r.title)+'</td><td class="sm">'+new Date(r.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</td></tr>'}).join('')||'<tr><td colspan="4" class="muted">아직 열람 기록이 없어요</td></tr>')+'</table><div class="muted sm" style="margin-top:6px">같은 영상을 30분 안에 다시 열면 한 번으로 세요. 한 학생이 하루에 여러 기기에서 많이 열었다면 주소를 공유했는지 살펴보세요.</div></div>';return h}
+function render(msg){var a=$('#app');if(S.view==='login'){a.innerHTML=vLogin(msg);bindLogin();return}a.innerHTML=S.staff?vStaff():vStudent()}
+async function reloadVideos(){var j=await api('me');if(j&&j.ok){S.videos=j.videos||[];render()}}
+document.addEventListener('click',async function(ev){var t=ev.target.closest('button');if(!t)return;
+ if(t.dataset.play){var id=t.dataset.play;S.play[id]=!S.play[id];render();if(S.play[id]&&!S.staff)api('watch',{id:id});return}
+ if(t.dataset.tab){S.tab=t.dataset.tab;if(S.tab==='enr'&&!S.enr){render();var j=await api('enroll_list');if(j&&j.ok){S.enr=j.rows}}if(S.tab==='log'){render();var jl=await api('log');if(jl&&jl.ok)S.log=jl}render();return}
+ if(t.id==='vadd'){var j2=await api('video_add',{week:+$('#vw').value,title:$('#vt').value,url:$('#vu').value,note:$('#vn').value});if(j2&&j2.ok){toast('올렸어요');await reloadVideos()}else toast((j2&&j2.error)||'올리지 못했어요');return}
+ if(t.dataset.vedit){var v=S.videos.find(function(x){return x.id===t.dataset.vedit}),nt=prompt('제목',v.title);if(nt===null)return;var nn=prompt('메모(학생에게 보여요, 비우면 지워요)',v.note||'');if(nn===null)return;var j3=await api('video_edit',{id:v.id,title:nt,note:nn});if(j3&&j3.ok){toast('고쳤어요');await reloadVideos()}else toast((j3&&j3.error)||'고치지 못했어요');return}
+ if(t.dataset.vdel){if(!confirm('이 영상을 지울까요? (열람 기록도 함께 지워져요)'))return;var j4=await api('video_del',{id:t.dataset.vdel});if(j4&&j4.ok){toast('지웠어요');await reloadVideos()}else toast((j4&&j4.error)||'지우지 못했어요');return}
+ if(t.dataset.esave){var ri=+t.dataset.esave,r=S.enr[ri],all=document.querySelector('[data-eall="'+ri+'"]').checked,ws=null;if(!all){ws=[];for(var i=1;i<=13;i++){var c=document.querySelector('[data-ew="'+ri+'_'+i+'"]');if(c&&c.checked)ws.push(i)}}
+  if(!all&&!ws.length&&!confirm(r.name+' 학생은 등록한 수업이 하나도 없어요. 공수내모 미션·영상이 모두 안 보이게 돼요. 저장할까요?'))return;
+  var j5=await api('enroll_set',{sid:r.sid,weeks:ws});if(j5&&j5.ok){r.weeks=ws;toast(r.name+' 저장했어요'+(ws===null?' (전체)':' ('+ws.join(', ')+'주차)'));render()}else toast((j5&&j5.error)||'저장하지 못했어요');return}});
+document.addEventListener('change',function(ev){var t=ev.target;if(t&&t.dataset&&t.dataset.eall!==undefined){var ri=+t.dataset.eall,r=S.enr[ri];r.weeks=t.checked?null:(r.weeks||[]);if(!t.checked&&!r.weeks.length)r.weeks=[];render()}
+ if(t&&t.dataset&&t.dataset.ew){var p=t.dataset.ew.split('_'),r2=S.enr[+p[0]],w=+p[1];r2.weeks=r2.weeks||[];var k=r2.weeks.indexOf(w);if(t.checked&&k<0)r2.weeks.push(w);if(!t.checked&&k>=0)r2.weeks.splice(k,1)}});
+boot();
+</script></body></html>
