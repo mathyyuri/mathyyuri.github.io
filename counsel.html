@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>전유리T · 학생 상담</title>
+<style>
+:root{--font:'Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;--serif:'Gowun Batang','Noto Serif KR',Batang,serif;
+ --bg:#f5efe4;--bg2:#efe6d6;--card:#fffdf8;--ink:#33281f;--mut:#8b7d6c;--line:#e8dfcf;--warn:#b57c12;--bad:#a8453a;--sh:0 6px 22px rgba(86,60,28,.07);
+ --pri2:#c8566f;--acc:#2f7a67;--soft:#e3f1ea}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+button{font-family:inherit;font-size:inherit;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+#app{height:100%}
+.app{display:grid;grid-template-columns:290px 1fr;height:100%}
+.side{background:#fbf6ec;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side .hd0{padding:16px 16px 10px}
+.side .ttl{font-family:var(--serif);font-weight:700;font-size:19px;color:var(--acc);line-height:1.3}
+.side .who{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:14px;color:var(--ink);font-weight:600}
+.side .who button{margin-left:auto;border:0;background:none;color:var(--mut);text-decoration:underline;cursor:pointer;font-size:13px;padding:2px}
+.side .sq{padding:0 14px 10px}
+.side .lst{flex:1;overflow-y:auto;padding:0 8px 24px;min-height:0}
+.cho{position:sticky;top:0;background:#fbf6ec;font-family:var(--serif);font-weight:700;color:var(--acc);font-size:13px;padding:8px 8px 3px;border-bottom:1px solid var(--line)}
+.it{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;border-radius:12px;padding:9px 10px;cursor:pointer}
+.it:hover{background:var(--soft)}.it.on{background:var(--acc);color:#fff}
+.it .n{font-weight:700;font-size:16px;white-space:nowrap}.it .c{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.it.on .c{color:#d8efe6}
+.it .r{margin-left:auto;display:flex;gap:4px;flex:none}
+.dot{display:inline-block;border-radius:10px;padding:0 7px;font-size:11.5px;font-weight:700;background:#fdecea;color:var(--bad)}.dot.f{background:#fbf3dc;color:var(--warn)}
+.it.on .dot{background:#fff}
+.main{overflow-y:auto;padding:18px 22px 80px;min-height:0}
+.pane{max-width:860px;margin:0 auto}
+.ph{text-align:center;color:var(--mut);margin-top:22vh;font-family:var(--serif);font-size:20px}
+.card{background:var(--card);border-radius:20px;box-shadow:var(--sh);padding:16px 18px;margin-bottom:12px}
+.card h3{margin:0 0 8px;font-family:var(--serif);font-size:18px;display:flex;gap:8px;align-items:center}
+.card h4{margin:14px 0 6px;font-size:13px;color:var(--mut);font-weight:700}.card h4:first-of-type{margin-top:4px}
+.muted{color:var(--mut)}.sm{font-size:12.5px}
+.btn{border:0;border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;background:var(--acc);color:#fff;text-decoration:none;display:inline-block}
+.btn.sec{background:var(--soft);color:var(--acc)}.btn.gh{background:transparent;border:1.5px solid var(--line);color:var(--ink)}.btn.dng{background:#fdecea;color:var(--bad)}.btn.rose{background:var(--pri2)}
+.btn.s3{padding:6px 12px;font-size:13px}.btn:disabled{opacity:.5}
+.badge{display:inline-block;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--soft);color:var(--acc)}
+.note{background:#fdecea;border:1.5px solid #e7b5ad;border-radius:16px;padding:12px 14px;color:var(--bad)}
+.empty{text-align:center;color:var(--mut);padding:16px 8px}
+.inp{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 13px;background:#fff}
+textarea.inp{min-height:110px;resize:vertical}
+.lbl{display:block;font-size:13px;font-weight:600;color:var(--mut);margin:12px 0 5px}
+.k{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.k:first-of-type{border-top:0}.k .d{flex:none;width:58px;font-size:12.5px;color:var(--mut);line-height:1.5}.k .t{flex:1;min-width:0}
+.k .a{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.warn{background:#fdecea;border:1.5px solid #e7b5ad;border-radius:18px;padding:12px 16px;margin-bottom:12px}.warn b{color:var(--bad)}
+.hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.hd h2{margin:0;font-size:28px;font-family:var(--serif)}
+.bt{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 2px}
+.bar{height:8px;background:var(--bg2);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+.ev{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 8px}.ev>div{background:var(--soft);border-radius:14px;padding:7px 6px;text-align:center}.ev b{display:block;font-size:19px}.ev span{font-size:12px;color:var(--mut)}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}.tbl td{padding:5px 4px;border-top:1px solid var(--line);vertical-align:top}.tbl tr:first-child td{border-top:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:var(--soft);color:var(--acc);border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}.chip.cl{background:#fbf3dc;color:var(--warn)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cols>div{min-width:0}
+.login{max-width:420px;margin:8vh auto 0;padding:0 14px}.login h1{font-family:var(--serif);font-weight:400;text-align:center;margin:0 0 4px;font-size:30px}.login p.s{text-align:center;color:var(--mut);margin:0 0 18px}
+.ov{position:fixed;inset:0;background:rgba(40,30,20,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.md{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 18px 28px}
+@media(min-width:700px){.ov{align-items:center}.md{border-radius:24px}}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#33281f;color:#fff;padding:10px 18px;border-radius:999px;z-index:30;font-size:14px}
+.back{display:none}
+@media(max-width:820px){
+ .app{grid-template-columns:1fr}
+ .app.det .side{display:none}.app:not(.det) .main{display:none}
+ .back{display:inline-block;margin-bottom:10px}
+ .main{padding:12px 12px 80px}
+ .cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* 전유리T 학생 상담 — 왼쪽 학생 명단(가나다) → 학생을 누르면 오른쪽에 그 학생 정보 (서버: 65_상담실장_담당학생_서버.sql, 문 이름 ac_counsel)
+   · 서버가 '볼 수 있는 학생'만 내려줘요(담당 배정된 학생, 또는 전체 보기가 켜진 사람은 분당 학생 전체). 화면에서 숨기는 것이 아니에요.
+   · 로그인: ① 전용 링크(counsel.html?k=…)를 열면 바로 들어가요 ② 링크가 없으면 이름 + 전화번호 뒤 4자리. 한 번 들어오면 그 폰·PC에서는 계속 로그인 상태예요.
+   · 이 화면 로그인 열쇠는 기존 운영진·학생 화면 열쇠와 달라서 다른 기능은 아무것도 못 열어요.
+   · 화면의 모든 글은 esc() 로 걸러요. */
+(function () {
+  var SBQ = (function () { try { var q = new URLSearchParams(location.search).get('sb'); return q && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(q) ? q : null; } catch (e) { return null; } })();   // 시험용(내 컴퓨터) 서버만 허용
+  var URL_ = (SBQ || 'https://eqllmvfbcdtzercliicy.supabase.co/rest/v1/rpc/') + 'ac_counsel', API_KEY = 'sb_publishable_OcoOR7ERpt8BFBLuQ2CoWw_lELDDCEV';
+  var TK = 'cs_tok_v1';
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  var VIA = { phone: '전화', visit: '방문', msg: '문자·카톡', etc: '기타' }, WHO = { parent: '학부모', student: '학생', both: '학부모+학생' };
+  var EV = [['tae', '태도'], ['hw', '숙제'], ['und', '이해도'], ['att', '출결']];
+  var ATT = { present: '출석', late: '지각', early: '조퇴', absent: '결석' };
+  var S = { tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function nl(t) { return esc(t).replace(/\n/g, '<br>'); }
+  function tel(p) { return String(p || '').replace(/[^0-9+]/g, ''); }
+  function dstr(ds) { if (!ds) return ''; var d = new Date(String(ds).slice(0, 10) + 'T00:00'); return (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function stars(n) { return '<span style="color:#d49a1a">' + '★'.repeat(n) + '</span><span style="color:#d8d2c6">' + '★'.repeat(5 - n) + '</span>'; }
+  function avg(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : null; }
+  function isM(c) { c = String(c || ''); return c === 'MATHY CLASS' || c.indexOf('MATHY CLASS · ') === 0; }
+  function clsTxt(c) { return isM(c) ? 'MATHY CLASS' : c; }
+  function hm(t) { return String(t || '').slice(0, 5); }
+  var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', CHO_BASE = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };
+  function cho(n) { var c = String(n || '').charCodeAt(0); if (c >= 0xAC00 && c <= 0xD7A3) { var x = CHO.charAt(Math.floor((c - 0xAC00) / 588)); return CHO_BASE[x] || x; } return /[A-Za-z]/.test(String(n).charAt(0)) ? String(n).charAt(0).toUpperCase() : '#'; }
+  function who() { return S.me + (S.title ? ' ' + S.title : ''); }     // 기록에 남는 이름 (예: 김지은 부원장)
+  function toast(m) { var e = document.createElement('div'); e.className = 'toast'; e.textContent = m; document.body.appendChild(e); setTimeout(function () { e.remove(); }, 2200); }
+  function saveTok(t) { S.tok = t; try { if (t) localStorage.setItem(TK, t); else localStorage.removeItem(TK); } catch (e) {} }
+
+  async function api(a, args, noTok) {
+    var r;
+    try { r = await fetch(URL_, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: API_KEY, Authorization: 'Bearer ' + API_KEY }, body: JSON.stringify({ p_action: a, p_token: noTok ? null : S.tok, p_args: args || {} }) }); }
+    catch (e) { return { ok: false, net: true, error: '인터넷 연결을 확인해 주세요' }; }
+    if (!r.ok) return { ok: false, net: r.status >= 500, error: r.status === 404 ? '상담 서버가 아직 준비되지 않았어요 (65번 SQL 실행 필요)' : '서버에 연결하지 못했어요 (' + r.status + ')' };
+    var j; try { j = await r.json(); } catch (e) { return { ok: false, net: true, error: '서버 응답을 읽지 못했어요' }; }
+    if (j && j.ok === false && !noTok && String(j.error || '').indexOf('다시 로그인') >= 0) { logoutLocal('로그인이 풀렸어요. 다시 들어와 주세요.'); }
+    return j;
+  }
+  function logoutLocal(msg) { saveTok(null); S.list = null; S.card = null; S.sid = null; S.q = ''; S.view = 'login'; S.loginErr = msg || ''; render(); }
+
+  /* ── 로그인 화면 ── */
+  function vLogin() {
+    return '<div class="login"><h1>학생 상담</h1><p class="s">전유리T · 학생 정보</p><form data-f="login" class="card" autocomplete="on">' +
+      (S.loginErr ? '<div class="note" style="margin-bottom:10px">' + esc(S.loginErr) + '</div>' : '') +
+      '<label class="lbl" style="margin-top:0">이름</label><input class="inp" name="name" autocomplete="username" required placeholder="예: 김지은" value="' + esc(S.pname) + '">' +
+      '<label class="lbl">전화번호 뒤 4자리</label><input class="inp" name="secret" type="tel" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required placeholder="예: 1234">' +
+      '<button class="btn" style="width:100%;margin-top:16px;font-size:17px;padding:13px" type="submit"' + (S.busy ? ' disabled' : '') + '>들어가기</button>' +
+      '<div class="muted sm" style="margin-top:10px;line-height:1.6">원장님이 보내 주신 <b>전용 링크</b>를 열면 이 과정 없이 바로 들어가요. 한 번 들어오면 이 기기에서는 계속 로그인된 상태예요.</div></form></div>';
+  }
+
+  /* ── 왼쪽: 학생 명단 (가나다) ── */
+  function listHtml() {
+    if (S.err && !S.list) return '<div class="note" style="margin:8px">' + esc(S.err) + '</div>';
+    if (!S.list) return '<div class="empty">불러오는 중…</div>';
+    var q = S.q.trim().toLowerCase(), dg = q.replace(/[^0-9]/g, '');
+    var rows = S.list.filter(function (s) { return !q || (s.name + ' ' + (s.school || '') + ' ' + clsTxt(s.cls)).toLowerCase().indexOf(q) >= 0 || (dg.length >= 2 && String(s.p4 || '').indexOf(dg) >= 0); });
+    if (!rows.length) return '<div class="empty">' + (S.list.length ? '찾는 학생이 없어요' : '볼 수 있는 학생이 아직 없어요.<br>원장님께 담당 학생 배정을 요청해 주세요.') + '</div>';
+    var h = '', last = '';
+    rows.forEach(function (s) {
+      var c = cho(s.name); if (c !== last) { h += '<div class="cho">' + esc(c) + '</div>'; last = c; }
+      h += '<button class="it' + (S.sid === s.id ? ' on' : '') + '" type="button" data-a="open" data-v="' + esc(s.id) + '"><span class="n">' + esc(s.name) + '</span><span class="c">' + esc(clsTxt(s.cls)) + '</span><span class="r">' +
+        (s.pin > 0 ? '<span class="dot" title="특이사항">⚠</span>' : '') + (s.follow > 0 ? '<span class="dot f" title="후속 조치">후속' + s.follow + '</span>' : '') + '</span></button>';
+    });
+    return h;
+  }
+
+  /* ── 오른쪽: 학생 정보 ── */
+  function noteBtns(n) {
+    if (!n.mine || (n.kind !== 'consult' && n.kind !== 'special')) return '';
+    return '<div class="a"><button class="btn gh s3" data-a="edit" data-v="' + n.id + '" type="button">고치기</button><button class="btn dng s3" data-a="del" data-v="' + n.id + '" type="button">지우기</button></div>';
+  }
+  function evLine(sc) { return EV.filter(function (e) { return sc && sc[e[0]]; }).map(function (e) { return '<span style="white-space:nowrap">' + e[1] + ' ' + stars(sc[e[0]]) + '</span>'; }).join(' &nbsp; '); }
+  function vCard(d) {
+    var st = d.stu, notes = d.notes || [], sp = notes.filter(function (n) { return n.kind === 'special'; }), co = notes.filter(function (n) { return n.kind === 'consult'; }), ev = notes.filter(function (n) { return n.kind === 'eval'; });
+    var pins = sp.filter(function (n) { return n.pinned; }), h = '<button class="btn gh s3 back" data-a="back" type="button">← 명단</button>';
+    h += '<div class="card"><div class="hd"><h2>' + esc(st.name) + '</h2><span class="badge">' + esc(clsTxt(st.cls)) + '</span><span class="muted">' + esc(st.school || '') + '</span></div>';
+    if (st.phone) h += '<div class="bt"><a class="btn rose" href="tel:' + esc(tel(st.phone)) + '">📞 학부모 ' + esc(st.phone) + '</a><button class="btn gh" data-a="copy" data-v="' + esc(st.phone) + '" type="button">번호 복사</button></div>';
+    else h += '<div class="muted sm" style="margin-top:6px">등록된 학부모 전화번호가 없어요</div>';
+    h += '<div class="bt"><button class="btn" data-a="new" data-v="consult" type="button">+ 상담 기록</button><button class="btn sec" data-a="new" data-v="special" type="button">+ 특이사항</button></div></div>';
+    if (pins.length) h += '<div class="warn"><b>⚠ 특이사항</b>' + pins.map(function (n) { return '<div style="margin-top:4px">' + nl(n.body) + '</div>'; }).join('') + '</div>';
+
+    /* 수업 현황 */
+    var at = d.att || {}, hw = d.hw || { total: 0, done: 0, recent: [] }, pct = hw.total ? Math.round(hw.done / hw.total * 100) : 0, sc = (d.scores || []).slice(0, 5), a5 = avg(sc.map(function (x) { return x.score; }));
+    var undone = (hw.recent || []).filter(function (x) { return !x.done && x.due <= today(); }).slice(0, 4);
+    h += '<div class="card"><h3>수업 현황 <span class="badge">' + esc(clsTxt(st.cls)) + '</span></h3>';
+    h += '<h4>정규 수업</h4>' + ((d.sched || []).length ? '<div class="chips">' + d.sched.map(function (x) { return '<span class="chip' + (x.kind === '클리닉' ? ' cl' : '') + '">' + esc(WD[+x.dow]) + ' ' + esc(hm(x.time)) + (x.n ? ' · ' + esc(x.n) : '') + '</span>'; }).join('') + '</div>' : '<div class="muted sm">등록된 시간표가 없어요</div>');
+    h += '<div class="cols"><div><h4>출석 (최근 2달)</h4><div class="ev">' + ['present', 'late', 'early', 'absent'].map(function (k) { return '<div><b>' + (at[k] || 0) + '</b><span>' + ATT[k] + '</span></div>'; }).join('') + '</div>' +
+      ((at.recent && at.recent.length) ? '<table class="tbl">' + at.recent.slice(0, 5).map(function (x) { return '<tr><td class="muted" style="width:56px">' + esc(dstr(x.day)) + '</td><td><b>' + esc(ATT[x.status] || x.status) + '</b>' + (x.reason ? ' <span class="muted">· ' + esc(x.reason) + '</span>' : '') + '</td></tr>'; }).join('') + '</table>' : '') + '</div>' +
+      '<div><h4>과제 (최근 2달)</h4>' + (hw.total ? '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><b>완료 ' + hw.done + ' / ' + hw.total + '</b><span class="muted">' + pct + '%</span></div><div class="bar"><i style="width:' + pct + '%"></i></div>' +
+        (undone.length ? '<div class="muted sm" style="margin-top:6px">미완료: ' + undone.map(function (x) { return esc(x.title); }).join(' · ') + '</div>' : '') : '<div class="muted sm">해당 기간에 과제가 없어요</div>') + '</div></div>';
+    h += '<h4>최근 성적' + (a5 != null ? ' <span class="badge">최근 ' + sc.length + '회 평균 ' + a5.toFixed(1) + '</span>' : '') + '</h4>' + (sc.length ? '<table class="tbl">' + sc.map(function (x) { return '<tr><td class="muted" style="width:56px">' + esc(dstr(x.date)) + '</td><td>' + esc(x.name) + '</td><td style="text-align:right;font-weight:700">' + esc(String(Math.round(x.score * 10) / 10)) + '점</td></tr>'; }).join('') + '</table>' : '<div class="muted sm">입력된 성적이 없어요</div>');
+    h += '<h4>최근 수업 진도</h4>' + ((d.lessons || []).length ? '<table class="tbl">' + d.lessons.map(function (x) {
+      return '<tr><td class="muted" style="width:56px">' + esc(dstr(x.date)) + '</td><td><b>' + (x.no ? esc(x.no) + '회 ' : '') + esc(x.title || '') + '</b>' + (x.range ? ' <span class="muted">' + esc(x.range) + '</span>' : '') + ((x.hw && x.hw.length) ? '<div class="muted sm">숙제: ' + x.hw.map(esc).join(' · ') + '</div>' : '') + '</td></tr>';
+    }).join('') + '</table>' : '<div class="muted sm">등록된 수업 내용이 없어요</div>');
+    h += '</div>';
+
+    /* 상담내역 */
+    h += '<div class="card"><h3>상담내역 <span class="badge">' + co.length + '건</span></h3>';
+    if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
+    co.forEach(function (n) {
+      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
+        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label></div>' : '') + noteBtns(n) + '</div></div>';
+    });
+    h += '</div>';
+    /* 특이사항 */
+    if (sp.length) {
+      h += '<div class="card"><h3>특이사항 <span class="badge">' + sp.length + '건</span></h3>';
+      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
+      h += '</div>';
+    }
+    /* 조교평가 (보기만) */
+    if (ev.length) {
+      var five = ev.slice(0, 5);
+      h += '<div class="card"><h3>조교평가 <span class="muted sm">최근 ' + five.length + '회 평균</span></h3><div class="ev">' + EV.map(function (e) { var a = avg(five.filter(function (n) { return n.scores && n.scores[e[0]]; }).map(function (n) { return n.scores[e[0]]; })); return '<div><b>' + (a == null ? '-' : a.toFixed(1)) + '</b><span>' + e[1] + '</span></div>'; }).join('') + '</div>';
+      ev.slice(0, 3).forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + evLine(n.scores) + (n.body ? '<div class="sm" style="margin-top:3px">' + nl(n.body) + '</div>' : '') + '</div></div>'; });
+      h += '</div>';
+    }
+    return h;
+  }
+  function vDetail() {
+    if (!S.sid) return '<div class="ph">왼쪽에서 학생을 눌러 주세요</div>';
+    if (S.card) return '<div class="pane">' + vCard(S.card) + '</div>';
+    if (S.err) return '<div class="pane"><button class="btn gh s3 back" data-a="back" type="button">← 명단</button><div class="note">' + esc(S.err) + '</div></div>';
+    return '<div class="pane"><button class="btn gh s3 back" data-a="back" type="button">← 명단</button><div class="empty">불러오는 중…</div></div>';
+  }
+
+  /* ── 기록 쓰기 창 ── */
+  function formHtml(k, n) {
+    n = n || {};
+    var h = '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (k === 'consult' ? '상담 기록' : '특이사항') + (n.id ? ' 고치기' : ' 추가') + '</h3><div class="muted sm">쓴 사람: ' + esc(who()) + ' (자동으로 남아요)</div>';
+    if (k === 'consult') {
+      h += '<label class="lbl">날짜</label><input class="inp" type="date" id="f_date" value="' + esc(String(n.date || today()).slice(0, 10)) + '">' +
+        '<label class="lbl">방법</label><select class="inp" id="f_via">' + Object.keys(VIA).map(function (x) { return '<option value="' + x + '"' + ((n.via || 'phone') === x ? ' selected' : '') + '>' + VIA[x] + '</option>'; }).join('') + '</select>' +
+        '<label class="lbl">대상</label><select class="inp" id="f_who">' + Object.keys(WHO).map(function (x) { return '<option value="' + x + '"' + ((n.who || 'parent') === x ? ' selected' : '') + '>' + WHO[x] + '</option>'; }).join('') + '</select>' +
+        '<label class="lbl">상담 내용</label><textarea class="inp" id="f_body" maxlength="2000" placeholder="무슨 얘기를 했는지, 부모님 요청·걱정거리 등">' + esc(n.body || '') + '</textarea>' +
+        '<label class="lbl">후속 조치 (할 일이 있으면, 끝나면 체크해요)</label><input class="inp" id="f_follow" maxlength="200" value="' + esc(n.follow || '') + '" placeholder="예: 시험 범위표 문자로 보내기">';
+    } else {
+      h += '<label class="lbl">내용</label><textarea class="inp" id="f_body" maxlength="1000" placeholder="알레르기, 성향, 주의할 점, 약속한 것 등">' + esc(n.body || '') + '</textarea>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin-top:12px;cursor:pointer"><input type="checkbox" id="f_pin"' + (n.pinned ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--acc)"> <b>중요 — 카드 맨 위에 빨간 상자로 고정</b></label>';
+    }
+    return h + '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" data-a="save" data-k="' + k + '" data-id="' + (n.id || '') + '" type="button">저장</button><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+  }
+  function openModal(h) { closeModal(); var o = document.createElement('div'); o.className = 'ov'; o.id = 'ov'; o.innerHTML = '<div class="md">' + h + '</div>'; o.addEventListener('mousedown', function (e) { if (e.target === o) closeModal(); }); document.body.appendChild(o); }
+  function closeModal() { var o = document.getElementById('ov'); if (o) o.remove(); }
+
+  function render() {
+    var el = document.getElementById('app'), h, mainY = 0, listY = 0, m = document.querySelector('.main'), l = document.querySelector('.lst');
+    if (m) mainY = m.scrollTop; if (l) listY = l.scrollTop;
+    if (S.view === 'boot') h = '<div class="empty" style="margin-top:20vh">불러오는 중…</div>';
+    else if (S.view === 'retry') h = '<div class="card" style="max-width:420px;margin:14vh auto 0;text-align:center"><div class="note">' + esc(S.err || '연결하지 못했어요') + '</div><button class="btn" style="margin-top:14px" data-a="retry" type="button">다시 시도</button></div>';
+    else if (S.view === 'login') h = vLogin();
+    else h = '<div class="app' + (S.sid ? ' det' : '') + '"><aside class="side"><div class="hd0"><div class="ttl">전유리T · 학생 상담</div><div class="who"><span>' + esc(S.me) + (S.title ? ' ' + esc(S.title) : '') + '님</span><button data-a="logout" type="button">로그아웃</button></div></div>' +
+      '<div class="sq"><input class="inp" id="q" value="' + esc(S.q) + '" placeholder="이름 · 학교 · 전화 뒤 4자리" autocomplete="off" data-i="q"></div><div class="lst" id="lst">' + listHtml() + '</div></aside><main class="main" id="main">' + vDetail() + '</main></div>';
+    el.innerHTML = h;
+    var m2 = document.querySelector('.main'), l2 = document.querySelector('.lst'); if (S.keepY) { if (m2) m2.scrollTop = mainY; S.keepY = false; } if (l2) l2.scrollTop = listY;
+  }
+
+  /* ── 불러오기 ── */
+  async function loadList() {
+    var j = await api('list'); if (!j) return;
+    if (!j.ok) { S.err = j.error; S.list = null; } else { S.err = null; S.list = (j.list || []).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'ko') || String(a.cls).localeCompare(String(b.cls), 'ko'); }); S.me = j.me || S.me; S.title = j.title || S.title; }
+    if (S.view === 'main') { var e = document.getElementById('lst'); if (e) { var y = e.scrollTop; e.innerHTML = listHtml(); e.scrollTop = y; } else render(); }
+  }
+  async function loadCard(keep) {
+    var sid = S.sid, j = await api('card', { sid: sid }); if (S.sid !== sid) return;
+    if (!j.ok) { S.err = j.error; S.card = null; } else { S.err = null; S.card = j; }
+    S.keepY = !!keep; render();
+  }
+  async function enter() { S.view = 'main'; S.sid = null; S.card = null; S.list = null; render(); loadList(); }
+  function keyFromUrl() {
+    try { var u = new URL(location.href), k = u.searchParams.get('k'); if (k) { u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } return k ? String(k).trim() : ''; } catch (e) { return ''; }
+  }
+  async function boot() {
+    var key = keyFromUrl();                                           // 전용 링크로 열었으면 바로 로그인 (주소창에서는 열쇠를 지워요)
+    try { S.tok = localStorage.getItem(TK); S.pname = localStorage.getItem('cs_name_v1') || ''; } catch (e) { S.tok = null; }
+    if (key) {
+      var jl = await api('login', { key: key }, true);
+      if (jl && jl.ok) { saveTok(jl.token); S.me = jl.name; S.title = jl.title || ''; try { localStorage.setItem('cs_name_v1', jl.name); } catch (e) {} enter(); return; }
+      if (jl && jl.net) { S.view = 'retry'; S.err = jl.error; try { sessionStorage.setItem('cs_key_retry', key); } catch (e) {} render(); return; }
+      S.view = 'login'; S.loginErr = (jl && jl.error) || ''; render(); return;
+    }
+    try { var rk = sessionStorage.getItem('cs_key_retry'); if (rk) { sessionStorage.removeItem('cs_key_retry'); var j2 = await api('login', { key: rk }, true); if (j2 && j2.ok) { saveTok(j2.token); S.me = j2.name; S.title = j2.title || ''; enter(); return; } } } catch (e) {}
+    if (!S.tok) { S.view = 'login'; render(); return; }
+    var j = await api('me');
+    if (j && j.ok) { S.me = j.me; S.title = j.title || ''; enter(); return; }
+    if (j && j.net) { S.view = 'retry'; S.err = j.error; render(); return; }     // 인터넷 문제면 로그인을 지우지 않아요
+    if (S.view !== 'login') { S.view = 'login'; S.loginErr = (j && j.error) || ''; render(); }
+  }
+
+  /* ── 동작 ── */
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t || !t.dataset || t.dataset.i !== 'q') return;
+    S.q = t.value; var l = document.getElementById('lst'); if (l) l.innerHTML = listHtml();
+  });
+  document.addEventListener('submit', async function (e) {
+    var f = e.target.closest && e.target.closest('form[data-f]'); if (!f) return; e.preventDefault();
+    if (S.busy || f.dataset.f !== 'login') return; var fd = new FormData(f);
+    S.busy = true; S.pname = String(fd.get('name') || '').trim(); var j = await api('login', { name: S.pname, secret: String(fd.get('secret') || '').trim() }, true); S.busy = false;
+    if (!j.ok) { S.loginErr = j.error || '로그인하지 못했어요'; render(); return; }
+    S.loginErr = ''; saveTok(j.token); S.me = j.name; S.title = j.title || ''; try { localStorage.setItem('cs_name_v1', j.name); } catch (er) {} enter();
+  });
+  window.addEventListener('popstate', function () { if (S.sid) { S.sid = null; S.card = null; S.err = null; render(); } });
+  function pick(sid) {
+    var first = !S.sid; S.sid = sid; S.card = null; S.err = null;
+    if (first) { try { history.pushState({ c: 1 }, ''); } catch (er) {} }
+    render(); var m = document.getElementById('main'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); loadCard();
+  }
+  document.addEventListener('click', async function (e) {
+    var t = e.target.closest && e.target.closest('[data-a]'); if (!t) return;
+    var a = t.dataset.a, v = t.dataset.v, j;
+    if (a === 'fchk') return;
+    if (a === 'open') { e.preventDefault(); pick(v); return; }
+    if (a === 'back') { if (history.state && history.state.c) history.back(); else { S.sid = null; S.card = null; S.err = null; render(); } return; }
+    if (a === 'copy') { try { await navigator.clipboard.writeText(v); toast('복사했어요'); } catch (er) { toast('길게 눌러 직접 복사해 주세요'); } return; }
+    if (a === 'retry') { S.view = 'boot'; render(); boot(); return; }
+    if (a === 'logout') { if (!confirm('로그아웃할까요?')) return; await api('logout'); logoutLocal(''); return; }
+    if (a === 'close') { closeModal(); return; }
+    if (a === 'new') { openModal(formHtml(v)); return; }
+    if (a === 'edit') { var n = ((S.card && S.card.notes) || []).filter(function (x) { return String(x.id) === String(v); })[0]; if (n) openModal(formHtml(n.kind, n)); return; }
+    if (a === 'del') { if (!confirm('이 기록을 지울까요? (되돌릴 수 없어요)')) return; j = await api('del', { id: v }); if (!j.ok) { toast(j.error || '지우지 못했어요'); return; } toast('지웠어요'); loadCard(true); loadList(); return; }
+    if (a === 'save') {
+      var k = t.dataset.k, id = t.dataset.id, g = function (i) { var x = document.getElementById(i); return x ? x.value : ''; };
+      var args = { sid: S.sid, kind: k, body: g('f_body'), date: g('f_date') };
+      if (k === 'consult') { args.via = g('f_via'); args.who = g('f_who'); args.follow = g('f_follow'); }
+      if (k === 'special') args.pinned = !!(document.getElementById('f_pin') || {}).checked;
+      if (id) args.id = id;
+      t.disabled = true; j = await api(id ? 'edit' : 'add', args); t.disabled = false;
+      if (!j.ok) { toast(j.error || '저장하지 못했어요'); return; }
+      closeModal(); toast('저장했어요'); loadCard(true); loadList(); return;
+    }
+  });
+  document.addEventListener('change', async function (e) {
+    var t = e.target; if (!t || !t.dataset || t.dataset.a !== 'fchk') return;
+    var j = await api('follow', { id: t.dataset.v, done: !!t.checked });
+    if (!j.ok) { toast(j.error || '체크하지 못했어요'); t.checked = !t.checked; return; }
+    loadCard(true); loadList();
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view === 'main' && !document.getElementById('ov')) { loadList(); if (S.sid) loadCard(true); } });
+  boot();
+})();
+</script>
+</body>
+</html>

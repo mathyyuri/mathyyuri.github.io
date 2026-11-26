@@ -120,7 +120,8 @@
   }
   function vList() {
     var chips = S.mc ? '' : '<div class="chips"><button class="chip ' + (!Q.cls ? 'on' : '') + '" data-sm="cls" data-v="" type="button">전체</button>' + (Q.classes || []).map(function (c) { return '<button class="chip ' + (Q.cls === c ? 'on' : '') + '" data-sm="cls" data-v="' + esc(c) + '" type="button">' + esc(c) + '</button>'; }).join('') + '</div>';
-    return '<div class="card"><div class="fld" style="margin:0 0 8px"><input type="text" id="smq" value="' + esc(Q.q) + '" placeholder="이름 · 학교 · 학부모 전화 뒤 4자리" autocomplete="off" data-si="smq" style="font-size:16px"></div>' +
+    return (isAdm() && !S.mc ? '<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>상담실장</b> <span class="muted sm">담당 학생만 보는 별도 화면 · 등록과 담당 배정은 여기서</span></div><button class="btn sec sm3" data-sm="csopen" type="button">상담실장 관리 · 담당 배정</button></div>' : '') +
+      '<div class="card"><div class="fld" style="margin:0 0 8px"><input type="text" id="smq" value="' + esc(Q.q) + '" placeholder="이름 · 학교 · 학부모 전화 뒤 4자리" autocomplete="off" data-si="smq" style="font-size:16px"></div>' +
       '<div class="muted sm" style="margin-bottom:6px">전화가 왔을 땐 번호 뒤 4자리를 입력하면 바로 찾아요.</div>' + chips + '<div id="smlist">' + listHtml() + '</div></div>' +
       '<div id="smfeed">' + feedHtml() + '</div>' +
       '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">이 화면의 기록은 운영진만 볼 수 있어요. 학생·학부모에게는 보이지 않고, 카드를 열면 열람 기록이 남아요.</div>';
@@ -206,6 +207,7 @@
   };
   window.vSinfo = function () {
     if (!kind()) return '<div class="card"><div class="empty">이 화면은 분당미래탐구 운영진만 쓸 수 있어요.</div></div>';
+    if (Q.csv && isAdm()) return vCs();
     if (Q.tok !== TOKEN && !Q.sid && !Q.list) return '<div class="card"><div class="empty">불러오는 중…</div></div>';
     if (Q.sid) {
       if (Q.err && !Q.card) return '<button class="btn gh sm3" data-sm="back" type="button">← 목록으로</button><div class="note" style="margin-top:10px">' + esc(Q.err) + '</div>';
@@ -278,5 +280,133 @@
   });
   window.sinfoName = function (id, name) { return kind() ? '<a href="#" data-sm="open" data-v="' + esc(id) + '" style="color:inherit;text-decoration:underline dotted;font-weight:700" title="학생 정보 열기">' + esc(name) + '</a>' : '<b>' + esc(name) + '</b>'; };   // 다른 화면의 학생 이름을 누를 수 있게
   window.sinfoOpen = function (sid) { if (!kind()) return; Q.sid = sid; Q.card = null; Q.err = null; S.tab = 'sinfo'; render(0); };   // 다른 화면에서 학생 이름을 눌렀을 때 쓰는 문
-  window.sinfoReset = function () { Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; };
+  window.sinfoReset = function () { Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; Q.csv = false; Q.csd = null; Q.csl = null; };
+
+  /* ══════════ 원장 전용: 상담실장 등록 · 전용 링크 · 담당 학생 배정 · 로그인 기록 (서버: 65_상담실장_담당학생_서버.sql, 문 ac_counsel) ══════════
+     상담실장은 별도 화면(counsel.html, 전용 링크로 바로 로그인)으로 들어와 '내 담당 학생'만 봐요. 여기서는 사람을 등록하고 담당·링크·로그인 기록을 관리해요. */
+  function isAdm() { try { var u = me(); return !!u && u.role === 'admin' && kind(); } catch (e) { return false; } }
+  var CSURL = API_URL.replace('ac_api', 'ac_counsel'), CS_PAGE = 'https://mathyyuri.com/counsel.html';
+  async function capi(a, args) {
+    var r;
+    try { r = await fetch(CSURL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: API_KEY, Authorization: 'Bearer ' + API_KEY }, body: JSON.stringify({ p_action: a, p_token: TOKEN, p_args: args || {} }) }); }
+    catch (e) { return { ok: false, error: '인터넷 연결을 확인해 주세요' }; }
+    if (!r.ok) return { ok: false, error: r.status === 404 ? '상담실장 서버가 아직 준비되지 않았어요 (65_상담실장_담당학생_서버.sql 실행 필요)' : '서버에 연결하지 못했어요 (' + r.status + ')' };
+    try { return await r.json(); } catch (e) { return { ok: false, error: '서버 응답을 읽지 못했어요' }; }
+  }
+  async function csLoad() {
+    var j = await capi('adm_list'); if (!isAdm()) return;
+    if (!j || !j.ok) { Q.cse = (j && j.error) || '불러오지 못했어요'; Q.csd = null; } else { Q.cse = null; Q.csd = j; }
+    var l = await capi('adm_logins', { n: 60 }); if (!isAdm()) return;
+    Q.csl = l && l.ok ? l : null;
+    if (Q.csv && S.tab === 'sinfo') render();
+  }
+  function csLink(c) { return CS_PAGE + '?k=' + c.key; }
+  function csDev(ua) {
+    ua = String(ua || ''); var os = /iPhone|iPad/.test(ua) ? '아이폰' : /Android/.test(ua) ? '안드로이드' : /Windows/.test(ua) ? '윈도우 PC' : /Mac OS/.test(ua) ? '맥' : ua ? '기타' : '?';
+    var br = /KAKAOTALK/i.test(ua) ? ' · 카카오톡' : /SamsungBrowser/.test(ua) ? ' · 삼성인터넷' : /Edg\//.test(ua) ? ' · 엣지' : /CriOS|Chrome/.test(ua) ? ' · 크롬' : /Safari/.test(ua) ? ' · 사파리' : '';
+    return os + br;
+  }
+  function csStatus(c) {
+    if (!c.active) return '<span class="smb" style="background:#eee;color:#777">사용 중지</span>';
+    return '<span class="smb" style="background:#e3f1ea;color:#2f7a67">사용 중</span> <span class="muted sm">' + (c.last_login ? '마지막 로그인 ' + esc(String(c.last_login).slice(5).replace('T', ' ')) : '아직 로그인한 적 없어요') + '</span>';
+  }
+  function csLogHtml() {
+    var L = Q.csl; if (!L) return '';
+    var h = '<div class="card"><h3 style="margin:0 0 4px">로그인 기록 <span class="muted sm">(최근 ' + (L.logs || []).length + '건 · 원장만 볼 수 있어요)</span></h3>' +
+      (L.fail24 > 0 ? '<div class="smwarn" style="padding:8px 12px;margin:6px 0"><b>최근 24시간 로그인 실패 ' + L.fail24 + '건</b> — 모르는 시도가 있으면 해당 상담실장의 [전용 링크 새로 만들기]를 눌러 주세요.</div>' : '');
+    if (!(L.logs || []).length) return h + '<div class="empty" style="padding:14px">아직 로그인 기록이 없어요</div></div>';
+    h += '<table class="smtbl">' + L.logs.map(function (x) {
+      return '<tr><td class="muted" style="white-space:nowrap;width:92px">' + esc(String(x.at).slice(5).replace('T', ' ')) + '</td><td><b>' + esc(x.name) + '</b> <span class="muted sm">' + (x.how === 'link' ? '전용 링크' : '이름+번호') + '</span><div class="muted sm">' + esc(csDev(x.ua)) + (x.ip ? ' · ' + esc(x.ip) : '') + '</div></td>' +
+        '<td style="text-align:right;white-space:nowrap;font-weight:700;color:' + (x.ok ? '#2f7a67' : '#a8453a') + '">' + (x.ok ? '성공' : '실패') + '</td></tr>';
+    }).join('') + '</table></div>';
+    return h;
+  }
+  function vCs() {
+    var d = Q.csd, h = '<button class="btn gh sm3" data-sm="csback" type="button">← 학생정보로</button>';
+    h += '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px">상담실장 관리</h3>' +
+      '<div class="sm" style="line-height:1.7">상담실장마다 <b>전용 링크</b>가 하나씩 있어요. 그 링크를 폰에서 한 번 열면 <b>바로 로그인</b>되고, 그 폰에서는 계속 로그인된 상태예요. 링크를 잃어버렸을 땐 <b>이름 + 전화번호 뒤 4자리</b>로도 들어와요. <b>담당으로 정해 준 학생만</b> 보여요(서버가 막아요). 부원장·데스크처럼 전체가 필요한 사람은 <b>전체 학생 보기</b>를 켜면 돼요. 화면은 왼쪽 학생 명단(가나다) → 학생을 누르면 오른쪽에 그 학생의 수업 현황·상담 내용이 보이는 한 가지뿐이에요.</div>' +
+      '<div class="smbtn"><button class="btn" data-sm="csadd" type="button">+ 등록 (상담실장·부원장·조교)</button></div></div>';
+    if (Q.cse) return h + '<div class="note">' + esc(Q.cse) + '</div>';
+    if (!d) return h + '<div class="card"><div class="empty">불러오는 중…</div></div>';
+    if (!d.counselors.length) return h + '<div class="card"><div class="empty">아직 등록한 상담실장이 없어요</div></div>';
+    d.counselors.forEach(function (c) {
+      h += '<div class="card"><div class="smhd"><h2 style="font-size:21px">' + esc(c.name) + ' ' + esc(c.title || '상담실장') + '님</h2><span class="muted sm">☎ 뒤 ' + esc(c.p4) + '</span><span class="badge">' + (c.all ? '전체 학생 보기' : '담당 ' + c.n + '명') + '</span></div><div style="margin:6px 0">' + csStatus(c) + '</div>' +
+        '<div class="smbtn">' + (c.active ? '<button class="btn rose" data-sm="cscopy" data-v="' + esc(csLink(c)) + '" type="button">전용 링크 복사</button>' + (c.all ? '' : '<button class="btn" data-sm="csassign" data-v="' + esc(c.id) + '" type="button">담당 학생 배정</button>') : '') +
+        '<button class="btn gh sm3" data-sm="csedit" data-v="' + esc(c.id) + '" type="button">이름·번호 고치기</button>' +
+        '<button class="btn gh sm3" data-sm="csreset" data-v="' + esc(c.id) + '" type="button">전용 링크 새로 만들기</button>' +
+        '<button class="btn gh sm3" data-sm="csactive" data-v="' + esc(c.id) + '" data-on="' + (c.active ? '0' : '1') + '" type="button">' + (c.active ? '사용 중지' : '다시 사용') + '</button>' +
+        '<button class="btn dng sm3" data-sm="csdel" data-v="' + esc(c.id) + '" type="button">삭제</button></div></div>';
+    });
+    return h + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+  }
+  function csForm(c) {
+    return '<h3>' + (c ? '이름·직함·번호 고치기' : '상담실장·부원장·조교 등록') + '</h3><div class="smf"><label class="l">이름 (직함은 빼고 · 로그인할 때 쓰는 이름이에요 · 중복 불가)</label><input type="text" id="csf_name" maxlength="20" value="' + esc(c ? c.name : '') + '" placeholder="예: 김지은">' +
+      '<label class="l">직함 (화면에는 "이름 직함님"으로 보여요)</label><select id="csf_title">' + ['상담실장', '부원장', '조교'].map(function (t) { return '<option value="' + t + '"' + ((c ? c.title : '상담실장') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>' +
+      '<label class="l">전화번호 (전체나 뒤 4자리)</label><input type="text" id="csf_phone" maxlength="20" inputmode="numeric" value="' + esc(c ? c.p4 : '') + '" placeholder="예: 010-1234-5678">' +
+      '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:14px;cursor:pointer"><input type="checkbox" id="csf_all"' + (c && c.all ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--acc);margin-top:2px"> <span><b>전체 학생 보기</b> <span class="muted sm">(부원장·데스크처럼 모든 학생이 필요한 사람은 켜 주세요. 끄면 담당으로 배정한 학생만 보여요)</span></span></label>' +
+      (c ? '' : '<div class="muted sm" style="margin-top:8px">등록하면 그 사람만의 전용 링크가 만들어져요. [전용 링크 복사]로 복사해서 개인 메시지로 보내 주세요.</div>') +
+      '</div><div class="row" style="gap:8px;margin-top:16px"><button class="btn" data-sm="cssave" data-id="' + (c ? esc(c.id) : '') + '" type="button">' + (c ? '저장' : '등록') + '</button><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>';
+  }
+  function csAssignHtml(c) {
+    var st = Q.csd.students, cls = {}, names = {}; Q.csd.counselors.forEach(function (x) { names[x.id] = x.name; });
+    st.forEach(function (s) { (cls[s.cls] = cls[s.cls] || []).push(s); });
+    var h = '<h3>' + esc(c.name) + ' · 담당 학생 배정</h3><div class="muted sm" style="margin:4px 0 8px">체크한 학생만 이 상담실장에게 보여요. 한 학생을 여러 명이 맡아도 돼요.</div>' +
+      '<input type="text" id="csa_q" placeholder="이름 · 학교로 찾기" autocomplete="off" data-cs="q" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:16px;margin-bottom:6px">' +
+      '<div class="muted sm" id="csa_n" style="margin-bottom:4px"></div><div style="max-height:52vh;overflow:auto">';
+    Object.keys(cls).sort().forEach(function (k) {
+      h += '<div data-csg="' + esc(k) + '"><div style="display:flex;align-items:center;gap:8px;margin:10px 0 2px"><b>' + esc(clsTxt(k)) + '</b><button class="btn gh sm3" data-sm="csall" data-v="' + esc(k) + '" type="button">반 전체 선택/해제</button></div>' +
+        cls[k].map(function (s) {
+          var others = (s.cs || []).filter(function (id) { return id !== c.id; }).map(function (id) { return names[id]; }).filter(Boolean);
+          return '<label class="csr" data-csn="' + esc((s.name + ' ' + (s.school || '')).toLowerCase()) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-top:1px solid var(--line);cursor:pointer"><input type="checkbox" data-csk="' + esc(s.id) + '" data-csc="' + esc(k) + '"' + ((s.cs || []).indexOf(c.id) >= 0 ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--acc);flex:none"><span style="font-weight:700">' + esc(s.name) + '</span><span class="muted sm">' + esc(s.school || '') + '</span>' + (others.length ? '<span class="muted sm" style="margin-left:auto">이미 ' + esc(others.join('·')) + '</span>' : '') + '</label>';
+        }).join('') + '</div>';
+    });
+    return h + '</div><div class="row" style="gap:8px;margin-top:14px"><button class="btn" data-sm="csasave" data-v="' + esc(c.id) + '" type="button">저장</button><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>';
+  }
+  function csCount() { var n = document.querySelectorAll('[data-csk]:checked').length, e = document.getElementById('csa_n'); if (e) e.textContent = '선택 ' + n + '명'; }
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t || !t.dataset || t.dataset.cs !== 'q') return;
+    var v = t.value.trim().toLowerCase();
+    document.querySelectorAll('.csr').forEach(function (r) { r.style.display = !v || r.dataset.csn.indexOf(v) >= 0 ? 'flex' : 'none'; });
+  });
+  document.addEventListener('change', function (e) { if (e.target && e.target.dataset && e.target.dataset.csk !== undefined) csCount(); });
+  document.addEventListener('click', async function (e) {
+    var t = e.target.closest && e.target.closest('[data-sm]'); if (!t || !t.dataset.sm || t.dataset.sm.indexOf('cs') !== 0 || !isAdm()) return;
+    var a = t.dataset.sm, v = t.dataset.v, j, c = Q.csd && Q.csd.counselors.filter(function (x) { return x.id === v; })[0];
+    if (a === 'csopen') { Q.csv = true; Q.csd = null; Q.cse = null; render(0); csLoad(); return; }
+    if (a === 'csback') { Q.csv = false; render(0); return; }
+    if (a === 'cscopy') { try { await navigator.clipboard.writeText(v); toast('전용 링크를 복사했어요. 개인 메시지로 보내 주세요'); } catch (er) { toast('복사하지 못했어요. 브라우저 권한을 확인해 주세요'); } return; }
+    if (a === 'csadd') { openModal(csForm(null)); return; }
+    if (a === 'csedit' && c) { openModal(csForm(c)); return; }
+    if (a === 'cssave') {
+      var args = { name: (document.getElementById('csf_name') || {}).value, phone: (document.getElementById('csf_phone') || {}).value, all: !!(document.getElementById('csf_all') || {}).checked, title: (document.getElementById('csf_title') || {}).value }; if (t.dataset.id) args.id = t.dataset.id;
+      t.disabled = true; j = await capi('adm_save', args); t.disabled = false;
+      if (!j || !j.ok) { toast((j && j.error) || '저장하지 못했어요'); return; }
+      closeModal(); toast(t.dataset.id ? '저장했어요' : '등록했어요. [전용 링크 복사]로 링크를 보내 주세요'); csLoad(); return;
+    }
+    if (a === 'csreset' && c) {
+      if (!confirm(c.name + ' ' + (c.title || '상담실장') + '님의 전용 링크를 새로 만들까요?\n옛 링크는 못 쓰게 되고, 로그인된 기기가 모두 풀려요. 새 링크를 다시 보내 주셔야 해요.')) return;
+      j = await capi('adm_reset', { id: v }); if (!j || !j.ok) { toast((j && j.error) || '새로 만들지 못했어요'); return; }
+      try { navigator.clipboard.writeText(CS_PAGE + '?k=' + j.key); toast('새 링크를 만들어 복사했어요'); } catch (er) { toast('새 링크를 만들었어요. [전용 링크 복사]를 눌러 주세요'); } csLoad(); return;
+    }
+    if (a === 'csactive' && c) {
+      var on = t.dataset.on === '1';
+      if (!on && !confirm(c.name + ' 님을 사용 중지할까요? 바로 로그아웃되고 들어올 수 없어요. (담당 배정은 그대로 남아요)')) return;
+      j = await capi('adm_active', { id: v, active: on }); if (!j || !j.ok) { toast((j && j.error) || '바꾸지 못했어요'); return; } toast(on ? '다시 사용해요' : '사용 중지했어요'); csLoad(); return;
+    }
+    if (a === 'csdel' && c) {
+      if (!confirm(c.name + ' 님을 삭제할까요?\n담당 배정이 모두 사라지고 되돌릴 수 없어요. (이미 쓴 상담 기록은 남아요)')) return;
+      j = await capi('adm_del', { id: v }); if (!j || !j.ok) { toast((j && j.error) || '삭제하지 못했어요'); return; } toast('삭제했어요'); csLoad(); return;
+    }
+    if (a === 'csassign' && c) { openModal(csAssignHtml(c)); csCount(); return; }
+    if (a === 'csall') {
+      var bx = Array.prototype.filter.call(document.querySelectorAll('[data-csk]'), function (b) { return b.dataset.csc === v && b.closest('.csr').style.display !== 'none'; }), allOn = bx.every(function (b) { return b.checked; });
+      bx.forEach(function (b) { b.checked = !allOn; }); csCount(); return;
+    }
+    if (a === 'csasave') {
+      var sids = Array.prototype.map.call(document.querySelectorAll('[data-csk]:checked'), function (b) { return b.dataset.csk; });
+      t.disabled = true; j = await capi('adm_assign', { id: v, sids: sids }); t.disabled = false;
+      if (!j || !j.ok) { toast((j && j.error) || '저장하지 못했어요'); return; }
+      closeModal(); toast('담당 학생 ' + j.n + '명을 저장했어요'); csLoad(); return;
+    }
+  });
 })();

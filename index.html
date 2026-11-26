@@ -563,7 +563,7 @@ function renderLogin(){
     '<form class="lform" data-form="login" autocomplete="off"><div class="fld"><label>'+(role==='parent'?'자녀 이름':'내 이름')+'</label><input type="text" id="lname" placeholder="이름" autocomplete="off" value="'+esc(L.nm||'')+'"></div>'+
     '<div class="fld"><label>학부모님 전화번호 뒤 4자리</label><input type="password" id="lpin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></div>'+
     '<div class="lerr">'+esc(L.err||'')+'</div><button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'들어가기')+'</button></form>'+
-    (mc?'':'<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">운영진</button> 로그인</div>');
+    (mc?'':'<div class="staffln">선생님은 <button class="link" data-a="lstaff" data-v="admin">원장</button> · <button class="link" data-a="lstaff" data-v="ta">운영진</button> 로그인 · <a class="link" href="counsel.html" style="text-decoration:underline">상담실장 입구</a></div>');
   }else{
    h+='<form class="lform" data-form="staff" autocomplete="off"><div class="fld"><label>'+(L.staff==='admin'?'원장':'운영진')+' 비밀번호</label><input type="password" id="lpw" placeholder="비밀번호" autocomplete="off"></div><div class="lerr">'+esc(L.err||'')+'</div>'+
     '<button class="btn" type="submit" style="width:100%"'+(L.busy?' disabled':'')+'>'+(L.busy?'확인 중…':'로그인')+'</button></form><div class="staffln"><button class="link" data-a="lstaffback">← 학생 · 학부모 로그인으로</button></div>';
