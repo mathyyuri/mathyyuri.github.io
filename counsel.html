@@ -169,21 +169,17 @@ textarea.inp{min-height:110px;resize:vertical}
   var deferredInstall = window.__bip || null;
   function isStandalone() { try { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; } }
   function isPC() { return !/iPhone|iPad|iPod|Android/.test(navigator.userAgent || ''); }
-  function instHtml() { return isStandalone() ? '' : '<div class="instrow">' + (isPC() ? '<button type="button" data-a="getlnk">바탕화면 바로가기 받기</button>' : '<button type="button" data-a="inst">앱으로 설치하기</button>') + '</div>'; }     // 컴퓨터는 바로가기, 휴대폰은 앱 설치
+  function instHtml() { return isStandalone() ? '' : '<div class="instrow"><button type="button" data-a="inst">' + (isPC() ? '바탕화면에 설치하기' : '앱으로 설치하기') + '</button></div>'; }     // 컴퓨터는 바로가기, 휴대폰은 앱 설치
   function getShortcut() {      // 바로가기 파일을 내려받아요(.url 파일은 브라우저가 막아서, 누르면 이 주소로 바로 이동하는 작은 .html 파일로 만들어요)
     var url = location.origin + '/counsel.html', html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>MATHY YURI</title><meta http-equiv="refresh" content="0;url=' + url + '"></head><body style="font-family:sans-serif;text-align:center;padding-top:20vh"><p>학생상담 화면으로 이동 중이에요…</p><p><a href="' + url + '">자동으로 안 넘어가면 여기를 눌러 주세요</a></p><script>location.replace("' + url + '")<' + '/script></body></html>', blob = new Blob([html], { type: 'text/html' }), a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'MATHY YURI.html'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">바로가기를 받았어요</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>브라우저 아래쪽(또는 오른쪽 위)에 <b>"MATHY YURI"</b> 파일이 받아졌어요</div></div><div class="hw3" style="font-size:16px"><b class="n">2</b><div>그 파일을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓으면 끝!</b> 더블클릭하면 브라우저에서 바로 열려요</div></div><div class="muted sm" style="margin-top:6px">파일 이름이 "MATHY YURI"(.html)이면 정상이에요. 지금 로그인한 브라우저로 열면 로그인이 그대로 유지돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
   }
   function instGuide() {
-    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), and = /Android/.test(ua), edge = /Edg\//.test(ua), steps;
-    if (ios) steps = ['아래 <b>공유 버튼(네모에 화살표)</b>을 누르고 <b>"홈 화면에 추가"</b>를 눌러요 <span class="muted sm">(Safari로 열어야 해요)</span>'];
-    else if (and) steps = ['오른쪽 위 <b>점 세 개(⋮)</b>를 누르고 <b>"앱 설치"</b>(또는 "홈 화면에 추가")를 눌러요'];
-    else steps = [edge ? '오른쪽 위 <b>⋯</b> → <b>앱</b> → <b>"이 사이트를 앱으로 설치"</b>를 눌러요' : '주소창 맨 오른쪽의 <b>설치 아이콘</b>(모니터에 화살표)을 누르고 <b>[설치]</b>를 눌러요',
-      '<b>설치 아이콘이 안 보이면:</b> 주소창 맨 앞의 <b>자물쇠 모양</b>을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓아요.</b> 더블클릭하면 바로 열리고, 로그인도 그대로예요'];
-    return '<h3 style="margin:0 0 6px;font-family:var(--serif)">' + (ios || and ? '홈 화면에 아이콘 만들기' : '바탕화면에 아이콘 만들기') + '</h3>' +
-      steps.map(function (t, i) { return '<div class="hw3" style="font-size:16px"><b class="n">' + (i + 1) + '</b><div>' + t + '</div></div>'; }).join('') +
-      '<div class="muted sm" style="margin-top:6px">한 번 로그인하면 계속 자동 로그인돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), and = /Android/.test(ua);
+    if (ios) return '<h3 style="margin:0 0 6px;font-family:var(--serif)">홈 화면에 아이콘 만들기</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>아래 <b>공유 버튼(네모에 화살표)</b>을 누르고 <b>"홈 화면에 추가"</b>를 눌러요 <span class="muted sm">(Safari로 열어야 해요)</span></div></div><div class="muted sm" style="margin-top:6px">한 번 로그인하면 계속 자동 로그인돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+    if (and) return '<h3 style="margin:0 0 6px;font-family:var(--serif)">홈 화면에 아이콘 만들기</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div><b>크롬</b>에서 오른쪽 위 <b>점 세 개(⋮)</b> → <b>"앱 설치"</b>(또는 "홈 화면에 추가")를 눌러요</div></div><div class="muted sm" style="margin-top:6px">한 번 로그인하면 계속 자동 로그인돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+    return '<h3 style="margin:0 0 6px;font-family:var(--serif)">바탕화면에 설치하기</h3><div class="muted" style="margin-bottom:8px">이 브라우저에서는 설치 창을 바로 띄울 수 없어요. <b>크롬 또는 엣지</b>에서 이 주소를 다시 열어 [바탕화면에 설치하기]를 눌러 주세요.</div><div class="hw3" style="font-size:15px"><b class="n">!</b><div>이미 설치했다면 <b>시작 메뉴</b>에서 <b>"MATHY YURI"</b>를 찾아 열어 보세요. (시작 메뉴 → 마우스 오른쪽 → "바탕 화면에 바로 가기 만들기")</div></div><div class="muted sm" style="margin-top:8px">설치가 안 되는 브라우저라면 임시로 바로가기 파일을 받을 수도 있어요 (브라우저 아이콘으로 보여요).</div><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn sec" data-a="getlnk" type="button">바로가기 파일 받기</button><button class="btn gh" data-a="close" type="button">닫기</button></div>';
   }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; window.__bip = e; });
   window.addEventListener('appinstalled', function () { deferredInstall = null; var r = document.querySelector('.instrow'); if (r) r.remove(); toast('앱이 설치됐어요. 홈 화면에서 열어 주세요'); });
@@ -673,7 +669,8 @@ textarea.inp{min-height:110px;resize:vertical}
     if (a === 'inst') {
       var uaI = navigator.userAgent || '', iosI = /iPhone|iPad|iPod/.test(uaI), inapp = /KAKAOTALK|NAVER\(|Instagram|FBAN|FBAV|Line\//i.test(uaI);
       if (!deferredInstall && !iosI && !inapp) { toast('설치 준비 중…'); for (var wi = 0; wi < 12 && !deferredInstall && !window.__bip; wi++) await new Promise(function (r) { setTimeout(r, 250); }); if (!deferredInstall) deferredInstall = window.__bip || null; }
-      if (deferredInstall) { var dp = deferredInstall; deferredInstall = null; window.__bip = null; try { dp.prompt(); await dp.userChoice; } catch (er) {} }
+      if (deferredInstall) { var dp = deferredInstall; deferredInstall = null; window.__bip = null; var ch = null; try { dp.prompt(); ch = await dp.userChoice; } catch (er) {}
+        if (ch && ch.outcome === 'accepted' && isPC()) openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">설치했어요 🎉</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>바탕화면 또는 <b>시작 메뉴</b>에서 <b>"MATHY YURI"</b>를 열어 보세요</div></div><div class="hw3" style="font-size:16px"><b class="n">2</b><div>바탕화면에 안 보이면 시작 메뉴의 MATHY YURI를 <b>마우스 오른쪽 → "바탕 화면에 바로 가기 만들기"</b>(또는 "시작에 고정")를 눌러요</div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>'); }
       else if (inapp && /Android/.test(uaI)) openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">크롬으로 열어 주세요</h3><div class="muted" style="margin-bottom:10px">지금은 카카오톡 같은 앱 안에서 열려 있어서 설치가 안 돼요. 크롬으로 열면 설치 버튼이 바로 돼요.</div><a class="btn" style="display:block;text-align:center" href="intent://' + location.host + '/counsel.html#Intent;scheme=https;package=com.android.chrome;end">크롬으로 열기</a><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
       else openModal(instGuide());
       return;
