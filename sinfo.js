@@ -329,7 +329,7 @@
     var d = Q.csd, h = '<button class="btn gh sm3" data-sm="csback" type="button">← 학생정보로</button>';
     h += '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px">상담실장 관리</h3>' +
       '<div class="sm" style="line-height:1.7">상담실장마다 <b>전용 링크</b>가 하나씩 있어요. 그 링크를 폰에서 한 번 열면 <b>바로 로그인</b>되고, 그 폰에서는 계속 로그인된 상태예요. 링크를 잃어버렸을 땐 <b>이름 + 전화번호 뒤 4자리</b>로도 들어와요. <b>담당으로 정해 준 학생만</b> 보여요(서버가 막아요). 부원장·데스크처럼 전체가 필요한 사람은 <b>전체 학생 보기</b>를 켜면 돼요. 화면은 왼쪽 학생 명단(가나다) → 학생을 누르면 오른쪽에 그 학생의 수업 현황·상담 내용이 보이는 한 가지뿐이에요.</div>' +
-      '<div class="smbtn"><button class="btn" data-sm="csadd" type="button">+ 등록 (상담실장·부원장·조교)</button></div></div>';
+      '<div class="smbtn"><button class="btn" data-sm="csadd" type="button">+ 등록 (원장·상담실장·부원장·조교)</button></div></div>';
     if (Q.cse) return h + '<div class="note">' + esc(Q.cse) + '</div>';
     if (!d) return h + '<div class="card"><div class="empty">불러오는 중…</div></div>';
     if (!d.counselors.length) return h + '<div class="card"><div class="empty">아직 등록한 상담실장이 없어요</div></div>';
@@ -341,7 +341,7 @@
         '<button class="btn gh sm3" data-sm="csactive" data-v="' + esc(c.id) + '" data-on="' + (c.active ? '0' : '1') + '" type="button">' + (c.active ? '사용 중지' : '다시 사용') + '</button>' +
         '<button class="btn dng sm3" data-sm="csdel" data-v="' + esc(c.id) + '" type="button">삭제</button></div></div>';
     });
-    return h + csLeadCard() + csPlanCard() + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+    return h + csLeadCard() + csPlanCard() + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(원장·상담실장·부원장·조교)이 붙어요.</div>';
   }
   function csLeadCard() {
     var L = Q.csld; if (!L) return '';
@@ -380,8 +380,8 @@
       '<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn sec" data-sm="cspadd" type="button">+ 회차 추가</button><button class="btn" data-sm="cspsave" data-cls="' + esc(cls || '') + '" type="button">저장</button><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>';
   }
   function csForm(c) {
-    return '<h3>' + (c ? '이름·직함·번호 고치기' : '상담실장·부원장·조교 등록') + '</h3><div class="smf"><label class="l">이름 (직함은 빼고 · 로그인할 때 쓰는 이름이에요 · 중복 불가)</label><input type="text" id="csf_name" maxlength="20" value="' + esc(c ? c.name : '') + '" placeholder="예: 김지은">' +
-      '<label class="l">직함 (화면에는 "이름 직함님"으로 보여요)</label><select id="csf_title">' + ['상담실장', '부원장', '조교'].map(function (t) { return '<option value="' + t + '"' + ((c ? c.title : '상담실장') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>' +
+    return '<h3>' + (c ? '이름·직함·번호 고치기' : '원장·상담실장·부원장·조교 등록') + '</h3><div class="smf"><label class="l">이름 (직함은 빼고 · 로그인할 때 쓰는 이름이에요 · 중복 불가)</label><input type="text" id="csf_name" maxlength="20" value="' + esc(c ? c.name : '') + '" placeholder="예: 김지은">' +
+      '<label class="l">직함 (화면에는 "이름 직함님"으로 보여요)</label><select id="csf_title">' + ['원장', '상담실장', '부원장', '조교'].map(function (t) { return '<option value="' + t + '"' + ((c ? c.title : '상담실장') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>' +
       '<label class="l">전화번호 (전체나 뒤 4자리)</label><input type="text" id="csf_phone" maxlength="20" inputmode="numeric" value="' + esc(c ? c.p4 : '') + '" placeholder="예: 010-1234-5678">' +
       '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:14px;cursor:pointer"><input type="checkbox" id="csf_all"' + (c && c.all ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--acc);margin-top:2px"> <span><b>전체 학생 보기</b> <span class="muted sm">(부원장·데스크처럼 모든 학생이 필요한 사람은 켜 주세요. 끄면 담당으로 배정한 학생만 보여요)</span></span></label>' +
       (c ? '' : '<div class="muted sm" style="margin-top:8px">등록하면 그 사람만의 전용 링크가 만들어져요. [전용 링크 복사]로 복사해서 개인 메시지로 보내 주세요.</div>') +
