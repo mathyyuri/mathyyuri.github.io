@@ -144,6 +144,7 @@ textarea.inp{min-height:110px;resize:vertical}
   var S = { todo: null, hv: false, tmore: {}, leads: null, lid: null, lcard: null, lopen: false, lall: false, plan: null, pcls: '', pv: false, tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function an(n) { n = String(n == null ? '' : n); return /(원장|상담실장|부원장|조교)$/.test(n) ? n + '님' : n; }     // 직함으로 끝나는 이름에는 '님'을 붙여 보여요 (예: 김지은 부원장 → 김지은 부원장님)
   function nl(t) { return esc(t).replace(/\n/g, '<br>'); }
   function tel(p) { return String(p || '').replace(/[^0-9+]/g, ''); }
   function dstr(ds) { if (!ds) return ''; var d = new Date(String(ds).slice(0, 10) + 'T00:00'); return (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
@@ -249,7 +250,7 @@ textarea.inp{min-height:110px;resize:vertical}
     h += '<div class="card"><div class="hd"><h2>' + esc(l.name) + '</h2><span class="sd ' + esc(l.status) + '" style="font-size:13px;padding:2px 12px">' + esc(LST[l.status] || '') + '</span><span class="muted">' + esc([l.grade, l.school].filter(Boolean).join(' · ')) + '</span></div>';
     if (l.phone) h += '<div class="bt"><a class="btn rose" href="tel:' + esc(tel(l.phone)) + '">📞 학부모 ' + esc(l.phone) + '</a><button class="btn gh" data-a="copy" data-v="' + esc(l.phone) + '" type="button">번호 복사</button></div>';
     else h += '<div class="muted sm" style="margin-top:6px">전화번호가 아직 없어요 ([정보 수정]에서 넣어 주세요)</div>';
-    h += '<div class="kv"><span>문의 경로</span><span>' + esc(LSRC[l.source] || '') + '</span><span>관심 수업</span><span>' + esc(l.interest || '-') + '</span><span>등록</span><span>' + esc(l.by) + ' · ' + esc(String(l.at).slice(0, 10)) + '</span></div>';
+    h += '<div class="kv"><span>문의 경로</span><span>' + esc(LSRC[l.source] || '') + '</span><span>관심 수업</span><span>' + esc(l.interest || '-') + '</span><span>등록</span><span>' + esc(an(l.by)) + ' · ' + esc(String(l.at).slice(0, 10)) + '</span></div>';
     if (lock) h += '<div class="note" style="margin-top:10px;background:#e3f1ea;border-color:#bfe0d2;color:#2f7a67"><b>수강생으로 등록된 학생이에요.</b> 앞으로는 왼쪽 수강생 명단에서 보세요.</div>';
     else {
       h += '<h4 style="margin:12px 0 2px;font-size:13px;color:var(--mut)">상태</h4><div class="stb">' + ['inq', 'booked', 'done', 'enrolled', 'hold', 'lost'].map(function (k) { return '<button type="button" data-a="lstatus" data-v="' + k + '" class="' + (l.status === k ? 'on' : '') + '">' + LST[k] + '</button>'; }).join('') + '</div>';
@@ -262,13 +263,13 @@ textarea.inp{min-height:110px;resize:vertical}
     h += '<div class="card"><h3>상담내역 <span class="badge">' + co.length + '건</span></h3>';
     if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
     co.forEach(function (n) {
-      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
+      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
         (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue) + ' <button type="button" class="btn gh s3" style="padding:2px 10px" data-a="fdueset" data-k="' + (S.lid ? 'lead' : 'stu') + '" data-v="' + n.id + '">기한 정하기</button>') + '</div>' : '') + noteBtns(n) + '</div></div>';
     });
     h += '</div>';
     if (sp.length) {
       h += '<div class="card"><h3>메모 <span class="badge">' + sp.length + '건</span></h3>';
-      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
+      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
       h += '</div>';
     }
     return h + '</div>';
@@ -277,7 +278,7 @@ textarea.inp{min-height:110px;resize:vertical}
     l = l || {};
     var sel = function (id, map, cur) { return '<select class="inp" id="' + id + '">' + Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + map[k] + '</option>'; }).join('') + '</select>'; };
     var classes = (S.plan && S.plan.classes ? S.plan.classes : []).map(function (c) { return '<option value="' + esc(c.cls) + '">'; }).join('');
-    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (l.id ? '문의 학생 정보 수정' : '문의·관심 학생 추가') + '</h3><div class="muted sm">등록한 사람: ' + esc(who()) + ' (자동)</div>' +
+    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (l.id ? '문의 학생 정보 수정' : '문의·관심 학생 추가') + '</h3><div class="muted sm">등록한 사람: ' + esc(an(who())) + ' (자동)</div>' +
       '<label class="lbl">이름 *</label><input class="inp" id="lf_name" maxlength="20" value="' + esc(l.name || '') + '" placeholder="예: 김민수">' +
       '<label class="lbl">학부모 전화번호 (뒤 4자리만 알아도 돼요)</label><input class="inp" id="lf_phone" type="tel" maxlength="20" value="' + esc(l.phone || '') + '" placeholder="예: 010-1234-5678">' +
       '<div class="cols"><div><label class="lbl">학교</label><input class="inp" id="lf_school" maxlength="30" value="' + esc(l.school || '') + '" placeholder="예: 서현중"></div><div><label class="lbl">학년</label><input class="inp" id="lf_grade" maxlength="20" value="' + esc(l.grade || '') + '" placeholder="예: 예비고1"></div></div>' +
@@ -304,7 +305,7 @@ textarea.inp{min-height:110px;resize:vertical}
     var h = '<div class="card" style="' + (pin ? 'border:1.5px solid #e7b5ad;background:#fff8f6' : '') + '"><h3>' + (pin ? '<span style="color:var(--bad)">⚠</span> ' : '') + '특이사항 <span class="badge">' + sp.length + '건</span></h3>';
     sp.forEach(function (n, i) {
       h += '<div style="padding:7px 0;' + (i ? 'border-top:1px solid var(--line)' : '') + '">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span style="' + (n.pinned ? 'font-weight:700' : '') + '">' + nl(n.body) + '</span>' +
-        '<div class="muted sm" style="margin-top:2px">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + ' · ' + esc(dstr(n.date)) + '</div>' + noteBtns(n) + '</div>';
+        '<div class="muted sm" style="margin-top:2px">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + ' · ' + esc(dstr(n.date)) + '</div>' + noteBtns(n) + '</div>';
     });
     return h + '</div>';
   }
@@ -338,7 +339,7 @@ textarea.inp{min-height:110px;resize:vertical}
     h += '<div class="card"><h3>상담내역 <span class="badge">' + co.length + '건</span></h3>';
     if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
     co.forEach(function (n) {
-      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
+      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
         (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue) + ' <button type="button" class="btn gh s3" style="padding:2px 10px" data-a="fdueset" data-k="' + (S.lid ? 'lead' : 'stu') + '" data-v="' + n.id + '">기한 정하기</button>') + '</div>' : '') + noteBtns(n) + '</div></div>';
     });
     h += '</div>';
@@ -347,7 +348,7 @@ textarea.inp{min-height:110px;resize:vertical}
     var hSpec = specCard(sp);
     if (false) {
       h += '<div class="card"><h3>특이사항 <span class="badge">' + sp.length + '건</span></h3>';
-      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
+      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
       h += '</div>';
     }
     /* 조교평가 (보기만) */
@@ -404,7 +405,7 @@ textarea.inp{min-height:110px;resize:vertical}
     h += tsec('items', '해야 할 일 <span class="muted sm" style="font-weight:600">기한 빠른 순</span>', 'w', items, function (it) {
       if (it.t === 'task') {
         var k = it.x, who = k.sid ? '<button type="button" class="nm" style="font-size:13px;font-weight:700;color:var(--acc)" data-a="open" data-v="' + esc(k.sid) + '">' + esc(k.sname) + '</button> · ' : (k.lid ? '<button type="button" class="nm" style="font-size:13px;font-weight:700;color:var(--acc)" data-a="lopen" data-v="' + esc(k.lid) + '">' + esc(k.lname) + '</button> · ' : '');
-        return '<div class="td"><div class="m"><div class="fw" style="font-size:15.5px">' + esc(k.title) + '</div><div class="sb">' + dueChip(k.due) + ' ' + who + esc(k.by) + '</div></div><div class="ac"><button type="button" class="btn sec s3" data-a="taskdone" data-v="' + esc(k.id) + '">완료</button>' +
+        return '<div class="td"><div class="m"><div class="fw" style="font-size:15.5px">' + esc(k.title) + '</div><div class="sb">' + dueChip(k.due) + ' ' + who + esc(an(k.by)) + '</div></div><div class="ac"><button type="button" class="btn sec s3" data-a="taskdone" data-v="' + esc(k.id) + '">완료</button>' +
           (k.mine ? '<button type="button" class="btn gh s3" data-a="taskedit" data-v="' + esc(k.id) + '">고치기</button>' : '') + '</div></div>';
       }
       var f = it.x, open = f.k === 'lead' ? 'lopen' : 'open', id = f.k === 'lead' ? f.lid : f.sid;
@@ -432,7 +433,7 @@ textarea.inp{min-height:110px;resize:vertical}
     k = k || {};
     var names = (S.list || []).map(function (x) { return x.name; }).concat((S.leads || []).filter(function (l) { return l.status !== 'enrolled' && l.status !== 'lost'; }).map(function (l) { return l.name; }));
     var opts = names.filter(function (v, i) { return names.indexOf(v) === i; }).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('');
-    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (k.id ? '할 일 고치기' : '할 일 추가') + '</h3><div class="muted sm">만든 사람: ' + esc(who()) + ' · 팀 모두가 같이 볼 수 있어요(완료 체크는 누구나, 고치기는 만든 사람만)</div>' +
+    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (k.id ? '할 일 고치기' : '할 일 추가') + '</h3><div class="muted sm">만든 사람: ' + esc(an(who())) + ' · 팀 모두가 같이 볼 수 있어요(완료 체크는 누구나, 고치기는 만든 사람만)</div>' +
       '<label class="lbl">할 일</label><input class="inp" id="tk_title" maxlength="120" value="' + esc(k.title || '') + '" placeholder="예: 공수내모 교재 주문 확인">' +
       '<label class="lbl">기한 (선택)</label><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input class="inp" id="tk_due" type="date" style="width:auto" value="' + esc(k.due || '') + '">' + [['오늘', 0], ['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7]].map(function (x) { return '<button type="button" class="btn gh s3" data-a="duq" data-t="tk_due" data-v="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<button type="button" class="btn gh s3" data-a="duq" data-t="tk_due" data-v="x">기한 없음</button></div>' +
       (k.id ? '' : '<label class="lbl">학생 연결 (선택 · 이름을 고르면 그 학생 카드로 바로 갈 수 있어요)</label><input class="inp" id="tk_who" list="tk_names" maxlength="20" autocomplete="off" placeholder="학생·문의 학생 이름"><datalist id="tk_names">' + opts + '</datalist>') +
@@ -487,7 +488,7 @@ textarea.inp{min-height:110px;resize:vertical}
   /* ── 기록 쓰기 창 ── */
   function formHtml(k, n) {
     n = n || {};
-    var h = '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (k === 'consult' ? '상담 기록' : '특이사항') + (n.id ? ' 고치기' : ' 추가') + '</h3><div class="muted sm">쓴 사람: ' + esc(who()) + ' (자동으로 남아요)</div>';
+    var h = '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (k === 'consult' ? '상담 기록' : '특이사항') + (n.id ? ' 고치기' : ' 추가') + '</h3><div class="muted sm">쓴 사람: ' + esc(an(who())) + ' (자동으로 남아요)</div>';
     if (k === 'consult') {
       h += '<label class="lbl">날짜</label><input class="inp" type="date" id="f_date" value="' + esc(String(n.date || today()).slice(0, 10)) + '">' +
         '<label class="lbl">방법</label><select class="inp" id="f_via">' + Object.keys(VIA).map(function (x) { return '<option value="' + x + '"' + ((n.via || 'phone') === x ? ' selected' : '') + '>' + VIA[x] + '</option>'; }).join('') + '</select>' +

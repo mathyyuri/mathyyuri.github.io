@@ -38,6 +38,7 @@
   /* ── 작은 도구 ── */
   function dstr(ds) { if (!ds) return ''; var d = new Date(String(ds).slice(0, 10) + 'T00:00'); return (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
   function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function an(n) { n = String(n == null ? '' : n); return /(원장|상담실장|부원장|조교)$/.test(n) ? n + '님' : n; }     // 직함으로 끝나는 이름에는 '님'을 붙여 보여요 (예: 김지은 부원장 → 김지은 부원장님)
   function nl(t) { return esc(t).replace(/\n/g, '<br>'); }
   function tel(p) { return String(p || '').replace(/[^0-9+]/g, ''); }
   function stars(n) { return '<span style="color:#d49a1a;letter-spacing:1px">' + '★'.repeat(n) + '</span><span style="color:#d8d2c6;letter-spacing:1px">' + '★'.repeat(5 - n) + '</span>'; }
@@ -73,6 +74,13 @@
     if (!Q.feed) loadFeed();
   };
 
+  function dueChip(due) {
+    if (!due) return '';
+    var n = Math.round((new Date(due + 'T00:00') - new Date(today() + 'T00:00')) / 86400000), dl = esc(dstr(due));
+    var st = n < 0 ? 'background:#c2503f;color:#fff' : n === 0 ? 'background:#e8a63a;color:#fff' : n <= 3 ? 'background:#fbf3dc;color:#a8760f' : 'background:#eee;color:#777';
+    return '<span class="smb" style="' + st + '">' + (n < 0 ? '기한 ' + (-n) + '일 지남 · ' + dl : n === 0 ? '오늘까지' : 'D-' + n + ' · ' + dl) + '</span>';
+  }
+
   /* ── CSS ── */
   var css = document.createElement('style');
   css.textContent =
@@ -107,13 +115,13 @@
     var h = '';
     if (F.follows && F.follows.length) {
       h += '<div class="card"><h3 style="margin:0 0 6px">해야 할 후속 조치 <span class="badge">' + F.follows.length + '건</span></h3>' + F.follows.map(function (f) {
-        return '<div class="smk"><div class="d">' + esc(dstr(f.date)) + '</div><div class="t"><a href="#" data-sm="open" data-v="' + esc(f.sid) + '" style="color:inherit;font-weight:700">' + esc(f.name) + '</a> <span class="muted sm">' + esc(f.cls) + ' · ' + esc(f.author) + '</span><div>' + esc(f.follow) + '</div></div><button class="btn sec sm3" data-sm="follow" data-v="' + f.id + '" type="button">완료</button></div>';
+        return '<div class="smk"><div class="d">' + esc(dstr(f.date)) + '</div><div class="t"><a href="#" data-sm="open" data-v="' + esc(f.sid) + '" style="color:inherit;font-weight:700">' + esc(f.name) + '</a> <span class="muted sm">' + esc(f.cls) + ' · ' + esc(an(f.author)) + '</span><div>' + esc(f.follow) + ' ' + dueChip(f.due) + '</div></div><button class="btn sec sm3" data-sm="follow" data-v="' + f.id + '" type="button">완료</button></div>';
       }).join('') + '</div>';
     }
     if (F.recent && F.recent.length) {
       h += '<div class="card"><h3 style="margin:0 0 6px">운영진 최근 기록 <span class="muted sm">(공유)</span></h3>' + F.recent.slice(0, 20).map(function (n) {
         var kd = n.kind === 'consult' ? '상담' : n.kind === 'eval' ? '조교평가' : '특이사항', sc = n.scores ? ' ' + EV.filter(function (e) { return n.scores[e[0]]; }).map(function (e) { return e[1] + n.scores[e[0]]; }).join(' ') : '';
-        return '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><a href="#" data-sm="open" data-v="' + esc(n.sid) + '" style="color:inherit;font-weight:700">' + esc(n.name) + '</a> <span class="smb" style="background:var(--soft);color:var(--acc)">' + kd + '</span> <span class="muted sm">' + esc(n.author) + '</span><div class="sm">' + esc(n.body || '') + esc(sc) + '</div></div></div>';
+        return '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><a href="#" data-sm="open" data-v="' + esc(n.sid) + '" style="color:inherit;font-weight:700">' + esc(n.name) + '</a> <span class="smb" style="background:var(--soft);color:var(--acc)">' + kd + '</span> <span class="muted sm">' + esc(an(n.author)) + '</span><div class="sm">' + esc(n.body || '') + esc(sc) + '</div></div></div>';
       }).join('') + '</div>';
     }
     return h;
@@ -146,8 +154,8 @@
     h += '<div class="card"><h3 style="margin:0 0 6px">상담내역 <span class="badge">' + co.length + '건</span></h3>';
     if (!co.length) h += '<div class="empty" style="padding:14px">아직 상담 기록이 없어요</div>';
     co.forEach(function (n) {
-      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="smb" style="background:var(--soft);color:var(--acc)">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
-        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-sm="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:#b57c12') + '">후속: ' + esc(n.follow) + '</b></label></div>' : '') + noteBtns(n, d) + '</div></div>';
+      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="smb" style="background:var(--soft);color:var(--acc)">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
+        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-sm="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:#b57c12') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue)) + '</div>' : '') + noteBtns(n, d) + '</div></div>';
     });
     h += '</div>';
     /* 조교평가 */
@@ -158,14 +166,14 @@
     }
     if (!ev.length) h += '<div class="empty" style="padding:14px">아직 평가가 없어요</div>';
     ev.forEach(function (n) {
-      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + evLine(n.scores) + ' <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span>' + (n.body ? '<div style="margin-top:3px">' + nl(n.body) + '</div>' : '') + noteBtns(n, d) + '</div></div>';
+      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + evLine(n.scores) + ' <span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span>' + (n.body ? '<div style="margin-top:3px">' + nl(n.body) + '</div>' : '') + noteBtns(n, d) + '</div></div>';
     });
     h += '</div>';
     /* 특이사항 */
     h += '<div class="card"><h3 style="margin:0 0 6px">특이사항 <span class="badge">' + sp.length + '건</span></h3>';
     if (!sp.length) h += '<div class="empty" style="padding:14px">아직 특이사항이 없어요</div>';
     sp.forEach(function (n) {
-      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="smb" style="background:#fdecea;color:#a8453a">중요</span> ' : '') + '<span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n, d) + '</div></div>';
+      h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="smb" style="background:#fdecea;color:#a8453a">중요</span> ' : '') + '<span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n, d) + '</div></div>';
     });
     h += '</div>';
     /* 성적 */
@@ -188,7 +196,7 @@
     h += '<div class="card"><h3 style="margin:0 0 6px">출석 <span class="muted sm">(최근 2달)</span></h3><div class="smev">' + ['present', 'late', 'early', 'absent'].map(function (k) { return '<div><b>' + (at[k] || 0) + '</b><span>' + ATT[k] + '</span></div>'; }).join('') + '</div>';
     if (at.recent && at.recent.length) h += '<table class="smtbl">' + at.recent.map(function (x) { return '<tr><td class="muted" style="width:60px">' + esc(dstr(x.day)) + '</td><td><b>' + esc(ATT[x.status] || x.status) + '</b>' + (x.reason ? ' <span class="muted">· ' + esc(x.reason) + '</span>' : '') + '</td></tr>'; }).join('') + '</table>';
     h += '</div>';
-    if (d.views && d.views.length) h += '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">최근 열람: ' + d.views.map(function (v) { return esc(v.staff) + ' ' + esc(String(v.at).slice(5).replace('T', ' ')); }).join(' · ') + '</div>';
+    if (d.views && d.views.length) h += '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">최근 열람: ' + d.views.map(function (v) { return esc(an(v.staff)) + ' ' + esc(String(v.at).slice(5).replace('T', ' ')); }).join(' · ') + '</div>';
     return h;
   }
 
@@ -226,7 +234,8 @@
       h += '<label class="l">방법</label><select id="smf_via">' + Object.keys(VIA).map(function (x) { return '<option value="' + x + '"' + ((n.via || 'phone') === x ? ' selected' : '') + '>' + VIA[x] + '</option>'; }).join('') + '</select>' +
         '<label class="l">대상</label><select id="smf_who">' + Object.keys(WHO).map(function (x) { return '<option value="' + x + '"' + ((n.who || 'parent') === x ? ' selected' : '') + '>' + WHO[x] + '</option>'; }).join('') + '</select>' +
         '<label class="l">상담 내용</label><textarea id="smf_body" maxlength="2000" placeholder="무슨 얘기를 했는지, 부모님 요청·걱정거리 등">' + esc(n.body || '') + '</textarea>' +
-        '<label class="l">후속 조치 (할 일이 있으면, 끝나면 체크해요)</label><input type="text" id="smf_follow" maxlength="200" value="' + esc(n.follow || '') + '" placeholder="예: 시험 범위표 문자로 보내기">';
+        '<label class="l">후속 조치 (할 일이 있으면, 끝나면 체크해요)</label><input type="text" id="smf_follow" maxlength="200" value="' + esc(n.follow || '') + '" placeholder="예: 시험 범위표 문자로 보내기">' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px"><span class="muted sm">기한</span><input type="date" id="smf_fdue" style="width:auto" value="' + esc(n.fdue || '') + '">' + [['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7]].map(function (x) { return '<button type="button" class="btn gh sm3" data-sm="smdq" data-v="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<button type="button" class="btn gh sm3" data-sm="smdq" data-v="x">기한 없음</button></div>';
     } else if (k === 'special') {
       h += '<label class="l">내용</label><textarea id="smf_body" maxlength="1000" placeholder="알레르기, 성향, 주의할 점, 약속한 것 등">' + esc(n.body || '') + '</textarea>' +
         '<label style="display:flex;gap:8px;align-items:center;margin-top:12px;cursor:pointer"><input type="checkbox" id="smf_pin"' + (n.pinned ? ' checked' : '') + ' style="width:20px;height:20px;accent-color:var(--acc)"> <b>중요 — 카드 맨 위에 빨간 상자로 고정</b></label>';
@@ -240,7 +249,7 @@
   }
   async function save(k, id) {
     var v = function (i) { var e = document.getElementById(i); return e ? e.value : ''; }, args = { sid: Q.sid, kind: k, body: v('smf_body'), date: v('smf_date') };
-    if (k === 'consult') { args.via = v('smf_via'); args.who = v('smf_who'); args.follow = v('smf_follow'); }
+    if (k === 'consult') { args.via = v('smf_via'); args.who = v('smf_who'); args.follow = v('smf_follow'); args.follow_due = v('smf_fdue'); }
     if (k === 'special') args.pinned = !!(document.getElementById('smf_pin') || {}).checked;
     if (k === 'eval') { args.scores = {}; EV.forEach(function (e) { var r = document.querySelector('input[name="smf_' + e[0] + '"]:checked'); if (r && +r.value > 0) args.scores[e[0]] = +r.value; }); }
     if (id) args.id = id;
@@ -261,6 +270,7 @@
     var t = e.target.closest && e.target.closest('[data-sm]'); if (!t || !kind()) return;
     var a = t.dataset.sm, v = t.dataset.v, j;
     if (a === 'fchk') return;                                           // 체크박스는 change 에서
+    if (a === 'smdq') { var di = document.getElementById('smf_fdue'); if (di) { if (v === 'x') di.value = ''; else { var d0 = new Date(); d0.setDate(d0.getDate() + (+v)); di.value = d0.getFullYear() + '-' + ('0' + (d0.getMonth() + 1)).slice(-2) + '-' + ('0' + d0.getDate()).slice(-2); } } return; }
     if (t.tagName === 'A' && a !== 'open') return;
     if (a === 'open') { e.preventDefault(); Q.sid = v; Q.card = null; Q.err = null; S.tab = 'sinfo'; render(0); return; }
     if (a === 'back') { Q.sid = null; Q.card = null; Q.err = null; Q.feed = null; Q.listAt = 0; render(0); return; }
@@ -348,7 +358,7 @@
     var h = '<div class="card"><h3 style="margin:0 0 4px">문의·관심 학생 → 수강생 등록 <span class="badge">' + (L.pending || []).length + '명 대기</span></h3><div class="muted sm" style="margin-bottom:6px">상담 화면에서 상태를 <b>"등록"</b>으로 바꾼 문의 학생이 여기에 떠요. [수강생으로 등록]을 누르면 수강생 명단에 이름·학교·전화가 그대로 들어가고, 문의 때 쓴 상담 기록도 학생 카드로 따라가요. (문의 학생 전체 ' + L.total + '명)</div>';
     if (!(L.pending || []).length) return h + '<div class="empty" style="padding:10px">등록 대기 중인 문의 학생이 없어요</div></div>';
     (L.pending || []).forEach(function (x) {
-      h += '<div class="smk"><div class="t"><b>' + esc(x.name) + '</b> <span class="muted sm">' + esc([x.grade, x.school].filter(Boolean).join(' · ')) + (x.interest ? ' · 관심 ' + esc(x.interest) : '') + '</span><div class="muted sm">☎ ' + (x.phone ? esc(x.phone) : '<b style="color:#a8453a">전화번호 없음 (상담 화면에서 넣어 주세요)</b>') + ' · 등록 ' + esc(x.by) + ' · 상담 기록 ' + x.notes + '건</div></div>' +
+      h += '<div class="smk"><div class="t"><b>' + esc(x.name) + '</b> <span class="muted sm">' + esc([x.grade, x.school].filter(Boolean).join(' · ')) + (x.interest ? ' · 관심 ' + esc(x.interest) : '') + '</span><div class="muted sm">☎ ' + (x.phone ? esc(x.phone) : '<b style="color:#a8453a">전화번호 없음 (상담 화면에서 넣어 주세요)</b>') + ' · 등록 ' + esc(an(x.by)) + ' · 상담 기록 ' + x.notes + '건</div></div>' +
         '<button class="btn sm3" data-sm="csldreg" data-v="' + esc(x.id) + '" type="button">수강생으로 등록</button><button class="btn dng sm3" data-sm="csldx" data-v="' + esc(x.id) + '" type="button">삭제</button></div>';
     });
     return h + '</div>';
