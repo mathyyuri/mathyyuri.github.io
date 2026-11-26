@@ -536,7 +536,7 @@ function render(y){
  if(!S.uid){document.body.dataset.ac=S.L.ac||'';renderLogin();}
  else{document.body.dataset.ac=inMc()?'mc':curAc();renderMain();}
  window.scrollTo(0,keep);
- setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();setTimeout(()=>{if(typeof shopAfter==='function')shopAfter();if(typeof sinfoAfter==='function')sinfoAfter();},0);
+ setTimeout(loadImages,0);setTimeout(loadMsgFiles,0);setTimeout(loadPostMedia,0);setTimeout(loadReacts,0);paintViewBar();setTimeout(()=>{if(typeof shopAfter==='function')shopAfter();if(typeof sinfoAfter==='function')sinfoAfter();if(typeof mcAfter==='function')mcAfter();},0);
 }
 function saveSession(){}
 
@@ -579,7 +579,7 @@ function renderLogin(){
 const TABS=[['home','<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>','홈'],['feed','<svg viewBox="0 0 24 24"><path d="M5 4h11v16H7a2 2 0 0 1-2-2zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>','소식'],['lesson','<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2zM5 19V5M9 7h6"/></svg>','수업'],['mission','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>','미션'],['exam','<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>','누적성적'],['msg','<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>','메시지']];
 const TAB_ORDER=['home','feed','mission','exam','lesson','msg'];TABS.sort((a,b)=>TAB_ORDER.indexOf(a[0])-TAB_ORDER.indexOf(b[0]));
 const tabsBase=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
-const tabsNow=()=>{let L=tabsBase();if(typeof shopTab==='function')L=shopTab(L);if(typeof sinfoTab==='function')L=sinfoTab(L);return L;};   /* 공수내모 반 '교재 구매' 탭은 shop.js 가 끼워 넣어요 */
+const tabsNow=()=>{let L=tabsBase();if(typeof shopTab==='function')L=shopTab(L);if(typeof sinfoTab==='function')L=sinfoTab(L);if(typeof mcTabs==='function')L=mcTabs(L);return L;};   /* 공수내모 반 '교재 구매' 탭은 shop.js 가 끼워 넣어요 */
 function badgeFor(t){const u=me();
  if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
  if(t==='msg')return unreadMsgs();return 0;}
@@ -589,22 +589,22 @@ function unreadMsgs(){const u=me();let n=0;
   else{const my=stuOf(u);if(my.id!==sid||(u.role==='student'?'student':'parent')!==kind)return;DB.msgs[k].forEach(m=>{if(m.f==='s'&&!m.rdU)n++;});}});
  return n;}
 const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',shop:'books',sinfo:'students',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
-function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크',shop:(typeof shopTitle==='function'?shopTitle():'교재 구매'),sinfo:'학생 정보'}[t];}
+function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크',shop:(typeof shopTitle==='function'?shopTitle():'교재 구매'),sinfo:'학생 정보',mcnew:'수강생 등록'}[t]||(String(t).indexOf('mc:')===0&&U[String(t).slice(3)]?U[String(t).slice(3)].name:'');}
 function renderMain(){
- if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'&&S.tab!=='sinfo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}
+ if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'&&S.tab!=='sinfo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}if(typeof mcGuard==='function')mcGuard();
  const u=me(),a=AC[curAc()],st=stuOf(u);
  const dn=inMc()?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
  const sub=isStaff()?(ROLE[u.role]+' · '+dn):((isMc(st.cls)?'MATHY CLASS':st.cls)+' · '+st.name+(u.role==='parent'?' 학부모':' 학생'));
  const acsw=u.role==='admin'?'<div class="acsw">'+Object.values(AC).map(x=>'<button class="'+(x.id===curAc()&&!S.mc?'on':'')+'" data-a="ac" data-v="'+x.id+'">'+x.name+'</button>').join('')+'<button class="'+(S.mc?'on':'')+'" data-a="ac" data-v="mc">MATHY CLASS</button></div>':'';
  let nav='';tabsNow().forEach(t=>{const b=badgeFor(t[0]);nav+='<button class="'+(S.tab===t[0]?'on':'')+'" data-a="tab" data-v="'+t[0]+'"><span class="ic">'+t[1]+'</span>'+t[2]+(b?'<span class="nb">'+b+'</span>':'')+'</button>';});
- const body=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend,shop:(typeof vShop==='function'?vShop:()=>''),sinfo:(typeof vSinfo==='function'?vSinfo:()=>'')})[S.tab]();
+ const bmap=({home:vHome,feed:vFeed,lesson:vLesson,mission:vMission,exam:vExam,msg:vMsg,admin:vAdmin,todo:vTodo,att:vAttend,shop:(typeof vShop==='function'?vShop:()=>''),sinfo:(typeof vSinfo==='function'?vSinfo:()=>'')});const body=(bmap[S.tab]||(typeof mcBody==='function'?mcBody(S.tab):null)||(()=>''))();
  $('#app').innerHTML=
  '<div class="shell"><aside class="side"><div class="logo">MATHY <i>YURI</i></div><div class="nm">'+dn+'</div>'+acsw+''+viewAsNav()+'<div class="nav">'+nav+'</div>'+sideApp()+'<div class="me"><b>'+esc(u.name)+'</b>'+sub+'<button data-a="logout">로그아웃</button></div></aside>'+
  '<div><div class="top"><div class="brand">'+dn+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
- '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+EB[S.tab]+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
- '<nav class="bnav" style="grid-template-columns:repeat('+tabsNow().length+',1fr)">'+nav+'</nav>';
+ '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+(EB[S.tab]||'individual')+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
+ '<nav class="bnav'+(inMc()&&tabsNow().length>5?' scr':'')+'" style="'+(inMc()&&tabsNow().length>5?'':'grid-template-columns:repeat('+tabsNow().length+',1fr)')+'">'+nav+'</nav>';
 }
-function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att'||S.tab==='shop'||S.tab==='sinfo')return '';
+function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att'||S.tab==='shop'||S.tab==='sinfo'||inMc())return '';
  return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+esc(c)+'">'+(isMc(c)?'✦ '+esc(mcLabel(c)):esc(c))+'</button>').join('')+'</div>';}
 const comBadge=it=>it.ac==='all'?' <span class="badge com">공통</span>':'';
 
@@ -2756,5 +2756,6 @@ async function boot(){
 </script>
 <script src="shop.js"></script>
 <script src="sinfo.js"></script>
+<script src="mcclass.js"></script>
 </body>
 </html>

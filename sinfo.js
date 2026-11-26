@@ -61,7 +61,7 @@
     if (Q.cardBusy || !Q.sid) return; Q.cardBusy = true; var tok = TOKEN, sid = Q.sid;
     var j = await sapi('card', { sid: sid }); Q.cardBusy = false; if (tok !== TOKEN || Q.sid !== sid) return;
     if (!j || !j.ok) { Q.err = (j && j.error) || '불러오지 못했어요'; Q.card = null; } else { Q.err = null; Q.card = j; }
-    if (S.tab === 'sinfo') render(keep ? undefined : 0);
+    if (S.tab === 'sinfo' || String(S.tab).indexOf('mc:') === 0) render(keep ? undefined : 0);
   }
   window.sinfoAfter = function () {
     if (S.tab !== 'sinfo' || !kind()) return;
@@ -132,10 +132,10 @@
     return '<div class="a"><button class="btn gh sm3" data-sm="edit" data-v="' + n.id + '" type="button">고치기</button><button class="btn dng sm3" data-sm="del" data-v="' + n.id + '" type="button">지우기</button></div>';
   }
   function evLine(sc) { return EV.filter(function (e) { return sc && sc[e[0]]; }).map(function (e) { return '<span style="white-space:nowrap">' + e[1] + ' ' + stars(sc[e[0]]) + '</span>'; }).join(' &nbsp; '); }
-  function vCard(d) {
+  function vCard(d, embed) {
     var st = d.stu, notes = d.notes || [], sp = notes.filter(function (n) { return n.kind === 'special'; }), co = notes.filter(function (n) { return n.kind === 'consult'; }), ev = notes.filter(function (n) { return n.kind === 'eval'; });
     var pins = sp.filter(function (n) { return n.pinned; }), h = '';
-    h += '<button class="btn gh sm3" data-sm="back" type="button">← 목록으로</button>';
+    if (!embed) h += '<button class="btn gh sm3" data-sm="back" type="button">← 목록으로</button>';
     h += '<div class="card" style="margin-top:10px"><div class="smhd"><h2>' + esc(st.name) + '</h2><span class="badge">' + esc(clsTxt(st.cls)) + '</span><span class="muted">' + esc(st.school || '') + '</span>' + (st.active ? '' : '<span class="smb" style="background:#eee;color:#777">퇴원/비활성</span>') + '</div>';
     if (st.phone) h += '<div class="smbtn"><a class="btn rose" href="tel:' + esc(tel(st.phone)) + '" style="text-decoration:none">📞 학부모 ' + esc(st.phone) + '</a><button class="btn gh" data-sm="copy" data-v="' + esc(st.phone) + '" type="button">번호 복사</button></div>';
     else h += '<div class="muted sm" style="margin-top:6px">등록된 학부모 전화번호가 없어요</div>';
@@ -191,6 +191,19 @@
     return h;
   }
 
+  window.sinfoEnsure = function (sid) {
+    if (!kind()) return;
+    if (Q.tok !== TOKEN) { Q.tok = TOKEN; Q.card = null; Q.sid = null; }
+    if (Q.sid !== sid) { Q.sid = sid; Q.card = null; Q.err = null; }
+    if (!Q.card && !Q.cardBusy) loadCard();
+  };
+  window.sinfoEmbed = function (sid) {
+    if (!kind()) return '';
+    if (Q.sid !== sid) return '<div class="card"><div class="empty">불러오는 중…</div></div>';
+    if (Q.err && !Q.card) return '<div class="note">' + esc(Q.err) + '</div>';
+    if (!Q.card) return '<div class="card"><div class="empty">학생 정보를 불러오는 중…</div></div>';
+    return vCard(Q.card, true);
+  };
   window.vSinfo = function () {
     if (!kind()) return '<div class="card"><div class="empty">이 화면은 분당미래탐구 운영진만 쓸 수 있어요.</div></div>';
     if (Q.tok !== TOKEN && !Q.sid && !Q.list) return '<div class="card"><div class="empty">불러오는 중…</div></div>';

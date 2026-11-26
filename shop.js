@@ -13,6 +13,7 @@
   var ST = { pending: ['입금 대기', '#b57c12', '#fbf3dc'], paid: ['결제 완료', '#2f7a67', '#e3f1ea'], cancelled: ['취소', '#7a7a7a', '#eee'], refunded: ['환불', '#a8453a', '#fbe8e4'] };
   var BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
+  function onShop() { return S.tab === 'shop' || String(S.tab).indexOf('mc:') === 0; }
   function kind() {
     try {
       var u = me(); if (!u) return null;
@@ -70,13 +71,13 @@
       var keep = {}; (j.weeks || []).forEach(function (w) { if (P.sel[w.week] && w.active && w.st === 'none') keep[w.week] = 1; }); (j.items || []).forEach(function (i) { if (P.sel[i.id] && i.st === 'none') keep[i.id] = 1; }); P.sel = keep;
       if (!P.dep && j.me) P.dep = j.me.name || '';
     }
-    if (S.tab === 'shop') render();
+    if (onShop()) render();
   }
   async function loadList() {
     if (P.listLoading) return; P.listLoading = true;
     var j = await sapi('list'); P.listLoading = false;
     P.list = j && j.ok ? j : { err: (j && j.error) || '불러오지 못했어요' }; P.listAt = Date.now();
-    if (S.tab === 'shop') render();
+    if (onShop()) render();
   }
   async function loadPics() {
     if (P.picBusy || !P.d || !P.d.photos) return; P.picBusy = true;
@@ -203,18 +204,7 @@
     var h = '<div class="card"><div class="chips" style="padding-bottom:6px">' + f.map(function (c) { return '<button class="chip ' + (flt === c[0] ? 'on' : '') + '" data-sa="flt" data-v="' + c[0] + '" type="button">' + c[1] + ' ' + os.filter(function (o) { return c[0] === 'all' || (c[0] === 'x' ? (o.status === 'cancelled' || o.status === 'refunded') : o.status === c[0]); }).length + '</button>'; }).join('') +
       '<button class="btn gh sm3" data-sa="reload" type="button" style="margin-left:auto;flex:none">새로고침</button></div>';
     if (!show.length) h += '<div class="empty">해당하는 주문이 없어요</div>';
-    show.forEach(function (o) {
-      h += '<div class="shord"><div class="h"><div><b>' + esc(o.name) + '</b> <span class="muted sm">' + esc(o.school || '') + (o.by === 'parent' ? ' · 학부모 주문' : '') + '</span></div>' + badge(o.status) + '</div>' +
-        '<div style="margin-top:2px"><b>' + esc(weeksTxt(o.weeks)) + '</b> · <b>' + esc(won(o.amount)) + '</b> · 입금자명 <b style="background:#fff3b0;padding:0 5px;border-radius:6px">' + esc(o.depositor) + '</b></div>' +
-        '<div class="muted sm">' + esc(o.no) + ' · 주문 ' + esc(String(o.at || '').replace('T', ' ')) + (o.paid_at ? ' · 확인 ' + esc(String(o.paid_at).replace('T', ' ')) : '') + '</div>';
-      var a = '';
-      if (o.status === 'pending') a = '<button class="btn sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="paid" type="button">입금 확인</button><button class="btn dng sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="cancelled" type="button">취소</button>';
-      else if (o.status === 'paid') a = '<button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="refunded" type="button">환불 처리</button><button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="pending" type="button">입금 대기로 되돌리기</button>';
-      else if (o.status === 'cancelled') a = '<button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="pending" type="button">되살리기</button>';
-      if (a) h += '<div class="a">' + a + '</div>';
-      if (o.hist && o.hist.length > 1) h += '<div class="muted sm" style="margin-top:6px">' + o.hist.map(function (x) { return esc(String(x.at || '').slice(5).replace('T', ' ')) + ' ' + esc(x.by) + ' → ' + esc((ST[x.to] || [x.to])[0]) + (x.memo ? ' (' + esc(x.memo) + ')' : ''); }).join(' · ') + '</div>';
-      h += '</div>';
-    });
+    show.forEach(function (o) { h += lecOrderRow(o); });
     return h + '<div class="shwarn">\'입금 확인\'은 은행 앱에서 입금을 직접 확인한 뒤에만 눌러 주세요. 학생이 스스로 결제 완료로 바꿀 수는 없어요. \'환불 처리\'는 기록만 바꾸고 실제 환불은 은행에서 직접 하세요.</div></div>';
   }
   function admBoard(d) {
@@ -268,7 +258,7 @@
     if (LA.loading) return; LA.loading = true; var tok = TOKEN;
     var j = await sapi('lec_list'); LA.loading = false; if (tok !== TOKEN) return;
     LA.list = j && j.ok ? j : { err: (j && j.error) || '불러오지 못했어요' }; LA.at = Date.now();
-    if (S.tab === 'shop') render();
+    if (onShop()) render();
   }
 
   /* ── 학생·학부모 화면 ── */
@@ -343,6 +333,22 @@
     if (L.err) return h + '<div class="note">' + esc(L.err) + '</div>';
     return h + (LA.sub === 'orders' ? lecOrders(L) : LA.sub === 'set' ? lecSet(L) : lecStudents(L));
   }
+  function lecBody(s, L) {
+    var h = '';
+        groups(s.items).forEach(function (g) {
+          h += '<div style="padding:8px 14px 2px"><b>' + esc(g.t) + '</b></div>';
+          g.it.forEach(function (i) {
+            h += '<div class="shpa" style="padding:6px 14px"><div class="t">' + esc(i.no + '회') + ' · <a href="#" data-sa="lprice" data-v="' + esc(i.id) + '" data-p="' + i.price + '" style="color:inherit;text-decoration:underline dotted">' + esc(won(i.price)) + '</a> ' +
+              (i.st === 'none' ? '' : badge(i.st)) + '</div>' +
+              (i.st === 'paid' ? '<label style="cursor:pointer;white-space:nowrap"><input type="checkbox" data-sa="lsent1" data-v="' + esc(i.id) + '"' + (i.sent ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> 영상 보냄</label>' : '') +
+              (i.st === 'none' ? '<button class="btn dng sm3" data-sa="ldel" data-v="' + esc(i.id) + '" type="button">지우기</button>' : '') + '</div>';
+          });
+        });
+        h += '<div style="padding:12px 14px 14px;border-top:1px dashed var(--line);margin-top:6px"><b class="sm">강의 추가</b><div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:6px">' +
+          '<input type="text" id="lat_' + esc(s.sid) + '" maxlength="40" placeholder="강의 이름 (예: 공통수학1 다항식)" class="shin"><input type="text" inputmode="numeric" id="lac_' + esc(s.sid) + '" placeholder="몇 회 (예: 8)" class="shin"></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px"><input type="text" inputmode="numeric" id="las_' + esc(s.sid) + '" placeholder="첫 회차 (기본 1)" class="shin"><input type="text" inputmode="numeric" id="lap_' + esc(s.sid) + '" placeholder="회당 가격 (기본 ' + esc(String(L.cfg.price)) + ')" class="shin"><button class="btn sm3" data-sa="ladd" data-v="' + esc(s.sid) + '" type="button">추가</button></div></div>';
+    return h;
+  }
   function lecStudents(L) {
     var h = '', send = [];
     (L.students || []).forEach(function (s) { var x = s.items.filter(function (i) { return i.st === 'paid' && !i.sent; }); if (x.length) send.push({ s: s, x: x }); });
@@ -357,23 +363,24 @@
       var np = s.items.filter(function (i) { return i.st === 'pending'; }).length, ng = s.items.filter(function (i) { return i.st === 'paid'; }).length, open = !!LA.open[s.sid];
       h += '<div class="shmo"><div class="shmh" data-sa="lopen" data-v="' + esc(s.sid) + '" style="cursor:pointer"><div class="t"><b style="font-size:16px">' + esc(s.name) + '</b> <span class="muted sm">' + esc(s.school || '') + '</span>' +
         '<div class="muted sm">강의 ' + s.items.length + '회 · 결제 완료 ' + ng + (np ? ' · 입금 대기 ' + np : '') + '</div></div><div class="am"><span class="muted sm">' + (open ? '접기 ▲' : '관리 ▼') + '</span></div></div>';
-      if (open) {
-        groups(s.items).forEach(function (g) {
-          h += '<div style="padding:8px 14px 2px"><b>' + esc(g.t) + '</b></div>';
-          g.it.forEach(function (i) {
-            h += '<div class="shpa" style="padding:6px 14px"><div class="t">' + esc(i.no + '회') + ' · <a href="#" data-sa="lprice" data-v="' + esc(i.id) + '" data-p="' + i.price + '" style="color:inherit;text-decoration:underline dotted">' + esc(won(i.price)) + '</a> ' +
-              (i.st === 'none' ? '' : badge(i.st)) + '</div>' +
-              (i.st === 'paid' ? '<label style="cursor:pointer;white-space:nowrap"><input type="checkbox" data-sa="lsent1" data-v="' + esc(i.id) + '"' + (i.sent ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> 영상 보냄</label>' : '') +
-              (i.st === 'none' ? '<button class="btn dng sm3" data-sa="ldel" data-v="' + esc(i.id) + '" type="button">지우기</button>' : '') + '</div>';
-          });
-        });
-        h += '<div style="padding:12px 14px 14px;border-top:1px dashed var(--line);margin-top:6px"><b class="sm">강의 추가</b><div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:6px">' +
-          '<input type="text" id="lat_' + esc(s.sid) + '" maxlength="40" placeholder="강의 이름 (예: 공통수학1 다항식)" class="shin"><input type="text" inputmode="numeric" id="lac_' + esc(s.sid) + '" placeholder="몇 회 (예: 8)" class="shin"></div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px"><input type="text" inputmode="numeric" id="las_' + esc(s.sid) + '" placeholder="첫 회차 (기본 1)" class="shin"><input type="text" inputmode="numeric" id="lap_' + esc(s.sid) + '" placeholder="회당 가격 (기본 ' + esc(String(L.cfg.price)) + ')" class="shin"><button class="btn sm3" data-sa="ladd" data-v="' + esc(s.sid) + '" type="button">추가</button></div></div>';
-      }
+      if (open) h += lecBody(s, L);
       h += '</div>';
     });
     return h + '<div class="shwarn">회당 가격 숫자를 누르면 고칠 수 있어요(아직 신청 안 된 회차만). 결제 완료된 회차를 영상 보낸 뒤 체크해 두면 \'보낼 것\' 목록에서 빠져요.</div>';
+  }
+  function lecOrderRow(o) {
+    var h = '';
+      h += '<div class="shord"><div class="h"><div><b>' + esc(o.name) + '</b> <span class="muted sm">' + esc(o.school || '') + (o.by === 'parent' ? ' · 학부모 주문' : '') + '</span></div>' + badge(o.status) + '</div>' +
+        '<div style="margin-top:2px"><b>' + esc(weeksTxt(o.weeks)) + '</b> · <b>' + esc(won(o.amount)) + '</b> · 입금자명 <b style="background:#fff3b0;padding:0 5px;border-radius:6px">' + esc(o.depositor) + '</b></div>' +
+        '<div class="muted sm">' + esc(o.no) + ' · 주문 ' + esc(String(o.at || '').replace('T', ' ')) + (o.paid_at ? ' · 확인 ' + esc(String(o.paid_at).replace('T', ' ')) : '') + '</div>';
+      var a = '';
+      if (o.status === 'pending') a = '<button class="btn sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="paid" type="button">입금 확인</button><button class="btn dng sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="cancelled" type="button">취소</button>';
+      else if (o.status === 'paid') a = '<button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="refunded" type="button">환불 처리</button><button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="pending" type="button">입금 대기로 되돌리기</button>';
+      else if (o.status === 'cancelled') a = '<button class="btn gh sm3" data-sa="st" data-v="' + esc(o.id) + '" data-to="pending" type="button">되살리기</button>';
+      if (a) h += '<div class="a">' + a + '</div>';
+      if (o.hist && o.hist.length > 1) h += '<div class="muted sm" style="margin-top:6px">' + o.hist.map(function (x) { return esc(String(x.at || '').slice(5).replace('T', ' ')) + ' ' + esc(x.by) + ' → ' + esc((ST[x.to] || [x.to])[0]) + (x.memo ? ' (' + esc(x.memo) + ')' : ''); }).join(' · ') + '</div>';
+      h += '</div>';
+    return h;
   }
   function lecOrders(L) {
     var os = L.orders, flt = LA.flt, f = [['pending', '입금 대기'], ['paid', '결제 완료'], ['x', '취소·환불'], ['all', '전체']];
@@ -404,6 +411,25 @@
       '<div class="fld"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="lcs_open"' + (c.open === false ? '' : ' checked') + ' style="width:20px;height:20px;accent-color:var(--acc)"> 신청 받기 (끄면 학생이 신청할 수 없어요)</label></div>' +
       '<button class="btn" data-sa="lsave" type="button">저장</button></div>';
   }
+  window.shopEnsureLec = function () {
+    if (!kind()) return;
+    if (P.tok !== TOKEN && !P.loading) { P.d = null; LA.list = null; P.pic = {}; P.sel = {}; P.flash = null; P.dep = ''; load(); return; }
+    if (!P.d && !P.loading) load();
+    if (!LA.list && !LA.loading) loadLec(); else if (LA.list && Date.now() - LA.at > 30000 && !LA.loading) loadLec();
+  };
+  window.mcLecEmbed = function (sid) {
+    if (kind() !== 'adm') return '';
+    var L = LA.list; if (!L) return '<div class="card"><div class="empty">불러오는 중…</div></div>'; if (L.err) return '<div class="note">' + esc(L.err) + '</div>';
+    var s = (L.students || []).filter(function (x) { return x.sid === sid; })[0]; if (!s) return '<div class="note">이 수강생의 강의 목록을 찾지 못했어요. 새로고침해 주세요.</div>';
+    var h = '', d = P.d || {}, send = s.items.filter(function (i) { return i.st === 'paid' && !i.sent; });
+    if (d.bank_ready === false) h += '<div class="note"><b>입금 계좌가 아직 비어 있어요.</b> 분당미래탐구 화면의 [교재 주문 → 설정]에서 은행·계좌번호·예금주를 넣어야 수강생이 신청할 수 있어요.</div>';
+    if (send.length) h += '<div class="card"><h3 style="margin:0 0 6px">영상 보낼 것 <span class="badge">' + send.length + '건</span></h3><div class="muted sm">' + send.map(function (i) { return esc(lab(i)); }).join(' · ') + '</div><div style="margin-top:8px"><button class="btn sm3" data-sa="lsentall" data-v="' + esc(send.map(function (i) { return i.id; }).join(',')) + '" type="button">모두 보냈어요</button></div></div>';
+    h += '<div class="shmo" style="background:var(--card)"><div class="shmh"><div class="t" style="cursor:default"><b style="font-size:16px">강의 목록</b><div class="muted sm">강의 ' + s.items.length + '회 · 결제 완료 ' + s.items.filter(function (i) { return i.st === 'paid'; }).length + '</div></div></div>' +
+      (s.items.length ? '' : '<div class="empty" style="padding:16px">아직 강의가 없어요. 아래에서 추가해 주세요.</div>') + lecBody(s, L) + '</div>';
+    var os = (L.orders || []).filter(function (o) { return o.sid === s.sid; });
+    h += '<div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">신청 · 입금 내역</h3>' + (os.length ? os.map(lecOrderRow).join('') : '<div class="empty" style="padding:14px">아직 신청이 없어요</div>') + '</div>';
+    return h + '<div class="shwarn">회당 가격 숫자를 누르면 고칠 수 있어요(아직 신청 안 된 회차만). \'입금 확인\'은 은행 앱에서 입금을 직접 확인한 뒤에만 눌러 주세요.</div>';
+  };
   async function lecAfter(msg) { if (msg) toast(msg); await loadLec(); load(true); }
 
   /* 클릭: 이 함수가 처리했으면 true */
