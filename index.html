@@ -383,6 +383,7 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .bubble{background:#eef0f4;border-radius:18px;padding:12px 16px;font-size:14px;max-width:340px;line-height:1.6}
 .fld input[type=time],.fld input[type=number]{width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px;background:#fff}
 .landing .lface img{pointer-events:none}
+.plk{display:inline-block;margin:3px 0;padding:7px 14px;border-radius:16px;background:var(--pri);color:#fff!important;font-weight:700;text-decoration:none}
 </style>
 </head>
 <body>
@@ -1161,7 +1162,9 @@ function cleanNode(n){
  });
 }
 function cleanHtml(h){const d=new DOMParser().parseFromString('<body>'+String(h||'')+'</body>','text/html').body;cleanNode(d);return d.innerHTML;}
-function postBodyHtml(b){b=String(b||'');return b.indexOf('<!--h-->')===0?cleanHtml(b.slice(8)):nl(b);}
+/* 글 속 [글자](주소) = 누르는 버튼. 주소는 이 사이트의 화면(homework.html 처럼 .html) 또는 https 주소만 허용해요 */
+function linkPost(h){return h.replace(/\[([^\]<>]{1,40})\]\(([^)\s<>"]+)\)/g,(m,t,u)=>{const own=/^[a-z0-9_]+\.html(\?[\w=&;.\-]*)?$/.test(u),ext=/^https:\/\/[^\s"<>]+$/.test(u);if(!own&&!ext)return m;return '<a class="plk" href="'+u+'"'+(ext?' target="_blank" rel="noopener noreferrer"':'')+'>'+t+'</a>';});}
+function postBodyHtml(b){b=String(b||'');return b.indexOf('<!--h-->')===0?cleanHtml(b.slice(8)):linkPost(nl(b));}
 function plainOf(b){b=String(b||'');if(b.indexOf('<!--h-->')!==0)return b;const d=new DOMParser().parseFromString('<body>'+b.slice(8).replace(/<br\s*\/?>|<\/div>|<\/p>/gi,' ')+'</body>','text/html').body;return (d.textContent||'').replace(/\s+/g,' ').trim();}
 function rtBar(){
  return '<div class="rtbar"><button type="button" data-a="rtcmd" data-c="bold" title="굵게"><b>가</b></button>'+
