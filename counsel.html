@@ -263,7 +263,7 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
     co.forEach(function (n) {
       h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
-        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue)) + '</div>' : '') + noteBtns(n) + '</div></div>';
+        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue) + ' <button type="button" class="btn gh s3" style="padding:2px 10px" data-a="fdueset" data-k="' + (S.lid ? 'lead' : 'stu') + '" data-v="' + n.id + '">기한 정하기</button>') + '</div>' : '') + noteBtns(n) + '</div></div>';
     });
     h += '</div>';
     if (sp.length) {
@@ -339,7 +339,7 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
     co.forEach(function (n) {
       h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
-        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue)) + '</div>' : '') + noteBtns(n) + '</div></div>';
+        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label> ' + (n.done ? '' : dueChip(n.fdue) + ' <button type="button" class="btn gh s3" style="padding:2px 10px" data-a="fdueset" data-k="' + (S.lid ? 'lead' : 'stu') + '" data-v="' + n.id + '">기한 정하기</button>') + '</div>' : '') + noteBtns(n) + '</div></div>';
     });
     h += '</div>';
     var hConsult = h; h = '';
@@ -409,7 +409,7 @@ textarea.inp{min-height:110px;resize:vertical}
       }
       var f = it.x, open = f.k === 'lead' ? 'lopen' : 'open', id = f.k === 'lead' ? f.lid : f.sid;
       return '<div class="td"><div class="m"><div class="fw" style="font-size:15.5px">' + esc(f.follow) + '</div><div class="sb">' + dueChip(f.due) + ' <button type="button" class="nm" style="font-size:13px;font-weight:700;color:var(--acc)" data-a="' + open + '" data-v="' + esc(id) + '">' + esc(f.name) + '</button> <span class="muted sm">' + esc(f.k === 'lead' ? '문의' : clsTxt(f.cls)) + ' · ' + esc(dstr(f.date)) + ' 상담 후속</span></div></div>' +
-        '<div class="ac"><button type="button" class="btn sec s3" data-a="tfollow" data-k="' + f.k + '" data-v="' + f.nid + '">완료</button></div></div>';
+        '<div class="ac"><button type="button" class="btn gh s3" data-a="fdueset" data-k="' + f.k + '" data-v="' + f.nid + '">기한</button><button type="button" class="btn sec s3" data-a="tfollow" data-k="' + f.k + '" data-v="' + f.nid + '">완료</button></div></div>';
     });
     h += tsec('absent', '결석·지각 학부모 연락', '', T.absent, function (x) {
       return '<div class="td"><div class="m"><button type="button" class="nm" data-a="open" data-v="' + esc(x.sid) + '">' + esc(x.name) + '</button> <span class="muted sm">' + esc(clsTxt(x.cls)) + '</span><div class="sb"><b style="color:var(--bad)">' + esc(dstr(x.day)) + ' ' + esc(ATT[x.status] || x.status) + '</b>' + (x.reason ? ' · ' + esc(x.reason) : '') + ' · 이후 상담 기록 없음</div></div><div class="ac">' + telBtn(x.phone) + '</div></div>';
@@ -423,6 +423,11 @@ textarea.inp{min-height:110px;resize:vertical}
     return h + '</div>';
   }
 
+  function fdueFormHtml(k, id, text, cur) {
+    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">후속 조치 기한</h3><div class="muted sm" style="margin-bottom:8px">내용을 고치는 것이 아니라 <b>기한만</b> 정해요. (기록을 쓴 사람이 아니어도 정할 수 있어요)</div><div class="card" style="box-shadow:none;background:var(--soft);padding:10px 12px"><b>' + esc(text) + '</b></div>' +
+      '<label class="lbl">기한</label><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input class="inp" id="fd_due" type="date" style="width:auto" value="' + esc(cur || '') + '">' + [['오늘', 0], ['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7]].map(function (x) { return '<button type="button" class="btn gh s3" data-a="duq" data-t="fd_due" data-v="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<button type="button" class="btn gh s3" data-a="duq" data-t="fd_due" data-v="x">기한 없음</button></div>' +
+      '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" data-a="fduesave" data-k="' + esc(k) + '" data-v="' + esc(id) + '" type="button">저장</button><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+  }
   function taskFormHtml(k) {
     k = k || {};
     var names = (S.list || []).map(function (x) { return x.name; }).concat((S.leads || []).filter(function (l) { return l.status !== 'enrolled' && l.status !== 'lost'; }).map(function (l) { return l.name; }));
@@ -596,6 +601,18 @@ textarea.inp{min-height:110px;resize:vertical}
     var t = e.target.closest && e.target.closest('[data-a]'); if (!t) return;
     var a = t.dataset.a, v = t.dataset.v, j;
     if (a === 'fchk' || a === 'lnextdate') return;
+    if (a === 'fdueset') {
+      var fk = t.dataset.k, fnote = null;
+      if (S.card && !S.lid) fnote = (S.card.notes || []).filter(function (x) { return String(x.id) === String(v); })[0];
+      if (!fnote && S.lcard && S.lid) fnote = (S.lcard.notes || []).filter(function (x) { return String(x.id) === String(v); })[0];
+      if (fnote) openModal(fdueFormHtml(fk, v, fnote.follow, fnote.fdue));
+      else { var ff = ((S.todo && S.todo.follows) || []).filter(function (x) { return String(x.nid) === String(v) && x.k === fk; })[0]; if (ff) openModal(fdueFormHtml(fk, v, ff.follow, ff.due)); }
+      return;
+    }
+    if (a === 'fduesave') {
+      t.disabled = true; j = await api('follow_due', { k: t.dataset.k, id: v, due: (document.getElementById('fd_due') || {}).value || '' }); t.disabled = false;
+      if (!j.ok) { toast(j.error || '저장하지 못했어요'); return; } closeModal(); toast('기한을 저장했어요'); loadTodo(); if (S.lid) loadLCard(true); else if (S.sid) loadCard(true); return;
+    }
     if (a === 'duq') { var di = document.getElementById(t.dataset.t); if (di) { if (v === 'x') di.value = ''; else { var dd0 = new Date(); dd0.setDate(dd0.getDate() + (+v)); di.value = dd0.getFullYear() + '-' + ('0' + (dd0.getMonth() + 1)).slice(-2) + '-' + ('0' + dd0.getDate()).slice(-2); } } return; }
     if (a === 'taskadd') { openModal(taskFormHtml()); return; }
     if (a === 'taskedit') { var tk0 = ((S.todo && S.todo.tasks) || []).filter(function (x) { return x.id === v; })[0]; if (tk0) openModal(taskFormHtml(tk0)); return; }
