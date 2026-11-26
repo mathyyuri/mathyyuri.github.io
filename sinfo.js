@@ -280,7 +280,7 @@
   });
   window.sinfoName = function (id, name) { return kind() ? '<a href="#" data-sm="open" data-v="' + esc(id) + '" style="color:inherit;text-decoration:underline dotted;font-weight:700" title="학생 정보 열기">' + esc(name) + '</a>' : '<b>' + esc(name) + '</b>'; };   // 다른 화면의 학생 이름을 누를 수 있게
   window.sinfoOpen = function (sid) { if (!kind()) return; Q.sid = sid; Q.card = null; Q.err = null; S.tab = 'sinfo'; render(0); };   // 다른 화면에서 학생 이름을 눌렀을 때 쓰는 문
-  window.sinfoReset = function () { Q.csp = null; Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; Q.csv = false; Q.csd = null; Q.csl = null; };
+  window.sinfoReset = function () { Q.csld = null; Q.csp = null; Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; Q.csv = false; Q.csd = null; Q.csl = null; };
 
   /* ══════════ 원장 전용: 상담실장 등록 · 전용 링크 · 담당 학생 배정 · 로그인 기록 (서버: 65_상담실장_담당학생_서버.sql, 문 ac_counsel) ══════════
      상담실장은 별도 화면(counsel.html, 전용 링크로 바로 로그인)으로 들어와 '내 담당 학생'만 봐요. 여기서는 사람을 등록하고 담당·링크·로그인 기록을 관리해요. */
@@ -298,6 +298,8 @@
     if (!j || !j.ok) { Q.cse = (j && j.error) || '불러오지 못했어요'; Q.csd = null; } else { Q.cse = null; Q.csd = j; }
     var l = await capi('adm_logins', { n: 60 }); if (!isAdm()) return;
     Q.csl = l && l.ok ? l : null;
+    var lj = await capi('adm_ld_pending'); if (!isAdm()) return;
+    Q.csld = lj && lj.ok ? lj : null;
     var pj = await capi('adm_plan'); if (!isAdm()) return;
     Q.csp = pj && pj.ok ? pj : null;
     if (Q.csv && S.tab === 'sinfo') render();
@@ -339,7 +341,17 @@
         '<button class="btn gh sm3" data-sm="csactive" data-v="' + esc(c.id) + '" data-on="' + (c.active ? '0' : '1') + '" type="button">' + (c.active ? '사용 중지' : '다시 사용') + '</button>' +
         '<button class="btn dng sm3" data-sm="csdel" data-v="' + esc(c.id) + '" type="button">삭제</button></div></div>';
     });
-    return h + csPlanCard() + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+    return h + csLeadCard() + csPlanCard() + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+  }
+  function csLeadCard() {
+    var L = Q.csld; if (!L) return '';
+    var h = '<div class="card"><h3 style="margin:0 0 4px">문의·관심 학생 → 수강생 등록 <span class="badge">' + (L.pending || []).length + '명 대기</span></h3><div class="muted sm" style="margin-bottom:6px">상담 화면에서 상태를 <b>"등록"</b>으로 바꾼 문의 학생이 여기에 떠요. [수강생으로 등록]을 누르면 수강생 명단에 이름·학교·전화가 그대로 들어가고, 문의 때 쓴 상담 기록도 학생 카드로 따라가요. (문의 학생 전체 ' + L.total + '명)</div>';
+    if (!(L.pending || []).length) return h + '<div class="empty" style="padding:10px">등록 대기 중인 문의 학생이 없어요</div></div>';
+    (L.pending || []).forEach(function (x) {
+      h += '<div class="smk"><div class="t"><b>' + esc(x.name) + '</b> <span class="muted sm">' + esc([x.grade, x.school].filter(Boolean).join(' · ')) + (x.interest ? ' · 관심 ' + esc(x.interest) : '') + '</span><div class="muted sm">☎ ' + (x.phone ? esc(x.phone) : '<b style="color:#a8453a">전화번호 없음 (상담 화면에서 넣어 주세요)</b>') + ' · 등록 ' + esc(x.by) + ' · 상담 기록 ' + x.notes + '건</div></div>' +
+        '<button class="btn sm3" data-sm="csldreg" data-v="' + esc(x.id) + '" type="button">수강생으로 등록</button><button class="btn dng sm3" data-sm="csldx" data-v="' + esc(x.id) + '" type="button">삭제</button></div>';
+    });
+    return h + '</div>';
   }
   function csPlanCard() {
     var P = Q.csp; if (!P) return '';
@@ -400,6 +412,21 @@
   document.addEventListener('click', async function (e) {
     var t = e.target.closest && e.target.closest('[data-sm]'); if (!t || !t.dataset.sm || t.dataset.sm.indexOf('cs') !== 0 || !isAdm()) return;
     var a = t.dataset.sm, v = t.dataset.v, j, c = Q.csd && Q.csd.counselors.filter(function (x) { return x.id === v; })[0];
+    if (a === 'csldreg') {
+      var lp = ((Q.csld && Q.csld.pending) || []).filter(function (x) { return x.id === v; })[0]; if (!lp) return;
+      var cl = (typeof AC !== 'undefined' && AC.bd && AC.bd.classes ? AC.bd.classes : ['공수내모']).filter(function (c) { return String(c).indexOf('MATHY CLASS') !== 0; });
+      openModal('<h3>' + esc(lp.name) + ' · 수강생으로 등록</h3><div class="muted sm" style="margin:4px 0 8px">' + esc(lp.school || '') + ' · ☎ ' + esc(lp.phone || '') + '<br>로그인 번호는 학부모 전화 뒤 4자리예요(이름 + 뒤 4자리).</div><div class="smf"><label class="l">반</label><select id="csld_cls">' + cl.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="row" style="gap:8px;margin-top:16px"><button class="btn" data-sm="csldgo" data-v="' + esc(lp.id) + '" type="button">등록</button><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>'); return;
+    }
+    if (a === 'csldgo') {
+      t.disabled = true; j = await capi('adm_ld_convert', { id: v, cls: (document.getElementById('csld_cls') || {}).value }); t.disabled = false;
+      if (!j || !j.ok) { toast((j && j.error) || '등록하지 못했어요'); return; }
+      closeModal(); toast('수강생으로 등록했어요 (상담 기록 ' + j.notes + '건 이어졌어요)'); Q.list = null; Q.listAt = 0; csLoad(); return;
+    }
+    if (a === 'csldx') {
+      if (!confirm('이 문의 학생을 지울까요? (상담 기록도 함께 지워져요)')) return;
+      j = await capi('adm_ld_del', { id: v }); if (!j || !j.ok) { toast((j && j.error) || '지우지 못했어요'); return; } toast('지웠어요'); csLoad(); return;
+    }
     if (a === 'cspedit') { var pc = ((Q.csp && Q.csp.classes) || []).filter(function (x) { return x.cls === v; })[0]; if (pc) openModal(cspHtml(pc.cls, pc.rows)); return; }
     if (a === 'cspnew') { openModal(cspHtml('', [{ no: 1 }])); return; }
     if (a === 'cspadd') {

@@ -78,6 +78,14 @@ textarea.inp{min-height:110px;resize:vertical}
 .ls.today .tg{background:#d49a1a;color:#fff}.ls.done .tg{background:#fff;color:var(--acc)}
 .sidebtn{display:flex;align-items:center;gap:8px;width:calc(100% - 28px);margin:0 14px 10px;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:10px 12px;font-weight:800;cursor:pointer;text-align:left}
 .sidebtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.lh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;margin:14px 0 4px;padding:9px 10px;background:#f3ead9;border-radius:12px;font-weight:800;cursor:pointer;font-size:14px}
+.lh .cnt{font-weight:600;color:var(--mut);font-size:12.5px}.lh .due{background:var(--bad);color:#fff;border-radius:10px;padding:0 8px;font-size:12px}.lh .ad{margin-left:auto;border:0;background:var(--acc);color:#fff;border-radius:999px;padding:3px 12px;font-weight:800;cursor:pointer;font-size:12.5px}
+.sd{display:inline-block;border-radius:10px;padding:0 8px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.sd.inq{background:#e8eef9;color:#3b5a9a}.sd.booked{background:#fbf3dc;color:#a8760f}.sd.done{background:#e3f1ea;color:#2f7a67}.sd.enrolled{background:#2f7a67;color:#fff}.sd.hold{background:#eee;color:#777}.sd.lost{background:#f4e0dd;color:#a8453a}
+.it.lead{flex-wrap:wrap;row-gap:2px}.it.lead .r{flex-wrap:wrap;justify-content:flex-end}.it.lead .n{font-size:15px}.it .nx{font-size:11.5px;color:var(--mut)}.it .nx.due{color:var(--bad);font-weight:800}.it.on .nx{color:#d8efe6}
+.stb{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.stb button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;font-weight:700;cursor:pointer;font-size:13px}.stb button.on{border-color:var(--acc);background:var(--acc);color:#fff}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin-top:6px}.kv span:nth-child(odd){color:var(--mut)}
+
 
 @media(max-width:820px){
  .app{grid-template-columns:1fr}
@@ -103,8 +111,9 @@ textarea.inp{min-height:110px;resize:vertical}
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
   var VIA = { phone: '전화', visit: '방문', msg: '문자·카톡', etc: '기타' }, WHO = { parent: '학부모', student: '학생', both: '학부모+학생' };
   var EV = [['tae', '태도'], ['hw', '숙제'], ['und', '이해도'], ['att', '출결']];
+  var LST = { inq: '문의', booked: '상담예약', done: '상담완료', enrolled: '등록', hold: '보류', lost: '미등록' }, LSRC = { phone: '전화', msg: '문자·카톡', visit: '방문', intro: '지인 소개', etc: '기타' };
   var ATT = { present: '출석', late: '지각', early: '조퇴', absent: '결석' };
-  var S = { plan: null, pcls: '', pv: false, tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
+  var S = { leads: null, lid: null, lcard: null, lopen: false, lall: false, plan: null, pcls: '', pv: false, tok: null, view: 'boot', me: '', title: '', pname: '', list: null, q: '', sid: null, card: null, err: null, busy: false, loginErr: '' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function nl(t) { return esc(t).replace(/\n/g, '<br>'); }
@@ -144,12 +153,12 @@ textarea.inp{min-height:110px;resize:vertical}
   }
 
   /* ── 왼쪽: 학생 명단 (가나다) ── */
-  function listHtml() {
+  function stuListHtml() {
     if (S.err && !S.list) return '<div class="note" style="margin:8px">' + esc(S.err) + '</div>';
     if (!S.list) return '<div class="empty">불러오는 중…</div>';
     var q = S.q.trim().toLowerCase(), dg = q.replace(/[^0-9]/g, '');
     var rows = S.list.filter(function (s) { return !q || (s.name + ' ' + (s.school || '') + ' ' + clsTxt(s.cls)).toLowerCase().indexOf(q) >= 0 || (dg.length >= 2 && String(s.p4 || '').indexOf(dg) >= 0); });
-    if (!rows.length) return '<div class="empty">' + (S.list.length ? '찾는 학생이 없어요' : '볼 수 있는 학생이 아직 없어요.<br>원장님께 담당 학생 배정을 요청해 주세요.') + '</div>';
+    if (!rows.length) return q && S.leads && leadMatches(q).length ? '' : '<div class="empty">' + (S.list.length ? '찾는 학생이 없어요' : '볼 수 있는 학생이 아직 없어요.<br>원장님께 담당 학생 배정을 요청해 주세요.') + '</div>';
     var h = '', last = '';
     rows.forEach(function (s) {
       var c = cho(s.name); if (c !== last) { h += '<div class="cho">' + esc(c) + '</div>'; last = c; }
@@ -157,6 +166,80 @@ textarea.inp{min-height:110px;resize:vertical}
         (s.pin > 0 ? '<span class="dot" title="특이사항">⚠</span>' : '') + (s.follow > 0 ? '<span class="dot f" title="후속 조치">후속' + s.follow + '</span>' : '') + '</span></button>';
     });
     return h;
+  }
+
+  /* ── 문의·관심 학생 구역 (수강생 아래) ── */
+  function leadMatches(q) {
+    var dg = q.replace(/[^0-9]/g, '');
+    return (S.leads || []).filter(function (l) { return !q || (l.name + ' ' + (l.school || '') + ' ' + (l.interest || '')).toLowerCase().indexOf(q) >= 0 || (dg.length >= 2 && String(l.p4 || '').indexOf(dg) >= 0); });
+  }
+  function leadHtml() {
+    if (!S.leads) return '';
+    var q = S.q.trim().toLowerCase(), all = leadMatches(q), live = all.filter(function (l) { return l.status !== 'enrolled' && l.status !== 'lost'; }), done = all.filter(function (l) { return l.status === 'enrolled' || l.status === 'lost'; });
+    var dueN = S.leads.filter(function (l) { return l.due; }).length, open = S.lopen || (q && all.length > 0);
+    var h = '<div class="lh" data-a="ltoggle">' + (open ? '▾' : '▸') + ' 문의·관심 <span class="cnt">' + S.leads.filter(function (l) { return l.status !== 'enrolled' && l.status !== 'lost'; }).length + '명</span>' + (dueN ? '<span class="due">오늘 연락 ' + dueN + '</span>' : '') + '<button class="ad" type="button" data-a="lnew">+ 추가</button></div>';
+    if (!open) return h;
+    var row = function (l) {
+      var nx = l.status === 'enrolled' || l.status === 'lost' ? '' : (l.next ? '<span class="nx' + (l.due ? ' due' : '') + '">' + (l.due ? (l.next === S.ltoday ? '오늘 연락' : '연락 ' + esc(dstr(l.next))) : esc(dstr(l.next))) + '</span>' : '');
+      return '<button class="it lead' + (S.lid === l.id ? ' on' : '') + '" type="button" data-a="lopen" data-v="' + esc(l.id) + '"><span class="n">' + esc(l.name) + '</span><span class="c">' + esc([l.grade, l.school].filter(Boolean).join(' · ')) + '</span><span class="r">' +
+        (l.pin > 0 ? '<span class="dot">⚠</span>' : '') + (l.follow > 0 ? '<span class="dot f">후속' + l.follow + '</span>' : '') + nx + '<span class="sd ' + esc(l.status) + '">' + esc(LST[l.status] || '') + '</span></span></button>';
+    };
+    if (!live.length && !(S.lall && done.length)) h += '<div class="empty" style="padding:10px">' + (q ? '찾는 문의 학생이 없어요' : '문의·관심 학생이 없어요') + '</div>';
+    h += live.map(row).join('');
+    if (done.length) { h += '<div style="text-align:center;margin:6px 0"><button type="button" data-a="lall" style="border:0;background:none;color:var(--mut);text-decoration:underline;cursor:pointer;font-size:12.5px">' + (S.lall ? '등록·미등록 숨기기' : '등록·미등록 ' + done.length + '명 보기') + '</button></div>'; if (S.lall) h += done.map(row).join(''); }
+    return h;
+  }
+  function listHtml() { return stuListHtml() + leadHtml(); }
+
+  /* ── 오른쪽: 문의 학생 카드 ── */
+  function vLead() {
+    var back = '<button class="btn gh s3 back" data-a="back" type="button">← 명단</button>';
+    if (!S.lcard) return '<div class="pane">' + back + (S.err ? '<div class="note">' + esc(S.err) + '</div>' : '<div class="empty">불러오는 중…</div>') + '</div>';
+    var d = S.lcard, l = d.lead, notes = d.notes || [], co = notes.filter(function (n) { return n.kind === 'consult'; }), sp = notes.filter(function (n) { return n.kind === 'special'; }), pins = sp.filter(function (n) { return n.pinned; });
+    var lock = !!l.enrolled_sid, h = '<div class="pane">' + back;
+    h += '<div class="card"><div class="hd"><h2>' + esc(l.name) + '</h2><span class="sd ' + esc(l.status) + '" style="font-size:13px;padding:2px 12px">' + esc(LST[l.status] || '') + '</span><span class="muted">' + esc([l.grade, l.school].filter(Boolean).join(' · ')) + '</span></div>';
+    if (l.phone) h += '<div class="bt"><a class="btn rose" href="tel:' + esc(tel(l.phone)) + '">📞 학부모 ' + esc(l.phone) + '</a><button class="btn gh" data-a="copy" data-v="' + esc(l.phone) + '" type="button">번호 복사</button></div>';
+    else h += '<div class="muted sm" style="margin-top:6px">전화번호가 아직 없어요 ([정보 수정]에서 넣어 주세요)</div>';
+    h += '<div class="kv"><span>문의 경로</span><span>' + esc(LSRC[l.source] || '') + '</span><span>관심 수업</span><span>' + esc(l.interest || '-') + '</span><span>등록</span><span>' + esc(l.by) + ' · ' + esc(String(l.at).slice(0, 10)) + '</span></div>';
+    if (lock) h += '<div class="note" style="margin-top:10px;background:#e3f1ea;border-color:#bfe0d2;color:#2f7a67"><b>수강생으로 등록된 학생이에요.</b> 앞으로는 왼쪽 수강생 명단에서 보세요.</div>';
+    else {
+      h += '<h4 style="margin:12px 0 2px;font-size:13px;color:var(--mut)">상태</h4><div class="stb">' + ['inq', 'booked', 'done', 'enrolled', 'hold', 'lost'].map(function (k) { return '<button type="button" data-a="lstatus" data-v="' + k + '" class="' + (l.status === k ? 'on' : '') + '">' + LST[k] + '</button>'; }).join('') + '</div>';
+      h += '<h4 style="margin:8px 0 2px;font-size:13px;color:var(--mut)">다음 연락일 ' + (l.next ? '<b style="color:' + (l.next <= S.ltoday ? 'var(--bad)' : 'var(--ink)') + '">' + esc(dstr(l.next)) + '</b>' : '<span>없음</span>') + '</h4><div class="stb">' +
+        [['오늘', 0], ['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7], ['2주 뒤', 14]].map(function (x) { return '<button type="button" data-a="lnext" data-v="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<input type="date" id="l_nx" value="' + esc(l.next || '') + '" data-a="lnextdate" style="border:1.5px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px">' + (l.next ? '<button type="button" data-a="lnext" data-v="x">지우기</button>' : '') + '</div>';
+      h += '<div class="bt"><button class="btn" data-a="new" data-v="consult" type="button">+ 상담 기록</button><button class="btn sec" data-a="new" data-v="special" type="button">+ 메모</button><button class="btn gh" data-a="ledit" type="button">정보 수정</button>' + (l.mine ? '<button class="btn dng s3" data-a="ldel" type="button">삭제</button>' : '') + '</div>';
+    }
+    h += '</div>';
+    if (pins.length) h += '<div class="warn"><b>⚠ 메모</b>' + pins.map(function (n) { return '<div style="margin-top:4px">' + nl(n.body) + '</div>'; }).join('') + '</div>';
+    h += '<div class="card"><h3>상담내역 <span class="badge">' + co.length + '건</span></h3>';
+    if (!co.length) h += '<div class="empty">아직 상담 기록이 없어요</div>';
+    co.forEach(function (n) {
+      h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t"><span class="badge">' + esc(VIA[n.via] || '') + ' · ' + esc(WHO[n.who] || '') + '</span> <span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' +
+        (n.follow ? '<div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" data-a="fchk" data-v="' + n.id + '"' + (n.done ? ' checked' : '') + ' style="accent-color:var(--acc);width:18px;height:18px;vertical-align:-3px"> <b style="' + (n.done ? 'text-decoration:line-through;color:var(--mut)' : 'color:var(--warn)') + '">후속: ' + esc(n.follow) + '</b></label></div>' : '') + noteBtns(n) + '</div></div>';
+    });
+    h += '</div>';
+    if (sp.length) {
+      h += '<div class="card"><h3>메모 <span class="badge">' + sp.length + '건</span></h3>';
+      sp.forEach(function (n) { h += '<div class="k"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="badge" style="background:#fdecea;color:var(--bad)">중요</span> ' : '') + '<span class="muted sm">' + esc(n.author) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n) + '</div></div>'; });
+      h += '</div>';
+    }
+    return h + '</div>';
+  }
+  function leadFormHtml(l) {
+    l = l || {};
+    var sel = function (id, map, cur) { return '<select class="inp" id="' + id + '">' + Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + map[k] + '</option>'; }).join('') + '</select>'; };
+    var classes = (S.plan && S.plan.classes ? S.plan.classes : []).map(function (c) { return '<option value="' + esc(c.cls) + '">'; }).join('');
+    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">' + (l.id ? '문의 학생 정보 수정' : '문의·관심 학생 추가') + '</h3><div class="muted sm">등록한 사람: ' + esc(who()) + ' (자동)</div>' +
+      '<label class="lbl">이름 *</label><input class="inp" id="lf_name" maxlength="20" value="' + esc(l.name || '') + '" placeholder="예: 김민수">' +
+      '<label class="lbl">학부모 전화번호 (뒤 4자리만 알아도 돼요)</label><input class="inp" id="lf_phone" type="tel" maxlength="20" value="' + esc(l.phone || '') + '" placeholder="예: 010-1234-5678">' +
+      '<div class="cols"><div><label class="lbl">학교</label><input class="inp" id="lf_school" maxlength="30" value="' + esc(l.school || '') + '" placeholder="예: 서현중"></div><div><label class="lbl">학년</label><input class="inp" id="lf_grade" maxlength="20" value="' + esc(l.grade || '') + '" placeholder="예: 예비고1"></div></div>' +
+      '<div class="cols"><div><label class="lbl">문의 경로</label>' + sel('lf_source', LSRC, l.source || 'phone') + '</div><div><label class="lbl">상태</label>' + sel('lf_status', LST, l.status || 'inq') + '</div></div>' +
+      '<label class="lbl">관심 수업</label><input class="inp" id="lf_interest" list="lf_cl" maxlength="60" value="' + esc(l.interest || '') + '" placeholder="예: 공수내모"><datalist id="lf_cl">' + classes + '</datalist>' +
+      '<label class="lbl">다음 연락일 (선택)</label><input class="inp" id="lf_next" type="date" value="' + esc(l.next || '') + '">' +
+      '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" data-a="lsave" data-id="' + esc(l.id || '') + '" type="button">저장</button><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+  }
+  function leadArgs(over) {      // 카드의 현재 값에 일부만 바꿔서 저장할 때
+    var l = S.lcard.lead, o = { id: l.id, name: l.name, school: l.school, grade: l.grade, phone: l.phone, source: l.source, interest: l.interest, status: l.status, next: l.next || '' };
+    Object.keys(over || {}).forEach(function (k) { o[k] = over[k]; }); return o;
   }
 
   /* ── 오른쪽: 학생 정보 ── */
@@ -214,6 +297,7 @@ textarea.inp{min-height:110px;resize:vertical}
     return h;
   }
   function vDetail() {
+    if (S.lid) return vLead();
     if (!S.sid) return vPlan();
     if (S.card) return '<div class="pane">' + vCard(S.card) + '</div>';
     if (S.err) return '<div class="pane"><button class="btn gh s3 back" data-a="back" type="button">← 명단</button><div class="note">' + esc(S.err) + '</div></div>';
@@ -290,8 +374,8 @@ textarea.inp{min-height:110px;resize:vertical}
     if (S.view === 'boot') h = '<div class="empty" style="margin-top:20vh">불러오는 중…</div>';
     else if (S.view === 'retry') h = '<div class="card" style="max-width:420px;margin:14vh auto 0;text-align:center"><div class="note">' + esc(S.err || '연결하지 못했어요') + '</div><button class="btn" style="margin-top:14px" data-a="retry" type="button">다시 시도</button></div>';
     else if (S.view === 'login') h = vLogin();
-    else h = '<div class="app' + ((S.sid || S.pv) ? ' det' : '') + '"><aside class="side"><div class="hd0"><div class="ttl">전유리T · 학생 상담</div><div class="who"><span>' + esc(S.me) + (S.title ? ' ' + esc(S.title) : '') + '님</span><button data-a="logout" type="button">로그아웃</button></div></div>' +
-      '<button class="sidebtn' + (!S.sid ? ' on' : '') + '" type="button" data-a="toplan">수업 진행표 <span style="font-weight:600;font-size:12.5px;opacity:.85;margin-left:auto">' + esc(sideLine()) + '</span></button><div class="sq"><input class="inp" id="q" value="' + esc(S.q) + '" placeholder="이름 · 학교 · 전화 뒤 4자리" autocomplete="off" data-i="q"></div><div class="lst" id="lst">' + listHtml() + '</div></aside><main class="main" id="main">' + vDetail() + '</main></div>';
+    else h = '<div class="app' + ((S.sid || S.pv || S.lid) ? ' det' : '') + '"><aside class="side"><div class="hd0"><div class="ttl">전유리T · 학생 상담</div><div class="who"><span>' + esc(S.me) + (S.title ? ' ' + esc(S.title) : '') + '님</span><button data-a="logout" type="button">로그아웃</button></div></div>' +
+      '<button class="sidebtn' + (!S.sid && !S.lid ? ' on' : '') + '" type="button" data-a="toplan">수업 진행표 <span style="font-weight:600;font-size:12.5px;opacity:.85;margin-left:auto">' + esc(sideLine()) + '</span></button><div class="sq"><input class="inp" id="q" value="' + esc(S.q) + '" placeholder="이름 · 학교 · 전화 뒤 4자리" autocomplete="off" data-i="q"></div><div class="lst" id="lst">' + listHtml() + '</div></aside><main class="main" id="main">' + vDetail() + '</main></div>';
     el.innerHTML = h;
     var m2 = document.querySelector('.main'), l2 = document.querySelector('.lst'); if (S.keepY) { if (m2) m2.scrollTop = mainY; S.keepY = false; } if (l2) l2.scrollTop = listY;
   }
@@ -312,7 +396,17 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!j.ok) { S.planErr = j.error || '진행표를 불러오지 못했어요'; S.plan = null; } else { S.planErr = null; S.plan = j; }
     if (S.view === 'main') { var y = (document.getElementById('main') || {}).scrollTop; render(); var m = document.getElementById('main'); if (m && y) m.scrollTop = y; }
   }
-  async function enter() { S.view = 'main'; S.sid = null; S.pv = false; S.card = null; S.list = null; render(); loadList(); loadPlan(); }
+  async function loadLeads() {
+    var j = await api('ld_list'); if (!j) return;
+    if (j.ok) { S.leads = j.list || []; S.ltoday = j.today; }
+    if (S.view === 'main') { var e = document.getElementById('lst'); if (e) { var y = e.scrollTop; e.innerHTML = listHtml(); e.scrollTop = y; } }
+  }
+  async function loadLCard(keep) {
+    var id = S.lid, j = await api('ld_card', { id: id }); if (S.lid !== id) return;
+    if (!j.ok) { S.err = j.error; S.lcard = null; } else { S.err = null; S.lcard = j; S.ltoday = S.ltoday || ''; }
+    S.keepY = !!keep; render();
+  }
+  async function enter() { S.view = 'main'; S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.list = null; render(); loadList(); loadPlan(); loadLeads(); }
   function keyFromUrl() {
     try { var u = new URL(location.href), k = u.searchParams.get('k'); if (k) { u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } return k ? String(k).trim() : ''; } catch (e) { return ''; }
   }
@@ -345,45 +439,76 @@ textarea.inp{min-height:110px;resize:vertical}
     if (!j.ok) { S.loginErr = j.error || '로그인하지 못했어요'; render(); return; }
     S.loginErr = ''; saveTok(j.token); S.me = j.name; S.title = j.title || ''; try { localStorage.setItem('cs_name_v1', j.name); } catch (er) {} enter();
   });
-  window.addEventListener('popstate', function () { if (S.sid || S.pv) { S.sid = null; S.pv = false; S.card = null; S.err = null; render(); } });
+  window.addEventListener('popstate', function () { if (S.sid || S.pv || S.lid) { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.err = null; render(); } });
   function pick(sid) {
-    S.sid = sid; S.card = null; S.err = null; S.pv = false;
+    S.sid = sid; S.card = null; S.err = null; S.pv = false; S.lid = null; S.lcard = null;
     if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} }
     render(); var m = document.getElementById('main'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); loadCard();
+  }
+  function pickLead(id) {
+    S.lid = id; S.lcard = null; S.err = null; S.pv = false; S.sid = null; S.card = null;
+    if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} }
+    render(); var m = document.getElementById('main'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); loadLCard();
   }
   document.addEventListener('click', async function (e) {
     var t = e.target.closest && e.target.closest('[data-a]'); if (!t) return;
     var a = t.dataset.a, v = t.dataset.v, j;
-    if (a === 'fchk') return;
+    if (a === 'fchk' || a === 'lnextdate') return;
+    if (a === 'lopen') { e.preventDefault(); pickLead(v); return; }
+    if (a === 'ltoggle') { if (e.target.closest('[data-a=lnew]')) return; S.lopen = !S.lopen; var le = document.getElementById('lst'); if (le) { var yy = le.scrollTop; le.innerHTML = listHtml(); le.scrollTop = yy; } return; }
+    if (a === 'lall') { S.lall = !S.lall; var le2 = document.getElementById('lst'); if (le2) le2.innerHTML = listHtml(); return; }
+    if (a === 'lnew') { e.stopPropagation(); openModal(leadFormHtml()); return; }
+    if (a === 'ledit') { if (S.lcard) openModal(leadFormHtml(S.lcard.lead)); return; }
+    if (a === 'lsave') {
+      var gv = function (i) { var x = document.getElementById(i); return x ? x.value : ''; }, la = { name: gv('lf_name'), phone: gv('lf_phone'), school: gv('lf_school'), grade: gv('lf_grade'), source: gv('lf_source'), status: gv('lf_status'), interest: gv('lf_interest'), next: gv('lf_next') };
+      if (t.dataset.id) la.id = t.dataset.id;
+      t.disabled = true; j = await api('ld_save', la); t.disabled = false;
+      if (!j.ok) { toast(j.error || '저장하지 못했어요'); return; }
+      closeModal(); toast(j.dup === 'student' ? '저장했어요 · 이미 같은 이름·번호의 수강생이 있어요' : j.dup === 'lead' ? '저장했어요 · 이미 같은 이름·번호의 문의 학생이 있어요' : '저장했어요');
+      S.lopen = true; await loadLeads(); if (!t.dataset.id) pickLead(j.id); else loadLCard(true); return;
+    }
+    if (a === 'lstatus' && S.lcard) {
+      j = await api('ld_save', leadArgs({ status: v })); if (!j.ok) { toast(j.error || '바꾸지 못했어요'); return; }
+      toast(v === 'enrolled' ? '등록으로 바꿨어요. 원장님 화면에 "등록 대기"로 떠요' : '상태를 바꿨어요'); loadLCard(true); loadLeads(); return;
+    }
+    if (a === 'lnext' && S.lcard) {
+      var nxv = ''; if (v !== 'x') { var dn = new Date(); dn.setDate(dn.getDate() + (+v)); nxv = dn.getFullYear() + '-' + ('0' + (dn.getMonth() + 1)).slice(-2) + '-' + ('0' + dn.getDate()).slice(-2); }
+      j = await api('ld_save', leadArgs({ next: nxv })); if (!j.ok) { toast(j.error || '바꾸지 못했어요'); return; } toast(nxv ? '다음 연락일을 ' + dstr(nxv) + '로 정했어요' : '연락일을 지웠어요'); loadLCard(true); loadLeads(); return;
+    }
+    if (a === 'ldel' && S.lcard) {
+      if (!confirm(S.lcard.lead.name + ' 문의 학생을 지울까요? (상담 기록도 함께 지워져요)')) return;
+      j = await api('ld_del', { id: S.lid }); if (!j.ok) { toast(j.error || '지우지 못했어요'); return; } toast('지웠어요'); S.lid = null; S.lcard = null; S.pv = false; if (history.state && history.state.c) history.back(); else render(); loadLeads(); return;
+    }
     if (a === 'open') { e.preventDefault(); pick(v); return; }
-    if (a === 'back') { if (history.state && history.state.c) history.back(); else { S.sid = null; S.pv = false; S.card = null; S.err = null; render(); } return; }
-    if (a === 'toplan') { e.preventDefault(); if (v) S.pcls = v; S.sid = null; S.card = null; S.err = null; S.pv = true; if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} } render(); var mm = document.getElementById('main'); if (mm) mm.scrollTop = 0; window.scrollTo(0, 0); return; }
+    if (a === 'back') { if (history.state && history.state.c) history.back(); else { S.sid = null; S.lid = null; S.lcard = null; S.pv = false; S.card = null; S.err = null; render(); } return; }
+    if (a === 'toplan') { e.preventDefault(); if (v) S.pcls = v; S.sid = null; S.card = null; S.lid = null; S.lcard = null; S.err = null; S.pv = true; if (!(history.state && history.state.c)) { try { history.pushState({ c: 1 }, ''); } catch (er) {} } render(); var mm = document.getElementById('main'); if (mm) mm.scrollTop = 0; window.scrollTo(0, 0); return; }
     if (a === 'pcls') { S.pcls = v; render(); return; }
     if (a === 'copy') { try { await navigator.clipboard.writeText(v); toast('복사했어요'); } catch (er) { toast('길게 눌러 직접 복사해 주세요'); } return; }
     if (a === 'retry') { S.view = 'boot'; render(); boot(); return; }
     if (a === 'logout') { if (!confirm('로그아웃할까요?')) return; await api('logout'); logoutLocal(''); return; }
     if (a === 'close') { closeModal(); return; }
     if (a === 'new') { openModal(formHtml(v)); return; }
-    if (a === 'edit') { var n = ((S.card && S.card.notes) || []).filter(function (x) { return String(x.id) === String(v); })[0]; if (n) openModal(formHtml(n.kind, n)); return; }
-    if (a === 'del') { if (!confirm('이 기록을 지울까요? (되돌릴 수 없어요)')) return; j = await api('del', { id: v }); if (!j.ok) { toast(j.error || '지우지 못했어요'); return; } toast('지웠어요'); loadCard(true); loadList(); return; }
+    if (a === 'edit') { var n = (((S.lid ? S.lcard : S.card) || {}).notes || []).filter(function (x) { return String(x.id) === String(v); })[0]; if (n) openModal(formHtml(n.kind, n)); return; }
+    if (a === 'del') { if (!confirm('이 기록을 지울까요? (되돌릴 수 없어요)')) return; j = await api(S.lid ? 'ldn_del' : 'del', { id: v }); if (!j.ok) { toast(j.error || '지우지 못했어요'); return; } toast('지웠어요'); if (S.lid) { loadLCard(true); loadLeads(); } else { loadCard(true); loadList(); } return; }
     if (a === 'save') {
       var k = t.dataset.k, id = t.dataset.id, g = function (i) { var x = document.getElementById(i); return x ? x.value : ''; };
-      var args = { sid: S.sid, kind: k, body: g('f_body'), date: g('f_date') };
+      var args = S.lid ? { lid: S.lid, kind: k, body: g('f_body'), date: g('f_date') } : { sid: S.sid, kind: k, body: g('f_body'), date: g('f_date') };
       if (k === 'consult') { args.via = g('f_via'); args.who = g('f_who'); args.follow = g('f_follow'); }
       if (k === 'special') args.pinned = !!(document.getElementById('f_pin') || {}).checked;
       if (id) args.id = id;
-      t.disabled = true; j = await api(id ? 'edit' : 'add', args); t.disabled = false;
+      t.disabled = true; j = await api(S.lid ? (id ? 'ldn_edit' : 'ldn_add') : (id ? 'edit' : 'add'), args); t.disabled = false;
       if (!j.ok) { toast(j.error || '저장하지 못했어요'); return; }
-      closeModal(); toast('저장했어요'); loadCard(true); loadList(); return;
+      closeModal(); toast('저장했어요'); if (S.lid) { loadLCard(true); loadLeads(); } else { loadCard(true); loadList(); } return;
     }
   });
   document.addEventListener('change', async function (e) {
+    var t0 = e.target; if (t0 && t0.dataset && t0.dataset.a === 'lnextdate' && S.lcard) { var jn = await api('ld_save', leadArgs({ next: t0.value })); if (!jn.ok) { toast(jn.error || '바꾸지 못했어요'); return; } toast(t0.value ? '다음 연락일을 정했어요' : '연락일을 지웠어요'); loadLCard(true); loadLeads(); return; }
     var t = e.target; if (!t || !t.dataset || t.dataset.a !== 'fchk') return;
-    var j = await api('follow', { id: t.dataset.v, done: !!t.checked });
+    var j = await api(S.lid ? 'ldn_follow' : 'follow', { id: t.dataset.v, done: !!t.checked });
     if (!j.ok) { toast(j.error || '체크하지 못했어요'); t.checked = !t.checked; return; }
-    loadCard(true); loadList();
+    if (S.lid) { loadLCard(true); loadLeads(); } else { loadCard(true); loadList(); }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view === 'main' && !document.getElementById('ov')) { loadList(); loadPlan(); if (S.sid) loadCard(true); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view === 'main' && !document.getElementById('ov')) { loadList(); loadPlan(); loadLeads(); if (S.sid) loadCard(true); if (S.lid) loadLCard(true); } });
   boot();
 })();
 </script>
