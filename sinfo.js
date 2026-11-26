@@ -280,7 +280,7 @@
   });
   window.sinfoName = function (id, name) { return kind() ? '<a href="#" data-sm="open" data-v="' + esc(id) + '" style="color:inherit;text-decoration:underline dotted;font-weight:700" title="학생 정보 열기">' + esc(name) + '</a>' : '<b>' + esc(name) + '</b>'; };   // 다른 화면의 학생 이름을 누를 수 있게
   window.sinfoOpen = function (sid) { if (!kind()) return; Q.sid = sid; Q.card = null; Q.err = null; S.tab = 'sinfo'; render(0); };   // 다른 화면에서 학생 이름을 눌렀을 때 쓰는 문
-  window.sinfoReset = function () { Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; Q.csv = false; Q.csd = null; Q.csl = null; };
+  window.sinfoReset = function () { Q.csp = null; Q.tok = null; Q.list = null; Q.feed = null; Q.card = null; Q.sid = null; Q.q = ''; Q.cls = ''; Q.csv = false; Q.csd = null; Q.csl = null; };
 
   /* ══════════ 원장 전용: 상담실장 등록 · 전용 링크 · 담당 학생 배정 · 로그인 기록 (서버: 65_상담실장_담당학생_서버.sql, 문 ac_counsel) ══════════
      상담실장은 별도 화면(counsel.html, 전용 링크로 바로 로그인)으로 들어와 '내 담당 학생'만 봐요. 여기서는 사람을 등록하고 담당·링크·로그인 기록을 관리해요. */
@@ -298,6 +298,8 @@
     if (!j || !j.ok) { Q.cse = (j && j.error) || '불러오지 못했어요'; Q.csd = null; } else { Q.cse = null; Q.csd = j; }
     var l = await capi('adm_logins', { n: 60 }); if (!isAdm()) return;
     Q.csl = l && l.ok ? l : null;
+    var pj = await capi('adm_plan'); if (!isAdm()) return;
+    Q.csp = pj && pj.ok ? pj : null;
     if (Q.csv && S.tab === 'sinfo') render();
   }
   function csLink(c) { return CS_PAGE + '?k=' + c.key; }
@@ -337,7 +339,33 @@
         '<button class="btn gh sm3" data-sm="csactive" data-v="' + esc(c.id) + '" data-on="' + (c.active ? '0' : '1') + '" type="button">' + (c.active ? '사용 중지' : '다시 사용') + '</button>' +
         '<button class="btn dng sm3" data-sm="csdel" data-v="' + esc(c.id) + '" type="button">삭제</button></div></div>';
     });
-    return h + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+    return h + csPlanCard() + csLogHtml() + '<div class="shwarn" style="font-size:12.5px;color:var(--mut)">전용 링크는 그 사람만 알아야 해요(카톡 나와의 채팅·개인 메시지로만 보내 주세요). 폰을 잃어버렸거나 링크가 퍼졌다면 [전용 링크 새로 만들기]를 누르세요. 옛 링크와 로그인된 기기가 모두 풀려요. 상담실장이 쓴 상담·특이사항은 이 학생정보 화면에도 같은 기록으로 보이고, 쓴 사람 이름 옆에 직함(상담실장·부원장·조교)이 붙어요.</div>';
+  }
+  function csPlanCard() {
+    var P = Q.csp; if (!P) return '';
+    var h = '<div class="card"><h3 style="margin:0 0 4px">수업 진행표 <span class="muted sm">(상담 화면 메인에 회차 목차로 보여요)</span></h3><div class="muted sm" style="margin-bottom:6px">날짜가 지난 회차는 색이 켜지고, 아직 안 한 회차는 어둡게 보여요(날짜 기준 자동).</div>';
+    (P.classes || []).forEach(function (c) {
+      h += '<div class="smk"><div class="t"><b>' + esc(c.cls) + '</b> <span class="muted sm">' + c.rows.length + '회차 · ' + esc(String(c.rows[0].day).slice(5)) + ' ~ ' + esc(String(c.rows[c.rows.length - 1].day).slice(5)) + '</span></div><button class="btn sec sm3" data-sm="cspedit" data-v="' + esc(c.cls) + '" type="button">고치기</button></div>';
+    });
+    if (!(P.classes || []).length) h += '<div class="empty" style="padding:10px">아직 진행표가 없어요</div>';
+    return h + '<div class="smbtn"><button class="btn gh sm3" data-sm="cspnew" type="button">+ 다른 반 진행표 만들기</button></div></div>';
+  }
+  function cspRow(r) {
+    r = r || {};
+    return '<div class="cspr" style="border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin-top:8px;background:#fff"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+      '<input type="number" min="1" max="60" data-f="no" value="' + esc(r.no || '') + '" placeholder="회" style="width:64px;border:1px solid var(--line);border-radius:10px;padding:7px"><span class="muted sm">회</span>' +
+      '<input type="date" data-f="day" value="' + esc(String(r.day || '').slice(0, 10)) + '" style="border:1px solid var(--line);border-radius:10px;padding:7px">' +
+      '<input type="text" data-f="qtr" maxlength="60" value="' + esc(r.qtr || '') + '" placeholder="분기 (예: 1분기 · 공수1 중간)" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:10px;padding:7px">' +
+      '<button class="btn dng sm3" data-sm="cspdel" type="button">삭제</button></div>' +
+      '<input type="text" data-f="title" maxlength="80" value="' + esc(r.title || '') + '" placeholder="제목 (예: 태원고 · 한솔고)" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:7px">' +
+      '<input type="text" data-f="detail" maxlength="300" value="' + esc(r.detail || '') + '" placeholder="내용 (예: 모의 1회 태원고 2026 중간 …)" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:7px">' +
+      '<input type="text" data-f="hw" maxlength="200" value="' + esc(r.hw || '') + '" placeholder="숙제 (예: 과제 1·2회)" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:7px"></div>';
+  }
+  function cspHtml(cls, rows) {
+    return '<h3>' + (cls ? esc(cls) + ' 수업 진행표' : '새 반 진행표') + '</h3>' + (cls ? '' : '<label class="l" style="display:block;font-size:13px;font-weight:600;color:var(--mut);margin:10px 0 5px">반 이름 (학생 반 이름과 똑같이)</label><input type="text" id="csp_cls" maxlength="40" placeholder="예: 공수내모" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:16px">') +
+      '<div class="muted sm" style="margin:6px 0 0">날짜가 지난 회차는 색이 켜지고 아직 안 한 회차는 어둡게 보여요. 회차를 모두 지우고 저장하면 이 반의 진행표가 없어져요.</div>' +
+      '<div id="csp_rows" style="max-height:56vh;overflow:auto">' + (rows || []).map(cspRow).join('') + '</div>' +
+      '<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn sec" data-sm="cspadd" type="button">+ 회차 추가</button><button class="btn" data-sm="cspsave" data-cls="' + esc(cls || '') + '" type="button">저장</button><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>';
   }
   function csForm(c) {
     return '<h3>' + (c ? '이름·직함·번호 고치기' : '상담실장·부원장·조교 등록') + '</h3><div class="smf"><label class="l">이름 (직함은 빼고 · 로그인할 때 쓰는 이름이에요 · 중복 불가)</label><input type="text" id="csf_name" maxlength="20" value="' + esc(c ? c.name : '') + '" placeholder="예: 김지은">' +
@@ -372,6 +400,24 @@
   document.addEventListener('click', async function (e) {
     var t = e.target.closest && e.target.closest('[data-sm]'); if (!t || !t.dataset.sm || t.dataset.sm.indexOf('cs') !== 0 || !isAdm()) return;
     var a = t.dataset.sm, v = t.dataset.v, j, c = Q.csd && Q.csd.counselors.filter(function (x) { return x.id === v; })[0];
+    if (a === 'cspedit') { var pc = ((Q.csp && Q.csp.classes) || []).filter(function (x) { return x.cls === v; })[0]; if (pc) openModal(cspHtml(pc.cls, pc.rows)); return; }
+    if (a === 'cspnew') { openModal(cspHtml('', [{ no: 1 }])); return; }
+    if (a === 'cspadd') {
+      var wrap = document.getElementById('csp_rows'), last = wrap.querySelectorAll('.cspr'), lr = last.length ? last[last.length - 1] : null, nn = 1, nd = '';
+      if (lr) { nn = (+lr.querySelector('[data-f=no]').value || last.length) + 1; var ld = lr.querySelector('[data-f=day]').value; if (ld) { var dd = new Date(ld + 'T00:00'); dd.setDate(dd.getDate() + 7); nd = dd.getFullYear() + '-' + ('0' + (dd.getMonth() + 1)).slice(-2) + '-' + ('0' + dd.getDate()).slice(-2); } var lq = lr.querySelector('[data-f=qtr]').value; }
+      wrap.insertAdjacentHTML('beforeend', cspRow({ no: nn, day: nd, qtr: lq || '' })); wrap.scrollTop = wrap.scrollHeight; return;
+    }
+    if (a === 'cspdel') { var rw = t.closest('.cspr'); if (rw) rw.remove(); return; }
+    if (a === 'cspsave') {
+      var cls = t.dataset.cls || ((document.getElementById('csp_cls') || {}).value || '').trim(), rows = [];
+      document.querySelectorAll('#csp_rows .cspr').forEach(function (r) { var g = function (f) { return r.querySelector('[data-f=' + f + ']').value; }; rows.push({ no: +g('no'), day: g('day'), qtr: g('qtr'), title: g('title'), detail: g('detail'), hw: g('hw') }); });
+      if (!cls) { toast('반 이름을 입력해 주세요'); return; }
+      for (var i = 0; i < rows.length; i++) { if (!rows[i].no || !rows[i].day) { toast((i + 1) + '번째 줄의 회차와 날짜를 채워 주세요'); return; } }
+      rows.sort(function (x, y) { return x.no - y.no; });
+      t.disabled = true; j = await capi('adm_plan_save', { cls: cls, rows: rows }); t.disabled = false;
+      if (!j || !j.ok) { toast((j && j.error) || '저장하지 못했어요'); return; }
+      closeModal(); toast(rows.length ? cls + ' 진행표 ' + j.n + '회차를 저장했어요' : cls + ' 진행표를 지웠어요'); csLoad(); return;
+    }
     if (a === 'csopen') { Q.csv = true; Q.csd = null; Q.cse = null; render(0); csLoad(); return; }
     if (a === 'csback') { Q.csv = false; render(0); return; }
     if (a === 'cscopy') { try { await navigator.clipboard.writeText(v); toast('전용 링크를 복사했어요. 개인 메시지로 보내 주세요'); } catch (er) { toast('복사하지 못했어요. 브라우저 권한을 확인해 주세요'); } return; }
