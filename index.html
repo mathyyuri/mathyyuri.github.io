@@ -384,6 +384,7 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .fld input[type=time],.fld input[type=number]{width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 14px;background:#fff}
 .landing .lface img{pointer-events:none}
 .plk{display:inline-block;margin:3px 0;padding:7px 14px;border-radius:16px;background:var(--pri);color:#fff!important;font-weight:700;text-decoration:none}
+.post h4[data-a],.post .bd.clamp{cursor:pointer}
 </style>
 </head>
 <body>
@@ -684,8 +685,8 @@ function postCard(p){
  const scope=p.sid?'개인 · '+U[p.sid].name:(p.ac==='all'?'두 학원 공통':(p.cls&&p.cls!=='all'?p.cls:AC[p.ac].name+' 전체'));
  const long=p.body.length>110||p.body.indexOf('\n')>=0;
  let h='<div class="post'+(p.pin?' pin':'')+'" id="post_'+p.id+'"><div class="hd"><span class="badge t-'+p.type+'">'+p.type+'</span>'+(p.pin?'<span class="badge">고정</span>':'')+comBadge(p)+'<span class="badge" style="background:#eee;color:#555">'+esc(scope)+'</span>'+(unread?'<span class="badge new">NEW</span>':'')+'</div>'+
- '<h4>'+esc(p.title)+'</h4><div class="meta">'+esc(p.au==='조교'?'운영진':p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
- thumbHtml(p,open)+'<div class="bd'+(open?'':' clamp')+'">'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
+ '<h4 data-a="open" data-id="'+p.id+'">'+esc(p.title)+'</h4><div class="meta">'+esc(p.au==='조교'?'운영진':p.au)+' · '+fmtTs(p.ts)+(p.ed?' · 수정됨':'')+'</div>'+
+ thumbHtml(p,open)+'<div class="bd'+(open?'':' clamp')+'"'+(open?'':' data-a="open" data-id="'+p.id+'"')+'>'+postBodyHtml(p.body)+'</div>'+(p.img?imgTag(p):'')+
  rxHtml('post',p.id)+'<div class="ft">'+(long&&!open?'<button data-a="open" data-id="'+p.id+'" class="rd">더보기 ▾</button>':'')+(open?'<button data-a="open" data-id="'+p.id+'">접기 ▴</button>':'')+
  '<button data-a="open" data-id="'+p.id+'">댓글 '+p.cm.length+'</button>'+(staff?'<button class="rd" data-a="reads" data-id="'+p.id+'">읽음 '+rc+'/'+tg.length+'</button>':'')+
  '<span class="sp"></span>'+(canEditPost(p)?'<button data-a="editpost" data-id="'+p.id+'">수정</button>':'')+(me().role==='admin'?'<button data-a="pin" data-id="'+p.id+'">'+(p.pin?'고정 해제':'고정')+'</button><button data-a="delpost" data-id="'+p.id+'" style="color:var(--bad)">삭제</button>':'')+'</div>';
@@ -2197,6 +2198,7 @@ function saveNotif(){return mut('settings_set',{key:'notif',value:DB.set.notif},
 /* ── 클릭 ── */
 document.addEventListener('click',async e=>{
  const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v,id=t.dataset.id;
+ if(a==='open'&&t.tagName!=='BUTTON'&&e.target.closest('a,img'))return;   /* 글 속 버튼·사진을 누를 땐 글이 접히거나 펼쳐지지 않게 */
  if(a==='gopost'){e.preventDefault();S.tab='feed';S.ftype='all';S.open[id]=1;const p=DB.posts.find(x=>x.id===id);if(p)readPost(p);render(0);const el=document.getElementById('post_'+id);if(el)el.scrollIntoView({block:'start'});return;}
  switch(a){
  case 'lac':S.L={ac:v,role:'student'};render(0);break;
