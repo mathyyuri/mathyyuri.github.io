@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="학생상담">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>window.__bip = null; window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__bip = e; });</script>
 <style>
 :root{--font:'Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;--serif:'Gowun Batang','Noto Serif KR',Batang,serif;
  --bg:#f5efe4;--bg2:#efe6d6;--card:#fffdf8;--ink:#33281f;--mut:#8b7d6c;--line:#e8dfcf;--warn:#b57c12;--bad:#a8453a;--sh:0 6px 22px rgba(86,60,28,.07);
@@ -165,14 +166,14 @@ textarea.inp{min-height:110px;resize:vertical}
   function saveTok(t) { S.tok = t; try { if (t) localStorage.setItem(TK, t); else localStorage.removeItem(TK); } catch (e) {} idbSet(TK, t || null); try { if (t && navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} }
 
   /* ── 앱 설치 ── */
-  var deferredInstall = null;
+  var deferredInstall = window.__bip || null;
   function isStandalone() { try { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; } }
   function isPC() { return !/iPhone|iPad|iPod|Android/.test(navigator.userAgent || ''); }
   function instHtml() { return isStandalone() ? '' : '<div class="instrow">' + (isPC() ? '<button type="button" data-a="getlnk">바탕화면 바로가기 받기</button>' : '<button type="button" data-a="inst">앱으로 설치하기</button>') + '</div>'; }     // 컴퓨터는 바로가기, 휴대폰은 앱 설치
-  function getShortcut() {      // 윈도우 바로가기 파일(.url)을 내려받아요. 받은 파일을 바탕화면으로 옮기면 끝이에요
-    var url = location.origin + '/counsel.html', blob = new Blob(['[InternetShortcut]' + String.fromCharCode(13, 10) + 'URL=' + url + String.fromCharCode(13, 10)], { type: 'application/octet-stream' }), a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = '학생상담.url'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-    openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">바로가기를 받았어요</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>브라우저 아래쪽(또는 오른쪽 위)에 <b>"학생상담"</b> 파일이 받아졌어요</div></div><div class="hw3" style="font-size:16px"><b class="n">2</b><div>그 파일을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓으면 끝!</b> 더블클릭하면 바로 열려요</div></div><div class="muted sm" style="margin-top:6px">지금 로그인한 그 브라우저로 열면 로그인이 그대로 유지돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
+  function getShortcut() {      // 바로가기 파일을 내려받아요(.url 파일은 브라우저가 막아서, 누르면 이 주소로 바로 이동하는 작은 .html 파일로 만들어요)
+    var url = location.origin + '/counsel.html', html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>MATHY YURI</title><meta http-equiv="refresh" content="0;url=' + url + '"></head><body style="font-family:sans-serif;text-align:center;padding-top:20vh"><p>학생상담 화면으로 이동 중이에요…</p><p><a href="' + url + '">자동으로 안 넘어가면 여기를 눌러 주세요</a></p><script>location.replace("' + url + '")<' + '/script></body></html>', blob = new Blob([html], { type: 'text/html' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'MATHY YURI.html'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">바로가기를 받았어요</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>브라우저 아래쪽(또는 오른쪽 위)에 <b>"MATHY YURI"</b> 파일이 받아졌어요</div></div><div class="hw3" style="font-size:16px"><b class="n">2</b><div>그 파일을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓으면 끝!</b> 더블클릭하면 브라우저에서 바로 열려요</div></div><div class="muted sm" style="margin-top:6px">파일 이름이 "MATHY YURI"(.html)이면 정상이에요. 지금 로그인한 브라우저로 열면 로그인이 그대로 유지돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
   }
   function instGuide() {
     var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), and = /Android/.test(ua), edge = /Edg\//.test(ua), steps;
@@ -184,7 +185,7 @@ textarea.inp{min-height:110px;resize:vertical}
       steps.map(function (t, i) { return '<div class="hw3" style="font-size:16px"><b class="n">' + (i + 1) + '</b><div>' + t + '</div></div>'; }).join('') +
       '<div class="muted sm" style="margin-top:6px">한 번 로그인하면 계속 자동 로그인돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
   }
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; window.__bip = e; });
   window.addEventListener('appinstalled', function () { deferredInstall = null; var r = document.querySelector('.instrow'); if (r) r.remove(); toast('앱이 설치됐어요. 홈 화면에서 열어 주세요'); });
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('counsel-sw.js', { scope: '/counsel.html' }).catch(function () {}); } catch (e) {}
 
@@ -669,7 +670,14 @@ textarea.inp{min-height:110px;resize:vertical}
     if (a === 'retry') { S.view = 'boot'; render(); boot(); return; }
     if (a === 'logout') { if (!confirm('로그아웃할까요?')) return; await api('logout'); logoutLocal(''); return; }
     if (a === 'getlnk') { getShortcut(); return; }
-    if (a === 'inst') { if (deferredInstall) { var dp = deferredInstall; deferredInstall = null; dp.prompt(); try { await dp.userChoice; } catch (er) {} } else openModal(instGuide()); return; }
+    if (a === 'inst') {
+      var uaI = navigator.userAgent || '', iosI = /iPhone|iPad|iPod/.test(uaI), inapp = /KAKAOTALK|NAVER\(|Instagram|FBAN|FBAV|Line\//i.test(uaI);
+      if (!deferredInstall && !iosI && !inapp) { toast('설치 준비 중…'); for (var wi = 0; wi < 12 && !deferredInstall && !window.__bip; wi++) await new Promise(function (r) { setTimeout(r, 250); }); if (!deferredInstall) deferredInstall = window.__bip || null; }
+      if (deferredInstall) { var dp = deferredInstall; deferredInstall = null; window.__bip = null; try { dp.prompt(); await dp.userChoice; } catch (er) {} }
+      else if (inapp && /Android/.test(uaI)) openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">크롬으로 열어 주세요</h3><div class="muted" style="margin-bottom:10px">지금은 카카오톡 같은 앱 안에서 열려 있어서 설치가 안 돼요. 크롬으로 열면 설치 버튼이 바로 돼요.</div><a class="btn" style="display:block;text-align:center" href="intent://' + location.host + '/counsel.html#Intent;scheme=https;package=com.android.chrome;end">크롬으로 열기</a><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
+      else openModal(instGuide());
+      return;
+    }
     if (a === 'close') { closeModal(); return; }
     if (a === 'new') { openModal(formHtml(v)); return; }
     if (a === 'edit') { var n = (((S.lid ? S.lcard : S.card) || {}).notes || []).filter(function (x) { return String(x.id) === String(v); })[0]; if (n) openModal(formHtml(n.kind, n)); return; }
