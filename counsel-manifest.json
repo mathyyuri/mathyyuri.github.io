@@ -1,7 +1,7 @@
 {
-  "name": "전유리T 학생 상담",
-  "short_name": "학생상담",
-  "description": "분당미래탐구 학생 상담 · 오늘 할 일 · 수업 진행표",
+  "name": "MATHY YURI",
+  "short_name": "MATHY YURI",
+  "description": "MATHY YURI · 분당미래탐구 학생 상담 · 해야 할 일 · 수업 진행표",
   "id": "/counsel.html",
   "start_url": "/counsel.html",
   "scope": "/counsel.html",
@@ -11,7 +11,17 @@
   "theme_color": "#21493f",
   "lang": "ko",
   "icons": [
-    { "src": "counsel-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "counsel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "counsel-192.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "counsel-512.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
