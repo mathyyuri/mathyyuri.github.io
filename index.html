@@ -234,6 +234,8 @@ select.sel{border:1px solid var(--line);border-radius:20px;padding:9px 14px;back
 .b.you{align-self:flex-start;background:var(--bg2);border-bottom-left-radius:6px}
 .b small{display:block;opacity:.6;font-size:11px;margin-top:2px}
 .chat .in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.chat .in textarea.mta{flex:1;border:1px solid var(--line);border-radius:20px;padding:11px 18px;min-width:0;background:#fff;font:inherit;line-height:1.5;resize:none;max-height:160px;overflow-y:auto;display:block}
+.chat .in{align-items:flex-end}
 .chat .in input{flex:1;border:1px solid var(--line);border-radius:24px;padding:11px 18px;min-width:0;background:#fff}
 /* ── 모달 ── */
 #modal{position:fixed;inset:0;background:#2a1f1480;z-index:100;display:none;align-items:flex-end;justify-content:center}
@@ -857,7 +859,7 @@ function roomChatHtml(id){
  const sub=r.kind==='staff'?'원장·조교만 볼 수 있어요':r.kind==='all'?'학원 학생 모두와 선생님이 함께 해요':(esc(r.cls)+' 학생과 선생님이 함께 해요');
  return '<div class="chat"><div class="hh"><button class="btn sm3 gh back" data-a="room" data-v="">‹</button>'+esc(r.title)+' <span class="muted sm" style="font-weight:500">'+sub+'</span></div>'+
   '<div class="msgs" id="rmsgs">'+roomMsgsHtml(id)+'</div>'+
-  '<div class="in"><button class="btn sm3 gh" type="button" data-a="emo" data-t="rmin">이모티콘</button><input id="rmin" placeholder="메시지 입력 (Enter로 보내기)" maxlength="1000" data-enter="rsend" data-room="'+esc(id)+'" value="'+esc(RDRAFT[id]||'')+'"><button class="btn" data-a="rsend" data-room="'+esc(id)+'">보내기</button></div></div>';
+  '<div class="in"><button class="btn sm3 gh" type="button" data-a="emo" data-t="rmin">이모티콘</button><textarea id="rmin" rows="1" class="mta" placeholder="메시지 입력 (Enter 보내기 · Shift+Enter 줄바꿈)" maxlength="1000" data-enter="rsend" data-room="'+esc(id)+'">'+esc(RDRAFT[id]||'')+'</textarea><button class="btn" data-a="rsend" data-room="'+esc(id)+'">보내기</button></div></div>';
 }
 function vRooms(){
  if(RMS&&RMS.ac!==undefined&&RMS.ac!==roomAc()){RMS=null;RMSG={};S.room=null;}
@@ -877,7 +879,7 @@ async function sendRoom(id){
  const j=await roomApi('send',{room:id,text:tx});
  const n=document.getElementById('rmin'),b=document.querySelector('[data-a="rsend"]');
  if(!j||!j.ok){toast((j&&j.error)||'보내지 못했어요');if(n){n.disabled=false;n.focus();}if(b)b.disabled=false;return;}
- RDRAFT[id]='';if(n){n.value='';n.disabled=false;n.focus();}if(b)b.disabled=false;
+ RDRAFT[id]='';if(n){n.value='';mtaGrow(n);n.disabled=false;n.focus();}if(b)b.disabled=false;
  await pollRoom(false);
 }
 document.addEventListener('click',async e=>{
@@ -888,7 +890,10 @@ document.addEventListener('click',async e=>{
  if(a==='rretry'){RMS=null;render();return;}
  if(a==='rdel'){if(!confirm('이 글을 지울까요?'))return;const j=await roomApi('del',{id:t.dataset.id});if(!j||!j.ok){toast((j&&j.error)||'지우지 못했어요');return;}RMSG[S.room]=(RMSG[S.room]||[]).filter(m=>String(m.id)!==String(t.dataset.id));paintRoomMsgs(true);}
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing)return;const t=e.target.closest&&e.target.closest('[data-enter="rsend"]');if(t){e.preventDefault();sendRoom(t.dataset.room);}});
+const mtaGrow=el=>{if(!el)return;el.style.height='auto';el.style.height=Math.min(el.scrollHeight+2,160)+'px';};
+const mtaTouch=()=>{try{return matchMedia('(pointer:coarse)').matches;}catch(e){return false;}};
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing||e.shiftKey||mtaTouch())return;const t=e.target.closest&&e.target.closest('[data-enter="rsend"]');if(t){e.preventDefault();sendRoom(t.dataset.room);}});
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('mta'))mtaGrow(t);});
 document.addEventListener('input',e=>{const t=e.target;if(t&&t.id==='rmin'&&S.room)RDRAFT[S.room]=t.value;});
 setInterval(()=>{
  if(document.hidden||!TOKEN)return;
@@ -1027,7 +1032,7 @@ function chatHtml(key,title,subt){
  const mark=staff?'rdS':'rdU';let ch=false;a.forEach(m=>{if((staff&&m.f==='u'&&!m.rdS)||(!staff&&m.f==='s'&&!m.rdU)){m[mark]=true;ch=true;}});if(ch)markMsg(key);
  return '<div class="chat"><div class="hh">'+(staff?'<button class="btn sm3 gh back" data-a="thread" data-v="">‹</button>'+esc(s.name)+(k==='parent'?' 학부모':'')+' <span class="muted sm" style="font-weight:500">'+s.cls+'</span>'+delAllBtn(sid,k):esc(title)+' <span class="muted sm" style="font-weight:500">'+subt+'</span>')+'</div>'+
  '<div class="msgs" id="msgs">'+(a.length?a.map(m=>{const mine=staff?m.f==='s':m.f==='u';return '<div class="b '+(mine?'me':'you')+'">'+nl(m.t)+attHtml(m)+(m.id?rxHtml('msg',m.id):'')+'<small>'+(m.f==='s'?'선생님':(k==='parent'?'학부모':'학생'))+' · '+fmtTs(m.ts)+msgDelBtn(m)+'</small></div>';}).join(''):'<div class="empty">아직 대화가 없어요</div>')+'</div>'+
- '<div id="attbar">'+attBar()+'</div><div class="in"><button class="btn sm3 gh" type="button" data-a="attpick">첨부</button><button class="btn sm3 gh" type="button" data-a="emo" data-t="min">이모티콘</button><input id="min" placeholder="메시지 입력 (사진·파일은 여기로 끌어다 놓거나 붙여넣기)" data-enter="send" data-key="'+key+'"><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
+ '<div id="attbar">'+attBar()+'</div><div class="in"><button class="btn sm3 gh" type="button" data-a="attpick">첨부</button><button class="btn sm3 gh" type="button" data-a="emo" data-t="min">이모티콘</button><textarea id="min" rows="1" class="mta" placeholder="메시지 입력 (Shift+Enter 줄바꿈 · 사진·파일은 끌어다 놓거나 붙여넣기)" data-enter="send" data-key="'+key+'"></textarea><button class="btn" data-a="send" data-key="'+key+'">보내기</button></div></div>';
 }
 
 function cutWhite(cv){
@@ -2722,7 +2727,9 @@ async function sendMsg(key){
  if(j&&j.ok!==false){ATT=[];const ab=$('#attbar');if(ab)ab.innerHTML=attBar();}
  const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;const n=$('#min');if(n&&(!j||j.ok===false)){n.disabled=false;n.value=tx;if(sb)sb.disabled=false;}else if(n)n.focus();
 }
-document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target.closest('[data-enter]');if(!t)return;
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing)return;const t=e.target.closest('[data-enter]');if(!t||t.dataset.enter==='rsend')return;
+ if(t.dataset.enter==='send'&&(e.shiftKey||mtaTouch()))return;
+ if(t.dataset.enter==='send')e.preventDefault();
  if(t.dataset.enter==='comment'){const b=document.querySelector('[data-a="comment"][data-id="'+t.dataset.id+'"]');if(b)b.click();}
  if(t.dataset.enter==='send')sendMsg(t.dataset.key);});
 document.addEventListener('change',async e=>{const t=e.target.closest('[data-ch]');if(!t)return;const c=t.dataset.ch;
