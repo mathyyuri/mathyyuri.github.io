@@ -167,15 +167,22 @@ textarea.inp{min-height:110px;resize:vertical}
   /* ── 앱 설치 ── */
   var deferredInstall = null;
   function isStandalone() { try { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; } }
-  function instHtml() { return isStandalone() ? '' : '<div class="instrow"><button type="button" data-a="inst">앱으로 설치하기</button></div>'; }
+  function isPC() { return !/iPhone|iPad|iPod|Android/.test(navigator.userAgent || ''); }
+  function instHtml() { return isStandalone() ? '' : '<div class="instrow">' + (isPC() ? '<button type="button" data-a="getlnk">바탕화면 바로가기 받기</button>' : '<button type="button" data-a="inst">앱으로 설치하기</button>') + '</div>'; }     // 컴퓨터는 바로가기, 휴대폰은 앱 설치
+  function getShortcut() {      // 윈도우 바로가기 파일(.url)을 내려받아요. 받은 파일을 바탕화면으로 옮기면 끝이에요
+    var url = location.origin + '/counsel.html', blob = new Blob(['[InternetShortcut]' + String.fromCharCode(13, 10) + 'URL=' + url + String.fromCharCode(13, 10)], { type: 'application/octet-stream' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = '학생상담.url'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    openModal('<h3 style="margin:0 0 8px;font-family:var(--serif)">바로가기를 받았어요</h3><div class="hw3" style="font-size:16px"><b class="n">1</b><div>브라우저 아래쪽(또는 오른쪽 위)에 <b>"학생상담"</b> 파일이 받아졌어요</div></div><div class="hw3" style="font-size:16px"><b class="n">2</b><div>그 파일을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓으면 끝!</b> 더블클릭하면 바로 열려요</div></div><div class="muted sm" style="margin-top:6px">지금 로그인한 그 브라우저로 열면 로그인이 그대로 유지돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>');
+  }
   function instGuide() {
-    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), and = /Android/.test(ua), kakao = /KAKAOTALK/i.test(ua);
-    var steps = ios ? ['<b>Safari</b>로 이 주소를 열어요 (카카오톡·크롬 앱 안에서 열었다면 Safari로 옮겨 주세요)', '아래쪽 <b>공유 버튼(네모에 위쪽 화살표)</b>을 눌러요', '<b>"홈 화면에 추가"</b>를 누르고 <b>추가</b>를 눌러요', '홈 화면의 <b>학생상담</b> 아이콘을 눌러 열고, <b>처음 한 번만</b> 이름 + 전화번호 뒤 4자리로 들어와요 (아이폰은 설치된 앱이 따로 저장되기 때문이에요)']
-      : and ? ['<b>크롬</b>으로 이 주소를 열어요' + (kakao ? ' (지금은 카카오톡 안이라면 크롬으로 열어 주세요)' : ''), '오른쪽 위 <b>점 세 개(⋮)</b>를 눌러요', '<b>"앱 설치"</b> 또는 <b>"홈 화면에 추가"</b>를 눌러요', '홈 화면의 <b>학생상담</b> 아이콘으로 열어요. 링크로 한 번 들어온 상태 그대로 자동 로그인돼요']
-      : ['<b>크롬 또는 엣지</b>로 이 주소를 열어요', '주소창 오른쪽의 <b>설치 아이콘(모니터에 화살표)</b>을 누르거나, 오른쪽 위 메뉴(⋮)에서 <b>"앱 설치"</b>를 눌러요', '바탕화면·시작 메뉴의 <b>학생상담</b>으로 열어요. 로그인은 그대로 유지돼요'];
-    return '<h3 style="margin:0 0 4px;font-family:var(--serif)">앱으로 설치하기</h3><div class="muted sm">홈 화면(또는 바탕화면)에 <b>학생상담</b> 아이콘이 생기고, 주소창 없이 앱처럼 열려요. 한 번 로그인하면 계속 자동 로그인돼요.</div>' +
-      steps.map(function (t, i) { return '<div class="hw3"><b class="n">' + (i + 1) + '</b><div>' + t + '</div></div>'; }).join('') +
-      '<div class="muted sm">내 기기: ' + (ios ? '아이폰/아이패드' : and ? '안드로이드' : '컴퓨터') + ' 기준 안내예요</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), and = /Android/.test(ua), edge = /Edg\//.test(ua), steps;
+    if (ios) steps = ['아래 <b>공유 버튼(네모에 화살표)</b>을 누르고 <b>"홈 화면에 추가"</b>를 눌러요 <span class="muted sm">(Safari로 열어야 해요)</span>'];
+    else if (and) steps = ['오른쪽 위 <b>점 세 개(⋮)</b>를 누르고 <b>"앱 설치"</b>(또는 "홈 화면에 추가")를 눌러요'];
+    else steps = [edge ? '오른쪽 위 <b>⋯</b> → <b>앱</b> → <b>"이 사이트를 앱으로 설치"</b>를 눌러요' : '주소창 맨 오른쪽의 <b>설치 아이콘</b>(모니터에 화살표)을 누르고 <b>[설치]</b>를 눌러요',
+      '<b>설치 아이콘이 안 보이면:</b> 주소창 맨 앞의 <b>자물쇠 모양</b>을 마우스로 잡아서 <b>바탕화면으로 끌어다 놓아요.</b> 더블클릭하면 바로 열리고, 로그인도 그대로예요'];
+    return '<h3 style="margin:0 0 6px;font-family:var(--serif)">' + (ios || and ? '홈 화면에 아이콘 만들기' : '바탕화면에 아이콘 만들기') + '</h3>' +
+      steps.map(function (t, i) { return '<div class="hw3" style="font-size:16px"><b class="n">' + (i + 1) + '</b><div>' + t + '</div></div>'; }).join('') +
+      '<div class="muted sm" style="margin-top:6px">한 번 로그인하면 계속 자동 로그인돼요.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gh" data-a="close" type="button">닫기</button></div>';
   }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; });
   window.addEventListener('appinstalled', function () { deferredInstall = null; var r = document.querySelector('.instrow'); if (r) r.remove(); toast('앱이 설치됐어요. 홈 화면에서 열어 주세요'); });
@@ -661,6 +668,7 @@ textarea.inp{min-height:110px;resize:vertical}
     if (a === 'copy') { try { await navigator.clipboard.writeText(v); toast('복사했어요'); } catch (er) { toast('길게 눌러 직접 복사해 주세요'); } return; }
     if (a === 'retry') { S.view = 'boot'; render(); boot(); return; }
     if (a === 'logout') { if (!confirm('로그아웃할까요?')) return; await api('logout'); logoutLocal(''); return; }
+    if (a === 'getlnk') { getShortcut(); return; }
     if (a === 'inst') { if (deferredInstall) { var dp = deferredInstall; deferredInstall = null; dp.prompt(); try { await dp.userChoice; } catch (er) {} } else openModal(instGuide()); return; }
     if (a === 'close') { closeModal(); return; }
     if (a === 'new') { openModal(formHtml(v)); return; }
