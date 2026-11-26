@@ -389,7 +389,11 @@ function solOf(so) {                                      /* 정답 칸에 보�
 function isRefAn(a) { return /(풀이|해설)\s*참[조고]/.test(String(a == null ? '' : a)); }
 function qaOf(o) {                                         // 빠른 정답 한 칸: 정답이 있으면 a, 없거나 '풀이 참조'면 풀이(r)
  var has = String(o.an == null ? '' : o.an).replace(/\s/g, '') !== '';
- if (has && !isRefAn(o.an)) return { a: (o.ch && o.ch.length && /^[1-5]$/.test(String(o.an))) ? CIRC5.charAt(+o.an - 1) : String(o.an) };
+ if (has && !isRefAn(o.an)) {
+  var isMc = o.ch && o.ch.length && /^[1-5]$/.test(String(o.an));
+  if (isMc && o.hh && o.ch[+o.an - 1] != null) return { a: CIRC5.charAt(+o.an - 1) + ' ' + String(o.ch[+o.an - 1]) };      // 보기를 가린 문제는 번호 옆에 보기 내용도 (채점할 수 있게)
+  return { a: isMc ? CIRC5.charAt(+o.an - 1) : String(o.an) };
+ }
  return { r: solOf(o.so) };
 }
 function roundHint() {
@@ -645,7 +649,7 @@ function normAns(a) {                                      // 서버 정답의 &
 }
 function ansHtml(a) {                                      // 정답 칸: 서버 정답이 수식 조각(<span class="eq">)이면 그대로, 아니면 글자로
  a = normAns(a);
- if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = '<span class="eq">' + esc(a) + '</span>'; else a = esc(a);
+ if (/<span class="eq">/.test(a)) a = a.replace(/<(?!\/?span\b)[^>]*>/g, ''); else if (/\\\(/.test(a)) a = String(a).split(/(\\\(.*?\\\))/).map(function (x, i) { return i % 2 ? '<span class="eq">' + esc(x) + '</span>' : esc(x); }).join(''); else a = esc(a);      // 글 사이에 \( \) 수식이 섞인 정답은 수식마다 따로
  return a.replace(/\\?bold\s*(?:\{([^{}]*)\})?/g, function (m, b) { return b == null ? ' ' : b; });
 }
 function quickCollect(pick, PDFJS) {
