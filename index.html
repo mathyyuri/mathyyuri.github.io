@@ -1929,16 +1929,17 @@ async function rpLoadDet(){
 function rpReport(){
  const hist=RP.hist||[];
  if(!hist.length)return rpStudentBar()+noteLog()+'<div class="card"><div class="empty">아직 채점된 미션 기록이 없어요.</div></div>';
+ const gsmH=hist.some(h=>GSM_CATS.indexOf(h.cat)>=0);   /* 공수내모는 '2학기 기말·중간대비' 구분 없이 한 줄로 */
  const seas=S.rpSeason&&(S.rpSeason==='fin'||S.rpSeason==='mid')?S.rpSeason:(hist.some(h=>msSeasonH(h)==='fin')?'fin':'mid');
- const L=hist.filter(h=>msSeasonH(h)===seas).slice().reverse();
+ const L=(gsmH?hist:hist.filter(h=>msSeasonH(h)===seas)).slice().reverse();
  let clr=0,xs=0,sp=0,np=0;L.forEach(h=>{const c=hCnt(h);if(c.x===0&&c.b===0&&c.o+c.t>0)clr++;xs+=c.x;const p=pctOf(h);if(p!=null){sp+=p;np++;}});
  const cnt={fin:0,mid:0};hist.forEach(h=>cnt[msSeasonH(h)]++);
  let h=rpStudentBar()+noteLog();
- h+='<div class="tabs" style="padding-bottom:6px">'+[['fin','2학기 기말대비'],['mid','2학기 중간대비']].map(x=>'<button class="'+(seas===x[0]?'on':'')+'" data-a="rpseason" data-v="'+x[0]+'">'+x[1]+' <span style="opacity:.7">'+cnt[x[0]]+'</span></button>').join('')+'</div>';
+ if(!gsmH)h+='<div class="tabs" style="padding-bottom:6px">'+[['fin','2학기 기말대비'],['mid','2학기 중간대비']].map(x=>'<button class="'+(seas===x[0]?'on':'')+'" data-a="rpseason" data-v="'+x[0]+'">'+x[1]+' <span style="opacity:.7">'+cnt[x[0]]+'</span></button>').join('')+'</div>';
  h+='<div class="kpi" style="margin-bottom:10px"><div><b>'+L.length+'개</b><span>푼 미션</span></div><div><b>'+(np?Math.round(sp/np*10)/10:'-')+'%</b><span>평균 점수</span></div><div><b style="color:#2f7d5b">'+clr+'개</b><span>클리어</span></div><div><b style="color:'+(xs?'#b84a4a':'#2f7d5b')+'">'+xs+'문제</b><span>남은 오답</span></div></div>';
  const lim=S.rpAll?L.length:8;
  h+=L.slice(0,lim).map(x=>{const c=hCnt(x),ok=c.x===0&&c.b===0&&c.o+c.t>0;
-  return '<div class="rpc"><div class="hd"><div><b>'+esc(x.name)+'</b><div class="muted sm">'+esc(String(x.date).slice(5).replace('-','/'))+(x.cat?' · '+esc(x.cat):'')+'</div></div><div class="sc"><strong>'+(x.score==null?'-':Math.round(x.score*10)/10)+'</strong> / '+Math.round(x.tot*10)/10+'점<div>'+x.rk+'위 / '+x.cnt+'명'+(x.avg!=null?' · 평균 '+Math.round(x.avg*10)/10:'')+'</div></div>'+(ok?'<span class="stamp s">CLEAR</span>':(c.x?'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+c.x+'</b>':''))+'</div>'+pBlocks(x)+mnoteHtml(x)+'</div>';}).join('');
+  return '<div class="rpc"><div class="hd"><div><b>'+esc(x.name)+'</b><div class="muted sm">'+esc(String(x.date).slice(5).replace('-','/'))+(x.cat?' · '+esc(x.cat):'')+'</div></div><div class="sc"><strong>'+(x.score==null?'-':Math.round(x.score*10)/10)+'</strong> / '+Math.round(x.tot*10)/10+'점<div>'+x.rk+'위 / '+x.cnt+'명'+(x.avg!=null?' · 평균 '+Math.round(x.avg*10)/10:'')+'</div></div>'+(ok?'<span class="stamp s">CLEAR</span>':(c.x?'<b style="color:#b84a4a;white-space:nowrap">남은 오답 '+c.x+'</b>':''))+(['내모미션','과제미션','원본미션'].indexOf(x.cat)>=0?'<button class="btn sm3" type="button" data-rpt="view" data-id="'+x.id+'" data-sid="'+(isStaff()?(S.rpSid||''):'')+'" style="white-space:nowrap">📄 성적표 보기</button>':'')+'</div>'+pBlocks(x)+mnoteHtml(x)+'</div>';}).join('');
  if(L.length>8)h+='<div style="text-align:center"><button class="btn sm3 gh" type="button" data-a="rpall">'+(S.rpAll?'접기':'미션 '+L.length+'개 전체 보기')+'</button></div>';
  h+='<div class="muted sm" style="margin-top:8px">○ 맞음(파랑) · ✕ 틀림(빨강) · △ 틀렸다 고침(노랑) · · 기록 없음</div>';
  return h;
