@@ -104,7 +104,7 @@ function bindLogin(){document.querySelectorAll('[data-r]').forEach(function(b){b
 /* ── 시작 ── */
 async function boot(){if(!S.tok){S.view='login';render();return}
  var j=await api('list');if(!j||!j.ok){if(S.view!=='login'){S.view='login';render((j&&j.error)||'불러오지 못했어요')}return}
- S.list=j.list;S.staff=j.staff;S.admin=j.admin;S.me=j.me;
+ S.list=j.list;S.list.forEach(function(e){if(e.mine&&!e.mine.tries)e.mine=null});S.staff=j.staff;S.admin=j.admin;S.me=j.me;
  $('#who').innerHTML=(S.staff?'선생님':esc((S.me||{}).name)+' 학생')+' <button class="tb" id="out" type="button">로그아웃</button>';
  $('#out').onclick=async function(){await call('ac_api',{p_action:'logout',p_token:S.tok,p_args:{}});S.tok=null;try{localStorage.removeItem(TK)}catch(e){}location.reload()};
  S.view='list';render();var want=qs.get('exam');if(want&&S.list.some(function(x){return x.id===want})){S.staff?openRows(want):openExam(want)}}
@@ -125,7 +125,7 @@ function vList(){var t=nowMs(),L=(S.list||[]).filter(function(e){return S.staff|
    '<button class="btn" data-open="'+e.id+'" '+(op&&!S.staff?'disabled':'')+' type="button">'+(S.staff?'현황 보기':op?'아직 안 열렸어요':over?(m?'내 제출 보기':'보기'):m?'다시 풀기 · 고치기':'과제 풀기')+'</button></div>'}).join('')}
 /* ── 학생: 과제 풀기 ── */
 async function openExam(id){var j=await api('open',{exam_id:id});if(!j||!j.ok){toast((j&&j.error)||'열지 못했어요');return}
- S.ex=j.exam;S.ess=(j.essays&&j.essays.items)||[];S.figs=Object.assign({},(j.essays&&j.essays.figs)||{});S.mine=j.mine;S.photos=j.photos||{};S.thumbs={};S.probs={};S.res=null;
+ S.ex=j.exam;S.ess=(j.essays&&j.essays.items)||[];S.figs=Object.assign({},(j.essays&&j.essays.figs)||{});S.mine=(j.mine&&j.mine.tries)?j.mine:null;S.photos=j.photos||{};S.thumbs={};S.probs={};S.res=null;
  var n=S.ex.n,dr=null;try{dr=JSON.parse(localStorage.getItem('hw_dr_'+id)||'null')}catch(e){}
  var a=new Array(n).fill(''),c=new Array(n).fill('');
  if(S.mine&&S.mine.answers){a=S.mine.answers.slice();c=(S.mine.conf||[]).slice();while(c.length<n)c.push('')}

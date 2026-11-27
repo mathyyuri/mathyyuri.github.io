@@ -648,7 +648,7 @@ async function boot(){if(!S.tok){showLogin();return}
  S.list=j.list;S.staff=j.staff;S.admin=j.admin;S.me=j.me;$('#stuLogin').hidden=true;$('#stuMain').hidden=false;
  $('#stuHi').innerHTML=(S.staff?'<b>선생님</b> 화면':'<b>'+esc((S.me||{}).name)+'</b> 학생 · '+esc((S.me||{}).cls||''))+' <button class="g" id="stuOut">로그아웃</button>';
  $('#stuOut').onclick=async function(){await call('ac_api',{p_action:'logout',p_token:S.tok,p_args:{}});S.tok=null;try{localStorage.removeItem(TK)}catch(e){}location.reload()};
- var sel=$('#stuExam');sel.innerHTML=S.list.length?S.list.map(function(e,i){var m=e.mine;return'<option value="'+i+'">'+esc(e.name)+(m?' — 제출함('+m.tries+'회)':'')+(e.lock?' · 마감':'')+'</option>'}).join(''):'<option>제출할 시험이 아직 없어요</option>';
+ var sel=$('#stuExam');sel.innerHTML=S.list.length?S.list.map(function(e,i){var m=e.mine&&e.mine.tries?e.mine:null;return'<option value="'+i+'">'+esc(e.name)+(m?' — 제출함('+m.tries+'회)':'')+(e.lock?' · 마감':'')+'</option>'}).join(''):'<option>제출할 시험이 아직 없어요</option>';
  sel.onchange=pick;pick()}
 function pick(){var e=S.list[+$('#stuExam').value];S.ex=e||null;$('#readPanel').style.display=(!S.staff&&e&&!e.lock)?'':'none';$('#stuStaff').hidden=!S.staff;$('#scanLast').innerHTML='';
  if(!e){$('#stuExamInfo').textContent='';return}
@@ -656,7 +656,7 @@ function pick(){var e=S.list[+$('#stuExam').value];S.ex=e||null;$('#readPanel').
  var m=e.mine,h='객관식 '+e.n+'문항'+(e.es.length?' · 서술형 '+e.es.length+'문항(선생님이 채점)':'');
  if(e.lock)h+='<br><b style="color:#c33">제출이 마감됐어요</b>';
  $('#stuExamInfo').innerHTML=h+mineInfo(e)}
-function mineInfo(e){var m=e.mine;if(!m)return '';return '<br>지금까지 <b>'+m.tries+'번</b> 제출했어요 (최대 5번) · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.score!=null?' · 객관식 '+(Math.round(((+m.score)-(+m.es_total||0))*100)/100)+'점':'')+(m.es_total!=null?' · 서술형 '+m.es_total+'점':'')}
+function mineInfo(e){var m=e.mine;if(!m||!m.tries)return '';return '<br>지금까지 <b>'+m.tries+'번</b> 제출했어요 (최대 5번) · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.score!=null?' · 객관식 '+(Math.round(((+m.score)-(+m.es_total||0))*100)/100)+'점':'')+(m.es_total!=null?' · 서술형 '+m.es_total+'점':'')}
 /* ── 학생: 사진을 읽은 뒤 확인·제출 ── */
 document.addEventListener('change',function(e){var t=e.target;if(t&&(t.id==='fileIn'||t.id==='fileAlb')){window.__stuFiles.push.apply(window.__stuFiles,[].slice.call(t.files))}},true);
 function toJpeg(file,mx,q){return new Promise(function(res,rej){var im=new Image();im.onload=function(){var k=Math.min(1,mx/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};im.onerror=function(){rej(new Error('사진을 열 수 없어요'))};im.src=URL.createObjectURL(file)})}
