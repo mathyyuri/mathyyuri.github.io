@@ -94,14 +94,14 @@
     try { var r = await fetch('books/books.json?v=' + Date.now()); P.base = r.ok ? await r.json() : {}; } catch (e) { P.base = {}; }
     P.baseBusy = false; if (onShop()) render(0);
   }
-  function pcard(src, cap, v, id) {
-    return '<div class="shi"><img ' + (id ? 'data-sp="' + esc(id) + '" ' : '') + 'data-sa="zoom" data-v="' + esc(v) + '" src="' + esc(src) + '" alt="' + esc(cap) + '">' + (cap ? '<div class="shc">' + esc(cap) + '</div>' : '') + '</div>';
+  function pcard(src, cap, v, id, k) {
+    return '<div class="shi' + (k ? ' k-' + esc(k) : '') + '"><img ' + (id ? 'data-sp="' + esc(id) + '" ' : '') + 'data-sa="zoom" data-v="' + esc(v) + '" src="' + esc(src) + '" alt="' + esc(cap) + '">' + (cap ? '<div class="shc">' + esc(cap) + '</div>' : '') + '</div>';
   }
   function bookPics(w) {
     var base = (P.base && P.base[String(w)]) || [], ex = ((P.d && P.d.photos) || []).filter(function (f) { return f.week === w; });
     if (!base.length && !ex.length) return '';
     var h = '<div class="shbk">';
-    if (base.length) h += '<div class="shbl">기본 교재</div><div class="shp">' + base.map(function (b) { return pcard(b.f, b.c, b.f); }).join('') + '</div>';
+    if (base.length) h += '<div class="shbl">기본 교재</div><div class="shp">' + base.map(function (b) { return pcard(b.f, b.c, b.f, null, b.k); }).join('') + '</div>';
     if (ex.length) h += '<div class="shbl">추가 교재</div><div class="shp">' + ex.map(function (f) { return pcard(P.pic[f.id] || BLANK, f.caption, f.id, f.id); }).join('') + '</div>';
     return h + '</div>';
   }
@@ -134,7 +134,7 @@
     '.shacct{background:var(--soft);border:1.5px solid var(--acc);border-radius:20px;padding:16px 18px;margin-bottom:16px}.shacct .big{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;letter-spacing:.5px;word-break:break-all}.shacct .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-top:1px dashed #c9b79c}.shacct .row:first-of-type{border-top:0}.shacct .row span:first-child{color:var(--mut);font-size:13px;flex:none}' +
     '.shord{padding:12px 0;border-top:1px solid var(--line)}.shord:first-of-type{border-top:0}.shord .h{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.shord .a{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}' +
     '.shmx{overflow-x:auto;border:1px solid var(--line);border-radius:14px}.shmx table{border-collapse:collapse;font-size:13px;min-width:100%}.shmx th,.shmx td{padding:6px 7px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}.shmx th{background:var(--soft);position:sticky;top:0}.shmx td:first-child,.shmx th:first-child{text-align:left;position:sticky;left:0;background:var(--card);font-weight:700}.shmx th:first-child{background:var(--soft)}.shmx tfoot td{font-weight:700;background:var(--soft2)}' +
-    '.shbk{margin:4px 0 2px}.shbl{font-size:12.5px;font-weight:700;color:var(--acc);margin:8px 0 0}.shsel{width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 10px;background:#fff;font:inherit}.shp .shi img[data-v^="books/"]{height:224px}' +
+    '.shp .shi.k-exam img{border:3px solid #16325c}.shp .shi.k-orig img{border:3px solid #1f5a3d}.shp .shi.k-hw img{border:3px solid #8c2f4a}.shp .shi.k-exam .shc{color:#16325c;font-weight:700}.shp .shi.k-orig .shc{color:#1f5a3d;font-weight:700}.shp .shi.k-hw .shc{color:#8c2f4a;font-weight:700}.shbk{margin:4px 0 2px}.shbl{font-size:12.5px;font-weight:700;color:var(--acc);margin:8px 0 0}.shsel{width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 10px;background:#fff;font:inherit}.shp .shi img[data-v^="books/"]{height:224px}' +
     '.shpa{display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.shpa img{width:56px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--bg2)}.shpa .t{flex:1;min-width:0}' +
     '.shin{width:100%;border:1px solid var(--line);border-radius:14px;padding:9px 12px;background:#fff;min-width:0}' +
     '.shwarn{font-size:12.5px;color:var(--mut);line-height:1.55;margin-top:8px}';
@@ -268,7 +268,7 @@
       '<input type="file" id="shp_file" accept="image/jpeg,image/png,image/webp" data-si="photo" multiple style="display:none"><button class="btn" data-sa="pickfile" type="button"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? '올리는 중…' : '사진 고르기 (여러 장 가능)') + '</button></div>';
     var bk = P.base || {}, bks = Object.keys(bk).sort(function (x, y) { return x - y; });
     if (bks.length) h += '<div class="card"><h3 style="margin:0 0 4px">기본 교재 (자동)</h3><div class="muted sm" style="margin-bottom:6px">교재를 만들 때 함께 만들어지는 사진이에요. 시험지는 문제를 흐리게 처리했어요.</div>' +
-      bks.map(function (k) { return '<div class="shbl">' + k + '회차</div><div class="shp">' + bk[k].map(function (b) { return pcard(b.f, b.c, b.f); }).join('') + '</div>'; }).join('') + '</div>';
+      bks.map(function (k) { return '<div class="shbl">' + k + '회차</div><div class="shp">' + bk[k].map(function (b) { return pcard(b.f, b.c, b.f, null, b.k); }).join('') + '</div>'; }).join('') + '</div>';
     var ph = (d.photos || []);
     h += '<div class="card"><h3 style="margin:0 0 4px">올려 둔 추가 교재 사진</h3>' + (ph.length ? '' : '<div class="muted sm">아직 없어요</div>');
     ph.forEach(function (f) {
