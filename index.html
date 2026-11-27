@@ -547,7 +547,7 @@ function saveSession(){}
 /* 로그인 */
 function tlHtml(nohl){const si=nohl?-1:seasonIdx();
  return '<div class="tl6">'+SEASONS.map((x,i)=>'<div class="st '+(i<si?'past':i===si?'now':'')+(x.vac?' vac':'')+'"><div class="nd">'+(i<si?'✓':i+1)+'</div><div class="en">'+x.en+'</div><div class="ko">'+x.ko+'</div></div>').join('')+'</div><div class="tlg"><span class="k"></span>시험 대비 시즌<span class="k v"></span>방학 시즌</div>';}
-const TEMP_OMR_LINK=true;   // 10모 수학 답안지 제출 임시 입구(분당 외부생용) — 필요 없어지면 false
+const TEMP_OMR_LINK=false;   // 10모 수학 답안지 제출 임시 입구(분당 외부생용) — 2026-11-27 원장님 요청으로 끔(다시 쓰려면 true)
 function renderLogin(){
  const L=S.L,si=seasonIdx(),X=SEASONS[si];
  let h='<div class="landing"><div class="lface"><img src="'+faceSrc()+'" alt=""></div><div class="lmain">'+
