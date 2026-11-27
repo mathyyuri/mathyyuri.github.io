@@ -2113,13 +2113,18 @@ async function saveOx(){
 
 /* ── 교과서 미션 화면을 이 앱 안에 그대로 넣기 (다른 주소로 이동하지 않고, 로그인 정보도 그대로 써요) ── */
 function isDir(){const u=me();return !!u&&u.role==='ta'&&/^(대표원장|원장|부원장)/.test(String(u.name||''));}
-function tbmUrl(extra){const loc=/localhost|127\.0\.0\.1/.test(API_URL);return (loc?'교과서미션.html':'tbmission.html')+'?embed=1'+(extra||'')+(loc?'&sb='+encodeURIComponent(API_URL.replace(/ac_api$/,'')):'');}
-function tbmFrame(){return '<iframe class="tbmf" id="tbmf" src="'+tbmUrl()+'" title="교과서 미션"></iframe>';}
+/* 원장이 지금 보고 있는 학원(대치에스플러스 / 분당미래탐구)을 미션 화면에 알려 줘요 → 그 학원 미션만 보이고, 미션 올리기 창이 그 학원으로 바로 열려요 */
+function tbmAcQ(up,more){try{const u=me();if(!u||u.role!=='admin'||S.mc)return '';const a=curAc();if(a!=='ds'&&a!=='bd')return '';return (more?'&':'?')+'ac='+a+(up?'&up=1':'');}catch(e){return '';}}
+function toolName(t){return (t.url==='tbmission.html'&&t.name==='교과서 미션')?'미션올리기':t.name;}
+function toolDesc(t){return (t.url==='tbmission.html'&&t.desc==='정오표 · 정답률 · 오답노트')?'미션 올리기 · 정오표 · 정답률 · 오답노트':(t.desc||'');}
+function toolHref(t){return t.url==='tbmission.html'?(t.url+tbmAcQ(true,false)):t.url;}
+function tbmUrl(extra){const loc=/localhost|127\.0\.0\.1/.test(API_URL);return (loc?'교과서미션.html':'tbmission.html')+'?embed=1'+(extra||tbmAcQ(true,true))+(loc?'&sb='+encodeURIComponent(API_URL.replace(/ac_api$/,'')):'');}
+function tbmFrame(){return '<iframe class="tbmf" id="tbmf" src="'+tbmUrl()+'" title="미션올리기"></iframe>';}
 function tbmOn(){return !!S.uid&&S.tab==='admin'&&(S.sub.admin||(me().role==='admin'?'tools':'tbm'))==='tbm';}
 /* ── 관리 탭: 학생 · 선생님 · 비밀번호 ── */
 function vAdmin(){
  const u=me(),adm=u.role==='admin';let k=S.sub.admin||(adm?'tools':'tbm');if(!adm&&k!=='pw')k='tbm';
- let h=(adm&&!VIEW?'<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="viewas" type="button">👁 미리보기 — 학생·학부모·조교·부원장 화면으로 보기</button></div>':'')+'<div class="chips">'+(adm?[['tbm','교과서 미션'],['tools','도구 모음'],['pr','알림 현황'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','운영진'],['pw','내 비밀번호']]:[['tbm','교과서 미션 채점'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+ let h=(adm&&!VIEW?'<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="viewas" type="button">👁 미리보기 — 학생·학부모·조교·부원장 화면으로 보기</button></div>':'')+'<div class="chips">'+(adm?[['tbm','미션올리기'],['tools','도구 모음'],['pr','알림 현황'],['stu','학생'],['cls','반 관리'],['pv','기출풀이'],['staff','운영진'],['pw','내 비밀번호']]:[['tbm','교과서 미션 채점'],['pw','내 비밀번호']]).map(x=>'<button class="chip '+(k===x[0]?'on':'')+'" data-a="sub" data-k="admin" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
  if(k==='tbm')return h+tbmFrame();
  if(k==='pr')return h+vPushRoster();
  if(k==='tools')return h+vTools();
@@ -2357,7 +2362,7 @@ document.addEventListener('click',async e=>{
 /* ── 도구 모음: 원장은 전부, 조교·학생·학부모는 원장이 정해 준 것만 ── */
 const TOOLS_URL=API_URL.replace('ac_api','ac_tools');
 const DEF_TOOLS=[
- {id:'tbmission',name:'교과서 미션',url:'tbmission.html',desc:'정오표 · 정답률 · 오답노트',grp:'미션·성적',roles:['ta','student','parent']},
+ {id:'tbmission',name:'미션올리기',url:'tbmission.html',desc:'미션 올리기 · 정오표 · 정답률 · 오답노트',grp:'미션·성적',roles:['ta','student','parent']},
  {id:'res10',name:'10월 전국연합 성적 통계',url:'26_10moresult.html',desc:'반별·등급 통계',grp:'미션·성적',roles:['ta','student','parent']},
  {id:'form10',name:'10월 모의고사 성적 제출',url:'score_form_10.html',desc:'학생이 점수 직접 입력',grp:'미션·성적',roles:['student','parent']},
  {id:'mo10staff',name:'10모 성적표 (강사용)',url:'mo10staff.html',desc:'이름·전 과목·반별 분포 · 이미지 저장',grp:'미션·성적',roles:[]},
@@ -2398,7 +2403,7 @@ function vTools(){
  if(adm)h+=pvCard();
  if(adm)h+='<div class="row" style="margin-bottom:12px"><button class="btn" data-a="toolsedit">도구 관리</button></div>';
  if(!L.length)return h+'<div class="card"><div class="empty">보여 줄 도구가 아직 없어요</div></div>';
- grp.forEach(g=>{h+='<div class="card"><h3>'+esc(g.k)+'</h3><div class="grid g3">'+g.a.map(t=>'<a class="card" href="'+esc(t.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;margin:0"><div style="font-weight:800;font-size:16px">'+esc(t.name)+'</div><div class="muted sm" style="margin-top:4px">'+esc(t.desc||'')+'</div>'+(adm&&t.roles&&t.roles.length?'<div style="margin-top:6px">'+t.roles.map(r=>'<span class="badge">'+({ta:'운영진',student:'학생',parent:'학부모'}[r]||r)+'</span>').join(' ')+'</div>':'')+'</a>').join('')+'</div></div>';});
+ grp.forEach(g=>{h+='<div class="card"><h3>'+esc(g.k)+'</h3><div class="grid g3">'+g.a.map(t=>'<a class="card" href="'+esc(toolHref(t))+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;margin:0"><div style="font-weight:800;font-size:16px">'+esc(toolName(t))+'</div><div class="muted sm" style="margin-top:4px">'+esc(toolDesc(t))+'</div>'+(adm&&t.roles&&t.roles.length?'<div style="margin-top:6px">'+t.roles.map(r=>'<span class="badge">'+({ta:'운영진',student:'학생',parent:'학부모'}[r]||r)+'</span>').join(' ')+'</div>':'')+'</a>').join('')+'</div></div>';});
  return h;
 }
 let TEDIT=null;
@@ -2619,7 +2624,7 @@ function vMission(){
  const chips='<div class="chips">'+gsmGroups().map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+(gonly?'':'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button>')+'</div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h=chips+(g==='hw'?hwCard():'')+(g==='nemo'?pvCard():'')+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+(g==='hw'?hwCard():'')+(g==='nemo'?pvCard():'')+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html'+tbmAcQ(false,false)+'">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
