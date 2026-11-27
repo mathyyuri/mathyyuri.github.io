@@ -160,7 +160,7 @@
     /* 안내 */
     h += '<div class="card"><h3 style="margin:0 0 4px">공수내모 교재 <span class="badge">주당 ' + esc(won(d.price)) + '</span></h3>' +
       '<div class="muted sm">주마다 수업일에 받는 교재예요. 필요한 주차만 골라서 살 수 있어요.</div>' +
-      '<ul style="margin:10px 0 0;padding-left:20px;line-height:1.8"><li><b>1주차</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · 첫날 추가문제</li><li><b>2주차부터</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · <b>개별 MEN BOOK</b>(내 오답노트)가 함께 들어가요</li></ul>';
+      '<ul style="margin:10px 0 0;padding-left:20px;line-height:1.8"><li><b>1주차</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · 과제 시험지 2개 · 원본 시험지 2개(학교 시험 그대로) · 첫날 추가문제</li><li><b>2주차부터</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · <b>개별 MEN BOOK</b>(내 오답노트)가 함께 들어가요</li></ul>';
     var gp = (d.photos || []).filter(function (f) { return f.week == null; });
     if (gp.length) h += '<div class="shp" style="margin-top:12px">' + gp.map(function (f) { return pcard(P.pic[f.id] || BLANK, f.caption, f.id, f.id); }).join('') + '</div>';
     var cw = curWeek(d), cb = cw ? bookPics(cw) : '';
