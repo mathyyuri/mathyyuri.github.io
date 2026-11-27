@@ -262,7 +262,7 @@
   function admPhoto(d) {
     var ws = d.weeks || [];
     var wopts = '<option value="">공통 (모든 회차에 보여요)</option>' + ws.map(function (w) { return '<option value="' + w.week + '"' + (String(P.upWeek) === String(w.week) ? ' selected' : '') + '>' + w.week + '회차 · ' + esc(dstr(w.ds)) + '</option>'; }).join('');
-    var h = '<div class="card"><h3 style="margin:0 0 4px">교재 사진 <span class="muted sm">(' + (d.photos || []).length + '/60장)</span></h3><div class="muted sm" style="margin-bottom:10px">회차마다 <b>기본 교재</b>(해설집 표지 2 · 시험지 2 · 과제 2)는 <b>자동으로</b> 들어가요. 여기에는 그 회차에 <b>추가로 나눠 주는 교재</b>(예: 개념집, 킬러40제)를 올려요. 올린 사진은 공수내모 학생·학부모의 \'교재 구매\' 화면에서 그 회차 칸에 보여요. 사진은 자동으로 작게 줄여서 올려요. 세로 사진이 보기 좋아요.</div>' +
+    var h = '<div class="card"><h3 style="margin:0 0 4px">교재 사진 <span class="muted sm">(' + (d.photos || []).length + '/60장)</span></h3><div class="muted sm" style="margin-bottom:10px">회차마다 <b>기본 교재</b>(해설집 표지 2 · 시험지 2 · 과제 2)는 <b>자동으로</b> 들어가요. 여기에는 그 회차에 <b>추가로 나눠 주는 교재</b>(예: 개념집, 킬러40제)를 올려요. 올린 사진은 공수내모 학생·학부모의 \'교재 구매\' 화면에서 그 회차 칸에 보여요. 사진은 자동으로 작게 줄여서 올려요. 세로 사진이 보기 좋아요.<br><b>사진을 복사(Ctrl+V)해서 이 화면에 그대로 붙여넣거나, 파일을 끌어다 놓아도 올라가요.</b></div>' +
       '<div class="fld"><label>어느 회차 교재인가요?</label><select id="shp_week" class="shsel" data-si="upweek">' + wopts + '</select></div>' +
       '<div class="fld"><label>사진 이름 (비우면 파일 이름이 들어가요 · 여러 장을 한꺼번에 고를 수 있어요)</label><input type="text" id="shp_cap" maxlength="30"></div>' +
       '<input type="file" id="shp_file" accept="image/jpeg,image/png,image/webp" data-si="photo" multiple style="display:none"><button class="btn" data-sa="pickfile" type="button"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? '올리는 중…' : '사진 고르기 (여러 장 가능)') + '</button></div>';
@@ -598,7 +598,7 @@
     var capEl = document.getElementById('shp_cap'), cap0 = (capEl || {}).value || '', wk = P.upWeek ? Number(P.upWeek) : null;
     P.busy = true; render(); var okn = 0, err = '';
     for (var i = 0; i < files.length; i++) {
-      var file = files[i], cap = (files.length === 1 && cap0) ? cap0 : String(file.name || '').replace(/\.[^.]+$/, '').slice(0, 30);
+      var file = files[i], fn0 = String(file.name || ''), pasted = !fn0 || /^image(\s*\(\d+\))?\.(png|jpe?g|webp)$/i.test(fn0), cap = (cap0 && (files.length === 1 || pasted)) ? cap0 : (pasted ? '교재 사진' : fn0.replace(/\.[^.]+$/, '').slice(0, 30));
       var src = ''; try { src = await resize(file); } catch (e) { err = '사진을 읽지 못했어요'; break; }
       var args = { src: src, caption: cap }; if (wk) args.week = wk;
       var j = await sapi('photo_add', args);
@@ -646,5 +646,23 @@
     if (t.dataset.si === 'photo') { var fl = t.files ? [].slice.call(t.files) : []; t.value = ''; doPhoto(fl); }
   });
   document.addEventListener('input', function (e) { var t = e.target; if (t && t.dataset && t.dataset.si === 'dep') P.dep = t.value; });
+  /* 교재 사진 탭: Ctrl+V 붙여넣기 · 끌어다 놓기로도 올리기 (회차는 위에서 고른 값이 적용돼요) */
+  var IMG_RE = /^image\/(jpeg|png|webp)$/;
+  function photoTabOn() { try { return S.tab === 'shop' && kind() === 'adm' && P.area !== 'lec' && P.sub === 'photo' && !P.busy; } catch (e) { return false; } }
+  function imgFiles(dt) {
+    var out = []; if (!dt) return out;
+    [].slice.call(dt.files || []).forEach(function (f) { if (IMG_RE.test(f.type)) out.push(f); });
+    if (!out.length) [].slice.call(dt.items || []).forEach(function (it) { if (it.kind === 'file' && IMG_RE.test(it.type)) { var f = it.getAsFile(); if (f) out.push(f); } });
+    return out;
+  }
+  document.addEventListener('paste', function (e) {
+    if (!photoTabOn()) return; var fl = imgFiles(e.clipboardData); if (!fl.length) return;
+    e.preventDefault(); toast(fl.length + '장 붙여넣었어요 — 올리는 중…'); doPhoto(fl);
+  });
+  document.addEventListener('dragover', function (e) { if (photoTabOn() && e.dataTransfer && [].slice.call(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault(); });
+  document.addEventListener('drop', function (e) {
+    if (!photoTabOn()) return; var fl = imgFiles(e.dataTransfer); if (!fl.length) return;
+    e.preventDefault(); toast(fl.length + '장 올리는 중…'); doPhoto(fl);
+  });
   window.shopReset = function () { LA.list = null; P.open = {}; P.tok = null; P.d = null; P.list = null; P.pic = {}; P.sel = {}; P.flash = null; P.dep = ''; };
 })();
