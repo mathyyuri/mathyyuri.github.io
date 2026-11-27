@@ -8,7 +8,7 @@
 (function () {
   var SHOP_URL = API_URL.replace('ac_api', 'ac_shop');
   var P = { tok: null, d: null, at: 0, loading: false, err: null, sel: {}, dep: '', busy: false, flash: null, pic: {}, picBusy: false,
-            sub: 'orders', area: 'book', open: {}, list: null, listAt: 0, listLoading: false, flt: 'pending' };
+            sub: 'orders', area: 'book', open: {}, list: null, listAt: 0, listLoading: false, flt: 'pending', base: null, baseBusy: false, upWeek: '' };
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
   var ST = { pending: ['입금 대기', '#b57c12', '#fbf3dc'], paid: ['결제 완료', '#2f7a67', '#e3f1ea'], cancelled: ['취소', '#7a7a7a', '#eee'], refunded: ['환불', '#a8453a', '#fbe8e4'] };
   var BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -88,6 +88,28 @@
     }
     P.picBusy = false;
   }
+  /* 기본 교재 사진(해설집 표지·시험지·과제)은 사이트의 books 폴더에 자동으로 만들어져요 — books/books.json 에 회차별 목록이 있어요 */
+  async function loadBase() {
+    if (P.base || P.baseBusy) return; P.baseBusy = true;
+    try { var r = await fetch('books/books.json?v=' + Date.now()); P.base = r.ok ? await r.json() : {}; } catch (e) { P.base = {}; }
+    P.baseBusy = false; if (onShop()) render(0);
+  }
+  function pcard(src, cap, v, id) {
+    return '<div class="shi"><img ' + (id ? 'data-sp="' + esc(id) + '" ' : '') + 'data-sa="zoom" data-v="' + esc(v) + '" src="' + esc(src) + '" alt="' + esc(cap) + '">' + (cap ? '<div class="shc">' + esc(cap) + '</div>' : '') + '</div>';
+  }
+  function bookPics(w) {
+    var base = (P.base && P.base[String(w)]) || [], ex = ((P.d && P.d.photos) || []).filter(function (f) { return f.week === w; });
+    if (!base.length && !ex.length) return '';
+    var h = '<div class="shbk">';
+    if (base.length) h += '<div class="shbl">기본 교재</div><div class="shp">' + base.map(function (b) { return pcard(b.f, b.c, b.f); }).join('') + '</div>';
+    if (ex.length) h += '<div class="shbl">추가 교재</div><div class="shp">' + ex.map(function (f) { return pcard(P.pic[f.id] || BLANK, f.caption, f.id, f.id); }).join('') + '</div>';
+    return h + '</div>';
+  }
+  function curWeek(d) {
+    var t = new Date(), ts = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2), c = null;
+    (d.weeks || []).forEach(function (w) { if (c === null && String(w.ds) >= ts) c = w.week; });
+    return c === null && d.weeks && d.weeks.length ? d.weeks[d.weeks.length - 1].week : c;
+  }
   function paintPics() { document.querySelectorAll('img[data-sp]').forEach(function (im) { var s = P.pic[im.getAttribute('data-sp')]; if (s && im.getAttribute('src') !== s) im.setAttribute('src', s); }); }
   window.shopAfter = function () {
     if (S.tab !== 'shop' || !kind()) return;
@@ -95,7 +117,7 @@
     if (!P.loading && Date.now() - P.at > 30000) load(true);
     if (kind() === 'adm' && P.d && P.area === 'lec' && !LA.loading && (!LA.list || Date.now() - LA.at > 30000)) loadLec();
     else if (kind() === 'adm' && P.d && P.area !== 'lec' && P.sub !== 'set' && P.sub !== 'photo' && !P.listLoading && (!P.list || Date.now() - P.listAt > 30000)) loadList();
-    paintPics(); loadPics();
+    loadBase(); paintPics(); loadPics();
   };
 
   /* ── CSS ── */
@@ -112,6 +134,7 @@
     '.shacct{background:var(--soft);border:1.5px solid var(--acc);border-radius:20px;padding:16px 18px;margin-bottom:16px}.shacct .big{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;letter-spacing:.5px;word-break:break-all}.shacct .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-top:1px dashed #c9b79c}.shacct .row:first-of-type{border-top:0}.shacct .row span:first-child{color:var(--mut);font-size:13px;flex:none}' +
     '.shord{padding:12px 0;border-top:1px solid var(--line)}.shord:first-of-type{border-top:0}.shord .h{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.shord .a{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}' +
     '.shmx{overflow-x:auto;border:1px solid var(--line);border-radius:14px}.shmx table{border-collapse:collapse;font-size:13px;min-width:100%}.shmx th,.shmx td{padding:6px 7px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}.shmx th{background:var(--soft);position:sticky;top:0}.shmx td:first-child,.shmx th:first-child{text-align:left;position:sticky;left:0;background:var(--card);font-weight:700}.shmx th:first-child{background:var(--soft)}.shmx tfoot td{font-weight:700;background:var(--soft2)}' +
+    '.shbk{margin:4px 0 2px}.shbl{font-size:12.5px;font-weight:700;color:var(--acc);margin:8px 0 0}.shsel{width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 10px;background:#fff;font:inherit}.shp .shi img[data-v^="books/"]{height:224px}' +
     '.shpa{display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.shpa img{width:56px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--bg2)}.shpa .t{flex:1;min-width:0}' +
     '.shin{width:100%;border:1px solid var(--line);border-radius:14px;padding:9px 12px;background:#fff;min-width:0}' +
     '.shwarn{font-size:12.5px;color:var(--mut);line-height:1.55;margin-top:8px}';
@@ -138,9 +161,10 @@
     h += '<div class="card"><h3 style="margin:0 0 4px">공수내모 교재 <span class="badge">주당 ' + esc(won(d.price)) + '</span></h3>' +
       '<div class="muted sm">주마다 수업일에 받는 교재예요. 필요한 주차만 골라서 살 수 있어요.</div>' +
       '<ul style="margin:10px 0 0;padding-left:20px;line-height:1.8"><li><b>1주차</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · 첫날 추가문제</li><li><b>2주차부터</b> — 해설집 2권 · 시험지 2개(동형모의고사 2회) · <b>개별 MEN BOOK</b>(내 오답노트)가 함께 들어가요</li></ul>';
-    if (d.photos && d.photos.length) {
-      h += '<div class="shp" style="margin-top:12px">' + d.photos.map(function (f) { return '<div class="shi"><img data-sp="' + esc(f.id) + '" data-sa="zoom" data-v="' + esc(f.id) + '" src="' + (P.pic[f.id] || BLANK) + '" alt="' + esc(f.caption) + '">' + (f.caption ? '<div class="shc">' + esc(f.caption) + '</div>' : '') + '</div>'; }).join('') + '</div>';
-    }
+    var gp = (d.photos || []).filter(function (f) { return f.week == null; });
+    if (gp.length) h += '<div class="shp" style="margin-top:12px">' + gp.map(function (f) { return pcard(P.pic[f.id] || BLANK, f.caption, f.id, f.id); }).join('') + '</div>';
+    var cw = curWeek(d), cb = cw ? bookPics(cw) : '';
+    if (cb) h += '<div style="margin-top:12px"><b>' + cw + '회차 교재</b> <span class="muted sm">(가까운 수업 · 아래 \'교재비 고르기\'에서 회차별로 모두 볼 수 있어요)</span>' + cb + '</div>';
     if (d.note) h += '<div class="shwarn">' + nl(d.note) + '</div>';
     h += '</div>';
     if (!d.open) h += '<div class="note">지금은 주문을 받지 않아요. 선생님께 문의해 주세요.</div>';
@@ -163,6 +187,7 @@
         h += '<label class="shw' + (c1 ? '' : ' off') + '"><input type="checkbox" data-sa="pick" data-v="' + w.week + '"' + (on ? ' checked' : '') + (c1 ? '' : ' disabled') + '>' +
           '<div class="t"><b>' + esc(w.title) + '</b> <span class="muted sm">' + esc(dstr(w.ds)) + ' 수업</span> ' + (w.st === 'paid' ? badge('paid') : w.st === 'pending' ? badge('pending') : '') + (w.active ? '' : ' <span class="shb" style="color:#777;background:#eee">판매 안 함</span>') +
           '<div class="it">' + (w.items || []).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div></div><div style="font-weight:700;white-space:nowrap">' + esc(won(d.price)) + '</div></label>';
+        var bp = bookPics(w.week); if (bp) h += '<div style="padding:0 14px 12px">' + bp + '</div>';
       });
       h += '</div>';
     });
@@ -235,11 +260,20 @@
       '<button class="btn" data-sa="save" type="button"' + (P.busy ? ' disabled' : '') + '>저장</button></div>';
   }
   function admPhoto(d) {
-    var h = '<div class="card"><h3 style="margin:0 0 4px">교재 사진 <span class="muted sm">(' + (d.photos || []).length + '/12장)</span></h3><div class="muted sm" style="margin-bottom:10px">올린 사진은 공수내모 반 학생·학부모의 \'교재 구매\' 화면에 보여요. 사진은 자동으로 작게 줄여서 올려요. 세로 사진이 보기 좋아요.</div>' +
-      '<div class="fld"><label>사진 이름 (예: 1주차 해설집)</label><input type="text" id="shp_cap" maxlength="30"></div>' +
-      '<input type="file" id="shp_file" accept="image/jpeg,image/png,image/webp" data-si="photo" style="display:none"><button class="btn" data-sa="pickfile" type="button"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? '올리는 중…' : '사진 고르기') + '</button>';
-    (d.photos || []).forEach(function (f) {
-      h += '<div class="shpa"><img data-sp="' + esc(f.id) + '" src="' + (P.pic[f.id] || BLANK) + '" alt=""><div class="t"><b>' + esc(f.caption || '(이름 없음)') + '</b></div><button class="btn gh sm3" data-sa="pcap" data-v="' + esc(f.id) + '" type="button">이름</button><button class="btn dng sm3" data-sa="pdel" data-v="' + esc(f.id) + '" type="button">지우기</button></div>';
+    var ws = d.weeks || [];
+    var wopts = '<option value="">공통 (모든 회차에 보여요)</option>' + ws.map(function (w) { return '<option value="' + w.week + '"' + (String(P.upWeek) === String(w.week) ? ' selected' : '') + '>' + w.week + '회차 · ' + esc(dstr(w.ds)) + '</option>'; }).join('');
+    var h = '<div class="card"><h3 style="margin:0 0 4px">교재 사진 <span class="muted sm">(' + (d.photos || []).length + '/60장)</span></h3><div class="muted sm" style="margin-bottom:10px">회차마다 <b>기본 교재</b>(해설집 표지 2 · 시험지 2 · 과제 2)는 <b>자동으로</b> 들어가요. 여기에는 그 회차에 <b>추가로 나눠 주는 교재</b>(예: 개념집, 킬러40제)를 올려요. 올린 사진은 공수내모 학생·학부모의 \'교재 구매\' 화면에서 그 회차 칸에 보여요. 사진은 자동으로 작게 줄여서 올려요. 세로 사진이 보기 좋아요.</div>' +
+      '<div class="fld"><label>어느 회차 교재인가요?</label><select id="shp_week" class="shsel" data-si="upweek">' + wopts + '</select></div>' +
+      '<div class="fld"><label>사진 이름 (비우면 파일 이름이 들어가요 · 여러 장을 한꺼번에 고를 수 있어요)</label><input type="text" id="shp_cap" maxlength="30"></div>' +
+      '<input type="file" id="shp_file" accept="image/jpeg,image/png,image/webp" data-si="photo" multiple style="display:none"><button class="btn" data-sa="pickfile" type="button"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? '올리는 중…' : '사진 고르기 (여러 장 가능)') + '</button></div>';
+    var bk = P.base || {}, bks = Object.keys(bk).sort(function (x, y) { return x - y; });
+    if (bks.length) h += '<div class="card"><h3 style="margin:0 0 4px">기본 교재 (자동)</h3><div class="muted sm" style="margin-bottom:6px">교재를 만들 때 함께 만들어지는 사진이에요. 시험지는 문제를 흐리게 처리했어요.</div>' +
+      bks.map(function (k) { return '<div class="shbl">' + k + '회차</div><div class="shp">' + bk[k].map(function (b) { return pcard(b.f, b.c, b.f); }).join('') + '</div>'; }).join('') + '</div>';
+    var ph = (d.photos || []);
+    h += '<div class="card"><h3 style="margin:0 0 4px">올려 둔 추가 교재 사진</h3>' + (ph.length ? '' : '<div class="muted sm">아직 없어요</div>');
+    ph.forEach(function (f) {
+      var o = '<option value="">공통</option>' + ws.map(function (w) { return '<option value="' + w.week + '"' + (f.week === w.week ? ' selected' : '') + '>' + w.week + '회차</option>'; }).join('');
+      h += '<div class="shpa"><img data-sp="' + esc(f.id) + '" src="' + (P.pic[f.id] || BLANK) + '" alt=""><div class="t"><b>' + esc(f.caption || '(이름 없음)') + '</b><div style="margin-top:4px"><select class="shsel" data-sa="pweek" data-v="' + esc(f.id) + '" style="width:auto;padding:5px 8px">' + o + '</select></div></div><button class="btn gh sm3" data-sa="pcap" data-v="' + esc(f.id) + '" type="button">이름</button><button class="btn dng sm3" data-sa="pdel" data-v="' + esc(f.id) + '" type="button">지우기</button></div>';
     });
     return h + '</div>';
   }
@@ -557,15 +591,21 @@
       fr.readAsDataURL(file);
     });
   }
-  async function doPhoto(file) {
-    if (!file) return; if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast('jpg·png·webp 사진만 올릴 수 있어요'); return; }
-    var cap = (document.getElementById('shp_cap') || {}).value || '';
-    P.busy = true; render();
-    var src = ''; try { src = await resize(file); } catch (e) { P.busy = false; render(); toast('사진을 읽지 못했어요'); return; }
-    var j = await sapi('photo_add', { src: src, caption: cap });
-    P.busy = false;
-    if (!j || !j.ok) { toast((j && j.error) || '올리지 못했어요'); render(); return; }
-    toast('올렸어요'); await load(true);
+  async function doPhoto(files) {
+    files = [].slice.call(files || []); if (!files.length) return;
+    var bad = files.filter(function (f) { return !/^image\/(jpeg|png|webp)$/.test(f.type); });
+    if (bad.length) { toast('jpg·png·webp 사진만 올릴 수 있어요'); return; }
+    var capEl = document.getElementById('shp_cap'), cap0 = (capEl || {}).value || '', wk = P.upWeek ? Number(P.upWeek) : null;
+    P.busy = true; render(); var okn = 0, err = '';
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i], cap = (files.length === 1 && cap0) ? cap0 : String(file.name || '').replace(/\.[^.]+$/, '').slice(0, 30);
+      var src = ''; try { src = await resize(file); } catch (e) { err = '사진을 읽지 못했어요'; break; }
+      var args = { src: src, caption: cap }; if (wk) args.week = wk;
+      var j = await sapi('photo_add', args);
+      if (!j || !j.ok) { err = (j && j.error) || '올리지 못했어요'; if (/photo_add|알 수 없는|server|서버/.test(err) && !okn) err += ' (78_교재사진_회차별_서버.sql 실행이 필요할 수 있어요)'; break; }
+      okn++;
+    }
+    P.busy = false; if (err) toast((okn ? okn + '장 올렸고, ' : '') + err); else toast(okn + '장 올렸어요'); await load(true);
   }
 
   document.addEventListener('click', async function (e) {
@@ -587,7 +627,7 @@
       var j = await sapi('cancel', { id: v }); if (!j || !j.ok) { toast((j && j.error) || '취소하지 못했어요'); return; }
       toast('취소했어요'); if (P.flash) P.flash = null; load(true); return;
     }
-    if (a === 'zoom') { var s = P.pic[v]; if (s && s !== BLANK) { openModal('<div style="text-align:center"><img src="' + esc(s) + '" alt="" style="max-width:100%;max-height:78vh;border-radius:12px"></div><div style="text-align:center;margin-top:10px"><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>'); } return; }
+    if (a === 'zoom') { var s = P.pic[v] || (/^books\//.test(v) ? v : ''); if (s && s !== BLANK) { openModal('<div style="text-align:center"><img src="' + esc(s) + '" alt="" style="max-width:100%;max-height:78vh;border-radius:12px"></div><div style="text-align:center;margin-top:10px"><button class="btn gh" onclick="closeModal()" type="button">닫기</button></div>'); } return; }
     if (a === 'sub') { P.sub = v; render(0); return; }
     if (a === 'flt') { P.flt = v; render(); return; }
     if (a === 'st') { doStatus(v, t.dataset.to); return; }
@@ -601,7 +641,9 @@
     if (await lecChange(t)) return;
     if (t.dataset.sa === 'mpick') { var mk = t.dataset.v; (P.d.weeks || []).forEach(function (w) { if (String(w.ds).slice(0, 7) === mk && w.active && w.st === 'none' && P.d.open) { if (t.checked) P.sel[w.week] = 1; else delete P.sel[w.week]; } }); render(); return; }
     if (t.dataset.sa === 'pick') { var w = t.dataset.v; if (t.checked) P.sel[w] = 1; else delete P.sel[w]; render(); return; }
-    if (t.dataset.si === 'photo') { var f = t.files && t.files[0]; t.value = ''; doPhoto(f); }
+    if (t.dataset.si === 'upweek') { P.upWeek = t.value; return; }
+    if (t.dataset.sa === 'pweek') { var jw = await sapi('photo_week', { id: t.dataset.v, week: t.value }); if (!jw || !jw.ok) { toast((jw && jw.error) || '바꾸지 못했어요'); } else toast('회차를 바꿨어요'); load(true); return; }
+    if (t.dataset.si === 'photo') { var fl = t.files ? [].slice.call(t.files) : []; t.value = ''; doPhoto(fl); }
   });
   document.addEventListener('input', function (e) { var t = e.target; if (t && t.dataset && t.dataset.si === 'dep') P.dep = t.value; });
   window.shopReset = function () { LA.list = null; P.open = {}; P.tok = null; P.d = null; P.list = null; P.pic = {}; P.sel = {}; P.flash = null; P.dep = ''; };
