@@ -121,7 +121,7 @@ function vList(){var t=nowMs(),L=(S.list||[]).filter(function(e){return S.staff|
  return h+L.map(function(e){var st=status(e),m=e.mine,over=Date.parse(e.due)<t||e.lock,op=e.open&&t<Date.parse(e.open);
   var sub=S.staff?'<span class="badge">제출 '+((e.stat||{}).done||0)+'/'+((e.stat||{}).total||0)+'명</span>':'<span class="badge '+st.c+'">'+st.t+'</span>';
   return '<div class="card hwc"><div class="row"><div class="t">'+esc(e.name)+'</div><span class="sp"></span>'+sub+'</div><div class="m">객관식 '+e.n+(e.es.length?' · 서술형 '+e.es.length:'')+' · 마감 <b>'+kst(e.due)+'</b>'+(over?'':' · '+left(e.due))+(op?' · '+kst(e.open)+'부터 열려요':'')+'</div>'+
-   (m&&!S.staff&&m.score!=null?'<div class="sm" style="margin-bottom:8px">객관식 <b>'+m.score+'점</b> · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.es_total!=null?' · 서술형 '+m.es_total+'점':'')+'</div>':'')+
+   (m&&!S.staff&&m.score!=null?'<div class="sm" style="margin-bottom:8px">객관식 <b>'+ob(m)+'점</b> · 맞힌 개수 '+((m.ox||'').match(/O/g)||[]).length+'/'+e.n+(m.es_total!=null?' · 서술형 '+m.es_total+'점 · <b>합계 '+m.score+'점</b>':'')+'</div>':'')+
    '<button class="btn" data-open="'+e.id+'" '+(op&&!S.staff?'disabled':'')+' type="button">'+(S.staff?'현황 보기':op?'아직 안 열렸어요':over?(m?'내 제출 보기':'보기'):m?'다시 풀기 · 고치기':'과제 풀기')+'</button></div>'}).join('')}
 /* ── 학생: 과제 풀기 ── */
 async function openExam(id){var j=await api('open',{exam_id:id});if(!j||!j.ok){toast((j&&j.error)||'열지 못했어요');return}
@@ -167,9 +167,10 @@ async function submit(){if(S.busy)return;var n=S.ex.n,a=S.ans.filter(function(x)
  S.busy=true;var b=$('#subm');if(b){b.disabled=true;b.textContent='제출 중...'}
  var j=await api('submit',{exam_id:S.ex.id,answers:S.ans,conf:S.conf});S.busy=false;if(b){b.disabled=false}
  if(!j||!j.ok){toast((j&&j.error)||'제출하지 못했어요');if(b)b.textContent=S.mine?'다시 제출하기':'제출하기';return}
- S.res=j;S.mine=Object.assign({},S.mine||{},{tries:j.tries,ox:j.ox,score:j.score,answers:S.ans.slice(),conf:S.conf.slice(),at:new Date().toISOString()});
- var it=(S.list||[]).find(function(x){return x.id===S.ex.id});if(it)it.mine={tries:j.tries,score:j.score,ox:j.ox};
+ S.res=j;S.mine=Object.assign({},S.mine||{},{tries:j.tries,ox:j.ox,score:(+j.score)+(+(S.mine&&S.mine.es_total)||0),answers:S.ans.slice(),conf:S.conf.slice(),at:new Date().toISOString()});
+ var it=(S.list||[]).find(function(x){return x.id===S.ex.id});if(it)it.mine={tries:j.tries,score:(+j.score)+(+(it.mine&&it.mine.es_total)||0),ox:j.ox,es_total:it.mine&&it.mine.es_total};
  try{localStorage.removeItem('hw_dr_'+S.ex.id)}catch(e){}S.view='result';render()}
+function ob(m){return m&&m.score!=null?Math.round(((+m.score)-(+m.es_total||0))*100)/100:null}
 function vResult(){var r=S.res,e=S.ex,left_=5-r.tries,wrong=r.ox.split('').filter(function(c){return c==='X'}).length;
  return '<div class="card" style="text-align:center"><div class="muted sm">제출했어요 🎉 ('+r.tries+'번째)</div><div class="big">'+r.right+' / '+r.n+'</div><div class="muted">객관식 '+r.score+'점</div></div>'+
  '<div class="card"><b>문제별 결과</b><div class="grid">'+r.ox.split('').map(function(c,i){return '<span class="'+(c==='O'?'o':'x')+'">'+(i+1)+' '+(c==='O'?'○':'✕')+'</span>'}).join('')+'</div>'+
@@ -187,7 +188,7 @@ function vRows(){var j=S.rows,e=j.exam,rows=j.rows,done=rows.filter(function(r){
  h+='<div class="card sc"><table class="tbl"><tr><th>이름</th><th>상태</th><th>객관식</th><th>1차</th><th>확신</th><th>서술형 사진 · 점수</th></tr>'+rows.map(function(r,ri){
   var cf=(r.conf||[]).reduce(function(o,c){if(c)o[c]=(o[c]||0)+1;return o},{}),first=r.first_ox?(r.first_ox.match(/O/g)||[]).length:null,es=e.es.map(function(mx,qi){var q=qi+1,np=(r.photos||{})[q]||0,v=r.es&&r.es[qi]!=null?r.es[qi]:'';
    return '<div style="margin-bottom:4px"><button class="pbtn" data-ps="'+r.sid+'_'+q+'" type="button" '+(np?'':'disabled')+'>서'+q+' 📷'+np+'</button><input class="es" data-es="'+ri+'_'+qi+'" type="number" step="0.5" min="0" max="'+mx+'" value="'+v+'" placeholder="/'+mx+'" '+(r.tries?'':'disabled')+'></div>'}).join('');
-  return '<tr><td><b>'+esc(r.name)+'</b><div class="muted sm">'+esc(r.school||'')+'</div></td><td>'+(r.tries?'<span class="badge ok">제출 '+r.tries+'번</span>':'<span class="badge bad">미제출</span>')+'</td><td>'+(r.score!=null?'<b>'+r.score+'</b>점<div class="muted sm">'+((r.ox||'').match(/O/g)||[]).length+'/'+n+'</div>':'-')+'</td><td>'+(first!=null?first+'/'+n:'-')+'</td><td class="sm">'+(r.conf?'확실 '+(cf.s||0)+'<br>긴가민가 '+(cf.u||0)+'<br>모름 '+(cf.n||0):'-')+'</td><td>'+es+(r.tries&&e.es.length?'<button class="btn sm3" data-ess="'+ri+'" type="button">점수 저장</button>':'')+'</td></tr>'}).join('')+'</table></div>';
+  return '<tr><td><b>'+esc(r.name)+'</b><div class="muted sm">'+esc(r.school||'')+'</div></td><td>'+(r.tries?'<span class="badge ok">제출 '+r.tries+'번</span>':'<span class="badge bad">미제출</span>')+'</td><td>'+(r.score!=null?'<b>'+ob(r)+'</b>점<div class="muted sm">'+((r.ox||'').match(/O/g)||[]).length+'/'+n+'</div>':'-')+'</td><td>'+(first!=null?first+'/'+n:'-')+'</td><td class="sm">'+(r.conf?'확실 '+(cf.s||0)+'<br>긴가민가 '+(cf.u||0)+'<br>모름 '+(cf.n||0):'-')+'</td><td>'+es+(r.tries&&e.es.length?'<button class="btn sm3" data-ess="'+ri+'" type="button">점수 저장</button>':'')+'</td></tr>'}).join('')+'</table></div>';
  return h}
 function localIn(iso){var d=new Date(Date.parse(iso)+9*3600e3);return d.toISOString().slice(0,16)}
 async function viewPhotos(sid,q){var e=S.rows.exam,h='<div class="modal" data-close="1"><div class="bx"><div class="row"><b>서'+q+' 풀이 사진</b><span class="sp"></span><button class="btn gh sm3" data-close="1" type="button">닫기</button></div><div id="pbox" class="muted sm">불러오는 중...</div></div></div>';$('#layer').innerHTML=h;var out='';

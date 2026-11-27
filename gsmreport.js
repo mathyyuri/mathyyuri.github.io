@@ -9,6 +9,19 @@
   var NAVY = '#1f3a6e', ROSE = '#b76e79', GOLD = '#c9a55d', CATS = ['내모미션', '과제미션', '원본미션'];
   var V = { ex: null, sel: {}, open: false };
 
+  var ESS = {}, TAGS = [['skip', '풀이 과정 생략', '풀이 과정을 한 줄씩 빠짐없이 쓰는 연습이 필요해요(과정 점수가 따로 있어요).'],
+    ['calc', '계산 실수', '계산 과정을 줄 맞춰 쓰고 마지막에 반드시 검산하세요.'], ['cond', '조건 누락', '문제의 조건을 먼저 표시하고, 풀이에서 모두 사용했는지 확인하세요.'],
+    ['concept', '개념·공식 오류', '관련 개념과 공식을 정확히 쓰고 적용하는 연습이 필요해요.'], ['ans', '답만 기재', '답만 쓰지 말고, 근거가 되는 식을 반드시 함께 쓰세요.'],
+    ['part', '부분점수만', '마지막 단계까지 끝내는 연습이 필요해요(끝까지 푸는 습관).'], ['mark', '표기·서술 부정확', '수학 기호와 용어를 정확히 쓰고, 문장으로도 풀이를 연결하세요.'],
+    ['time', '시간 부족·미완성', '서술형은 쉬운 것부터 시간 배분을 정해 푸는 연습이 필요해요.']];
+  function tagOf(id) { for (var i = 0; i < TAGS.length; i++) if (TAGS[i][0] === id) return TAGS[i]; return null; }
+  async function omrApi(a, args) { try { var r = await fetch(API_URL.replace('ac_api', 'ac_omr'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: API_KEY, Authorization: 'Bearer ' + API_KEY }, body: JSON.stringify({ p_action: a, p_token: TOKEN, p_args: args || {} }) }); return r.ok ? await r.json() : { ok: false }; } catch (e) { return { ok: false }; } }
+  async function essOf(it) {
+    var id = it.m.id; if (ESS[id] !== undefined) return ESS[id];
+    var j = await omrApi('emeta', { exam_id: id }), o = null;
+    if (j && j.ok && (j.es_max || []).length) { o = { max: j.es_max.map(Number), rows: {} }; (j.rows || []).forEach(function (r) { o.rows[r.sid] = r; }); }
+    ESS[id] = o; return o;
+  }
   function r1(v) { return Math.round(v * 10) / 10; }
   function kindOf(it) { var c = msCatOf(it); return c === '과제미션' ? '과제' : c === '원본미션' ? '원본' : '동형'; }
   function kindCol(k) { return k === '과제' ? '#8a2d4a' : k === '원본' ? '#2f7d5b' : NAVY; }
@@ -25,15 +38,21 @@
   }
   function totalOf(it) { return r1((it.ex.items || []).reduce(function (a, x) { return a + (+x.pts || 1); }, 0)) || 100; }
   /* 한 학생 · 한 회차 계산 */
-  function calc(it, row) {
-    var inf = gsmInfo(it), sc = r1(+row.score), ex = it.ex, items = ex.items || [];
+  function essFor(it, key) {
+    var eo = ESS[it.m.id]; if (!eo) return null; var sr = null;
+    if (isStaff()) sr = eo.rows[key] || null; else { var ks = Object.keys(eo.rows); sr = ks.length ? eo.rows[ks[0]] : null; }
+    var mx = r1(eo.max.reduce(function (a, b) { return a + b; }, 0)), graded = !!(sr && sr.es_total != null);
+    return { max: eo.max, mx: mx, got: (sr && sr.es) || [], tags: (sr && sr.tags) || [], total: graded ? +sr.es_total : null, graded: graded, has: !!sr, sid: sr && sr.sid, ks: (sr && sr.ks) || [], hw: (sr && sr.hw) || {}, ex: it.m.id };
+  }
+  function calc(it, row, key) {
+    var inf = gsmInfo(it), sc = r1(+row.score), ex = it.ex, items = ex.items || [], es = essFor(it, key), objTot = totalOf(it);
     var peers = it.roster.filter(function (r) { return r.score != null; }), n = peers.length, rk = 1, sum = 0;
     peers.forEach(function (r) { if (+r.score > +row.score) rk++; sum += +r.score; });
     var ev = gsmEval(inf.school, sc), st = GSM_ST[inf.school] || null, ox = String(row.ox || '');
     var rows = items.map(function (x, i) { return { no: x.no || (i + 1), unit: x.unit || '', typ: x.typ || '객관식', pts: +x.pts || 0, c: ox.charAt(i) || '' }; });
     var un = {}, order = [];
     rows.forEach(function (q) { if (!q.unit) return; if (!un[q.unit]) { un[q.unit] = { t: 0, g: 0 }; order.push(q.unit); } un[q.unit].t++; if (q.c === 'O') un[q.unit].g++; });
-    return { it: it, inf: inf, kind: kindOf(it), sc: sc, tot: totalOf(it), n: n, rk: rk, avg: n ? r1(sum / n) : null, ev: ev, st: st, rows: rows, un: un, order: order,
+    return { it: it, inf: inf, kind: kindOf(it), sc: sc, es: es, objTot: objTot, obj: es && es.graded ? r1(sc - es.total) : sc, tot: es && es.graded ? r1(objTot + es.mx) : objTot, n: n, rk: rk, avg: n ? r1(sum / n) : null, ev: ev, st: st, rows: rows, un: un, order: order,
       cuts: st ? st.slice(2, 6) : null, nm: ex.name, date: dd(it) };
   }
   function upperAt(school, s) { return gsmEval(school, s) ? gsmEval(school, s).top : null; }
@@ -89,18 +108,43 @@
     var h = '<table class="rp-ht"><tr><th>날짜</th><th>회차</th><th>구분</th><th>학교</th><th>점수</th><th></th><th>등급</th><th>상위</th><th>석차</th></tr>', k = 0;
     exams().forEach(function (it) {
       if (dd(it) > dd(upto.it) || (dd(it) === dd(upto.it) && String(it.ex.name) > String(upto.it.ex.name))) return;
-      var row = rowOf(it, key); if (!row) return; var d = calc(it, row); k++;
+      var row = rowOf(it, key); if (!row) return; var d = calc(it, row, key); k++;
       h += '<tr' + (it === upto.it ? ' class="me"' : '') + '><td>' + d.date.slice(5).replace('-', '/') + '</td><td>' + (d.inf.n ? d.inf.n + '회' : '') + '</td><td><b style="color:' + kindCol(d.kind) + '">' + d.kind + '</b></td><td>' + esc(d.inf.school || '') + '</td><td><b>' + d.sc + '</b></td>' +
         '<td class="bar"><i style="width:' + Math.min(100, d.sc / d.tot * 100) + '%;background:' + kindCol(d.kind) + '"></i></td><td>' + (d.ev ? '<b class="gc" style="background:' + GC[d.ev.grade] + ';color:' + GT[d.ev.grade] + '">' + d.ev.grade + '</b>' : '-') + '</td><td>' + (d.ev ? Math.round(d.ev.top) + '%' : '-') + '</td><td>' + d.rk + '/' + d.n + '</td></tr>';
     });
     return k ? h + '</table>' : '';
+  }
+  function essPage(name, d) {
+    var E = d.es, n = E.max.length, W = n >= 4 ? 104 : 118, got = E.total == null ? 0 : E.total, rate = E.mx ? Math.round(got / E.mx * 100) : 0, orate = d.objTot ? Math.round(d.obj / d.objTot * 100) : 0, tg = {};
+    (E.tags || []).forEach(function (t) { ((t && t.t) || []).forEach(function (x) { tg[x] = (tg[x] || 0) + 1; }); });
+    var top = Object.keys(tg).sort(function (a, b) { return tg[b] - tg[a]; }).slice(0, 2).map(tagOf).filter(Boolean), sum;
+    if (!E.graded) sum = '서술형 채점이 끝나면 점수와 보완할 점이 여기에 나와요.';
+    else sum = '서술형 <b>' + E.total + ' / ' + E.mx + '점 (' + rate + '%)</b>' + (rate < orate - 5 ? ' — 객관식 정답률(' + orate + '%)보다 낮아요. 아는 문제도 <b>풀이 과정</b>까지 써야 점수가 되니 과정 쓰기를 연습해요.' : (rate >= 85 ? ' — 서술형을 아주 잘 풀었어요!' : '.')) +
+      (top.length ? '<br>가장 자주 나온 감점 이유: <b>' + top.map(function (t) { return esc(t[1]); }).join('</b>, <b>') + '</b>' : '');
+    var blocks = E.max.map(function (m, k) {
+      var v = E.got[k], t0 = E.tags[k] || {}, ts = (t0.t || []).map(tagOf).filter(Boolean), has = v != null, r = has && m ? v / m : 0, ih = r1(W * (k === 0 ? 57 / 182 : (248 / 3) / 182));
+      var st = !has ? '<span class="rp-chip">채점 전</span>' : v >= m ? '<span class="rp-chip ok">만점</span>' : v <= 0 ? '<span class="rp-chip bad">0점</span>' : '<span class="rp-chip mid">부분 점수</span>';
+      return '<div class="rp-eb"><div class="rp-ei" style="width:' + W + 'mm;height:' + ih + 'mm"><img class="rp-eimg" alt="서술형 ' + (k + 1) + '" data-ex="' + E.ex + '" data-sid="' + (E.sid || '') + '" data-k="' + (k + 1) + '" style="width:' + W + 'mm;height:' + ih + 'mm"></div>' +
+        '<div class="rp-ep"><div class="rp-en">서술형 ' + (k + 1) + ' ' + st + '</div><div class="rp-es"><b>' + (has ? v : '-') + '</b><span> / ' + m + '점</span></div><div class="rp-eb2"><i style="width:' + Math.round(r * 100) + '%;background:' + (r >= .85 ? '#2f7d5b' : r >= .5 ? GOLD : '#b84a4a') + '"></i></div>' +
+        (has && v < m ? (ts.length ? '<div class="rp-tg">' + ts.map(function (t) { return '<span>' + esc(t[1]) + '</span>'; }).join('') + '</div><div class="rp-ad">' + ts.map(function (t) { return esc(t[2]); }).join(' ') + '</div>' : '<div class="rp-ad rp-mut">감점 이유가 기록되지 않았어요. 감점된 부분을 다시 확인해 보세요.</div>') : (has ? '<div class="rp-ad">풀이 과정과 답이 모두 잘 쓰였어요.</div>' : '')) +
+        (t0.m ? '<div class="rp-cm">✍ ' + esc(t0.m) + '</div>' : '') + '</div></div>';
+    }).join('');
+    return '<section class="rp pg"><div class="rp-hd sm"><div><div class="rp-br">MATHY YURI · 분당미래탐구</div><div class="rp-tt">서술형 분석</div></div><div class="rp-nm"><small>이름</small>' + esc(name) + '</div></div>' +
+      '<div class="rp-ex"><b style="background:' + kindCol(d.kind) + '">' + d.kind + '</b><span>' + esc(d.nm) + '</span><em>' + d.date.replace(/-/g, '.') + '</em></div>' +
+      '<div class="rp-note" style="margin-top:1mm">' + sum + '</div>' + '<div class="rp-ebs">' + blocks + '</div>' +
+      '<div class="rp-ft">서술형은 정답만큼 <b>풀이 과정</b>이 점수가 돼요. 답안 사진은 답안지 칸을 번호별로 잘라 보관한 것이에요.</div></section>';
+  }
+  function pagesHtml(name, key, d) {
+    var h = '<div class="pgw">' + pageHtml(name, key, d) + '</div>';
+    if (d.es && d.es.has && d.es.graded) h += '<div class="pgw">' + essPage(name, d) + '</div>';
+    return h;
   }
   function pageHtml(name, key, d) {
     var ev = d.ev, g = ev ? ev.grade : 0;
     return '<section class="rp pg">' +
       '<div class="rp-hd"><div><div class="rp-br">MATHY YURI · 분당미래탐구</div><div class="rp-tt">공수내모 성적표</div></div><div class="rp-nm"><small>이름</small>' + esc(name) + '</div></div>' +
       '<div class="rp-ex"><b style="background:' + kindCol(d.kind) + '">' + d.kind + '</b><span>' + esc(d.nm) + '</span><em>' + d.date.replace(/-/g, '.') + '</em></div>' +
-      '<div class="rp-kpi"><div><small>내 점수</small><b>' + d.sc + '</b><span>/ ' + d.tot + '점</span></div>' +
+      '<div class="rp-kpi"><div><small>내 점수</small><b>' + d.sc + '</b><span>/ ' + d.tot + '점' + (d.es && d.es.graded ? '<br>객관식 ' + d.obj + ' + 서술형 ' + d.es.total : (d.es && d.es.has ? '<br>서술형 채점 전(객관식 점수)' : '')) + '</span></div>' +
       '<div><small>등급 · ' + esc(d.inf.school || '학교') + ' 기준</small>' + (ev ? '<b class="g" style="background:' + GC[g] + ';color:' + GT[g] + '">' + g + '등급</b><span>상위 ' + (ev.top < 1 ? '1% 이내' : Math.round(ev.top) + '%') + '</span>' : '<b>-</b><span>등급컷 자료 없음</span>') + '</div>' +
       '<div><small>우리 반</small><b>' + d.rk + '위</b><span>' + d.n + '명 중 · 평균 ' + (d.avg == null ? '-' : d.avg) + '점</span></div></div>' +
       '<div class="rp-sec"><h4>등급 위치</h4><div class="rp-row"><div class="rp-sc-w">' + scaleHtml(d) + '</div><div class="rp-gt-w">' + gradeTable(d) + '</div></div></div>' +
@@ -133,13 +177,27 @@
     '.rp-row2{display:grid;grid-template-columns:1fr 1fr;gap:5mm}.rp-ub{display:grid;grid-template-columns:30mm 1fr 9mm;gap:2mm;align-items:center;font-size:7.6pt;margin-bottom:1mm}.rp-ub small{color:#8a8f9e;margin-left:1mm}.rp-ub .b{height:2.6mm;background:#eceef4;border-radius:99px;overflow:hidden;display:block}.rp-ub .b i{display:block;height:100%}.rp-ub .p{text-align:right;font-weight:800}' +
     '.rp-note{border:.3mm dashed #c9a55d;background:#fffbf1;border-radius:2mm;padding:2.4mm 3mm;line-height:1.7}.rp-note div+div{margin-top:.6mm}' +
     '.rp-ht{width:100%;border-collapse:collapse;font-size:7.6pt;text-align:center}.rp-ht th{background:#1f3a6e;color:#e0c48a;padding:.9mm;font-size:6.8pt}.rp-ht td{border-bottom:.2mm solid #e8eaf1;padding:.8mm .6mm}.rp-ht tr.me td{background:#fdf1d8}.rp-ht td.bar{width:26mm}.rp-ht td.bar i{display:block;height:2.6mm;border-radius:99px}.rp-ht b.gc{display:inline-block;min-width:5mm;border-radius:1mm}' +
+    '.rp-hd.sm{padding-bottom:3.5mm}.rp-hd.sm .rp-tt{font-size:15pt}' +
+    '.rp-ebs{display:flex;flex-direction:column;gap:3.4mm}.rp-eb{display:flex;gap:4mm;align-items:flex-start;border-bottom:.2mm solid #e8eaf1;padding-bottom:3mm}.rp-ei{flex:none;border:.3mm solid #d9dce6;border-radius:1.4mm;overflow:hidden;background:#fafbff}.rp-ei img{display:block;object-fit:fill}' +
+    '.rp-ep{flex:1;min-width:0}.rp-en{font-weight:900;color:#1f3a6e;font-size:9.4pt}.rp-chip{display:inline-block;font-size:6.8pt;padding:.3mm 2mm;border-radius:99px;background:#e6e9f1;color:#555;margin-left:1.4mm;vertical-align:1px}.rp-chip.ok{background:#d9f2e6;color:#1a7a50}.rp-chip.bad{background:#fde1e1;color:#b84a4a}.rp-chip.mid{background:#fff0cf;color:#9a6a00}' +
+    '.rp-es b{font-size:18pt;font-weight:900;color:#1f3a6e}.rp-es span{font-size:8pt;color:#666}.rp-eb2{height:2.4mm;background:#eceef4;border-radius:99px;overflow:hidden;margin:1mm 0 1.6mm}.rp-eb2 i{display:block;height:100%}' +
+    '.rp-tg{display:flex;flex-wrap:wrap;gap:1mm}.rp-tg span{background:#fde9ec;color:#8a2d4a;font-size:7pt;font-weight:700;padding:.4mm 2mm;border-radius:99px}.rp-ad{font-size:7.4pt;line-height:1.55;color:#444;margin-top:1.2mm}.rp-cm{font-size:7.6pt;color:#1f3a6e;margin-top:1.2mm;background:#eef2fa;border-radius:1.4mm;padding:1mm 2mm}' +
     '.rp-ft{margin-top:auto;font-size:6.6pt;color:#8a8f9e;border-top:.2mm solid #e3d3b0;padding-top:1.6mm}';
 
   function ensureCss() { if (!document.getElementById('rptcss')) { var s = document.createElement('style'); s.id = 'rptcss'; s.textContent = CSS; document.head.appendChild(s); } }
   function stuList(it) { return ((it && it.all) || []).filter(function (r) { return r.ox && r.score != null; }).sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ko'); }); }
   function ov() { return document.getElementById('rptOv'); }
+  function needEss(L, it) { return L.filter(function (x) { return dd(x) <= dd(it) && ESS[x.m.id] === undefined; }); }
+  async function fillImgs(root) {
+    var im = [].slice.call(root.querySelectorAll('img.rp-eimg:not([data-done])')), i = 0;
+    async function w() { while (i < im.length) { var e = im[i++]; e.setAttribute('data-done', '1'); var a = { exam_id: e.dataset.ex, k: +e.dataset.k }; if (e.dataset.sid) a.sid = e.dataset.sid; var j = await omrApi('eimg', a);
+      if (j && j.ok) { await new Promise(function (r) { e.onload = e.onerror = r; e.src = j.src; }); } else { e.removeAttribute('src'); e.parentNode.innerHTML = '<div class="rp-mut" style="padding:4mm;text-align:center">답안 사진이 없어요<br>(선생님께 말씀해 주세요)</div>'; } } }
+    await Promise.all([w(), w(), w()]);
+  }
   function draw() {
     var o = ov(); if (!o) return; var L = exams(), staff = isStaff();
+    var it0 = L.filter(function (x) { return x.m.id === V.ex; })[0] || L[L.length - 1];
+    if (it0) { var nd = needEss(L, it0); if (nd.length) { Promise.all(nd.map(essOf)).then(function () { if (ov()) draw(); }); if (!o.querySelector('.vw')) o.innerHTML = '<div class="rb"><b>📄 성적표</b><span class="sp"></span><button class="g" data-rpt="close">닫기</button></div><div class="msg">성적표를 만드는 중…</div>'; return; } }
     if (!L.length) { o.innerHTML = '<div class="rb"><b>성적표</b><span class="sp"></span><button class="g" data-rpt="close">닫기</button></div><div class="msg">아직 채점된 시험이 없어요.</div>'; return; }
     if (!V.ex || L.map(function (x) { return x.m.id; }).indexOf(V.ex) < 0) { var nm = L.filter(function (x) { return msCatOf(x) === '내모미션'; }); V.ex = (nm.length ? nm[nm.length - 1] : L[L.length - 1]).m.id; }
     var it = L.filter(function (x) { return x.m.id === V.ex; })[0];
@@ -150,17 +208,18 @@
       rs = stuList(it);
       h += '<div class="pk"><b style="font-size:13px">학생</b><button data-rpt="all1" style="border:1px solid #1f3a6e;background:#fff;color:#1f3a6e;border-radius:8px;padding:3px 10px;font-weight:700;cursor:pointer">전체 선택</button><button data-rpt="all0" style="border:1px solid #888;background:#fff;color:#555;border-radius:8px;padding:3px 10px;cursor:pointer">전체 해제</button>' +
         rs.map(function (r) { var on = V.sel[r.k] !== false; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-rpt="chk" data-k="' + esc(r.k) + '"' + (on ? ' checked' : '') + '>' + esc(r.name || r.nick || '') + '</label>'; }).join('') + '</div>';
-      rs.forEach(function (r) { if (V.sel[r.k] === false) return; cnt++; pages += '<div class="pgw">' + pageHtml(r.name || r.nick || '', r.k, calc(it, r)) + '</div>'; });
+      rs.forEach(function (r) { if (V.sel[r.k] === false) return; cnt++; pages += pagesHtml(r.name || r.nick || '', r.k, calc(it, r, r.k)); });
       if (!cnt) pages = '<div class="msg">성적표를 만들 학생을 체크해 주세요.</div>';
     } else {
       var row = rowOf(it, null);
-      pages = row ? '<div class="pgw">' + pageHtml((me().name || '나'), null, calc(it, row)) + '</div>' : '<div class="msg">이 회차는 내 기록이 아직 없어요.</div>';
+      pages = row ? pagesHtml((me().name || '나'), null, calc(it, row, null)) : '<div class="msg">이 회차는 내 기록이 아직 없어요.</div>';
     }
     var keep = o.querySelector('.vw'), top = keep ? keep.scrollTop : 0;
     o.innerHTML = h + '<div class="vw">' + pages + '</div>';
     var vw = o.querySelector('.vw'), z = Math.max(0.62, Math.min(1, (vw.clientWidth - 16) / 794));
     if (z < 1) [].forEach.call(vw.querySelectorAll('.pgw'), function (p) { p.style.zoom = z; });
     vw.scrollTop = top;
+    V.imgP = fillImgs(vw);
   }
   function load(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('도구를 불러오지 못했어요(인터넷 연결 확인)')); }; document.head.appendChild(s); }); }
   async function pdf(btn) {
@@ -171,6 +230,7 @@
       if (!window.html2canvas) await load('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
       if (!(window.jspdf && window.jspdf.jsPDF)) await load('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      btn.textContent = '답안 사진 불러오는 중…'; if (V.imgP) await V.imgP;
       var J = window.jspdf.jsPDF, doc = null;
       for (var i = 0; i < pgs.length; i++) {
         btn.textContent = '찍는 중… (' + (i + 1) + '/' + pgs.length + ')';
@@ -187,7 +247,7 @@
   }
   window.rptOpen = function () {
     if (!MS || !MS.items) { try { msEnsure(); } catch (e) {} alert('미션을 불러오는 중이에요. 잠깐 뒤에 다시 눌러 주세요.'); return; }
-    ensureCss(); var o = ov(); if (o) o.remove(); o = document.createElement('div'); o.id = 'rptOv'; o.className = 'rpov'; document.body.appendChild(o); V.sel = {}; draw();
+    ensureCss(); var o = ov(); if (o) o.remove(); o = document.createElement('div'); o.id = 'rptOv'; o.className = 'rpov'; document.body.appendChild(o); V.sel = {}; ESS = {}; draw();
   };
   window.rptCard = function () {
     if (!MS || !MS.items || !exams().length) return '';
