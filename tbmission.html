@@ -101,7 +101,7 @@ async function call(fn,args){
  if(!r.ok)return {ok:false,error:'서버 오류 '+r.status+(r.status===404?' — 4_교과서미션_서버.sql 을 먼저 실행해 주세요':'')};
  try{return await r.json()}catch(e){return {ok:false,error:'서버 응답을 읽지 못했어요'}}}
 async function api(a,args){var j=await call('ac_api',{p_action:a,p_token:S.tok,p_args:args||{}});guard(j);return j}
-async function ms(a,args){var j=await call('ac_mission',{p_action:a,p_token:S.tok,p_args:args||{}});guard(j);return j}
+async function ms(a,args){var j=await call('ac_mission',{p_action:a,p_token:S.tok,p_args:args||{}});guard(j);if(a==='list'&&j&&j.ok&&isTa()&&S.me&&S.me.academy==='bd')j.list=(j.list||[]).filter(function(m){return m.cls==='공수내모'});return j}   /* 분당미래탐구 조교는 공수내모 반 미션만 보여요 */
 function guard(j){if(j&&j.ok===false&&/다시 로그인/.test(j.error||''))logout(true)}
 function logout(soft){S.tok=null;S.me=null;try{localStorage.removeItem(TK)}catch(e){}if(!soft||true)render()}
 var isTa=function(){return !!S.me&&S.me.role==='ta'&&!/^(대표원장|원장|부원장)/.test(String(S.me.name||''))};

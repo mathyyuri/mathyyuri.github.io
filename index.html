@@ -423,7 +423,8 @@ const stuList=ac=>stuListAll(ac).filter(u=>scopeOk(u.cls));
 const isMc=c=>{c=String(c||'');return c==='MATHY CLASS'||c.indexOf('MATHY CLASS · ')===0;};
 const mcLabel=c=>String(c).replace(/^MATHY CLASS · /,'')||'MATHY CLASS';
 /* 운영진 화면 범위: S.mc(원장이 MATHY CLASS 를 고름)면 개별반만, 아니면 개별반은 빼요. 반 이름이 없거나 'all'(학원 전체)인 것은 어느 쪽에서나 보여요 */
-const scopeOk=c=>{try{if(!S.uid||!U[S.uid]||!isStaff())return true;}catch(e){return true;}c=String(c||'');if(!c||c==='all')return true;return isMc(c)===!!S.mc;};
+const taOnly=()=>{try{const u=U[S.uid];return !!u&&u.role==='ta'&&u.ac==='bd'&&!/^(대표원장|원장|부원장)/.test(String(u.name||''))?'공수내모':'';}catch(e){return '';}};   /* 분당미래탐구 조교(직함 없는 운영진)는 공수내모 반만 보여요 */
+const scopeOk=c=>{try{if(!S.uid||!U[S.uid]||!isStaff())return true;}catch(e){return true;}c=String(c||'');if(!c||c==='all')return true;const t=taOnly();if(t)return c===t;return isMc(c)===!!S.mc;};
 const inMc=()=>{try{const u=me();if(!u)return false;if(isStaff(u))return !!S.mc;const st=stuOf(u);return !!st&&isMc(st.cls);}catch(e){return false;}};
 const LINKS=[
  {n:'OMR 사진 자동채점',d:'답안지 사진 → 자동 채점',u:'https://mathyyuri.com/omr.html',ic:''},
@@ -531,7 +532,7 @@ function clsOk(it){const st=stuOf();if(st){return !(it.cls&&it.cls!=='all'&&it.c
 function postVis(p){if(!inAc(p))return false;if(isStaff()&&!scopeOk(p.sid&&U[p.sid]?U[p.sid].cls:p.cls))return false;const st=stuOf();
  if(p.sid){if(st)return st.id===p.sid;return S.cls==='all'||(U[p.sid]&&U[p.sid].cls===S.cls);}
  return clsOk(p);}
-const classesNow=()=>{const b=AC[curAc()].classes.filter(c=>!isMc(c));if(curAc()!=='bd')return b;const m=[...new Set(stuListAll('bd').map(x=>x.cls).filter(isMc))].sort();return (isStaff()&&S.mc)?m:b;};
+const classesNow=()=>{const b=AC[curAc()].classes.filter(c=>!isMc(c));if(curAc()!=='bd')return b;const m=[...new Set(stuListAll('bd').map(x=>x.cls).filter(isMc))].sort();const r=(isStaff()&&S.mc)?m:b,t=taOnly();return t?r.filter(c=>c===t):r;};
 
 
 /* ════════ 렌더링 ════════ */
