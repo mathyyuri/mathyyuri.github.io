@@ -2566,7 +2566,7 @@ function gsmShown(it){if(isStaff())return true;const dd=String(it.ex&&it.ex.date
 function gsmShow2(it){return GSM_CATS.indexOf(msCatOf(it))<0||gsmShown(it);}
 function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&gsmShown(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
 function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*(?:동형|2026)/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
-function gsmWeekOf(dd){const i=GSM_DATES.indexOf(dd);return i>=0?i+1:0;}
+function gsmWeekOf(dd){const t=Date.parse(dd+'T00:00:00Z');if(isNaN(t))return 0;for(let i=GSM_DATES.length-1;i>=0;i--){const d=(t-Date.parse(GSM_DATES[i]+'T00:00:00Z'))/864e5;if(d>=0)return d<=6?i+1:0;}return 0;}   /* 수업 토요일부터 그 주(토~금)까지는 같은 주차 — 과제(화·목)도 그 주 */
 function gsmOnly(){return gsmItems().length>0&&(!isStaff()||S.cls==='공수내모');}
 function gsmGroups(){const has=gsmItems().length>0;if(gsmOnly())return GSM_ONLY.map(k=>MS_GROUPS.find(x=>x[0]===k));return MS_GROUPS.filter(x=>!x[3]||has);}
 function gsmMine(it,inf,stu){
