@@ -205,9 +205,11 @@
     var term = t ? t[1] : (GSM_TERM[code] || ''), sem = m ? m[1] + '학기' : '1학기';
     return { school: sc, sem: sem, term: term, full: (sc ? sc + ' ' : '') + '1학년 ' + sem + (term ? ' ' + term + '고사' : ''), short: (sc ? sc + ' ' : '') + sem + (term ? ' ' + term : '') };
   }
-  function hdr(name, title, sm, d, big) {
+  /* 회차(=학교)마다 그 해설집 표지 사진을 써요: 1회 태원고·2회 한솔고·3회 서현고·4회 야탑고·5회 돌마고·6회 수내고 */
+  function photoOf(d) { var n = d ? (d.nn || (d.inf && d.inf.n) || 0) : 0; return 'gsm_rpt_ph' + (n >= 1 && n <= 6 ? n : 1) + '.jpg'; }
+  function hdr(name, title, sm, d, big, pd) {
     var T = d ? termOf(d) : null, tt = big && T ? '<span class="ts">' + esc(T.school) + '</span> ' + esc(T.sem + (T.term ? ' ' + T.term + '고사' : '')) : title;
-    return '<div class="rp-hd' + (sm ? ' sm' : '') + '"><img class="rp-ph" src="gsm_rpt_photo4.jpg" alt=""><div class="rp-phf"></div><div class="rp-hl"><div><div class="rp-br">MATHY YURI · 분당미래탐구 · 공수내모 성적표</div><div class="rp-tt">' + tt + '</div>' +
+    return '<div class="rp-hd' + (sm ? ' sm' : '') + '"><img class="rp-ph" src="' + photoOf(pd || d) + '" alt=""><div class="rp-phf"></div><div class="rp-hl"><div><div class="rp-br">MATHY YURI · 분당미래탐구 · 공수내모 성적표</div><div class="rp-tt">' + tt + '</div>' +
       (T && !big ? '<div class="rp-tm"><b>' + esc(T.short) + '</b>' + esc(title) + '</div>' : '') + (big && T ? '<div class="rp-tm"><b>' + esc(d.kind === '과제' ? '과제' : d.kind === '원본' ? '원본' : '동형 모의고사') + (d.nn ? ' ' + d.nn + '회' : '') + '</b>학교 시험 대비 성적표</div>' : '') + '</div></div><div class="rp-nm"><small>이름</small>' + esc(name) + '</div></div>';
   }
   function exbar(d) { return '<div class="rp-ex"><b style="background:' + kindCol(d.kind) + '">' + d.kind + '</b><span>' + esc(d.nm) + '</span><em>' + d.date.replace(/-/g, '.') + '</em></div>'; }
@@ -472,7 +474,7 @@
     var scoreC = lineSvg(sets, [{ vals: avS, color: '#bdb8a5', dash: true, lab: false }, { vals: dhS, color: NAVY, up: cmpUp(dhS, hwS) }, { vals: hwS, color: '#9a8450', up: cmpUp(hwS, dhS, false, true) }]) + legend([['동형', NAVY], ['과제', '#9a8450'], ['반 평균(동형)', '#bdb8a5']]);
     var gd = sets.map(function (s) { return s.dh && s.dh.cg != null ? Math.round(s.dh.cg * 100) / 100 : null; }), gh = sets.map(function (s) { return s.hw && s.hw.cg != null ? Math.round(s.hw.cg * 100) / 100 : null; });
     var gradeC = lineSvg(sets, [{ vals: gd, color: NAVY, up: cmpUp(gd, gh, true) }, { vals: gh, color: '#9a8450', up: cmpUp(gh, gd, true, true) }], { w: 260, h: 150, min: 0, max: 5, invert: true, ticks: [0, 1, 2, 3, 4, 5], pl: 24, fs: 10, fmt: function (v) { return v; }, vfmt: function (v) { return v.toFixed(2); } }) + legend([['동형', NAVY], ['과제', '#9a8450']]);
-    var p1 = '<section class="rp pg">' + hdr(name, '누적 성적표', true) +
+    var p1 = '<section class="rp pg">' + hdr(name, '누적 성적표', true, null, false, d) +
       '<div class="rp-ex"><b style="background:#9a8450">누적</b><span>동형 + 과제 = 1세트 · ' + sets[0].n + '~' + sets[sets.length - 1].n + '세트</span><em>' + d.date.replace(/-/g, '.') + ' 기준</em></div>' +
       '<div class="rp-sec">' + h4('세트별 성적', '과제를 제출하면 그 세트에 바로 쌓여요') + tb + '</div>' +
       '<div class="rp-sec">' + h4('점수 추이', '동형 · 과제 · 반 평균') + scoreC + '</div>' +
@@ -487,7 +489,7 @@
     var DCOL = [NAVY, '#9a8450', '#6b7a5e', '#b5a58a'], dl = Object.keys(dNames).slice(0, 4);
     var domC = lineSvg(sets, dl.map(function (k, i) { var v = aggs.map(function (a) { return rateOf(a.D[k]); }); return { vals: v, color: DCOL[i], up: v.map(function () { return i % 2 === 0; }) }; }), { w: 260, h: 150, pl: 24, fs: 10, ticks: [0, 50, 100], vfmt: function (v) { return v + '%'; } }) + legend(dl.map(function (k, i) { return [k, DCOL[i]]; }));
     var lvC = lineSvg(sets, [1, 2, 3].map(function (l) { var v = aggs.map(function (a) { return rateOf(a.Lv[l]); }); return { vals: v, color: LVC[l], up: v.map(function () { return l !== 2; }) }; }), { w: 260, h: 150, pl: 24, fs: 10, ticks: [0, 50, 100], vfmt: function (v) { return v + '%'; } }) + legend([['하', LVC[1]], ['중', LVC[2]], ['상', LVC[3]]]);
-    var p2 = '<section class="rp pg">' + hdr(name, '영역별 정답률 추이', true) +
+    var p2 = '<section class="rp pg">' + hdr(name, '영역별 정답률 추이', true, null, false, d) +
       '<div class="rp-ex"><b style="background:#9a8450">누적</b><span>단원 · 영역 · 난이도별 정답률 변화 (동형+과제 합산)</span><em>' + d.date.replace(/-/g, '.') + ' 기준</em></div>' +
       '<div class="rp-sec">' + h4('단원별 정답률 추이', '진한 선 = 나 · 점선 = 반 평균') + '<div class="mcg">' + (umini || '<div class="rp-mut">단원 정보가 있는 시험이 아직 없어요.</div>') + '</div></div>' +
       '<div class="rp-row2"><div class="rp-sec">' + h4('영역(대단원)별 추이') + domC + '</div><div class="rp-sec">' + h4('난이도별 추이') + lvC + '</div></div>' +
