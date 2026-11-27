@@ -585,7 +585,8 @@ const TAB_ORDER=['home','feed','mission','exam','lesson','msg'];TABS.sort((a,b)=
 const tabsBase=()=>isStaff()?(me().role==='ta'?(isDir()?TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크']]):[['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','오늘의 할일'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','채점']]):TABS.concat([['todo','<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5.5"/></svg>','지시사항'],['att','<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>','출석체크'],['admin','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>','관리']])):TABS;
 const tabsNow=()=>{let L=tabsBase();if(typeof shopTab==='function')L=shopTab(L);if(typeof sinfoTab==='function')L=sinfoTab(L);if(typeof mcTabs==='function')L=mcTabs(L);return L;};   /* 공수내모 반 '교재 구매' 탭은 shop.js 가 끼워 넣어요 */
 function badgeFor(t){const u=me();
- if(t==='feed'){if(isStaff())return 0;return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
+ if(t==='feed'){if(isStaff())return feedNewCount();return DB.posts.filter(p=>postVis(p)&&!p.reads.includes(u.id)).length;}
+ if(t==='mission'&&!isStaff())return pvNewWeeks().length;
  if(t==='msg')return unreadMsgs();return 0;}
 function unreadMsgs(){const u=me();let n=0;
  Object.keys(DB.msgs).forEach(k=>{const [sid,kind]=k.split(':');const st=U[sid];
@@ -595,6 +596,7 @@ function unreadMsgs(){const u=me();let n=0;
 const EB={home:'welcome back',feed:'news & notice',lesson:'class & schedule',mission:'missions',exam:'results & review',shop:'books',sinfo:'students',msg:'messages',admin:'manage',todo:'today',att:'attendance'};
 function titleOf(t){return {home:'홈',feed:'소식',lesson:'수업',mission:'미션',exam:'누적성적',msg:'메시지',admin:(me().role==='ta'?'교과서 미션 채점':'관리'),todo:(me().role==='ta'&&!isDir()?'오늘의 할일':'지시사항'),att:'출석체크',shop:(typeof shopTitle==='function'?shopTitle():'교재 구매'),sinfo:'학생 정보',mcnew:'수강생 등록'}[t]||(String(t).indexOf('mc:')===0&&U[String(t).slice(3)]?U[String(t).slice(3)].name:'');}
 function renderMain(){
+ ensurePv();
  if(me().role==='ta'&&!isDir()&&S.tab!=='admin'&&S.tab!=='todo'&&S.tab!=='att'&&S.tab!=='sinfo'){S.tab='todo';}if(S.tab==='admin'&&me().role==='ta'&&isDir()){S.tab='home';}if(typeof mcGuard==='function')mcGuard();
  const u=me(),a=AC[curAc()],st=stuOf(u);
  const dn=inMc()?'MATHY CLASS':a.name;   /* MATHY CLASS 수강생에게는 학원 이름 대신 이 이름 */
@@ -607,6 +609,7 @@ function renderMain(){
  '<div><div class="top"><div class="brand">'+dn+'</div><div class="who">'+esc(u.name)+'<br>'+ROLE[u.role]+'</div>'+viewAsBtnM()+'<button class="sw" data-a="logout">로그아웃</button></div>'+
  '<main class="main">'+(u.role==='admin'?'<div class="hide-pc">'+acsw+'</div>':'')+(S.tab==='home'?'':'<div class="ph"><div class="eb">'+(EB[S.tab]||'individual')+'</div><h1>'+titleOf(S.tab)+'</h1><div class="s">'+esc(sub)+'</div></div>')+clsBar()+body+'</main></div></div>'+
  '<nav class="bnav'+(inMc()&&tabsNow().length>5?' scr':'')+'" style="'+(inMc()&&tabsNow().length>5?'':'grid-template-columns:repeat('+tabsNow().length+',1fr)')+'">'+nav+'</nav>';
+ if(isStaff()&&S.tab==='feed')feedSeenNow();
 }
 function clsBar(){if(!isStaff()||S.tab==='home'||S.tab==='admin'||S.tab==='todo'||S.tab==='att'||S.tab==='shop'||S.tab==='sinfo'||inMc())return '';
  return '<div class="chips"><span class="lbl">반</span><button class="chip cl '+(S.cls==='all'?'on':'')+'" data-a="cls" data-v="all">전체</button>'+classesNow().map(c=>'<button class="chip cl '+(S.cls===c?'on':'')+'" data-a="cls" data-v="'+esc(c)+'">'+(isMc(c)?'✦ '+esc(mcLabel(c)):esc(c))+'</button>').join('')+'</div>';}
@@ -664,7 +667,7 @@ function vHome(){if(!isStaff())return vHomeStu();if(isDir())return vHomeDir();
  const ev=upcoming(5);
  h+='<div class="card"><h3>오늘·다가오는 일정<button class="more" data-a="tab" data-v="lesson">스케줄 ›</button></h3>'+(ev.length?ev.map(x=>'<div class="li"><div class="tm">'+(x.ds===TODAY?'오늘':x.ds.slice(5).replace('-','/'))+'</div><div class="tx"><b>'+esc(x.e.n)+'</b><div class="muted sm">'+(x.e.time||'종일')+(x.e.kind==='클리닉'?' · 클리닉':'')+'</div></div></div>').join(''):'<div class="empty">예정된 일정이 없어요</div>')+'</div>';
  const pins=DB.posts.filter(p=>postVis(p)).sort((a,b)=>(b.pin||0)-(a.pin||0)||b.ts.localeCompare(a.ts)).slice(0,3);
- h+='<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+pins.map(p=>'<div class="li"><div class="tx"><span class="badge t-'+p.type+'">'+p.type+'</span>'+comBadge(p)+(!staff&&!p.reads.includes(u.id)?' <span class="badge new">NEW</span>':'')+'<div style="margin-top:3px"><a href="#" data-a="gopost" data-id="'+p.id+'" style="color:inherit;text-decoration:none;font-weight:700">'+esc(p.title)+'</a></div><div class="muted sm">'+fmtTs(p.ts)+'</div></div></div>').join('')+'</div>';
+ h+='<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+pins.map(p=>'<div class="li"><div class="tx"><span class="badge t-'+p.type+'">'+p.type+'</span>'+comBadge(p)+(isUnreadPost(p)?' <span class="badge new">NEW</span>':'')+'<div style="margin-top:3px"><a href="#" data-a="gopost" data-id="'+p.id+'" style="color:inherit;text-decoration:none;font-weight:700">'+esc(p.title)+'</a></div><div class="muted sm">'+fmtTs(p.ts)+'</div></div></div>').join('')+'</div>';
  if(staff){
   const ms=myMissions().filter(m=>m.kind!=='공통').map(m=>({m,n:Object.keys(m.done).filter(k=>mTargets(m).some(s=>s.id===k)).length,t:mTargets(m).length})).sort((a,b)=>a.n/a.t-b.n/b.t).slice(0,4);
   h+='<div class="card"><h3>미션 제출 현황<button class="more" data-a="tab" data-v="mission">전체 ›</button></h3>'+ms.map(x=>'<div class="li"><div class="tx"><b>'+esc(x.m.title)+'</b> <span class="muted sm">'+x.m.cls+'</span><div class="bar" style="margin-top:6px"><i style="width:'+(x.n/x.t*100)+'%"></i></div></div><div class="tm">'+x.n+'/'+x.t+'</div></div>').join('')+'</div>';
@@ -682,7 +685,7 @@ function vHome(){if(!isStaff())return vHomeStu();if(isDir())return vHomeDir();
 /* ── 소식 ── */
 function readPost(p){const u=me();if(!isStaff()&&!p.reads.includes(u.id)){p.reads.push(u.id);api('post_read',{id:p.id});}}
 function postCard(p){
- const u=me(),staff=isStaff(),open=!!S.open[p.id],unread=!staff&&!p.reads.includes(u.id);
+ const u=me(),staff=isStaff(),open=!!S.open[p.id],unread=isUnreadPost(p);
  const tg=targetsOf(p),rc=tg.filter(t=>p.reads.includes(t.id)).length;
  const scope=p.sid?'개인 · '+U[p.sid].name:(p.ac==='all'?'두 학원 공통':(p.cls&&p.cls!=='all'?p.cls:AC[p.ac].name+' 전체'));
  const long=p.body.length>110||p.body.indexOf('\n')>=0;
@@ -1421,7 +1424,7 @@ async function viewAsStart(){
  VIEW={orig:TOKEN,ac:S.ac,tab:S.tab,label:j.label};TOKEN=j.token;closeModal();
  viewReset();await resync();S.ac=j.academy||S.ac;S.tab='home';S.cls='all';S.thread=null;S.open={};S.exsel=null;S.rex=null;S.rstu='';render(0);window.scrollTo(0,0);
 }
-function viewReset(){dropCaches();ATD=undefined;ATDR={};TODOE=null;RX.post={};RX.msg={};Object.keys(RXL).forEach(k=>delete RXL[k]);PUSH_ON=undefined;PUSHMARKED=false;LASTLOAD=Date.now();}
+function viewReset(){PV=undefined;FEEDPREV=undefined;dropCaches();ATD=undefined;ATDR={};TODOE=null;RX.post={};RX.msg={};Object.keys(RXL).forEach(k=>delete RXL[k]);PUSH_ON=undefined;PUSHMARKED=false;LASTLOAD=Date.now();}
 async function viewEnd(auto){
  if(!VIEW)return;const v=VIEW;
  try{await api('logout');}catch(e){}
@@ -1845,7 +1848,7 @@ function autoNote(name,H){
 function newsCard(){
  const staff=false,u=me();
  const P=DB.posts.filter(p=>postVis(p)).sort((a,b)=>(b.pin||0)-(a.pin||0)||b.ts.localeCompare(a.ts)).slice(0,4);
- return '<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+(P.length?P.map(p=>{const un=!isStaff()&&!p.reads.includes(u.id);
+ return '<div class="card"><h3>새 소식<button class="more" data-a="tab" data-v="feed">전체 ›</button></h3>'+(P.length?P.map(p=>{const un=isUnreadPost(p);
   return '<button class="nws" data-a="tab" data-v="feed">'+smallThumb(p)+'<span class="badge t-'+p.type+'">'+esc(p.type)+'</span>'+(un?' <span class="badge new">NEW</span>':'')+(p.img?' <span class="muted sm">사진</span>':'')+'<div style="font-weight:700;margin-top:4px">'+esc(p.title)+'</div>'+(p.body?'<div class="pv2">'+esc(plainOf(p.body))+'</div>':'')+'<div class="muted sm" style="margin-top:3px">'+fmtTs(p.ts)+'</div></button>';}).join(''):'<div class="empty">아직 소식이 없어요</div>')+'</div>';
 }
 function noteCard(){
@@ -2017,7 +2020,7 @@ function vHomeDir(){
 }
 function vHomeStu(){
  shEnsure();
- return seasonHero()+seasonTimeline()+'<div class="hgrid"><div>'+newsCard()+noteCard()+cumChart()+clearCard()+landingExtras(true)+'</div><aside class="hside">'+sideCal()+'</aside></div>';
+ return pvBanner()+seasonHero()+seasonTimeline()+'<div class="hgrid"><div>'+newsCard()+noteCard()+cumChart()+clearCard()+landingExtras(true)+'</div><aside class="hside">'+sideCal()+'</aside></div>';
 }
 /* ── 선생님: 학생별 한마디 쓰기 (직접 쓰거나 자동 작성) ── */
 async function openNote(sid){
@@ -2583,8 +2586,33 @@ function gsmTrendCard(){
 }
 /* 과제미션: 일일일모 방식으로 풀고 제출하는 화면(homework.html)으로 가는 카드 */
 function hwCard(){const st=isStaff();return '<div class="card" style="border-left:4px solid #c9a55d;background:#fbf5e4;margin-bottom:12px"><div class="row"><div><b>'+(st?'과제 제출 현황':'과제 풀고 제출하기')+'</b><div class="muted sm">'+(st?'누가 냈는지 · 서술형 사진 · 점수 입력 · 미제출 독촉':'문제를 보고 답과 확신 정도를 누르고, 서술형은 풀이 사진을 올려요. 마감은 화·목 밤 11:59예요.')+'</div></div><span class="sp"></span><a class="btn" style="text-decoration:none" href="homework.html">'+(st?'현황 보기':'과제 풀러 가기')+'</a></div></div>';}
+/* ── 새 소식 NEW (선생님 화면): 이 기기에서 지난번에 본 뒤에 올라온 글에 NEW ── */
+let FEEDPREV;
+function feedKey(){return 'gsm_feed_seen_'+(me().id||'');}
+function feedLatest(){return DB.posts.filter(p=>postVis(p)).reduce((m,p)=>String(p.ts)>m?String(p.ts):m,'');}
+function feedPrev(){if(FEEDPREV===undefined){let v=lsGet(feedKey());if(!v){v=feedLatest();if(v)lsSet(feedKey(),v);}FEEDPREV=v||'';}return FEEDPREV;}
+function ownPost(p){return p.au===(me().role==='admin'?'원장':'조교');}
+function feedNewStaff(p){return isStaff()&&!ownPost(p)&&String(p.ts)>feedPrev();}
+function feedNewCount(){const sn=lsGet(feedKey())||feedPrev();return DB.posts.filter(p=>postVis(p)&&!ownPost(p)&&String(p.ts)>sn).length;}
+function feedSeenNow(){const l=feedLatest();if(l&&lsGet(feedKey())!==l)lsSet(feedKey(),l);}
+function isUnreadPost(p){return isStaff()?feedNewStaff(p):!p.reads.includes(me().id);}
+/* ── 예습영상 '업로드 완료'·NEW: 서버(vstat)에서 주차별 개수·마지막 올린 시각만 받아요(영상 주소는 안 와요) ── */
+let PV;   /* undefined=아직 안 불러옴 · null=불러오는 중 · 객체=결과 */
+const PV_SEEN='gsm_pv_seen';   /* preview.html 이 같은 키로 '영상 화면을 마지막으로 연 때'를 적어요 */
+function pvEligible(){if(!S.uid)return false;if(isStaff())return true;const st=stuOf(me());return !!st&&st.cls==='공수내모';}
+async function gsmApi(a,args){try{const r=await fetch(API_URL.replace('ac_api','ac_gsm'),{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});return r.ok?await r.json():{ok:false};}catch(e){return {ok:false};}}
+function ensurePv(){if(PV!==undefined||!pvEligible())return;PV=null;gsmApi('vstat').then(j=>{PV=(j&&j.ok)?j:{weeks:[],ann:{},err:1};render();});}
+function pvSeen(){const v=+lsGet(PV_SEEN);return v>0?v:0;}
+function pvNewWeeks(){if(!PV||!PV.weeks||isStaff())return [];const sn=pvSeen();return PV.weeks.filter(w=>Date.parse(w.last)>sn);}
+function pvStatus(){
+ if(PV===null||PV===undefined||PV.err)return '';
+ const st=isStaff(),nw=pvNewWeeks().map(w=>w.week);
+ if(!PV.weeks.length)return '<div class="muted sm" style="margin-top:8px">'+(st?'아직 올라온 영상이 없어요.':'아직 올라온 영상이 없어요. 올라오면 여기에 알려 줘요.')+'</div>';
+ return '<div style="margin-top:8px;display:grid;gap:4px">'+PV.weeks.map(w=>{const ann=st&&PV.ann&&PV.ann[w.week];
+  return '<div style="font-size:13.5px">✅ <b>'+w.week+'주차 예습영상 '+(st?'올라감':'업로드 완료')+'</b> · '+w.n+'개'+(nw.indexOf(w.week)>=0?' <span class="badge new">NEW</span>':'')+(st?(ann?' <span class="muted sm">· 학생에게 알림 보냄</span>':' <span class="sm" style="color:#b76e79">· 아직 학생에게 안 알렸어요</span>'):'')+'</div>';}).join('')+'</div>';}
+function pvBanner(){const nw=pvNewWeeks();if(!nw.length)return '';return '<div class="card" style="border-left:4px solid #1f3a6e;background:#eef2fa;margin-bottom:12px"><div class="row"><div><b>🎬 '+nw.map(w=>w.week+'주차').join('·')+' 예습영상이 올라왔어요</b> <span class="badge new">NEW</span><div class="muted sm">수업 전에 보고 오면 좋아요. 안 보고 와도 괜찮아요.</div></div><span class="sp"></span><a class="btn" style="text-decoration:none" href="preview.html">영상 보러 가기</a></div></div>';}
 /* 내모미션: 수업 전 예습영상(preview.html) — 등록한 수업의 영상만 보여요 */
-function pvCard(){const st=isStaff();return '<div class="card" style="border-left:4px solid #1f3a6e;background:#eef2fa;margin-bottom:12px"><div class="row"><div><b>'+(st?'예습영상 · 수강 등록 관리':'수업 전 예습영상')+'</b><div class="muted sm">'+(st?'영상 올리기 · 학생별 부분수강(등록한 수업) · 시청 기록':'토요일 수업 전에 원문제 풀이·해설 영상을 보고 와요. 내가 등록한 수업만 보여요.')+'</div></div><span class="sp"></span><a class="btn" style="text-decoration:none" href="preview.html">'+(st?'관리하기':'영상 보러 가기')+'</a></div></div>';}
+function pvCard(){const st=isStaff();return '<div class="card" style="border-left:4px solid #1f3a6e;background:#eef2fa;margin-bottom:12px"><div class="row"><div><b>'+(st?'예습영상 · 수강 등록 관리':'수업 전 예습영상')+'</b><div class="muted sm">'+(st?'영상 올리기 · 학생별 부분수강(등록한 수업) · 시청 기록':'토요일 수업 전에 원문제 풀이·해설 영상을 보고 와요. 내가 등록한 수업만 보여요.')+'</div></div><span class="sp"></span><a class="btn" style="text-decoration:none" href="preview.html">'+(st?'관리하기':'영상 보러 가기')+'</a></div>'+pvStatus()+'</div>';}
 function vMission(){
  let g=S.sub.mission;
  const gonly=gsmOnly();if(gonly&&GSM_ONLY.indexOf(g)<0){g='nemo';S.sub.mission='nemo';}
