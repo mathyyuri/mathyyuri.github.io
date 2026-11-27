@@ -1384,7 +1384,7 @@ async function atdHist(sid){
 /* ── 원장 미리보기: 학생 · 학부모 · 조교 · 부원장 화면으로 보기 (보기만 가능) ── */
 const VIEWAS_URL=API_URL.replace('ac_api','ac_viewas');
 let VIEW=null,VAM='student';
-const VIEW_OK={ac_api:['sync','public','post_img','logout'],ac_mission:['list','load','problems','history','students'],ac_note:['mine','get','mlist','auto'],ac_tools:['get'],ac_react:['get'],ac_post_media:['get','gets'],ac_push:['status'],ac_push_roster:['list'],ac_tasks:['day'],ac_attend:['day','hist']};
+const VIEW_OK={ac_api:['sync','public','post_img','logout'],ac_mission:['list','load','problems','history','students'],ac_note:['mine','get','mlist','auto'],ac_tools:['get'],ac_react:['get'],ac_post_media:['get','gets'],ac_push:['status'],ac_push_roster:['list'],ac_tasks:['day'],ac_attend:['day','hist'],ac_shop:['info','photo','lec_info'],ac_gsm:['me','vstat']};   /* 교재구매 화면·예습영상 현황도 보기만 허용(저장·주문은 계속 막아요) */
 (function(){
  const f0=window.fetch.bind(window);
  window.fetch=function(input,init){
