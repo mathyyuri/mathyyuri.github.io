@@ -2554,19 +2554,20 @@ function msMatrix(L){
 /* ── 공수내모: 내모미션(수업 당일 시험) · 과제미션(집에서 푼 시험) · 오답미션 — 시험지별 학교 기준 백분위·등급 ── */
 const GSM_ST={"낙생고":[50.5,19.5,80,61,46,29],"늘푸른고":[55.0,18.6,83,67,50,34],"돌마고":[55.4,18.8,84,68,51,33],"보라고":[53.9,19.2,83,66,48,32],"보평고":[47.3,20.8,79,59,40,24],"분당고":[47.7,21.2,80,60,40,24],"분당대진고":[47.7,20.2,79,60,41,26],"불곡고":[58.9,18.9,85,72,55,36],"서천고":[60.8,17.6,86,72,57,41],"서현고":[59.1,18.4,88,73,55,37],"송림고":[56.3,17.3,82,67,52,36],"수내고":[56.1,20.2,88,68,52,32],"신갈고":[55.8,18.0,84,66,52,34],"야탑고":[60.9,20.3,90,74,56,37],"영덕여고":[56.7,19.7,85,70,52,34],"운중고":[62.1,19.3,89,75,58,39],"이매고":[58.8,20.2,89,71,53,34],"태원고":[65.1,19.5,94,79,61,41],"판교고":[56.9,19.7,88,69,50,35],"한솔고":[64.6,19.7,94,78,60,41]};   /* 학교 → [평균, 표준편차, 1등급컷, 2등급컷, 3등급컷, 4등급컷] (2026 중간 기준 예상) */
 const GSM_DATES=['2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-13','2027-02-20','2027-02-27'];
-const GSM_CATS=['내모미션','과제미션','원본미션','추가미션'],GSM_ONLY=['nemo','hw','orig','extra','wrong'],GSM_GC=['','#2f7d5b','#4a8f3c','#b88a1e','#c4602a','#b84a4a'];
+const GSM_CATS=['내모미션','과제미션','원본미션','추가미션'],GSM_ONLY=['chart','nemo','orig','hw','wrong','extra'],GSM_GC=['','#2f7d5b','#4a8f3c','#b88a1e','#c4602a','#b84a4a'];
 function gsmCdf(z){const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
-function gsmEval(school,sc){const s=GSM_ST[school];if(!s||sc==null||isNaN(sc))return null;const pct=gsmCdf((sc-s[0])/s[1])*100,g=sc>=s[2]?1:sc>=s[3]?2:sc>=s[4]?3:sc>=s[5]?4:5;return {pct:pct,top:100-pct,grade:g};}
+function gsmUpper(school,sc){const u=window.GSM_UP&&GSM_UP[school];if(u){sc=Math.max(0,Math.min(100,sc));const a=Math.floor(sc),b=Math.min(100,a+1);return u[a]+(u[b]-u[a])*(sc-a);}const s=GSM_ST[school];return s?100-gsmCdf((sc-s[0]-3)/s[1])*100:null;}   /* 상위% = 해설집 뒷편 예상 등급표와 같은 점수 분포(gsmreport.js 의 GSM_UP) */
+function gsmEval(school,sc){const s=GSM_ST[school];if(!s||sc==null||isNaN(sc))return null;const pct=100-gsmUpper(school,sc),g=sc>=s[2]?1:sc>=s[3]?2:sc>=s[4]?3:sc>=s[5]?4:5;return {pct:pct,top:100-pct,grade:g};}
 function gsmTopTxt(e){const t=e.top;return t<1?'상위 1% 이내':'상위 '+Math.round(t)+'%';}
 /* 학생 화면: 아직 시작 안 한 주차(수업일 3일 전보다 이른 것)는 숨겨요. 선생님은 전부 보여요. */
 function gsmOpenDate(){const d=new Date();d.setDate(d.getDate()+3);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function gsmShown(it){if(isStaff())return true;const dd=String(it.ex&&it.ex.date||'').slice(0,10);return !dd||dd<=gsmOpenDate();}
 function gsmShow2(it){return GSM_CATS.indexOf(msCatOf(it))<0||gsmShown(it);}
 function gsmItems(){return MS&&MS.items?MS.items.filter(it=>msVis(it)&&gsmShown(it)&&GSM_CATS.indexOf(msCatOf(it))>=0):[];}
-function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*동형/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
+function gsmInfo(it){const nm=String(it.ex.name||''),m=/(\d+)\s*회/.exec(nm),sm=/·\s*(\S+?)\s*(?:동형|2026)/.exec(nm);return {n:m?+m[1]:0,school:sm?sm[1]:'',hw:msCatOf(it)==='과제미션'};}
 function gsmWeekOf(dd){const i=GSM_DATES.indexOf(dd);return i>=0?i+1:0;}
 function gsmOnly(){return gsmItems().length>0&&(!isStaff()||S.cls==='공수내모');}
-function gsmGroups(){const has=gsmItems().length>0;if(gsmOnly())return MS_GROUPS.filter(x=>GSM_ONLY.indexOf(x[0])>=0);return MS_GROUPS.filter(x=>!x[3]||has);}
+function gsmGroups(){const has=gsmItems().length>0;if(gsmOnly())return GSM_ONLY.map(k=>MS_GROUPS.find(x=>x[0]===k));return MS_GROUPS.filter(x=>!x[3]||has);}
 function gsmMine(it,inf,stu){
  const st=msStat(it);if(!st.n)return '<span class="muted sm">채점 전</span>';
  let sc=null,extra='';
@@ -2586,7 +2587,7 @@ function gsmTrend(pts){
  return s+'</svg><div class="sm muted"><b style="color:#1f3a6e">━ 내모미션</b> &nbsp; <b style="color:#b76e79">━ 과제미션</b></div>';
 }
 function gsmTrendCard(){
- const pts=[];gsmItems().forEach(it=>{const inf=gsmInfo(it);if(!inf.n)return;const me=msStat(it).me;pts.push({n:inf.n,hw:inf.hw,sc:me?Math.round(+me.r.score*10)/10:null});});
+ const pts=[];gsmItems().forEach(it=>{if(['내모미션','과제미션'].indexOf(msCatOf(it))<0)return;const inf=gsmInfo(it);if(!inf.n)return;const me=msStat(it).me;pts.push({n:inf.n,hw:inf.hw,sc:me?Math.round(+me.r.score*10)/10:null});});
  const t=gsmTrend(pts);return t?'<div class="card" style="padding:12px 16px;margin-bottom:10px"><b>내 점수 추이</b> <span class="muted sm">회차별 점수 (한 주에 내모 2회 + 과제 2회)</span>'+t+'</div>':'';
 }
 /* 과제미션: 일일일모 방식으로 풀고 제출하는 화면(homework.html)으로 가는 카드 */
@@ -2624,7 +2625,7 @@ function vMission(){
  const chips='<div class="chips">'+gsmGroups().map(x=>'<button class="chip '+((g===x[0]||(g==='chart'&&x[0]==='chart'))?'on':'')+'" data-a="sub" data-k="mission" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+(gonly?'':'<button class="chip '+(g==='공통'?'on':'')+'" data-a="sub" data-k="mission" data-v="공통">공통과제</button>')+'</div>';
  if(g==='공통'){const o=vMissionOld();return chips+o.slice(o.indexOf('</div>')+6);}
  msEnsure();
- let h=chips+(g==='hw'?hwCard():'')+(g==='nemo'?pvCard():'')+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html'+tbmAcQ(false,false)+'">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
+ let h=chips+(g==='chart'&&gsmOnly()&&window.rptCard?rptCard():'')+(g==='hw'?hwCard():'')+(g==='nemo'?pvCard():'')+'<div class="row" style="margin-bottom:12px">'+(isStaff()?'<a class="btn" style="text-decoration:none" href="tbmission.html'+tbmAcQ(false,false)+'">미션 전체 · 기록 한눈에 보기</a><button class="btn sec" data-a="nickview" title="캡처해서 공유할 때 본명 대신 닉네임으로 보여 줘요">'+(NICKV?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<button class="btn sec" data-a="msrefresh">새로고침</button></div>';
  if(!MS)return h+'<div class="card"><div class="empty">불러오는 중…</div></div>';
  if(MS.err)return h+'<div class="card"><div class="empty">미션을 불러오지 못했어요. 4_교과서미션_서버.sql 을 실행했는지 확인해 주세요.</div></div>';
  const grp=MS_GROUPS.find(x=>x[0]===g)||MS_GROUPS[0];
@@ -2632,7 +2633,7 @@ function vMission(){
  if(!L.length)return h+'<div class="card"><div class="empty">아직 '+(grp[2]?esc(grp[1]):'올라온 미션')+'이 없어요.</div></div>';
  const stu=!isStaff();let _ld='';L.sort((a,b)=>String(b.ex.date).localeCompare(String(a.ex.date)));   /* 최신 미션이 먼저, 같은 날짜는 묶음 줄 아래에 */
  if(g==='chart')return h+msMatrix(L);
- const gx=(g==='nemo'||g==='hw');if(gx&&stu)h+=gsmTrendCard();
+ const gx=(g==='nemo'||g==='hw'||g==='orig');if((g==='nemo'||g==='hw')&&stu)h+=gsmTrendCard();
  h+='<div class="note">'+(gx?'<b>시험지마다 그 학교 기준으로 백분위·등급</b>을 계산해요(학교별 예상 등급컷·평균·표준편차). ':'')+'미션을 누르면 <b>정오표</b>와 <b>분석</b>이 펼쳐져요. 클리어 = 틀린 문제를 모두 고친 상태(남은 오답 0개)예요.</div><div class="card" style="padding:8px 4px"><table class="tbl"><tr><th style="text-align:left">미션</th><th>응시</th><th>평균</th><th>클리어</th><th>남은 오답</th>'+(stu?'<th>내 상태</th>':'')+(gx?'<th>'+(stu?'내 성적':'평균 성적')+'</th>':'')+'</tr>';
  L.forEach(it=>{
   const st=msStat(it),op=!!S.open['ms'+it.m.id],id=it.m.id,dd=String(it.ex.date).slice(0,10);if(dd!==_ld){_ld=dd;h+='<tr class="dgr"><td colspan="'+((stu?6:5)+(gx?1:0))+'" class="dw'+msDow(dd)+'">'+msDay(dd)+(gx&&gsmWeekOf(dd)?' <span style="font-weight:600">· '+gsmWeekOf(dd)+'주차</span>':'')+'</td></tr>';}
@@ -2809,6 +2810,7 @@ async function boot(){
 })();
 </script>
 <script src="shop.js"></script>
+<script src="gsmreport.js"></script>
 <script src="sinfo.js"></script>
 <script src="mcclass.js"></script>
 </body>
