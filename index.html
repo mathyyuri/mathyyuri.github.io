@@ -1538,6 +1538,7 @@ window.addEventListener('message',e=>{
  if(e.origin!==location.origin||!e.data)return;
  if(e.data.tbmh)document.querySelectorAll('iframe.tbmh').forEach(f=>{if(f.contentWindow===e.source)f.style.height=Math.max(160,e.data.tbmh)+'px';});
  if(e.data.tbmsaved){LASTLOAD=0;dropCaches();}
+ if(e.data.tbmrpt&&window.rptOpen){window.rptOpen(String(e.data.tbmrpt));}
  if(e.data.tbmhome&&S.uid){S.tab='home';S.thread=null;render(0);}
 });
 

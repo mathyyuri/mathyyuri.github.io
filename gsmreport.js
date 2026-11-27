@@ -28,7 +28,7 @@
   function dd(it) { return String(it.ex.date || '').slice(0, 10); }
   function exams() {
     if (!MS || !MS.items) return [];
-    return MS.items.filter(function (it) { return msVis(it) && CATS.indexOf(msCatOf(it)) >= 0 && gsmShown(it) && it.roster && it.roster.length; })
+    return MS.items.filter(function (it) { return (V.any || msVis(it)) && CATS.indexOf(msCatOf(it)) >= 0 && gsmShown(it) && it.roster && it.roster.length; })
       .sort(function (a, b) { return dd(a).localeCompare(dd(b)) || String(a.ex.name).localeCompare(String(b.ex.name), 'ko'); });
   }
   function rowOf(it, key) {
@@ -245,8 +245,9 @@
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = orig; }
   }
-  window.rptOpen = function () {
-    if (!MS || !MS.items) { try { msEnsure(); } catch (e) {} alert('미션을 불러오는 중이에요. 잠깐 뒤에 다시 눌러 주세요.'); return; }
+  window.rptOpen = function (id, tries) {
+    if (typeof id === 'string' && id) { V.ex = id; V.any = true; }
+    if (!MS || !MS.items) { try { msEnsure(); } catch (e) {} tries = (tries || 0) + 1; if (tries > 60) { alert('미션을 불러오지 못했어요. 잠깐 뒤에 다시 눌러 주세요.'); return; } setTimeout(function () { window.rptOpen(null, tries); }, 400); return; }
     ensureCss(); var o = ov(); if (o) o.remove(); o = document.createElement('div'); o.id = 'rptOv'; o.className = 'rpov'; document.body.appendChild(o); V.sel = {}; ESS = {}; draw();
   };
   window.rptCard = function () {
@@ -261,6 +262,11 @@
     else if (a === 'pdf') pdf(t);
     else if (a === 'all1' || a === 'all0') { var it = exams().filter(function (x) { return x.m.id === V.ex; })[0]; stuList(it).forEach(function (r) { V.sel[r.k] = a === 'all1'; }); draw(); }
   });
+  /* 미션 채점 화면(tbmission.html)에서 [성적표 출력]을 누르면 index.html?rpt=<미션 id> 로 와서 바로 성적표를 열어요 */
+  try {
+    var q = new URLSearchParams(location.search).get('rpt');
+    if (q) { var n = 0, iv = setInterval(function () { n++; var ok = false; try { ok = !!(S && S.uid && U[S.uid]); } catch (e) {} if (ok) { clearInterval(iv); window.rptOpen(q); } else if (n > 100) clearInterval(iv); }, 300); }
+  } catch (e) {}
   document.addEventListener('change', function (ev) {
     var t = ev.target; if (!t || !t.getAttribute) return; var a = t.getAttribute('data-rpt');
     if (a === 'ex') { V.ex = t.value; draw(); }

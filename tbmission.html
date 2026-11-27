@@ -338,7 +338,7 @@ function tabsFor(){
  var t=[['main','정오표 · 분석'],['my',isStaff()?'학생별 성적':'내 성적'],['board','전체 성적표'],['rate','번호별 정답률'],['note','오답노트']];
  if(isStaff())t.push(['input','정오표 입력'],['mng','미션 관리']);return t}
 function vDetail(){
- var C=S.C,h='<div class="row" style="margin-bottom:10px"><button class="btn sec sm3" data-a="back">← 미션 목록</button><button class="btn sec sm3" data-a="home">🏠 홈</button>'+(isStaff()?'<button class="btn sec sm3" data-a="nickview">'+(NICK?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<b style="font-family:var(--fk);font-size:18px">'+esc(S.ex.name)+'</b><span class="muted sm">'+esc(S.ex.date)+' · '+C.n+'문항 · 만점 '+C.tot+'점 · 채점 '+C.G.length+'명</span></div>';
+ var C=S.C,h='<div class="row" style="margin-bottom:10px"><button class="btn sec sm3" data-a="back">← 미션 목록</button><button class="btn sec sm3" data-a="home">🏠 홈</button>'+(isStaff()?'<button class="btn sec sm3" data-a="nickview">'+(NICK?'실명으로 보기':'닉네임으로 보기')+'</button>':'')+'<b style="font-family:var(--fk);font-size:18px">'+esc(S.ex.name)+'</b><span class="muted sm">'+esc(S.ex.date)+' · '+C.n+'문항 · 만점 '+C.tot+'점 · 채점 '+C.G.length+'명</span>'+(isStaff()&&S.ex.cls==='공수내모'&&['내모미션','과제미션','원본미션'].indexOf(S.ex.cat)>=0?'<span class="sp"></span><button class="btn gold sm3" data-a="rpt" title="점수·등급·서술형 분석이 든 학생별 성적표를 만들어 PDF로 저장해요">📄 성적표 출력 (PDF)</button>':'')+'</div>';
  h='<div class="acstrip '+(S.ex.ac==='ds'||S.ex.ac==='bd'?S.ex.ac:'no')+'">'+esc(AC[S.ex.ac]||'공통')+(S.ex.cls&&String(S.ex.cls).indexOf('note:')!==0?' · '+esc(S.ex.cls)+'반':'')+' 미션 채점</div>'+h;
  h+='<div class="tabs">'+tabsFor().map(function(t){return '<button data-a="view" data-v="'+t[0]+'" class="'+(S.view===t[0]?'on':'')+'">'+t[1]+'</button>'}).join('')+'</div>';
  var f={main:vMain,my:vMy,board:vBoard,grid:vGrid,rate:vRate,ana:vAna,note:vNote,input:vInput,mng:vMng}[S.view];
@@ -841,6 +841,7 @@ document.addEventListener('click',async function(ev){
  if(a==='close'){$('#md').hidden=true;return}
  if(a==='icls'){S.icls=b.getAttribute('data-v');render();return}
  if(a==='paste'){openPaste();return}if(a==='pasteok'){pasteOk();return}
+ if(a==='rpt'){var rid=S.ex.id;if(EMB&&window.parent!==window){try{window.parent.postMessage({tbmrpt:rid},location.origin)}catch(e){}}else{location.href='index.html?rpt='+encodeURIComponent(rid)}return}
  if(a==='saveox'){saveOx();return}
  if(a==='cell'){var kk=b.getAttribute('data-k'),ii=+b.getAttribute('data-i');gSet(kk,ii,CYC[S.G[kk][ii]]||'O');return}
  if(a==='gns'){gNs(b.getAttribute('data-k'));return}
