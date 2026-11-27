@@ -4,6 +4,9 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>공수내모 예습영상 · MATHY YURI</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
 :root{--navy:#1f3a6e;--rose:#b76e79;--gold:#c9a55d;--ink:#232733;--mute:#6b7080;--line:#e3e6ee;--bg:#f6f0e4;--card:#fffdf8;--ok:#2f7d5b;--bad:#b84a4a;--fk:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR","Malgun Gothic",sans-serif;--fd:"Playfair Display",serif}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-text-size-adjust:100%}
@@ -20,6 +23,7 @@ button{font-family:inherit;cursor:pointer}input,select,textarea{font-family:inhe
 .guide{border-left:4px solid var(--gold);background:#fbf5e4}
 .wk{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}.wk b{font-family:var(--fk);font-size:18px;color:var(--navy)}
 .vid{border:1px solid #eadfca;border-radius:12px;padding:10px 12px;margin-top:8px;background:#fff}.vid .t{font-weight:700;font-size:14.5px}.vid .n{font-size:12.5px;color:var(--mute);margin-top:2px}
+.vid .pb{margin-top:8px;padding:9px 12px;border-radius:10px;background:#faf6ea;border:1px solid #eadfca;font-family:var(--fk);font-size:14px;line-height:1.85;word-break:keep-all}.vid .pt{margin-top:6px;padding:7px 12px;border-radius:10px;background:#eef2fa;border-left:3px solid var(--navy);font-size:13px;line-height:1.7;color:#2a3550}.vid .pt b{color:var(--navy);margin-right:4px}
 .player{position:relative;width:100%;padding-top:56.25%;margin-top:10px;border-radius:12px;overflow:hidden;background:#000}.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .err{background:#fdeeee;border:1px solid #efc5c5;color:#8a2a2a;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:10px}
 .tabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--mute)}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -61,6 +65,7 @@ async function boot(){if(!S.tok){S.view='login';render();return}
 function weekHead(w){return '<div class="wk"><b>'+w+'주차</b><span class="muted sm">'+(DATES[w-1]?DATES[w-1]+' (토) 수업':'')+'</span></div>'}
 function vidHtml(v){var open=S.play[v.id];
  return '<div class="vid"><div class="row"><div><div class="t">'+esc(v.title)+'</div>'+(v.note?'<div class="n">'+esc(v.note)+'</div>':'')+'</div><span class="sp"></span><button class="btn sm3'+(open?' gh':'')+'" data-play="'+v.id+'" type="button">'+(open?'닫기':'▶ 영상 보기')+'</button></div>'+
+  (v.prob?'<div class="pb">'+esc(v.prob).split(String.fromCharCode(10)).join('<br>')+'</div>':'')+(v.point?'<div class="pt"><b>핵심</b>'+esc(v.point)+'</div>':'')+
   (open?'<div class="player"><iframe src="https://www.youtube-nocookie.com/embed/'+esc(v.yt)+'?rel=0&modestbranding=1&playsinline=1" allow="accelerometer;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="'+esc(v.title)+'"></iframe></div>':'')+'</div>'}
 function vStudent(){var by={};S.videos.forEach(function(v){(by[v.week]=by[v.week]||[]).push(v)});
  var ws=S.weeks===null?[1,2,3,4,5,6,7,8,9,10,11,12,13]:S.weeks.slice();
@@ -75,8 +80,8 @@ function vStaff(){
  if(S.tab==='enr')return tabs+vEnr();if(S.tab==='log')return tabs+vLog();
  var by={};S.videos.forEach(function(v){(by[v.week]=by[v.week]||[]).push(v)});
  var h=tabs+(S.admin?'<div class="card"><h3>영상 올리기</h3><div class="chk"><b>유튜브에 올릴 때 이렇게 설정해 주세요</b><br>① 공개 상태 = <b>일부 공개</b> (공개 ✕ · 비공개 ✕) &nbsp; ② <b>재생목록·채널 홈에 넣지 않기</b> &nbsp; ③ 댓글 끄기 · 퍼가기 허용 끄기(가능하면) &nbsp; ④ 제목에 학교·학원 이름 넣지 않기<br><span class="muted">일부 공개 영상은 검색에 나오지 않지만 <b>주소를 아는 사람은 누구나</b> 볼 수 있어요. 이 사이트는 등록한 학생에게만 주소를 내려 주고, 열람 기록을 남겨요.</span></div>'+
-  '<div class="frm"><div class="row"><select id="vw">'+DATES.map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'주차 · '+d+'</option>'}).join('')+'</select><input id="vt" placeholder="제목 (예: 1주차 예습 · 태원고 원문제 풀이해설)" style="flex:1;min-width:200px"></div><input id="vu" placeholder="유튜브 주소 (youtu.be/… 또는 youtube.com/watch?v=…)"><input id="vn" placeholder="메모 (선택, 학생에게 보여요)"><button class="btn" id="vadd" type="button">올리기</button></div></div>':'');
- for(var w=1;w<=13;w++){var L=by[w]||[];h+='<div class="card">'+weekHead(w)+(L.length?L.map(function(v){return vidHtml(v)+(S.admin?'<div class="row" style="margin:4px 0 0 4px"><button class="btn gh sm3" data-vedit="'+v.id+'" type="button">제목·메모 고치기</button><button class="btn dng sm3" data-vdel="'+v.id+'" type="button">지우기</button></div>':'')}).join(''):'<div class="muted sm">영상 없음</div>')+'</div>'}
+  '<div class="frm"><div class="row"><select id="vw">'+DATES.map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'주차 · '+d+'</option>'}).join('')+'</select><input id="vt" placeholder="제목 (예: 1주차 예습 · 태원고 원문제 풀이해설)" style="flex:1;min-width:200px"></div><input id="vu" placeholder="유튜브 주소 (youtu.be/… 또는 youtube.com/watch?v=…)"><input id="vn" placeholder="메모 (선택, 학생에게 보여요)"><textarea id="vq" rows="3" placeholder="문제 (선택 · 수식은 \\( 와 \\) 사이에 써요. 학교·번호가 제목에 있으면 서버가 자동으로 채워요)"></textarea><input id="vp" placeholder="핵심 포인트 (선택, 한두 줄)"><button class="btn" id="vadd" type="button">올리기</button></div></div>':'');
+ for(var w=1;w<=13;w++){var L=by[w]||[];h+='<div class="card">'+weekHead(w)+(L.length?L.map(function(v){return vidHtml(v)+(S.admin?'<div class="row" style="margin:4px 0 0 4px"><button class="btn gh sm3" data-vedit="'+v.id+'" type="button">제목·메모·핵심 고치기</button><button class="btn dng sm3" data-vdel="'+v.id+'" type="button">지우기</button></div>':'')}).join(''):'<div class="muted sm">영상 없음</div>')+'</div>'}
  return h}
 function vEnr(){if(!S.enr)return '<div class="card"><div class="muted">불러오는 중…</div></div>';
  var h='<div class="card guide"><b>수강 등록(부분수강)</b><div class="muted sm" style="margin-top:4px;line-height:1.7">학생마다 <b>등록한 수업(주차)</b>를 체크해요. 체크하지 않은 수업의 <b>미션·과제·문제·오답분석·예습영상은 서버가 아예 내려주지 않아요.</b> <b>[전체]</b>는 정규(모든 수업)예요. 새로 등록한 학생은 기본이 전체예요.'+(S.admin?'':' (바꾸는 건 원장만 가능해요)')+'</div></div>';
@@ -87,13 +92,15 @@ function vEnr(){if(!S.enr)return '<div class="card"><div class="muted">불러오
 function vLog(){if(!S.log)return '<div class="card"><div class="muted">불러오는 중…</div></div>';
  var h='<div class="card sc"><b>영상별 열람</b><table class="tbl" style="margin-top:6px"><tr><th>주차</th><th class="l">제목</th><th>본 학생 수</th><th>열람 횟수</th><th>마지막</th></tr>'+(S.log.videos.map(function(v){return '<tr><td>'+v.week+'</td><td class="l">'+esc(v.title)+'</td><td>'+v.viewers+'</td><td>'+v.opens+'</td><td class="sm">'+(v.last?new Date(v.last).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'-')+'</td></tr>'}).join('')||'<tr><td colspan="5" class="muted">아직 영상이 없어요</td></tr>')+'</table></div>';
  h+='<div class="card sc"><b>최근 열람 60건</b><table class="tbl" style="margin-top:6px"><tr><th class="l">학생</th><th>주차</th><th class="l">영상</th><th>때</th></tr>'+(S.log.recent.map(function(r){return '<tr><td class="l">'+esc(r.name)+'</td><td>'+r.week+'</td><td class="l">'+esc(r.title)+'</td><td class="sm">'+new Date(r.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</td></tr>'}).join('')||'<tr><td colspan="4" class="muted">아직 열람 기록이 없어요</td></tr>')+'</table><div class="muted sm" style="margin-top:6px">같은 영상을 30분 안에 다시 열면 한 번으로 세요. 한 학생이 하루에 여러 기기에서 많이 열었다면 주소를 공유했는지 살펴보세요.</div></div>';return h}
-function render(msg){var a=$('#app');if(S.view==='login'){a.innerHTML=vLogin(msg);bindLogin();return}a.innerHTML=S.staff?vStaff():vStudent()}
+function render(msg){var a=$('#app');if(S.view==='login'){a.innerHTML=vLogin(msg);bindLogin();return}a.innerHTML=S.staff?vStaff():vStudent();mathUp(a)}
+var BS=String.fromCharCode(92);
+function mathUp(el){var o={delimiters:[{left:BS+'(',right:BS+')',display:false}],throwOnError:false};function go(){try{if(window.renderMathInElement){renderMathInElement(el,o);return true}}catch(e){}return false}if(!go())setTimeout(go,700)}
 async function reloadVideos(){var j=await api('me');if(j&&j.ok){S.videos=j.videos||[];render()}}
 document.addEventListener('click',async function(ev){var t=ev.target.closest('button');if(!t)return;
  if(t.dataset.play){var id=t.dataset.play;S.play[id]=!S.play[id];render();if(S.play[id]&&!S.staff)api('watch',{id:id});return}
  if(t.dataset.tab){S.tab=t.dataset.tab;if(S.tab==='enr'&&!S.enr){render();var j=await api('enroll_list');if(j&&j.ok){S.enr=j.rows}}if(S.tab==='log'){render();var jl=await api('log');if(jl&&jl.ok)S.log=jl}render();return}
- if(t.id==='vadd'){var j2=await api('video_add',{week:+$('#vw').value,title:$('#vt').value,url:$('#vu').value,note:$('#vn').value});if(j2&&j2.ok){toast('올렸어요');await reloadVideos()}else toast((j2&&j2.error)||'올리지 못했어요');return}
- if(t.dataset.vedit){var v=S.videos.find(function(x){return x.id===t.dataset.vedit}),nt=prompt('제목',v.title);if(nt===null)return;var nn=prompt('메모(학생에게 보여요, 비우면 지워요)',v.note||'');if(nn===null)return;var j3=await api('video_edit',{id:v.id,title:nt,note:nn});if(j3&&j3.ok){toast('고쳤어요');await reloadVideos()}else toast((j3&&j3.error)||'고치지 못했어요');return}
+ if(t.id==='vadd'){var j2=await api('video_add',{week:+$('#vw').value,title:$('#vt').value,url:$('#vu').value,note:$('#vn').value,prob:$('#vq').value,point:$('#vp').value});if(j2&&j2.ok){toast('올렸어요');await reloadVideos()}else toast((j2&&j2.error)||'올리지 못했어요');return}
+ if(t.dataset.vedit){var v=S.videos.find(function(x){return x.id===t.dataset.vedit}),nt=prompt('제목',v.title);if(nt===null)return;var nn=prompt('메모(학생에게 보여요, 비우면 지워요)',v.note||'');if(nn===null)return;var np=prompt('핵심 포인트(학생에게 보여요, 비우면 지워요)',v.point||'');if(np===null)return;var j3=await api('video_edit',{id:v.id,title:nt,note:nn,point:np});if(j3&&j3.ok){toast('고쳤어요');await reloadVideos()}else toast((j3&&j3.error)||'고치지 못했어요');return}
  if(t.dataset.vdel){if(!confirm('이 영상을 지울까요? (열람 기록도 함께 지워져요)'))return;var j4=await api('video_del',{id:t.dataset.vdel});if(j4&&j4.ok){toast('지웠어요');await reloadVideos()}else toast((j4&&j4.error)||'지우지 못했어요');return}
  if(t.dataset.esave){var ri=+t.dataset.esave,r=S.enr[ri],all=document.querySelector('[data-eall="'+ri+'"]').checked,ws=null;if(!all){ws=[];for(var i=1;i<=13;i++){var c=document.querySelector('[data-ew="'+ri+'_'+i+'"]');if(c&&c.checked)ws.push(i)}}
   if(!all&&!ws.length&&!confirm(r.name+' 학생은 등록한 수업이 하나도 없어요. 공수내모 미션·영상이 모두 안 보이게 돼요. 저장할까요?'))return;
