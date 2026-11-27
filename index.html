@@ -2392,6 +2392,7 @@ function vTools(){
  const adm=me().role==='admin',L=toolsNow();
  const grp=[];L.forEach(t=>{let g=grp.find(x=>x.k===(t.grp||'기타'));if(!g){g={k:t.grp||'기타',a:[]};grp.push(g);}g.a.push(t);});
  let h='<div class="note">'+(adm?'원장님은 모든 도구를 볼 수 있어요. <b>[도구 관리]</b>에서 <b>운영진 · 학생 · 학부모</b>가 볼 도구를 정해요.':'원장님이 정해 준 도구가 보여요.')+'</div>';
+ if(adm)h+=pvCard();
  if(adm)h+='<div class="row" style="margin-bottom:12px"><button class="btn" data-a="toolsedit">도구 관리</button></div>';
  if(!L.length)return h+'<div class="card"><div class="empty">보여 줄 도구가 아직 없어요</div></div>';
  grp.forEach(g=>{h+='<div class="card"><h3>'+esc(g.k)+'</h3><div class="grid g3">'+g.a.map(t=>'<a class="card" href="'+esc(t.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;margin:0"><div style="font-weight:800;font-size:16px">'+esc(t.name)+'</div><div class="muted sm" style="margin-top:4px">'+esc(t.desc||'')+'</div>'+(adm&&t.roles&&t.roles.length?'<div style="margin-top:6px">'+t.roles.map(r=>'<span class="badge">'+({ta:'운영진',student:'학생',parent:'학부모'}[r]||r)+'</span>').join(' ')+'</div>':'')+'</a>').join('')+'</div></div>';});
