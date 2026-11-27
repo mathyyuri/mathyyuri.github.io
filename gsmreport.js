@@ -207,7 +207,7 @@
   }
   function hdr(name, title, sm, d, big) {
     var T = d ? termOf(d) : null, tt = big && T ? '<span class="ts">' + esc(T.school) + '</span> ' + esc(T.sem + (T.term ? ' ' + T.term + '고사' : '')) : title;
-    return '<div class="rp-hd' + (sm ? ' sm' : '') + '"><img class="rp-ph" src="gsm_rpt_photo2.jpg" alt=""><div class="rp-phf"></div><div class="rp-hl"><div><div class="rp-br">MATHY YURI · 분당미래탐구 · 공수내모 성적표</div><div class="rp-tt">' + tt + '</div>' +
+    return '<div class="rp-hd' + (sm ? ' sm' : '') + '"><img class="rp-ph" src="gsm_rpt_photo3.jpg" alt=""><div class="rp-phf"></div><div class="rp-hl"><div><div class="rp-br">MATHY YURI · 분당미래탐구 · 공수내모 성적표</div><div class="rp-tt">' + tt + '</div>' +
       (T && !big ? '<div class="rp-tm"><b>' + esc(T.short) + '</b>' + esc(title) + '</div>' : '') + (big && T ? '<div class="rp-tm"><b>' + esc(d.kind === '과제' ? '과제' : d.kind === '원본' ? '원본' : '동형 모의고사') + (d.nn ? ' ' + d.nn + '회' : '') + '</b>학교 시험 대비 성적표</div>' : '') + '</div></div><div class="rp-nm"><small>이름</small>' + esc(name) + '</div></div>';
   }
   function exbar(d) { return '<div class="rp-ex"><b style="background:' + kindCol(d.kind) + '">' + d.kind + '</b><span>' + esc(d.nm) + '</span><em>' + d.date.replace(/-/g, '.') + '</em></div>'; }
@@ -301,18 +301,39 @@
     return '<section class="rp pg">' + hdr(name, '학습 처방', true, d) + exbar(d) +
       '<div class="rp-sec">' + h4('더 공부해야 할 단원', '잃은 점수가 큰 순서') + weakHtml(d) + '</div>' +
       '<div class="rp-sec">' + h4('학습 처방', '다음 회차까지 할 일', true) + '<div class="rp-note">' + edBox(d, 'rx', genRx(d)) + '</div></div>' +
-      '<div class="rp-sec">' + h4('지난 회차 대비', p ? '이전 ' + d.kind + ' 기록과 비교' : '', true) + (p ? cmpBars(d, p) : '') + '<div class="rp-note">' + edBox(d, 'cmp', genCmp(d, p)) + '</div></div>' +
+      '<div class="rp-sec">' + h4('지난 회차 대비', p ? '이전 ' + d.kind + ' 기록과 비교' : '', true) + (p ? cmpChart(d, prevList(d, 2)) : '') + '<div class="rp-note">' + edBox(d, 'cmp', genCmp(d, p)) + '</div></div>' +
       '<div class="rp-sec rp-fin">' + h4('선생님 최종 한마디', '', true) + '<div class="rp-note fin">' + edBox(d, 'fin', genFin(d)) + '</div><div class="rp-sig"><span class="sk">수학 강사</span><span class="sn">전유리</span><span class="sg">Mathy Yuri</span></div></div>' +
       '<div class="rp-ft">학습 처방은 이번 시험의 오답·난이도·반 정답률로 자동 작성한 뒤 선생님이 확인·수정한 내용이에요.</div></section>';
   }
-  function cmpBars(d, p) {
-    var rows = [['점수', p.sc, d.sc, 100]];
-    if (d.cg != null && p.cg != null) rows.push(['등급', p.cg, d.cg, 5, true]);
-    [1, 2, 3].forEach(function (l) { var a = lvRate(p, l), b = lvRate(d, l); if (a.me != null && b.me != null) rows.push(['난이도 ' + LVN[l], a.me, b.me, 100]); });
-    return '<div class="rp-cmp">' + rows.map(function (r) {
-      var df = r[2] - r[1], inv = !!r[4];
-      return '<div class="cr2"><span class="cl">' + r[0] + '</span><span class="v">' + (inv ? gfmt(r[1]) : r[1]) + '</span><span class="ar">→</span><span class="v"><b>' + (inv ? gfmt(r[2]) : r[2]) + '</b></span>' + arrow(inv ? r1(df * 100) / 100 : r1(df), inv ? '' : (r[0] === '점수' ? '점' : '%p'), inv) + '</div>';
-    }).join('') + '</div>';
+  /* 같은 종류의 이전 회차들(오래된 → 최근), 최대 n개 */
+  function prevList(d, n) {
+    var L = [];
+    exams().forEach(function (it) {
+      if (it === d.it || kindOf(it) !== d.kind) return; var i2 = gsmInfo(it);
+      var before = d.kind === '원본' ? dd(it) < d.date : (i2.n && d.nn ? i2.n < d.nn : dd(it) < d.date);
+      if (!before) return; var row = rowOf(it, d.key); if (!row) return; L.push({ it: it, row: row, nn: i2.n });
+    });
+    L.sort(function (a, b) { return d.kind === '원본' ? dd(a.it).localeCompare(dd(b.it)) : a.nn - b.nn; });
+    return L.slice(-n).map(function (x) { return calc(x.it, x.row, d.key); });
+  }
+  /* 지난 회차 대비 그래프: 이전 회차들 + 이번 회차를 막대로 나란히 (회차가 쌓일수록 막대가 늘어나요) */
+  function cmpChart(d, prevs) {
+    var H = prevs.concat([d]), K = H.length, COL = K === 2 ? ['#c4bcab', NAVY] : ['#d9d2c3', '#93a0b3', NAVY];
+    var lab = H.map(function (x, i) { return i === K - 1 ? '이번' + (x.nn ? ' ' + x.nn + '회' : '') : (x.nn ? x.nn + '회' : x.date.slice(5).replace('-', '/')); });
+    var left = [], right = [];
+    left.push({ n: '점수', v: H.map(function (x) { return x.sc / (x.tot || 100) * 100; }), t: H.map(function (x) { return x.sc; }), u: '점', big: true });
+    [1, 2, 3].forEach(function (l) { var v = H.map(function (x) { return lvRate(x, l).me; }); if (v.some(function (a) { return a != null; })) left.push({ n: '난이도 ' + LVN[l], v: v, t: v, u: '%', col: LVC[l] }); });
+    if (H.every(function (x) { return x.es && x.es.graded && x.es.mx; })) { var ev = H.map(function (x) { return Math.round(x.es.total / x.es.mx * 100); }); left.push({ n: '서술형', v: ev, t: ev, u: '%' }); }
+    var units = {}; d.order.forEach(function (u) { units[u] = 1; });
+    Object.keys(units).slice(0, 6).forEach(function (u) { var v = H.map(function (x) { return x.un[u] ? unRate(x.un[u]).me : null; }); right.push({ n: u, v: v, t: v, u: '%' }); });
+    var row = function (m) {
+      var cur = m.t[K - 1], prev = null, i; for (i = K - 2; i >= 0; i--) if (m.t[i] != null) { prev = m.t[i]; break; }
+      var df = cur != null && prev != null ? cur - prev : null;
+      var bars = m.v.map(function (v, i) { return v == null ? '' : '<div class="cb2"><i style="width:' + Math.max(1.5, Math.min(100, v)) + '%;background:' + (i === K - 1 && m.col ? m.col : COL[i]) + '"></i><em>' + (m.big ? m.t[i] : v) + '</em></div>'; }).join('');
+      return '<div class="cr3"><span class="cn3">' + esc(m.n) + '</span><div class="cbs">' + bars + '</div><span class="cd3">' + (df != null ? arrow(Math.round(df * 10) / 10, m.u === '점' ? '점' : '%p') : '') + '</span></div>';
+    };
+    return '<div class="rp-cmpc"><div class="cc"><div class="ch">점수 · 난이도별 정답률</div>' + left.map(row).join('') + '</div><div class="cc"><div class="ch">단원별 정답률</div>' + (right.map(row).join('') || '<div class="rp-mut">단원 정보가 없어요</div>') + '</div></div>' +
+      '<div class="rp-lg">' + lab.map(function (t, i) { return '<span><i style="background:' + COL[i] + '"></i>' + esc(t) + '</span>'; }).join('') + (d.cg != null ? '<span class="gm">등급 ' + H.filter(function (x) { return x.cg != null; }).map(function (x) { return gfmt(x.cg); }).join(' → ') + '</span>' : '') + '</div>';
   }
 
   /* ───────── 서술형 쪽(채점된 경우) ───────── */
@@ -492,7 +513,7 @@
     '.rp{width:210mm;height:297mm;box-sizing:border-box;padding:9mm 11mm 8mm;background:#fbf7ee;color:#1c2236;font-variant-numeric:lining-nums;font-family:' + SERIF + ';font-size:8.6pt;line-height:1.42;display:flex;flex-direction:column;gap:3mm;overflow:hidden;position:relative;text-align:left}' +
     '.rp *{box-sizing:border-box}.rp-mut{color:#8c877c;font-size:7.6pt}.rp b{font-weight:800}' +
     '.rp-hd{background:#14264b;color:#fff;margin:-9mm -11mm 0;padding:6mm 11mm 4.4mm;display:flex;justify-content:space-between;align-items:center;border-bottom:1.2mm solid #b08d57}' +
-    '.rp-hl{display:flex;align-items:center;gap:4mm;position:relative;z-index:2}.rp-ph{position:absolute;right:0;top:0;height:100%;width:70mm;object-fit:cover;object-position:62% 30%;z-index:0}.rp-phf{position:absolute;right:0;top:0;height:100%;width:70mm;z-index:1;background:linear-gradient(90deg,#14264b 0%,rgba(20,38,75,.92) 10%,rgba(20,38,75,0) 58%),linear-gradient(0deg,rgba(20,38,75,.3) 0%,rgba(20,38,75,0) 34%)}.rp-hd.sm .rp-ph,.rp-hd.sm .rp-phf{width:44mm}.rp-hd{position:relative;min-height:40mm}.rp-hd.sm{min-height:25mm}.rp-nm{position:relative;z-index:2;margin-right:60mm}.rp-hd.sm .rp-nm{margin-right:38mm}' +
+    '.rp-hl{display:flex;align-items:center;gap:4mm;position:relative;z-index:2;margin-left:60mm}.rp-hd.sm .rp-hl{margin-left:38mm}.rp-ph{position:absolute;left:0;top:0;height:100%;width:66mm;object-fit:cover;object-position:40% 30%;z-index:0}.rp-phf{position:absolute;left:0;top:0;height:100%;width:66mm;z-index:1;background:linear-gradient(90deg,rgba(20,38,75,0) 0%,rgba(20,38,75,0) 52%,rgba(20,38,75,.9) 90%,#14264b 100%),linear-gradient(0deg,rgba(20,38,75,.3) 0%,rgba(20,38,75,0) 34%)}.rp-hd.sm .rp-ph,.rp-hd.sm .rp-phf{width:44mm}.rp-hd{position:relative;min-height:40mm}.rp-hd.sm{min-height:25mm}.rp-nm{position:relative;z-index:2}' +
     '.rp-br{font-size:7.2pt;letter-spacing:.14em;color:#d8c29a;font-weight:700}.rp-tt{font-size:19pt;font-weight:900;margin-top:.6mm}.rp-nm{font-size:17pt;font-weight:900;text-align:right}.rp-nm small{display:block;font-size:7pt;font-weight:600;color:#d8c29a;letter-spacing:.1em}' +
     '.rp-ex{display:flex;align-items:center;gap:2.4mm;margin-top:1.2mm;font-size:10pt;font-weight:800}.rp-ex b{color:#fff;font-size:7.6pt;padding:.7mm 2.4mm;border-radius:99px}.rp-ex em{margin-left:auto;font-style:normal;font-size:8pt;color:#6f6a60;font-weight:600}' +
     '.rp-kpi{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:3mm}.rp-kpi>div{border:.3mm solid #d9ccb2;background:#f5eedf;border-radius:2.4mm;padding:2.2mm 3.4mm;text-align:center}.rp-kpi small{display:block;font-size:7.2pt;color:#6f6044;font-weight:700}' +
@@ -519,7 +540,7 @@
     '.rp-cmp{display:flex;flex-wrap:wrap;gap:1.6mm 5mm;margin:0 0 1.6mm;font-size:8pt}.rp-cmp .cr2{display:flex;align-items:center;gap:1.2mm;background:#f3efe6;border-radius:99px;padding:.6mm 3mm}.rp-cmp .cl{color:#6f6a60;font-size:7pt}.rp-cmp .ar{color:#aaa}' +
     '.rp-ht{width:100%;border-collapse:collapse;font-size:7.8pt;text-align:center}.rp-ht th{background:#14264b;color:#d8c29a;padding:.9mm;font-size:6.8pt}.rp-ht td{border-bottom:.2mm solid #e6e1d6;padding:1mm .6mm}.rp-ht tr.me td{background:#f3e8d0}.rp-ht tr.sum td{background:#f0ece3;font-weight:800;border-top:.4mm solid #14264b}.rp-ht small{font-size:6.6pt;font-weight:500}' +
     '.rp-lg{display:flex;gap:4mm;justify-content:center;font-size:7pt;color:#555;margin-top:.6mm}.rp-lg i{display:inline-block;width:3mm;height:1.4mm;border-radius:99px;margin-right:1mm;vertical-align:middle}' +
-    '.rp-tt .ts{color:#d8c29a}.rp-tm{margin-top:1.2mm;font-size:8.4pt;color:#e9dfc8}.rp-tm b{background:#b08d57;color:#14264b;border-radius:99px;padding:.4mm 2.6mm;margin-right:2mm;font-size:8.2pt}.rp-hd.sm .rp-tm{margin-top:.6mm}.mcg{display:grid;grid-template-columns:1fr 1fr;gap:2mm 6mm}.mc .mh{display:flex;justify-content:space-between;align-items:baseline;font-size:8.2pt;margin-bottom:.4mm}.mc .mh span{font-weight:800;color:#14264b}.rp-ht td.l{text-align:left;padding-left:2mm;font-size:7.4pt}.rp-sig{display:flex;align-items:baseline;justify-content:flex-end;gap:3mm;margin-top:1.4mm;padding:0 3mm 2mm 0;color:#14264b}.rp-sig .sk{font:500 8pt Noto Serif KR,serif;color:#6f6a60}.rp-sig .sn{font:400 17pt Nanum Pen Script,Noto Serif KR,cursive;letter-spacing:.06em}.rp-sig .sg{font:400 25pt Pinyon Script,cursive;color:#6b2430;transform:rotate(-3deg);display:inline-block}.rp-hd.sm{padding-bottom:3.4mm}.rp-hd.sm .rp-tt{font-size:15pt}' +
+    '.rp-tt .ts{color:#d8c29a}.rp-tm{margin-top:1.2mm;font-size:8.4pt;color:#e9dfc8}.rp-tm b{background:#b08d57;color:#14264b;border-radius:99px;padding:.4mm 2.6mm;margin-right:2mm;font-size:8.2pt}.rp-hd.sm .rp-tm{margin-top:.6mm}.mcg{display:grid;grid-template-columns:1fr 1fr;gap:2mm 6mm}.mc .mh{display:flex;justify-content:space-between;align-items:baseline;font-size:8.2pt;margin-bottom:.4mm}.mc .mh span{font-weight:800;color:#14264b}.rp-ht td.l{text-align:left;padding-left:2mm;font-size:7.4pt}.rp-sig{display:flex;align-items:baseline;justify-content:flex-end;gap:3mm;margin-top:1.4mm;padding:0 3mm 2mm 0;color:#14264b}.rp-sig .sk{font:500 8pt Noto Serif KR,serif;color:#6f6a60}.rp-sig .sn{font:400 17pt Nanum Pen Script,Noto Serif KR,cursive;letter-spacing:.06em}.rp-sig .sg{font:400 25pt Pinyon Script,cursive;color:#6b2430;transform:rotate(-3deg);display:inline-block}.rp-cmpc{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-bottom:1.4mm}.rp-cmpc .ch{font-size:7.6pt;color:#6f6a60;margin-bottom:1mm}.cr3{display:grid;grid-template-columns:17mm 1fr 13mm;gap:1.6mm;align-items:center;margin-bottom:1.5mm}.cn3{font-size:7.8pt;font-weight:700}.cbs{display:flex;flex-direction:column;gap:.5mm}.cb2{position:relative;height:2.5mm;background:#ece7db;border-radius:99px}.cb2 i{display:block;height:100%;border-radius:99px}.cb2 em{position:absolute;right:1.2mm;top:0;font-style:normal;font-size:5.8pt;line-height:2.5mm;color:#444}.cd3{text-align:right}.rp-lg .gm{margin-left:4mm;color:#6b2430;font-weight:700}.rp-hd.sm{padding-bottom:3.4mm}.rp-hd.sm .rp-tt{font-size:15pt}' +
     '.rp-ebs{display:flex;flex-direction:column;gap:3.4mm}.rp-eb{display:flex;gap:4mm;align-items:flex-start;border-bottom:.2mm solid #e6e1d6;padding-bottom:3mm}.rp-ei{flex:none;border:.3mm solid #d6d0c2;border-radius:1.4mm;overflow:hidden;background:#faf7f0}.rp-ei img{display:block;object-fit:fill}' +
     '.rp-ep{flex:1;min-width:0}.rp-en{font-weight:900;color:#14264b;font-size:9.4pt}.rp-chip{display:inline-block;font-size:6.8pt;padding:.3mm 2mm;border-radius:99px;background:#e4dfd3;color:#555;margin-left:1.4mm;vertical-align:1px}.rp-chip.ok{background:#dde8d9;color:#3a5a40}.rp-chip.bad{background:#f2dcd5;color:#a4553a}.rp-chip.mid{background:#f3e6c8;color:#7d5f2a}' +
     '.rp-es b{font-size:18pt;font-weight:900;color:#14264b}.rp-es span{font-size:8pt;color:#666}.rp-eb2{height:2.4mm;background:#e9e4d9;border-radius:99px;overflow:hidden;margin:1mm 0 1.6mm}.rp-eb2 i{display:block;height:100%}' +
