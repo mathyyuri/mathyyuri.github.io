@@ -200,6 +200,7 @@ function acBar(){
  var n={ds:0,bd:0},t=0;S.list.forEach(function(m){if(isNoteM(m))return;t++;if(n[m.ac]!==undefined)n[m.ac]++});
  if(!n.ds&&!n.bd)return '';
  return '<div class="acseg"><button class="all '+(!S.acf?'on':'')+'" data-a="acf" data-v="">전체 '+t+'</button><button class="ds '+(S.acf==='ds'?'on':'')+'" data-a="acf" data-v="ds">대치에스플러스 '+n.ds+'</button><button class="bd '+(S.acf==='bd'?'on':'')+'" data-a="acf" data-v="bd">분당미래탐구 '+n.bd+'</button></div>'}
+function prepOpen(){try{return localStorage.getItem('tbm_prepopen')==='1'}catch(e){return false}}
 function prepAcOk(m){return !m.ac||!S.acf||!isAdmin()||m.ac===S.acf}
 function visList(){return filtered().slice(0,S.lim||30)}
 function seasonBar(list){
@@ -216,7 +217,7 @@ function vList(){
  var h=ta?'<div class="note1">미션을 누르면 바로 <b>채점</b>하고, <b>정오표 · 분석</b>을 볼 수 있어요.</div>':'<div class="note1">'+(isStaff()?'미션을 눌러 정오표를 입력하고 분석을 보세요. 미션은 <b>교재 생성기의 [서버 저장·불러오기]</b>에서 만들어요.':'미션을 눌러 내 성적과 전체 정오표, 문제 분석, 오답노트를 확인하세요.')+'</div>';
  h+='<div class="row" style="margin-bottom:10px"><button class="btn" data-w="open">'+(isStaff()?'오답 원인 분석 (5단계 체크)':'나의 오답 스타일 보기')+'</button></div>';
  if(!ta)h+='<div class="row" style="margin-bottom:10px"><button class="btn gold" data-a="ov">'+(isStaff()?'학생별 기록 한눈에 보기':'내 기록 한눈에 보기')+' · 성적 그래프 · 정오표 클리어</button>'+(isStaff()?'<button class="btn sec" data-a="new">＋ 미션 올리기</button><span class="muted sm">카드를 끌어서 순서를 바꿀 수 있어요 (▲▼ 도 돼요)</span>':'')+'</div>';
- if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return prepAcOk(m)&&!S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length)h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><b>오늘의 미션이 준비돼 있어요</b> — 누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요.<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div></div>'}
+ if(isStaff()&&!ta&&S.prep&&S.prep.list){var todo=S.prep.list.filter(function(m){return prepAcOk(m)&&!S.list.some(function(x){return x.name===m.name&&x.date===ymd()})});if(todo.length){var po=prepOpen();h+='<div class="note1" style="border-color:#c9a15a;background:#fff4dc"><div class="row" style="align-items:center;gap:10px"><b>준비된 미션 '+todo.length+'개</b><span class="muted sm">누르면 문제 DB와 연결된 미션이 바로 만들어지고 정오표 입력 화면으로 가요</span><span class="sp"></span><button type="button" class="btn sec sm3" data-a="preptog">'+(po?'접기 ▲':'펼치기 ▼')+'</button></div>'+(po?'<div class="row" style="gap:8px;margin-top:8px">'+todo.map(function(m){return '<button class="btn gold" data-a="prepmk" data-i="'+S.prep.list.indexOf(m)+'">'+esc(m.name)+' 만들기 ('+m.items.length+'문항)</button>'}).join('')+'</div>':'')+'</div>'}}
  if(!S.list.length)return h+'<div class="card"><div class="empty">아직 올라온 미션이 없어요.</div></div>';
  h+=acBar()+seasonBar(AL())+catBar(AL());
  if(isStaff()&&!ta&&S.cat==='오답미션'){h+=vNotes();if(!filtered().length)return h}
@@ -811,6 +812,7 @@ document.addEventListener('click',async function(ev){
  if(a==='nickview'){NICK=!NICK;try{localStorage.setItem(NICKK,NICK?'1':'0')}catch(e){}render();return}
  if(a==='home'){goHome();return}
  if(a==='prepmk'){await prepOk(+b.getAttribute('data-i'));return}
+ if(a==='preptog'){try{localStorage.setItem('tbm_prepopen',prepOpen()?'0':'1')}catch(e){}render();return}
  if(a==='acf'){S.acf=b.getAttribute('data-v')||'';try{localStorage.setItem('tbm_acf',S.acf)}catch(e){}S.cat='';S.lim=30;render();return}
  if(a==='prepac'){PREP.ac=b.getAttribute('data-v');prepShow();return}
  if(a==='prepgo'){await prepGo();return}
