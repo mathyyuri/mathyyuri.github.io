@@ -2432,7 +2432,7 @@ async function saveTools(){
 let MS=null,MS_BUSY=false;
 const MS_URL=API_URL.replace('ac_api','ac_mission');
 const MSC={'S+':'#1f3a6e','S':'#b76e79','A+':'#c9a55d','A':'#8d94a3','B':'#c5c9d2'};
-const MS_GROUPS=[['chart','성적차트',null],['nemo','내모미션',['내모미션'],1],['hw','과제미션',['과제미션'],1],['prog','진도미션',['교과서미션','진도미션']],['wrong','오답미션',['오답미션']],['test','TEST미션',['TEST']],['past','기출미션',['기출']],['naesin','내신기출',['내신기출']]];
+const MS_GROUPS=[['chart','성적차트',null],['nemo','내모미션',['내모미션'],1],['hw','과제미션',['과제미션'],1],['orig','원본미션',['원본미션'],1],['extra','추가미션',['추가미션'],1],['prog','진도미션',['교과서미션','진도미션']],['wrong','오답미션',['오답미션']],['test','TEST미션',['TEST']],['past','기출미션',['기출']],['naesin','내신기출',['내신기출']]];
 async function msApi(a,args){
  try{const r=await fetch(MS_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:API_KEY,Authorization:'Bearer '+API_KEY},body:JSON.stringify({p_action:a,p_token:TOKEN,p_args:args||{}})});
   if(!r.ok)return {ok:false};return await r.json();}catch(e){return {ok:false};}
@@ -2554,7 +2554,7 @@ function msMatrix(L){
 /* ── 공수내모: 내모미션(수업 당일 시험) · 과제미션(집에서 푼 시험) · 오답미션 — 시험지별 학교 기준 백분위·등급 ── */
 const GSM_ST={"낙생고":[50.5,19.5,80,61,46,29],"늘푸른고":[55.0,18.6,83,67,50,34],"돌마고":[55.4,18.8,84,68,51,33],"보라고":[53.9,19.2,83,66,48,32],"보평고":[47.3,20.8,79,59,40,24],"분당고":[47.7,21.2,80,60,40,24],"분당대진고":[47.7,20.2,79,60,41,26],"불곡고":[58.9,18.9,85,72,55,36],"서천고":[60.8,17.6,86,72,57,41],"서현고":[59.1,18.4,88,73,55,37],"송림고":[56.3,17.3,82,67,52,36],"수내고":[56.1,20.2,88,68,52,32],"신갈고":[55.8,18.0,84,66,52,34],"야탑고":[60.9,20.3,90,74,56,37],"영덕여고":[56.7,19.7,85,70,52,34],"운중고":[62.1,19.3,89,75,58,39],"이매고":[58.8,20.2,89,71,53,34],"태원고":[65.1,19.5,94,79,61,41],"판교고":[56.9,19.7,88,69,50,35],"한솔고":[64.6,19.7,94,78,60,41]};   /* 학교 → [평균, 표준편차, 1등급컷, 2등급컷, 3등급컷, 4등급컷] (2026 중간 기준 예상) */
 const GSM_DATES=['2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-13','2027-02-20','2027-02-27'];
-const GSM_CATS=['내모미션','과제미션'],GSM_ONLY=['nemo','hw','wrong'],GSM_GC=['','#2f7d5b','#4a8f3c','#b88a1e','#c4602a','#b84a4a'];
+const GSM_CATS=['내모미션','과제미션','원본미션','추가미션'],GSM_ONLY=['nemo','hw','orig','extra','wrong'],GSM_GC=['','#2f7d5b','#4a8f3c','#b88a1e','#c4602a','#b84a4a'];
 function gsmCdf(z){const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
 function gsmEval(school,sc){const s=GSM_ST[school];if(!s||sc==null||isNaN(sc))return null;const pct=gsmCdf((sc-s[0])/s[1])*100,g=sc>=s[2]?1:sc>=s[3]?2:sc>=s[4]?3:sc>=s[5]?4:5;return {pct:pct,top:100-pct,grade:g};}
 function gsmTopTxt(e){const t=e.top;return t<1?'상위 1% 이내':'상위 '+Math.round(t)+'%';}
