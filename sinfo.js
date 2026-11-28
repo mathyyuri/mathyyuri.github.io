@@ -176,6 +176,8 @@
       h += '<div class="smk"><div class="d">' + esc(dstr(n.date)) + '</div><div class="t">' + (n.pinned ? '<span class="smb" style="background:#fdecea;color:#a8453a">중요</span> ' : '') + '<span class="muted sm">' + esc(an(n.author)) + (n.edited ? ' · 수정됨' : '') + '</span><div style="margin-top:3px">' + nl(n.body) + '</div>' + noteBtns(n, d) + '</div></div>';
     });
     h += '</div>';
+    /* 성적 상세·상담 도우미 (scoredetail.js) */
+    try { var hw0 = d.hw || { total: 0, done: 0 }, at0 = d.att || {}; if (window.sdHtml) h += window.sdHtml(d, { name: st.name, hwPct: hw0.total ? Math.round(hw0.done / hw0.total * 100) : null, late: at0.late || 0, absent: at0.absent || 0 }); } catch (e) { }
     /* 성적 */
     var sc = d.scores || [], a5 = avg(sc.slice(0, 5).map(function (x) { return x.score; }));
     h += '<div class="card"><h3 style="margin:0 0 6px">최근 성적' + (a5 != null ? ' <span class="badge">최근 ' + Math.min(5, sc.length) + '회 평균 ' + a5.toFixed(1) + '</span>' : '') + '</h3>';
