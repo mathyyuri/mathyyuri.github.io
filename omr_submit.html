@@ -754,6 +754,22 @@ function pageH(cv){var w=cv.width,h=cv.height,g=toGray(cv),pl=paperLevel(g),n=ne
  var mi=ord.findIndex(function(p){return p.pair});if(mi<0)throw new Error('왼쪽 위 표식(네모 2개)을 못 찾았어요');
  var rot=[];for(var k=0;k<4;k++)rot.push(ord[(mi+k)%4]);
  return {H:homog([[9,14.5],[201,9],[201,288],[9,288]],rot.map(function(p){return[p.x,p.y]})),pl:pl}}
+/* 서술형 칸 위치 맞추기: 사진이 바로잡힌 뒤에도 인쇄·촬영 오차로 칸이 몇 mm 어긋나 위쪽이 잘리는 일이 있어서,
+   답란 상자의 가로 테두리선을 사진에서 직접 찾아 그 선에 맞춰 자르고, 못 찾으면 원래 좌표를 써요. */
+function rectGray(cv,H,x,y,w,h,ppm){var W=Math.round(w*ppm),Hh=Math.round(h*ppm),w0=cv.width,h0=cv.height,src=cv.getContext('2d').getImageData(0,0,w0,h0).data,out=new Uint8Array(W*Hh);
+ for(var v=0;v<Hh;v++)for(var u=0;u<W;u++){var p=mapp(H,x+u/ppm,y+v/ppm),x0=Math.round(p[0]),y0=Math.round(p[1]);if(x0<0||y0<0||x0>=w0||y0>=h0){out[v*W+u]=255;continue}var a=(y0*w0+x0)*4;out[v*W+u]=src[a]*.3+src[a+1]*.59+src[a+2]*.11}
+ return{g:out,W:W,H:Hh}}
+function findHLines(cv,H,y0,y1){var ppm=5,x0=32,x1=172,R=rectGray(cv,H,x0,y0,x1-x0,y1-y0,ppm),W=R.W,Hh=R.H,g=R.g,smp=[];for(var i=0;i<g.length;i+=7)smp.push(g[i]);smp.sort(function(a,b){return a-b});
+ var paper=smp[Math.floor(smp.length*.85)]||255,thr=paper*.62,seg=4,sw=Math.floor(W/seg),hit=new Uint8Array(Hh);
+ for(var v=0;v<Hh;v++){var n=0;for(var k=0;k<seg;k++){var c=0;for(var u=k*sw;u<(k+1)*sw;u++)if(g[v*W+u]<thr)c++;if(c/sw>=.6)n++}hit[v]=n>=3?1:0}
+ var lines=[],inl=false,st=0;for(var r=0;r<=Hh;r++){var on=r<Hh&&hit[r];if(on&&!inl){inl=true;st=r}else if(!on&&inl){inl=false;if(r-st<=ppm*2)lines.push(y0+((st+r-1)/2+.5)/ppm);else if(r-st<=ppm*9){lines.push(y0+(st+.5)/ppm);lines.push(y0+(r-.5)/ppm)}}}   /* 굵은 띠(번호 머리글)는 위·아래 가장자리를 선으로 쳐요 */
+ return lines}
+function snapBoxes(cv,H,boxes){if(!boxes.length)return boxes;
+ try{var ys=Math.min.apply(null,boxes.map(function(b){return b.y})),ye=Math.max.apply(null,boxes.map(function(b){return b.y+b.h})),y0=Math.max(0,ys-14),y1=Math.min(297,ye+14),L=findHLines(cv,H,y0,y1);
+  function near(e){var best=null,bd=12;L.forEach(function(l){var d=Math.abs(l-e);if(d<bd){bd=d;best=l}});return best}
+  return boxes.map(function(b){var t=near(b.y),bt=near(b.y+b.h),ny=b.y,nh=b.h;
+   if(t!=null&&bt!=null&&bt-t>b.h*.7&&bt-t<b.h*1.4){ny=t;nh=bt-t}else if(t!=null){ny=t}else if(bt!=null){ny=bt-b.h}
+   return{side:b.side,k:b.k,x:b.x,y:ny,w:b.w,h:nh}})}catch(e){return boxes}}
 function cropBoxes(cv,H,boxes,pl,pad){var w=cv.width,h=cv.height,src=cv.getContext('2d').getImageData(0,0,w,h).data,gain=Math.min(1.6,Math.max(1,255/(pl||255))),ppm=5,res={};
  boxes.forEach(function(b){var x=b.x-pad,y=b.y-pad,bw=b.w+2*pad,bh=b.h+2*pad,W=Math.round(bw*ppm),Hh=Math.round(bh*ppm),c=document.createElement('canvas');c.width=W;c.height=Hh;var cx=c.getContext('2d'),im=cx.createImageData(W,Hh),d=im.data;
   for(var v=0;v<Hh;v++)for(var u=0;u<W;u++){var p=mapp(H,x+u/ppm,y+v/ppm),px=p[0],py=p[1],x0=Math.floor(px),y0=Math.floor(py),o=(v*W+u)*4;
@@ -775,9 +791,9 @@ function cornerTool(cv,msg){return new Promise(function(res){var M=document.crea
  M.querySelector('.ok').onclick=function(){M.remove();res(P.map(function(p){return[p[0]/k,p[1]/k]}))};M.querySelector('.sk').onclick=function(){M.remove();res(null)}})}
 /* 한 면(앞 f / 뒤 b)의 서술형 칸을 번호별로 자르기: 표식으로 자동 → 안 되면 모서리 맞추기 */
 async function cropSide(cv,side,ne,manualOk,msg){var boxes=escBoxes(ne).filter(function(b){return b.side===side});if(!boxes.length)return{};
- try{var r=pageH(cv);return cropBoxes(cv,r.H,boxes,r.pl,.6)}catch(e){if(!manualOk)throw e;
+ try{var r=pageH(cv);return cropBoxes(cv,r.H,snapBoxes(cv,r.H,boxes),r.pl,.6)}catch(e){if(!manualOk)throw e;
   var q=await cornerTool(cv,msg||('자동으로 모서리를 못 찾았어요 ('+e.message+').'));if(!q)return null;
-  return cropBoxes(cv,homog([[0,0],[210,0],[210,297],[0,297]],q),boxes,paperLevel(toGray(cv)),2)}}
+  var Hm=homog([[0,0],[210,0],[210,297],[0,297]],q);return cropBoxes(cv,Hm,snapBoxes(cv,Hm,boxes),paperLevel(toGray(cv)),2)}}
 async function makeCrops(f,bf,ne){var crops={},notes=[];if(!ne)return{crops:crops,notes:notes};
  var cvF=await toCv(f),rF=await cropSide(cvF,'f',ne,true,'앞면 서술형 칸을 맞추려고 해요.');if(rF)Object.assign(crops,rF);else notes.push('앞면 자르기를 건너뛰었어요');
  if(ne>1){if(!bf)notes.push('뒷면 사진을 올리지 않아서 서술형 2번 이후 사진이 없어요. 선생님이 따로 올릴 수 있어요.');
@@ -805,7 +821,7 @@ async function esView(r,ex){var M=$('#stuEs'),inn=M.querySelector('.in'),es=ex.e
  $('#esSave').onclick=async function(){var msg=$('#esMsg'),vs=[],tags=[];$('#esBody').querySelectorAll('.esq').forEach(function(q){vs.push(q.querySelector('.esv').value.trim());tags.push({t:[].map.call(q.querySelectorAll('.etg input:checked'),function(c){return c.dataset.t}),m:q.querySelector('.esm').value.trim()})});
   msg.className='stuMsg';msg.textContent='저장 중...';var x=await omr('es',{exam_id:ex.id,sid:r.sid,es:vs,tags:tags});if(!x||!x.ok){msg.className='stuMsg err';msg.textContent=(x&&x.error)||'저장하지 못했어요';return}
   r.es=vs.map(function(v){return v===''?null:+v});r.es_total=x.es_total;msg.className='stuMsg ok';msg.textContent='저장했어요 — 서술형 합계 '+x.es_total+'점';setTimeout(function(){M.style.display='none';staffView()},700)}}
-window.__esx={toCv:toCv,cropSide:cropSide,pageH:pageH,cropBoxes:cropBoxes,escBoxes:escBoxes,makeCrops:makeCrops};
+window.__crop={pageH:pageH,cropBoxes:cropBoxes,snapBoxes:snapBoxes,findHLines:findHLines,escBoxes:escBoxes,toCv:toCv,homog:homog};window.__esx={toCv:toCv,cropSide:cropSide,pageH:pageH,cropBoxes:cropBoxes,escBoxes:escBoxes,makeCrops:makeCrops};
 /* ── 선생님: OMR 사진·PDF 한꺼번에 올리기 (여러 학생 답안지를 읽고 → 누구 것인지 고르면 → 정오표·사진·서술형 사진까지 한 번에 반영) ── */
 var BK=null;
 function cvJpeg(cv,mx,q){var k=Math.min(1,mx/Math.max(cv.width,cv.height)),c=document.createElement('canvas');c.width=Math.round(cv.width*k);c.height=Math.round(cv.height*k);c.getContext('2d').drawImage(cv,0,0,c.width,c.height);return c.toDataURL('image/jpeg',q)}
@@ -820,18 +836,27 @@ function bulkStep1(){var e=BK.ex,ne=(e.es||[]).length,inn=$('#bulkM .in');
  inn.innerHTML='<div><b>📷 OMR 사진·PDF 한꺼번에 올리기</b> · '+esc(e.name)+' <button class="g" id="bkX" style="float:right">닫기 ✕</button></div>'
   +'<div class="hint">학생 답안지 사진(여러 장)이나 스캔 PDF를 한꺼번에 올리면 답을 자동으로 읽어요. 그다음 <b>누구 답안지인지만 골라 주면</b> 점수와 정오표에 바로 들어가요. 서술형이 있으면 번호별로 잘라 저장해서 서술형 채점·성적표까지 이어져요.</div>'
   +'<div class="box"><label>파일 <input type="file" id="bkFiles" accept="image/*,application/pdf" multiple></label><div class="hint">촬영 사진(여러 장 선택 가능)이나 PDF 스캔본이에요. 휴대폰에서도 올릴 수 있어요.</div>'
-  +'<div style="margin:8px 0"><b>한 학생 답안지 구성</b><br><label style="display:block;margin:3px 0"><input type="radio" name="bkMode" value="duplex"'+(ne>1?' checked':'')+'> 앞면 → 뒷면 순서로 번갈아 (양면 스캔 · 촬영) — 서술형 2번 이후는 뒷면에 써요</label><label style="display:block;margin:3px 0"><input type="radio" name="bkMode" value="front"'+(ne>1?'':' checked')+'> 앞면만 (한 장 = 한 학생)</label></div>'
+  +'<div style="margin:8px 0"><b>한 학생 답안지 구성</b><br><label style="display:block;margin:3px 0"><input type="radio" name="bkMode" value="auto"'+(ne>1?' checked':'')+'> 자동으로 앞·뒷면 짝짓기 (추천) — 사진 순서가 앞→뒤 번갈아여도, 앞면 먼저 쭉 찍고 뒷면을 쭉 찍어도 알아서 맞춰요</label><label style="display:block;margin:3px 0"><input type="radio" name="bkMode" value="duplex"> 앞면 → 뒷면 순서로 번갈아 (양면 스캔 · 촬영)</label><label style="display:block;margin:3px 0"><input type="radio" name="bkMode" value="front"'+(ne>1?'':' checked')+'> 앞면만 (한 장 = 한 학생)</label></div>'
   +'<div><button id="bkGo">읽기 시작</button> <span id="bkMsg" class="stuMsg"></span></div></div>';
  $('#bkX').onclick=bulkClose;
  $('#bkGo').onclick=async function(){var fs=[].slice.call($('#bkFiles').files),msg=$('#bkMsg');if(!fs.length){msg.className='stuMsg err';msg.textContent='파일을 먼저 골라 주세요';return}
   var mode=(document.querySelector('input[name=bkMode]:checked')||{}).value||'front';this.disabled=true;msg.className='stuMsg';
   try{var pages=[];fs.sort(function(a,b){return a.name.localeCompare(b.name,'ko',{numeric:true})});
    for(var f of fs){if(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name))await bkPdfPages(f,pages,function(t){msg.textContent=t});else{msg.textContent='사진 여는 중... '+f.name;pages.push({cv:await toCv(f),name:f.name})}}
-   var sheets=[];for(var k=0;k<pages.length;k+=(mode==='duplex'?2:1))sheets.push({front:pages[k],back:mode==='duplex'?(pages[k+1]||null):null,sid:'',st:''});
+   var sheets=[];
+   if(mode==='auto'){var kinds=[];for(var q=0;q<pages.length;q++){msg.textContent='앞·뒷면 구분하는 중... '+(q+1)+'/'+pages.length;await new Promise(function(r){setTimeout(r,10)});kinds.push(isBackPage(pages[q].cv)?'B':'F')}
+    var nB=kinds.filter(function(x){return x==='B'}).length;
+    if(!nB)mode='duplex';          // 뒷면 표시(번호 머리글 띠)가 하나도 안 보이면(옛 인쇄본) 번갈아 짝지어요
+    else{var firstB=kinds.indexOf('B'),nF=kinds.length-nB,allF=kinds.slice(0,firstB).every(function(x){return x==='F'}),allB=kinds.slice(firstB).every(function(x){return x==='B'});
+     if(allF&&allB&&firstB===nF&&nF===nB&&nF>1){for(var z=0;z<nF;z++)sheets.push({front:pages[z],back:pages[nF+z],sid:'',st:''})}      // 앞면 전부 → 뒷면 전부(순서 같음)
+     else{var cur=null;for(var y=0;y<pages.length;y++){if(kinds[y]==='F'){cur={front:pages[y],back:null,sid:'',st:''};sheets.push(cur)}else if(cur&&!cur.back)cur.back=pages[y];else sheets.push({front:pages[y],back:null,sid:'',st:'',orphan:'앞면 없이 뒷면만 있어요(앞면과 짝이 안 맞아요)'})}}}}
+   if(mode!=='auto'){for(var k=0;k<pages.length;k+=(mode==='duplex'?2:1))sheets.push({front:pages[k],back:mode==='duplex'?(pages[k+1]||null):null,sid:'',st:''})}
    for(var i=0;i<sheets.length;i++){var sh=sheets[i];msg.textContent='답을 읽는 중... '+(i+1)+'/'+sheets.length;await new Promise(function(r){setTimeout(r,20)});
+    if(sh.orphan){sh.err=sh.orphan;continue}
     try{sh.r=window.OMR_test(sh.front.cv);sh.ans=sh.r.ans.slice(0,e.n).map(function(a){return a.v});sh.flag=sh.r.ans.slice(0,e.n).map(function(a){return a.flag||''});sh.thumb=cvJpeg(sh.front.cv,1000,.6)}catch(er){sh.err=er.message||'읽지 못했어요'}}
    BK.sheets=sheets;bulkStep2()}
   catch(er){msg.className='stuMsg err';msg.textContent=er.message;this.disabled=false}}}
+function isBackPage(cv){try{var r=pageH(cv),L=findHLines(cv,r.H,3,20);return L.some(function(l){return Math.abs(l-8.3)<1.3})&&L.some(function(l){return Math.abs(l-14.1)<1.3})}catch(e){return false}}   /* 뒷면은 위쪽에 '번호·서술형 답란' 진한 띠(y 8~14mm)가 있어요 */
 function bkChips(sh){return sh.ans.map(function(v,k){return'<i class="'+(sh.flag[k]?'b':(v===''?'x':'o'))+'">'+(k+1)+'</i>'}).join('')}
 function bkWarn(sh){var e=BK.ex,id=sh.r.id||{},m=e.meta||{},hb=[];
  if(id.school&&id.school!=='?'&&m.school&&id.school!==m.school)hb.push('학교 '+id.school+' ≠ '+m.school);if(id.subj&&id.subj!=='?'&&m.subj&&id.subj!==m.subj)hb.push('과목 '+id.subj+' ≠ '+m.subj);
@@ -847,7 +872,7 @@ function bulkStep2(){var e=BK.ex,inn=$('#bulkM .in'),rows=BK.rows;
  BK.sheets.forEach(function(sh,k){h+='<tr data-k="'+k+'"><td>'+(k+1)+'<br><small>'+esc(sh.front.name)+'</small></td>';
   if(sh.err){h+='<td colspan="3"><span class="stuMsg err">읽지 못했어요: '+esc(sh.err)+' — 네 모서리의 검은 네모가 모두 나오게 다시 찍거나 스캔해 주세요.</span></td><td></td></tr>';return}
   h+='<td class="l">'+(sh.r.nm?'<img class="bkNm" alt="이름 칸" src="'+sh.r.nm+'">':'<span class="hint">이름 칸 사진 없음</span>')+'<br><button class="g bkView">답안지 보기</button></td>'
-   +'<td><select class="bkSel">'+opts(sh.sid,k)+'</select></td><td class="l"><div class="stuChips bkCh">'+bkChips(sh)+'</div><div class="bkWr">'+bkWarn(sh)+'</div><button class="g bkFix">답 고치기</button><div class="bkFixBox" style="display:none"></div></td><td class="bkSt">'+(sh.st||'')+'</td></tr>'});
+   +'<td><select class="bkSel">'+opts(sh.sid,k)+'</select></td><td class="l"><div class="stuChips bkCh">'+bkChips(sh)+'</div><div class="bkWr">'+bkWarn(sh)+'</div><button class="g bkFix">답 고치기</button>'+(sh.back?' <button class="g bkSwap" title="앞면과 뒷면이 서로 바뀌었을 때 눌러요">⇄ 앞·뒷면 바꾸기</button>':'')+'<div class="bkFixBox" style="display:none"></div></td><td class="bkSt">'+(sh.st||'')+'</td></tr>'});
  h+='</table></div><div style="margin:10px 0"><button id="bkRun">선택한 학생 반영하기</button> <button class="g" id="bkBack">← 파일 다시 고르기</button> <span id="bkSum" class="stuMsg"></span></div>';
  inn.innerHTML=h;$('#bkX').onclick=bulkClose;$('#bkBack').onclick=bulkStep1;
  inn.querySelectorAll('.bkSel').forEach(function(s){s.addEventListener('change',function(){var k=+s.closest('tr').dataset.k;BK.sheets[k].sid=s.value;inn.querySelectorAll('.bkSel').forEach(function(o){var kk=+o.closest('tr').dataset.k;[].forEach.call(o.options,function(op){op.disabled=!!op.value&&BK.sheets.some(function(x,j){return j!==kk&&x.sid===op.value})})})})});
@@ -856,6 +881,7 @@ function bulkStep2(){var e=BK.ex,inn=$('#bulkM .in'),rows=BK.rows;
   if(box.style.display!=='none'){box.style.display='none';return}
   box.style.display='block';box.innerHTML='<div class="fixG">'+sh.ans.map(function(v,q){return'<label data-q="'+q+'"'+(sh.flag[q]?' class="ch"':'')+'><b>'+(q+1)+'</b><select><option value="">—</option>'+[1,2,3,4,5].map(function(x){return'<option'+(String(x)===String(v)?' selected':'')+'>'+x+'</option>'}).join('')+'</select></label>'}).join('')+'</div>';
   box.querySelectorAll('select').forEach(function(s){s.addEventListener('change',function(){var q=+s.parentNode.dataset.q;sh.ans[q]=s.value;sh.flag[q]='';s.parentNode.classList.remove('ch');tr.querySelector('.bkCh').innerHTML=bkChips(sh);tr.querySelector('.bkWr').innerHTML=bkWarn(sh)})})})});
+ inn.querySelectorAll('.bkSwap').forEach(function(b){b.addEventListener('click',function(){var k=+b.closest('tr').dataset.k,sh=BK.sheets[k],t=sh.front;sh.front=sh.back;sh.back=t;try{sh.r=window.OMR_test(sh.front.cv);sh.ans=sh.r.ans.slice(0,e.n).map(function(a){return a.v});sh.flag=sh.r.ans.slice(0,e.n).map(function(a){return a.flag||''});sh.thumb=cvJpeg(sh.front.cv,1000,.6);sh.err=null}catch(er){sh.err=er.message||'읽지 못했어요'}bulkStep2()})});
  $('#bkRun').onclick=bulkRun}
 async function bulkRun(){var e=BK.ex,ne=(e.es||[]).length,btn=$('#bkRun'),sum=$('#bkSum'),todo=BK.sheets.map(function(s,k){return{s:s,k:k}}).filter(function(x){return x.s.sid&&!x.s.err&&x.s.st.indexOf('✓')<0});
  if(!todo.length){sum.className='stuMsg err';sum.textContent='반영할 학생을 먼저 골라 주세요';return}
@@ -866,16 +892,21 @@ async function bulkRun(){var e=BK.ex,ne=(e.es||[]).length,btn=$('#bkRun'),sum=$(
   try{var front=cvShrink(sh.front.cv),back=sh.back?cvShrink(sh.back.cv):'',id=sh.r.id||{};
    var j=await omr('ssub',{exam_id:e.id,sid:sh.sid,answers:sh.ans,front:front,back:back,hdr:{no:id.no,kind:id.kind,school:id.school,subj:id.subj,term:id.term}});
    if(!j||!j.ok)throw new Error((j&&j.error)||'반영하지 못했어요');
-   var note='';
+   var note='';sh.miss=[];
    if(ne){var crops={},miss=[];
-    try{var r1=await cropSide(sh.front.cv,'f',ne,false);if(r1)Object.assign(crops,r1)}catch(ec){miss.push('앞면 서술형 칸을 못 잘랐어요')}
-    if(ne>1){if(!sh.back)miss.push('뒷면 사진이 없어서 서술형 2번 이후 사진은 없어요');else{try{var r2=await cropSide(sh.back.cv,'b',ne,false);if(r2)Object.assign(crops,r2)}catch(ec2){miss.push('뒷면 서술형 칸을 못 잘랐어요')}}}
+    try{var r1=await cropSide(sh.front.cv,'f',ne,false);if(r1)Object.assign(crops,r1)}catch(ec){miss.push('앞면 서술형 칸을 못 잘랐어요');sh.miss.push('f')}
+    if(ne>1){if(!sh.back)miss.push('뒷면 사진이 없어서 서술형 2번 이후 사진은 없어요');else{try{var r2=await cropSide(sh.back.cv,'b',ne,false);if(r2)Object.assign(crops,r2)}catch(ec2){miss.push('뒷면 서술형 칸을 못 잘랐어요');sh.miss.push('b')}}}
     var ks=Object.keys(crops);
     if(ks.length){try{var up=await omr('ecrops',{exam_id:e.id,sid:sh.sid,crops:crops});note=up&&up.ok?' · 서술형 사진 '+up.n+'장':' · 서술형 사진 저장 실패'}catch(eu){note=' · 서술형 사진 저장 실패'}}
     if(miss.length)note+=' · '+miss.join(' · ')+' (서술형 채점의 [사진 다시 자르기]로 고칠 수 있어요)'}
-   sh.st='✓ '+esc(j.name)+' · 맞힌 '+j.right+'/'+j.n+' · 객관식 '+j.score+'점'+note;st.innerHTML='<span class="stuMsg ok">'+sh.st+'</span>';okN++}
+   sh.st='✓ '+esc(j.name)+' · 맞힌 '+j.right+'/'+j.n+' · 객관식 '+j.score+'점'+note;st.innerHTML='<span class="stuMsg ok">'+sh.st+'</span>'+(sh.miss.length?'<br><button class="g bkCut" data-k="'+todo[i].k+'">✂ 서술형 사진 모서리 직접 맞추기</button>':'');okN++}
   catch(er){st.innerHTML='<span class="stuMsg err">✕ '+esc(er.message)+'</span>';badN++}}
  sum.className='stuMsg '+(badN?'err':'ok');sum.textContent='반영 '+okN+'명'+(badN?' · 실패 '+badN+'명(오른쪽 빨간 글을 확인해 주세요)':' 완료! 정오표·성적표에 들어갔어요. 서술형 점수는 [서술형 채점]에서 입력해요.');btn.disabled=false}
+document.addEventListener('click',async function(ev){var b=ev.target.closest?ev.target.closest('.bkCut'):null;if(!b||!BK)return;var k=+b.dataset.k,sh=BK.sheets[k],e=BK.ex,ne=(e.es||[]).length,crops={};b.disabled=true;
+ try{for(var side of sh.miss){var cv=side==='f'?sh.front.cv:(sh.back&&sh.back.cv);if(!cv)continue;var r=await cropSide(cv,side,ne,true,(side==='f'?'앞면':'뒷면')+' 서술형 칸을 맞추려고 해요 — 종이의 네 모서리를 차례로 눌러 주세요.');if(r)Object.assign(crops,r)}
+  var ks=Object.keys(crops);if(!ks.length){b.disabled=false;return}var up=await omr('ecrops',{exam_id:e.id,sid:sh.sid,crops:crops});
+  if(up&&up.ok){sh.miss=[];b.outerHTML='<span class="stuMsg ok">서술형 사진 '+up.n+'장을 저장했어요</span>'}else{b.disabled=false;alert((up&&up.error)||'저장하지 못했어요')}}
+ catch(er){b.disabled=false;alert(er.message)}});
 function bulkClose(){var done=BK&&BK.sheets.some(function(s){return s.st&&s.st.indexOf('✓')===0});$('#bulkM').style.display='none';if(done)staffView()}
 window.__stuBoot=boot;boot();
 })();
