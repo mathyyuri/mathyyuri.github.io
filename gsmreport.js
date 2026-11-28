@@ -263,8 +263,8 @@
   function itemsHtml(d) {
     var h = '<table class="rp-qt"><tr><th>번호</th><th>유형</th><th>난이도</th><th class="l">단원 › 세부 개념</th><th>배점</th><th>결과</th><th>반 정답률</th></tr>';
     d.rows.forEach(function (q) {
-      var s = q.c === 'O' ? '<b class="o">○</b>' : q.c === 'X' ? '<b class="x">✕</b>' : q.c === 'T' ? '<b class="t">△</b>' : '<span class="rp-mut">·</span>';
-      h += '<tr class="' + (q.c === 'X' ? 'bad' : '') + '"><td>' + q.no + '</td><td>객관</td><td>' + (q.lv ? '<i class="lvt" style="background:' + LVC[q.lv] + '">' + LVN[q.lv] + '</i>' : '') + '</td><td class="l u">' + esc(q.unit) + (q.sub ? ' <span class="sb">› ' + esc(q.sub) + '</span>' : '') + '</td><td>' + q.pts + '</td><td>' + s + '</td><td class="cr">' + (q.cr == null ? '' : '<span class="cb"><i style="width:' + q.cr + '%"></i></span> ' + q.cr + '%') + '</td></tr>';
+      var s = q.c === 'O' ? '<b class="o">○</b>' : q.c === 'X' ? '<b class="x">✕</b>' : q.c === 'T' ? '<b class="t">△</b><small class="tf">고침</small>' : '<span class="rp-mut">·</span>';
+      h += '<tr class="' + (q.c === 'X' ? 'bad' : q.c === 'T' ? 'fix' : '') + '"><td>' + q.no + '</td><td>객관</td><td>' + (q.lv ? '<i class="lvt" style="background:' + LVC[q.lv] + '">' + LVN[q.lv] + '</i>' : '') + '</td><td class="l u">' + esc(q.unit) + (q.sub ? ' <span class="sb">› ' + esc(q.sub) + '</span>' : '') + '</td><td>' + q.pts + '</td><td>' + s + '</td><td class="cr">' + (q.cr == null ? '' : '<span class="cb"><i style="width:' + q.cr + '%"></i></span> ' + q.cr + '%') + '</td></tr>';
     });
     var E = d.es;
     if (E && E.has) E.max.forEach(function (m, k) {
@@ -284,7 +284,7 @@
   }
   function page2Html(name, key, d) {
     return '<section class="rp pg">' + hdr(name, '문항별 분석', true, d) + exbar(d) +
-      '<div class="rp-sec">' + h4('문항별 결과', '○ 맞힘 · ✕ 틀림 · △ 부분 점수 · 난이도 ' + (d.derived ? '(반 정답률로 나눔)' : '(출제 의도 기준)')) + itemsHtml(d) + '</div>' +
+      '<div class="rp-sec">' + h4('문항별 결과', '○ 맞힘 · ✕ 틀림 · △ 틀렸다가 고침(노란 줄) · 난이도 ' + (d.derived ? '(반 정답률로 나눔)' : '(출제 의도 기준)')) + itemsHtml(d) + '</div>' +
       '<div class="rp-sec">' + h4('단원·세부 개념별 정답률', '위 막대 = 나 · 아래 회색 = 반 평균 · ✓ 맞힘 ✕ 틀린 번호') + unitHtml(d) + '</div>' +
       '<div class="rp-ft">반 정답률 = 이번 시험을 본 반 친구들 중 그 문항을 맞힌 비율(△는 절반). 반 정답률이 높은 문제를 놓쳤다면 실수 점검이, 낮은 문제는 해설 학습이 우선이에요.</div></section>';
   }
@@ -533,7 +533,7 @@
     '.rp-ub2 .un b{font-size:calc(8.2pt*var(--fs,1));display:block}.rp-ub2 .un small{font-size:calc(6.8pt*var(--fs,1));color:#5a5d4c}.rp-ub2 .cn{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:1mm;margin-top:-.6mm}.cn span{font-size:calc(6.8pt*var(--fs,1));padding:.2mm 1.8mm;border-radius:99px;background:#f2efe4;color:#3a3d31}.cn span.bd{background:#f2dddb;color:#9a8450;font-weight:700}.cn span.ok{background:#e2ecd9;color:#6b7a5e}' +
     'b.up{color:#6b7a5e;font-size:calc(6.8pt*var(--fs,1))}b.dn{color:#a63d40;font-size:calc(6.8pt*var(--fs,1))}b.zz{color:#5d604f;font-size:calc(6.8pt*var(--fs,1))}' +
     '.rp-qt{width:100%;border-collapse:collapse;font-size:calc(7.5pt*var(--fs,1));text-align:center}.rp-qt th{background:#f2efe4;color:#2f4a3c;padding:.9mm;font-size:calc(6.8pt*var(--fs,1))}.rp-qt td{border-bottom:.2mm solid #eae7db;padding:.5mm .4mm;height:calc(5.2mm*var(--k,1))}.rp-qt .l{text-align:left}.rp-qt td.u{white-space:nowrap;overflow:hidden;max-width:74mm;text-overflow:ellipsis}.rp-qt .sb{color:#464938;font-size:calc(6.8pt*var(--fs,1))}' +
-    '.rp-qt tr.bad td{background:#f2dddb}.rp-qt tr.es td{background:#f4f1e7}.rp-qt b.o{color:#6b7a5e}.rp-qt b.x{color:#a63d40}.rp-qt b.t{color:#a8904f}.rp-qt td.cr{text-align:left;white-space:nowrap;font-size:calc(7pt*var(--fs,1))}.cb{display:inline-block;width:14mm;height:2mm;background:#ebe8dc;border-radius:99px;vertical-align:middle;overflow:hidden}.cb i{display:block;height:100%;background:#bdb8a5}' +
+    '.rp-qt tr.bad td{background:#f2dddb}.rp-qt tr.es td{background:#f4f1e7}.rp-qt b.o{color:#6b7a5e}.rp-qt b.x{color:#a63d40}.rp-qt tr.fix td{background:#f8ecd0}.rp-qt b.t{color:#c27a0a;font-weight:900}.rp-qt td small.tf{color:#a86a00;font-size:calc(6.8pt*var(--fs,1));margin-left:.8mm;font-weight:700}.rp-qt td.cr{text-align:left;white-space:nowrap;font-size:calc(7pt*var(--fs,1))}.cb{display:inline-block;width:14mm;height:2mm;background:#ebe8dc;border-radius:99px;vertical-align:middle;overflow:hidden}.cb i{display:block;height:100%;background:#bdb8a5}' +
     '.rp-wt{width:100%;border-collapse:collapse;font-size:calc(7.8pt*var(--fs,1));text-align:center}.rp-wt th{background:#f2dddb;color:#9a8450;padding:.9mm;font-size:calc(6.8pt*var(--fs,1))}.rp-wt td{border-bottom:.2mm solid #eed7d4;padding:calc(1.2mm*var(--k,1)) .8mm;vertical-align:top}.rp-wt .l{text-align:left}.rp-wt b.no{display:inline-block;width:5mm;height:5mm;line-height:5mm;border-radius:50%;background:#9a8450;color:#fff}.rp-wt .sb{font-size:calc(6.8pt*var(--fs,1));color:#464938}.rp-wt .sm{font-size:calc(7.2pt*var(--fs,1))}' +
     '.rp-note{border:.3mm dashed #b5a58a;background:#f7f5ec;border-radius:2mm;padding:2.2mm 3mm;line-height:calc(1.7 + .3*(var(--k,1) - 1))}.rp-note.fin{background:#f4f1e7;border-color:#b4b39f}' +
     '.rp-edw{position:relative}.rp-ed{white-space:pre-wrap;outline:none;min-height:5mm;font-size:calc(8.4pt*var(--fs,1));line-height:calc(1.75 + .3*(var(--k,1) - 1))}.rp-ed[contenteditable]{cursor:text}.rp-ed[contenteditable]:hover,.rp-ed[contenteditable]:focus{background:#f1f0e3}.rp-ed.edited{color:#2a3d31}' +
