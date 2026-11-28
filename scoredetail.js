@@ -16,6 +16,8 @@
     '.sd-box{background:var(--soft,#e6efe9);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.75}.sd-box p{margin:0 0 6px}.sd-box p:last-child{margin:0}' +
     '.sd-ta{width:100%;box-sizing:border-box;border:1.5px solid var(--line,#e4dcc6);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.75;background:#fffdf6;color:inherit;resize:vertical;min-height:170px}' +
     '.sd-bt{border:0;background:var(--acc,#2f6b57);color:#fff;border-radius:999px;padding:7px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}' +
+    '.sd-head{font-size:16px;line-height:1.6;margin:2px 0 8px}.sd-head b{font-size:17px}.sd-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.sd-chip{border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:800}.sd-chip small{font-weight:600;opacity:.85}.sd-chip.w{background:#fdecea;color:var(--bad,#b3402f)}.sd-chip.s{background:#e3f1ea;color:#2f7a67}' +
+    '.sd-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sd-more{border:1.5px solid var(--line,#e4dcc6);background:#fff;color:var(--ink,#262a24);border-radius:999px;padding:6px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}.sd-short{min-height:0}' +
     '.sd-q{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.75}.sd-note{font-size:12px;color:var(--mut,#7b7468);margin-top:8px}';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function r1(v) { return Math.round(v * 10) / 10; }
@@ -80,14 +82,32 @@
     return P.join('\n\n');
   }
 
+  function shortScript(c, ctx) {
+    var name = (ctx && ctx.name) || '학생', dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, P = [];
+    P.push('학부모님, ' + name + ' 학생은 최근 ' + c.ex.length + '회 시험 평균 ' + r1(c.mavg) + '점입니다.' + (c.cavg != null ? ' 같은 시험을 본 반 평균(' + r1(c.cavg) + '점)보다 ' + (Math.abs(dg) < .05 ? '비슷한 수준입니다.' : Math.abs(dg) + '점 ' + (dg > 0 ? '높습니다.' : '낮습니다.')) : ''));
+    if (c.weak.length) P.push(c.weak.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원이 상대적으로 약해서 이 부분을 먼저 보완하겠습니다.');
+    else if (c.strong.length) P.push(c.strong.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원은 안정적입니다. 지금 흐름을 이어 가겠습니다.');
+    if (ctx && ctx.hwPct != null && ctx.hwPct < 70) P.push('최근 과제 완료율이 ' + ctx.hwPct + '%라서 집에서 과제 마무리를 함께 챙겨 주시면 좋겠습니다.');
+    P.push('집에서 수학 공부하며 힘들어하는 점이 있으실까요?');
+    return P.join(' ');
+  }
   /* ── 화면 ── */
+  var OPEN = false;
   var seq = 0;
   window.sdHtml = function (d, ctx) {
     var xs = d && d.xs; if (!xs || !xs.length) return '';
     var c = compute(xs); if (!c.ex.length) return '';
     var id = 'sd' + (++seq);
     if (!document.getElementById('sd-css')) { var st = document.createElement('style'); st.id = 'sd-css'; st.textContent = CSS; document.head.appendChild(st); }
-    var h = '<div class="card sd-wrap"><h3>성적 상세 · 상담 도우미</h3><div class="sd-sub">최근 시험 ' + c.ex.length + '회 · 같은 시험을 본 반 학생들과 비교한 자동 분석이에요.</div>';
+    var dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, nmx = (ctx && ctx.name) || '학생';
+    var h = '<div class="card sd-wrap"><h3>성적 · 상담 핵심</h3>';
+    h += '<div class="sd-head">최근 ' + c.ex.length + '회 평균 <b>' + r1(c.mavg) + '점</b>' + (c.cavg != null ? ' · 반 평균(' + r1(c.cavg) + '점)보다 <b class="' + (Math.abs(dg) < .05 ? 'sd-z' : dg > 0 ? 'sd-up' : 'sd-dn') + '">' + (Math.abs(dg) < .05 ? '비슷해요' : Math.abs(dg) + '점 ' + (dg > 0 ? '높아요' : '낮아요')) + '</b>' : '') + '</div>';
+    var chips = c.weak.slice(0, 3).map(function (o, i) { return '<span class="sd-chip w">' + (i === 0 ? '보완 1순위 ' : '보완 ') + esc(o.u) + ' <small>내 ' + o.me + '%' + (o.cl != null ? ' · 반 ' + o.cl + '%' : '') + '</small></span>'; }).concat(c.strong.slice(0, 2).map(function (o) { return '<span class="sd-chip s">강점 ' + esc(o.u) + ' <small>' + o.me + '%</small></span>'; }));
+    if (ctx && ctx.hwPct != null && ctx.hwPct < 70) chips.push('<span class="sd-chip w">과제 완료 ' + ctx.hwPct + '% <small>낮음</small></span>');
+    if (!c.weak.length && c.units.length) chips.unshift('<span class="sd-chip s">반보다 크게 낮은 단원 없음</span>');
+    if (chips.length) h += '<div class="sd-chips">' + chips.join('') + '</div>';
+    h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta sd-short" id="' + id + 's" rows="5" spellcheck="false">' + esc(shortScript(c, ctx)) + '</textarea><div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + 's">한마디 복사</button><button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
+    h += '<div class="sd-detail" style="display:' + (OPEN ? 'block' : 'none') + '"><div class="sd-sub" style="margin-top:12px">최근 시험 ' + c.ex.length + '회 · 같은 시험을 본 반 학생들과 비교한 자세한 자동 분석이에요.</div>';
     /* 1. 시험별 */
     h += '<div class="sd-h" style="margin-top:6px">① 시험별 점수와 반 평균</div><table class="sd-t"><tr><th>시험</th><th>내 점수</th><th>반 평균</th><th>차이</th><th>등수</th></tr>' + c.ex.map(function (e) {
       return '<tr><td><span class="muted" style="color:var(--mut,#7b7468);font-size:12px">' + esc(dstr(e.date)) + '</span> ' + esc(e.name) + '</td><td><b>' + r1(e.score) + '</b></td><td>' + (e.avg == null ? '-' : e.avg) + '</td><td>' + sgn(e.diff, '점') + '</td><td style="color:var(--mut,#7b7468)">' + (e.n >= 2 ? e.rank + '/' + e.n + '명' : '비교 인원 적음') + '</td></tr>';
@@ -103,12 +123,14 @@
     /* 3. 자동 분석 */
     h += '<div class="sd-h">③ 자동 분석</div><div class="sd-box">' + analysis(c, ctx).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div>';
     /* 4. 상담 멘트 */
-    h += '<div class="sd-h">④ 학부모 상담 멘트 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta" id="' + id + '" rows="17" spellcheck="false">' + esc(script(c, ctx)) + '</textarea><div><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + '">멘트 복사</button></div>';
+    h += '<div class="sd-h">④ 학부모 상담 멘트 전체 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta" id="' + id + '" rows="17" spellcheck="false">' + esc(script(c, ctx)) + '</textarea><div><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + '">전체 멘트 복사</button></div>';
     h += '<div class="sd-h">상담 중 이렇게 물어보세요</div><ul class="sd-q"><li>시험 볼 때 시간이 모자랐는지, 아는 문제를 실수로 놓쳤는지 ' + esc((ctx && ctx.name) || '학생') + ' 학생이 뭐라고 하나요?</li><li>틀린 문제를 집에서 다시 풀어 보는 습관이 있나요?</li>' + (c.weak.length ? '<li>' + esc(c.weak[0].u) + ' 단원은 학생이 어려워한다고 느끼시나요?</li>' : '') + '</ul>';
-    h += '<div class="sd-note">수치는 입력된 시험 결과로 자동 계산했어요. 반 인원이 적으면(지금은 소수) 평균이 크게 흔들릴 수 있어요.</div></div>';
+    h += '<div class="sd-note">수치는 입력된 시험 결과로 자동 계산했어요. 반 인원이 적으면(지금은 소수) 평균이 크게 흔들릴 수 있어요.</div></div></div>';
     return h;
   };
   document.addEventListener('click', function (ev) {
+    var m = ev.target && ev.target.closest && ev.target.closest('[data-sd="more"]');
+    if (m) { var w = m.closest('.sd-wrap'), dt = w && w.querySelector('.sd-detail'); if (dt) { OPEN = dt.style.display === 'none'; dt.style.display = OPEN ? 'block' : 'none'; m.textContent = OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾'; } return; }
     var b = ev.target && ev.target.closest && ev.target.closest('[data-sd="copy"]'); if (!b) return;
     var ta = document.getElementById(b.getAttribute('data-for')); if (!ta) return;
     var done = function () { var o = b.textContent; b.textContent = '복사됐어요 ✓'; setTimeout(function () { b.textContent = o; }, 1500); };
