@@ -18,6 +18,7 @@
     '.sd-bt{border:0;background:var(--acc,#2f6b57);color:#fff;border-radius:999px;padding:7px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}' +
     '.sd-head{font-size:16px;line-height:1.6;margin:2px 0 8px}.sd-head b{font-size:17px}.sd-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.sd-chip{border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:800}.sd-chip small{font-weight:600;opacity:.85}.sd-chip.w{background:#fdecea;color:var(--bad,#b3402f)}.sd-chip.s{background:#e3f1ea;color:#2f7a67}' +
     '.sd-last{background:#f6f1e3;border-radius:12px;padding:9px 12px;margin:6px 0 0;font-size:13.5px;line-height:1.6}.sd-lt{color:var(--mut,#6b655a)}.sd-chip.n{background:#ece6d6;color:#4a4536}.sd-pin{margin-top:6px;font-size:13px;color:var(--bad,#b3402f);font-weight:700}' +
+    '.sd-st{font-size:12.5px;margin:0 0 4px}.sd-saved{color:#2f7a67;font-weight:800}.sd-bt:disabled{opacity:.5}.sd-sv{background:#2f7a67}' +
     '.sd-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sd-more{border:1.5px solid var(--line,#e4dcc6);background:#fff;color:var(--ink,#262a24);border-radius:999px;padding:6px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}.sd-short{min-height:0}' +
     '.sd-q{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.75}.sd-note{font-size:12px;color:var(--mut,#7b7468);margin-top:8px}';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -131,6 +132,7 @@
     P.push(H && H.last ? '지난 상담 이후 집에서 달라진 점이나 걱정되시는 점이 있으실까요?' : '집에서 수학 공부하며 힘들어하는 점이 있으실까요?');
     return P.join(' ');
   }
+  function stText(sv) { return sv ? '<span class="sd-saved">✔ 저장된 문구</span> ' + esc((sv.by || '') + (sv.at ? ' · ' + ld(sv.at) : '')) + ' <span style="color:var(--mut,#7b7468)">— 성적이 바뀌어도 이 문장은 그대로예요</span>' : '<span style="color:var(--mut,#7b7468)">자동으로 만든 문구예요 (저장 전)</span>'; }
   /* ── 화면 ── */
   var OPEN = false;
   var seq = 0;
@@ -152,7 +154,14 @@
         ((H.themes.length || H.follows.length) ? '<div class="sd-chips" style="margin-top:6px">' + H.themes.map(function (t) { return '<span class="sd-chip n">' + esc(t.label) + (t.id === 'goal' && H.goal ? ' ' + esc(H.goal) : '') + '</span>'; }).join('') + H.follows.map(function (f) { return '<span class="sd-chip w">후속 미완료 <small>' + esc(f) + '</small></span>'; }).join('') + '</div>' : '') +
         (H.pins.length ? '<div class="sd-pin">⚠ 특이사항: ' + H.pins.map(esc).join(' · ') + '</div>' : '') + '</div>';
     }
-    h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta sd-short" id="' + id + 's" rows="7" spellcheck="false">' + esc(shortScript(c, ctx)) + '</textarea><div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + 's">한마디 복사</button><button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
+    var auto = shortScript(c, ctx), sv = d.sdm && d.sdm.body ? d.sdm : null, cid = ++seq && 'sd' + seq, canSave = !!(ctx && ctx.save);
+    (window.__sdReg = window.__sdReg || {})[cid] = { d: d, ctx: ctx, auto: auto };
+    h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 [저장]하면 모든 상담실장님 화면에 이 문장이 보여요)</span></div>' +
+      '<div class="sd-st" id="' + cid + 't">' + stText(sv) + '</div>' +
+      '<textarea class="sd-ta sd-short" id="' + cid + 's" data-id="' + cid + '" rows="7" spellcheck="false">' + esc(sv ? sv.body : auto) + '</textarea>' +
+      '<div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + cid + 's">한마디 복사</button>' +
+      (canSave ? '<button class="sd-bt sd-sv" type="button" data-sd="save" data-id="' + cid + '">저장</button><button class="sd-more" type="button" data-sd="reset" data-id="' + cid + '" style="' + (sv ? '' : 'display:none') + '">자동 문구로 되돌리기</button>' : '') +
+      '<button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
     h += '<div class="sd-detail" style="display:' + (OPEN ? 'block' : 'none') + '"><div class="sd-sub" style="margin-top:12px">최근 시험 ' + c.ex.length + '회 · 같은 시험을 본 반 학생들과 비교한 자세한 자동 분석이에요.</div>';
     /* 1. 시험별 */
     h += '<div class="sd-h" style="margin-top:6px">① 시험별 점수와 반 평균</div><table class="sd-t"><tr><th>시험</th><th>내 점수</th><th>반 평균</th><th>차이</th><th>등수</th></tr>' + c.ex.map(function (e) {
@@ -174,7 +183,20 @@
     h += '<div class="sd-note">수치는 입력된 시험 결과로 자동 계산했어요. 반 인원이 적으면(지금은 소수) 평균이 크게 흔들릴 수 있어요.</div></div></div>';
     return h;
   };
+  document.addEventListener('input', function (ev) { var t = ev.target; if (t && t.classList && t.classList.contains('sd-short')) { var st = document.getElementById(t.getAttribute('data-id') + 't'); if (st) st.innerHTML = '<span style="color:var(--bad,#b3402f);font-weight:700">고치는 중 — [저장]을 눌러야 다른 분들께 보여요</span>'; } });
+  function sdAct(b, kind) {
+    var id = b.getAttribute('data-id'), reg = (window.__sdReg || {})[id], ta = document.getElementById(id + 's'), st = document.getElementById(id + 't'); if (!reg || !ta) return;
+    if (kind === 'reset' && !window.confirm('저장한 문장을 지우고 자동 문구로 되돌릴까요?')) return;
+    b.disabled = true; st.textContent = '저장 중…';
+    var pr = kind === 'save' ? reg.ctx.save(ta.value) : reg.ctx.clear();
+    Promise.resolve(pr).then(function (j) {
+      b.disabled = false;
+      if (j && j.ok) { reg.d.sdm = j.sdm || null; if (kind === 'reset') ta.value = reg.auto; st.innerHTML = stText(reg.d.sdm); var rb = b.parentNode.querySelector('[data-sd="reset"]'); if (rb) rb.style.display = reg.d.sdm ? '' : 'none'; }
+      else st.innerHTML = '<span style="color:var(--bad,#b3402f);font-weight:700">' + esc((j && (j.error || j.msg)) || '저장하지 못했어요') + '</span>';
+    }, function () { b.disabled = false; st.innerHTML = '<span style="color:var(--bad,#b3402f);font-weight:700">저장하지 못했어요 (인터넷 확인)</span>'; });
+  }
   document.addEventListener('click', function (ev) {
+    var sb = ev.target && ev.target.closest && ev.target.closest('[data-sd="save"],[data-sd="reset"]'); if (sb) { sdAct(sb, sb.getAttribute('data-sd')); return; }
     var m = ev.target && ev.target.closest && ev.target.closest('[data-sd="more"]');
     if (m) { var w = m.closest('.sd-wrap'), dt = w && w.querySelector('.sd-detail'); if (dt) { OPEN = dt.style.display === 'none'; dt.style.display = OPEN ? 'block' : 'none'; m.textContent = OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾'; } return; }
     var b = ev.target && ev.target.closest && ev.target.closest('[data-sd="copy"]'); if (!b) return;
