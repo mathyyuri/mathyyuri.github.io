@@ -119,18 +119,13 @@
     });
     return out.slice(0, 2);
   }
-  function shortScript(c, ctx) {
-    var name = (ctx && ctx.name) || '학생', dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, P = [];
-    var H = ctx && ctx.H, ho = histOpen(H, name); if (ho) P.push(ho);
-    P.push((ho ? '' : '학부모님, ') + name + ' 학생은 최근 ' + c.ex.length + '회 시험 평균 ' + r1(c.mavg) + '점입니다.' + (c.cavg != null ? ' 같은 시험을 본 반 평균(' + r1(c.cavg) + '점)보다 ' + (Math.abs(dg) < .05 ? '비슷한 수준입니다.' : Math.abs(dg) + '점 ' + (dg > 0 ? '높습니다.' : '낮습니다.')) : ''));
-    if (c.weak.length) P.push(c.weak.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원이 상대적으로 약해서 이 부분을 먼저 보완하겠습니다.');
-    else if (c.strong.length) P.push(c.strong.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원은 안정적입니다. 지금 흐름을 이어 가겠습니다.');
-    var care = histCare(H, c).slice(0, 1);
-    if (care.length) P.push(care[0]);
-    else if (ctx && ctx.hwPct != null && ctx.hwPct < 70) P.push('최근 과제 완료율이 ' + ctx.hwPct + '%라서 집에서 과제 마무리를 함께 챙겨 주시면 좋겠습니다.');
-    if (H && H.follows.length) P.push('지난번 안내 예정이던 ‘' + H.follows[0] + '’ 건도 함께 말씀드리겠습니다.');
+  function shortScript(c, ctx) {   // 딱 3줄: ① 지난 상담 이어서 ② 점수+보완 ③ 마무리 질문
+    var name = (ctx && ctx.name) || '학생', dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, H = ctx && ctx.H, P = [], ho = histOpen(H, name);
+    if (ho) P.push(ho);
+    var w = c.weak.slice(0, 2).map(function (o) { return nm(o); }).join('·');
+    P.push(name + ' 학생은 최근 평균 ' + r1(c.mavg) + '점으로' + (c.cavg != null ? ' 반 평균(' + r1(c.cavg) + '점)보다 ' + (Math.abs(dg) < .05 ? '비슷하고' : Math.abs(dg) + '점 ' + (dg > 0 ? '높고' : '낮고')) : '') + (w ? ', ' + w + ' 단원을 먼저 보완하겠습니다.' : ' 지금 흐름을 이어 가겠습니다.'));
     P.push(H && H.last ? '지난 상담 이후 집에서 달라진 점이나 걱정되시는 점이 있으실까요?' : '집에서 수학 공부하며 힘들어하는 점이 있으실까요?');
-    return P.join(' ');
+    return P.join('\n');
   }
   function stText(sv) { return sv ? '<span class="sd-saved">✔ 저장된 문구</span> ' + esc((sv.by || '') + (sv.at ? ' · ' + ld(sv.at) : '')) + ' <span style="color:var(--mut,#7b7468)">— 성적이 바뀌어도 이 문장은 그대로예요</span>' : '<span style="color:var(--mut,#7b7468)">자동으로 만든 문구예요 (저장 전)</span>'; }
   /* ── 화면 ── */
@@ -158,7 +153,7 @@
     (window.__sdReg = window.__sdReg || {})[cid] = { d: d, ctx: ctx, auto: auto };
     h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 [저장]하면 모든 상담실장님 화면에 이 문장이 보여요)</span></div>' +
       '<div class="sd-st" id="' + cid + 't">' + stText(sv) + '</div>' +
-      '<textarea class="sd-ta sd-short" id="' + cid + 's" data-id="' + cid + '" rows="7" spellcheck="false">' + esc(sv ? sv.body : auto) + '</textarea>' +
+      '<textarea class="sd-ta sd-short" id="' + cid + 's" data-id="' + cid + '" rows="4" spellcheck="false">' + esc(sv ? sv.body : auto) + '</textarea>' +
       '<div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + cid + 's">한마디 복사</button>' +
       (canSave ? '<button class="sd-bt sd-sv" type="button" data-sd="save" data-id="' + cid + '">저장</button><button class="sd-more" type="button" data-sd="reset" data-id="' + cid + '" style="' + (sv ? '' : 'display:none') + '">자동 문구로 되돌리기</button>' : '') +
       '<button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
@@ -204,5 +199,5 @@
     var done = function () { var o = b.textContent; b.textContent = '복사됐어요 ✓'; setTimeout(function () { b.textContent = o; }, 1500); };
     try { navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); document.execCommand('copy'); done(); }); } catch (e) { ta.select(); try { document.execCommand('copy'); done(); } catch (e2) { } }
   });
-  window.sdCompute = compute; window.sdScript = script;
+  window.sdCompute = compute; window.sdScript = script; window.sdShort = shortScript;
 })();
