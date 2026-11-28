@@ -17,6 +17,7 @@
     '.sd-ta{width:100%;box-sizing:border-box;border:1.5px solid var(--line,#e4dcc6);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.75;background:#fffdf6;color:inherit;resize:vertical;min-height:170px}' +
     '.sd-bt{border:0;background:var(--acc,#2f6b57);color:#fff;border-radius:999px;padding:7px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}' +
     '.sd-head{font-size:16px;line-height:1.6;margin:2px 0 8px}.sd-head b{font-size:17px}.sd-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.sd-chip{border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:800}.sd-chip small{font-weight:600;opacity:.85}.sd-chip.w{background:#fdecea;color:var(--bad,#b3402f)}.sd-chip.s{background:#e3f1ea;color:#2f7a67}' +
+    '.sd-last{background:#f6f1e3;border-radius:12px;padding:9px 12px;margin:6px 0 0;font-size:13.5px;line-height:1.6}.sd-lt{color:var(--mut,#6b655a)}.sd-chip.n{background:#ece6d6;color:#4a4536}.sd-pin{margin-top:6px;font-size:13px;color:var(--bad,#b3402f);font-weight:700}' +
     '.sd-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sd-more{border:1.5px solid var(--line,#e4dcc6);background:#fff;color:var(--ink,#262a24);border-radius:999px;padding:6px 16px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px}.sd-short{min-height:0}' +
     '.sd-q{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.75}.sd-note{font-size:12px;color:var(--mut,#7b7468);margin-top:8px}';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -66,7 +67,7 @@
   }
   function script(c, ctx) {
     var name = (ctx && ctx.name) || '학생', P = [], e0 = c.ex[0], diffAll = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null;
-    P.push('학부모님, ' + name + ' 학생의 최근 성적을 말씀드리겠습니다.');
+    var H = ctx && ctx.H, ho = histOpen(H, name); P.push(ho || ('학부모님, ' + name + ' 학생의 최근 성적을 말씀드리겠습니다.'));
     P.push('최근 ' + c.ex.length + '회 시험 평균은 ' + r1(c.mavg) + '점입니다.' + (c.cavg != null ? ' 같은 시험을 본 반 평균 ' + r1(c.cavg) + '점과 비교하면 ' + (Math.abs(diffAll) < .05 ? '비슷한 수준입니다.' : diffAll > 0 ? diffAll + '점 높습니다.' : Math.abs(diffAll) + '점 낮습니다.') : '') + ' 가장 최근인 ‘' + e0.name + '’ 시험은 ' + e0.score + '점이었습니다.' + (c.ex.length >= 2 ? ' (시험마다 난이도가 달라, 점수 자체보다 반 평균과의 차이를 함께 보고 있습니다.)' : ''));
     if (c.strong.length) P.push('잘하고 있는 부분은 ' + c.strong.slice(0, 3).map(function (o) { return nm(o); }).join('·') + ' 단원입니다. 반 평균 이상으로 안정적입니다.');
     if (c.weak.length) {
@@ -78,17 +79,56 @@
       if (ctx.hwPct >= 90) P.push('과제는 최근 2달 동안 ' + ctx.hwPct + '% 해 와서 성실하게 하고 있습니다.');
       else if (ctx.hwPct < 70) P.push('최근 2달 과제 완료율이 ' + ctx.hwPct + '%여서, 집에서 과제를 마무리하는 습관을 함께 잡아 주시면 성적이 더 빨리 오를 것 같습니다.');
     }
+    histCare(H, c).forEach(function (t) { P.push(t); });
+    if (H && H.follows.length) P.push('지난번 안내 예정이던 ' + H.follows.map(function (f) { return '‘' + f + '’'; }).join(', ') + ' 건도 함께 말씀드리겠습니다.');
     P.push('집에서 ' + name + ' 학생이 수학 공부하면서 힘들어하는 점이나 느끼시는 점이 있으실까요?');
     return P.join('\n\n');
   }
 
+  /* ── 지난 상담 기록 읽기: 키워드로 학부모가 신경 쓰던 것을 찾아 멘트에 녹여요(말을 이해하는 AI 는 아니라서 틀릴 수 있어요) ── */
+  var VIA = { phone: '전화', visit: '방문', msg: '문자·카톡', etc: '기타' }, WHO = { parent: '학부모', student: '학생', both: '학부모+학생' };
+  var THEMES = [
+    { id: 'mind', re: /멘탈|자신감|위축|불안|스트레스|예민|흔들|주눅|눈치/, label: '멘탈·자신감', said: '학생의 멘탈·자신감' },
+    { id: 'habit', re: /의지|꾸준|습관|게으|산만|집중|요령|끈기|부족한 것/, label: '공부 습관', said: '공부 습관과 의지' },
+    { id: 'goal', re: /과고|영재|특목|자사|의대|서울대|명문|목표|입시|1등급|내신/, label: '목표', said: '목표' },
+    { id: 'worry', re: /실망|걱정|놀라|속상|낮은|부족/, label: '성적 걱정', said: '현재 성적에 대한 걱정' },
+    { id: 'base', re: /구멍|기초|개념|선행|진도|탄탄/, label: '기초·진도', said: '기초와 진도' }];
+  function history(notes) {
+    var cs = (notes || []).filter(function (n) { return n.kind === 'consult'; }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || (b.id || 0) - (a.id || 0); });
+    var sp = (notes || []).filter(function (n) { return n.kind === 'special'; }), txt = cs.concat(sp).map(function (n) { return n.body || ''; }).join('\n');
+    var th = THEMES.filter(function (t) { return t.re.test(txt); }).slice(0, 3), gm = txt.match(/과고|영재고|영재|특목고|특목|자사고|의대|서울대/);
+    var last = cs[0] || null, body = last ? String(last.body || '').replace(/\s+/g, ' ').trim() : '';
+    return { n: cs.length, last: last, lastTxt: body.length > 70 ? body.slice(0, 70) + '…' : body, themes: th, goal: gm ? gm[0] : '', follows: cs.filter(function (n) { return n.follow && !n.done; }).map(function (n) { return n.follow; }).slice(0, 2),
+      pins: sp.filter(function (n) { return n.pinned; }).map(function (n) { return String(n.body || '').replace(/\s+/g, ' ').slice(0, 40); }).slice(0, 2) };
+  }
+  function ld(x) { var m = String(x || '').match(/(\d+)-(\d+)-(\d+)/); return m ? (+m[2]) + '/' + (+m[3]) : ''; }
+  function histOpen(H, name) {   // 첫머리: 지난 상담 이야기를 이어서
+    if (!H || !H.last) return '';
+    var said = H.themes.slice(0, 2).map(function (t) { return t.id === 'goal' && H.goal ? '‘' + H.goal + '’ 목표' : t.label; });
+    return '지난 ' + ld(H.last.date) + ' 상담 때 ' + (said.length ? '말씀하신 ' + said.join('·') + ' 부분을 기억하고 있습니다.' : '말씀 나눈 내용을 기억하고 있습니다.');
+  }
+  function histCare(H, c) {   // 상담 이력에서 읽은 걱정에 맞춘 보살핌 문장
+    if (!H || !H.themes.length) return [];
+    var out = [], good = c && c.strong.length ? c.strong[0].u : '';
+    H.themes.forEach(function (t) {
+      if (t.id === 'mind') out.push('점수가 낮게 나온 부분이 있어도 ' + (good ? '「' + good + '」처럼 ' : '') + '잘한 부분을 먼저 짚어 주며 자신감을 지켜 가겠습니다.');
+      else if (t.id === 'habit') out.push('공부 습관은 수업 중 과제 확인과 오답노트로 꾸준히 잡아 가겠습니다.');
+      else if (t.id === 'goal') out.push((H.goal ? '말씀하신 ‘' + H.goal + '’ 목표를 기준으로 ' : '목표에 맞춰 ') + '단원별 우선순위를 잡아서 준비시키겠습니다.');
+      else if (t.id === 'base') out.push('기초 개념의 빈 곳을 먼저 메우는 데 시간을 쓰겠습니다.');
+    });
+    return out.slice(0, 2);
+  }
   function shortScript(c, ctx) {
     var name = (ctx && ctx.name) || '학생', dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, P = [];
-    P.push('학부모님, ' + name + ' 학생은 최근 ' + c.ex.length + '회 시험 평균 ' + r1(c.mavg) + '점입니다.' + (c.cavg != null ? ' 같은 시험을 본 반 평균(' + r1(c.cavg) + '점)보다 ' + (Math.abs(dg) < .05 ? '비슷한 수준입니다.' : Math.abs(dg) + '점 ' + (dg > 0 ? '높습니다.' : '낮습니다.')) : ''));
+    var H = ctx && ctx.H, ho = histOpen(H, name); if (ho) P.push(ho);
+    P.push((ho ? '' : '학부모님, ') + name + ' 학생은 최근 ' + c.ex.length + '회 시험 평균 ' + r1(c.mavg) + '점입니다.' + (c.cavg != null ? ' 같은 시험을 본 반 평균(' + r1(c.cavg) + '점)보다 ' + (Math.abs(dg) < .05 ? '비슷한 수준입니다.' : Math.abs(dg) + '점 ' + (dg > 0 ? '높습니다.' : '낮습니다.')) : ''));
     if (c.weak.length) P.push(c.weak.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원이 상대적으로 약해서 이 부분을 먼저 보완하겠습니다.');
     else if (c.strong.length) P.push(c.strong.slice(0, 2).map(function (o) { return nm(o); }).join('·') + ' 단원은 안정적입니다. 지금 흐름을 이어 가겠습니다.');
-    if (ctx && ctx.hwPct != null && ctx.hwPct < 70) P.push('최근 과제 완료율이 ' + ctx.hwPct + '%라서 집에서 과제 마무리를 함께 챙겨 주시면 좋겠습니다.');
-    P.push('집에서 수학 공부하며 힘들어하는 점이 있으실까요?');
+    var care = histCare(H, c).slice(0, 1);
+    if (care.length) P.push(care[0]);
+    else if (ctx && ctx.hwPct != null && ctx.hwPct < 70) P.push('최근 과제 완료율이 ' + ctx.hwPct + '%라서 집에서 과제 마무리를 함께 챙겨 주시면 좋겠습니다.');
+    if (H && H.follows.length) P.push('지난번 안내 예정이던 ‘' + H.follows[0] + '’ 건도 함께 말씀드리겠습니다.');
+    P.push(H && H.last ? '지난 상담 이후 집에서 달라진 점이나 걱정되시는 점이 있으실까요?' : '집에서 수학 공부하며 힘들어하는 점이 있으실까요?');
     return P.join(' ');
   }
   /* ── 화면 ── */
@@ -99,14 +139,20 @@
     var c = compute(xs); if (!c.ex.length) return '';
     var id = 'sd' + (++seq);
     if (!document.getElementById('sd-css')) { var st = document.createElement('style'); st.id = 'sd-css'; st.textContent = CSS; document.head.appendChild(st); }
-    var dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, nmx = (ctx && ctx.name) || '학생';
+    ctx = ctx || {}; ctx.H = history(d.notes);
+    var H = ctx.H, dg = (c.mavg != null && c.cavg != null) ? r1(c.mavg - c.cavg) : null, nmx = (ctx && ctx.name) || '학생';
     var h = '<div class="card sd-wrap"><h3>성적 · 상담 핵심</h3>';
     h += '<div class="sd-head">최근 ' + c.ex.length + '회 평균 <b>' + r1(c.mavg) + '점</b>' + (c.cavg != null ? ' · 반 평균(' + r1(c.cavg) + '점)보다 <b class="' + (Math.abs(dg) < .05 ? 'sd-z' : dg > 0 ? 'sd-up' : 'sd-dn') + '">' + (Math.abs(dg) < .05 ? '비슷해요' : Math.abs(dg) + '점 ' + (dg > 0 ? '높아요' : '낮아요')) + '</b>' : '') + '</div>';
     var chips = c.weak.slice(0, 3).map(function (o, i) { return '<span class="sd-chip w">' + (i === 0 ? '보완 1순위 ' : '보완 ') + esc(o.u) + ' <small>내 ' + o.me + '%' + (o.cl != null ? ' · 반 ' + o.cl + '%' : '') + '</small></span>'; }).concat(c.strong.slice(0, 2).map(function (o) { return '<span class="sd-chip s">강점 ' + esc(o.u) + ' <small>' + o.me + '%</small></span>'; }));
     if (ctx && ctx.hwPct != null && ctx.hwPct < 70) chips.push('<span class="sd-chip w">과제 완료 ' + ctx.hwPct + '% <small>낮음</small></span>');
     if (!c.weak.length && c.units.length) chips.unshift('<span class="sd-chip s">반보다 크게 낮은 단원 없음</span>');
     if (chips.length) h += '<div class="sd-chips">' + chips.join('') + '</div>';
-    h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta sd-short" id="' + id + 's" rows="5" spellcheck="false">' + esc(shortScript(c, ctx)) + '</textarea><div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + 's">한마디 복사</button><button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
+    if (H.last || H.pins.length) {
+      h += '<div class="sd-last">' + (H.last ? '<div><b>지난 상담</b> ' + esc(ld(H.last.date)) + ' ' + esc((VIA[H.last.via] || '') + (H.last.who ? '·' + (WHO[H.last.who] || '') : '')) + ' <span class="sd-lt">“' + esc(H.lastTxt) + '”</span></div>' : '') +
+        ((H.themes.length || H.follows.length) ? '<div class="sd-chips" style="margin-top:6px">' + H.themes.map(function (t) { return '<span class="sd-chip n">' + esc(t.label) + (t.id === 'goal' && H.goal ? ' ' + esc(H.goal) : '') + '</span>'; }).join('') + H.follows.map(function (f) { return '<span class="sd-chip w">후속 미완료 <small>' + esc(f) + '</small></span>'; }).join('') + '</div>' : '') +
+        (H.pins.length ? '<div class="sd-pin">⚠ 특이사항: ' + H.pins.map(esc).join(' · ') + '</div>' : '') + '</div>';
+    }
+    h += '<div class="sd-h">상담 한마디 <span style="font-weight:600;color:var(--mut,#7b7468);font-size:12px">(고쳐서 쓰세요)</span></div><textarea class="sd-ta sd-short" id="' + id + 's" rows="7" spellcheck="false">' + esc(shortScript(c, ctx)) + '</textarea><div class="sd-row"><button class="sd-bt" type="button" data-sd="copy" data-for="' + id + 's">한마디 복사</button><button class="sd-more" type="button" data-sd="more">' + (OPEN ? '자세히 닫기 ▴' : '자세히 보기 ▾') + '</button></div>';
     h += '<div class="sd-detail" style="display:' + (OPEN ? 'block' : 'none') + '"><div class="sd-sub" style="margin-top:12px">최근 시험 ' + c.ex.length + '회 · 같은 시험을 본 반 학생들과 비교한 자세한 자동 분석이에요.</div>';
     /* 1. 시험별 */
     h += '<div class="sd-h" style="margin-top:6px">① 시험별 점수와 반 평균</div><table class="sd-t"><tr><th>시험</th><th>내 점수</th><th>반 평균</th><th>차이</th><th>등수</th></tr>' + c.ex.map(function (e) {
