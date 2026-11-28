@@ -243,7 +243,7 @@
     return '<section class="rp pg">' + hdr(name, '공수내모 성적표', false, d, true) + exbar(d) +
       '<div class="rp-kpi"><div><small>내 점수</small><b>' + d.sc + '</b><span>/ ' + d.tot + '점' + (d.es && d.es.graded ? '<br>객관식 ' + d.obj + ' + 서술형 ' + d.es.total : (d.es && d.es.has ? '<br>서술형 채점 전(객관식 점수)' : '')) + '</span></div>' +
       '<div class="gk"><small>내 등급 · ' + esc(d.inf.school || '학교') + ' 기준</small>' + (ev ? '<b class="g">' + gtxt(d) + '<u>등급</u></b><span>상위 ' + topTxt(d.tp) + ' · <i style="background:' + GC[g] + ';color:' + GT[g] + '">' + g + '등급 구간</i></span>' : '<b>-</b><span>등급컷 자료 없음</span>') + '</div>' +
-      '<div><small>우리 반</small><b>' + d.rk + '위</b><span>' + d.n + '명 중 · 평균 ' + (d.avg == null ? '-' : d.avg) + '점</span></div></div>' +
+      '<div><small>우리 반 평균</small><b>' + (d.avg == null ? '-' : d.avg) + '</b><span>/ ' + d.tot + '점' + (d.avg == null ? '' : ' · 나는 ' + (d.sc - d.avg >= 0 ? '+' : '−') + Math.abs(r1(d.sc - d.avg)) + '점') + '</span></div></div>' +
       '<div class="rp-sec">' + h4('등급 위치', '백분위로 계산한 연속 등급 · 0~1.00 = 1등급 구간 · 1~2.00 = 2등급 구간 … (경계: 상위 10·34·66·90%)') + distHtml(d) + '</div>' +
       '<div class="rp-row"><div class="rp-sec">' + h4('예상 등급표') + gradeTable(d) + '</div><div class="rp-sec">' + h4('난이도별 정답률', d.derived ? '반 정답률로 나눔' : '') + levelHtml(d) + '</div></div>' +
       '<div class="rp-sec">' + h4('AI 이해도 분석', '현재 이해 수준', true) + '<div class="rp-note">' + edBox(d, 'und', genUnd(d)) + '</div></div>' +
